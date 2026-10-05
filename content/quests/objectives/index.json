@@ -1,10 +1,10 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/quests/objectives/",
-  "kind": "static_content",
-  "owner": "Quest/Interaction",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Objective definitions and typed conditions."
+  "kind": "static_content",
+  "notes": "Objective definitions and typed conditions.",
+  "owner": "Quest/Interaction",
+  "path": "content/quests/objectives/",
+  "population_state": "READY_UNPOPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

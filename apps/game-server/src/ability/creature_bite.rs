@@ -156,7 +156,7 @@ pub(crate) trait CreatureBiteVitals {
     /// `None` changes nothing.
     fn apply_creature_damage(
         &mut self,
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         target: ExactActorRef,
         target_session: GameSessionId,
         magnitude: u32,
@@ -218,7 +218,7 @@ impl CreatureBiteLedger {
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn commit_ai_bite(
     ledger: &mut CreatureBiteLedger,
-    runtime: &ChannelRuntimeV1,
+    runtime: &mut ChannelRuntimeV1,
     vitals: &mut dyn CreatureBiteVitals,
     intent: AiBiteIntent,
     definition: CreatureBiteDefinition,
@@ -256,7 +256,7 @@ pub(crate) fn commit_ai_bite(
 
 #[allow(clippy::too_many_arguments)]
 fn resolve_and_apply(
-    runtime: &ChannelRuntimeV1,
+    runtime: &mut ChannelRuntimeV1,
     vitals: &mut dyn CreatureBiteVitals,
     entry: &BiteEntry,
     intent: AiBiteIntent,

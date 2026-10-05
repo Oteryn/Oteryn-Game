@@ -1,10 +1,10 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/items/relations/",
-  "kind": "relationship_content",
-  "owner": "Item/Interaction/Ability/Document",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Explicit Item relations not owned by another forward relation. Capability relations are generated from every current Item definition, including post-Wave-1 imbuement slots, plus retained authoring-only forge and enchanting facts."
+  "kind": "relationship_content",
+  "notes": "Explicit Item relations not owned by another forward relation. Capability relations are generated from every current Item definition, including post-Wave-1 imbuement slots, plus retained authoring-only forge and enchanting facts.",
+  "owner": "Item/Interaction/Ability/Document",
+  "path": "content/items/relations/",
+  "population_state": "POPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

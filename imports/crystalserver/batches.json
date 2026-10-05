@@ -1,1 +1,158 @@
-{"batches":[{"access_disposition":"PENDING","batch_id":"cw2-b1-donor-identity-epoch-2-r1","candidates":[],"importer":"OTERYN_CONTENT_ITEM_DONOR_IDENTITY_EPOCH/v2","mapper":"A8-ALIAS-GATE-V1","mapper_revision":"00ce02a57ca5a12e48f32a3476e37471167e4c3f","mapper_sha256":"82530255b2f03e14012fd06caac00cd89cf5c4438fce3dfd3291e377201c2831","reimport_states":[],"source_artifact_sha256":"13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece","source_generation_profile":"OTERYN_ITEM_DONOR_CENSUS/v1","source_repository":"zimbadev/crystalserver","source_revision":"00ce02a57ca5a12e48f32a3476e37471167e4c3f"},{"access_disposition":"PENDING","batch_id":"cw2-b1-full-item-family-registry-r1","candidates":[],"importer":"OTERYN_CONTENT_ITEM_FAMILY_SCALE_REGISTRY/v1","mapper":"OTERYN_CW2_ITEM_IDENTITY_CATALOG_MAPPER/v1","mapper_revision":"904d62e1277ceae76434f75bca104686a7303ff2","mapper_sha256":"320ce69f516de2a6e3cec669493ec59a6f3103f405e624478cf2a76acd3d01b6","reimport_states":[],"source_artifact_sha256":"7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7","source_generation_profile":"OTERYN_CW2_ITEM_IDENTITY_CATALOG_SOURCE_BATCH/v1","source_repository":"zimbadev/crystalserver","source_revision":"ff7ede593c69d4c658b382c97443e8155926924a"},{"access_disposition":"PENDING","batch_id":"g4-creature-crystal-1530-r1","candidates":[],"importer":"OTERYN_CANARY_MONSTER_POPULATION_CENSUS/v1","mapper":"OTERYN_CREATURE_ADMISSION_STAGE/v1","mapper_revision":"creature-admission-r1","mapper_sha256":"3679ab87a31ad5f8e02aae38505819afb39e16de8a3d6028642438ead9a8c511","reimport_states":[],"source_artifact_sha256":"0117ce9b1996a21c609c62d7ba9680614fb1f1fb2337e30d50a4ba1ab2bc049f","source_generation_profile":"OTERYN_MONSTER_AUTHORING_BUNDLE/v1","source_repository":"zimbadev/crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f"},{"access_disposition":"PENDING","batch_id":"g4-npc-crystal-summer-supplement-r1","candidates":[],"importer":"OTERYN_NPC_PROMOTION_CANDIDATES/v1","mapper":"OTERYN_NPC_ADMISSION_STAGE/v1","mapper_revision":"npc-admission-r9","mapper_sha256":"4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff","reimport_states":[],"source_artifact_sha256":"154083cc71de6e41d73c13854307c4c2cbc134df5afdd1e1c899cfc12f5b3fb5","source_generation_profile":"OTERYN_NPC_AUTHORING_CANDIDATE/v1","source_repository":"zimbadev/crystalserver","source_revision":"00ce02a57ca5a12e48f32a3476e37471167e4c3f"}],"schema":"OTERYN_IMPORT_BATCHES/v1"}
+{
+  "batches": [
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "cw2-b1-donor-identity-epoch-2-r1",
+      "candidates": [],
+      "importer": "OTERYN_CONTENT_ITEM_DONOR_IDENTITY_EPOCH/v2",
+      "mapper": "A8-ALIAS-GATE-V1",
+      "mapper_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "mapper_sha256": "82530255b2f03e14012fd06caac00cd89cf5c4438fce3dfd3291e377201c2831",
+      "reimport_states": [],
+      "source_artifact_sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+      "source_generation_profile": "OTERYN_ITEM_DONOR_CENSUS/v1",
+      "source_repository": "zimbadev/crystalserver",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    },
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "cw2-b1-full-item-family-registry-r1",
+      "candidates": [],
+      "importer": "OTERYN_CONTENT_ITEM_FAMILY_SCALE_REGISTRY/v1",
+      "mapper": "OTERYN_CW2_ITEM_IDENTITY_CATALOG_MAPPER/v1",
+      "mapper_revision": "904d62e1277ceae76434f75bca104686a7303ff2",
+      "mapper_sha256": "320ce69f516de2a6e3cec669493ec59a6f3103f405e624478cf2a76acd3d01b6",
+      "reimport_states": [],
+      "source_artifact_sha256": "7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7",
+      "source_generation_profile": "OTERYN_CW2_ITEM_IDENTITY_CATALOG_SOURCE_BATCH/v1",
+      "source_repository": "zimbadev/crystalserver",
+      "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    },
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "g4-creature-crystal-1530-r1",
+      "candidates": [],
+      "importer": "OTERYN_CANARY_MONSTER_POPULATION_CENSUS/v1",
+      "mapper": "OTERYN_CREATURE_ADMISSION_STAGE/v1",
+      "mapper_revision": "creature-admission-r1",
+      "mapper_sha256": "3679ab87a31ad5f8e02aae38505819afb39e16de8a3d6028642438ead9a8c511",
+      "reimport_states": [
+        {
+          "baseline": {
+            "type": "Text",
+            "value": "ce94e6812c4a52ab98613875cb7b79db6d4e005e53a926406eaa7d134dffa800"
+          },
+          "decision": "Unchanged",
+          "field_path": "encounter_manifest_sha256",
+          "local": {
+            "type": "Text",
+            "value": "ce94e6812c4a52ab98613875cb7b79db6d4e005e53a926406eaa7d134dffa800"
+          },
+          "stable_identity": "oteryn:encounter.crystal_herald_of_fire",
+          "upstream": {
+            "type": "Text",
+            "value": "ce94e6812c4a52ab98613875cb7b79db6d4e005e53a926406eaa7d134dffa800"
+          }
+        },
+        {
+          "baseline": {
+            "type": "Text",
+            "value": "d5d3dd2a286c4e80b1f62d54a07596dad88e233625b951462e13507e7fdee01e"
+          },
+          "decision": "Unchanged",
+          "field_path": "encounter_manifest_sha256",
+          "local": {
+            "type": "Text",
+            "value": "d5d3dd2a286c4e80b1f62d54a07596dad88e233625b951462e13507e7fdee01e"
+          },
+          "stable_identity": "oteryn:encounter.crystal_lord_retro",
+          "upstream": {
+            "type": "Text",
+            "value": "d5d3dd2a286c4e80b1f62d54a07596dad88e233625b951462e13507e7fdee01e"
+          }
+        },
+        {
+          "baseline": {
+            "type": "Text",
+            "value": "dded82bbaa356f188e975d9f30d422b100929bb4284ed13ce5e80f4e408ad986"
+          },
+          "decision": "Unchanged",
+          "field_path": "encounter_manifest_sha256",
+          "local": {
+            "type": "Text",
+            "value": "dded82bbaa356f188e975d9f30d422b100929bb4284ed13ce5e80f4e408ad986"
+          },
+          "stable_identity": "oteryn:encounter.crystal_smelly_cheese",
+          "upstream": {
+            "type": "Text",
+            "value": "dded82bbaa356f188e975d9f30d422b100929bb4284ed13ce5e80f4e408ad986"
+          }
+        },
+        {
+          "baseline": {
+            "type": "Text",
+            "value": "7bdcd079783a55bfaccfdf3a5f39b59b9cf9aa54de9c942b9f2758622e0d4870"
+          },
+          "decision": "Unchanged",
+          "field_path": "encounter_manifest_sha256",
+          "local": {
+            "type": "Text",
+            "value": "7bdcd079783a55bfaccfdf3a5f39b59b9cf9aa54de9c942b9f2758622e0d4870"
+          },
+          "stable_identity": "oteryn:encounter.crystal_weak_spot",
+          "upstream": {
+            "type": "Text",
+            "value": "7bdcd079783a55bfaccfdf3a5f39b59b9cf9aa54de9c942b9f2758622e0d4870"
+          }
+        }
+      ],
+      "source_artifact_sha256": "1c54c864a5dfcd069db58719d8500a1e7c882517dd2b838759ef393b2bf35d37",
+      "source_generation_profile": "OTERYN_MONSTER_AUTHORING_BUNDLE/v1",
+      "source_repository": "zimbadev/crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    },
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "g4-npc-crystal-summer-supplement-r1",
+      "candidates": [],
+      "importer": "OTERYN_NPC_PROMOTION_CANDIDATES/v1",
+      "mapper": "OTERYN_NPC_ADMISSION_STAGE/v1",
+      "mapper_revision": "npc-admission-r9",
+      "mapper_sha256": "4b1569375cb675f31fb64a00d94e97c73719b9224eff9569dd38d0ee01a362ff",
+      "reimport_states": [],
+      "source_artifact_sha256": "154083cc71de6e41d73c13854307c4c2cbc134df5afdd1e1c899cfc12f5b3fb5",
+      "source_generation_profile": "OTERYN_NPC_AUTHORING_CANDIDATE/v1",
+      "source_repository": "zimbadev/crystalserver",
+      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    },
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "monster-full-mechanics-portal25051-crystal-20261004",
+      "candidates": [],
+      "importer": "OTERYN_PORTAL25051_SOURCE_SEMANTICS/v1",
+      "mapper": "OTERYN_PORTAL25051_SOURCE_SEMANTICS/v1",
+      "mapper_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "mapper_sha256": "fe7a5b200c6f068a42bd0e60a46318e04a7d63ed27988263a5c84f37f43b7bc8",
+      "reimport_states": [],
+      "source_artifact_sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece",
+      "source_generation_profile": "OTERYN_PORTAL25051_PINNED_XML_AND_APPEARANCE/v1",
+      "source_repository": "zimbadev/crystalserver",
+      "source_revision": "portal25051-semantics:00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    },
+    {
+      "access_disposition": "PENDING",
+      "batch_id": "monster-full-mechanics-tentacle-items-crystal-20261004",
+      "candidates": [],
+      "importer": "OTERYN_TENTACLE_NATIVE_ITEM_SUCCESSOR/v1",
+      "mapper": "OTERYN_TENTACLE_NATIVE_ITEM_SUCCESSOR/v1",
+      "mapper_revision": "tentacle-native-items-r1",
+      "mapper_sha256": "568a3360929a9387ac75a8596145024d05ca449fa2dd9fa2cba3400e4e26a289",
+      "reimport_states": [],
+      "source_artifact_sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
+      "source_generation_profile": "OTERYN_TENTACLE_PINNED_DAT_ITEM_CONSTRUCTOR/v1",
+      "source_repository": "zimbadev/crystalserver",
+      "source_revision": "tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+    }
+  ],
+  "schema": "OTERYN_IMPORT_BATCHES/v1"
+}

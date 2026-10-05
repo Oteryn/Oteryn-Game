@@ -1,1 +1,26 @@
-{"schema":"OTERYN_IMPORT_SOURCES/v1","sources":[{"evidence":"OtsHypothesisOnly","import_batch_id":"g4-creature-canary-wave-a-r1","key":"oteryn:source.canary","revision":"47dfd51f45280a59a1d3e50ba7edd573d7234446","sha256":"0117ce9b1996a21c609c62d7ba9680614fb1f1fb2337e30d50a4ba1ab2bc049f"}]}
+{
+  "schema": "OTERYN_IMPORT_SOURCES/v1",
+  "sources": [
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-creature-canary-wave-a-r1",
+      "key": "oteryn:source.canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "1c54c864a5dfcd069db58719d8500a1e7c882517dd2b838759ef393b2bf35d37"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "monster-full-mechanics-portal25051-canary-20261004",
+      "key": "oteryn:source.canary",
+      "revision": "portal25051-semantics:47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "monster-full-mechanics-tentacle-items-canary-20261004",
+      "key": "oteryn:source.canary",
+      "revision": "tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+    }
+  ]
+}

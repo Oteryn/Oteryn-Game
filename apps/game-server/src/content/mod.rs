@@ -135,3 +135,27 @@ pub(crate) mod spell_familiar_config;
 pub(crate) mod spell_familiar_defenses;
 
 pub(crate) use project::SourceFloorChange;
+
+// Crate test composition may inspect an actually staged native pair; the Stage owner
+// and its complete runtime generation remain private to CONTENT and absent downstream.
+#[cfg(test)]
+pub(crate) fn native_gameplay_test_world_id() -> Result<crate::foundation::WorldId, ContentError> {
+    Ok(production::test_source(1)?.world_id)
+}
+#[cfg(test)]
+pub(crate) fn qualified_native_gameplay_test_state(
+    compiled: &CompiledFirstProductionContent,
+) -> Result<native_gameplay::NativeGameplayState, ContentError> {
+    let staged = production::StagedGeneration::stage(
+        &compiled.server_artifact,
+        &compiled.client_artifact,
+        compiled.expectation(),
+    )?;
+    staged
+        .runtime_state()
+        .native_gameplay()
+        .cloned()
+        .ok_or(ContentError::InvalidArtifact(
+            "explicit native gameplay fixture state absent",
+        ))
+}

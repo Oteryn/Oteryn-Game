@@ -796,17 +796,17 @@ pub(crate) struct SpellItemScopeAuthority {
     ownership_generation: u64,
 }
 impl SpellItemScopeAuthority {
-    pub(super) fn world_bytes(&self) -> [u8; 16] {
+    pub(crate) fn world_bytes(&self) -> [u8; 16] {
         self.world
     }
-    pub(super) fn channel_bytes(&self) -> [u8; 16] {
+    pub(crate) fn channel_bytes(&self) -> [u8; 16] {
         self.channel
     }
-    pub(super) fn generation(&self) -> u64 {
+    pub(crate) fn generation(&self) -> u64 {
         self.ownership_generation
     }
 }
-pub(super) async fn check_scope_transaction(
+pub(crate) async fn check_scope_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
 ) -> Result<()> {
@@ -942,7 +942,7 @@ pub(crate) async fn assert_spell_item_scope_in_transaction(
     assert_spell_item_scope_with_recovery(tx, &record, node, scope, generation).await
 }
 
-pub(super) async fn assert_spell_item_scope_with_recovery(
+pub(crate) async fn assert_spell_item_scope_with_recovery(
     tx: &mut Transaction<'_, Postgres>,
     record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -1174,7 +1174,7 @@ pub(crate) async fn check_transaction(
     Ok(())
 }
 
-fn uuid(value: &str) -> Result<[u8; 16]> {
+pub(crate) fn uuid(value: &str) -> Result<[u8; 16]> {
     let compact: String = value.chars().filter(|c| *c != '-').collect();
     if compact.len() != 32 {
         return Err(SpellItemError::Rejected("stored UUID"));
@@ -1186,19 +1186,19 @@ fn uuid(value: &str) -> Result<[u8; 16]> {
     }
     Ok(output)
 }
-fn integer(value: String) -> Result<u64> {
+pub(crate) fn integer(value: String) -> Result<u64> {
     value
         .parse()
         .map_err(|_| SpellItemError::Rejected("stored unsigned value"))
 }
-fn decoded_definition(row: &sqlx::postgres::PgRow) -> Result<TypedDefinitionRef> {
+pub(crate) fn decoded_definition(row: &sqlx::postgres::PgRow) -> Result<TypedDefinitionRef> {
     Ok(TypedDefinitionRef {
         family: row.try_get("definition_family")?,
         production_key: row.try_get("definition_production_key")?,
         revision_ref: row.try_get("definition_revision_ref")?,
     })
 }
-fn decoded_placement(row: &sqlx::postgres::PgRow) -> Result<GroundPlacement> {
+pub(crate) fn decoded_placement(row: &sqlx::postgres::PgRow) -> Result<GroundPlacement> {
     Ok(GroundPlacement {
         spatial_position: row.try_get("spatial_position")?,
         corpse_ref: row.try_get("corpse_ref")?,
@@ -1210,7 +1210,7 @@ fn decoded_placement(row: &sqlx::postgres::PgRow) -> Result<GroundPlacement> {
 
 // The Channel owner lock serializes Ground custody; retain row locks on
 // mutable ItemInstances without requiring UPDATE on immutable locations.
-const TILE_ROWS: &str = "SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.minted_transaction_id::text,g.stack_ordinal::text,g.runtime_scope_ownership_generation::text AS ground_scope_generation,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,COALESCE(fc.blocks_movement,l.blocks_movement,nm.blocks_movement) AS blocks_movement,COALESCE(fc.blocks_projectile,l.blocks_projectile,nm.blocks_projectile) AS blocks_projectile,COALESCE(fc.immovable_block_solid,l.immovable_block_solid,nm.immovable_block_solid) AS immovable_block_solid,l.expires_at_unix_ms,r.character_id::text AS origin_character,r.game_session_id::text AS origin_session,r.command_id::text AS origin_command,r.occurred_at_unix_ms AS origin_created_unix_ms,r.ownership_generation::text AS origin_generation,r.caster_lease_generation::text AS origin_lease,r.caster_placement_digest AS origin_placement,r.catalog_digest AS origin_catalog,l.content_generation_digest AS origin_content, EXISTS (SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=i.item_instance_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION') AS corpse FROM game_item_ground_locations g JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id LEFT JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.operation_kind=1 LEFT JOIN game_spell_item_receipts r ON r.transaction_id=l.transaction_id LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND fc.content_digest=l.content_generation_digest LEFT JOIN game_native_map_item_receipts nm ON nm.item_instance_id=i.item_instance_id AND nm.transaction_id=i.minted_transaction_id AND (nm.definition_family,nm.definition_key,nm.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND nm.quantity=i.quantity AND i.state_revision=1 AND i.last_transaction_id IS NULL AND (nm.world_id,nm.channel_id,nm.spatial_position,nm.map_revision,nm.content_revision,nm.placement_context)=(g.world_id,g.channel_id,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) AND (nm.scope_generation=g.runtime_scope_ownership_generation OR EXISTS(SELECT 1 FROM game_native_map_scope_adoptions ad WHERE ad.source_transaction_id=nm.transaction_id AND ad.ownership_generation=g.runtime_scope_ownership_generation)) AND nm.content_revision='sha256:'||encode(nm.content_digest,'hex') AND nm.map_revision='sha256:'||encode(nm.map_digest,'hex') AND nm.placement_context=nm.frame_digest AND (nm.owner_kind IS NULL OR nm.owner_kind IN('container','door')) AND EXISTS(SELECT 1 FROM game_native_map_item_audit na WHERE na.transaction_id=nm.transaction_id AND na.item_instance_id=nm.item_instance_id AND na.event_id=nm.event_id AND na.envelope=nm.source_intent AND na.envelope_digest=nm.binding AND na.created_xact_id=nm.created_xact_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 AND g.native_room_placement_context=$6 AND i.lifecycle=1 ORDER BY g.stack_ordinal DESC NULLS FIRST LIMIT 501 FOR UPDATE OF i";
+const TILE_ROWS: &str = "SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.minted_transaction_id::text,g.stack_ordinal::text,g.runtime_scope_ownership_generation::text AS ground_scope_generation,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,COALESCE(fc.blocks_movement,l.blocks_movement,nm.blocks_movement) AS blocks_movement,COALESCE(fc.blocks_projectile,l.blocks_projectile,nm.blocks_projectile) AS blocks_projectile,COALESCE(fc.immovable_block_solid,l.immovable_block_solid,nm.immovable_block_solid) AS immovable_block_solid,l.expires_at_unix_ms,r.cause_kind AS origin_cause_kind,r.world_id::text AS creature_origin_world,r.channel_id::text AS creature_origin_channel,r.creature_placement AS creature_origin_placement,r.creature_actor_generation::text AS creature_origin_generation,r.creature_definition_key AS creature_origin_key,r.creature_definition_revision AS creature_origin_revision,r.spell_production_key AS creature_origin_ability,r.spell_revision AS creature_origin_ability_revision,r.creature_occurrence AS creature_origin_occurrence,r.creature_map_digest AS creature_origin_map,r.creature_frame_digest AS creature_origin_frame,r.creature_source_body_digest AS creature_origin_body,r.creature_cast_digest AS creature_origin_cast,r.character_id::text AS origin_character,r.game_session_id::text AS origin_session,r.command_id::text AS origin_command,r.occurred_at_unix_ms AS origin_created_unix_ms,r.ownership_generation::text AS origin_generation,r.caster_lease_generation::text AS origin_lease,r.caster_placement_digest AS origin_placement,r.catalog_digest AS origin_catalog,l.content_generation_digest AS origin_content, EXISTS (SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=i.item_instance_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION') AS corpse FROM game_item_ground_locations g JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id LEFT JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.operation_kind=1 AND l.transaction_id=i.minted_transaction_id LEFT JOIN game_spell_item_receipts r ON r.transaction_id=l.transaction_id LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND fc.content_digest=l.content_generation_digest LEFT JOIN game_native_map_item_receipts nm ON nm.item_instance_id=i.item_instance_id AND nm.transaction_id=i.minted_transaction_id AND (nm.definition_family,nm.definition_key,nm.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND nm.quantity=i.quantity AND i.state_revision=1 AND i.last_transaction_id IS NULL AND (nm.world_id,nm.channel_id,nm.spatial_position,nm.map_revision,nm.content_revision,nm.placement_context)=(g.world_id,g.channel_id,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) AND (nm.scope_generation=g.runtime_scope_ownership_generation OR EXISTS(SELECT 1 FROM game_native_map_scope_adoptions ad WHERE ad.source_transaction_id=nm.transaction_id AND ad.ownership_generation=g.runtime_scope_ownership_generation)) AND nm.content_revision='sha256:'||encode(nm.content_digest,'hex') AND nm.map_revision='sha256:'||encode(nm.map_digest,'hex') AND nm.placement_context=nm.frame_digest AND (nm.owner_kind IS NULL OR nm.owner_kind IN('container','door')) AND EXISTS(SELECT 1 FROM game_native_map_item_audit na WHERE na.transaction_id=nm.transaction_id AND na.item_instance_id=nm.item_instance_id AND na.event_id=nm.event_id AND na.envelope=nm.source_intent AND na.envelope_digest=nm.binding AND na.created_xact_id=nm.created_xact_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 AND g.native_room_placement_context=$6 AND i.lifecycle=1 ORDER BY g.stack_ordinal DESC NULLS FIRST LIMIT 501 FOR UPDATE OF i";
 
 async fn locked_tile_rows(
     tx: &mut Transaction<'_, Postgres>,
@@ -1227,7 +1227,7 @@ async fn locked_tile_rows(
     locked_tile_rows_for_scope(tx, &scope, target).await
 }
 
-async fn locked_tile_rows_for_scope(
+pub(crate) async fn locked_tile_rows_for_scope(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemScopeAuthority,
     target: &SpellGroundTarget,
@@ -1345,7 +1345,7 @@ pub(crate) async fn read_qualification_scope_tile_in_transaction(
     )
 }
 
-fn decode_tile_rows(
+pub(crate) fn decode_tile_rows(
     rows: Vec<sqlx::postgres::PgRow>,
     ownership_generation: u64,
     target: &SpellGroundTarget,
@@ -1371,6 +1371,7 @@ fn decode_tile_rows(
                 .try_get::<Option<bool>, _>("immovable_block_solid")?
                 .ok_or(SpellItemError::Rejected("unknown immovable blocking fact"))?,
             expires_at_unix_ms: row.try_get("expires_at_unix_ms")?,
+            creature_field_origin: decode_creature_field_origin(&row)?,
             field_origin: match row.try_get::<Option<String>, _>("origin_lease")? {
                 None => None,
                 Some(lease) => Some(DurableFieldOrigin {
@@ -1454,10 +1455,10 @@ pub(crate) async fn prepare_ground_removal_in_transaction(
     Err(SpellItemError::Rejected("item no longer in target custody"))
 }
 
-fn reference(value: &TypedDefinitionRef) -> serde_json::Value {
+pub(crate) fn reference(value: &TypedDefinitionRef) -> serde_json::Value {
     serde_json::json!({"family":value.family,"key":value.production_key,"revision":value.revision_ref})
 }
-fn ground(value: &GroundPlacement) -> serde_json::Value {
+pub(crate) fn ground(value: &GroundPlacement) -> serde_json::Value {
     serde_json::json!({"position":value.spatial_position,"corpse_ref":value.corpse_ref,"map_revision":value.map_revision,"content_revision":value.content_revision,"context":value.native_room_placement_context})
 }
 pub(crate) fn encode_cast_cost(cost: &CastCostBinding) -> Result<Vec<u8>> {
@@ -1483,10 +1484,10 @@ pub(crate) fn encode_cast_cost(cost: &CastCostBinding) -> Result<Vec<u8>> {
     }
     serde_json::to_vec(&serde_json::json!({"version":1,"before_revision":cost.vitals_revision_before,"after_revision":cost.vitals_revision_after,"mana_before":cost.mana_before,"mana_after":cost.mana_after,"soul_before":cost.soul_before,"soul_after":cost.soul_after,"cooldowns_before":cost.cooldowns_before,"cooldowns_after":cost.cooldowns_after,"caster_before":cost.caster_digest_before.as_slice(),"caster_after":cost.caster_digest_after.as_slice()})).map_err(|_|SpellItemError::Rejected("cost encoding"))
 }
-fn uuid_v7(value: &[u8; 16]) -> bool {
+pub(crate) fn uuid_v7(value: &[u8; 16]) -> bool {
     value[6] >> 4 == 7 && value[8] & 0xc0 == 0x80
 }
-fn item_definition_valid(value: &TypedDefinitionRef) -> bool {
+pub(crate) fn item_definition_valid(value: &TypedDefinitionRef) -> bool {
     value.family == "Item"
         && value
             .production_key
@@ -2225,79 +2226,28 @@ async fn apply_operation(
             ));
         }
     }
-    sqlx::query("INSERT INTO game_spell_item_lines(transaction_id,ordinal,operation_kind,item_instance_id,definition_family,definition_production_key,definition_revision,quantity_before,quantity_after,state_revision_before,world_id,channel_id,spatial_position,map_revision,content_revision,placement_context,source_stack_ordinal,content_generation_digest,blocks_movement,blocks_projectile,expires_at_unix_ms,immovable_block_solid,destination_parent_item_instance_id,destination_ordinal) VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5,$6,$7,$8,$9,$10::text::numeric(20,0),encode($11,'hex')::uuid,encode($12,'hex')::uuid,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,CASE WHEN $23::bytea IS NULL THEN NULL ELSE encode($23,'hex')::uuid END,$24::text::numeric(20,0))")
-        .bind(request.transaction_id.as_slice()).bind(i32::try_from(ordinal).map_err(|_|SpellItemError::Rejected("line ordinal"))?).bind(kind).bind(item.as_slice()).bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref).bind(i64::from(quantity_before)).bind(i64::from(quantity_after)).bind(revision.to_string()).bind(authority.world.as_slice()).bind(authority.channel.as_slice()).bind(&placement.spatial_position).bind(&placement.map_revision).bind(&placement.content_revision).bind(&placement.native_room_placement_context).bind(stack.map(|n|i64::try_from(n).map_err(|_|SpellItemError::Rejected("Ground ordinal overflow"))).transpose()?).bind(content_digest.as_slice()).bind(blocks_movement).bind(blocks_projectile).bind(expires).bind(match operation {SpellItemOperation::MintGround{definition,blocks_movement,..}=> !definition.movable && *blocks_movement, _=>false}).bind(destination.as_ref().map(|(id,_)|id.as_slice())).bind(destination.as_ref().map(|(_,n)|n.to_string())).execute(&mut **tx).await?;
-    if kind == 1 {
-        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,1,encode($7,'hex')::uuid)")
-            .bind(item.as_slice()).bind(authority.world.as_slice()).bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref).bind(i64::from(quantity_after)).bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
-        if let SpellItemOperation::MintGround { definition, .. } = operation {
-            super::spell_item_temporal::schedule_field_chain_in_transaction(
-                tx,
-                authority,
-                request,
-                definition,
-                item,
-                u32::try_from(ordinal)
-                    .map_err(|_| SpellItemError::Rejected("field stage ordinal"))?,
-                occurred_at,
-            )
-            .await?;
-        }
-        if let SpellItemOperation::MintGround {
-            description: Some(description),
-            ..
-        } = operation
-        {
-            sqlx::query("INSERT INTO game_spell_item_source_descriptions(item_instance_id,transaction_id,ordinal,description) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4)")
-                .bind(item.as_slice())
-                .bind(request.transaction_id.as_slice())
-                .bind(i32::try_from(ordinal).map_err(|_| SpellItemError::Rejected("description ordinal"))?)
-                .bind(description)
-                .execute(&mut **tx).await?;
-        }
-        if let SpellItemOperation::MintInventory { definition, .. } = operation {
-            super::spell_item_temporal::schedule_minted_item_in_transaction(
-                tx,
-                authority,
-                request,
-                definition,
-                item,
-                u32::try_from(ordinal)
-                    .map_err(|_| SpellItemError::Rejected("temporal source ordinal"))?,
-                occurred_at,
-            )
-            .await?;
-        }
-        if let Some((parent, ordinal)) = destination {
-            sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric(20,0),encode($6,'hex')::uuid)")
-                .bind(item.as_slice()).bind(authority.world.as_slice()).bind(authority.character.as_slice()).bind(parent.as_slice()).bind(ordinal.to_string()).bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
-        } else {
-            sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),$5,$6,$7,$8,$9)")
-            .bind(item.as_slice()).bind(authority.world.as_slice()).bind(authority.channel.as_slice()).bind(authority.ownership_generation.to_string()).bind(&placement.spatial_position).bind(&placement.corpse_ref).bind(&placement.map_revision).bind(&placement.content_revision).bind(&placement.native_room_placement_context).execute(&mut **tx).await?;
-        }
-    } else if kind == 4 {
-        let updated=sqlx::query("UPDATE game_item_instances SET quantity=$1,last_transaction_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($3,'hex')::uuid AND lifecycle=1 AND state_revision=$4::text::numeric(20,0) AND quantity=$5")
-            .bind(i64::from(quantity_after)).bind(request.transaction_id.as_slice()).bind(item.as_slice()).bind(revision.to_string()).bind(i64::from(quantity_before)).execute(&mut **tx).await?;
-        if updated.rows_affected() != 1 {
-            return Err(SpellItemError::Rejected(
-                "existing inventory stack compare-and-grant refused",
-            ));
-        }
-    } else {
-        let updated=sqlx::query("UPDATE game_item_instances SET lifecycle=2,quantity=0,last_transaction_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid AND lifecycle=1 AND state_revision=$3::text::numeric(20,0)")
-            .bind(request.transaction_id.as_slice()).bind(item.as_slice()).bind(revision.to_string()).execute(&mut **tx).await?;
-        if updated.rows_affected() != 1 {
-            return Err(SpellItemError::Rejected("item compare-and-retire refused"));
-        }
-        let removed=sqlx::query("DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid AND stack_ordinal=$2")
-            .bind(item.as_slice()).bind(stack.map(|n|i64::try_from(n).map_err(|_|SpellItemError::Rejected("Ground ordinal overflow"))).transpose()?).execute(&mut **tx).await?;
-        if removed.rows_affected() != 1 {
-            return Err(SpellItemError::Rejected(
-                "Ground compare-and-remove refused",
-            ));
-        }
-    }
-    Ok(())
+    apply_physical_item_line(
+        tx,
+        PhysicalItemOwner::Player(authority),
+        PhysicalItemCause::Player(request),
+        ordinal,
+        occurred_at,
+        operation,
+        kind,
+        item,
+        definition,
+        quantity_before,
+        quantity_after,
+        revision,
+        stack,
+        placement,
+        content_digest,
+        blocks_movement,
+        blocks_projectile,
+        expires,
+        destination,
+    )
+    .await
 }
 
 /// Historical source integrity only. This cannot grant current gameplay,
@@ -3168,7 +3118,7 @@ pub(crate) async fn current_top_corpse_definition_in_transaction(
 
 /// build_source_world preserves numeric OTBM tags as decimal JSON keys:
 /// ATTR_ACTION_ID=4 and ATTR_UNIQUE_ID=5, not the separate region-codec names.
-fn source_map_protection_tags(attributes: &serde_json::Value) -> Result<(bool, bool)> {
+pub(crate) fn source_map_protection_tags(attributes: &serde_json::Value) -> Result<(bool, bool)> {
     let attributes = attributes
         .as_object()
         .ok_or(SpellItemError::Rejected("source item attributes shape"))?;
@@ -3213,4 +3163,292 @@ mod map_protection_tag_tests {
             assert!(source_map_protection_tags(&serde_json::json!({"5":value})).is_err());
         }
     }
+}
+
+// Single physical ItemInstance/ground-custody mutation implementation. Creature writers never
+// manufacture a Player authority, cost, command or inventory destination.
+#[derive(Clone, Copy)]
+pub(crate) enum PhysicalItemOwner<'a> {
+    Player(&'a SpellItemAuthority),
+    Creature(&'a SpellItemScopeAuthority),
+}
+impl PhysicalItemOwner<'_> {
+    fn world(&self) -> &[u8; 16] {
+        match self {
+            Self::Player(a) => &a.world,
+            Self::Creature(a) => &a.world,
+        }
+    }
+    fn channel(&self) -> &[u8; 16] {
+        match self {
+            Self::Player(a) => &a.channel,
+            Self::Creature(a) => &a.channel,
+        }
+    }
+    fn generation(&self) -> u64 {
+        match self {
+            Self::Player(a) => a.ownership_generation,
+            Self::Creature(a) => a.ownership_generation,
+        }
+    }
+    fn player(&self) -> Result<&SpellItemAuthority> {
+        match self {
+            Self::Player(a) => Ok(a),
+            _ => Err(SpellItemError::Rejected(
+                "Creature cause cannot mutate Player inventory",
+            )),
+        }
+    }
+}
+#[derive(Clone, Copy)]
+pub(crate) enum PhysicalItemCause<'a> {
+    Player(&'a SpellItemTransactionRequest),
+    Creature([u8; 16]),
+}
+impl PhysicalItemCause<'_> {
+    fn transaction_id(&self) -> &[u8; 16] {
+        match self {
+            Self::Player(r) => &r.transaction_id,
+            Self::Creature(id) => id,
+        }
+    }
+    fn player(&self) -> Result<&SpellItemTransactionRequest> {
+        match self {
+            Self::Player(r) => Ok(r),
+            _ => Err(SpellItemError::Rejected(
+                "Creature cause has no Player cost request",
+            )),
+        }
+    }
+}
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn apply_physical_item_line(
+    tx: &mut Transaction<'_, Postgres>,
+    owner: PhysicalItemOwner<'_>,
+    cause: PhysicalItemCause<'_>,
+    ordinal: usize,
+    occurred_at: i64,
+    operation: &SpellItemOperation,
+    kind: i16,
+    item: [u8; 16],
+    definition: &TypedDefinitionRef,
+    quantity_before: u32,
+    quantity_after: u32,
+    revision: u64,
+    stack: Option<u64>,
+    placement: &GroundPlacement,
+    content_digest: [u8; 32],
+    blocks_movement: bool,
+    blocks_projectile: bool,
+    expires: Option<i64>,
+    destination: Option<([u8; 16], u64)>,
+) -> Result<()> {
+    match (&owner, &cause) {
+        (PhysicalItemOwner::Player(authority), PhysicalItemCause::Player(_)) => {
+            check_transaction(tx, authority).await?
+        }
+        (PhysicalItemOwner::Creature(authority), PhysicalItemCause::Creature(_)) => {
+            check_scope_transaction(tx, authority).await?;
+            if destination.is_some()
+                || !matches!(
+                    operation,
+                    SpellItemOperation::MintGround { .. } | SpellItemOperation::RemoveGround(_)
+                )
+                || ![1, 2].contains(&kind)
+            {
+                return Err(SpellItemError::Rejected(
+                    "Creature ground-only physical mutation",
+                ));
+            }
+        }
+        _ => return Err(SpellItemError::Rejected("physical cause/owner mismatch")),
+    }
+    sqlx::query("INSERT INTO game_spell_item_lines(transaction_id,ordinal,operation_kind,item_instance_id,definition_family,definition_production_key,definition_revision,quantity_before,quantity_after,state_revision_before,world_id,channel_id,spatial_position,map_revision,content_revision,placement_context,source_stack_ordinal,content_generation_digest,blocks_movement,blocks_projectile,expires_at_unix_ms,immovable_block_solid,destination_parent_item_instance_id,destination_ordinal) VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5,$6,$7,$8,$9,$10::text::numeric(20,0),encode($11,'hex')::uuid,encode($12,'hex')::uuid,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,CASE WHEN $23::bytea IS NULL THEN NULL ELSE encode($23,'hex')::uuid END,$24::text::numeric(20,0))")
+        .bind(cause.transaction_id().as_slice()).bind(i32::try_from(ordinal).map_err(|_|SpellItemError::Rejected("line ordinal"))?).bind(kind).bind(item.as_slice()).bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref).bind(i64::from(quantity_before)).bind(i64::from(quantity_after)).bind(revision.to_string()).bind(owner.world().as_slice()).bind(owner.channel().as_slice()).bind(&placement.spatial_position).bind(&placement.map_revision).bind(&placement.content_revision).bind(&placement.native_room_placement_context).bind(stack.map(|n|i64::try_from(n).map_err(|_|SpellItemError::Rejected("Ground ordinal overflow"))).transpose()?).bind(content_digest.as_slice()).bind(blocks_movement).bind(blocks_projectile).bind(expires).bind(match operation {SpellItemOperation::MintGround{definition,blocks_movement,..}=> !definition.movable && *blocks_movement, _=>false}).bind(destination.as_ref().map(|(id,_)|id.as_slice())).bind(destination.as_ref().map(|(_,n)|n.to_string())).execute(&mut **tx).await?;
+    if kind == 1 {
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,1,encode($7,'hex')::uuid)")
+            .bind(item.as_slice()).bind(owner.world().as_slice()).bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref).bind(i64::from(quantity_after)).bind(cause.transaction_id().as_slice()).execute(&mut **tx).await?;
+        if let SpellItemOperation::MintGround { definition, .. } = operation {
+            async {             match (&owner, &cause) {
+                (PhysicalItemOwner::Player(authority), PhysicalItemCause::Player(request)) => {
+                    super::spell_item_temporal::schedule_field_chain_in_transaction(
+                        tx, authority, request, definition, item,
+                        u32::try_from(ordinal).map_err(|_| SpellItemError::Rejected("field stage ordinal"))?, occurred_at,
+                    ).await?;
+                }
+                (PhysicalItemOwner::Creature(authority), PhysicalItemCause::Creature(transaction_id)) => {
+                    super::spell_item_temporal::schedule_source_scope_field_chain_in_transaction(
+                        tx, authority, *transaction_id, definition, item,
+                        u32::try_from(ordinal).map_err(|_| SpellItemError::Rejected("field stage ordinal"))?, occurred_at,
+                    ).await?;
+                }
+                _ => return Err(SpellItemError::Rejected("physical cause/owner mismatch")),
+            }
+            Ok::<(), SpellItemError>(()) }
+            .await?;
+        }
+        if let SpellItemOperation::MintGround {
+            description: Some(description),
+            ..
+        } = operation
+        {
+            sqlx::query("INSERT INTO game_spell_item_source_descriptions(item_instance_id,transaction_id,ordinal,description) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4)")
+                .bind(item.as_slice())
+                .bind(cause.transaction_id().as_slice())
+                .bind(i32::try_from(ordinal).map_err(|_| SpellItemError::Rejected("description ordinal"))?)
+                .bind(description)
+                .execute(&mut **tx).await?;
+        }
+        if let SpellItemOperation::MintInventory { definition, .. } = operation {
+            super::spell_item_temporal::schedule_minted_item_in_transaction(
+                tx,
+                owner.player()?,
+                cause.player()?,
+                definition,
+                item,
+                u32::try_from(ordinal)
+                    .map_err(|_| SpellItemError::Rejected("temporal source ordinal"))?,
+                occurred_at,
+            )
+            .await?;
+        }
+        if let Some((parent, ordinal)) = destination {
+            sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric(20,0),encode($6,'hex')::uuid)")
+                .bind(item.as_slice()).bind(owner.world().as_slice()).bind(owner.player()?.character.as_slice()).bind(parent.as_slice()).bind(ordinal.to_string()).bind(cause.transaction_id().as_slice()).execute(&mut **tx).await?;
+        } else {
+            sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),$5,$6,$7,$8,$9)")
+            .bind(item.as_slice()).bind(owner.world().as_slice()).bind(owner.channel().as_slice()).bind(owner.generation().to_string()).bind(&placement.spatial_position).bind(&placement.corpse_ref).bind(&placement.map_revision).bind(&placement.content_revision).bind(&placement.native_room_placement_context).execute(&mut **tx).await?;
+        }
+    } else if kind == 4 {
+        let updated=sqlx::query("UPDATE game_item_instances SET quantity=$1,last_transaction_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($3,'hex')::uuid AND lifecycle=1 AND state_revision=$4::text::numeric(20,0) AND quantity=$5")
+            .bind(i64::from(quantity_after)).bind(cause.transaction_id().as_slice()).bind(item.as_slice()).bind(revision.to_string()).bind(i64::from(quantity_before)).execute(&mut **tx).await?;
+        if updated.rows_affected() != 1 {
+            return Err(SpellItemError::Rejected(
+                "existing inventory stack compare-and-grant refused",
+            ));
+        }
+    } else {
+        let updated=sqlx::query("UPDATE game_item_instances SET lifecycle=2,quantity=0,last_transaction_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid AND lifecycle=1 AND state_revision=$3::text::numeric(20,0)")
+            .bind(cause.transaction_id().as_slice()).bind(item.as_slice()).bind(revision.to_string()).execute(&mut **tx).await?;
+        if updated.rows_affected() != 1 {
+            return Err(SpellItemError::Rejected("item compare-and-retire refused"));
+        }
+        let removed=sqlx::query("DELETE FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid AND stack_ordinal=$2")
+            .bind(item.as_slice()).bind(stack.map(|n|i64::try_from(n).map_err(|_|SpellItemError::Rejected("Ground ordinal overflow"))).transpose()?).execute(&mut **tx).await?;
+        if removed.rows_affected() != 1 {
+            return Err(SpellItemError::Rejected(
+                "Ground compare-and-remove refused",
+            ));
+        }
+    }
+    Ok(())
+}
+
+pub(crate) async fn read_creature_scope_tile_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    target: &SpellGroundTarget,
+) -> Result<DurableTileItems> {
+    check_scope_transaction(tx, authority).await?;
+    decode_tile_rows(
+        locked_tile_rows_for_scope(tx, authority, target).await?,
+        authority.ownership_generation,
+        target,
+    )
+}
+pub(crate) async fn prepare_creature_scope_removal_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    target: &SpellGroundTarget,
+    item: [u8; 16],
+) -> Result<DurableGroundItemReservation> {
+    check_scope_transaction(tx, authority).await?;
+    let rows = locked_tile_rows_for_scope(tx, authority, target).await?;
+    let row = rows
+        .iter()
+        .find(|r| {
+            r.try_get::<String, _>("item_instance_id")
+                .ok()
+                .and_then(|s| uuid(&s).ok())
+                == Some(item)
+        })
+        .ok_or(SpellItemError::Rejected("Creature Item left source Ground"))?;
+    let children:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).fetch_one(&mut **tx).await?;
+    if children != 0 {
+        return Err(SpellItemError::Rejected(
+            "Creature source removal cannot acquire contained items",
+        ));
+    }
+    Ok(DurableGroundItemReservation {
+        item_instance_id: item,
+        definition: decoded_definition(row)?,
+        state_revision: integer(row.try_get("state_revision")?)?,
+        top_down_ordinal: integer(row.try_get("stack_ordinal")?)?,
+        placement: decoded_placement(row)?,
+        quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
+            .map_err(|_| SpellItemError::Rejected("Creature Item quantity"))?,
+        contents: Vec::new(),
+    })
+}
+
+/// Native composition borrows the existing recovery record without exposing a constructor.
+pub(crate) fn creature_item_recovery_record(
+    recovery: &ReconciledCharacterAuthority<'_, '_>,
+    root: &DurabilityRoot,
+) -> Result<crate::character_recovery_fence::CharacterRecoveryFenceV1> {
+    recovery
+        .record_for(root)
+        .map_err(|_| SpellItemError::Rejected("Creature source recovery authority"))
+}
+pub(crate) async fn commit_creature_item_owner_transaction(
+    tx: Transaction<'_, Postgres>,
+    deadline: std::time::Instant,
+) -> std::result::Result<(), DurabilityError> {
+    super::db::commit_semantic_transaction(tx, deadline).await
+}
+
+fn decode_creature_field_origin(
+    row: &sqlx::postgres::PgRow,
+) -> Result<Option<DurableCreatureFieldOrigin>> {
+    if row.try_get::<Option<i16>, _>("origin_cause_kind")? != Some(1) {
+        return Ok(None);
+    }
+    let digest = |name: &str| -> Result<[u8; 32]> {
+        row.try_get::<Vec<u8>, _>(name)?
+            .try_into()
+            .map_err(|_| SpellItemError::Rejected("Creature field digest width"))
+    };
+    let origin = DurableCreatureFieldOrigin {
+        world: uuid(&row.try_get::<String, _>("creature_origin_world")?)?,
+        channel: uuid(&row.try_get::<String, _>("creature_origin_channel")?)?,
+        created_at_unix_ms: row.try_get("origin_created_unix_ms")?,
+        source_scope_generation: integer(row.try_get("origin_generation")?)?,
+        content_digest: digest("origin_content")?,
+        catalog_digest: digest("origin_catalog")?,
+        map_digest: digest("creature_origin_map")?,
+        frame_digest: digest("creature_origin_frame")?,
+        source_body_digest: digest("creature_origin_body")?,
+        source_cast_digest: digest("creature_origin_cast")?,
+        actor_placement: row
+            .try_get::<Vec<u8>, _>("creature_origin_placement")?
+            .try_into()
+            .map_err(|_| SpellItemError::Rejected("Creature field placement width"))?,
+        actor_generation: integer(row.try_get("creature_origin_generation")?)?,
+        creature_key: row.try_get("creature_origin_key")?,
+        creature_revision: row.try_get("creature_origin_revision")?,
+        ability_key: row.try_get("creature_origin_ability")?,
+        ability_revision: row.try_get("creature_origin_ability_revision")?,
+        occurrence: row.try_get("creature_origin_occurrence")?,
+        item_instance: uuid(&row.try_get::<String, _>("item_instance_id")?)?,
+        item_key: row.try_get("definition_production_key")?,
+        item_revision: row.try_get("definition_revision_ref")?,
+    };
+    if origin.condition_source_key().is_none()
+        || row.try_get::<Option<String>, _>("origin_lease")?.is_some()
+    {
+        return Err(SpellItemError::Rejected(
+            "Creature field typed cause metadata",
+        ));
+    }
+    Ok(Some(origin))
 }

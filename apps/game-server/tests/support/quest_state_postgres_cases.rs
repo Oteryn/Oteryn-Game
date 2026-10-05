@@ -1416,3 +1416,94 @@ fn quest_tracks_are_bounded_at_rl_01_and_the_load_fails_closed_over_it() -> Test
 // QUEST-XP-1 quest XP obligations (migration 0069) and their award, on the fixtures above.
 #[path = "quest_xp_postgres_cases.rs"]
 mod quest_xp_postgres_cases;
+
+#[test]
+fn source_herald_grouped_writer_death_replay_ineligible_and_stale_session_are_atomic() -> TestResult
+{
+    run("source_herald", async |harness| {
+        let mission =
+            "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/mission";
+        let killed =
+            "oteryn:quest-progress/crystalserver/quest/u15_24/targuna/burning_heart/herald_killed";
+        let source_key = "oteryn:quest-transition/crystalserver/targuna/herald-death/mission-1";
+        let lowered = crate::durability::quest_state::quest::loader::load_embedded_quest_state(
+            "source-herald-crystal00ce-r1",
+        )
+        .map_err(debug)?;
+        let catalogue = Arc::new(lowered.catalogue().clone());
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let request = QuestTransitionRequest {
+            transition_key: source_key.into(),
+            cause: QuestCause::CreatureDeath(
+                ExperienceRewardOccurrence::from_bytes(id(71)).map_err(debug)?,
+            ),
+        };
+        let before = snapshot(&harness.pool).await?;
+        assert_eq!(
+            commit(harness, &authority, fence(1)?, request.clone(), &catalogue).await,
+            Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))
+        );
+        assert_eq!(snapshot(&harness.pool).await?, before);
+        let start=QuestTransitionRequest {transition_key:"oteryn:quest-transition/crystalserver/quest/u15_24/targuna/burning_heart/mission/npc_1".into(),cause:QuestCause::Command(command(51)?)};
+        committed(commit(harness, &authority, fence(1)?, start, &catalogue).await)?;
+        let sequencer = CharacterRevisionSequencer::new();
+        let mut slot = sequencer
+            .acquire(CharacterId::from_bytes(id(CHARACTER)).map_err(debug)?)
+            .await;
+        let first = committed(
+            slot.commit_quest_transition(
+                &harness.root,
+                &authority,
+                &harness.node,
+                fence(2)?,
+                request.clone(),
+                Arc::clone(&catalogue),
+            )
+            .await,
+        )?;
+        assert_eq!(track_value(&harness.pool, mission).await?, Some(3));
+        assert_eq!(track_value(&harness.pool, killed).await?, Some(1));
+        assert_eq!(first.changes.len(), 2);
+        let applied = snapshot(&harness.pool).await?;
+        assert_eq!(
+            slot.commit_quest_transition(
+                &harness.root,
+                &authority,
+                &harness.node,
+                fence(2)?,
+                request.clone(),
+                Arc::clone(&catalogue)
+            )
+            .await
+            .map_err(debug),
+            Ok(QuestTransitionOutcome::AlreadyCommitted(first))
+        );
+        assert_eq!(snapshot(&harness.pool).await?, applied);
+        drop(slot);
+        let other = QuestTransitionRequest {
+            transition_key: source_key.into(),
+            cause: QuestCause::CreatureDeath(
+                ExperienceRewardOccurrence::from_bytes(id(72)).map_err(debug)?,
+            ),
+        };
+        let mut stale = fence(3)?;
+        stale.game_session_id = GameSessionId::decode(&id(99)).map_err(debug)?;
+        assert!(
+            commit(harness, &authority, stale, other.clone(), &catalogue)
+                .await
+                .is_err()
+        );
+        assert_eq!(snapshot(&harness.pool).await?, applied);
+        assert_eq!(
+            commit(harness, &authority, fence(3)?, other, &catalogue).await,
+            Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))
+        );
+        assert_eq!(snapshot(&harness.pool).await?, applied);
+        Ok(())
+    })
+}

@@ -160,6 +160,7 @@ mod tests {
             mitigation: None,
             resistances: Vec::new(),
             damage_immunities: Vec::new(),
+            healing_from_damage: vec![],
             flags: crate::foundation::CreatureFlags {
                 attackable: true,
                 illusionable: false,

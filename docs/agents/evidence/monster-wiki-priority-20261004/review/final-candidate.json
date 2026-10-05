@@ -1,0 +1,97 @@
+{
+  "status": "PASS",
+  "scope": "Read-only scratch native candidate + cached field proof; no Cargo or product changes",
+  "integration_sha256": "e0ecd82f1cd8e2a7d1c1907fc50e395b82b1ae2f01c070390e8012ae4dbe1fd7",
+  "file_hash_checks": {
+    "content/creatures/definitions/spell-native-profiles.json": {
+      "preimage_match": false,
+      "candidate_match": true,
+      "current_matches_candidate": true
+    },
+    "content/creatures/definitions/creatures-00000-00499.json": {
+      "preimage_match": false,
+      "candidate_match": true,
+      "current_matches_candidate": true
+    },
+    "content/world/definitions/declarations.json": {
+      "preimage_match": false,
+      "candidate_match": true,
+      "current_matches_candidate": true
+    },
+    "content/creatures/definitions/creatures-00500-00999.json": {
+      "preimage_match": false,
+      "candidate_match": true,
+      "current_matches_candidate": true
+    },
+    "content/creatures/definitions/creatures-01000-01499.json": {
+      "preimage_match": false,
+      "candidate_match": true,
+      "current_matches_candidate": true
+    },
+    "content/creatures/definitions/creatures-01500-01862.json": {
+      "preimage_match": false,
+      "candidate_match": true,
+      "current_matches_candidate": true
+    }
+  },
+  "native_record_count": 1870,
+  "native_nonstat_and_other_top_fields_preserved": true,
+  "core_exact_cached_provenance_checks": 168,
+  "core_statuses": {
+    "WIKI_CONFIRMED": 154,
+    "UNKNOWN": 1,
+    "WIKI_NORMALIZED_LINEAGE": 1
+  },
+  "wiki_speed_projection_count": 17,
+  "findings": [],
+  "qualification_limits": [
+    "17 observed wiki speeds explicitly accepted as PROJECT native base-speed projection, not Global engine-unit parity.",
+    "Appearance/loot/source-body/nonstat definitions unchanged.",
+    "Metadata and sealed readback checked by root after canonical writer."
+  ],
+  "current_product_state": "All6 touched product documents now equal exact scratch candidates; root applied while review was running.",
+  "preimage_review_note": "Initial independent structural read before application observed only seven native stat fields plus four details.healing_from_damage additions; final preimage guards cannot be reasserted after root application.",
+  "independent_healing_raw_cell_checks": [
+    {
+      "actor": "Security Golem",
+      "damage_type": "energy",
+      "wiki_raw": "-100%",
+      "matches": true,
+      "revision_id": 440024,
+      "content_sha256": "c730cee210c3a83d4164ad7317c5bb8a5433986917c7226db8984b2f0cf2a3ed"
+    },
+    {
+      "actor": "Sir Baeloc",
+      "damage_type": "death",
+      "wiki_raw": "-300%",
+      "matches": true,
+      "revision_id": 445229,
+      "content_sha256": "6c3acd0c6479f5de995cfa77fed1fc450f25a340287a0e921c9ba89d0a2eed89"
+    },
+    {
+      "actor": "Sir Baeloc",
+      "damage_type": "earth",
+      "wiki_raw": "-20%",
+      "matches": true,
+      "revision_id": 445229,
+      "content_sha256": "6c3acd0c6479f5de995cfa77fed1fc450f25a340287a0e921c9ba89d0a2eed89"
+    },
+    {
+      "actor": "Sir Nictros",
+      "damage_type": "death",
+      "wiki_raw": "-300%",
+      "matches": true,
+      "revision_id": 445231,
+      "content_sha256": "ec4beb30b40db33e4ca01dcb8933cc89888ddc520a5dfc927f0ef289eca32e58"
+    },
+    {
+      "actor": "The Percht Queen",
+      "damage_type": "ice",
+      "wiki_raw": "-100%",
+      "matches": true,
+      "revision_id": 445344,
+      "content_sha256": "f45dc868ae418a75ee6a02aa93c5ca4929de71f247238553699b525f971e6e3a"
+    }
+  ],
+  "healing_raw_cells_pass": true
+}

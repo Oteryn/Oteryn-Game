@@ -16,28 +16,28 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        364,
-        "c8bc6fbae51a3360eea24dd2035a99df8ccbcfeca127db6a850f120e4d215928",
+        418,
+        "4e34b13d30e70206163ac703ccae4ffd46eb5b55e7e8b5b37e2f8b7b292caf5e",
     ),
     (
         "definitions/declarations.json",
-        20_105_845,
-        "8e89f9a7384750b875e74e9406c2144e935427b2b25ae0184aa0c4bfd724d53c",
+        20700315,
+        "1bbdcd9545157612d2381a8bd2cacb089ad96b5d334861348a5190fd24654aa0",
     ),
     (
         "definitions/reference.json",
-        26_606_984,
-        "c32aeaf21030459bc426e2a907d8ea06bc0d4059e7e1dadd10af230f15892f67",
+        26997047,
+        "cc8cde6c90d7a4f94e4c6b0b1219cbdb36b3d064d89fb3a3c72eceb79b36ecce",
     ),
     (
         "editor/author.json",
-        120_557,
+        120557,
         "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
     ),
     (
         "manifest.json",
-        1939,
-        "d8e0ebe8a89c8404cf4e1799691e3c06289ab165ea1a2479f032383462ce5660",
+        1957,
+        "319d0547296e41da1c403fd7495f184786f408ee462cb2c477cacaa486d84494",
     ),
     (
         "presentations/bindings.json",
@@ -46,18 +46,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        390,
-        "a06013831634dd2bf0f1a154350595c7fd14e29c53c7d7fd59fc8e9f6019e4da",
+        408,
+        "2ac2a68d7b6e3fdad7c373ffbcabaaffaf428f4e592aa0564a11bb59ee5a1703",
     ),
     (
         "provenance/imports.json",
-        6_758_132,
-        "cff0c73bf9148a497384e594624bb0d4efd78329c5487fd62d242de15814ebef",
+        6762517,
+        "54ea6948d062da090389e1b757fd02ca70f03f99b2b0cc9a596c552b9e8635d4",
     ),
     (
         "provenance/sources.json",
-        1_511_734,
-        "598bca60cb1039f2e6a68012a890f5f87022e7e56c4c710656a8a6bb7f6b05c3",
+        1558864,
+        "af41b51b967d5ec51698d7ccb405ed2fe30d04f32c7036ea2b22979fa225a8e9",
     ),
     (
         "worlds/world.json",
@@ -125,18 +125,18 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "83f9330ffdcf83b8a511f4680946ad4f08cbcb6ba1d6a3cc6986e823b180e3f0";
+const TREE_SHA256: &str = "2e966964f7cdb881bd52732be5eef4c9bf433869a58678bc27766b746c957b62";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 61 appearance-only records (ITEM-ADD-1, Snowball 53855).
-const ITEMS: usize = 34_032;
+const ITEMS: usize = 34_042;
 /// Actual canonical package: 2,286,109 JSON values; retain a bounded 2.4M budget.
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
 /// Full generated population, including qualified source proxies and Wiki metadata.
-const CREATURES: usize = 1_763;
-const CREATURE_RECORDS: usize = 24_933;
-const CREATURE_PROFILES: usize = 23_823;
+const CREATURES: usize = 1_863;
+const CREATURE_RECORDS: usize = 26_194;
+const CREATURE_PROFILES: usize = 25_052;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1110;
 const NPC_RECORDS: usize = 2220;
@@ -144,7 +144,7 @@ const NPC_DECLARATIONS: usize = 2184;
 const NPC_DIALOGUES: usize = 694;
 const NPC_BINDINGS: usize = 2376;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
-const ENCOUNTERS: usize = 104;
+const ENCOUNTERS: usize = 108;
 /// Source-bound encyclopedia Documents, referenced by exactly the same number of creatures.
 const ENCYCLOPEDIA_DOCUMENTS: usize = 1_609;
 
@@ -167,8 +167,8 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 12,
-        max_reimport_states: ENCOUNTERS + 296,
+        max_import_records: 16,
+        max_reimport_states: 404,
     }
 }
 
@@ -343,13 +343,17 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-wave-a-r9");
-    assert_eq!(project.imports().len(), 14);
+    assert_eq!(
+        project.project_revision(),
+        "monster-canonical-1863-20261004-r1"
+    );
+    assert_eq!(project.imports().len(), 18);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
         .filter(|b| {
-            b.batch_id != "g4-item-forge289-br-r1"
+            !b.batch_id.starts_with("monster-full-mechanics-")
+                && b.batch_id != "g4-item-forge289-br-r1"
                 && b.batch_id != "g4-item-fx-audio295-raw-evidence-r1"
         })
         .collect();
@@ -417,7 +421,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert!(creature_import.candidates.is_empty());
     // E5: each admitted encounter keeps its manifest digest as an unchanged reimport baseline.
-    assert_eq!(creature_import.reimport_states.len(), ENCOUNTERS);
+    assert_eq!(creature_import.reimport_states.len(), 104);
     assert!(creature_import.reimport_states.iter().all(|state| {
         state.stable_identity.starts_with("oteryn:encounter.")
             && state.field_path == "encounter_manifest_sha256"
@@ -440,6 +444,17 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f"
     );
     assert!(creature_crystal_import.candidates.is_empty());
+    assert_eq!(creature_crystal_import.reimport_states.len(), 4);
+    assert!(creature_crystal_import.reimport_states.iter().all(|state| {
+        state
+            .stable_identity
+            .starts_with("oteryn:encounter.crystal_")
+            && state.field_path == "encounter_manifest_sha256"
+            && matches!(&state.baseline, Some(CandidateValue::Text(digest)) if digest.len() == 64)
+            && state.upstream == state.baseline
+            && state.local == state.baseline
+            && state.decision == ReimportDecision::Unchanged
+    }));
     let wiki = &legacy_imports[4];
     assert_eq!(wiki.batch_id, "g4-item-exact-165-tibiawiki-r1");
     assert_eq!(
@@ -908,11 +923,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 12);
+    assert_eq!(v2.sources.len(), 16);
     let legacy_sources: Vec<_> = v2
         .sources
         .iter()
-        .filter(|s| s.import_batch_id != "g4-item-forge289-br-r1")
+        .filter(|s| {
+            !s.import_batch_id.starts_with("monster-full-mechanics-")
+                && s.import_batch_id != "g4-item-forge289-br-r1"
+        })
         .collect();
     assert_eq!(legacy_sources.len(), 11);
     assert_eq!(legacy_sources[0].key, "oteryn:source.canary");
@@ -1093,7 +1111,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     );
     assert_eq!(
         v2.source_identity_bindings.len(),
-        550 + 289 + CREATURES + ENCOUNTERS + NPC_BINDINGS
+        550 + 289 + CREATURES + ENCOUNTERS + NPC_BINDINGS + 22
     );
     assert_eq!(v2.editor.len(), 550);
     let new_source = v2
@@ -1150,7 +1168,25 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     let mut npc_bindings = 0;
     let mut crystal_creatures = 0;
     let mut encounter_bindings = 0;
+    let extra_item_bindings: serde_json::Value = serde_json::from_str(r#"[{"source_key":"oteryn:source.canary","source_revision":"portal25051-semantics:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"25051","target":{"family":"Item","key":"oteryn:item.tibia.i25051","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35107","target":{"family":"Item","key":"oteryn:item.tibia.i35107","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35109","target":{"family":"Item","key":"oteryn:item.tibia.i35109","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35110","target":{"family":"Item","key":"oteryn:item.tibia.i35110","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35112","target":{"family":"Item","key":"oteryn:item.tibia.i35112","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35119","target":{"family":"Item","key":"oteryn:item.tibia.i35119","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35120","target":{"family":"Item","key":"oteryn:item.tibia.i35120","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35122","target":{"family":"Item","key":"oteryn:item.tibia.i35122","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35126","target":{"family":"Item","key":"oteryn:item.tibia.i35126","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35510","target":{"family":"Item","key":"oteryn:item.tibia.i35510","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.canary","source_revision":"tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446","identity_namespace":"ots/item_server_id","external_id":"35511","target":{"family":"Item","key":"oteryn:item.tibia.i35511","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"portal25051-semantics:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"25051","target":{"family":"Item","key":"oteryn:item.tibia.i25051","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35107","target":{"family":"Item","key":"oteryn:item.tibia.i35107","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35109","target":{"family":"Item","key":"oteryn:item.tibia.i35109","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35110","target":{"family":"Item","key":"oteryn:item.tibia.i35110","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35112","target":{"family":"Item","key":"oteryn:item.tibia.i35112","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35119","target":{"family":"Item","key":"oteryn:item.tibia.i35119","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35120","target":{"family":"Item","key":"oteryn:item.tibia.i35120","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35122","target":{"family":"Item","key":"oteryn:item.tibia.i35122","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35126","target":{"family":"Item","key":"oteryn:item.tibia.i35126","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35510","target":{"family":"Item","key":"oteryn:item.tibia.i35510","revision":"definition-r1"},"disposition":"EXACT"},{"source_key":"oteryn:source.crystalserver","source_revision":"tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f","identity_namespace":"ots/item_server_id","external_id":"35511","target":{"family":"Item","key":"oteryn:item.tibia.i35511","revision":"definition-r1"},"disposition":"EXACT"}]"#).expect("qualified source Item witnesses");
+    let mut extra_item_count = 0;
+    let mut crystal_encounter_count = 0;
     for binding in &v2.source_identity_bindings {
+        if binding
+            .source_revision
+            .starts_with("portal25051-semantics:")
+            || binding.source_revision.starts_with("tentacle-items-dat:")
+        {
+            let encoded = serde_json::to_value(binding).expect("serialize qualified Item witness");
+            assert!(
+                extra_item_bindings
+                    .as_array()
+                    .expect("witness list")
+                    .contains(&encoded)
+            );
+            extra_item_count += 1;
+            continue;
+        }
         if binding.source_key == new_source[0].key
             && binding.source_revision == new_source[0].revision
         {
@@ -1172,7 +1208,15 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             if binding.source_key == "oteryn:source.crystalserver" {
                 assert_eq!(binding.source_revision, legacy_sources[2].revision);
                 assert_eq!(binding.identity_namespace, "crystalserver/monster-file");
-                assert!(binding.external_id.starts_with("data-global/monster/"));
+                assert!(
+                    binding.external_id.starts_with("data-global/monster/")
+                        || matches!(
+                            binding.external_id.as_str(),
+                            "data-crystal/monster/inkborn/crusader_guardian.lua"
+                                | "data-crystal/monster/inkborn/vicious_ink_splash.lua"
+                                | "data-crystal/monster/trainers/training_monk.lua"
+                        )
+                );
                 assert!(binding.target.key.starts_with("oteryn:creature."));
                 assert!(creature_files.insert(&binding.external_id));
                 crystal_creatures += 1;
@@ -1186,6 +1230,24 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             continue;
         }
         if binding.target.family == ProjectV2Family::Encounter {
+            if binding.source_key == "oteryn:source.crystalserver" {
+                assert_eq!(binding.source_revision, legacy_sources[2].revision);
+                assert_eq!(binding.identity_namespace, "crystalserver/encounter");
+                assert_eq!(
+                    binding.target.key,
+                    format!("oteryn:encounter.{}", binding.external_id)
+                );
+                assert!(matches!(
+                    binding.external_id.as_str(),
+                    "crystal_herald_of_fire"
+                        | "crystal_lord_retro"
+                        | "crystal_smelly_cheese"
+                        | "crystal_weak_spot"
+                ));
+                crystal_encounter_count += 1;
+                encounter_bindings += 1;
+                continue;
+            }
             assert_eq!(binding.source_key, "oteryn:source.canary");
             assert_eq!(binding.source_revision, legacy_sources[0].revision);
             assert_eq!(binding.identity_namespace, "canary/encounter");
@@ -1234,7 +1296,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(creature_files.len(), CREATURES - 1);
     assert_eq!(npc_bindings, NPC_BINDINGS);
     assert_eq!(encounter_bindings, ENCOUNTERS);
-    assert_eq!(crystal_creatures, 96);
+    assert_eq!(crystal_encounter_count, 4);
+    assert_eq!(extra_item_count, 22);
+    assert_eq!(crystal_creatures, 196);
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
     assert!(outfit_ids.iter().all(|id| id.as_str() != "68724"));
@@ -1402,6 +1466,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         50
     );
     let mut known_description_keys = BTreeSet::new();
+    let mut qualified_portal_description = false;
     let mut numeric_keys = BTreeSet::new();
     for definition in &linked.definitions {
         let ReferenceDefinitionKind::Item(item) = &definition.kind else {
@@ -1411,13 +1476,23 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         if let ReferenceItemField::Known(presentation) = &item.semantics.presentation
             && let ReferenceItemField::Known(text) = &presentation.description
         {
-            let row = description_rows.get(key).expect("only closed descriptions");
-            assert_eq!(
-                serde_json::to_value(&presentation.description).expect("exact UTF-8 literal"),
-                serde_json::json!({"state":"KNOWN", "value": row["description"]})
-            );
-            assert!(text.len() <= 200 && !text.is_empty());
-            assert!(known_description_keys.insert(key));
+            if key == "oteryn:item.tibia.i25051" {
+                assert_eq!(text, "You can see the other side through it.");
+                assert_eq!(
+                    presentation.name,
+                    ReferenceItemField::Known("energy portal".to_owned())
+                );
+                assert!(!qualified_portal_description);
+                qualified_portal_description = true;
+            } else {
+                let row = description_rows.get(key).expect("only closed descriptions");
+                assert_eq!(
+                    serde_json::to_value(&presentation.description).expect("exact UTF-8 literal"),
+                    serde_json::json!({"state":"KNOWN", "value": row["description"]})
+                );
+                assert!(text.len() <= 200 && !text.is_empty());
+                assert!(known_description_keys.insert(key));
+            }
         }
         if let Some(row) = numeric_rows.iter().find(|r| r["target"]["key"] == key) {
             assert_eq!(
@@ -1429,6 +1504,42 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         }
     }
     assert_eq!(known_description_keys.len(), 1627);
+    assert!(qualified_portal_description);
+    // These exact ten source-qualified Tentacle Item identities carry physical/stack facts only.
+    // Unknown presentation and every other semantics group remain Unknown; no wiki fact is invented.
+    for source_id in [
+        35107, 35109, 35110, 35112, 35119, 35120, 35122, 35126, 35510, 35511,
+    ] {
+        let source_key = format!("oteryn:item.tibia.i{source_id}");
+        let definition = linked
+            .definitions
+            .iter()
+            .find(|d| d.definition.key().as_str() == source_key)
+            .expect("exact source-qualified Tentacle Item admitted");
+        let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+            panic!("source-qualified Item family required")
+        };
+        assert!(!item.materializable);
+        let encoded =
+            serde_json::to_value(&item.semantics).expect("source-qualified Item semantics");
+        assert_eq!(
+            encoded["physical"],
+            serde_json::json!({"state":"KNOWN","value":{"weight":{"state":"UNKNOWN"},"movable":{"state":"KNOWN","value":false},"pickupable":{"state":"KNOWN","value":false}}})
+        );
+        assert_eq!(
+            encoded["stack"],
+            serde_json::json!({"state":"KNOWN","value":{"stackable":{"state":"KNOWN","value":false},"stack_max":{"state":"UNKNOWN"}}})
+        );
+        for (group, value) in encoded.as_object().expect("typed Item semantics object") {
+            if group != "physical" && group != "stack" {
+                assert_eq!(
+                    value,
+                    &serde_json::json!({"state":"UNKNOWN"}),
+                    "{source_key}: {group}"
+                );
+            }
+        }
+    }
     assert_eq!(numeric_keys.len(), 17);
     assert_eq!(
         Sha256::digest(item_name15_promotion::ITEM_NAME15_PACKET)
@@ -1576,14 +1687,15 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // The 201 D149 records carried 204 promoted atoms; they left content with their records
     // (ITEM-ID-1b) and are kept in the tombstone archive.
     // ITEM-ADD-1: 23 donor epoch-2 Items carry 39 TibiaWiki atoms on these paths.
-    assert_eq!(promoted_items, 12_301 - 201 + 23);
+    // Source-qualified portal25051 adds one newly known presentation.name atom.
+    assert_eq!(promoted_items, 12_301 - 201 + 23 + 1);
     // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
     // never removes, the others. Capacity adds 17 unknown atoms; declared charges add one.
     // Explicit relative hit facts add 28 atoms on Items already in this census.
     // TIMED-CONTENT-1 adds one charges atom on these paths where none was promoted.
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28 + 1
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28 + 1 + 1
     );
     let (wave1_items, wave1_fields) = linked
         .definitions
@@ -1611,11 +1723,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // Eight successor defaults add eight false leaves; all already have Wave 1 atoms.
     assert_eq!(
         wave1_items,
-        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2518
+        // Portal25051 + ten exact Tentacle Item identities add eleven explicit false stackability facts.
+        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2518 + 11
     );
     assert_eq!(
         wave1_fields,
-        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_889 + 8
+        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_889 + 8 + 11
     );
     // The declared timer has its own census: it is not one of the older v1/Wave 1 atoms.
     let (charge_fields, duration_fields) = linked
@@ -1788,7 +1901,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         (pickup_fields, positive_stacks, weight_fields),
         (6755, 39, 6513 + 4)
     );
-    assert_eq!((movable_true, movable_false), (5691, 0));
+    // Portal25051 and ten exact Tentacle source Items add eleven immovable facts.
+    assert_eq!((movable_true, movable_false), (5691, 11));
     assert_eq!(
         (
             document_groups,

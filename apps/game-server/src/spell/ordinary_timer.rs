@@ -123,8 +123,23 @@ impl SavedOrdinaryCombat {
     pub(crate) fn validates_effect(&self, effect: &OwnerCombatEffect) -> bool {
         effect.target == self.target
             && effect.sub_ordinal == self.sub_ordinal
-            && matches!(&effect.change, OwnerCombatChange::Damage { target_atom, magnitude }
-                if !target_atom.is_empty() && !target_atom.contains('\0') && *magnitude >= 0)
+            && match &effect.change {
+                OwnerCombatChange::Damage {
+                    target_atom,
+                    magnitude,
+                } => !target_atom.is_empty() && !target_atom.contains('\0') && *magnitude >= 0,
+                OwnerCombatChange::DamageWithHealing {
+                    target_atom,
+                    damage,
+                    healing,
+                } => {
+                    !target_atom.is_empty()
+                        && !target_atom.contains('\0')
+                        && *damage >= 0
+                        && *healing > 0
+                }
+                _ => false,
+            }
     }
     pub(crate) fn current_target(&self, runtime: &ChannelRuntimeV1) -> bool {
         runtime.contains_live_creature(self.target)

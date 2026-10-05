@@ -1,6 +1,9 @@
 //! Actual condition-store ticks use an owner-input origin, never a player command.
 //! The world owner supplies independently qualified standing/PZ facts in this
 //! uninterrupted turn. No detached tick or caller damage number is accepted.
+type CurrentPlayerPeriodicSource<'a> =
+    dyn FnMut(&ChannelRuntimeV1, ExactActorRef, u64) -> Result<Option<u32>, CarrierError> + 'a;
+
 use super::runtime_actor_companion::{CompanionSnapshot, CompanionState};
 use super::*;
 use crate::foundation::RuntimeWorkStamp;
@@ -33,10 +36,48 @@ impl ChannelRuntimeV1 {
         now_us: u64,
         facts: TickFacts,
     ) -> Result<PreparedCreaturePeriodicTurn, CarrierError> {
+        self.stage_creature_periodic_turn_inner(actor, now_us, facts, None)
+    }
+    /// Source snapshots/PlayerSpellState reads are acquired and committed in
+    /// one locked Channel-owner call. This is not a detached damage capability.
+    pub(crate) fn apply_creature_periodic_turn_with_sources(
+        &mut self,
+        actor: ExactActorRef,
+        now_us: u64,
+        facts: TickFacts,
+        player_source: &mut CurrentPlayerPeriodicSource<'_>,
+    ) -> Result<CreaturePeriodicReceipt, CarrierError> {
+        let prepared =
+            self.stage_creature_periodic_turn_inner(actor, now_us, facts, Some(player_source))?;
+        self.commit_creature_periodic_turn(prepared)
+    }
+
+    fn stage_creature_periodic_turn_inner(
+        &mut self,
+        actor: ExactActorRef,
+        now_us: u64,
+        facts: TickFacts,
+        mut player_source: Option<&mut CurrentPlayerPeriodicSource<'_>>,
+    ) -> Result<PreparedCreaturePeriodicTurn, CarrierError> {
         if self.actor_spell_reserved(actor) {
             return Err(CarrierError::PlanConflict);
         }
         let before = self.companion_snapshot(actor)?;
+        if self
+            .companion_policy(&before.state.policy.definition_key)?
+            .as_ref()
+            != before.state.policy.as_ref()
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        if self
+            .carrier
+            .bone_shared_groups
+            .iter()
+            .any(|g| g.phylactery == actor || g.cages.contains(&actor))
+        {
+            return Err(CarrierError::PositionContextMismatch);
+        }
         if !before.state.conditions.accepts_time(now_us) {
             return Err(CarrierError::PlanConflict);
         }
@@ -44,6 +85,8 @@ impl ChannelRuntimeV1 {
         let mut after = before.state.clone();
         let ticks = after.conditions.take_due(now_us, facts);
         let mut total = 0i64;
+        let mut had_damage = false;
+        let mut health_after = before.health;
         for tick in &ticks {
             match tick.kind {
                 TickKind::Damage {
@@ -51,10 +94,150 @@ impl ChannelRuntimeV1 {
                     refused: false,
                     ..
                 } => {
-                    let damage = finish_unattributed_condition_tick(&before, tick, amount, now_us)?;
-                    total = total
-                        .checked_add(damage)
+                    let mut healing = 0;
+                    let mut dealt_percent = 100;
+                    let mut attributed = tick.clone();
+                    if let Some(source) = tick.provenance.source {
+                        if let Some(lineage) = &tick.provenance.lineage
+                            && (lineage.source_content_digest
+                                != self.content_pin().server_artifact_digest()
+                                || lineage.source_actor_placement != source.placement_identity()
+                                || lineage.source_scope_generation
+                                    != source.scope_generation().get())
+                        {
+                            return Err(CarrierError::PlanConflict);
+                        }
+                        let source_percent = match self.companion_snapshot_including_dead(source) {
+                            Ok(snapshot) if snapshot.health <= 0 => None,
+                            Ok(snapshot) => {
+                                if self
+                                    .companion_policy(&snapshot.state.policy.definition_key)?
+                                    .as_ref()
+                                    != snapshot.state.policy.as_ref()
+                                {
+                                    return Err(CarrierError::PlanConflict);
+                                }
+                                self.assert_actor_spell_unreserved(source)?;
+                                let position = self.read_actor_position(source)?;
+                                if position.context() != self.pinned_movement_context() {
+                                    return Err(CarrierError::PositionContextMismatch);
+                                }
+                                use crate::foundation::condition::{ConditionValues, ConflictKey};
+                                let source_store = self
+                                    .actor_conditions_at(source, None, now_us)
+                                    .map_err(|_| CarrierError::PlanConflict)?;
+                                let native = snapshot
+                                    .state
+                                    .conditions
+                                    .active_at(ConflictKey::Attributes, now_us);
+                                let imported =
+                                    source_store.active_at(ConflictKey::Attributes, now_us);
+                                let chosen = match (native, imported) {
+                                    (Some(a), Some(b))
+                                        if a.definition() == b.definition()
+                                            && a.provenance() == b.provenance() =>
+                                    {
+                                        Some(a)
+                                    }
+                                    (Some(_), Some(_)) => return Err(CarrierError::PlanConflict),
+                                    (a, b) => a.or(b),
+                                };
+                                Some(match chosen.map(|a| a.definition().values()) {
+                                    Some(ConditionValues::Attributes {
+                                        damage_dealt_percent,
+                                        ..
+                                    }) => damage_dealt_percent,
+                                    _ => 100,
+                                })
+                            }
+                            Err(_) => {
+                                if let Some(ref mut lookup) = player_source {
+                                    lookup(self, source, now_us)?
+                                } else if !self.borrow_exact_actor_lookup().contains(source) {
+                                    None
+                                } else {
+                                    return Err(CarrierError::PlanConflict);
+                                }
+                            }
+                        };
+                        if let Some(percent) = source_percent {
+                            let TickKind::Damage { element, .. } = tick.kind else {
+                                return Err(CarrierError::PlanConflict);
+                            };
+                            if before.state.policy.flags.attackable {
+                                healing = before.state.policy.damage_healing(
+                                    periodic_element_key(element),
+                                    i64::from(amount),
+                                )?;
+                            }
+                            dealt_percent = percent;
+                        }
+                        attributed.provenance.source = None;
+                        attributed.provenance.lineage = None;
+                    } else if tick.provenance.lineage.is_some() {
+                        return Err(CarrierError::PlanConflict);
+                    }
+                    let adjusted = (u64::from(amount) * u64::from(dealt_percent)) / 100;
+                    let adjusted =
+                        u32::try_from(adjusted).map_err(|_| CarrierError::DamageOverflow)?;
+                    use crate::foundation::condition::{ConditionValues, ConflictKey};
+                    let imported = self
+                        .actor_conditions_at(actor, None, now_us)
+                        .map_err(|_| CarrierError::PlanConflict)?;
+                    let a = before
+                        .state
+                        .conditions
+                        .active_at(ConflictKey::Attributes, now_us);
+                    let b = imported.active_at(ConflictKey::Attributes, now_us);
+                    let chosen = match (a, b) {
+                        (Some(a), Some(b))
+                            if a.definition() == b.definition()
+                                && a.provenance() == b.provenance() =>
+                        {
+                            Some(a)
+                        }
+                        (Some(_), Some(_)) => return Err(CarrierError::PlanConflict),
+                        (a, b) => a.or(b),
+                    };
+                    let received = match chosen.map(|a| a.definition().values()) {
+                        Some(ConditionValues::Attributes {
+                            incoming_reduction_percent,
+                            ..
+                        }) => 100u32
+                            .checked_sub(incoming_reduction_percent)
+                            .ok_or(CarrierError::PlanConflict)?,
+                        _ => 100,
+                    };
+                    let damage = finish_condition_tick_with_received(
+                        &before,
+                        &attributed,
+                        adjusted,
+                        now_us,
+                        Some(received),
+                    )?;
+                    had_damage |= damage > 0;
+                    if damage > 0 {
+                        after
+                            .conditions
+                            .remove_type(crate::foundation::condition::ConditionType::Invisible);
+                    }
+                    // Source combatBlockHit heals before residual damage; each
+                    // real tick caps independently, and lethal never resurrects.
+                    health_after = health_after
+                        .saturating_add(healing)
+                        .min(before.state.policy.maximum_health);
+                    health_after = health_after
+                        .checked_sub(damage)
+                        .ok_or(CarrierError::DamageOverflow)?
+                        .max(0);
+                    total = before
+                        .health
+                        .checked_sub(health_after)
                         .ok_or(CarrierError::DamageOverflow)?;
+                    if health_after == 0 {
+                        after.conditions.clear_on_death();
+                        break;
+                    }
                 }
                 TickKind::Damage { refused: true, .. }
                 | TickKind::Regeneration {
@@ -68,18 +251,13 @@ impl ChannelRuntimeV1 {
                 _ => return Err(CarrierError::PlanConflict),
             }
         }
-        let health_after = before
-            .health
-            .checked_sub(total)
-            .ok_or(CarrierError::DamageOverflow)?
-            .max(0);
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         let Slot::CreatureOccupied { committed, .. } = &self.carrier.slots[index] else {
             return Err(CarrierError::NotCreature);
         };
         let original_slot = self.carrier.slots[index].clone();
         let ordinal = committed.next_ordinal;
-        let next_ordinal = if total > 0 {
+        let next_ordinal = if had_damage {
             ordinal
                 .checked_add(1)
                 .ok_or(CarrierError::CapacityArithmeticOverflow)?
@@ -181,6 +359,9 @@ impl ChannelRuntimeV1 {
         }
         committed.next_ordinal = prepared.next_ordinal;
         *health = prepared.health_after;
+        if prepared.health_after == 0 {
+            committed.conditions.die();
+        }
         *companion = Some(next);
         Ok(CreaturePeriodicReceipt {
             actor: prepared.before.actor,
@@ -191,6 +372,19 @@ impl ChannelRuntimeV1 {
     }
 }
 
+fn periodic_element_key(element: crate::foundation::condition::DotElement) -> &'static str {
+    use crate::foundation::condition::DotElement;
+    match element {
+        DotElement::Poison => "earth",
+        DotElement::Fire => "fire",
+        DotElement::Energy => "energy",
+        DotElement::Bleeding => "physical",
+        DotElement::Drown => "drowning",
+        DotElement::Freezing => "ice",
+        DotElement::Dazzled => "holy",
+        DotElement::Cursed => "death",
+    }
+}
 /// ORIGIN_CONDITION has neither armor/defense nor critical/fatal/pierce draws.
 /// Attributed ticks additionally require the real live source owner; absence
 /// of that qualification cannot silently turn a known caster into no attacker.
@@ -200,23 +394,23 @@ fn finish_unattributed_condition_tick(
     amount: u32,
     now_us: u64,
 ) -> Result<i64, CarrierError> {
-    use crate::foundation::condition::{ConditionValues, ConflictKey, DotElement};
+    finish_condition_tick_with_received(target, tick, amount, now_us, None)
+}
+fn finish_condition_tick_with_received(
+    target: &CompanionSnapshot,
+    tick: &ConditionTick<ExactActorRef>,
+    amount: u32,
+    now_us: u64,
+    received_override: Option<u32>,
+) -> Result<i64, CarrierError> {
+    use crate::foundation::condition::{ConditionValues, ConflictKey};
     if tick.provenance.source.is_some() || tick.provenance.lineage.is_some() {
         return Err(CarrierError::PlanConflict);
     }
     let TickKind::Damage { element, .. } = tick.kind else {
         return Err(CarrierError::PlanConflict);
     };
-    let key = match element {
-        DotElement::Poison => "earth",
-        DotElement::Fire => "fire",
-        DotElement::Energy => "energy",
-        DotElement::Bleeding => "physical",
-        DotElement::Drown => "drown",
-        DotElement::Freezing => "ice",
-        DotElement::Dazzled => "holy",
-        DotElement::Cursed => "death",
-    };
+    let key = periodic_element_key(element);
     let policy = &target.state.policy;
     if !policy.flags.attackable || policy.damage_immunities.iter().any(|v| v == key) {
         return Ok(0);
@@ -234,6 +428,13 @@ fn finish_unattributed_condition_tick(
     {
         received_percent = 100 - incoming_reduction_percent;
         value = (value as f64 * f64::from(received_percent) / 100.0).trunc() as i64;
+    }
+    if let Some(current) = received_override {
+        if current > 100 {
+            return Err(CarrierError::PlanConflict);
+        }
+        received_percent = current;
+        value = (i64::from(amount) as f64 * f64::from(current) / 100.0).trunc() as i64;
     }
     let mitigation = policy.mitigation.ok_or(CarrierError::PlanConflict)?;
     if mitigation.denominator == 0 || mitigation.numerator < 0 {
@@ -297,6 +498,7 @@ mod tests {
             }),
             resistances: vec![],
             damage_immunities: vec![],
+            healing_from_damage: vec![],
             flags: CreatureFlags {
                 attackable: true,
                 illusionable: false,
@@ -494,6 +696,24 @@ mod tests {
         policy.mitigation = None;
         target.state.policy = std::sync::Arc::new(policy.clone());
         assert!(finish_unattributed_condition_tick(&target, &tick, 100, 1_000_000).is_err());
+        policy.healing_from_damage =
+            vec![super::super::runtime_actor_companion::CreatureResistance {
+                damage_type: "fire".into(),
+                percent: CreatureExactRatio {
+                    numerator: 300,
+                    denominator: 1,
+                },
+            }];
+        policy.mitigation = Some(CreatureExactRatio {
+            numerator: 10,
+            denominator: 1,
+        });
+        target.state.policy = std::sync::Arc::new(policy.clone());
+        assert_eq!(
+            finish_unattributed_condition_tick(&target, &tick, 100, 1_000_000).unwrap(),
+            45,
+            "actual source-free condition damage ignores healingMap without attacker"
+        );
         policy.damage_immunities.push("fire".into());
         target.state.policy = std::sync::Arc::new(policy);
         assert_eq!(

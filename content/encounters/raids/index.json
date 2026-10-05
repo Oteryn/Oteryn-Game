@@ -1,10 +1,10 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/encounters/raids/",
-  "kind": "static_content",
-  "owner": "Encounter",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Raid/invasion definitions."
+  "kind": "static_content",
+  "notes": "Raid/invasion definitions.",
+  "owner": "Encounter",
+  "path": "content/encounters/raids/",
+  "population_state": "READY_UNPOPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

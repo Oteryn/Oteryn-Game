@@ -14,7 +14,6 @@
 //! proposes a step and this module's existing machinery revalidates and commits it, unchanged.
 
 use crate::content::native_cell_lookup::NativeStaticCellLookup;
-#[cfg(test)]
 use crate::content::static_cell_engine::EngineeringStaticCellIndex;
 use crate::content::static_cell_engine::{EngineeringStaticCellScope, StaticCellEngineError};
 use crate::content::{CollisionClass, LogicalCell};
@@ -1316,4 +1315,46 @@ mod tests {
         assert_eq!(fixture.current_position()?, snapshot);
         Ok(())
     }
+}
+
+impl MovementDecision<'_> {
+    pub(crate) fn commit_native_summon(
+        self,
+        runtime: &mut ChannelRuntimeV1,
+        current: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        actor: ExactActorRef,
+    ) -> Result<crate::foundation::NativeSummonMovementOutcome, MovementError> {
+        if let Some(error) = self.failure {
+            return Err(error);
+        }
+        if !self.qualified {
+            return Err(MovementError::NotQualified);
+        }
+        runtime
+            .commit_native_summon_cardinal(current, stamp, actor, self.expected, self.destination)
+            .map_err(MovementError::Actor)
+    }
+}
+// Keep step_native_summon_cardinal ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn step_native_summon_cardinal(
+    runtime: &mut ChannelRuntimeV1,
+    current: &crate::foundation::ScopeRuntimeFence,
+    stamp: crate::foundation::RuntimeWorkStamp,
+    actor: ExactActorRef,
+    expected: MovementPositionSnapshot,
+    selection: &MovementEngineeringSelection<'_>,
+    index: &EngineeringStaticCellIndex,
+    direction: CardinalStep,
+) -> Result<crate::foundation::NativeSummonMovementOutcome, MovementError> {
+    let mut decision = MovementDecision::begin(
+        &runtime.borrow_movement_position(),
+        actor,
+        expected,
+        selection,
+        direction,
+    )?;
+    decision.attempt_candidate(index)?;
+    decision.commit_native_summon(runtime, current, stamp, actor)
 }

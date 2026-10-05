@@ -26,7 +26,7 @@ pub(crate) use runtime_actor_carrier::runtime_actor_companion::{
     CompanionMaster, CompanionSnapshot, CompanionState, CompiledCreaturePolicies,
     CompiledCreaturePolicy, CreatureExactRatio, CreatureFlags, CreatureResistance,
     FamiliarDefenseClock, FamiliarSelfHealDefense, PreparedCompanionAssignment,
-    PreparedCompanionSpawn,
+    PreparedCompanionSpawn, PreparedCreatureProfileTransformation,
 };
 pub(crate) use runtime_actor_carrier::runtime_actor_source_step::{
     SourceStepCommitProof, source_step_seal,
@@ -40,16 +40,25 @@ pub(crate) use runtime_actor_carrier::runtime_actor_spell_types;
 pub(crate) use runtime_actor_carrier::runtime_actor_spell_types::DeferredCommitAuthority;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
-    ABILITY01_EFFECT_PLAN_ENTRIES_MAX, ActorConditionPlan, ActorConditionTransition,
-    ApplicationFacts, AttackerCommand, COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX,
+    ABILITY01_EFFECT_PLAN_ENTRIES_MAX, AI01_SPAWN_POPULATION_MAX, AI01_SPAWN_SOURCES_PER_SCOPE_MAX,
+    ActorConditionPlan, ActorConditionTickPlan, ActorConditionTransition, ApplicationFacts,
+    AttackerCommand, AttributeModifier, AttributeModifiers, BoneOverlordCagePhase,
+    BoneOverlordPhase, BonePhaseError, BonePhaseTransition, BoneSharedHpResult, BorethDeathLedger,
+    BorethDeathResult, COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX,
     COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX, CarrierError, ChannelContentPin,
-    ChannelRuntimeV1, CommittedLethalReceipt, ConditionDefinition, ConditionOwnerError,
-    ConditionSource, ConditionSourceKind, ConditionStore, ConditionType, ConditionValues,
-    ControlLossMark, CreatureDeathOccurrenceKey, CreatureDeathOccurrenceRef,
+    ChannelRuntimeV1, CombatSkill, CommittedLethalReceipt, ConditionDefinition,
+    ConditionOwnerError, ConditionRefusal, ConditionSource, ConditionSourceKind, ConditionStore,
+    ConditionTick, ConditionType, ConditionValues, ControlLossMark, CreatureDeathOccurrenceKey,
+    CreatureDeathOccurrenceRef, CreatureSelfHealLedger, CreatureSelfHealRegistration,
     CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup,
-    CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition, MovementFacing,
-    MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot, OwnerDamageCommand,
-    OwnerDamageResult, PlayerActorReservation, RuntimeCorpseProjection, SpeedRange,
+    CurrentOwnerMovementPosition, DamageSchedule, DamageSegment, DotElement, EncounterSpawnError,
+    ExactActorRef, ExactSpeedRatio, FirstEntryPosition, MovementFacing, MovementLocalPosition,
+    MovementPositionContext, MovementPositionSnapshot, NativeEncounterSpawnSpec,
+    NativeSummonAdmissionSpec, NativeSummonDeath, NativeSummonMovementOutcome, NativeSummonOrigin,
+    OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation, RationalSpeedRange,
+    RumBarrelDeathLedger, RumBarrelDeathResult, RuntimeCorpseProjection, SpeedRange, StatusKind,
+    TickFacts, TickKind, WelterConsumeError, WelterConsumeLedger, WelterConsumeResult, WelterPrey,
+    WelterSourceRegistration,
 };
 #[cfg(test)]
 #[allow(unused_imports)] // Each path-included Foundation test crate uses only some fixtures.
@@ -1491,6 +1500,24 @@ pub mod admission_authority_publication;
 
 pub mod fresh_admission_durability;
 
+#[cfg(test)]
+#[allow(unused_imports)]
+pub(crate) use runtime_actor_carrier::crystal_death_router_fixture;
+// Append inside Foundation module. Test builds only; no production grant API.
+#[cfg(test)]
+pub(crate) fn crystal_timer_fixture(
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+) -> Result<(ScopeRuntimeFence, RuntimeWorkStamp), GenerationError> {
+    let mut fence = ScopeRuntimeFence::from_external_grant(generation).with_scope(scope);
+    let ordinal = fence.accept_input(generation)?;
+    let stamp = fence.stamp(ordinal);
+    Ok((fence, stamp))
+}
+
+#[cfg(test)]
+#[allow(unused_imports)]
+pub(crate) use runtime_actor_carrier::bone_shared_actual_owner_harness;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::runtime_actor_periodic::{
     CreaturePeriodicReceipt, PreparedCreaturePeriodicTurn,

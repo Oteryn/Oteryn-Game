@@ -1,10 +1,10 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/services/blessings/",
-  "kind": "static_content",
-  "owner": "Service/Ruleset",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Blessing purchase/service surface."
+  "kind": "static_content",
+  "notes": "Blessing purchase/service surface.",
+  "owner": "Service/Ruleset",
+  "path": "content/services/blessings/",
+  "population_state": "READY_UNPOPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

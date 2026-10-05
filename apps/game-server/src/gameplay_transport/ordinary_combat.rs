@@ -1198,7 +1198,7 @@ fn lower(
                 magnitude
                     .as_mut()
                     .ok_or(Error::InvalidBatch)?
-                    .finish(p, hit, target, draw)
+                    .finish_with_damage_healing(p, hit, target, draw)
             },
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
@@ -1966,16 +1966,24 @@ pub(in crate::gameplay_transport) async fn prepare_due(
     let NativeCombatPlan::Combat(combat) = &plan else {
         return reject();
     };
-    let amount = magnitude
-        .finish(&plan, &combat.hits[0], &bindings[1], draw)
+    let (amount, healing) = magnitude
+        .finish_with_damage_healing(&plan, &combat.hits[0], &bindings[1], draw)
         .map_err(|_| SpellCastDisposition::Rejected)?;
     Ok((
         OwnerCombatEffect {
             target,
             sub_ordinal: 0,
-            change: OwnerCombatChange::Damage {
-                target_atom: bindings[1].target_atom.clone(),
-                magnitude: amount,
+            change: if healing > 0 {
+                OwnerCombatChange::DamageWithHealing {
+                    target_atom: bindings[1].target_atom.clone(),
+                    damage: amount,
+                    healing,
+                }
+            } else {
+                OwnerCombatChange::Damage {
+                    target_atom: bindings[1].target_atom.clone(),
+                    magnitude: amount,
+                }
             },
         },
         magnitude,

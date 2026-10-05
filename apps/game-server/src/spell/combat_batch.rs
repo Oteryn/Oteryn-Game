@@ -101,11 +101,7 @@ pub(crate) fn lower_native(
     plan: &NativeCombatPlan,
     bindings: &[LiveActorBinding],
     first_sub_ordinal: u16,
-    finish: &mut dyn FnMut(
-        &NativeCombatPlan,
-        &MagnitudePlan,
-        &LiveActorBinding,
-    ) -> Result<i64, Error>,
+    finish: &mut NativeCombatFinish<'_>,
 ) -> Result<LoweredNativeCombat, Error> {
     if !batch.effects.is_empty() || batch.deferred.is_some() || bindings.len() > MAX_EFFECTS {
         return Err(Error::InvalidBatch);
@@ -232,14 +228,20 @@ pub(crate) fn lower_native(
     };
     for hit in hits {
         let target = bound(bindings, hit.target)?;
-        let magnitude = finish(plan, hit, target)?;
-        if magnitude < 0 {
+        let (magnitude, damage_healing) = finish(plan, hit, target)?;
+        if magnitude < 0 || damage_healing < 0 || (healing && damage_healing != 0) {
             return Err(Error::InvalidMagnitude);
         }
-        if magnitude == 0 {
+        if magnitude == 0 && damage_healing == 0 {
             continue;
         }
-        let change = if healing {
+        let change = if damage_healing > 0 {
+            OwnerCombatChange::DamageWithHealing {
+                target_atom: target.target_atom.clone(),
+                damage: magnitude,
+                healing: damage_healing,
+            }
+        } else if healing {
             OwnerCombatChange::Heal {
                 target_atom: target.target_atom.clone(),
                 magnitude,
@@ -276,3 +278,6 @@ pub(crate) fn lower_native(
         next_sub_ordinal: ordinal,
     })
 }
+
+type NativeCombatFinish<'a> = dyn FnMut(&NativeCombatPlan, &MagnitudePlan, &LiveActorBinding) -> Result<(i64, i64), Error>
+    + 'a;

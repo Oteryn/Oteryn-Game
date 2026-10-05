@@ -1,0 +1,1013 @@
+[
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.amenef_the_burning",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "ice"
+    ],
+    "evidence": [
+      {
+        "damage_type": "ice",
+        "old_present": true,
+        "old": {
+          "numerator": -20,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.eliz_the_unyielding",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "death",
+      "earth",
+      "energy",
+      "fire",
+      "holy",
+      "ice",
+      "physical"
+    ],
+    "evidence": [
+      {
+        "damage_type": "death",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 100,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "earth",
+        "old_present": true,
+        "old": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 100,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "energy",
+        "old_present": true,
+        "old": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 100,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "fire",
+        "old_present": true,
+        "old": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 100,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "holy",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 100,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "ice",
+        "old_present": true,
+        "old": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 100,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "physical",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 100,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.essence_of_malice",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "earth",
+      "fire",
+      "holy",
+      "ice"
+    ],
+    "evidence": [
+      {
+        "damage_type": "earth",
+        "old_present": true,
+        "old": {
+          "numerator": -50,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": -30,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "fire",
+        "old_present": true,
+        "old": {
+          "numerator": -50,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "holy",
+        "old_present": true,
+        "old": {
+          "numerator": -50,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "ice",
+        "old_present": true,
+        "old": {
+          "numerator": 50,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.fallen_mooh_tah_master_ghar",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "fire"
+    ],
+    "evidence": [
+      {
+        "damage_type": "fire",
+        "old_present": true,
+        "old": {
+          "numerator": 60,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.hacker",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "fire"
+    ],
+    "evidence": [
+      {
+        "damage_type": "fire",
+        "old_present": true,
+        "old": {
+          "numerator": 100,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.hairman_the_huge",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "earth",
+      "energy",
+      "fire"
+    ],
+    "evidence": [
+      {
+        "damage_type": "earth",
+        "old_present": true,
+        "old": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 1,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "energy",
+        "old_present": true,
+        "old": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 1,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "fire",
+        "old_present": true,
+        "old": {
+          "numerator": 25,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 1,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.hellgorak",
+      "revision": "definition-r1"
+    },
+    "apply": true,
+    "unresolved_elements": [
+      "drowning"
+    ],
+    "evidence": [
+      {
+        "damage_type": "drowning",
+        "old_present": true,
+        "old": {
+          "numerator": -205,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": -200,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.irgix_the_flimsy",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "energy",
+      "holy",
+      "physical"
+    ],
+    "evidence": [
+      {
+        "damage_type": "energy",
+        "old_present": true,
+        "old": {
+          "numerator": 100,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 50,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "holy",
+        "old_present": true,
+        "old": {
+          "numerator": 50,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "physical",
+        "old_present": true,
+        "old": {
+          "numerator": 50,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 75,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.memory_of_a_banshee",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "holy"
+    ],
+    "evidence": [
+      {
+        "damage_type": "holy",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": -25,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.memory_of_a_dwarf",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "death",
+      "earth",
+      "fire",
+      "physical"
+    ],
+    "evidence": [
+      {
+        "damage_type": "death",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": -5,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "earth",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "fire",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": -5,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "physical",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.memory_of_a_faun",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "death",
+      "earth",
+      "energy",
+      "fire",
+      "holy",
+      "physical"
+    ],
+    "evidence": [
+      {
+        "damage_type": "death",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 40,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "earth",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 70,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "energy",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": -10,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "fire",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": -5,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "holy",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": -10,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "physical",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 10,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.memory_of_a_frazzlemaw",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "death",
+      "earth",
+      "energy",
+      "fire",
+      "holy",
+      "ice",
+      "physical"
+    ],
+    "evidence": [
+      {
+        "damage_type": "death",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 10,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "earth",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "energy",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 15,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "fire",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 10,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "holy",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": -5,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "ice",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 5,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "physical",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 5,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  },
+  {
+    "target": {
+      "family": "Creature",
+      "key": "oteryn:creature.memory_of_a_fungus",
+      "revision": "definition-r1"
+    },
+    "apply": false,
+    "unresolved_elements": [
+      "death",
+      "earth",
+      "energy",
+      "fire",
+      "holy",
+      "ice"
+    ],
+    "evidence": [
+      {
+        "damage_type": "death",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 35,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "earth",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 100,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "energy",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 15,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "fire",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 5,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "holy",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 5,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      },
+      {
+        "damage_type": "ice",
+        "old_present": false,
+        "old": {
+          "numerator": 0,
+          "denominator": 1
+        },
+        "canonical_present": true,
+        "canonical": {
+          "numerator": 15,
+          "denominator": 1
+        },
+        "neutral_presence_only": false,
+        "provenance": "UNKNOWN",
+        "action": "RETAIN_OLD_PENDING_FIELD_PROOF",
+        "wiki_raw": null,
+        "wiki_identity_bound": true
+      }
+    ]
+  }
+]

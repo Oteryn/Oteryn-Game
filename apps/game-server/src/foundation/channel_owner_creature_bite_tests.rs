@@ -27,7 +27,7 @@ struct Vitals {
 impl CreatureBiteVitals for Vitals {
     fn apply_creature_damage(
         &mut self,
-        _runtime: &ChannelRuntimeV1,
+        _runtime: &mut ChannelRuntimeV1,
         _target: ExactActorRef,
         _target_session: GameSessionId,
         magnitude: u32,
@@ -115,7 +115,7 @@ fn at(micros: u64) -> SemanticTimeMicros {
 
 #[allow(clippy::too_many_arguments)]
 fn bite(
-    owner: &Owner,
+    owner: (&mut ChannelRuntimeV1, ExactActorRef, GameSessionId),
     ledger: &mut CreatureBiteLedger,
     vitals: &mut Vitals,
     issuer: ExactActorRef,
@@ -125,9 +125,9 @@ fn bite(
 ) -> Result<AppliedBite, BiteRejection> {
     commit_ai_bite(
         ledger,
-        &owner.runtime,
+        owner.0,
         vitals,
-        AiAbilityAdapter::bite(issuer, sequence, owner.player, owner.session),
+        AiAbilityAdapter::bite(issuer, sequence, owner.1, owner.2),
         bite_definition(),
         revisions(),
         protection,
@@ -145,11 +145,11 @@ fn vitals(health: u32) -> Vitals {
 
 #[test]
 fn an_adjacent_bite_commits_once_and_a_retry_returns_the_first_result() {
-    let owner = owner(4, position(11, 11));
+    let mut owner = owner(4, position(11, 11));
     let mut ledger = CreatureBiteLedger::default();
     let mut vitals = vitals(185);
     let first = bite(
-        &owner,
+        (&mut owner.runtime, owner.player, owner.session),
         &mut ledger,
         &mut vitals,
         owner.creature,
@@ -170,7 +170,7 @@ fn an_adjacent_bite_commits_once_and_a_retry_returns_the_first_result() {
     for now in [0, 5_000_000] {
         assert_eq!(
             bite(
-                &owner,
+                (&mut owner.runtime, owner.player, owner.session),
                 &mut ledger,
                 &mut vitals,
                 owner.creature,
@@ -186,12 +186,12 @@ fn an_adjacent_bite_commits_once_and_a_retry_returns_the_first_result() {
 
 #[test]
 fn the_bite_interval_gates_the_next_think_occurrence() {
-    let owner = owner(4, position(10, 11));
+    let mut owner = owner(4, position(10, 11));
     let mut ledger = CreatureBiteLedger::default();
     let mut vitals = vitals(185);
     assert!(
         bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             owner.creature,
@@ -203,7 +203,7 @@ fn the_bite_interval_gates_the_next_think_occurrence() {
     );
     assert_eq!(
         bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             owner.creature,
@@ -215,7 +215,7 @@ fn the_bite_interval_gates_the_next_think_occurrence() {
     );
     assert!(
         bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             owner.creature,
@@ -229,7 +229,7 @@ fn the_bite_interval_gates_the_next_think_occurrence() {
     // An older occurrence cannot resolve after a newer one; another target is a conflict.
     assert_eq!(
         bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             owner.creature,
@@ -242,7 +242,7 @@ fn the_bite_interval_gates_the_next_think_occurrence() {
     assert_eq!(
         commit_ai_bite(
             &mut ledger,
-            &owner.runtime,
+            &mut owner.runtime,
             &mut vitals,
             AiAbilityAdapter::bite(owner.creature, 2, owner.creature, owner.session),
             bite_definition(),
@@ -262,7 +262,7 @@ fn a_stale_or_non_creature_issuer_is_rejected_without_state() {
     let mut vitals = vitals(185);
     assert_eq!(
         bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             owner.player,
@@ -276,7 +276,7 @@ fn a_stale_or_non_creature_issuer_is_rejected_without_state() {
     owner.runtime.remove_test_actor(creature).expect("despawn");
     assert_eq!(
         bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             creature,
@@ -291,12 +291,12 @@ fn a_stale_or_non_creature_issuer_is_rejected_without_state() {
 
 #[test]
 fn a_stale_target_or_a_distant_one_gets_no_bite() {
-    let owner = owner(4, position(12, 10));
+    let mut owner = owner(4, position(12, 10));
     let mut ledger = CreatureBiteLedger::default();
     let mut vitals = vitals(185);
     assert_eq!(
         bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             owner.creature,
@@ -310,7 +310,7 @@ fn a_stale_target_or_a_distant_one_gets_no_bite() {
     assert_eq!(
         commit_ai_bite(
             &mut ledger,
-            &owner.runtime,
+            &mut owner.runtime,
             &mut vitals,
             AiAbilityAdapter::bite(owner.creature, 1, owner.player, other),
             bite_definition(),
@@ -325,7 +325,7 @@ fn a_stale_target_or_a_distant_one_gets_no_bite() {
 
 #[test]
 fn a_protected_target_gets_no_bite_and_none_is_buffered() {
-    let owner = owner(4, position(9, 9));
+    let mut owner = owner(4, position(9, 9));
     let mut ledger = CreatureBiteLedger::default();
     let mut vitals = vitals(185);
     let protected = ReentryProtection {
@@ -333,7 +333,7 @@ fn a_protected_target_gets_no_bite_and_none_is_buffered() {
     };
     assert_eq!(
         bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             owner.creature,
@@ -346,7 +346,7 @@ fn a_protected_target_gets_no_bite_and_none_is_buffered() {
     // The same occurrence after the window ends still returns its first result.
     assert_eq!(
         bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             owner.creature,
@@ -360,7 +360,7 @@ fn a_protected_target_gets_no_bite_and_none_is_buffered() {
     // A rejection starts no cooldown: the next think bites once the window is over.
     assert!(
         bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             owner.creature,
@@ -377,11 +377,11 @@ fn a_protected_target_gets_no_bite_and_none_is_buffered() {
 /// player is no longer a target, and the lethal result is kept for its think occurrence.
 #[test]
 fn a_hit_to_zero_is_lethal_and_the_dead_player_is_no_target() {
-    let owner = owner(4, position(11, 9));
+    let mut owner = owner(4, position(11, 9));
     let mut ledger = CreatureBiteLedger::default();
     let mut vitals = vitals(3);
     let first = bite(
-        &owner,
+        (&mut owner.runtime, owner.player, owner.session),
         &mut ledger,
         &mut vitals,
         owner.creature,
@@ -401,7 +401,7 @@ fn a_hit_to_zero_is_lethal_and_the_dead_player_is_no_target() {
     // A retry of the lethal think occurrence returns the same result and writes nothing.
     assert_eq!(
         bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             owner.creature,
@@ -412,7 +412,7 @@ fn a_hit_to_zero_is_lethal_and_the_dead_player_is_no_target() {
         Ok(first)
     );
     let second = bite(
-        &owner,
+        (&mut owner.runtime, owner.player, owner.session),
         &mut ledger,
         &mut vitals,
         owner.creature,
@@ -448,7 +448,7 @@ fn the_ledger_holds_the_envelope_and_refuses_one_more_live_issuer() {
     for creature in &creatures[..CREATURE_BITE_LEDGER_MAX] {
         // Out of range, but each issuer's think still resolves and is kept.
         let _ = bite(
-            &owner,
+            (&mut owner.runtime, owner.player, owner.session),
             &mut ledger,
             &mut vitals,
             *creature,
@@ -460,14 +460,30 @@ fn the_ledger_holds_the_envelope_and_refuses_one_more_live_issuer() {
     assert_eq!(ledger.len(), CREATURE_BITE_LEDGER_MAX);
     let extra = creatures[CREATURE_BITE_LEDGER_MAX];
     assert_eq!(
-        bite(&owner, &mut ledger, &mut vitals, extra, 0, UNPROTECTED, 0),
+        bite(
+            (&mut owner.runtime, owner.player, owner.session),
+            &mut ledger,
+            &mut vitals,
+            extra,
+            0,
+            UNPROTECTED,
+            0
+        ),
         Err(BiteRejection::LedgerFull)
     );
     // A dead issuer's entry is dropped for a live one; retire drops it at once.
     let dead = creatures[1];
     owner.runtime.remove_test_actor(dead).expect("despawn");
     assert_eq!(
-        bite(&owner, &mut ledger, &mut vitals, extra, 0, UNPROTECTED, 0),
+        bite(
+            (&mut owner.runtime, owner.player, owner.session),
+            &mut ledger,
+            &mut vitals,
+            extra,
+            0,
+            UNPROTECTED,
+            0
+        ),
         Err(BiteRejection::OutOfRange)
     );
     assert_eq!(ledger.len(), CREATURE_BITE_LEDGER_MAX);

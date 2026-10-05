@@ -1,0 +1,17 @@
+{
+  "proposal_sha256": "f140a76225b1d0b6109c78de1b504406feee8cc6bb1eb7d277009699f1352db0",
+  "counts": {
+    "ACCEPTED_PROJECT_ESTIMATE": 292,
+    "WIKI_CONFIRMED": 12
+  },
+  "rows": 304,
+  "conflicts": [],
+  "validation": {
+    "unique_targets": 304,
+    "current_old_presence_and_value": "PASS",
+    "prepared_bundle_matches_canonical_exact_rational": "PASS",
+    "single_active_mitigation_mapping": "PASS",
+    "native_whole_file_sha256": "PASS",
+    "shared_product_mutated": false
+  }
+}

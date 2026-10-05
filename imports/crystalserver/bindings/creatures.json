@@ -1,1 +1,2358 @@
-{"bindings":[{"disposition":"EXACT","external_id":"data-global/monster/humanoids/gloom_maw.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.gloom_maw","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/humanoids/norcferatu_heartless.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.norcferatu_heartless","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/humanoids/norcferatu_nightweaver.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.norcferatu_nightweaver","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/humanoids/varg.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.varg","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/inkborn/bluebeak.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.bluebeak","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/inkborn/bramble_wyrmling.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.bramble_wyrmling","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/inkborn/cinder_wyrmling.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.cinder_wyrmling","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/inkborn/crusader.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.crusader","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/inkborn/hawk_hopper.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.hawk_hopper","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/inkborn/headwalker.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.headwalker","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/inkborn/ink_splash.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.ink_splash","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/inkborn/lion_hydra.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.lion_hydra","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/inkborn/shell_drake.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.shell_drake","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/newhaven_update_2025/corrupted_ghost.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.corrupted_ghost","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/newhaven_update_2025/corrupted_skeleton.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.corrupted_skeleton","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/quests/cults_of_tibia/goldhanded_cultist_bride.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.goldhanded_cultist_bride","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/bosses/maior_domus.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.maior_domus","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/bosses/maior_domus_final.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.maior_domus_final","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/bosses/mimar_haffar.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.mimar_haffar","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/bosses/mimar_haffar_final.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.mimar_haffar_final","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/bosses/phosphorus.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.phosphorus","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/bosses/phosphorus_final.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.phosphorus_final","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/bosses/rakesh_moonfang.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.rakesh_moonfang","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/bosses/the_moonsnow_magnolia.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.the_moonsnow_magnolia","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/cult_initiate.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.cult_initiate","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/devoted_radiant_acolyte.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.devoted_radiant_acolyte","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/devoted_radiant_inquisitor.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.devoted_radiant_inquisitor","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/devoted_radiant_paragon.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.devoted_radiant_paragon","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/devoted_radiant_templar.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.devoted_radiant_templar","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/devoted_radiant_warden.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.devoted_radiant_warden","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/devoted_radiant_zealot.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.devoted_radiant_zealot","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/druid_rival.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.druid_rival","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/elite_fanatic.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.elite_fanatic","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/energy_cannon.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.energy_cannon","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/energy_cannon_right.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.energy_cannon_right","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/furious_jaracal.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.furious_jaracal","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/iceplume_strider.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.iceplume_strider","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/jaracal.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.jaracal","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/knight_rival.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.knight_rival","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/monk_rival.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.monk_rival","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonsilver_augur.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonsilver_augur","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonsilver_custodian.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonsilver_custodian","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonsilver_guardian.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonsilver_guardian","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonsilver_protector.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonsilver_protector","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonsilver_sentinel.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonsilver_sentinel","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonsilver_storm.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonsilver_storm","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonspawn_blightspitter.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonspawn_blightspitter","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonspawn_juggernaut.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonspawn_juggernaut","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonspawn_oozecrown.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonspawn_oozecrown","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonstone_excavator.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonstone_excavator","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonstone_miner.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonstone_miner","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/moonstone_overseer.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.moonstone_overseer","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/paladin_rival.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.paladin_rival","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/petrified_fanatic.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.petrified_fanatic","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/radiant_acolyte.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.radiant_acolyte","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/radiant_inquisitor.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.radiant_inquisitor","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/radiant_paragon.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.radiant_paragon","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/radiant_templar.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.radiant_templar","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/radiant_warden.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.radiant_warden","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/radiant_zealot.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.radiant_zealot","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/silverfrost_sentinel.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.silverfrost_sentinel","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/sorcerer_rival.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.sorcerer_rival","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/trapped_soul.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.trapped_soul","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/true_feverbloom_asura.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.true_feverbloom_asura","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/summer_update_2026/winged_jaracal.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.winged_jaracal","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/aragonia/pirate_cook.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.pirate_cook","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/aragonia/pirate_gunner.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.pirate_gunner","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/aragonia/pirate_navigator.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.pirate_navigator","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/aragonia/pirate_quartermaster.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.pirate_quartermaster","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/aragonia/sea_captain.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.sea_captain","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/crimson_court/infernoid_blob.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.infernoid_blob","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/crimson_court/infernoid_hound.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.infernoid_hound","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/crimson_court/infernoid_soul.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.infernoid_soul","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/crimson_court/infernoid_spiritual.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.infernoid_spiritual","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/hidden_lizard_temple/lizard_commander.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.lizard_commander","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/hidden_lizard_temple/lizard_executioner.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.lizard_executioner","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/hidden_lizard_temple/lizard_henchman.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.lizard_henchman","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/hidden_lizard_temple/lizard_magician.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.lizard_magician","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/targuna/hidden_lizard_temple/lizard_swordmaster.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.lizard_swordmaster","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/undeads/dworc_shadowstalker.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.dworc_shadowstalker","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/undeads/orclops_bloodbreaker.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.orclops_bloodbreaker","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/bone_bear.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.bone_bear","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/creepy_crawler.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.creepy_crawler","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/crypt_construct.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.crypt_construct","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/crypt_fiend.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.crypt_fiend","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/crypt_mage.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.crypt_mage","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/cyclursus.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.cyclursus","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/haunted_hunter.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.haunted_hunter","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/imperial.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.imperial","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/night_harpy.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.night_harpy","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/raubritter_chastener.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.raubritter_chastener","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/raubritter_marksman.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.raubritter_marksman","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/raubritter_skirmisher.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.raubritter_skirmisher","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/roaming_dread.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.roaming_dread","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/stag.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.stag","revision":"definition-r1"}},{"disposition":"EXACT","external_id":"data-global/monster/winter_update_2025/walking_dread.lua","identity_namespace":"crystalserver/monster-file","source_key":"oteryn:source.crystalserver","source_revision":"crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f","target":{"family":"Creature","key":"oteryn:creature.walking_dread","revision":"definition-r1"}}],"family":"Creature","schema":"OTERYN_SOURCE_IDENTITY_BINDINGS/v1"}
+{
+  "bindings": [
+    {
+      "disposition": "EXACT",
+      "external_id": "data-crystal/monster/inkborn/crusader_guardian.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.crusader_guardian",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-crystal/monster/inkborn/vicious_ink_splash.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.vicious_ink_splash",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-crystal/monster/trainers/training_monk.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.training_monk",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/bosses/arthom_the_hunter.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.arthom_the_hunter",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/bosses/high_templar_cobrass.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.high_templar_cobrass",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/bosses/lord_retro.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lord_retro",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/bosses/oodok_witchmaster.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.oodok_witchmaster",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/bosses/the_big_bad_one.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_big_bad_one",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/humanoids/gloom_maw.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.gloom_maw",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/humanoids/norcferatu_heartless.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.norcferatu_heartless",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/humanoids/norcferatu_minion.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.norcferatu_minion",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/humanoids/norcferatu_nightweaver.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.norcferatu_nightweaver",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/humanoids/varg.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.varg",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/humans/bride of night.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.bride_of_night",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/humans/doomsday_cultist.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.doomsday_cultist",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/humans/midnight_warrior.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.midnight_warrior",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/inkborn/bluebeak.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.bluebeak",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/inkborn/bramble_wyrmling.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.bramble_wyrmling",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/inkborn/cinder_wyrmling.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.cinder_wyrmling",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/inkborn/crusader.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.crusader",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/inkborn/hawk_hopper.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.hawk_hopper",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/inkborn/headwalker.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.headwalker",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/inkborn/ink_splash.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.ink_splash",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/inkborn/lion_hydra.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lion_hydra",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/inkborn/shell_drake.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.shell_drake",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/mammals/vampire_bat.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.vampire_bat",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/newhaven_update_2025/bosses/muglex_clan_chief.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.muglex_clan_chief",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/newhaven_update_2025/bosses/the_corruptor.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_corruptor",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/newhaven_update_2025/corrupted_ghost.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.corrupted_ghost",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/newhaven_update_2025/corrupted_skeleton.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.corrupted_skeleton",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/1st_mate_ratticus.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.1st_mate_ratticus",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/mister_catkiller.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.mister_catkiller",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/rateye_ric.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.rateye_ric",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/rum_barrel.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.rum_barrel",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/servant_of_tentugly.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.servant_of_tentugly",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/smelly_cheese.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.smelly_cheese",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_1.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_10.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle10",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_2.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_3.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle3",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_4.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle4",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_5.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle5",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_6.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle6",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_7.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle7",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_8.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle8",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tentacle_9.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tentacle9",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/tibianus.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tibianus",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/a_pirates_tail_quest/weak_spot.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.weak_spot",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/between_the_lines/blight_mariner.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.blight_mariner",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/between_the_lines/inkwing.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.inkwing",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/between_the_lines/sir_leonard.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.sir_leonard",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/between_the_lines/sir_leopold.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.sir_leopold",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/between_the_lines/tropical_desolator.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tropical_desolator",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/between_the_lines/vladrukh.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.vladrukh",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/between_the_lines/wrathful_archivist.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.wrathful_archivist",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/blood_brothers_quest/arthei.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.arthei",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/blood_brothers_quest/boreth.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.boreth",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/blood_brothers_quest/lersatio.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lersatio",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/blood_brothers_quest/marziel.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.marziel",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/blood_brothers_quest/shadow_of_boreth.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.shadow_of_boreth",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/blood_brothers_quest/shadow_of_lersatio.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.shadow_of_lersatio",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/blood_brothers_quest/shadow_of_marziel.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.shadow_of_marziel",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/bloody_tusks/angry_orc_ancestor_spirit.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.angry_orc_ancestor_spirit",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/bloody_tusks/blind_monstrosity.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.blind_monstrosity",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/bloody_tusks/blood_guardian.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.blood_guardian",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/bloody_tusks/blood_totem.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.blood_totem",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/bloody_tusks/digestive_ooze.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.digestive_ooze",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/bloody_tusks/norcferatu_abomination.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.norcferatu_abomination",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/bloody_tusks/vampiric_essence.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.vampiric_essence",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/bloody_tusks/vampiric_flesh.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.vampiric_flesh",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/cults_of_tibia/goldhanded_cultist_bride.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.goldhanded_cultist_bride",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/rotten_blood_quest/pillar of dark energy.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.pillar_of_dark_energy",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/quests/shadows_of_yalahar_quest/enraged_bookworm.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.enraged_bookworm",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/bosses/maior_domus.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.maior_domus",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/bosses/maior_domus_final.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.maior_domus_final",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/bosses/mimar_haffar.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.mimar_haffar",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/bosses/mimar_haffar_final.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.mimar_haffar_final",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/bosses/phosphorus.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.phosphorus",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/bosses/phosphorus_final.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.phosphorus_final",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/bosses/rakesh_moonfang.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.rakesh_moonfang",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/bosses/the_moonsnow_magnolia.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_moonsnow_magnolia",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/cult_initiate.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.cult_initiate",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/devoted_radiant_acolyte.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.devoted_radiant_acolyte",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/devoted_radiant_inquisitor.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.devoted_radiant_inquisitor",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/devoted_radiant_paragon.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.devoted_radiant_paragon",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/devoted_radiant_templar.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.devoted_radiant_templar",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/devoted_radiant_warden.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.devoted_radiant_warden",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/devoted_radiant_zealot.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.devoted_radiant_zealot",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/druid_rival.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.druid_rival",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/elite_fanatic.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.elite_fanatic",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/energy_cannon.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.energy_cannon",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/energy_cannon_right.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.energy_cannon_right",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/furious_jaracal.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.furious_jaracal",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/iceplume_strider.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.iceplume_strider",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/jaracal.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.jaracal",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/knight_rival.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.knight_rival",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/monk_rival.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.monk_rival",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonsilver_augur.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonsilver_augur",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonsilver_custodian.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonsilver_custodian",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonsilver_guardian.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonsilver_guardian",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonsilver_protector.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonsilver_protector",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonsilver_sentinel.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonsilver_sentinel",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonsilver_storm.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonsilver_storm",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonspawn_blightspitter.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonspawn_blightspitter",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonspawn_juggernaut.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonspawn_juggernaut",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonspawn_oozecrown.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonspawn_oozecrown",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonstone_excavator.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonstone_excavator",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonstone_miner.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonstone_miner",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/moonstone_overseer.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.moonstone_overseer",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/paladin_rival.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.paladin_rival",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/petrified_fanatic.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.petrified_fanatic",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/radiant_acolyte.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.radiant_acolyte",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/radiant_inquisitor.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.radiant_inquisitor",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/radiant_paragon.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.radiant_paragon",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/radiant_templar.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.radiant_templar",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/radiant_warden.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.radiant_warden",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/radiant_zealot.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.radiant_zealot",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/silverfrost_sentinel.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.silverfrost_sentinel",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/sorcerer_rival.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.sorcerer_rival",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/trapped_soul.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.trapped_soul",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/true_feverbloom_asura.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.true_feverbloom_asura",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/summer_update_2026/winged_jaracal.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.winged_jaracal",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/aragonia/freshwater_turtle.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.freshwater_turtle",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/aragonia/pirate_cook.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.pirate_cook",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/aragonia/pirate_gunner.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.pirate_gunner",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/aragonia/pirate_navigator.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.pirate_navigator",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/aragonia/pirate_quartermaster.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.pirate_quartermaster",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/aragonia/sea_captain.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.sea_captain",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/bosses/herald_of_fire.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.herald_of_fire",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/crimson_court/infernoid_blob.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.infernoid_blob",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/crimson_court/infernoid_hound.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.infernoid_hound",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/crimson_court/infernoid_soul.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.infernoid_soul",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/crimson_court/infernoid_spiritual.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.infernoid_spiritual",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/hidden_lizard_temple/lizard_commander.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lizard_commander",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/hidden_lizard_temple/lizard_executioner.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lizard_executioner",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/hidden_lizard_temple/lizard_henchman.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lizard_henchman",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/hidden_lizard_temple/lizard_magician.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lizard_magician",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/targuna/hidden_lizard_temple/lizard_swordmaster.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lizard_swordmaster",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/undeads/dworc_shadowstalker.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.dworc_shadowstalker",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/undeads/orclops_bloodbreaker.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.orclops_bloodbreaker",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bone_bear.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.bone_bear",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/adlerauge.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.adlerauge",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/adventurer_group.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.adventurer_group",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/bone_overlord.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.bone_overlord",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/clavius.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.clavius",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/court_warlock.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.court_warlock",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/eldritch_dragon_lord.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.eldritch_dragon_lord",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/fiona_firstdream.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.fiona_firstdream",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/grendel_greenlunch.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.grendel_greenlunch",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/ice_horror.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.ice_horror",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/michael_the_stalwart.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.michael_the_stalwart",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/nigel_neverguess.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.nigel_neverguess",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/overseer_osverger.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.overseer_osverger",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/percy_peacetinker.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.percy_peacetinker",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/the_gravedigger.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_gravedigger",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/bosses/yorik_youngbook.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.yorik_youngbook",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/creepy_crawler.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.creepy_crawler",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/crypt_construct.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.crypt_construct",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/crypt_fiend.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.crypt_fiend",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/crypt_mage.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.crypt_mage",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/cyclursus.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.cyclursus",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/day_night_harpy.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.day_night_harpy",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/destrier.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.destrier",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/haunted_hunter.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.haunted_hunter",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/imperial.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.imperial",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/night_harpy.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.night_harpy",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/an_eye.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.an_eye",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/bone_barrier.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.bone_barrier",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/bonelord_totem.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.bonelord_totem",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/bonelords_phylactery.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.bonelord_s_phylactery",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/bright_crystal.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.bright_crystal",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/elyraxa_spirit.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.elyrax_s_spirit",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/elyraxs_soulcage.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.elyrax_s_soulcage",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/energised_raubritter.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.energised_raubritter",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/enthralled_dragon.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.enthralled_dragon",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/eruption.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.eruption",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/fatal_bug.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.fatal_bug",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/flame_totem.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.flame_totem",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/frozen_raubritter.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.frozen_raubritter",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/ice_blockade.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.ice_blockade",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/ice_crawler.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.ice_crawler",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/myzaretha_spirit.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.myzareth_s_spirit",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/myzareths_soulcage.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.myzareth_s_soulcage",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/poisoned_raubritter.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.poisoned_raubritter",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/raging_raubritter.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.raging_raubritter",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/scaritha_spirit.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.scarith_s_spirit",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/scariths_soulcage.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.scarith_s_soulcage",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/tamed_frazzlemaw.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.tamed_frazzlemaw",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/zharvorina_spirit.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.zharvorin_s_spirit",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/quests/zharvorins_soulcage.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.zharvorin_s_soulcage",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/raubritter_chastener.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.raubritter_chastener",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/raubritter_marksman.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.raubritter_marksman",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/raubritter_skirmisher.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.raubritter_skirmisher",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/roaming_dread.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.roaming_dread",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/stag.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.stag",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "data-global/monster/winter_update_2025/walking_dread.lua",
+      "identity_namespace": "crystalserver/monster-file",
+      "source_key": "oteryn:source.crystalserver",
+      "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.walking_dread",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "family": "Creature",
+  "schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1"
+}

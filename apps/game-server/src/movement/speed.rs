@@ -594,3 +594,401 @@ mod tests {
         assert!(paralysis > plain, "{paralysis:?} > {plain:?}");
     }
 }
+
+/// Read-only source facts supplied by the current native definition owner. Missing source
+/// membership/base speed never becomes a player/default speed or a caller-minted grant.
+pub(crate) trait CurrentCreatureSpeedReader {
+    fn current_native_base_speed(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Option<u16>;
+}
+/// Source-defined base plus the ONE actual occupied actor-slot condition owner.
+/// The exact physical generation and condition clock are checked by Foundation.
+pub(crate) fn runtime_creature_speed(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    source: &dyn CurrentCreatureSpeedReader,
+    now: SemanticTimeMicros,
+) -> Option<u16> {
+    if !runtime.contains_live_creature(actor) {
+        return None;
+    }
+    let base = source.current_native_base_speed(runtime, actor)?;
+    if base == 0 {
+        return None;
+    } // source immobility is not a manufactured speed floor
+    let delta = runtime.actor_active_speed_delta(actor, None, now).ok()?;
+    u16::try_from(
+        i64::from(base)
+            .saturating_add(delta)
+            .clamp(i64::from(SPEED_MIN), i64::from(SPEED_MAX)),
+    )
+    .ok()
+}
+/// Pure cadence calculation: exactly the same table, ground provider and50ms beat as players.
+/// This issues neither a Movement decision nor scope/session authority. The caller still
+/// uses the existing Movement owner and records its pacer only after a real moved step.
+pub(crate) fn creature_step_duration(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    source: &dyn CurrentCreatureSpeedReader,
+    ground: &dyn GroundSpeedSource,
+    onto: LogicalCell,
+    now: SemanticTimeMicros,
+) -> Option<Duration> {
+    StepSpeedTable::embedded()?.step_duration(
+        runtime_creature_speed(runtime, actor, source, now)?,
+        ground.ground_speed(onto),
+    )
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, clippy::unwrap_used)]
+mod creature_native_speed_tests {
+    use super::*;
+    use crate::foundation::{
+        ActorConditionTransition, ApplicationFacts, ConditionDefinition, ConditionSource,
+        ConditionSourceKind, ConditionValues, MovementLocalPosition, SpeedRange,
+    };
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    struct Native {
+        actor: ExactActorRef,
+        base: u16,
+        pin: [u8; 32],
+    }
+    impl CurrentCreatureSpeedReader for Native {
+        fn current_native_base_speed(&self, r: &ChannelRuntimeV1, a: ExactActorRef) -> Option<u16> {
+            (a == self.actor
+                && r.contains_live_creature(a)
+                && r.content_pin().server_artifact_digest() == self.pin)
+                .then_some(self.base)
+        }
+    }
+    #[test]
+    fn creature_cadence_reads_real_slot_haste_expiry_ground_and_stale_generation() {
+        let (mut r, _, _) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(0x71);
+        let position = MovementLocalPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        };
+        let actor = r.admit_test_creature(position).unwrap();
+        let src = Native {
+            actor,
+            base: 220,
+            pin: r.content_pin().server_artifact_digest(),
+        };
+        let onto = LogicalCell {
+            x: 101,
+            y: 100,
+            z: 7,
+        };
+        let at = SemanticTimeMicros::from_micros;
+        assert_eq!(
+            creature_step_duration(&r, actor, &src, &EngineeringGroundSpeed, onto, at(0)),
+            Some(Duration::from_millis(300))
+        );
+        let definition = ConditionDefinition::new(
+            "speed.creature.fixture",
+            1,
+            ConditionValues::Speed {
+                paralysis: false,
+                range: SpeedRange {
+                    a_min: 0,
+                    b_min: 330,
+                    a_max: 0,
+                    b_max: 330,
+                },
+                duration_ms: 1000,
+            },
+        )
+        .unwrap();
+        let root = GameplayDecisionRoot::from_bytes([7; 32]);
+        let plan = r
+            .prepare_actor_condition(
+                actor,
+                None,
+                ActorConditionTransition::Apply {
+                    definition: &definition,
+                    source: ConditionSource {
+                        actor,
+                        session: None,
+                        kind: ConditionSourceKind::Creature,
+                    },
+                    immunities: &[],
+                    facts: ApplicationFacts {
+                        now: 100,
+                        base_speed: 220,
+                        mana_shield_capacity: 0,
+                        target_reentry_protected: false,
+                        source_reentry_protected: false,
+                        target_is_player: false,
+                        decision_root: &root,
+                        occurrence: DecisionOccurrenceId::from_bytes([1; 16]),
+                    },
+                },
+                at(100),
+            )
+            .unwrap();
+        assert!(r.commit_actor_condition(&plan, at(100)).unwrap());
+        assert_eq!(runtime_creature_speed(&r, actor, &src, at(99)), None);
+        assert_eq!(runtime_creature_speed(&r, actor, &src, at(101)), Some(330));
+        assert_eq!(
+            creature_step_duration(&r, actor, &src, &EngineeringGroundSpeed, onto, at(101)),
+            Some(Duration::from_millis(250))
+        );
+        assert_eq!(
+            creature_step_duration(
+                &r,
+                actor,
+                &src,
+                &EngineeringGroundSpeed,
+                onto,
+                at(1_000_100)
+            ),
+            Some(Duration::from_millis(300))
+        );
+        struct Unknown;
+        impl GroundSpeedSource for Unknown {
+            fn ground_speed(&self, _: LogicalCell) -> u16 {
+                0
+            }
+        }
+        assert_eq!(
+            creature_step_duration(&r, actor, &src, &Unknown, onto, at(1_000_100)),
+            None
+        );
+        let wrong = Native {
+            pin: [0; 32],
+            ..src
+        };
+        assert_eq!(
+            runtime_creature_speed(&r, actor, &wrong, at(1_000_100)),
+            None
+        );
+        r.remove_test_actor(actor).unwrap();
+        let replacement = r.admit_test_creature(position).unwrap();
+        assert_ne!(replacement, actor);
+        assert_eq!(runtime_creature_speed(&r, actor, &src, at(1_000_100)), None);
+    }
+    #[test]
+    fn native_player110_and_creature220_share_golden_beats_but_not_default_base() {
+        let table = StepSpeedTable::embedded().unwrap();
+        for (base, ground, expected) in [
+            (110, 150, 550),
+            (110, 200, 750),
+            (128, 150, 500),
+            (220, 150, 300),
+            (220, 200, 400),
+            (330, 150, 250),
+            (440, 150, 200),
+        ] {
+            assert_eq!(
+                table.step_duration(base, ground),
+                Some(Duration::from_millis(expected))
+            );
+        }
+        assert_eq!(PLAYER_BASE_SPEED, 110);
+    }
+    #[test]
+    #[ignore = "explicit local bounded kernel benchmark; no owner/world mutations"]
+    fn benchmark_canonical_creature_cadence_lookup() {
+        let table = StepSpeedTable::embedded().unwrap();
+        let started = std::time::Instant::now();
+        let mut sum = 0u128;
+        for i in 0..1_000_000u32 {
+            let speed = 10 + (i % 65_526) as u16;
+            let value = table
+                .step_duration(std::hint::black_box(speed), std::hint::black_box(150))
+                .unwrap();
+            sum += std::hint::black_box(value.as_micros());
+        }
+        assert!(sum > 0);
+        eprintln!(
+            "canonical_step_duration_1m_elapsed_ns={}",
+            started.elapsed().as_nanos()
+        );
+    }
+}
+
+/// Immutable descriptor from the native definition owner's selected Creature closure.
+/// Caller supplies real loader records/profiles; digest equality is ONLY an expected pin
+/// check, not permission to invent source membership, a movement actor or a scope grant.
+#[derive(Debug, Clone)]
+pub(crate) struct NativeCreatureSpeed {
+    creature: crate::content::ProjectV2DefinitionRef,
+    base: u16,
+    server: [u8; 32],
+}
+impl NativeCreatureSpeed {
+    pub(crate) fn from_native(
+        runtime: &ChannelRuntimeV1,
+        creature: &crate::content::ProjectV2DefinitionRef,
+        records: &[crate::content::ProjectReferenceRecord],
+        profiles: &[crate::content::ProjectV2AuthoringProfile],
+        loader_digest: [u8; 32],
+    ) -> Option<Self> {
+        use crate::content::{
+            ProjectReferenceRecord, ProjectV2AuthoringProfileData, ProjectV2Family,
+        };
+        if creature.family != ProjectV2Family::Creature
+            || loader_digest != runtime.content_pin().server_artifact_digest()
+        {
+            return None;
+        }
+        let mut core=records.iter().filter(|r|matches!(r,ProjectReferenceRecord::Creature{identity,..}if identity.family=="Creature"&&identity.key==creature.key&&identity.revision==creature.revision));
+        core.next()?;
+        if core.next().is_some() {
+            return None;
+        }
+        let mut values = profiles.iter().filter(|p| p.target == *creature);
+        let value = values.next()?;
+        if values.next().is_some() {
+            return None;
+        }
+        let ProjectV2AuthoringProfileData::Creature(profile) = &value.data else {
+            return None;
+        };
+        let base = u16::try_from(profile.speed?).ok()?;
+        Some(Self {
+            creature: creature.clone(),
+            base,
+            server: loader_digest,
+        })
+    }
+}
+impl CurrentCreatureSpeedReader for NativeCreatureSpeed {
+    fn current_native_base_speed(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Option<u16> {
+        if self.server != runtime.content_pin().server_artifact_digest()
+            || !runtime.matches_live_creature_identity(actor, self.creature.key.as_bytes())
+        {
+            return None;
+        }
+        runtime.read_actor_position(actor).ok()?;
+        Some(self.base)
+    }
+}
+
+/// Per-exact-actor cadence state; no actor census, condition store or Movement authority.
+/// Caller retains this alongside the existing native actor owner and supplies current work.
+pub(crate) struct CreatureMovementCadence {
+    actor: ExactActorRef,
+    content: [u8; 32],
+    pacer: crate::movement::pacing::CreatureStepPacer,
+}
+#[derive(Debug)]
+pub(crate) enum CreatureCadenceError {
+    StaleOwner,
+    StaleActor,
+    MissingSpeed,
+    MissingMap,
+    ClockOverflow,
+    Carrier(crate::foundation::CarrierError),
+    Movement(crate::movement::MovementError),
+}
+impl CreatureMovementCadence {
+    pub(crate) fn bind(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> Option<Self> {
+        if !runtime.contains_live_creature(actor) {
+            return None;
+        }
+        Some(Self {
+            actor,
+            content: runtime.content_pin().server_artifact_digest(),
+            pacer: Default::default(),
+        })
+    }
+    /// Native intrinsic summons use their existing typed removal-aware Movement sibling;
+    /// this regular-creature path must never bypass its distance cleanup.
+    // Keep step ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn step(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        current: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        source: &dyn CurrentCreatureSpeedReader,
+        ground: &dyn GroundSpeedSource,
+        now: SemanticTimeMicros,
+        scope: &crate::content::static_cell_engine::EngineeringStaticCellScope,
+        index: &crate::content::static_cell_engine::EngineeringStaticCellIndex,
+        blocking: &[LogicalCell],
+        direction: crate::movement::CardinalStep,
+    ) -> Result<Option<crate::foundation::MovementPositionSnapshot>, CreatureCadenceError> {
+        use CreatureCadenceError as E;
+        let b = runtime.binding();
+        if !current.is_current_for_scope(
+            crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.scope_generation(),
+        ) || !current.accepts_stamp(stamp)
+        {
+            return Err(E::StaleOwner);
+        }
+        if self.content != runtime.content_pin().server_artifact_digest()
+            || !runtime.contains_live_creature(self.actor)
+            || runtime
+                .native_summon_role(self.actor)
+                .map_err(E::Carrier)?
+                .is_some()
+        {
+            return Err(E::StaleActor);
+        }
+        let snapshot = runtime
+            .read_actor_position(self.actor)
+            .map_err(E::Carrier)?;
+        if scope.world_id != snapshot.world_id() || scope.generation_digest != self.content {
+            return Err(E::MissingMap);
+        }
+        let at = snapshot.position();
+        let (dx, dy) = match direction {
+            crate::movement::CardinalStep::North => (0, -1),
+            crate::movement::CardinalStep::East => (1, 0),
+            crate::movement::CardinalStep::South => (0, 1),
+            crate::movement::CardinalStep::West => (-1, 0),
+        };
+        let next = crate::foundation::MovementLocalPosition {
+            x: at.x.checked_add(dx).ok_or(E::MissingMap)?,
+            y: at.y.checked_add(dy).ok_or(E::MissingMap)?,
+            floor: at.floor,
+        };
+        let onto = LogicalCell {
+            x: next.x,
+            y: next.y,
+            z: i32::from(next.floor),
+        };
+        let duration = creature_step_duration(runtime, self.actor, source, ground, onto, now)
+            .ok_or(E::MissingSpeed)?;
+        if self.pacer.wait_until(now).is_some() {
+            return Ok(None);
+        }
+        self.pacer
+            .prepare_moved_deadline(now, duration)
+            .ok_or(E::ClockOverflow)?;
+        if blocking.contains(&onto) || !runtime.native_summon_cell_free(next) {
+            return Err(E::MissingMap);
+        }
+        let selection = crate::movement::MovementEngineeringSelection {
+            owner_context: snapshot.context(),
+            content_scope: scope,
+        };
+        let outcome = {
+            let mut turn =
+                crate::movement::MovementOwnerTurn::begin(runtime, std::num::NonZeroUsize::MIN);
+            turn.try_step(self.actor, snapshot, &selection, index, direction)
+                .map_err(E::Movement)?
+        };
+        match outcome {
+            crate::movement::MovementTurnOutcome::Applied(after) => {
+                self.pacer.record(now, Some(duration));
+                Ok(Some(after))
+            }
+            crate::movement::MovementTurnOutcome::Deferred => Ok(None),
+        }
+    }
+}

@@ -59,6 +59,13 @@ pub(crate) enum OwnerCombatChange {
         target_atom: String,
         magnitude: i64,
     },
+    /// Source damage healing is committed before residual damage, as one
+    /// retained source occurrence. Damage may be zero after immunity.
+    DamageWithHealing {
+        target_atom: String,
+        damage: i64,
+        healing: i64,
+    },
     Avatar(AvatarState),
     ManaShield(ManaShieldState),
     /// Correlated mana payment is staged by the actual player-vitals owner in the same group.

@@ -1,0 +1,322 @@
+{
+  "schema": "OTERYN_NATIVE_PRESENTATION_PROFILES/v1",
+  "records": [
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.damned_soul",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/232",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.demon",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/35",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.disruption",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:object/22761",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.frenzy",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/290",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.greed",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/293",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.lost_time",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:object/24963",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.rage_of_mazoran",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/243",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.shadow_fiend",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/320",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.sin_devourer",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/320",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.thorn_minion",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/717",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.time_waster",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:object/23729",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.corrupted_soul",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/355",
+          "light_level": 0,
+          "audio_bindings": [
+            {
+              "event": "Cast",
+              "cue_id": "canary.sound:effect/9",
+              "asset_binding": "canary.sound:effect/9"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/102",
+              "asset_binding": "canary.sound:effect/102"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2008",
+              "asset_binding": "canary.sound:effect/2008"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2013",
+              "asset_binding": "canary.sound:effect/2013"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2018",
+              "asset_binding": "canary.sound:effect/2018"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2035",
+              "asset_binding": "canary.sound:effect/2035"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.disgusting_ooze",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/238",
+          "light_level": 0,
+          "audio_bindings": [
+            {
+              "event": "Cast",
+              "cue_id": "canary.sound:effect/9",
+              "asset_binding": "canary.sound:effect/9"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/100",
+              "asset_binding": "canary.sound:effect/100"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2009",
+              "asset_binding": "canary.sound:effect/2009"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2013",
+              "asset_binding": "canary.sound:effect/2013"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2017",
+              "asset_binding": "canary.sound:effect/2017"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2034",
+              "asset_binding": "canary.sound:effect/2034"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2047",
+              "asset_binding": "canary.sound:effect/2047"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.energy_pulse",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/294",
+          "light_level": 0
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.glooth_generator",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:object/20710",
+          "light_level": 0,
+          "audio_bindings": [
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2016",
+              "asset_binding": "canary.sound:effect/2016"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.minion_of_gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Presentation",
+        "profile": {
+          "asset_binding": "canary.appearance:outfit/590",
+          "light_level": 0,
+          "audio_bindings": [
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/102",
+              "asset_binding": "canary.sound:effect/102"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2030",
+              "asset_binding": "canary.sound:effect/2030"
+            },
+            {
+              "event": "Impact",
+              "cue_id": "canary.sound:effect/2043",
+              "asset_binding": "canary.sound:effect/2043"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

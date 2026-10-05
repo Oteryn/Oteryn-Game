@@ -1,1 +1,21 @@
-{"attached_authoring_profiles":2873,"attached_source_bindings":0,"family":"Behavior","legacy_source":{"git_blob_sha":"c636d0c484a4470722da3b184c7bdec98908d2a6","path":"content/world/definitions/reference.json","schema":"OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1"},"record_count":2873,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/behaviors/behaviors-00000-00499.json","content/behaviors/behaviors-00500-00999.json","content/behaviors/behaviors-01000-01499.json","content/behaviors/behaviors-01500-01999.json","content/behaviors/behaviors-02000-02499.json","content/behaviors/behaviors-02500-02872.json"]}
+{
+  "attached_authoring_profiles": 2973,
+  "attached_source_bindings": 0,
+  "family": "Behavior",
+  "legacy_source": {
+    "git_blob_sha": "e9699570bfe2ea9ccac2ee0cbef9ba2d99c45da1",
+    "path": "content/world/definitions/reference.json",
+    "schema": "OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1"
+  },
+  "record_count": 2973,
+  "schema": "OTERYN_FAMILY_INDEX/v1",
+  "shard_size": 500,
+  "shards": [
+    "content/behaviors/behaviors-00000-00499.json",
+    "content/behaviors/behaviors-00500-00999.json",
+    "content/behaviors/behaviors-01000-01499.json",
+    "content/behaviors/behaviors-01500-01999.json",
+    "content/behaviors/behaviors-02000-02499.json",
+    "content/behaviors/behaviors-02500-02972.json"
+  ]
+}

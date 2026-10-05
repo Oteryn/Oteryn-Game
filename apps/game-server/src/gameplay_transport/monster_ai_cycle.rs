@@ -25,7 +25,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         };
         let now = self.owner_now();
-        let runtime = self.runtime.lock().await;
+        let mut runtime = self.runtime.lock().await;
         if runtime.owner_fence().is_err()
             || content.source_digest() != runtime.content_pin().server_artifact_digest()
             || room.compiled().server_digest() != runtime.content_pin().server_artifact_digest()
@@ -221,7 +221,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             };
             let _ = melee_owner.think(
-                &runtime,
+                &mut runtime,
                 &mut *states,
                 *actor,
                 sequence,
@@ -234,7 +234,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     if protected {
                         return None;
                     }
-                    // The immutable runtime borrow and exact current protection
+                    // The held runtime owner and exact current protection
                     // read above remain live through the synchronous bite commit.
                     Some((
                         actor,

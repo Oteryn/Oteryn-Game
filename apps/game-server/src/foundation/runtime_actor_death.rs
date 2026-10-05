@@ -36,7 +36,8 @@ impl ChannelRuntimeV1 {
     ) -> Result<MovementPositionSnapshot, CarrierError> {
         self.player_control_facts(actor, game_session_id)?;
         let current = self.carrier.read_position(&self.continuity, actor.0)?;
-        self.carrier
+        let committed = self
+            .carrier
             .compare_commit_position(
                 &self.continuity,
                 current,
@@ -47,7 +48,9 @@ impl ChannelRuntimeV1 {
                     floor: position.floor,
                 },
             )
-            .map(MovementPositionSnapshot)
+            .map(MovementPositionSnapshot)?;
+        self.clear_respawn_player_conditions(actor, game_session_id);
+        Ok(committed)
     }
 
     /// DEATH-2b and CHAR-POSITION-0 §3.3: place an admitted player for its pending respawn.

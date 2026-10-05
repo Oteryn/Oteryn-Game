@@ -556,12 +556,36 @@ impl PreparedMagnitudeOwner {
         Ok(value)
     }
 
+    /// Retains source healingMap separately from the residual damage; the
+    /// actual combat batch owns atomic capped healing followed by damage.
+    pub(crate) fn finish_with_damage_healing(
+        &mut self,
+        plan: &NativeCombatPlan,
+        hit: &MagnitudePlan,
+        binding: &LiveActorBinding,
+        draw: &mut dyn FnMut(i64, i64) -> i64,
+    ) -> Result<(i64, i64), Error> {
+        let mut healing = 0;
+        let magnitude = self.finish_inner(plan, hit, binding, draw, &mut healing)?;
+        Ok((magnitude, healing))
+    }
     pub(crate) fn finish(
         &mut self,
         plan: &NativeCombatPlan,
         hit: &MagnitudePlan,
         binding: &LiveActorBinding,
         draw: &mut dyn FnMut(i64, i64) -> i64,
+    ) -> Result<i64, Error> {
+        self.finish_with_damage_healing(plan, hit, binding, draw)
+            .map(|v| v.0)
+    }
+    fn finish_inner(
+        &mut self,
+        plan: &NativeCombatPlan,
+        hit: &MagnitudePlan,
+        binding: &LiveActorBinding,
+        draw: &mut dyn FnMut(i64, i64) -> i64,
+        damage_healing: &mut i64,
     ) -> Result<i64, Error> {
         if plan != &self.plan
             || hit.delay_ms != 0
@@ -646,6 +670,14 @@ impl PreparedMagnitudeOwner {
         if let Some(side) = hit.side_percent {
             value = signed_round(value as f64 * f64::from(side) / 100.0)?;
         }
+        let TargetOwner::Creature(source_target) = &target.owner else {
+            return invalid();
+        };
+        *damage_healing = source_target
+            .state
+            .policy
+            .damage_healing(element_key(element), value)
+            .map_err(Error::Owner)?;
         if let Some(ConditionValues::Attributes {
             damage_dealt_percent,
             ..

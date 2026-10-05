@@ -1,10 +1,10 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/achievements/",
-  "kind": "static_content",
-  "owner": "Achievement",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Achievement static definitions: 571 records (368 from 15.30 client staticdata, 203 secret from TibiaWiki; 1 retired), built by tools/content-schema/achievement-authoring/build_catalogue.py under OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1 §2.2."
+  "kind": "static_content",
+  "notes": "Achievement static definitions: 571 records (368 from 15.30 client staticdata, 203 secret from TibiaWiki; 1 retired), built by tools/content-schema/achievement-authoring/build_catalogue.py under OTERYN_ACHIEVEMENT_OWNER_CONTRACT_V1 §2.2.",
+  "owner": "Achievement",
+  "path": "content/achievements/",
+  "population_state": "POPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

@@ -213,6 +213,19 @@ impl PlayerSpellState {
         self.stance_key = loaded.key().map(str::to_owned);
         Ok(())
     }
+    pub(crate) fn after_creature_mana_drain(&self, magnitude: u32) -> Option<(Self, u32)> {
+        if self.health == 0 || magnitude == 0 {
+            return None;
+        }
+        let applied = self.mana.min(magnitude);
+        let mut next = self.clone();
+        if applied > 0 {
+            next.mana -= applied;
+            next.revision = next.revision.checked_add(1)?;
+        }
+        Some((next, applied))
+    }
+
     /// A new runtime actor starts at its maxima (SPELL-D2), with the durable Harmony and remaining
     /// forced Serene time the Character owner loaded (§8.2; both 0 for any other vocation).
     /// Maxima above the SPELL-D8 wire bounds, and corrupt Harmony values, are refused.
@@ -1646,6 +1659,7 @@ impl PlayerSpellState {
     /// that makes the respawned actor playable. `None` when the revision is exhausted.
     pub(crate) fn respawned(&self, now: SemanticTimeMicros) -> Option<Self> {
         let mut next = self.clone();
+        super::actor_conditions::clear_on_lifecycle(&mut next);
         next.health = next.facts.max_health;
         next.mana = next.facts.max_mana;
         next.revision = next.revision.checked_add(1)?;

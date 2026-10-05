@@ -1,10 +1,10 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/interactions/",
-  "kind": "static_content",
-  "owner": "Interaction",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Typed interaction definitions. reward_claims/: 336 RewardClaim DATA records from the chest pilot, built by tools/content-schema/reward-claim-authoring/reward_claim_authoring.py (CHEST-CONTENT part 2b)."
+  "kind": "static_content",
+  "notes": "Typed interaction definitions. reward_claims/: 336 RewardClaim DATA records from the chest pilot, built by tools/content-schema/reward-claim-authoring/reward_claim_authoring.py (CHEST-CONTENT part 2b).",
+  "owner": "Interaction",
+  "path": "content/interactions/",
+  "population_state": "POPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

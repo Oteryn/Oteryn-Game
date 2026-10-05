@@ -294,14 +294,93 @@ fn melee_budget_and_unavailable_summon_clock_are_explicit() {
 }
 
 fn native_population() -> Value {
-    let path = std::env::var_os("OTERYN_MONSTER_SCHEDULE_PROFILES")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| {
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
-                "../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json",
-            )
+    if let Some(path) = std::env::var_os("OTERYN_MONSTER_SCHEDULE_PROFILES") {
+        return serde_json::from_slice(
+            &std::fs::read(path).expect("explicit native profiles input"),
+        )
+        .expect("stage");
+    }
+    // Portable actual current corpus, rather than a deleted historical admission receipt.
+    // The native overlay supplies exact Creature→Behavior references: NPC Behavior
+    // profiles are never treated as Creature schedules merely because the family matches.
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut stage: Value = serde_json::from_slice(
+        &std::fs::read(root.join("content/world/definitions/declarations.json"))
+            .expect("actual canonical definitions"),
+    )
+    .expect("canonical definitions JSON");
+    let rows = stage["authoring_profiles"]
+        .as_array()
+        .expect("actual authoring profiles");
+    let creatures: std::collections::BTreeSet<ProjectV2DefinitionRef> = rows
+        .iter()
+        .filter(|row| row["target"]["family"] == "Creature")
+        .map(|row| serde_json::from_value(row["target"].clone()).expect("actual Creature ref"))
+        .collect();
+    assert_eq!(creatures.len(), 1863, "complete canonical Creature corpus");
+    let overlay: Value = serde_json::from_slice(
+        &std::fs::read(root.join("content/creatures/definitions/spell-native-profiles.json"))
+            .expect("actual native Creature overlay"),
+    )
+    .expect("native overlay JSON");
+    let mut selected_creatures = std::collections::BTreeSet::new();
+    let behaviors: std::collections::BTreeSet<ProjectV2DefinitionRef> = overlay["records"]
+        .as_array()
+        .expect("native profile records")
+        .iter()
+        .filter_map(|row| {
+            let creature: ProjectV2DefinitionRef =
+                serde_json::from_value(row["profile"]["target"].clone())
+                    .expect("native Creature ref");
+            if !creatures.contains(&creature) {
+                return None;
+            }
+            assert!(
+                selected_creatures.insert(creature),
+                "duplicate canonical native Creature"
+            );
+            let behavior: ProjectV2DefinitionRef =
+                serde_json::from_value(row["behavior"]["target"].clone())
+                    .expect("actual exact Behavior ref");
+            assert_eq!(behavior.family, ProjectV2Family::Behavior);
+            Some(behavior)
+        })
+        .collect();
+    assert_eq!(
+        selected_creatures, creatures,
+        "all canonical Creature refs have native schedules"
+    );
+    assert_eq!(
+        behaviors.len(),
+        creatures.len(),
+        "one exact distinct schedule per Creature"
+    );
+    stage["authoring_profiles"]
+        .as_array_mut()
+        .unwrap()
+        .retain(|row| {
+            row["target"]["family"] != "Behavior"
+                || behaviors.contains(
+                    &serde_json::from_value(row["target"].clone())
+                        .expect("exact authoring Behavior ref"),
+                )
         });
-    serde_json::from_slice(&std::fs::read(path).expect("native profiles input")).expect("stage")
+    let actual_behavior_refs: std::collections::BTreeSet<ProjectV2DefinitionRef> =
+        stage["authoring_profiles"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| row["target"]["family"] == "Behavior")
+            .map(|row| {
+                serde_json::from_value(row["target"].clone()).expect("selected Behavior ref")
+            })
+            .collect();
+    assert_eq!(
+        actual_behavior_refs, behaviors,
+        "each exact native schedule uses canonical authoring"
+    );
+    stage["counts"] = json!({"creatures":creatures.len()});
+    stage
 }
 
 fn native_abilities(rows: &[Value]) -> BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring> {

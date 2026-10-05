@@ -441,3 +441,365 @@ fn native_expiry_revalidates_session_generation_and_monotonic_time_at_commit() {
         Ok(0)
     );
 }
+
+#[test]
+fn canonical_batch_has_explicit_immune_outcomes_and_retained_replay() {
+    let (mut runtime, player, session, creature) = fixture();
+    let root = GameplayDecisionRoot::from_bytes([17; 32]);
+    let defs = [definition("cripple"), definition("adrenaline_burst")];
+    let source = ConditionSource {
+        actor: creature,
+        session: None,
+        kind: ConditionSourceKind::Creature,
+    };
+    let plan = runtime
+        .prepare_actor_condition(
+            player,
+            Some(session),
+            ActorConditionTransition::ApplyBatch {
+                definitions: &defs,
+                source,
+                immunities: &[ConditionType::Paralysis],
+                facts: facts(&root, 0, true, 71),
+            },
+            at(0),
+        )
+        .unwrap();
+    assert_eq!(plan.applications().len(), 2);
+    assert_eq!(plan.applications()[0], Err(ConditionRefusal::Immune));
+    assert!(plan.applications()[1].is_ok());
+    assert!(
+        runtime
+            .actor_conditions(player, Some(session))
+            .unwrap()
+            .instances()
+            .is_empty()
+    );
+    assert!(runtime.commit_actor_condition(&plan, at(0)).unwrap());
+    assert!(!runtime.commit_actor_condition(&plan, at(1)).unwrap());
+    assert_eq!(
+        runtime
+            .actor_conditions(player, Some(session))
+            .unwrap()
+            .instances()
+            .len(),
+        1
+    );
+    assert_eq!(
+        runtime
+            .actor_conditions(player, Some(session))
+            .unwrap()
+            .instances()[0]
+            .definition(),
+        &defs[1]
+    );
+}
+
+#[test]
+fn canonical_batch_refuses_size_before_any_publication_and_revalidates_source() {
+    let (mut runtime, player, session, creature) = fixture();
+    let root = GameplayDecisionRoot::from_bytes([18; 32]);
+    let defs = vec![definition("cripple"); 17];
+    let source = ConditionSource {
+        actor: creature,
+        session: None,
+        kind: ConditionSourceKind::Creature,
+    };
+    let invalid = runtime.prepare_actor_condition(
+        player,
+        Some(session),
+        ActorConditionTransition::ApplyBatch {
+            definitions: &defs,
+            source,
+            immunities: &[],
+            facts: facts(&root, 0, true, 72),
+        },
+        at(0),
+    );
+    assert_eq!(invalid, Err(ConditionOwnerError::BatchSize));
+    assert!(
+        runtime
+            .actor_conditions(player, Some(session))
+            .unwrap()
+            .instances()
+            .is_empty()
+    );
+    let defs = [definition("cripple")];
+    let plan = runtime
+        .prepare_actor_condition(
+            player,
+            Some(session),
+            ActorConditionTransition::ApplyBatch {
+                definitions: &defs,
+                source,
+                immunities: &[],
+                facts: facts(&root, 0, true, 73),
+            },
+            at(0),
+        )
+        .unwrap();
+    runtime.remove_test_actor(creature).unwrap();
+    assert!(runtime.commit_actor_condition(&plan, at(0)).is_err());
+    assert!(
+        runtime
+            .actor_conditions(player, Some(session))
+            .unwrap()
+            .instances()
+            .is_empty()
+    );
+}
+
+#[test]
+fn canonical_type_cure_preserves_shared_speed_sibling_and_stales_old_plan() {
+    let (mut runtime, player, session, creature) = fixture();
+    let root = GameplayDecisionRoot::from_bytes([19; 32]);
+    let haste = definition("adrenaline_burst");
+    let source = ConditionSource {
+        actor: creature,
+        session: None,
+        kind: ConditionSourceKind::Creature,
+    };
+    let apply = runtime
+        .prepare_actor_condition(
+            player,
+            Some(session),
+            ActorConditionTransition::Apply {
+                definition: &haste,
+                source,
+                immunities: &[],
+                facts: facts(&root, 0, true, 74),
+            },
+            at(0),
+        )
+        .unwrap();
+    runtime.commit_actor_condition(&apply, at(0)).unwrap();
+    let cure = runtime
+        .prepare_actor_condition(
+            player,
+            Some(session),
+            ActorConditionTransition::RemoveType {
+                kind: ConditionType::Paralysis,
+                source,
+                facts: facts(&root, 1, true, 75),
+            },
+            at(1),
+        )
+        .unwrap();
+    assert!(runtime.commit_actor_condition(&cure, at(1)).unwrap());
+    assert!(!runtime.commit_actor_condition(&cure, at(2)).unwrap());
+    assert_eq!(
+        runtime
+            .actor_conditions(player, Some(session))
+            .unwrap()
+            .instances()[0]
+            .definition(),
+        &haste
+    );
+    assert_eq!(
+        runtime.commit_actor_condition(&apply, at(2)),
+        Err(ConditionOwnerError::StalePlan)
+    );
+}
+
+#[test]
+fn canonical_tick_projection_is_abandonable_without_consuming_live_schedule() {
+    let (mut runtime, player, session, creature) = fixture();
+    let root = GameplayDecisionRoot::from_bytes([19; 32]);
+    let definition = ConditionDefinition::new_damage_schedule(
+        "source.dot",
+        1,
+        DotElement::Poison,
+        DamageSchedule::Fixed {
+            segments: vec![DamageSegment {
+                count: 8,
+                interval_ms: 1000,
+                amount: 3,
+            }],
+            delayed: true,
+        },
+    )
+    .unwrap();
+    let apply = runtime
+        .prepare_actor_condition(
+            player,
+            Some(session),
+            ActorConditionTransition::Apply {
+                definition: &definition,
+                source: ConditionSource {
+                    actor: creature,
+                    session: None,
+                    kind: ConditionSourceKind::Creature,
+                },
+                immunities: &[],
+                facts: facts(&root, 0, true, 81),
+            },
+            at(0),
+        )
+        .unwrap();
+    runtime.commit_actor_condition(&apply, at(0)).unwrap();
+    let before = runtime
+        .actor_conditions(player, Some(session))
+        .unwrap()
+        .clone();
+    let occurrence = DecisionOccurrenceId::from_bytes([82; 16]);
+    let abandoned = runtime
+        .prepare_actor_condition_ticks(
+            player,
+            Some(session),
+            occurrence,
+            TickFacts::default(),
+            at(8000000),
+        )
+        .unwrap();
+    assert_eq!(abandoned.ticks().len(), 4);
+    assert_eq!(
+        runtime.actor_conditions(player, Some(session)).unwrap(),
+        &before
+    );
+    let retry = runtime
+        .prepare_actor_condition_ticks(
+            player,
+            Some(session),
+            occurrence,
+            TickFacts::default(),
+            at(8000000),
+        )
+        .unwrap();
+    assert_eq!(retry, abandoned);
+    runtime.remove_test_actor(creature).unwrap();
+    // The caster is frozen provenance, not new tick-time authority. No HP mutation is performed.
+    assert_eq!(
+        runtime
+            .prepare_actor_condition_ticks(
+                player,
+                Some(session),
+                occurrence,
+                TickFacts::default(),
+                at(8000000)
+            )
+            .unwrap(),
+        retry
+    );
+    let expiry = runtime
+        .prepare_actor_condition_expiry(
+            player,
+            Some(session),
+            DecisionOccurrenceId::from_bytes([83; 16]),
+            at(8000000),
+        )
+        .unwrap();
+    runtime
+        .commit_actor_condition(&expiry, at(8000000))
+        .unwrap();
+    assert_eq!(
+        runtime.commit_actor_condition(retry.condition_plan(), at(8000000)),
+        Err(ConditionOwnerError::StalePlan)
+    );
+    assert_eq!(
+        runtime.actor_conditions(player, Some(session)).unwrap(),
+        &before
+    );
+}
+
+#[test]
+fn source_creature_heal_cure_preflights_all_targets_and_preserves_other_conditions() {
+    let mut r = super::super::tests::runtime(2);
+    let actor = ExactActorRef(
+        r.carrier
+            .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.rat", 5)
+            .unwrap(),
+    );
+    let root = GameplayDecisionRoot::from_bytes([81; 32]);
+    let definitions = [
+        ConditionDefinition::new(
+            "source.paralysis",
+            1,
+            ConditionValues::Speed {
+                paralysis: true,
+                range: SpeedRange {
+                    a_min: 0,
+                    a_max: 0,
+                    b_min: 40,
+                    b_max: 40,
+                },
+                duration_ms: 1000,
+            },
+        )
+        .unwrap(),
+        ConditionDefinition::new(
+            "source.invisible",
+            1,
+            ConditionValues::TimedStatus {
+                kind: StatusKind::Invisible,
+                duration_ms: 1000,
+            },
+        )
+        .unwrap(),
+    ];
+    let facts = ApplicationFacts {
+        now: 0,
+        base_speed: 110,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: false,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes([82; 16]),
+    };
+    let plan = r
+        .prepare_actor_condition(
+            actor,
+            None,
+            ActorConditionTransition::ApplyBatch {
+                definitions: &definitions,
+                source: ConditionSource {
+                    actor,
+                    session: None,
+                    kind: ConditionSourceKind::SelfUse,
+                },
+                immunities: &[],
+                facts,
+            },
+            at(0),
+        )
+        .unwrap();
+    r.commit_actor_condition(&plan, at(0)).unwrap();
+    let before = r.actor_conditions(actor, None).unwrap().clone();
+    let content = r.content_pin().server_artifact_digest();
+    assert!(
+        r.commit_source_creature_heal_and_cure(
+            content,
+            &[(actor, "wrong".into(), 20, 1)],
+            &[actor],
+            1
+        )
+        .is_err()
+    );
+    assert_eq!(r.actor_conditions(actor, None).unwrap(), &before);
+    let index = r.carrier.validate_ref(&r.continuity, actor.0).unwrap();
+    assert!(matches!(
+        r.carrier.slots[index],
+        Slot::CreatureOccupied { health: 5, .. }
+    ));
+    assert!(
+        r.commit_source_creature_heal_and_cure(content, &[], &[actor, actor], 1)
+            .is_err()
+    );
+    assert_eq!(r.actor_conditions(actor, None).unwrap(), &before);
+    let receipt = r
+        .commit_source_creature_heal_and_cure(
+            content,
+            &[(actor, "oteryn:creature.rat".into(), 20, 1)],
+            &[actor],
+            1,
+        )
+        .unwrap();
+    assert_eq!(receipt[0].health_after, 6);
+    let store = r.actor_conditions(actor, None).unwrap();
+    assert!(store.get(ConflictKey::Speed).is_none());
+    assert!(store.has_status(StatusKind::Invisible, 1));
+    assert_eq!(
+        r.commit_actor_condition(&plan, at(1)),
+        Err(ConditionOwnerError::StalePlan)
+    );
+}

@@ -347,7 +347,7 @@ mod tests {
     fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
     }
-    fn owner() -> (
+    pub(super) fn owner() -> (
         ChannelRuntimeV1,
         ChannelSpellStates,
         crate::content::QualifiedNativeEntryRoom,
@@ -549,5 +549,239 @@ mod tests {
             ),
             Ok((_, duration)) if duration == expected
         ));
+    }
+}
+
+#[cfg(test)]
+mod creature_field_step_tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+    use super::*;
+    fn ready() -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        crate::content::QualifiedNativeEntryRoom,
+        ExactActorRef,
+        GameSessionId,
+    ) {
+        let (runtime, mut states, room, actor, session) = super::tests::owner();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                crate::spell::cast::CharacterCastFacts {
+                    vocation: crate::spell::Vocation::Knight,
+                    level: 291,
+                    magic_level: 10,
+                    max_health: 1000,
+                    max_mana: 500,
+                    max_soul: 100,
+                },
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        (runtime, states, room, actor, session)
+    }
+    fn contact(runtime: &ChannelRuntimeV1) -> super::super::CreatureFieldContact {
+        // Real immutable qualified field recipe, actual Player/movement owner fixture.
+        let catalog: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../tools/content-schema/spell-authoring/samples/native-field-profiles.json"
+        ))
+        .unwrap();
+        let recipe = catalog["profiles"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| {
+                serde_json::from_value::<crate::ability::field_condition::QualifiedFieldCondition>(
+                    v.clone(),
+                )
+                .unwrap()
+            })
+            .find(|r| r.source.server == "canary" && r.source.server_item_id == 2118)
+            .unwrap();
+        let values = recipe.condition_values().unwrap().unwrap();
+        super::super::CreatureFieldContact {
+            source: "creature:field:owner-component-fixture".into(),
+            definition: crate::ability::condition::ConditionDefinition::new(
+                "native.field.i2118",
+                1,
+                values,
+            )
+            .unwrap(),
+            element: recipe.element().unwrap().unwrap(),
+            content: runtime.content_pin().server_artifact_digest(),
+        }
+    }
+    #[test]
+    fn actual_step_and_creature_field_initial_hp_dot_publish_together() {
+        let (mut runtime, mut states, room, actor, session) = ready();
+        let field = contact(&runtime);
+        let before = states.get(&runtime, actor, session).unwrap().clone();
+        assert!(
+            states
+                .step_with_creature_field_contact(
+                    &mut runtime,
+                    room.movement_cells(),
+                    actor,
+                    session,
+                    0,
+                    CardinalStep::East,
+                    &Default::default(),
+                    None,
+                    None,
+                    Some(field)
+                )
+                .is_ok()
+        );
+        let next = states.get(&runtime, actor, session).unwrap();
+        assert!(next.vitals().health < before.vitals().health);
+        assert_eq!(next.revision(), before.revision() + 1);
+        assert!(
+            next.owned_conditions()
+                .instances()
+                .iter()
+                .any(|i| i.provenance().source_kind
+                    == crate::ability::condition::ConditionSourceKind::Creature)
+        );
+        assert_eq!(runtime.read_actor_position(actor).unwrap().position().x, 1);
+    }
+    #[test]
+    fn blocked_step_leaves_initial_hp_condition_cursor_and_position_unchanged() {
+        let (mut runtime, mut states, room, actor, session) = ready();
+        let field = contact(&runtime);
+        let before = states.get(&runtime, actor, session).unwrap().clone();
+        let position = runtime.read_actor_position(actor).unwrap();
+        assert!(
+            states
+                .step_with_creature_field_contact(
+                    &mut runtime,
+                    room.movement_cells(),
+                    actor,
+                    session,
+                    0,
+                    CardinalStep::East,
+                    &std::collections::BTreeSet::from([LogicalCell { x: 1, y: 0, z: 0 }]),
+                    None,
+                    None,
+                    Some(field)
+                )
+                .is_err()
+        );
+        assert_eq!(states.get(&runtime, actor, session), Some(&before));
+        assert_eq!(runtime.read_actor_position(actor).unwrap(), position);
+        assert!(states.deaths.is_empty());
+    }
+    #[test]
+    fn older_field_contact_clock_refuses_before_next_position_or_hp_publication() {
+        let (mut runtime, mut states, room, actor, session) = ready();
+        let field = contact(&runtime);
+        assert!(
+            states
+                .step_with_creature_field_contact(
+                    &mut runtime,
+                    room.movement_cells(),
+                    actor,
+                    session,
+                    10,
+                    CardinalStep::East,
+                    &Default::default(),
+                    None,
+                    None,
+                    Some(field)
+                )
+                .is_ok()
+        );
+        let before = states.get(&runtime, actor, session).unwrap().clone();
+        let position = runtime.read_actor_position(actor).unwrap();
+        let field = contact(&runtime);
+        assert!(
+            states
+                .step_with_creature_field_contact(
+                    &mut runtime,
+                    room.movement_cells(),
+                    actor,
+                    session,
+                    0,
+                    CardinalStep::West,
+                    &Default::default(),
+                    None,
+                    None,
+                    Some(field)
+                )
+                .is_err()
+        );
+        assert_eq!(states.get(&runtime, actor, session), Some(&before));
+        assert_eq!(runtime.read_actor_position(actor).unwrap(), position);
+        assert!(states.deaths.is_empty());
+    }
+    #[test]
+    fn failed_lethal_mint_does_not_move_or_install_dot_then_retry_mints_one_actual_death() {
+        let (mut runtime, mut states, room, actor, session) = ready();
+        let before = states.get(&runtime, actor, session).unwrap().clone();
+        let (next, _) =
+            crate::spell::actor_conditions::stage_creature_hit(&before, 999, 0).unwrap();
+        let index = states.index(actor, session).unwrap();
+        states.actors[index].2 = next;
+        let before = states.get(&runtime, actor, session).unwrap().clone();
+        let position = runtime.read_actor_position(actor).unwrap();
+        let mint = states.mint_death;
+        states.mint_death = || None;
+        let field = contact(&runtime);
+        assert!(
+            states
+                .step_with_creature_field_contact(
+                    &mut runtime,
+                    room.movement_cells(),
+                    actor,
+                    session,
+                    0,
+                    CardinalStep::East,
+                    &Default::default(),
+                    None,
+                    None,
+                    Some(field)
+                )
+                .is_err()
+        );
+        assert_eq!(states.get(&runtime, actor, session), Some(&before));
+        assert_eq!(runtime.read_actor_position(actor).unwrap(), position);
+        assert!(states.deaths.is_empty());
+        states.mint_death = mint;
+        let field = contact(&runtime);
+        assert!(
+            states
+                .step_with_creature_field_contact(
+                    &mut runtime,
+                    room.movement_cells(),
+                    actor,
+                    session,
+                    0,
+                    CardinalStep::East,
+                    &Default::default(),
+                    None,
+                    None,
+                    Some(field)
+                )
+                .is_ok()
+        );
+        assert_eq!(states.deaths.len(), 1);
+        assert_eq!(
+            states
+                .get(&runtime, actor, session)
+                .unwrap()
+                .vitals()
+                .health,
+            0
+        );
+        assert!(
+            states
+                .get(&runtime, actor, session)
+                .unwrap()
+                .owned_conditions()
+                .instances()
+                .is_empty()
+        );
     }
 }

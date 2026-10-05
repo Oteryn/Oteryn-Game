@@ -1,0 +1,2565 @@
+[
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.animated_ogre_shaman.attack-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.animated_ogre_shaman.attack-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.chicken",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.arachir_the_ancient_one.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.arachir_the_ancient_one.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.bat",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.armenius_creature.defense-1",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.armenius_creature.defense-1",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.bat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/groundshaker"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.ashmunrah.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.ashmunrah.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.ancient_scarab",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.aspect_of_power.defense-1",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.aspect_of_power.defense-1",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.goshnar_s_malice",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.aspect_of_power.defense-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.aspect_of_power.defense-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.goshnar_s_cruelty",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.aspect_of_power.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.aspect_of_power.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.goshnar_s_hatred",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.aspect_of_power.defense-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.aspect_of_power.defense-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.goshnar_s_spite",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.bane_of_light.defense-1",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.bane_of_light.defense-1",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.bat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/groundshaker"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.bazir.attack-10",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.bazir.attack-10",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3058",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/loseenergy"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.bazir.attack-9",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.bazir.attack-9",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.demon",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/loseenergy"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.bazir.defense-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.bazir.defense-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 7000,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2916",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.black_vixen.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.black_vixen.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.werewolf",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.blue_djinn.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.blue_djinn.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.rabbit",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.captain_jones.attack-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.captain_jones.attack-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.skeleton",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/explosion"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.chayenne.defense-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.chayenne.defense-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.chayenne",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/energyhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.dark_apprentice.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.dark_apprentice.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.cyclops",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/explosion"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.dark_apprentice.attack-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.dark_apprentice.attack-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2324",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.dark_apprentice.defense-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.dark_apprentice.defense-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.green_frog",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.dworc_voodoomaster.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.dworc_voodoomaster.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.chicken",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.efreet.attack-7",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.efreet.attack-7",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.rat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.evil_sheep_lord.attack-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.evil_sheep_lord.attack-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.sheep",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.evil_sheep_lord.defense-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.evil_sheep_lord.defense-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.werewolf",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.fahim_the_wise.attack-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.fahim_the_wise.attack-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.rabbit",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.fernfang.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.fernfang.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 14000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.war_wolf",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.feroxa2.defense-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.feroxa2.defense-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.werewolf",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.feverish_citizen.defense-1",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.feverish_citizen.defense-1",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.bog_raider",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/green_rings"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.gorgo.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.gorgo.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.clay_guardian",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.green_djinn.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.green_djinn.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.rat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.hacker.defense-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.hacker.defense-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 500,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.pig",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.hemming.attack-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.hemming.attack-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.werewolf",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/sound_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.herald_of_gloom.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.herald_of_gloom.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.nightstalker",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.herald_of_gloom.defense-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.herald_of_gloom.defense-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.werewolf",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.herald_of_gloom.defense-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.herald_of_gloom.defense-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.the_count",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.herald_of_gloom.defense-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.herald_of_gloom.defense-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.grim_reaper",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.herald_of_gloom.defense-7",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.herald_of_gloom.defense-7",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.tarantula",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.herald_of_gloom.defense-8",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.herald_of_gloom.defense-8",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.ferumbras",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.ice_witch.attack-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.ice_witch.attack-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7172",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue",
+        "projectile_asset_binding": "canary.appearance:missile/snowball"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.incredibly_old_witch.attack-1",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.incredibly_old_witch.attack-1",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.rat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.incredibly_old_witch.attack-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.incredibly_old_witch.attack-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.chicken",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.incredibly_old_witch.attack-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.incredibly_old_witch.attack-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.green_frog",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.incredibly_old_witch.attack-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.incredibly_old_witch.attack-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.bug",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.incredibly_old_witch.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.incredibly_old_witch.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.pig",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.incredibly_old_witch.attack-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.incredibly_old_witch.attack-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.kongra",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.incredibly_old_witch.attack-7",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.incredibly_old_witch.attack-7",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.dog",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.incredibly_old_witch.attack-8",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.incredibly_old_witch.attack-8",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.skunk",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.incredibly_old_witch.attack-9",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.incredibly_old_witch.attack-9",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.donkey",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.kraknaknork.attack-7",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.kraknaknork.attack-7",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.sheep",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.kreebosh_the_exile.attack-7",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.kreebosh_the_exile.attack-7",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 60000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.rat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_green"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.lersatio.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.lersatio.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.bat",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.lord_of_the_elements.defense-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.lord_of_the_elements.defense-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.energy_overlord",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.lord_of_the_elements.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.lord_of_the_elements.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.fire_overlord",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.lord_of_the_elements.defense-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.lord_of_the_elements.defense-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.earth_overlord",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.lord_of_the_elements.defense-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.lord_of_the_elements.defense-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.ice_overlord",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.marid.attack-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.marid.attack-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.rabbit",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.medusa.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.medusa.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.clay_guardian",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.memory_of_a_vampire.defense-1",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.memory_of_a_vampire.defense-1",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.bat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/groundshaker"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.morshabaal.attack-11",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.morshabaal.attack-11",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.demon",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/loseenergy"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.morshabaal.attack-12",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.morshabaal.attack-12",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3058",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/loseenergy"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.morshabaal.defense-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.morshabaal.defense-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 7000,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2916",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.mutated_zalamon.defense-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.mutated_zalamon.defense-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.lizard_snakecharmer",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/energyhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.mutated_zalamon.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.mutated_zalamon.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.lizard_abomination",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/energyhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.mutated_zalamon.defense-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.mutated_zalamon.defense-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.serpent_spawn",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/energyhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.mutated_zalamon.defense-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.mutated_zalamon.defense-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.draken_abomination",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/energyhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.mutated_zalamon.defense-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.mutated_zalamon.defense-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.mutated_zalamon",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/energyhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.nightstalker.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.nightstalker.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.nightstalker",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.nightstalker.defense-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.nightstalker.defense-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.werewolf",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.nightstalker.defense-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.nightstalker.defense-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.the_count",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.nightstalker.defense-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.nightstalker.defense-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.grim_reaper",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.nightstalker.defense-7",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.nightstalker.defense-7",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.tarantula",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.nightstalker.defense-8",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.nightstalker.defense-8",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.ferumbras",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.ogre_shaman.attack-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.ogre_shaman.attack-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.chicken",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.oodok_witchmaster.attack-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.oodok_witchmaster.attack-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.chicken",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.orc_cult_priest.attack-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.orc_cult_priest.attack-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 30000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.orc_warlord",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.orc_cult_priest.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.orc_cult_priest.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 30000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.orc_shaman",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.orc_cult_priest.attack-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.orc_cult_priest.attack-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 30000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.orc",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.primitive.attack-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.primitive.attack-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.primitive",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/loseenergy"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.rahemos.attack-7",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.rahemos.attack-7",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 12000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.pig",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.rahemos.defense-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.rahemos.defense-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.demon",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.serpent_spawn.attack-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.serpent_spawn.attack-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.clay_guardian",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.shadow_of_lersatio.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.shadow_of_lersatio.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.bat",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.shadowpelt.attack-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.shadowpelt.attack-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.werebear",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.sharpclaw.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.sharpclaw.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.werebadger",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.son_of_verminor.defense-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.son_of_verminor.defense-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.rat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.son_of_verminor.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.son_of_verminor.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.larva",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.son_of_verminor.defense-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.son_of_verminor.defense-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.scorpion",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.son_of_verminor.defense-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.son_of_verminor.defense-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.slime",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.soulless_minion.defense-1",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.soulless_minion.defense-1",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.bat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/groundshaker"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-10",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-10",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.monk",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-11",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-11",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.crab",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-12",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-12",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.ghost",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-13",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-13",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.minotaur_mage",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-14",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-14",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.green_frog",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-15",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-15",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.parrot",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-16",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-16",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2096",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.bat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.thornback_tortoise",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.orc",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.snake",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.warlock",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-7",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-7",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.witch",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-8",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-8",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.necromancer",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_halloween_hare.attack-9",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_halloween_hare.attack-9",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 6000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.dwarf_geomancer",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_keeper.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_keeper.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3976",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_mutated_pumpkin.attack-8",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_mutated_pumpkin.attack-8",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.the_mutated_pumpkin",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/loseenergy"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.the_noxious_spawn.attack-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.the_noxious_spawn.attack-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3976",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.ugly_monster.attack-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.ugly_monster.attack-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.ugly_monster",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/earth"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.vampire.defense-1",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.vampire.defense-1",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 5000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.bat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/groundshaker"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.vampire_pig.defense-1",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.vampire_pig.defense-1",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 1500,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.mutated_bat",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.vampire_viscount.defense-1",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.vampire_viscount.defense-1",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.vicious_manbat",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.war_golem.attack-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.war_golem.attack-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 3000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.skeleton",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.werewolf.attack-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.werewolf.attack-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.werewolf",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/sound_blue"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.witch.attack-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.witch.attack-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 2000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.green_frog",
+          "revision": "definition-r1"
+        }
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.yaga_the_crone.defense-2",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.yaga_the_crone.defense-2",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.green_frog",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.zoralurk.defense-3",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.zoralurk.defense-3",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.behemoth",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/craps"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.zoralurk.defense-4",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.zoralurk.defense-4",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.fire_devil",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/craps"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.zoralurk.defense-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.zoralurk.defense-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.giant_spider",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/craps"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.zoralurk.defense-6",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.zoralurk.defense-6",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.undead_dragon",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/craps"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.zoralurk.defense-7",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.zoralurk.defense-7",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 10000,
+        "creature": {
+          "family": "Creature",
+          "key": "oteryn:creature.lost_soul",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/craps"
+      }
+    }
+  },
+  {
+    "ability": {
+      "family": "Ability",
+      "key": "oteryn:ability.creature.zushuka.attack-5",
+      "revision": "definition-r1"
+    },
+    "effect": {
+      "key": "oteryn:effect.creature.zushuka.attack-5",
+      "operation": {
+        "operation": "AppearanceTransform",
+        "duration_ms": 4000,
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7172",
+          "revision": "definition-r1"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  }
+]

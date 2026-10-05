@@ -4,6 +4,26 @@
 //! vitals and cooldowns and the owner work item of one cast.
 
 pub(crate) use oteryn_protocol_oteryn::actor_spell::*;
+#[path = "actor_conditions.rs"]
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod actor_conditions;
+#[path = "actor_invisibility.rs"]
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod actor_invisibility;
+pub(crate) use actor_conditions::{
+    NativeConditionAdmission, NativeConditionApplication, NativeConditionError,
+};
+#[cfg(test)]
+pub(crate) use actor_invisibility::CreatureVision;
+pub(crate) use actor_invisibility::{
+    InvisibilityError, InvisibleTileCombatPolicy, SelfInvisibleSource, SelfSpeedSource,
+};
 
 #[path = "actor_movement.rs"]
 mod actor_movement;
@@ -86,6 +106,10 @@ pub(crate) struct ChannelSpellStates {
     pub(in crate::gameplay_transport) monster_ai_cursor: usize,
     deaths: Vec<(ExactActorRef, GameSessionId, PlayerDeath)>,
     mint_death: fn() -> Option<PlayerDeathOccurrence>,
+    source_secondary_memos: Vec<actor_conditions::NativeSecondaryMemo>,
+    source_damage: Vec<NativeSourceMemo<crate::ability::player_lethal::PlayerDamageReceipt>>,
+    source_mana: Vec<NativeSourceMemo<crate::ability::player_lethal::PlayerManaDrainReceipt>>,
+    source_heal: Vec<NativeSourceMemo<crate::ability::player_lethal::PlayerHealReceipt>>,
 }
 
 impl Default for ChannelSpellStates {
@@ -111,6 +135,10 @@ impl Default for ChannelSpellStates {
             monster_ai_cursor: Default::default(),
             deaths: Vec::new(),
             mint_death: mint_player_death_occurrence,
+            source_secondary_memos: Vec::new(),
+            source_damage: Vec::new(),
+            source_mana: Vec::new(),
+            source_heal: Vec::new(),
         }
     }
 }
@@ -318,6 +346,7 @@ impl ChannelSpellStates {
         self.actors.retain(|(present, session, _)| {
             runtime.player_control_facts(*present, *session).is_ok()
         });
+        self.prune_source_memos(runtime);
         let actors = &self.actors;
         self.deaths.retain(|(dead, session, _)| {
             actors
@@ -562,6 +591,7 @@ impl ChannelSpellStates {
         if !self.commit(runtime, actor, game_session_id, next) {
             return None;
         }
+        self.forget_source_memos(actor, game_session_id);
         self.deaths.swap_remove(death);
         Some(vitals)
     }
@@ -587,6 +617,17 @@ impl ChannelSpellStates {
         runtime.player_control_facts(actor, game_session_id).ok()?;
         let index = self.index(actor, game_session_id)?;
         self.actors.get(index).map(|(_, _, state)| state)
+    }
+
+    /// Test-only full owned state read; admission remains the existing exact actor/session read.
+    #[cfg(test)]
+    pub(crate) fn read_owned_player_state_test_snapshot(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<&PlayerSpellState> {
+        self.get(runtime, actor, game_session_id)
     }
 
     /// Compare-commit (SPELL-D3): `next` replaces the state only as the direct successor of the
@@ -657,8 +698,8 @@ fn qualified_protection_zone(
 /// compare-committed vitals revision. DEATH-2 (§4.1, §4.2): a hit to 0 is lethal; the death
 /// occurrence is minted and the death recorded with the cell in the same write, and a dead
 /// player is no target. A failed mint or position read refuses the hit with nothing written.
-impl CreatureBiteVitals for ChannelSpellStates {
-    fn apply_creature_damage(
+impl ChannelSpellStates {
+    fn apply_creature_damage_native(
         &mut self,
         runtime: &ChannelRuntimeV1,
         target: ExactActorRef,
@@ -706,6 +747,19 @@ impl CreatureBiteVitals for ChannelSpellStates {
             vitals_revision,
             death: death.map(|death| *death.occurrence.as_bytes()),
         })
+    }
+}
+
+impl CreatureBiteVitals for ChannelSpellStates {
+    fn apply_creature_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+        magnitude: u32,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<CreatureHit> {
+        self.apply_creature_damage_native(runtime, target, target_session, magnitude, now)
     }
 }
 
@@ -854,6 +908,15 @@ pub(crate) mod tests {
 
     /// A Channel runtime with one committed player actor bound to the session `tag`.
     pub(crate) fn runtime_with_player(tag: u8) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
+        runtime_with_capacity(tag, 2)
+    }
+
+    // Source multi-child fixtures use the SAME existing committed-assignment owner with enough
+    // physical slots; legacy two-slot tests keep their original capacity. No production grant.
+    pub(crate) fn runtime_with_capacity(
+        tag: u8,
+        capacity: usize,
+    ) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
         let world = WorldId::decode(&uuid_v7(0x60)).expect("world");
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
@@ -863,7 +926,7 @@ pub(crate) mod tests {
             1,
             1,
             "runtime-scope-assignment:1",
-            2,
+            capacity,
             ChannelContentPin::test(world),
         )
         .expect("channel runtime");
@@ -1290,7 +1353,7 @@ pub(crate) mod tests {
         use crate::durability::character_progression::CurrentCharacterGameplayFence;
         use crate::foundation::{ConnectionGeneration, RuntimeScopeRefV1};
         use crate::spell::stance_execution::PreparedStance;
-        let (runtime, actor, session) = runtime_with_player(0x35);
+        let (mut runtime, actor, session) = runtime_with_player(0x35);
         let mut states = ChannelSpellStates::default();
         states
             .initialize(
@@ -1388,7 +1451,7 @@ pub(crate) mod tests {
             .clone();
         assert_eq!(
             states.apply_creature_damage(
-                &runtime,
+                &mut runtime,
                 actor,
                 session,
                 8,
@@ -1405,7 +1468,7 @@ pub(crate) mod tests {
         );
         let hit = states
             .apply_creature_damage(
-                &runtime,
+                &mut runtime,
                 actor,
                 session,
                 8,
@@ -1494,7 +1557,7 @@ pub(crate) mod tests {
             let before = states.get(&runtime, actor, session).expect("state").clone();
             assert_eq!(
                 states.apply_creature_damage(
-                    &runtime,
+                    &mut runtime,
                     actor,
                     session,
                     8,
@@ -1553,7 +1616,7 @@ pub(crate) mod tests {
     }
 
     fn bite_at(
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         ledger: &mut crate::ability::creature_bite::CreatureBiteLedger,
         (creature, actor, session): (ExactActorRef, ExactActorRef, GameSessionId),
@@ -1597,10 +1660,10 @@ pub(crate) mod tests {
         use crate::ability::creature_bite::{BiteRejection, CreatureBiteLedger, CreatureDamage};
         use crate::foundation::MovementLocalPosition;
 
-        let (runtime, mut states, actor, session, creature) = bitten_player(0x31, 5);
+        let (mut runtime, mut states, actor, session, creature) = bitten_player(0x31, 5);
         let mut ledger = CreatureBiteLedger::default();
         let actors = (creature, actor, session);
-        let first = bite_at(&runtime, &mut states, &mut ledger, actors, 0, 0).expect("bite");
+        let first = bite_at(&mut runtime, &mut states, &mut ledger, actors, 0, 0).expect("bite");
         assert_eq!(
             first.damage,
             CreatureDamage {
@@ -1624,11 +1687,11 @@ pub(crate) mod tests {
         assert!(states.is_dead(actor));
         // The lethal think occurrence replays its first result; a later bite has no target.
         assert_eq!(
-            bite_at(&runtime, &mut states, &mut ledger, actors, 0, 0),
+            bite_at(&mut runtime, &mut states, &mut ledger, actors, 0, 0),
             Ok(first)
         );
         assert_eq!(
-            bite_at(&runtime, &mut states, &mut ledger, actors, 1, 2_000_000),
+            bite_at(&mut runtime, &mut states, &mut ledger, actors, 1, 2_000_000),
             Err(BiteRejection::StaleTarget)
         );
         assert_eq!(
@@ -1648,7 +1711,7 @@ pub(crate) mod tests {
     fn the_respawn_refills_health_and_mana_in_one_revision_and_ends_the_death() {
         use crate::ability::creature_bite::CreatureBiteLedger;
 
-        let (runtime, mut states, actor, session, creature) = bitten_player(0x32, 8);
+        let (mut runtime, mut states, actor, session, creature) = bitten_player(0x32, 8);
         let mut ledger = CreatureBiteLedger::default();
         // A heal spends mana, so the respawn has both pools to refill.
         let healed = cast_at(&runtime, &mut states, actor, session, 1, 0);
@@ -1657,7 +1720,7 @@ pub(crate) mod tests {
         assert!(spent.mana < FACTS.max_mana);
         wound(&mut states, actor, session, 8);
         bite_at(
-            &runtime,
+            &mut runtime,
             &mut states,
             &mut ledger,
             (creature, actor, session),
@@ -1716,10 +1779,10 @@ pub(crate) mod tests {
             vocation: Vocation::Monk,
             ..FACTS
         };
-        let (runtime, mut states, actor, session, creature) =
+        let (mut runtime, mut states, actor, session, creature) =
             bitten_actor(0x35, 8, monk, (3, 4_000_000));
         bite_at(
-            &runtime,
+            &mut runtime,
             &mut states,
             &mut CreatureBiteLedger::default(),
             (creature, actor, session),
@@ -1755,12 +1818,12 @@ pub(crate) mod tests {
     fn a_lethal_hit_without_an_occurrence_writes_nothing() {
         use crate::ability::creature_bite::{BiteRejection, CreatureBiteLedger};
 
-        let (runtime, mut states, actor, session, creature) = bitten_player(0x34, 8);
+        let (mut runtime, mut states, actor, session, creature) = bitten_player(0x34, 8);
         states.mint_death = || None;
         let mut ledger = CreatureBiteLedger::default();
         assert_eq!(
             bite_at(
-                &runtime,
+                &mut runtime,
                 &mut states,
                 &mut ledger,
                 (creature, actor, session),
@@ -1772,5 +1835,1942 @@ pub(crate) mod tests {
         assert!(!states.is_dead(actor));
         let (revision, vitals) = observe_vitals(&runtime, &states, actor, session).expect("vitals");
         assert_eq!((revision, vitals.health), (1, 8));
+    }
+}
+// Reconciled source consumers: the existing ChannelSpellStates remains the only vitals/death owner.
+#[derive(Debug)]
+struct NativeSourceMemo<T> {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    occurrence: String,
+    magnitude: u32,
+    receipt: T,
+}
+impl ChannelSpellStates {
+    fn prune_source_memos(&mut self, runtime: &ChannelRuntimeV1) {
+        self.source_damage
+            .retain(|m| runtime.player_control_facts(m.actor, m.session).is_ok());
+        self.source_mana
+            .retain(|m| runtime.player_control_facts(m.actor, m.session).is_ok());
+        self.source_heal
+            .retain(|m| runtime.player_control_facts(m.actor, m.session).is_ok());
+    }
+    fn forget_source_memos(&mut self, actor: ExactActorRef, session: GameSessionId) {
+        self.source_secondary_memos
+            .retain(|m| m.actor != actor || m.session != session);
+        self.source_damage
+            .retain(|m| m.actor != actor || m.session != session);
+        self.source_mana
+            .retain(|m| m.actor != actor || m.session != session);
+        self.source_heal
+            .retain(|m| m.actor != actor || m.session != session);
+    }
+    fn source_occurrence_text(occurrence: &str) -> Option<String> {
+        if occurrence.is_empty() || occurrence.len() > 4096 {
+            return None;
+        }
+        let mut text = String::new();
+        text.try_reserve(occurrence.len()).ok()?;
+        text.push_str(occurrence);
+        Some(text)
+    }
+}
+impl crate::ability::player_lethal::PlayerLethalVitals for ChannelSpellStates {
+    fn apply_source_appearance_batch(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        fence: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        targets: &[crate::ability::player_lethal::SourceAppearanceTarget<'_>],
+    ) -> Option<Vec<crate::ability::player_lethal::SourceAppearanceReceipt>> {
+        self.native_source_appearance_batch(runtime, fence, stamp, source, definitions, targets)
+    }
+
+    fn apply_attack_conditions(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        fence: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> bool {
+        self.native_composite_conditions(
+            runtime,
+            target,
+            session,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            None,
+            fence,
+            stamp,
+        )
+        .is_some()
+    }
+    fn apply_composite_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        fence: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> Option<crate::ability::player_lethal::PlayerDamageReceipt> {
+        let binding = runtime.binding();
+        if !fence.is_current_for_scope(
+            crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+            binding.scope_generation(),
+        ) || !fence.accepts_stamp(stamp)
+        {
+            return None;
+        }
+
+        if definitions.is_empty() {
+            return self.apply_attack_damage(
+                runtime,
+                target,
+                session,
+                magnitude,
+                occurrence,
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(facts.now),
+            );
+        }
+        self.native_composite_conditions(
+            runtime,
+            target,
+            session,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            Some(magnitude),
+            fence,
+            stamp,
+        )?
+    }
+    fn remove_attack_invisibility(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        source: ExactActorRef,
+        now: u64,
+        fence: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> bool {
+        self.native_remove_attack_invisibility(runtime, target, session, source, now, fence, stamp)
+    }
+
+    fn source_player_health(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u32, u32, u64)> {
+        if self.is_dead(target)
+            || runtime
+                .player_control_facts(target, session)
+                .ok()?
+                .control_loss
+                .is_some()
+        {
+            return None;
+        }
+        let state = self.get(runtime, target, session)?;
+        let v = state.vitals();
+        (v.health > 0 && v.health <= v.max_health).then_some((
+            v.health,
+            v.max_health,
+            state.revision(),
+        ))
+    }
+    fn apply_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<crate::ability::player_lethal::PlayerDamageReceipt> {
+        use crate::ability::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
+        if magnitude == 0
+            || runtime
+                .player_control_facts(target, session)
+                .ok()?
+                .control_loss
+                .is_some()
+        {
+            return None;
+        }
+        if self
+            .source_secondary_memos
+            .iter()
+            .any(|m| m.actor == target && m.session == session && m.occurrence == occurrence)
+            && !self
+                .source_damage
+                .iter()
+                .any(|m| m.actor == target && m.session == session && m.occurrence == occurrence)
+        {
+            return None;
+        }
+        let text = Self::source_occurrence_text(occurrence)?;
+        self.prune_source_memos(runtime);
+        let old = self
+            .source_damage
+            .iter()
+            .position(|m| m.actor == target && m.session == session);
+        if let Some(i) = old {
+            let m = &self.source_damage[i];
+            if m.occurrence == occurrence {
+                return (m.magnitude == magnitude).then_some(m.receipt);
+            }
+        }
+        if self.is_dead(target) {
+            return None;
+        }
+        // Position/allocation failures precede native HP. Existing native owner rechecks position,
+        // reserves and mints its one PlayerDeathOccurrence before its own compare-commit.
+        let position = runtime.read_actor_position(target).ok()?.position();
+        if old.is_none() {
+            self.source_damage.try_reserve(1).ok()?;
+        }
+        let hit = CreatureBiteVitals::apply_creature_damage(
+            self, runtime, target, session, magnitude, now,
+        )?;
+        let death = hit.death.map(|bytes| {
+            PlayerLethalReceipt::from_native_commit(
+                runtime,
+                target,
+                session,
+                hit.vitals_revision,
+                bytes,
+                position,
+            )
+        });
+        let receipt = PlayerDamageReceipt {
+            applied: hit.damage.applied,
+            health_after: hit.damage.health_after,
+            vitals_revision: hit.vitals_revision,
+            death,
+        };
+        let memo = NativeSourceMemo {
+            actor: target,
+            session,
+            occurrence: text,
+            magnitude,
+            receipt,
+        };
+        if let Some(i) = old {
+            self.source_damage[i] = memo
+        } else {
+            self.source_damage.push(memo)
+        }
+        Some(receipt)
+    }
+    fn apply_source_player_heal(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<crate::ability::player_lethal::PlayerHealReceipt> {
+        use crate::ability::player_lethal::PlayerHealReceipt;
+        if self.has_pending_spell_commit(target, session)
+            || runtime.assert_actor_spell_unreserved(target).is_err()
+        {
+            return None;
+        }
+        if !self
+            .get(runtime, target, session)?
+            .owned_conditions()
+            .accepts_time(now.get())
+        {
+            return None;
+        }
+        let (health, max_health, _) = self.source_player_health(runtime, target, session)?;
+        let text = Self::source_occurrence_text(occurrence)?;
+        self.prune_source_memos(runtime);
+        let old = self
+            .source_heal
+            .iter()
+            .position(|m| m.actor == target && m.session == session);
+        if let Some(i) = old {
+            let m = &self.source_heal[i];
+            if m.occurrence == occurrence {
+                return (m.magnitude == magnitude).then_some(m.receipt);
+            }
+        }
+        if old.is_none() {
+            self.source_heal.try_reserve(1).ok()?;
+        }
+        // Reuse current main's cap/revision/no-op semantics; no duplicate health formula or cooldown.
+        let (applied, vitals_revision) =
+            self.apply_health_gain(runtime, target, session, u64::from(magnitude))?;
+        let receipt = PlayerHealReceipt {
+            applied,
+            health_before: health,
+            health_after: health + applied,
+            max_health,
+            vitals_revision,
+        };
+        let memo = NativeSourceMemo {
+            actor: target,
+            session,
+            occurrence: text,
+            magnitude,
+            receipt,
+        };
+        if let Some(i) = old {
+            self.source_heal[i] = memo
+        } else {
+            self.source_heal.push(memo)
+        }
+        Some(receipt)
+    }
+    fn apply_attack_mana_drain(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<crate::ability::player_lethal::PlayerManaDrainReceipt> {
+        use crate::ability::player_lethal::PlayerManaDrainReceipt;
+        if self.has_pending_spell_commit(target, session)
+            || runtime.assert_actor_spell_unreserved(target).is_err()
+        {
+            return None;
+        }
+        if magnitude == 0
+            || self.is_dead(target)
+            || runtime
+                .player_control_facts(target, session)
+                .ok()?
+                .control_loss
+                .is_some()
+        {
+            return None;
+        }
+        if !self
+            .get(runtime, target, session)?
+            .owned_conditions()
+            .accepts_time(now.get())
+        {
+            return None;
+        }
+        let text = Self::source_occurrence_text(occurrence)?;
+        self.prune_source_memos(runtime);
+        let old = self
+            .source_mana
+            .iter()
+            .position(|m| m.actor == target && m.session == session);
+        if let Some(i) = old {
+            let m = &self.source_mana[i];
+            if m.occurrence == occurrence {
+                return (m.magnitude == magnitude).then_some(m.receipt);
+            }
+        }
+        let current = self.get(runtime, target, session)?;
+        let mana_before = current.vitals().mana;
+        let (next, applied) = current.after_creature_mana_drain(magnitude)?;
+        let receipt = PlayerManaDrainReceipt {
+            applied,
+            mana_before,
+            mana_after: next.vitals().mana,
+            vitals_revision: next.revision(),
+        };
+        if old.is_none() {
+            self.source_mana.try_reserve(1).ok()?;
+        }
+        if applied > 0 && !self.commit(runtime, target, session, next) {
+            return None;
+        }
+        let memo = NativeSourceMemo {
+            actor: target,
+            session,
+            occurrence: text,
+            magnitude,
+            receipt,
+        };
+        if let Some(i) = old {
+            self.source_mana[i] = memo
+        } else {
+            self.source_mana.push(memo)
+        }
+        Some(receipt)
+    }
+}
+
+#[cfg(test)]
+mod source_native_vitals_tests {
+    use super::tests::{runtime_with_player, wound};
+    use super::*;
+    use crate::ability::player_lethal::PlayerLethalVitals;
+    fn ready(
+        tag: u8,
+    ) -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        ExactActorRef,
+        GameSessionId,
+    ) {
+        let (mut runtime, actor, session) = runtime_with_player(tag);
+        assert!(
+            runtime
+                .initialize_movement_test_position(
+                    actor,
+                    MovementLocalPosition {
+                        x: 10,
+                        y: 10,
+                        floor: 7
+                    }
+                )
+                .is_ok()
+        );
+        let mut states = ChannelSpellStates::default();
+        let facts = CharacterCastFacts {
+            vocation: crate::spell::Vocation::Druid,
+            level: 30,
+            magic_level: 20,
+            max_health: 185,
+            max_mana: 90,
+            max_soul: 100,
+        };
+        assert!(
+            states
+                .initialize(
+                    &runtime,
+                    actor,
+                    session,
+                    facts,
+                    (0, 0),
+                    SemanticTimeMicros::from_micros(0)
+                )
+                .is_some()
+        );
+        (runtime, states, actor, session)
+    }
+    #[test]
+    fn source_lethal_receipt_reuses_native_death_and_respawn_clears_source_replay() {
+        let (mut r, mut s, a, g) = ready(0x41);
+        wound(&mut s, a, g, 8);
+        let Some(hit) = s.apply_attack_damage(
+            &mut r,
+            a,
+            g,
+            8,
+            "source:lethal:0",
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+        ) else {
+            panic!("native source hit")
+        };
+        let Some(native) = s.player_death(&r, a, g) else {
+            panic!("native death")
+        };
+        let Some(receipt) = hit.death else {
+            panic!("receipt")
+        };
+        assert_eq!(receipt.occurrence_bytes(), *native.occurrence.as_bytes());
+        assert_eq!(receipt.position(), native.cell);
+        assert_eq!(hit.health_after, 0);
+        assert_eq!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                8,
+                "source:lethal:0",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            ),
+            Some(hit)
+        );
+        assert_eq!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                9,
+                "source:lethal:0",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            ),
+            None
+        );
+        assert_eq!(s.deaths.len(), 1);
+        assert_eq!(
+            s.apply_source_player_heal(
+                &mut r,
+                a,
+                g,
+                1,
+                "heal:dead",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            ),
+            None
+        );
+        assert_eq!(
+            s.apply_attack_mana_drain(
+                &mut r,
+                a,
+                g,
+                1,
+                "mana:dead",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            ),
+            None
+        );
+        assert!(
+            s.respawn(
+                &r,
+                a,
+                g,
+                native.occurrence,
+                SemanticTimeMicros::from_micros(1)
+            )
+            .is_some()
+        );
+        assert!(s.source_damage.is_empty());
+        assert!(s.source_mana.is_empty());
+        assert!(s.source_heal.is_empty());
+        assert!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                8,
+                "source:lethal:1",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            )
+            .is_some()
+        );
+        assert!(!s.is_dead(a));
+    }
+    #[test]
+    fn source_failed_native_mint_and_wrong_session_have_no_hp_or_memo_write() {
+        let (mut r, mut s, a, g) = ready(0x42);
+        wound(&mut s, a, g, 8);
+        s.mint_death = || None;
+        let before = s.get(&r, a, g).cloned();
+        assert_eq!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                g,
+                8,
+                "mint:failed",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            ),
+            None
+        );
+        assert_eq!(s.get(&r, a, g).cloned(), before);
+        assert!(s.source_damage.is_empty());
+        assert!(s.deaths.is_empty());
+        let (_, _, other) = runtime_with_player(0x43);
+        assert_eq!(
+            s.apply_attack_damage(
+                &mut r,
+                a,
+                other,
+                1,
+                "session:wrong",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            ),
+            None
+        );
+        assert_eq!(
+            s.apply_source_player_heal(
+                &mut r,
+                a,
+                other,
+                1,
+                "session:wrong",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            ),
+            None
+        );
+        assert_eq!(
+            s.apply_attack_mana_drain(
+                &mut r,
+                a,
+                other,
+                1,
+                "session:wrong",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            ),
+            None
+        );
+        assert_eq!(s.get(&r, a, g).cloned(), before);
+    }
+    #[test]
+    fn source_heal_uses_current_maximum_native_credit_noop_revision_and_replay() {
+        let (mut r, mut s, a, g) = ready(0x44);
+        wound(&mut s, a, g, 100);
+        let before = s.get(&r, a, g).cloned();
+        let Some(heal) = s.apply_source_player_heal(
+            &mut r,
+            a,
+            g,
+            u32::MAX,
+            "heal:0",
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+        ) else {
+            panic!("native credit")
+        };
+        assert_eq!(
+            (
+                heal.applied,
+                heal.health_after,
+                heal.max_health,
+                heal.vitals_revision
+            ),
+            (85, 185, 185, 2)
+        );
+        let Some(next) = s.get(&r, a, g).cloned() else {
+            panic!("current")
+        };
+        let Some(before) = before else {
+            panic!("before")
+        };
+        assert_eq!(
+            (before.vitals().mana, before.vitals().soul),
+            (next.vitals().mana, next.vitals().soul)
+        );
+        assert_eq!(
+            s.apply_source_player_heal(
+                &mut r,
+                a,
+                g,
+                u32::MAX,
+                "heal:0",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            ),
+            Some(heal)
+        );
+        assert_eq!(s.get(&r, a, g), Some(&next));
+        let Some(full) = s.apply_source_player_heal(
+            &mut r,
+            a,
+            g,
+            1,
+            "heal:1",
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+        ) else {
+            panic!("full credit")
+        };
+        assert_eq!((full.applied, full.vitals_revision), (0, 2));
+        let Some(zero) = s.apply_source_player_heal(
+            &mut r,
+            a,
+            g,
+            0,
+            "heal:2",
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+        ) else {
+            panic!("zero")
+        };
+        assert_eq!((zero.applied, zero.vitals_revision), (0, 2));
+    }
+    #[test]
+    fn source_mp_only_drain_clamps_current_pool_replays_and_exhaustion_keeps_revision() {
+        let (mut r, mut s, a, g) = ready(0x45);
+        let Some(before) = s.get(&r, a, g).cloned() else {
+            panic!("before")
+        };
+        let Some(drain) = s.apply_attack_mana_drain(
+            &mut r,
+            a,
+            g,
+            u32::MAX,
+            "mana:0",
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+        ) else {
+            panic!("MP debit")
+        };
+        assert_eq!(
+            (
+                drain.applied,
+                drain.mana_before,
+                drain.mana_after,
+                drain.vitals_revision
+            ),
+            (90, 90, 0, 2)
+        );
+        assert_eq!(
+            s.apply_attack_mana_drain(
+                &mut r,
+                a,
+                g,
+                u32::MAX,
+                "mana:0",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            ),
+            Some(drain)
+        );
+        let Some(next) = s.get(&r, a, g) else {
+            panic!("current")
+        };
+        assert_eq!(
+            (before.vitals().health, before.vitals().soul),
+            (next.vitals().health, next.vitals().soul)
+        );
+        assert!(!s.is_dead(a));
+        let Some(empty) = s.apply_attack_mana_drain(
+            &mut r,
+            a,
+            g,
+            1,
+            "mana:1",
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0),
+        ) else {
+            panic!("empty MP")
+        };
+        assert_eq!((empty.applied, empty.vitals_revision), (0, 2));
+        assert_eq!(
+            s.apply_attack_mana_drain(
+                &mut r,
+                a,
+                g,
+                2,
+                "mana:1",
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0)
+            ),
+            None
+        );
+    }
+}
+/// Retained source payload reader ABI; source monster regeneration is N/A (zero captured definitions).
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+pub(crate) trait NativeRegenerationTickSource {
+    fn gains(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        definition: &str,
+        revision: u32,
+        due: u64,
+    ) -> Option<(u64, u64)>;
+}
+/// Immutable source payload retained from the trusted, already parsed native loader.
+/// Runtime condition cursors remain exclusively in canonical actor slots.
+#[derive(Debug)]
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+pub(crate) struct NativeRegenerationRegistry {
+    world: crate::foundation::WorldId,
+    server: [u8; 32],
+    loader_digest: [u8; 32],
+    entries: Vec<NativeRegenerationEntry>,
+}
+#[derive(Debug)]
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+struct NativeRegenerationEntry {
+    key: String,
+    revision: u32,
+    source: crate::content::ProjectV2DefinitionRef,
+    values: crate::content::ProjectV2ConditionRegeneration,
+}
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+impl NativeRegenerationRegistry {
+    /// Root's trusted native loader supplies its verified input SHA, never a network caller.
+    pub(crate) fn from_trusted_native(
+        runtime: &ChannelRuntimeV1,
+        draft: &crate::content::ProjectV2Draft,
+        loader_digest: [u8; 32],
+    ) -> Option<Self> {
+        use crate::content::{
+            ProjectV2AbilityEffect, ProjectV2AuthoringProfileData, ProjectV2InlineEffectOperation,
+        };
+        let world = runtime.binding().world_id();
+        let text: String = world
+            .as_bytes()
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        if draft.core.world_id != text || loader_digest == [0; 32] {
+            return None;
+        }
+        let mut entries = Vec::new();
+        for profile in &draft.state.authoring_profiles {
+            let ProjectV2AuthoringProfileData::Ability(ability) = &profile.data else {
+                continue;
+            };
+            let Some(details) = &ability.details else {
+                continue;
+            };
+            let revision = profile
+                .target
+                .revision
+                .strip_prefix("definition-r")?
+                .parse::<u32>()
+                .ok()?;
+            if revision == 0 {
+                return None;
+            }
+            for effect in &details.effects {
+                let ProjectV2AbilityEffect::Inline(inline) = effect else {
+                    continue;
+                };
+                let ProjectV2InlineEffectOperation::Condition { condition, .. } = &inline.operation
+                else {
+                    continue;
+                };
+                let Some(values) = condition.regeneration else {
+                    continue;
+                };
+                let definition = crate::creature_condition_content::lower_condition_definition(
+                    inline, revision, None,
+                )
+                .ok()?;
+                if entries.iter().any(|e: &NativeRegenerationEntry| {
+                    e.key == definition.key() && e.revision == revision
+                }) {
+                    return None;
+                }
+                entries.try_reserve(1).ok()?;
+                entries.push(NativeRegenerationEntry {
+                    key: definition.key().to_owned(),
+                    revision,
+                    source: profile.target.clone(),
+                    values,
+                });
+            }
+        }
+        Some(Self {
+            world,
+            server: runtime.content_pin().server_artifact_digest(),
+            loader_digest,
+            entries,
+        })
+    }
+    pub(crate) fn len(&self) -> usize {
+        self.entries.len()
+    }
+    pub(crate) fn loader_digest(&self) -> [u8; 32] {
+        self.loader_digest
+    }
+}
+impl NativeRegenerationTickSource for NativeRegenerationRegistry {
+    fn gains(
+        &self,
+        _runtime: &ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _definition: &str,
+        _revision: u32,
+        _due: u64,
+    ) -> Option<(u64, u64)> {
+        None
+    }
+}
+#[derive(Debug)]
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+pub(crate) struct NativeOwnedPlayerTickReceipt {
+    pub(crate) ticks: Vec<crate::ability::condition::ConditionTick<String>>,
+    pub(crate) revision: u64,
+    pub(crate) damage: u32,
+    pub(crate) death: Option<PlayerDeath>,
+}
+impl ChannelSpellStates {
+    /// Independently qualified map/field facts are supplied by the same source owner turn.
+    /// Creature provenance is frozen by native source application, never reacquired from a
+    /// dead caster. Player/unknown provenance must use the separate actual PvP legality owner.
+    #[allow(
+        dead_code,
+        reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+    )]
+    pub(crate) fn tick_source_player_conditions(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        _occurrence: DecisionOccurrenceId,
+        facts: crate::ability::condition::TickFacts,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<NativeOwnedPlayerTickReceipt> {
+        use crate::ability::condition::{ConditionSourceKind, TickKind};
+        if self.is_dead(target)
+            || self.has_pending_spell_commit(target, session)
+            || runtime.assert_actor_spell_unreserved(target).is_err()
+            || runtime
+                .player_control_facts(target, session)
+                .ok()?
+                .control_loss
+                .is_some()
+        {
+            return None;
+        }
+        let before = self.get(runtime, target, session)?;
+        if before.vitals().health == 0 || !before.owned_conditions().accepts_time(now.get()) {
+            return None;
+        }
+        let mut next = before.clone();
+        let ticks = next.source_take_due(now.get(), facts);
+        let mut damage = 0u32;
+        for tick in &ticks {
+            if next.vitals().health == 0 {
+                break;
+            }
+            match tick.kind {
+                TickKind::Damage {
+                    amount,
+                    refused: false,
+                    ..
+                } => {
+                    if tick.provenance.source_kind != ConditionSourceKind::Creature
+                        || !tick
+                            .provenance
+                            .source
+                            .as_deref()
+                            .is_some_and(|s| s.starts_with("creature:"))
+                    {
+                        return None;
+                    }
+                    let (successor, hit) = crate::spell::actor_conditions::stage_creature_hit(
+                        &next,
+                        amount,
+                        now.get(),
+                    )
+                    .ok()?;
+                    damage = damage.checked_add(hit.applied)?;
+                    next = successor;
+                }
+                TickKind::Damage { refused: true, .. }
+                | TickKind::Regeneration {
+                    suppressed: true, ..
+                } => {}
+                TickKind::SpellRegeneration {
+                    health_gain,
+                    mana_gain,
+                    suppressed,
+                } => {
+                    if !suppressed {
+                        let (successor, _) = next.after_health_gain(u64::from(health_gain))?;
+                        next = successor;
+                        let (successor, _) = next.after_mana_gain(u64::from(mana_gain))?;
+                        next = successor;
+                    }
+                }
+                TickKind::Regeneration {
+                    suppressed: false, ..
+                } => return None,
+            }
+        }
+        let changed = next != *before;
+        let revision = if changed {
+            before.revision().checked_add(1)?
+        } else {
+            before.revision()
+        };
+        next.source_set_batch_revision(revision);
+        let death = if next.vitals().health == 0 {
+            let cell = runtime.read_actor_position(target).ok()?.position();
+            self.deaths.try_reserve(1).ok()?;
+            Some(PlayerDeath {
+                occurrence: (self.mint_death)()?,
+                cell,
+            })
+        } else {
+            None
+        };
+        if changed && !self.commit(runtime, target, session, next) {
+            return None;
+        }
+        if let Some(death) = death {
+            self.deaths.push((target, session, death));
+        }
+        Some(NativeOwnedPlayerTickReceipt {
+            ticks,
+            revision,
+            damage,
+            death,
+        })
+    }
+}
+#[cfg(test)]
+mod owned_source_tick_tests {
+    use super::*;
+    use crate::ability::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionValues, DamageSchedule, DamageSegment,
+        DotElement, TickFacts,
+    };
+    fn ready(
+        tag: u8,
+    ) -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        ExactActorRef,
+        GameSessionId,
+    ) {
+        let (mut r, a, g) = super::tests::runtime_with_player(tag);
+        assert!(r.initialize_first_entry_position(a).is_ok());
+        let mut s = ChannelSpellStates::default();
+        assert!(
+            s.initialize(
+                &r,
+                a,
+                g,
+                super::tests::FACTS,
+                (0, 0),
+                SemanticTimeMicros::from_micros(0)
+            )
+            .is_some()
+        );
+        (r, s, a, g)
+    }
+    fn install(
+        s: &mut ChannelSpellStates,
+        r: &ChannelRuntimeV1,
+        a: ExactActorRef,
+        g: GameSessionId,
+        defs: &[ConditionDefinition],
+    ) {
+        let root = GameplayDecisionRoot::from_bytes([111; 32]);
+        let facts = ApplicationFacts {
+            now: 0,
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: DecisionOccurrenceId::from_bytes([111; 16]),
+        };
+        let Some(before) = s.get(r, a, g) else {
+            panic!("native state")
+        };
+        let Some(next) = before.stage_owned_test_conditions(defs, &facts) else {
+            panic!("typed fixture")
+        };
+        assert!(s.commit(r, a, g, next));
+    }
+    fn poison(amount: u32) -> ConditionDefinition {
+        let Some(d) = ConditionDefinition::new_damage_schedule(
+            "test.source.poison",
+            1,
+            DotElement::Poison,
+            DamageSchedule::Fixed {
+                delayed: true,
+                segments: vec![DamageSegment {
+                    count: 3,
+                    interval_ms: 1000,
+                    amount,
+                }],
+            },
+        ) else {
+            panic!("source schedule")
+        };
+        d
+    }
+    // TEST_PARAMETERS: real captured monster regeneration count is zero, NOT_APPLICABLE.
+    fn regen() -> ConditionDefinition {
+        let Some(d) = ConditionDefinition::new(
+            "test.typed.native.regeneration",
+            1,
+            ConditionValues::SpellRegeneration {
+                duration_ms: 10000,
+                sub_id: 0,
+                health_gain: 5,
+                health_interval_ms: 1000,
+                mana_gain: 7,
+                mana_interval_ms: 2000,
+            },
+        ) else {
+            panic!("typed regeneration")
+        };
+        d
+    }
+    fn pass(
+        s: &mut ChannelSpellStates,
+        r: &mut ChannelRuntimeV1,
+        a: ExactActorRef,
+        g: GameSessionId,
+        t: u64,
+        f: TickFacts,
+    ) -> Option<NativeOwnedPlayerTickReceipt> {
+        s.tick_source_player_conditions(
+            r,
+            a,
+            g,
+            DecisionOccurrenceId::from_bytes([112; 16]),
+            f,
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(t),
+        )
+    }
+    #[test]
+    fn actual_creature_field_periodic_routes_to_death_owner_and_failed_mint_keeps_cursor() {
+        let (mut runtime, mut states, actor, session) = ready(0xb8);
+        install(&mut states, &runtime, actor, session, &[poison(200)]);
+        let before = states.get(&runtime, actor, session).cloned();
+        let mint = states.mint_death;
+        states.mint_death = || None;
+        let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1_000_000);
+        assert_eq!(
+            states.tick_current_creature_field_damage(
+                &mut runtime,
+                actor,
+                session,
+                now,
+                TickFacts::default(),
+                None
+            ),
+            Some(None)
+        );
+        assert_eq!(states.get(&runtime, actor, session), before.as_ref());
+        assert!(states.deaths.is_empty());
+        states.mint_death = mint;
+        let result = states.tick_current_creature_field_damage(
+            &mut runtime,
+            actor,
+            session,
+            now,
+            TickFacts::default(),
+            None,
+        );
+        assert!(matches!(
+            result,
+            Some(Some((_, ActorVitals { health: 0, .. })))
+        ));
+        assert!(states.player_death(&runtime, actor, session).is_some());
+        assert!(
+            states
+                .get(&runtime, actor, session)
+                .is_some_and(|s| s.owned_conditions().instances().is_empty())
+        );
+        let retained = states.player_death(&runtime, actor, session);
+        assert!(
+            states
+                .tick_current_creature_field_damage(
+                    &mut runtime,
+                    actor,
+                    session,
+                    now,
+                    TickFacts::default(),
+                    None
+                )
+                .is_none()
+        );
+        assert_eq!(states.player_death(&runtime, actor, session), retained);
+    }
+    #[test]
+    fn actual_malformed_creature_field_origin_refuses_without_hp_or_cursor_write() {
+        let (mut runtime, mut states, actor, session) = ready(0xba);
+        let before = states.get(&runtime, actor, session).cloned();
+        let Some(state) = before.as_ref() else {
+            panic!("actual player owner");
+        };
+        let root = GameplayDecisionRoot::from_bytes([113; 32]);
+        let facts = ApplicationFacts {
+            now: 0,
+            base_speed: 220,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: DecisionOccurrenceId::from_bytes([113; 16]),
+        };
+        let Some((next, _)) = state.stage_creature_field_contact(
+            "creature:field:{malformed}".into(),
+            &poison(10),
+            &facts,
+            DotElement::Poison,
+        ) else {
+            panic!("TEST_PARAMETERS malformed historical source in actual canonical store");
+        };
+        assert!(states.commit(&runtime, actor, session, next));
+        let before = states.get(&runtime, actor, session).cloned();
+        let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1_000_000);
+        assert_eq!(
+            states.tick_current_creature_field_damage(
+                &mut runtime,
+                actor,
+                session,
+                now,
+                TickFacts::default(),
+                None
+            ),
+            Some(None)
+        );
+        assert_eq!(states.get(&runtime, actor, session), before.as_ref());
+        assert!(states.deaths.is_empty());
+    }
+    #[test]
+    fn actual_creature_field_pz_preserves_hp_then_due_residual_uses_same_store() {
+        let (mut runtime, mut states, actor, session) = ready(0xb9);
+        install(&mut states, &runtime, actor, session, &[poison(10)]);
+        let health = states
+            .get(&runtime, actor, session)
+            .map(|s| s.vitals().health);
+        let pz = TickFacts {
+            in_protection_zone: true,
+            standing_on_field: None,
+        };
+        let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(1_000_000);
+        assert!(
+            states
+                .tick_current_creature_field_damage(&mut runtime, actor, session, now, pz, None)
+                .is_some()
+        );
+        assert_eq!(
+            states
+                .get(&runtime, actor, session)
+                .map(|s| s.vitals().health),
+            health
+        );
+        let now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(2_000_000);
+        assert!(
+            states
+                .tick_current_creature_field_damage(
+                    &mut runtime,
+                    actor,
+                    session,
+                    now,
+                    TickFacts::default(),
+                    None
+                )
+                .is_some()
+        );
+        assert!(
+            states
+                .get(&runtime, actor, session)
+                .is_some_and(|s| Some(s.vitals().health) < health)
+        );
+        assert!(
+            runtime
+                .actor_conditions(actor, Some(session))
+                .is_ok_and(|s| s.instances().is_empty())
+        );
+    }
+
+    #[test]
+    fn owned_tick_failed_mint_keeps_entire_state_then_lethal_stops_regeneration() {
+        let (mut r, mut s, a, g) = ready(0xa1);
+        install(&mut s, &r, a, g, &[poison(200), regen()]);
+        let before = s.get(&r, a, g).cloned();
+        let mint = s.mint_death;
+        s.mint_death = || None;
+        assert!(pass(&mut s, &mut r, a, g, 1000000, TickFacts::default()).is_none());
+        assert_eq!(s.get(&r, a, g), before.as_ref());
+        assert!(s.deaths.is_empty());
+        s.mint_death = mint;
+        let Some(receipt) = pass(&mut s, &mut r, a, g, 1000000, TickFacts::default()) else {
+            panic!("owned lethal")
+        };
+        assert_eq!(receipt.damage, 185);
+        assert!(receipt.death.is_some());
+        let Some(state) = s.get(&r, a, g) else {
+            panic!("nativeHP")
+        };
+        assert_eq!(state.vitals().health, 0);
+        assert!(state.owned_conditions().instances().is_empty());
+        assert_eq!(s.deaths.len(), 1);
+        assert!(pass(&mut s, &mut r, a, g, 1000000, TickFacts::default()).is_none());
+        assert_eq!(s.deaths.len(), 1);
+    }
+    #[test]
+    fn owned_typed_regeneration_distinct_intervals_and_unknown_gain_refuses_without_cursor() {
+        let (mut r, mut s, a, g) = ready(0xa2);
+        super::tests::wound(&mut s, a, g, 100);
+        let Some(state) = s.get(&r, a, g) else {
+            panic!("current MP")
+        };
+        let Some((wounded, _)) = state.after_creature_mana_drain(20) else {
+            panic!("MP stage")
+        };
+        assert!(s.commit(&r, a, g, wounded));
+        install(&mut s, &r, a, g, &[regen()]);
+        let Some(first) = pass(&mut s, &mut r, a, g, 1000000, TickFacts::default()) else {
+            panic!("first interval")
+        };
+        assert_eq!(first.damage, 0);
+        assert_eq!(s.get(&r, a, g).map(|v| v.vitals().health), Some(105));
+        assert_eq!(s.get(&r, a, g).map(|v| v.vitals().mana), Some(70));
+        let Some(_) = pass(&mut s, &mut r, a, g, 2000000, TickFacts::default()) else {
+            panic!("second interval")
+        };
+        assert_eq!(s.get(&r, a, g).map(|v| v.vitals().health), Some(110));
+        assert_eq!(s.get(&r, a, g).map(|v| v.vitals().mana), Some(77));
+        let Some(unknown) = ConditionDefinition::new(
+            "test.unknown.recovery",
+            1,
+            ConditionValues::Recovery {
+                duration_ms: 10000,
+                interval_ms: 1000,
+            },
+        ) else {
+            panic!("unknown source")
+        };
+        let (mut r, mut s, a, g) = ready(0xa3);
+        install(&mut s, &r, a, g, &[unknown]);
+        let before = s.get(&r, a, g).cloned();
+        assert!(pass(&mut s, &mut r, a, g, 1000000, TickFacts::default()).is_none());
+        assert_eq!(s.get(&r, a, g), before.as_ref());
+    }
+    #[test]
+    fn owned_tick_pz_refuses_damage_and_field_retains_compressed_source_budget() {
+        let (mut r, mut s, a, g) = ready(0xa4);
+        install(&mut s, &r, a, g, &[poison(5)]);
+        let Some(receipt) = pass(
+            &mut s,
+            &mut r,
+            a,
+            g,
+            1000000,
+            TickFacts {
+                in_protection_zone: true,
+                standing_on_field: None,
+            },
+        ) else {
+            panic!("current PZ")
+        };
+        assert_eq!(receipt.damage, 0);
+        assert_eq!(s.get(&r, a, g).map(|v| v.vitals().health), Some(185));
+        let (mut r, mut s, a, g) = ready(0xa5);
+        install(&mut s, &r, a, g, &[poison(5)]);
+        let Some(_) = pass(
+            &mut s,
+            &mut r,
+            a,
+            g,
+            3000000,
+            TickFacts {
+                in_protection_zone: false,
+                standing_on_field: Some(DotElement::Poison),
+            },
+        ) else {
+            panic!("actual field facts")
+        };
+        assert_eq!(s.get(&r, a, g).map(|v| v.vitals().health), Some(170));
+        assert_eq!(
+            s.get(&r, a, g)
+                .map(|v| v.owned_conditions().instances().len()),
+            Some(1)
+        );
+    }
+    #[test]
+    fn owned_old_staged_state_rejected_after_current_revision_commit() {
+        let (r, mut s, a, g) = ready(0xa6);
+        let Some(state) = s.get(&r, a, g) else {
+            panic!("current")
+        };
+        let Some((stale, _)) = state.after_creature_mana_drain(1) else {
+            panic!("staged")
+        };
+        let current = stale.clone();
+        assert!(s.commit(&r, a, g, current));
+        let before = s.get(&r, a, g).cloned();
+        assert!(!s.commit(&r, a, g, stale));
+        assert_eq!(s.get(&r, a, g), before.as_ref());
+    }
+}
+
+#[cfg(test)]
+impl ChannelSpellStates {
+    /// Component fixture seam inside the real owner: exact live creature provenance,
+    /// native Player condition staging and existing session-checked CAS publication.
+    /// This creates no production grant or mutable PlayerSpellState accessor.
+    pub(crate) fn install_owned_source_condition_fixture(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        caster: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+    ) -> bool {
+        if !runtime.contains_live_creature(caster)
+            || runtime.player_control_facts(target, session).is_err()
+            || self.has_pending_spell_commit(target, session)
+            || runtime.assert_actor_spell_unreserved(target).is_err()
+        {
+            return false;
+        }
+        let Some(before) = self.get(runtime, target, session) else {
+            return false;
+        };
+        let source = format!(
+            "creature:{}",
+            caster
+                .placement_identity()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        );
+        let Some(next) = before.stage_source_player_conditions(source, definitions, &[], facts)
+        else {
+            return false;
+        };
+        self.commit(runtime, target, session, next)
+    }
+    /// Read-only copy of the actual canonical Player condition store for fixture assertions.
+    pub(crate) fn owned_source_condition_fixture_snapshot(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<crate::ability::condition::ConditionStore<String>> {
+        Some(
+            self.get(runtime, target, session)?
+                .owned_conditions()
+                .clone(),
+        )
+    }
+}
+
+impl ChannelSpellStates {
+    /// Same locked Channel turn reads the canonical live attacker owner and
+    /// commits Creature HP+store together. No player slot condition fallback.
+    pub(crate) fn tick_source_creature_conditions(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        facts: crate::foundation::TickFacts,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Result<crate::foundation::CreaturePeriodicReceipt, crate::foundation::CarrierError> {
+        let mut lookup = |r: &ChannelRuntimeV1, source: ExactActorRef, at: u64| {
+            if !r.borrow_exact_actor_lookup().contains(source) {
+                return Ok(None);
+            }
+            let position = r.read_actor_position(source)?;
+            if position.context() != r.pinned_movement_context() {
+                return Err(crate::foundation::CarrierError::PositionContextMismatch);
+            }
+            let Some((_, session, state)) = self.actors.iter().find(|(a, _, _)| *a == source)
+            else {
+                // An extant live actor with no canonical state is UNKNOWN, not
+                // a positive no-attacker fact. A retired exact generation is absent.
+                return Err(crate::foundation::CarrierError::PlanConflict);
+            };
+            let current = r.player_control_facts(source, *session)?;
+            if current.control_loss.is_some() || self.is_dead(source) || state.vitals().health == 0
+            {
+                return Ok(None);
+            }
+            if !state.owned_conditions().accepts_time(at) {
+                return Err(crate::foundation::CarrierError::PlanConflict);
+            }
+            if self.has_pending_spell_commit(source, *session) {
+                return Err(crate::foundation::CarrierError::PlanConflict);
+            }
+            r.assert_actor_spell_unreserved(source)?;
+            use crate::ability::condition::ConditionValues;
+            let percent = match state.owned_conditions().attributes_at(at) {
+                Some(ConditionValues::Attributes {
+                    damage_dealt_percent,
+                    ..
+                }) => damage_dealt_percent,
+                _ => 100,
+            };
+            Ok(Some(percent))
+        };
+        runtime.apply_creature_periodic_turn_with_sources(target, now.get(), facts, &mut lookup)
+    }
+}
+#[cfg(test)]
+mod source_creature_dot_owner_tests {
+    #![allow(clippy::expect_used, clippy::panic)]
+    use super::*;
+    use crate::foundation::{
+        ApplicationFacts, CharacterId, CommandId, CommandRef, CompiledCreaturePolicies,
+        CompiledCreaturePolicy, ConditionDefinition, ConditionSourceKind, ConditionValues,
+        CreatureExactRatio, CreatureFlags, CreatureResistance, DotElement, MovementLocalPosition,
+    };
+    use crate::spell::combat_batch::{
+        OwnerCombatBatch, OwnerCombatChange, OwnerCombatEffect, SpellOccurrenceBinding,
+    };
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    fn fixture() -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        ExactActorRef,
+        ExactActorRef,
+        GameSessionId,
+    ) {
+        fixture_with_phase(true)
+    }
+    fn fixture_with_phase(
+        attackable: bool,
+    ) -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        ExactActorRef,
+        ExactActorRef,
+        GameSessionId,
+    ) {
+        let (mut runtime, source, session) = super::tests::runtime_with_player(0x41);
+        runtime
+            .initialize_first_entry_position(source)
+            .expect("actual pinned player");
+        let policy = CompiledCreaturePolicy {
+            definition_key: "creature:source-healing-target".into(),
+            definition_revision: "test-source-1".into(),
+            display_name: "source healing target".into(),
+            maximum_health: 20,
+            base_speed: 100,
+            outfit_look_type: 1,
+            object_look_type: None,
+            summonable: false,
+            convinceable: false,
+            mana_cost: None,
+            is_familiar: false,
+            condition_immunities: vec![],
+            armor: Some(0),
+            mitigation: Some(CreatureExactRatio {
+                numerator: 0,
+                denominator: 1,
+            }),
+            resistances: vec![],
+            damage_immunities: vec![],
+            healing_from_damage: vec![CreatureResistance {
+                damage_type: "fire".into(),
+                percent: CreatureExactRatio {
+                    numerator: 100,
+                    denominator: 1,
+                },
+            }],
+            flags: CreatureFlags {
+                attackable,
+                illusionable: false,
+                health_hidden: false,
+            },
+            preferred_distance: Some(1),
+            reward_boss: Some(false),
+        };
+        runtime
+            .install_companion_policies(
+                CompiledCreaturePolicies::from_active_artifact(
+                    runtime.content_pin().server_artifact_digest(),
+                    vec![policy],
+                )
+                .expect("actual loader policy"),
+            )
+            .expect("fullpin");
+        let target = runtime
+            .admit_pinned_test_creature(MovementLocalPosition {
+                x: 1,
+                y: 0,
+                floor: 0,
+            })
+            .expect("physical actor under actual pin");
+        runtime
+            .install_creature_policy(target, "creature:source-healing-target")
+            .expect("current native decoded profile");
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                source,
+                session,
+                super::tests::FACTS,
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .expect("actual canonical PlayerSpellState");
+        let root = GameplayDecisionRoot::from_bytes([8; 32]);
+        // TEST_PARAMETERS: Attributes is a native Player combat modifier.
+        // Source-player lowering intentionally does not accept this native kind.
+        let definition = crate::ability::condition::ConditionDefinition::new(
+            "test.source.attacker.buff",
+            1,
+            crate::ability::condition::ConditionValues::Attributes {
+                duration_ms: 5000,
+                critical_chance_percent: 0,
+                critical_extra_percentage_points: 0,
+                damage_dealt_percent: 50,
+                incoming_reduction_percent: 0,
+            },
+        )
+        .expect("typed native Player combat buff");
+        let facts = ApplicationFacts {
+            now: 0,
+            base_speed: 100,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: DecisionOccurrenceId::from_bytes([1; 16]),
+        };
+        let native_facts = crate::ability::condition::ApplicationFacts {
+            now: facts.now,
+            base_speed: facts.base_speed,
+            mana_shield_capacity: facts.mana_shield_capacity,
+            target_reentry_protected: facts.target_reentry_protected,
+            source_reentry_protected: facts.source_reentry_protected,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: facts.occurrence,
+        };
+        let next = states
+            .get(&runtime, source, session)
+            .expect("sole canonical owner")
+            .stage_owned_test_conditions(&[definition], &native_facts)
+            .expect("actual native Player buff owner");
+        assert!(states.commit(&runtime, source, session, next));
+        let wound = OwnerCombatBatch {
+            caster: source,
+            attacker: CharacterId::decode(&[
+                1, 0x90, 0, 0, 0, 5, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 5,
+            ])
+            .expect("test character"),
+            current_lease_generation: 1,
+            command: CommandRef::new(session, CommandId::new(1).expect("command")),
+            occurrence: SpellOccurrenceBinding {
+                id: "source-dot-wound".into(),
+                revisions: ["r1", "r1", "r1", "r1", "r1"].map(str::to_owned),
+            },
+            binding: b"actual-source-wound".to_vec(),
+            anchor: None,
+            now_ms: 0,
+            effects: vec![OwnerCombatEffect {
+                target,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::Damage {
+                    target_atom: runtime
+                        .creature_spell_target_atom(target)
+                        .expect("actual target identity"),
+                    magnitude: 15,
+                },
+            }],
+            deferred: None,
+        };
+        let staged = runtime
+            .stage_spell_batch(&wound)
+            .expect("native wound stage");
+        runtime.commit_spell_batch(staged).expect("native HP");
+        let before = runtime.companion_snapshot(target).expect("actual target");
+        let mut next = before.state.clone();
+        let dot = ConditionDefinition::new(
+            "test.source.player.dot",
+            1,
+            ConditionValues::DamageOverTime {
+                element: DotElement::Fire,
+                total_min: 30,
+                total_max: 30,
+                per_tick: 10,
+                interval_ms: 1000,
+                delayed: true,
+            },
+        )
+        .expect("typed source DOT");
+        let facts = ApplicationFacts {
+            target_is_player: false,
+            occurrence: DecisionOccurrenceId::from_bytes([2; 16]),
+            ..facts
+        };
+        next.conditions
+            .apply(&dot, Some(source), ConditionSourceKind::Player, &[], &facts)
+            .expect("actual source in native Creature store");
+        runtime
+            .compare_companion_state(&before, next)
+            .expect("current source install");
+        (runtime, states, source, target, session)
+    }
+    #[test]
+    fn current_player_buff_comes_from_canonical_owner_dot_heals_before_scaled_damage_and_replays() {
+        let (mut runtime, states, source, target, session) = fixture();
+        assert!(
+            runtime
+                .actor_conditions(source, Some(session))
+                .expect("native player compatibility store")
+                .instances()
+                .is_empty()
+        );
+        let receipt = states
+            .tick_source_creature_conditions(
+                &mut runtime,
+                target,
+                crate::foundation::TickFacts::default(),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000_000),
+            )
+            .expect("actual owned periodic handler");
+        assert_eq!(
+            (receipt.health_before, receipt.health_after),
+            (5, 10),
+            "map10 before50% source buff then damage5"
+        );
+        let retry = states
+            .tick_source_creature_conditions(
+                &mut runtime,
+                target,
+                crate::foundation::TickFacts::default(),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000_000),
+            )
+            .expect("same turn retry");
+        assert!(retry.ticks.is_empty());
+        assert_eq!(retry.health_after, 10);
+    }
+    #[test]
+    fn retired_exact_attacker_cannot_heal_and_pz_tick_uses_real_owner_store_without_hp() {
+        let (mut runtime, states, source, target, _) = fixture();
+        runtime
+            .remove_test_actor(source)
+            .expect("retire source generation");
+        let first = states
+            .tick_source_creature_conditions(
+                &mut runtime,
+                target,
+                crate::foundation::TickFacts {
+                    in_protection_zone: true,
+                    standing_on_field: None,
+                },
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000_000),
+            )
+            .expect("qualified PZ suppression");
+        assert_eq!((first.health_before, first.health_after), (5, 5));
+        let second = states
+            .tick_source_creature_conditions(
+                &mut runtime,
+                target,
+                crate::foundation::TickFacts::default(),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000),
+            )
+            .expect("retired attacker resolved absent");
+        assert_eq!(
+            (second.health_before, second.health_after),
+            (5, 0),
+            "no fake attacker buff/healing; residual damage remains"
+        );
+    }
+    #[test]
+    fn stale_lineage_content_pin_refuses_before_hp_and_condition_cursor_publication() {
+        let (mut runtime, states, source, target, session) = fixture();
+        let before = runtime.companion_snapshot(target).expect("current target");
+        let mut next = before.state.clone();
+        next.conditions
+            .remove_type(crate::foundation::ConditionType::DamageOverTime(
+                DotElement::Fire,
+            ));
+        let root = GameplayDecisionRoot::from_bytes([12; 32]);
+        let facts = ApplicationFacts {
+            now: 0,
+            base_speed: 100,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: false,
+            decision_root: &root,
+            occurrence: DecisionOccurrenceId::from_bytes([3; 16]),
+        };
+        let definition = ConditionDefinition::new(
+            "test.source.pin-negative",
+            1,
+            ConditionValues::DamageOverTime {
+                element: DotElement::Fire,
+                total_min: 10,
+                total_max: 10,
+                per_tick: 10,
+                interval_ms: 1000,
+                delayed: true,
+            },
+        )
+        .expect("typed source recipe");
+        let lineage = crate::foundation::condition::ConditionLineage {
+            source_character: [3; 16],
+            source_session: *session.as_bytes(),
+            source_lease_generation: 1,
+            source_actor_placement: source.placement_identity(),
+            source_scope_generation: source.scope_generation().get(),
+            source_content_digest: [9; 32],
+            source_catalog_digest: [8; 32],
+            source_creation_command: 7,
+        };
+        next.conditions
+            .apply_with_lineage(
+                &definition,
+                Some(source),
+                ConditionSourceKind::Player,
+                &[],
+                &facts,
+                &lineage,
+            )
+            .expect("retained historical source receipt");
+        runtime
+            .compare_companion_state(&before, next)
+            .expect("real owner source store");
+        let before = runtime.companion_snapshot(target).expect("full preimage");
+        assert!(
+            states
+                .tick_source_creature_conditions(
+                    &mut runtime,
+                    target,
+                    crate::foundation::TickFacts::default(),
+                    crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000_000)
+                )
+                .is_err()
+        );
+        assert_eq!(
+            runtime
+                .companion_snapshot(target)
+                .expect("untouched HP/store"),
+            before
+        );
+    }
+
+    #[test]
+    fn current_nonattackable_phase_does_not_trigger_pre_immunity_healing() {
+        let (mut runtime, states, _, target, _) = fixture_with_phase(false);
+        let receipt = states
+            .tick_source_creature_conditions(
+                &mut runtime,
+                target,
+                crate::foundation::TickFacts::default(),
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000_000),
+            )
+            .expect("actual nonattackable phase");
+        assert_eq!(
+            (receipt.health_before, receipt.health_after),
+            (5, 5),
+            "phaseattackability precedes healingMap; damageimmunity differs"
+        );
+    }
+}
+
+#[derive(Debug)]
+pub(in crate::gameplay_transport) struct CreatureFieldContact {
+    pub(in crate::gameplay_transport) source: String,
+    pub(in crate::gameplay_transport) definition: crate::ability::condition::ConditionDefinition,
+    pub(in crate::gameplay_transport) element: crate::ability::condition::DotElement,
+    pub(in crate::gameplay_transport) content: [u8; 32],
+}
+impl ChannelSpellStates {
+    /// Real STEP and field initial HP/DOT are staged before movement. This is an
+    /// owner method, not a callback that can mutate the stores during preflight.
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::gameplay_transport) fn step_with_creature_field_contact(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        cells: &crate::content::NativeEntryMovementCells,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now_us: u64,
+        direction: crate::movement::CardinalStep,
+        blocking: &std::collections::BTreeSet<crate::content::LogicalCell>,
+        equipment_delta: Option<i32>,
+        proof: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
+        contact: Option<CreatureFieldContact>,
+    ) -> actor_movement::StepInChannel {
+        let Some(contact) = contact else {
+            return actor_movement::step_in_channel_with_source_step(
+                runtime,
+                self,
+                cells,
+                actor,
+                session,
+                now_us,
+                direction,
+                blocking,
+                equipment_delta,
+                proof,
+            );
+        };
+        if contact.content != runtime.content_pin().server_artifact_digest()
+            || self.has_pending_spell_commit(actor, session)
+            || self.is_dead(actor)
+            || runtime.assert_actor_spell_unreserved(actor).is_err()
+        {
+            return Err(crate::movement::MovementError::NotQualified);
+        }
+        let index = self
+            .index(actor, session)
+            .ok_or(crate::movement::MovementError::NotQualified)?;
+        let before = self
+            .get(runtime, actor, session)
+            .ok_or(crate::movement::MovementError::NotQualified)?;
+        let protected = runtime
+            .current_player_reentry_protection(actor, session, now_us)
+            .map_err(crate::movement::MovementError::Actor)?;
+        let root = GameplayDecisionRoot::from_bytes(contact.content);
+        let mut occurrence_bytes = [0; 16];
+        let digest = Sha256::digest(contact.source.as_bytes());
+        occurrence_bytes.copy_from_slice(&digest[..16]);
+        let facts = crate::ability::condition::ApplicationFacts {
+            now: now_us,
+            base_speed: 1,
+            mana_shield_capacity: 0,
+            target_reentry_protected: protected,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: DecisionOccurrenceId::from_bytes(occurrence_bytes),
+        };
+        let (next, _damage) = before
+            .stage_creature_field_contact(
+                contact.source,
+                &contact.definition,
+                &facts,
+                contact.element,
+            )
+            .ok_or(crate::movement::MovementError::NotQualified)?;
+        let changed = next != *before;
+        let death = if next.vitals().health == 0 {
+            self.deaths
+                .try_reserve(1)
+                .map_err(|_| crate::movement::MovementError::NotQualified)?;
+            Some((self.mint_death)().ok_or(crate::movement::MovementError::NotQualified)?)
+        } else {
+            None
+        };
+        // Existing movement computes speed/ground/duration/current proof before
+        // committing its one physical position. It does not mutate Player state.
+        let result = actor_movement::step_in_channel_with_source_step(
+            runtime,
+            self,
+            cells,
+            actor,
+            session,
+            now_us,
+            direction,
+            blocking,
+            equipment_delta,
+            proof,
+        )?;
+        if changed {
+            self.actors[index].2 = next;
+        }
+        if let Some(occurrence) = death {
+            self.deaths.push((
+                actor,
+                session,
+                PlayerDeath {
+                    occurrence,
+                    cell: result.0.position(),
+                },
+            ));
+        }
+        Ok(result)
     }
 }

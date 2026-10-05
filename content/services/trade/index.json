@@ -1,1 +1,14 @@
-{"family":"Service.Trade","legacy_source":{"git_blob_sha":"803ee25def726a8df3a1658d9b0d3f5c4b3d4c8d","path":"content/world/definitions/declarations.json","schema":"OTERYN_WORLD_PROJECT_DECLARATIONS/v2"},"record_count":324,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/services/trade/trade-00000-00323.json"]}
+{
+  "family": "Service.Trade",
+  "legacy_source": {
+    "git_blob_sha": "1c88622f22bc4cba01aa5efa0a3ea1c800155c7b",
+    "path": "content/world/definitions/declarations.json",
+    "schema": "OTERYN_WORLD_PROJECT_DECLARATIONS/v2"
+  },
+  "record_count": 324,
+  "schema": "OTERYN_FAMILY_INDEX/v1",
+  "shard_size": 500,
+  "shards": [
+    "content/services/trade/trade-00000-00323.json"
+  ]
+}

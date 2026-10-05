@@ -2,101 +2,13 @@
 //! Exact active Item source bindings select definitions, replaceable old fields,
 //! and every duration/transform stage. No detached item map is introduced.
 use super::*;
-use crate::content::{ReferenceItemField as F, ReferenceItemType};
 use crate::durability::spell_item_transaction::{self as item_tx, SpellItemError};
-use crate::durability::spell_items_abi::{QualifiedItemDecayStage, SpellItemOperation};
+use crate::durability::spell_items_abi::SpellItemOperation;
 use crate::spell::world_items_execution::QualifiedItemDefinition;
 
-fn magic_field(
-    policy: crate::content::native_gameplay::QualifiedItemPolicy<'_>,
-) -> Result<bool, SpellItemError> {
-    match &policy.record().semantics.classification {
-        F::Known(c) => match c.item_type {
-            F::Known(t) => Ok(t == ReferenceItemType::MagicField),
-            F::NotApplicable => Ok(false),
-            _ => Err(SpellItemError::Rejected(
-                "unknown source Item classification",
-            )),
-        },
-        _ => Err(SpellItemError::Rejected(
-            "unknown source Item classification",
-        )),
-    }
-}
-fn field_chain(
-    content: &NativeGameplayState,
-    mut item: QualifiedItemDefinition,
-) -> Result<QualifiedItemDefinition, SpellItemError> {
-    let mut current = item.definition.clone();
-    let mut seen = BTreeSet::new();
-    let mut stages = Vec::new();
-    for _ in 0..32 {
-        if !seen.insert((current.production_key.clone(), current.revision_ref.clone())) {
-            return Err(SpellItemError::Rejected("cyclic field source decay"));
-        }
-        let policy = content
-            .item_policy(&current.production_key, &current.revision_ref)
-            .ok_or(SpellItemError::Rejected(
-                "field decay target source missing",
-            ))?;
-        if !magic_field(policy)? {
-            return Err(SpellItemError::Rejected(
-                "field decay target classification",
-            ));
-        }
-        let record = policy.record();
-        let qualified = QualifiedItemDefinition::from_native_policy(policy)
-            .map_err(SpellItemError::Rejected)?;
-        if qualified.definition != current
-            || !qualified.ground_destination
-            || qualified.stack_maximum != 1
-            || qualified.content_generation_digest != content.source_digest()
-        {
-            return Err(SpellItemError::Rejected("field source capability mismatch"));
-        }
-        let Some(decay) = qualified.decay.as_ref() else {
-            // Permanent source fields have no schedule. A final permanent
-            // transformation requires its own explicit immutable collision
-            // closure; current supported source chains end by retiring.
-            if !stages.is_empty() {
-                return Err(SpellItemError::Rejected(
-                    "permanent transformed field source unsupported",
-                ));
-            }
-            return Ok(item);
-        };
-        let blocks = record
-            .attributes
-            .blocks_movement
-            .ok_or(SpellItemError::Rejected("field source movement unknown"))?;
-        let projectile = record
-            .attributes
-            .blocks_projectile
-            .ok_or(SpellItemError::Rejected("field source projectile unknown"))?;
-        let immovable = record
-            .attributes
-            .immovable_block_solid
-            .ok_or(SpellItemError::Rejected(
-                "field source immovability unknown",
-            ))?;
-        stages.push(QualifiedItemDecayStage {
-            definition: current.clone(),
-            duration_millis: decay.duration_millis,
-            target: decay.target.clone(),
-            blocks_movement: blocks,
-            blocks_projectile: projectile,
-            immovable_block_solid: immovable,
-        });
-        match decay.target.as_ref() {
-            Some(next) => current = next.clone(),
-            None => {
-                item.decay_chain = stages;
-                return Ok(item);
-            }
-        }
-    }
-    Err(SpellItemError::Rejected("field decay chain bound"))
-}
+use crate::spell::world_items_execution::{
+    qualify_source_field_chain as field_chain, source_magic_field as magic_field,
+};
 
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn append_creations(
@@ -170,25 +82,7 @@ pub(super) async fn append_creations(
             return Err(SpellItemError::Rejected("field target tile changed"));
         }
         // Canary999025 combat.cpp1189–1244 and utils_definitions.hpp589–603.
-        let pvp = match source_id {
-            2123 => 2118,
-            2124 => 2119,
-            2125 => 2120,
-            2126 => 2122,
-            2121 => 105,
-            other => other,
-        };
-        let output =
-            if no_pvp || mode == crate::durability::spell_field_policy::FieldWorldType::NoPvp {
-                match pvp {
-                    2118 => 21465,
-                    105 => 2134,
-                    2122 => 2135,
-                    other => other,
-                }
-            } else {
-                pvp
-            };
+        let output = select_source_field_id(source_id, true, no_pvp, mode);
         // Source in-fight side effects require the current attack history owner;
         // ordinary damaging field creation is presently admitted only in safe
         // source contexts, never by inventing a non-PvP default.
@@ -271,4 +165,59 @@ pub(super) async fn append_creations(
         });
     }
     Ok(())
+}
+
+/// Shared exact source Item identity normalization; current World/tile policy remains mandatory.
+/// Pure helper grants no creature timer or durable Item authority.
+pub(crate) fn select_source_field_id(
+    source_id: u32,
+    player_owned: bool,
+    no_pvp: bool,
+    mode: crate::durability::spell_field_policy::FieldWorldType,
+) -> u32 {
+    let pvp = match source_id {
+        2123 => 2118,
+        2124 => 2119,
+        2125 => 2120,
+        2126 => 2122,
+        2121 => 105,
+        other => other,
+    };
+    if player_owned
+        && (no_pvp || mode == crate::durability::spell_field_policy::FieldWorldType::NoPvp)
+    {
+        match pvp {
+            2118 => 21465,
+            105 => 2134,
+            2122 => 2135,
+            other => other,
+        }
+    } else {
+        pvp
+    }
+}
+#[cfg(test)]
+mod source_field_selection_tests {
+    use super::*;
+    use crate::durability::spell_field_policy::FieldWorldType as M;
+    #[test]
+    fn source_field_ids_apply_safe_world_conversion_only_to_actual_player_owned_casters() {
+        for (source, safe) in [(2118, 21465), (2122, 2135), (105, 2134)] {
+            assert_eq!(
+                select_source_field_id(source, false, true, M::NoPvp),
+                source
+            );
+            assert_eq!(select_source_field_id(source, true, false, M::Pvp), source);
+            assert_eq!(select_source_field_id(source, true, true, M::Pvp), safe);
+            assert_eq!(select_source_field_id(source, true, false, M::NoPvp), safe);
+        }
+        assert_eq!(
+            select_source_field_id(2123, true, false, M::PvpEnforced),
+            2118
+        );
+        assert_eq!(
+            select_source_field_id(2123, true, true, M::PvpEnforced),
+            21465
+        );
+    }
 }

@@ -1307,3 +1307,91 @@ mod tests {
         );
     }
 }
+pub(crate) fn source_sight_steps(
+    mut a: MovementLocalPosition,
+    mut b: MovementLocalPosition,
+) -> Result<Vec<(MovementLocalPosition, bool)>, WorldRelocationError> {
+    if a.floor != b.floor {
+        return Err(WorldRelocationError::MissingTileMetadata);
+    }
+    let dx = a.x.abs_diff(b.x);
+    let dy = a.y.abs_diff(b.y);
+    if dx.max(dy) > 64 {
+        return Err(WorldRelocationError::MissingTileMetadata);
+    }
+    let mut out = Vec::new();
+    if dx.max(dy) <= 1 {
+        return Ok(out);
+    }
+    if dx == 0 || dy == 0 {
+        let (sx, sy) = ((b.x - a.x).signum(), (b.y - a.y).signum());
+        for _ in 1..dx.max(dy) {
+            a = offset(a, sx, sy, 0)?;
+            out.push((a, false));
+        }
+        return Ok(out);
+    }
+    let y_major = dy > dx;
+    if (y_major && a.y > b.y) || (!y_major && a.x > b.x) {
+        std::mem::swap(&mut a, &mut b);
+    }
+    let minor_sign = if y_major {
+        (b.x - a.x).signum()
+    } else {
+        (b.y - a.y).signum()
+    };
+    let adj =
+        (((if y_major { dx } else { dy }) as u64) << 16) / (if y_major { dy } else { dx }) as u64;
+    let adj = adj as u16;
+    let mut acc = if minor_sign < 0 {
+        0u16.wrapping_sub(adj)
+    } else {
+        0
+    };
+    for _ in 1..dx.max(dy) {
+        let before = acc;
+        acc = acc.wrapping_add(adj);
+        let minor = if acc <= before { minor_sign } else { 0 };
+        let near = a.x.abs_diff(b.x) <= 1 && a.y.abs_diff(b.y) <= 1;
+        a = if y_major {
+            offset(a, minor, 1, 0)?
+        } else {
+            offset(a, 1, minor, 0)?
+        };
+        out.push((a, near));
+    }
+    Ok(out)
+}
+/// Creature committed-cause uses the same source Map/bootstrap proof and static
+/// WorldObject borrow as Player combat, with independently current scope authority.
+pub(crate) async fn qualified_creature_source_tile_in_transaction<'owner>(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    authority: &crate::durability::spell_item_transaction::SpellItemScopeAuthority,
+    room: &'owner crate::content::QualifiedNativeEntryRoom,
+    runtime: &'owner ChannelRuntimeV1,
+    objects: &'owner crate::world_runtime::LocalObjectRuntime,
+    position: MovementLocalPosition,
+) -> Result<QualifiedCombatTileFact<'owner>, WorldRelocationError> {
+    crate::durability::spell_item_transaction::check_scope_transaction(tx, authority)
+        .await
+        .map_err(WorldRelocationError::Items)?;
+    if authority.world_bytes() != *runtime.binding().world_id().as_bytes()
+        || authority.channel_bytes() != *runtime.binding().channel_id().as_bytes()
+        || authority.generation() != runtime.binding().scope_generation().get()
+    {
+        return Err(WorldRelocationError::AuthorityMismatch);
+    }
+    let owner = qualified_static_owner(room, runtime, objects)?;
+    let tile = initialized_tile_in_transaction(tx, room, runtime, position)
+        .await?
+        .ok_or(WorldRelocationError::MissingTileMetadata)?;
+    if owner.blocks_movement(position) {
+        return Err(WorldRelocationError::MissingDynamicProjectileFlags);
+    }
+    Ok(QualifiedCombatTileFact {
+        position,
+        tile,
+        _runtime: runtime,
+        _objects: owner,
+    })
+}

@@ -39,11 +39,45 @@ pub(crate) struct CompiledCreaturePolicy {
     pub(crate) mitigation: Option<CreatureExactRatio>,
     pub(crate) resistances: Vec<CreatureResistance>,
     pub(crate) damage_immunities: Vec<String>,
+    /// Separate source healingMap response, not an elemental resistance.
+    pub(crate) healing_from_damage: Vec<CreatureResistance>,
     pub(crate) flags: CreatureFlags,
     pub(crate) preferred_distance: Option<u32>,
     pub(crate) reward_boss: Option<bool>,
 }
 impl CompiledCreaturePolicy {
+    /// Source game.cpp healingMap is evaluated before blockHit/immunity, from
+    /// the incoming pre-buff magnitude. No attacker means no damage-derived heal.
+    pub(crate) fn damage_healing(
+        &self,
+        damage_type: &str,
+        magnitude: i64,
+    ) -> Result<i64, CarrierError> {
+        if magnitude < 0 {
+            return Err(CarrierError::InvalidDamage);
+        }
+        let Some(response) = self
+            .healing_from_damage
+            .iter()
+            .find(|v| v.damage_type == damage_type)
+        else {
+            return Ok(0);
+        };
+        if response.percent.denominator == 0 || response.percent.numerator < 0 {
+            return Err(CarrierError::DamageOverflow);
+        }
+        let numerator = i128::from(magnitude)
+            .checked_mul(i128::from(response.percent.numerator))
+            .ok_or(CarrierError::DamageOverflow)?;
+        let denominator = i128::from(response.percent.denominator)
+            .checked_mul(100)
+            .ok_or(CarrierError::DamageOverflow)?;
+        let rounded = numerator
+            .checked_add(denominator - 1)
+            .ok_or(CarrierError::DamageOverflow)?
+            / denominator;
+        i64::try_from(rounded).map_err(|_| CarrierError::DamageOverflow)
+    }
     pub(crate) fn outfit_appearance(&self) -> Option<u32> {
         (self.object_look_type.is_none() && self.outfit_look_type != 0)
             .then_some(self.outfit_look_type)
@@ -84,10 +118,7 @@ impl CompiledCreaturePolicies {
                 || record.maximum_health <= 0
                 || record.base_speed < 0
                 || record.object_look_type.is_some_and(|look| {
-                    look == 0
-                        || record.outfit_look_type != 0
-                        || record.flags.illusionable
-                        || record.is_familiar
+                    look == 0 || record.outfit_look_type != 0 || record.is_familiar
                 })
                 || record.mitigation.is_some_and(|v| v.denominator == 0)
                 || record
@@ -99,11 +130,18 @@ impl CompiledCreaturePolicies {
                         .iter()
                         .any(|old| old.damage_type == v.damage_type)
                 })
+                || record.healing_from_damage.iter().enumerate().any(|(i, v)| {
+                    v.damage_type.is_empty()
+                        || v.percent.denominator == 0
+                        || v.percent.numerator < 0
+                        || record.healing_from_damage[..i]
+                            .iter()
+                            .any(|old| old.damage_type == v.damage_type)
+                })
                 || record.damage_immunities.iter().any(String::is_empty)
                 || (record.summonable || record.convinceable) != record.mana_cost.is_some()
                 || policies.iter().any(|p: &Arc<CompiledCreaturePolicy>| {
                     p.definition_key == record.definition_key
-                        || p.display_name.eq_ignore_ascii_case(&record.display_name)
                 })
             {
                 return Err(CarrierError::InvalidCreatureTarget);
@@ -174,6 +212,107 @@ pub(crate) struct CompanionSnapshot {
     pub(crate) maximum_health: i64,
     pub(crate) position: MovementLocalPosition,
     pub(crate) position_revision: u64,
+}
+
+/// A physical profile replacement prepared from the actual actor slot. It retains
+/// the actor's incarnation and combat occurrence history; its definition identity changes.
+/// The source encounter owns its callback replay and timer; this is not appearance.
+#[derive(Debug)]
+pub(crate) struct PreparedCreatureProfileTransformation {
+    expected: CompanionSnapshot,
+    content: (WorldId, u64, [[u8; 32]; 4], LocalPosition),
+    resulting: CompanionSnapshot,
+    replacement: Box<CompanionState>,
+    target_identity: Arc<[u8]>,
+}
+impl ChannelRuntimeV1 {
+    fn creature_transform_content_binding(&self) -> (WorldId, u64, [[u8; 32]; 4], LocalPosition) {
+        let p = self.content_pin();
+        (
+            p.world_id,
+            p.activation_sequence,
+            [
+                p.server_artifact_digest,
+                p.client_artifact_digest,
+                p.frame_binding_digest,
+                p.map_revision_digest,
+            ],
+            p.entry_start,
+        )
+    }
+    pub(crate) fn prepare_creature_profile_transformation(
+        &self,
+        expected: &CompanionSnapshot,
+        new_definition_key: &str,
+    ) -> Result<PreparedCreatureProfileTransformation, CarrierError> {
+        self.assert_actor_spell_unreserved(expected.actor)?;
+        self.validate_companion_snapshot(expected)?;
+        let old_policy = self.companion_policy(&expected.state.policy.definition_key)?;
+        let policy = self.companion_policy(new_definition_key)?;
+        if old_policy.as_ref() != expected.state.policy.as_ref()
+            || !self.matches_live_creature_identity(
+                expected.actor,
+                old_policy.definition_key.as_bytes(),
+            )
+            || policy.definition_key != new_definition_key
+            || expected.state.policy.is_familiar
+            || policy.is_familiar
+            || expected.health <= 0
+            || expected.health > policy.maximum_health
+        {
+            return Err(CarrierError::PlanConflict);
+        }
+        let target_identity = Arc::from(copy_bounded_binding(policy.definition_key.as_bytes())?);
+        let mut resulting = expected.clone();
+        resulting.maximum_health = policy.maximum_health;
+        resulting.state.outfit_look_type = policy.outfit_look_type;
+        resulting.state.object_look_type = policy.object_look_type;
+        resulting.state.lifecycle_epoch = expected
+            .state
+            .lifecycle_epoch
+            .checked_add(1)
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        resulting.state.policy = policy;
+        Ok(PreparedCreatureProfileTransformation {
+            expected: expected.clone(),
+            content: self.creature_transform_content_binding(),
+            replacement: Box::new(resulting.state.clone()),
+            resulting,
+            target_identity,
+        })
+    }
+    pub(crate) fn commit_creature_profile_transformation(
+        &mut self,
+        prepared: PreparedCreatureProfileTransformation,
+    ) -> Result<CompanionSnapshot, CarrierError> {
+        self.assert_actor_spell_unreserved(prepared.expected.actor)?;
+        if self.creature_transform_content_binding() != prepared.content {
+            return Err(CarrierError::ContentPinWorldMismatch);
+        }
+        self.validate_companion_snapshot(&prepared.expected)?;
+        let policy = self.companion_policy(&prepared.resulting.state.policy.definition_key)?;
+        if policy.as_ref() != prepared.resulting.state.policy.as_ref() {
+            return Err(CarrierError::PlanConflict);
+        }
+        let index = self
+            .carrier
+            .validate_ref(&self.continuity, prepared.expected.actor.0)?;
+        // All fallible checks and replacement allocation precede the one physical write.
+        let replacement = prepared.replacement;
+        let Slot::CreatureOccupied {
+            companion,
+            spell_combat,
+            target_identity,
+            ..
+        } = &mut self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        *target_identity = prepared.target_identity;
+        *companion = Some(replacement);
+        spell_combat.maximum_health = prepared.resulting.maximum_health;
+        Ok(prepared.resulting)
+    }
 }
 
 /// Immutable intent prepared from the actual current Creature slot. The existing
@@ -614,14 +753,24 @@ impl ChannelRuntimeV1 {
         if table.source_digest != self.content.server_artifact_digest {
             return Err(CarrierError::ContentPinWorldMismatch);
         }
-        table
+        // Qualified exact identity always wins over the display-name fallback.
+        // Source variants may share a real display name; never select one by export order.
+        if let Some(exact) = table
             .policies
             .iter()
-            .find(|p| {
-                p.definition_key == name_or_key || p.display_name.eq_ignore_ascii_case(name_or_key)
-            })
-            .cloned()
-            .ok_or(CarrierError::InvalidCreatureTarget)
+            .find(|p| p.definition_key == name_or_key)
+        {
+            return Ok(Arc::clone(exact));
+        }
+        let mut matches = table
+            .policies
+            .iter()
+            .filter(|p| p.display_name.eq_ignore_ascii_case(name_or_key));
+        let first = matches.next().ok_or(CarrierError::InvalidCreatureTarget)?;
+        if matches.next().is_some() {
+            return Err(CarrierError::InvalidCreatureTarget);
+        }
+        Ok(Arc::clone(first))
     }
     /// Active spawn realization binds its wild creature to its actual decoded policy. Convince
     /// subsequently reads this binding, never guesses the definition from a spawn instance id.
@@ -1165,6 +1314,7 @@ mod tests {
             mitigation: None,
             resistances: vec![],
             damage_immunities: vec![],
+            healing_from_damage: vec![],
             flags: CreatureFlags {
                 attackable: true,
                 illusionable: false,
@@ -1202,6 +1352,221 @@ mod tests {
             .unwrap();
         (runtime, actor, session)
     }
+    #[test]
+    fn physical_profile_transform_preserves_hp_actor_history_and_returns_with_fresh_epoch() {
+        let mut first = policy("guardian");
+        first.maximum_health = 20;
+        let mut alternate = policy("blazing");
+        alternate.maximum_health = 20;
+        alternate.outfit_look_type = 1001;
+        alternate.base_speed = 250;
+        alternate.resistances = vec![CreatureResistance {
+            damage_type: "ice".into(),
+            percent: CreatureExactRatio {
+                numerator: -30,
+                denominator: 1,
+            },
+        }];
+        let (mut runtime, _, _) = owner_with_policies(vec![first, alternate]);
+        let actor = runtime
+            .admit_source_pinned_lab_creature(
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                "creature:guardian",
+                20,
+            )
+            .unwrap();
+        runtime
+            .install_creature_policy(actor, "creature:guardian")
+            .unwrap();
+        let before = runtime.companion_snapshot(actor).unwrap();
+        let index = runtime
+            .carrier
+            .validate_ref(&runtime.continuity, actor.0)
+            .unwrap();
+        let previous_slot = runtime.carrier.slots[index].clone();
+        let prepared = runtime
+            .prepare_creature_profile_transformation(&before, "creature:blazing")
+            .unwrap();
+        let after = runtime
+            .commit_creature_profile_transformation(prepared)
+            .unwrap();
+        assert_eq!(after.actor, before.actor);
+        assert_eq!(after.health, 20);
+        assert_eq!(after.state.policy.definition_key, "creature:blazing");
+        assert_eq!(after.state.outfit_look_type, 1001);
+        assert_eq!(after.state.current_speed(0).unwrap(), 250);
+        assert_eq!(
+            after.state.lifecycle_epoch,
+            before.state.lifecycle_epoch + 1
+        );
+        if let (
+            Slot::CreatureOccupied {
+                target_identity: a,
+                committed: ca,
+                damage_contributors: da,
+                ..
+            },
+            Slot::CreatureOccupied {
+                target_identity: b,
+                committed: cb,
+                damage_contributors: db,
+                ..
+            },
+        ) = (&previous_slot, &runtime.carrier.slots[index])
+        {
+            assert_eq!(a.as_ref(), b"creature:guardian");
+            assert_eq!(b.as_ref(), b"creature:blazing");
+            assert_eq!(ca, cb);
+            assert_eq!(da, db);
+        } else {
+            panic!("physical Creature slots required");
+        }
+        assert!(runtime.validate_companion_snapshot(&before).is_err());
+        let prepared = runtime
+            .prepare_creature_profile_transformation(&after, "creature:guardian")
+            .unwrap();
+        let returned = runtime
+            .commit_creature_profile_transformation(prepared)
+            .unwrap();
+        assert_eq!(returned.state.policy.definition_key, "creature:guardian");
+        assert_eq!(returned.health, 20);
+        assert_eq!(returned.state.lifecycle_epoch, 2);
+    }
+    #[test]
+    fn physical_profile_transform_stale_actor_and_foreign_profile_never_mutate() {
+        let mut first = policy("guardian");
+        first.maximum_health = 20;
+        let mut alternate = policy("blazing");
+        alternate.maximum_health = 20;
+        let mut too_small = policy("small");
+        too_small.maximum_health = 19;
+        let (mut runtime, _, _) = owner_with_policies(vec![first, alternate, too_small]);
+        let actor = runtime
+            .admit_source_pinned_lab_creature(
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+                "creature:guardian",
+                20,
+            )
+            .unwrap();
+        runtime
+            .install_creature_policy(actor, "creature:guardian")
+            .unwrap();
+        let before = runtime.companion_snapshot(actor).unwrap();
+        assert!(
+            runtime
+                .prepare_creature_profile_transformation(&before, "blazing")
+                .is_err()
+        );
+        assert!(
+            runtime
+                .prepare_creature_profile_transformation(&before, "creature:unknown")
+                .is_err()
+        );
+        assert!(
+            runtime
+                .prepare_creature_profile_transformation(&before, "creature:small")
+                .is_err()
+        );
+        assert_eq!(runtime.companion_snapshot(actor).unwrap(), before);
+        let stale = runtime
+            .prepare_creature_profile_transformation(&before, "creature:blazing")
+            .unwrap();
+        let current = runtime
+            .prepare_creature_profile_transformation(&before, "creature:blazing")
+            .unwrap();
+        runtime
+            .commit_creature_profile_transformation(current)
+            .unwrap();
+        let after = runtime.companion_snapshot(actor).unwrap();
+        assert!(
+            runtime
+                .commit_creature_profile_transformation(stale)
+                .is_err()
+        );
+        assert_eq!(runtime.companion_snapshot(actor).unwrap(), after);
+        let removed = runtime
+            .prepare_creature_profile_transformation(&after, "creature:guardian")
+            .unwrap();
+        runtime.remove_test_actor(actor).unwrap();
+        assert!(
+            runtime
+                .commit_creature_profile_transformation(removed)
+                .is_err()
+        );
+    }
+    #[test]
+    fn qualified_variant_exact_keys_resolve_and_ambiguous_names_never_choose_export_order() {
+        let mut second = policy("RAT");
+        second.definition_key = "creature:rat-alternate".into();
+        second.maximum_health = 25;
+        let first = policy("rat");
+        let unique = policy("wolf");
+        for records in [
+            vec![first.clone(), second.clone(), unique.clone()],
+            vec![second.clone(), unique.clone(), first.clone()],
+        ] {
+            let (runtime, _, _) = owner_with_policies(records);
+            assert_eq!(
+                runtime
+                    .companion_policy("creature:rat")
+                    .unwrap()
+                    .maximum_health,
+                812
+            );
+            assert_eq!(
+                runtime
+                    .companion_policy("creature:rat-alternate")
+                    .unwrap()
+                    .maximum_health,
+                25
+            );
+            assert!(matches!(
+                runtime.companion_policy("rat"),
+                Err(CarrierError::InvalidCreatureTarget)
+            ));
+            assert!(matches!(
+                runtime.companion_policy("RaT"),
+                Err(CarrierError::InvalidCreatureTarget)
+            ));
+            assert_eq!(
+                runtime.companion_policy("WOLF").unwrap().definition_key,
+                "creature:wolf"
+            );
+            assert!(matches!(
+                runtime.companion_policy("unknown"),
+                Err(CarrierError::InvalidCreatureTarget)
+            ));
+        }
+        let mut duplicate = first.clone();
+        duplicate.display_name = "different-name".into();
+        assert!(matches!(
+            CompiledCreaturePolicies::from_active_artifact([1; 32], vec![first, duplicate]),
+            Err(CarrierError::InvalidCreatureTarget)
+        ));
+    }
+    #[test]
+    fn qualified_exact_key_wins_over_another_policy_display_name() {
+        let first = policy("rat");
+        let mut second = policy("other");
+        second.display_name = "creature:rat".into();
+        let (runtime, _, _) = owner_with_policies(vec![second, first]);
+        assert_eq!(
+            runtime
+                .companion_policy("creature:rat")
+                .unwrap()
+                .definition_key,
+            "creature:rat"
+        );
+    }
+
     #[test]
     fn qualified_object_appearance_survives_reserved_spawn_and_actual_snapshot() {
         let mut object = policy("object-creature");
@@ -1335,9 +1700,15 @@ mod tests {
                 2 => altered.flags.illusionable = true,
                 _ => altered.is_familiar = true,
             }
-            assert!(
-                CompiledCreaturePolicies::from_active_artifact([1; 32], vec![altered]).is_err()
-            );
+            if change == 2 {
+                assert!(altered.flags.illusionable);
+                assert_eq!(altered.outfit_appearance(), None);
+                CompiledCreaturePolicies::from_active_artifact([1; 32], vec![altered]).unwrap();
+            } else {
+                assert!(
+                    CompiledCreaturePolicies::from_active_artifact([1; 32], vec![altered]).is_err()
+                );
+            }
         }
     }
     #[test]
@@ -1686,7 +2057,11 @@ mod tests {
         assert!(
             CompiledCreaturePolicies::from_active_artifact(
                 [1; 32],
-                vec![policy("rat"), policy("RAT")]
+                vec![policy("rat"), {
+                    let mut duplicate = policy("RAT");
+                    duplicate.definition_key = policy("rat").definition_key;
+                    duplicate
+                }]
             )
             .is_err()
         );

@@ -299,6 +299,16 @@ fn canonical_binding(batch: &OwnerCombatBatch) -> Result<Vec<u8>, Error> {
                 out.atom(target_atom.as_bytes())?;
                 out.bytes(&magnitude.to_be_bytes())?;
             }
+            OwnerCombatChange::DamageWithHealing {
+                target_atom,
+                damage,
+                healing,
+            } => {
+                out.number(13)?;
+                out.atom(target_atom.as_bytes())?;
+                out.bytes(&damage.to_be_bytes())?;
+                out.bytes(&healing.to_be_bytes())?;
+            }
             OwnerCombatChange::Avatar(AvatarState {
                 expires_ms,
                 outfit_look_type,
@@ -1001,6 +1011,68 @@ impl ChannelRuntimeV1 {
                             MAX_EFFECTS as u16,
                             deferred,
                         )?);
+                    }
+                    OwnerCombatChange::DamageWithHealing {
+                        target_atom,
+                        damage,
+                        healing,
+                    } => {
+                        if *damage < 0 || *healing <= 0 {
+                            return Err(Error::InvalidMagnitude);
+                        }
+                        let before_health;
+                        {
+                            let Slot::CreatureOccupied {
+                                target_identity,
+                                health,
+                                spell_combat,
+                                ..
+                            } = &mut next.slots[index]
+                            else {
+                                return Err(Error::InvalidBatch);
+                            };
+                            if target_identity.as_ref() != target_atom.as_bytes() {
+                                return Err(Error::Owner(CarrierError::CreatureTargetMismatch));
+                            }
+                            if *health <= 0 || spell_combat.maximum_health <= 0 {
+                                return Err(Error::Owner(CarrierError::CreatureNotActionable));
+                            }
+                            before_health = *health;
+                            *health = health
+                                .saturating_add(*healing)
+                                .min(spell_combat.maximum_health);
+                        }
+                        if *damage > 0 {
+                            let mut hit_binding = digest.to_vec();
+                            hit_binding.extend_from_slice(&effect.sub_ordinal.to_be_bytes());
+                            next.commit_creature_damage_inner_bounded(
+                                &self.continuity,
+                                effect.target.0,
+                                OwnerDamageCommand {
+                                    target: target_atom.as_bytes(),
+                                    occurrence: &[],
+                                    binding: &hit_binding,
+                                    damage: *damage,
+                                },
+                                Some(AttackerCommand::new(
+                                    batch.attacker,
+                                    batch.current_lease_generation,
+                                    batch.command,
+                                    effect.sub_ordinal,
+                                )),
+                                false,
+                                MAX_EFFECTS as u16,
+                                deferred,
+                            )?;
+                        }
+                        let Slot::CreatureOccupied { health, .. } = &next.slots[index] else {
+                            return Err(Error::InvalidBatch);
+                        };
+                        health_receipt = Some(OwnerDamageResult {
+                            applied: true,
+                            health_before: before_health,
+                            health_after: *health,
+                        });
                     }
                     OwnerCombatChange::Heal {
                         target_atom,

@@ -18,6 +18,9 @@ struct Fixture {
     attributes: MagnitudeOwnedAttributes,
 }
 fn fixture() -> Fixture {
+    fixture_with_damage_healing(0)
+}
+fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
     let uuid = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
     let world = crate::foundation::WorldId::decode(&uuid(0x60)).expect("world");
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
@@ -82,7 +85,22 @@ fn fixture() -> Fixture {
                 denominator: 1,
             },
         }],
-        damage_immunities: vec![],
+        damage_immunities: if source_percent > 0 {
+            vec!["energy".into()]
+        } else {
+            vec![]
+        },
+        healing_from_damage: if source_percent > 0 {
+            vec![CreatureResistance {
+                damage_type: "energy".into(),
+                percent: CreatureExactRatio {
+                    numerator: source_percent,
+                    denominator: 1,
+                },
+            }]
+        } else {
+            vec![]
+        },
         flags: CreatureFlags {
             attackable: true,
             illusionable: false,
@@ -671,7 +689,7 @@ fn all_twenty_canonical_combat_profiles_lower_against_real_slots_and_qualified_m
             &plan,
             &f.bindings,
             0,
-            &mut |p, h, b| qualified.finish(p, h, b, &mut |low, _| low),
+            &mut |p, h, b| qualified.finish_with_damage_healing(p, h, b, &mut |low, _| low),
         )
         .expect("real actor binding lowerer");
         let mut ordinals: Vec<_> = lowered
@@ -692,4 +710,164 @@ fn all_twenty_canonical_combat_profiles_lower_against_real_slots_and_qualified_m
         count += 1;
     }
     assert_eq!((count, deferred_refusals), (20, 1));
+}
+#[test]
+fn source_damage_healing_100_300_precedes_immunity_caps_and_replays_on_real_owner() {
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::spell::combat_batch::{OwnerCombatBatch, OwnerCombatEffect, SpellOccurrenceBinding};
+    for percent in [100, 300] {
+        let mut f = fixture_with_damage_healing(percent);
+        let target = f.bindings[1].actor;
+        let make_batch = |command, effects| OwnerCombatBatch {
+            caster: f.caster,
+            attacker: f.attributes.binding.character,
+            current_lease_generation: 1,
+            command: CommandRef::new(f.session, CommandId::new(command).expect("test command")),
+            occurrence: SpellOccurrenceBinding {
+                id: format!("source-healing:{percent}:{command}"),
+                revisions: ["rules:1", "content:1", "world:1", "formula:1", "sim:1"]
+                    .map(str::to_owned),
+            },
+            binding: format!("source-map:{percent}:{command}").into_bytes(),
+            anchor: None,
+            now_ms: 100,
+            effects,
+            deferred: None,
+        };
+        let wound = make_batch(
+            1,
+            vec![OwnerCombatEffect {
+                target,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::Damage {
+                    target_atom: f.bindings[1].target_atom.clone(),
+                    magnitude: 15,
+                },
+            }],
+        );
+        let staged = f
+            .runtime
+            .stage_spell_batch(&wound)
+            .expect("actual wound preflight");
+        f.runtime
+            .commit_spell_batch(staged)
+            .expect("actual HP wound");
+        let mut p = plan();
+        let NativeCombatPlan::Combat(combat) = &mut p else {
+            panic!("test combat");
+        };
+        combat.hits.truncate(1);
+        combat.hits[0].magnitude = 20;
+        combat.hits[0].side_percent = None;
+        combat.block_armor = false;
+        let mut q = qualify(&f, &p).expect("actual current native policy pin");
+        let lowered = crate::spell::combat_batch::lower_native(
+            &f.runtime,
+            make_batch(2, vec![]),
+            1,
+            &p,
+            &f.bindings,
+            0,
+            &mut |p, h, b| q.finish_with_damage_healing(p, h, b, &mut |low, _| low),
+        )
+        .expect("source map lowering");
+        let [effect] = lowered.batch.effects.as_slice() else {
+            panic!("one source occurrence");
+        };
+        let OwnerCombatChange::DamageWithHealing {
+            damage, healing, ..
+        } = effect.change
+        else {
+            panic!("typed composite");
+        };
+        assert_eq!(
+            damage, 0,
+            "source damage immunity still blocks residual damage"
+        );
+        assert!(
+            healing >= 20 * percent / 100,
+            "map is computed before immunity from source hit"
+        );
+        let staged = f
+            .runtime
+            .stage_spell_batch(&lowered.batch)
+            .expect("real stage");
+        let receipt = f
+            .runtime
+            .commit_spell_batch(staged)
+            .expect("real composite commit");
+        let hp = receipt.effects[0]
+            .health
+            .expect("physical owner HP receipt");
+        assert_eq!(
+            (hp.health_before, hp.health_after),
+            (5, 20),
+            "source-qualified maxHP clamp"
+        );
+        let replay = f
+            .runtime
+            .stage_spell_batch(&lowered.batch)
+            .expect("exact receipt retry");
+        assert!(
+            !f.runtime
+                .commit_spell_batch(replay)
+                .expect("replay")
+                .applied
+        );
+        assert_eq!(
+            f.runtime
+                .companion_snapshot(target)
+                .expect("current actual target")
+                .health,
+            20
+        );
+        let mut forged = lowered.batch.clone();
+        if let OwnerCombatChange::DamageWithHealing { healing, .. } = &mut forged.effects[0].change
+        {
+            *healing += 1;
+        }
+        assert!(
+            f.runtime.stage_spell_batch(&forged).is_err(),
+            "same occurrence changed map is not replay"
+        );
+    }
+}
+
+#[test]
+fn source_damage_healing_uses_current_policy_and_stale_hp_fails_before_any_heal() {
+    let mut f = fixture_with_damage_healing(100);
+    let p = plan();
+    let q = qualify(&f, &p).expect("source snapshot");
+    let actor = f.bindings[1].actor;
+    let before = f.runtime.companion_snapshot(actor).expect("current actor");
+    let mut next = before.state.clone();
+    next.party_protection = !next.party_protection;
+    f.runtime
+        .compare_companion_state(&before, next)
+        .expect("actual independent owner change");
+    assert!(
+        q.validate_current(&f.runtime, &f.state, &f.attributes, &[])
+            .is_err(),
+        "source scope/policy/body snapshot remains fenced"
+    );
+    assert_eq!(
+        f.runtime
+            .companion_snapshot(actor)
+            .expect("HP unchanged")
+            .health,
+        20
+    );
+    let policy = f
+        .runtime
+        .companion_snapshot(actor)
+        .expect("policy")
+        .state
+        .policy;
+    assert_eq!(policy.damage_healing("energy", 1), Ok(1));
+    assert_eq!(
+        policy.damage_healing("fire", 1),
+        Ok(0),
+        "unknown element has no fabricated response"
+    );
+    assert!(policy.damage_healing("energy", -1).is_err());
 }

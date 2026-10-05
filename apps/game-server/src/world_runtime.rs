@@ -3572,3 +3572,248 @@ mod tests {
         Ok(())
     }
 }
+// Read-only existing Map-owner fence validation. No grant construction/publication is added.
+impl ScopeContentGenerationFence {
+    pub(crate) fn qualifies_current_content(
+        &self,
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+        content: &CanonicalReferencePlayableContent,
+    ) -> Result<(), WorldRuntimeError> {
+        let native = ReferenceContentGeneration::from_content(content)?;
+        self.validate_candidate(scope, generation, &native)
+    }
+}
+
+// Exact pinned donor callback geometry/item IDs. Constructor proof and source hashes retained in lane.
+// Validation only; source-qualified death registry remains the caller, current Map owner grants mutation.
+const TENTACLE_SOURCE_MAP_ROWS: &[TentacleSourceMapRow] = &[
+    (
+        "oteryn:creature.tentacle",
+        &[(33723, 31180, 7), (33724, 31180, 7), (33725, 31180, 7)],
+        (33726, 31180, 7),
+        35126,
+        35119,
+        35120,
+    ),
+    (
+        "oteryn:creature.tentacle2",
+        &[
+            (33723, 31186, 7),
+            (33723, 31187, 7),
+            (33723, 31188, 7),
+            (33723, 31189, 7),
+        ],
+        (33723, 31191, 7),
+        35112,
+        35109,
+        35110,
+    ),
+    (
+        "oteryn:creature.tentacle3",
+        &[(33727, 31184, 7), (33727, 31185, 7)],
+        (33727, 31186, 7),
+        35112,
+        35109,
+        35110,
+    ),
+    (
+        "oteryn:creature.tentacle4",
+        &[
+            (33731, 31180, 7),
+            (33732, 31180, 7),
+            (33733, 31180, 7),
+            (33734, 31180, 7),
+            (33735, 31180, 7),
+        ],
+        (33736, 31180, 7),
+        35126,
+        35119,
+        35120,
+    ),
+    (
+        "oteryn:creature.tentacle5",
+        &[(33718, 31180, 7), (33718, 31179, 7), (33718, 31178, 7)],
+        (33718, 31177, 7),
+        35112,
+        35510,
+        35107,
+    ),
+    (
+        "oteryn:creature.tentacle6",
+        &[(33714, 31180, 6), (33714, 31179, 6), (33714, 31178, 6)],
+        (33714, 31177, 6),
+        35112,
+        35510,
+        35107,
+    ),
+    (
+        "oteryn:creature.tentacle7",
+        &[
+            (33726, 31182, 6),
+            (33726, 31181, 6),
+            (33726, 31180, 6),
+            (33726, 31179, 6),
+            (33726, 31178, 6),
+        ],
+        (33726, 31177, 6),
+        35112,
+        35510,
+        35107,
+    ),
+    (
+        "oteryn:creature.tentacle8",
+        &[
+            (33718, 31187, 6),
+            (33718, 31188, 6),
+            (33718, 31189, 6),
+            (33718, 31190, 6),
+        ],
+        (33718, 31191, 6),
+        35112,
+        35109,
+        35110,
+    ),
+    (
+        "oteryn:creature.tentacle9",
+        &[(33714, 31185, 6), (33713, 31185, 6), (33712, 31185, 6)],
+        (33711, 31185, 6),
+        35126,
+        35511,
+        35122,
+    ),
+    (
+        "oteryn:creature.tentacle10",
+        &[(33716, 31181, 6), (33716, 31182, 6)],
+        (33716, 31183, 6),
+        35112,
+        35109,
+        35110,
+    ),
+];
+impl LocalObjectRuntime {
+    pub(crate) fn tentacle_source_map_binding_matches(
+        &self,
+        content: &CanonicalReferencePlayableContent,
+        op: &ScopeLocalObjectOperation,
+        actor_key: &str,
+        death: crate::foundation::MovementLocalPosition,
+    ) -> Result<bool, WorldRuntimeError> {
+        use crate::content::{ReferenceItemField, ReferenceItemStackClass};
+        let Some((_, line, final_at, line_id, from_id, to_id)) =
+            TENTACLE_SOURCE_MAP_ROWS.iter().find(|r| r.0 == actor_key)
+        else {
+            return Ok(false);
+        };
+        let current = line
+            .iter()
+            .position(|p| *p == (death.x, death.y, death.floor));
+        let next = current.map_or(0, |i| i + 1);
+        let (at, source_id, target_id, intent) = if let Some(at) = line.get(next) {
+            (
+                *at,
+                *line_id,
+                None,
+                crate::content::LOCAL_OBJECT_REMOVE_INTENT_FAMILY,
+            )
+        } else {
+            (
+                *final_at,
+                *from_id,
+                Some(*to_id),
+                crate::content::LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY,
+            )
+        };
+        let generation = ReferenceContentGeneration::from_content(content)?
+            .with_event_origins(&self.event_transitions)?;
+        if self.content_generation != generation || self.scope.world_id() != content.world_id {
+            return Ok(false);
+        }
+        let Some(p) = content.placements.iter().find(|p| p.key == self.placement) else {
+            return Ok(false);
+        };
+        if p.address.world_id != content.world_id
+            || p.address.coordinate_frame != content.coordinate_frame
+            || p.address.cell
+                != (LogicalCell {
+                    x: at.0,
+                    y: at.1,
+                    z: i32::from(at.2),
+                })
+        {
+            return Ok(false);
+        }
+        let Some(t) = self.transitions.get(op.transition_key()) else {
+            return Ok(false);
+        };
+        if t.definition != p.definition
+            || t.normalized_intent_family.as_str() != intent
+            || t.source_state.as_str() != format!("oteryn:item.tibia.i{source_id}")
+        {
+            return Ok(false);
+        }
+        if let Some(id) = target_id {
+            if t.target_state.as_str() != format!("oteryn:item.tibia.i{id}") {
+                return Ok(false);
+            }
+        } else if !self
+            .states
+            .iter()
+            .find(|s| s.key == t.target_state)
+            .is_some_and(|s| s.absent)
+        {
+            return Ok(false);
+        }
+        if self
+            .transition_revert_after_ms
+            .keys()
+            .any(|(key, _)| key == op.transition_key())
+        {
+            return Ok(false);
+        }
+        for id in [Some(source_id), target_id].into_iter().flatten() {
+            let expected_collision = if [35112, 35126, 35510, 35511].contains(&id) {
+                LocalObjectCollisionPresence::Present
+            } else {
+                LocalObjectCollisionPresence::Absent
+            };
+            if !self.states.iter().any(|s| {
+                s.key.as_str() == format!("oteryn:item.tibia.i{id}")
+                    && !s.absent
+                    && s.collision == expected_collision
+            }) {
+                return Ok(false);
+            }
+            let Some(d) = content.definitions.iter().find(|d| {
+                d.definition.family() == DefinitionFamily::Item
+                    && d.definition.key().as_str() == format!("oteryn:item.tibia.i{id}")
+                    && d.definition.revision().as_str() == "definition-r1"
+            }) else {
+                return Ok(false);
+            };
+            let ReferenceDefinitionKind::Item(item) = &d.kind else {
+                return Ok(false);
+            };
+            let ReferenceItemField::Known(physical) = &item.semantics.physical else {
+                return Ok(false);
+            };
+            if item.materializable
+                || item.stack_class != ReferenceItemStackClass::NonStackable
+                || physical.movable != ReferenceItemField::Known(false)
+                || physical.pickupable != ReferenceItemField::Known(false)
+            {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+}
+
+type TentacleSourceMapRow = (
+    &'static str,
+    &'static [(i32, i32, i16)],
+    (i32, i32, i16),
+    u32,
+    u32,
+    u32,
+);

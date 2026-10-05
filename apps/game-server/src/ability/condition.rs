@@ -10,6 +10,8 @@
 //! the families, conflict keys and policies. Every draw is one `oteryn_simulation_determinism`
 //! decision bound to the caller's `(GameplayDecisionRoot, DecisionOccurrenceId)`.
 
+type ConditionApplicationSource<'a, S> = dyn Fn(&ConditionProvenance<S>) -> bool + 'a;
+
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
@@ -26,6 +28,10 @@ fn valid_atom(value: &str) -> bool {
 #[path = "condition_spell.rs"]
 mod spell;
 pub(crate) use spell::{SkillAdjustments, SpellSpeedError};
+#[path = "damage_schedule.rs"]
+mod damage_schedule;
+use damage_schedule::DamageCursor;
+pub(crate) use damage_schedule::{DamageSchedule, DamageSegment};
 
 /// `COND0-RL-01`: instances per actor.
 pub(crate) const COND0_RL_01_INSTANCES_PER_ACTOR: usize = 16;
@@ -46,6 +52,9 @@ pub(crate) const COND_CLEANSE_PICK: &str = "oteryn.condition.cleanse_pick.v1";
 pub(crate) const CLEANSE_IMMUNITY_MS: u32 = 11_000;
 
 const MICROS_PER_MS: u64 = 1_000;
+#[path = "attribute_modifiers.rs"]
+mod attributes;
+pub(crate) use attributes::{AttributeModifier, AttributeModifiers, CombatSkill};
 
 /// The damage-over-time elements, one conflict key each (§3).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -64,6 +73,7 @@ pub(crate) enum DotElement {
 /// candidate key vocabulary; the actual per-actor instance cap remains 16.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum ConflictKey {
+    Status(StatusKind),
     Speed,
     Element(DotElement),
     FoodRegeneration,
@@ -81,6 +91,7 @@ pub(crate) enum ConflictKey {
 /// share the `speed` key but not an immunity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum ConditionType {
+    Status(StatusKind),
     Haste,
     Paralysis,
     DamageOverTime(DotElement),
@@ -98,6 +109,7 @@ pub(crate) enum ConditionType {
 impl ConditionType {
     pub(crate) const fn conflict_key(self) -> ConflictKey {
         match self {
+            Self::Status(kind) => ConflictKey::Status(kind),
             Self::Haste | Self::Paralysis => ConflictKey::Speed,
             Self::DamageOverTime(element) => ConflictKey::Element(element),
             Self::FoodRegeneration => ConflictKey::FoodRegeneration,
@@ -114,7 +126,12 @@ impl ConditionType {
 
     /// §5: the `negative` dispel tag: damage over time and paralysis.
     pub(crate) const fn is_negative(self) -> bool {
-        matches!(self, Self::Paralysis | Self::DamageOverTime(_))
+        matches!(
+            self,
+            Self::Paralysis
+                | Self::DamageOverTime(_)
+                | Self::Status(StatusKind::Drunk | StatusKind::Rooted | StatusKind::Feared)
+        )
     }
 }
 
@@ -139,6 +156,38 @@ pub(crate) struct DotSequenceStep {
     pub(crate) repetitions: u32,
 }
 
+/// Exact source/content ratio, without quantization to thousandths.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ExactSpeedRatio {
+    pub(crate) numerator: i64,
+    pub(crate) denominator: u64,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct RationalSpeedRange {
+    pub(crate) a_min: ExactSpeedRatio,
+    pub(crate) b_min: i32,
+    pub(crate) a_max: ExactSpeedRatio,
+    pub(crate) b_max: i32,
+}
+impl RationalSpeedRange {
+    fn valid(self) -> bool {
+        self.a_min.denominator != 0 && self.a_max.denominator != 0
+    }
+    fn endpoints(self, base: u16) -> Result<(i64, i64), ConditionRefusal> {
+        let end = |a: ExactSpeedRatio, b: i32| {
+            if a.denominator == 0 {
+                return Err(ConditionRefusal::DrawFailed);
+            }
+            let d = i128::from(a.denominator);
+            let n = i128::from(a.numerator) * (i128::from(base) - 40) + i128::from(b) * d;
+            // One truncation of the complete expression, as in the accepted speed rule.
+            i64::try_from(n / d).map_err(|_| ConditionRefusal::DrawFailed)
+        };
+        let (x, y) = (end(self.a_min, self.b_min)?, end(self.a_max, self.b_max)?);
+        Ok((x.min(y), x.max(y)))
+    }
+}
+
 /// The content values of one definition (§3: values come from content, never from code).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(
@@ -146,6 +195,22 @@ pub(crate) struct DotSequenceStep {
     reason = "transient owner result; boxing would add an allocation to the owner turn"
 )]
 pub(crate) enum ConditionValues {
+    DamageSchedule {
+        element: DotElement,
+    },
+    TimedStatus {
+        kind: StatusKind,
+        duration_ms: u32,
+    },
+    SourceAttributes {
+        modifiers: AttributeModifiers,
+        duration_ms: u32,
+    },
+    RationalSpeed {
+        paralysis: bool,
+        range: RationalSpeedRange,
+        duration_ms: u32,
+    },
     Speed {
         paralysis: bool,
         range: SpeedRange,
@@ -253,6 +318,7 @@ pub(crate) struct ConditionDefinition {
     key: String,
     revision: u32,
     values: ConditionValues,
+    damage_schedule: Option<DamageSchedule>,
     appearance_selection: Option<crate::domain::appearance::AppearanceSelection<String>>,
     item_appearance: Option<TemporaryItemAppearance>,
 }
@@ -264,6 +330,15 @@ impl ConditionDefinition {
         let interval_ok = |ms: u32| ms >= COND0_RL_02_MIN_TICK_INTERVAL_MS;
         let valid = valid_atom(key)
             && match values {
+                ConditionValues::DamageSchedule { .. } => false,
+                ConditionValues::TimedStatus { duration_ms, .. } => duration_ms > 0,
+                ConditionValues::SourceAttributes {
+                    modifiers,
+                    duration_ms,
+                } => modifiers.valid() && duration_ms > 0,
+                ConditionValues::RationalSpeed {
+                    range, duration_ms, ..
+                } => range.valid() && duration_ms > 0,
                 ConditionValues::Speed { duration_ms, .. }
                 | ConditionValues::ManaShield { duration_ms }
                 | ConditionValues::Light { duration_ms, .. }
@@ -348,6 +423,23 @@ impl ConditionDefinition {
             key: key.to_owned(),
             revision,
             values,
+            damage_schedule: None,
+            appearance_selection: None,
+            item_appearance: None,
+        })
+    }
+
+    pub(crate) fn new_damage_schedule(
+        key: &str,
+        revision: u32,
+        element: DotElement,
+        schedule: DamageSchedule,
+    ) -> Option<Self> {
+        (valid_atom(key) && revision > 0 && schedule.validate()).then(|| Self {
+            key: key.to_owned(),
+            revision,
+            values: ConditionValues::DamageSchedule { element },
+            damage_schedule: Some(schedule),
             appearance_selection: None,
             item_appearance: None,
         })
@@ -388,6 +480,18 @@ impl ConditionDefinition {
         });
         Some(self)
     }
+    pub(crate) fn source_appearance_selection(
+        &self,
+    ) -> Option<&crate::domain::appearance::AppearanceSelection<String>> {
+        self.appearance_selection.as_ref()
+    }
+    pub(crate) fn source_item_appearance(&self) -> Option<&TemporaryItemAppearance> {
+        self.item_appearance.as_ref()
+    }
+    pub(crate) fn source_damage_schedule(&self) -> Option<&DamageSchedule> {
+        self.damage_schedule.as_ref()
+    }
+
     pub(crate) fn key(&self) -> &str {
         &self.key
     }
@@ -400,15 +504,28 @@ impl ConditionDefinition {
         self.values
     }
 
+    pub(crate) fn is_negative(&self) -> bool {
+        match self.values {
+            ConditionValues::SourceAttributes { modifiers, .. } => modifiers.is_negative(),
+            _ => self.condition_type().is_negative(),
+        }
+    }
+
     pub(crate) const fn condition_type(&self) -> ConditionType {
         match self.values {
+            ConditionValues::TimedStatus { kind, .. } => ConditionType::Status(kind),
+            ConditionValues::SourceAttributes { .. } => ConditionType::Attributes,
             ConditionValues::Speed {
                 paralysis: true, ..
-            } => ConditionType::Paralysis,
-            ConditionValues::Speed { .. } => ConditionType::Haste,
-            ConditionValues::DamageOverTime { element, .. } => {
-                ConditionType::DamageOverTime(element)
             }
+            | ConditionValues::RationalSpeed {
+                paralysis: true, ..
+            } => ConditionType::Paralysis,
+            ConditionValues::Speed { .. } | ConditionValues::RationalSpeed { .. } => {
+                ConditionType::Haste
+            }
+            ConditionValues::DamageOverTime { element, .. }
+            | ConditionValues::DamageSchedule { element } => ConditionType::DamageOverTime(element),
             ConditionValues::DamageSequence { element, .. } => {
                 ConditionType::DamageOverTime(element)
             }
@@ -483,10 +600,12 @@ pub(crate) struct ConditionInstance<S> {
     started_at: u64,
     /// The remaining damage total of a damage over time.
     remaining_total: u32,
+    scheduled_damage: Option<DamageCursor>,
     sequence_step: u8,
     sequence_repetition: u32,
     /// The speed delta fixed at application.
     speed_delta: i64,
+    speed_base: u16,
     mana_shield_capacity: u32,
     mana_shield_remaining: u32,
 }
@@ -500,8 +619,16 @@ impl<S> ConditionInstance<S> {
         &self.provenance
     }
 
+    pub(crate) const fn started_at(&self) -> u64 {
+        self.started_at
+    }
+
     pub(crate) const fn sequence(&self) -> u32 {
         self.sequence
+    }
+
+    pub(crate) const fn application_base_speed(&self) -> u16 {
+        self.speed_base
     }
 
     pub(crate) const fn speed_delta(&self) -> i64 {
@@ -561,6 +688,7 @@ pub(crate) struct ApplicationFacts<'a> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ConditionRefusal {
+    ZeroDamage,
     /// The target's content lists an immunity to this type (§6.1).
     Immune,
     /// §6.1 PvE re-entry protection.
@@ -615,7 +743,7 @@ pub(crate) enum TickKind {
 }
 
 /// The owner facts read with a tick pass, in the same work item.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(crate) struct TickFacts {
     pub(crate) in_protection_zone: bool,
     /// The element of a field the actor stands on: ticks of that element are not used up.
@@ -708,6 +836,11 @@ impl<S: Clone> ConditionStore<S> {
         Self::default()
     }
 
+    /// Pure current-time view; expired status never remains effective before cleanup.
+    pub(crate) fn has_status(&self, kind: StatusKind, now: u64) -> bool {
+        self.get(ConflictKey::Status(kind))
+            .is_some_and(|instance| instance.ends_at.is_some_and(|end| now < end))
+    }
     pub(crate) fn instances(&self) -> &[ConditionInstance<S>] {
         &self.instances
     }
@@ -716,6 +849,33 @@ impl<S: Clone> ConditionStore<S> {
         self.instances
             .iter()
             .find(|instance| instance.definition.condition_type().conflict_key() == key)
+    }
+
+    pub(crate) fn effective_attributes(&self, now: u64) -> AttributeModifiers {
+        self.get(ConflictKey::Attributes)
+            .and_then(|instance| {
+                if instance.ends_at.is_some_and(|end| now >= end) {
+                    return None;
+                }
+                match instance.definition.values {
+                    ConditionValues::SourceAttributes { modifiers, .. } => Some(modifiers),
+                    _ => None,
+                }
+            })
+            .unwrap_or_default()
+    }
+
+    /// Exact application base and native fixed speed delta; expired instances have no effect,
+    /// even before a tick/cleanup pass. This does not invent a saved Character speed fact.
+    pub(crate) fn effective_speed(&self, now: u64) -> Option<(u16, i64)> {
+        let instance = self.get(ConflictKey::Speed)?;
+        if instance.ends_at.is_none_or(|end| now >= end) {
+            return None;
+        }
+        Some((
+            instance.speed_base,
+            i64::from(instance.speed_base) + instance.speed_delta,
+        ))
     }
 
     /// The effective `SPEED` delta, 0 without one.
@@ -738,7 +898,16 @@ impl<S: Clone> ConditionStore<S> {
         self.instances.retain(|instance| {
             !matches!(
                 instance.definition.values,
-                ConditionValues::Speed { .. }
+                ConditionValues::TimedStatus { .. }
+                    | ConditionValues::SourceAttributes { .. }
+                    | ConditionValues::SpellLight { .. }
+                    | ConditionValues::SpellSkills { .. }
+                    | ConditionValues::Invisible { .. }
+                    | ConditionValues::Outfit { .. }
+                    | ConditionValues::ItemOutfit { .. }
+                    | ConditionValues::Attributes { .. }
+                    | ConditionValues::RationalSpeed { .. }
+                    | ConditionValues::Speed { .. }
                     | ConditionValues::Light { .. }
                     | ConditionValues::ManaShield { .. }
             ) || instance.ends_at.is_none_or(|end| now < end)
@@ -769,6 +938,10 @@ impl<S: Clone> ConditionStore<S> {
         }
         // Bound this definition's real duration/next interval before mutation.
         let bound_ms = match definition.values {
+            ConditionValues::DamageSchedule { .. } => 0, // Source cursor application checks its first interval below; later advances use checked_add.
+            ConditionValues::TimedStatus { duration_ms, .. }
+            | ConditionValues::SourceAttributes { duration_ms, .. }
+            | ConditionValues::RationalSpeed { duration_ms, .. } => duration_ms,
             ConditionValues::DamageSequence { steps, len, .. } => {
                 sequence_duration(&steps[..usize::from(len)])
                     .ok_or(ConditionRefusal::ArithmeticBounds)?
@@ -821,7 +994,13 @@ impl<S: Clone> ConditionStore<S> {
         let keep_timing = |interval_ms: u32| {
             existing
                 .and_then(|existing| existing.next_tick_at)
-                .unwrap_or(now + ms(interval_ms))
+                .map_or_else(
+                    || {
+                        now.checked_add(ms(interval_ms))
+                            .ok_or(ConditionRefusal::TimeOverflow)
+                    },
+                    Ok,
+                )
         };
         let next_sequence = self
             .next_sequence
@@ -842,20 +1021,86 @@ impl<S: Clone> ConditionStore<S> {
             immediate_due: None,
             started_at: now,
             remaining_total: 0,
+            scheduled_damage: None,
             sequence_step: 0,
             sequence_repetition: 0,
             speed_delta: 0,
+            speed_base: facts.base_speed,
             mana_shield_capacity: 0,
             mana_shield_remaining: 0,
         };
         match definition.values {
+            ConditionValues::DamageSchedule { .. } => {
+                let spec = definition
+                    .damage_schedule
+                    .as_ref()
+                    .ok_or(ConditionRefusal::DrawFailed)?;
+                let cursor = spec.compile(facts)?;
+                if let Some(existing) = existing
+                    && instance.provenance.source_kind != ConditionSourceKind::Field
+                    && spec.comparison_total(&cursor) <= existing.remaining_total
+                {
+                    return Err(ConditionRefusal::KeptCurrent);
+                }
+                let first = cursor.current().ok_or(ConditionRefusal::DrawFailed)?;
+                instance.remaining_total = cursor.remaining;
+                instance.next_tick_at = Some(keep_timing(first.interval_ms)?);
+                instance.immediate_due = (!spec.delayed()).then_some(now);
+                instance.scheduled_damage = Some(cursor);
+            }
+
+            ConditionValues::TimedStatus {
+                kind: _,
+                duration_ms,
+            } => {
+                if existing.is_some_and(|old| ms(duration_ms) < old.remaining_at(now)) {
+                    return Err(ConditionRefusal::KeptCurrent);
+                }
+                instance.ends_at = Some(
+                    now.checked_add(ms(duration_ms))
+                        .ok_or(ConditionRefusal::DrawFailed)?,
+                );
+            }
+            ConditionValues::SourceAttributes { duration_ms, .. } => {
+                let end = now
+                    .checked_add(ms(duration_ms))
+                    .ok_or(ConditionRefusal::DrawFailed)?;
+                if existing
+                    .and_then(|i| i.ends_at)
+                    .is_some_and(|old| old > end)
+                {
+                    return Err(ConditionRefusal::KeptCurrent);
+                }
+                instance.ends_at = Some(end);
+            }
+            ConditionValues::RationalSpeed {
+                paralysis,
+                range,
+                duration_ms,
+            } => {
+                instance.speed_delta =
+                    if paralysis && i64::from(facts.base_speed) < PARALYSIS_SPEED_FLOOR {
+                        0
+                    } else {
+                        let (low, high) = range.endpoints(facts.base_speed)?;
+                        draw_speed_endpoints(paralysis, low, high, facts)?
+                    };
+                instance.ends_at = Some(
+                    now.checked_add(ms(duration_ms))
+                        .ok_or(ConditionRefusal::DrawFailed)?,
+                );
+            }
+
             ConditionValues::Speed {
                 paralysis,
                 range,
                 duration_ms,
             } => {
                 instance.speed_delta = draw_speed_delta(paralysis, range, facts)?;
-                instance.ends_at = Some(now + ms(duration_ms));
+                instance.ends_at = Some(
+                    now.checked_add(ms(duration_ms))
+                        .ok_or(ConditionRefusal::TimeOverflow)?,
+                );
             }
             ConditionValues::DamageOverTime {
                 total_min,
@@ -873,7 +1118,7 @@ impl<S: Clone> ConditionStore<S> {
                 }
                 instance.remaining_total =
                     draw_in_range(total_min, total_max, facts, COND_DOT_TOTAL_DRAW)?;
-                instance.next_tick_at = Some(keep_timing(interval_ms));
+                instance.next_tick_at = Some(keep_timing(interval_ms)?);
                 instance.immediate_due = (!delayed).then_some(now);
             }
             ConditionValues::DamageSequence {
@@ -890,7 +1135,7 @@ impl<S: Clone> ConditionStore<S> {
                     return Err(ConditionRefusal::KeptCurrent);
                 }
                 instance.remaining_total = total;
-                instance.next_tick_at = Some(keep_timing(steps[0].interval_ms));
+                instance.next_tick_at = Some(keep_timing(steps[0].interval_ms)?);
                 instance.immediate_due = (!delayed).then_some(now);
             }
             ConditionValues::FoodRegeneration {
@@ -898,22 +1143,33 @@ impl<S: Clone> ConditionStore<S> {
                 interval_ms,
             } => {
                 let remaining = existing.map_or(0, |existing| existing.remaining_at(now));
-                let total = remaining + ms(added_ms);
+                let total = remaining
+                    .checked_add(ms(added_ms))
+                    .ok_or(ConditionRefusal::TimeOverflow)?;
                 if total >= ms(FOOD_REGENERATION_CAP_MS) {
                     return Err(ConditionRefusal::Full);
                 }
-                instance.ends_at = Some(now + total);
-                instance.next_tick_at = Some(keep_timing(interval_ms));
+                instance.ends_at = Some(
+                    now.checked_add(total)
+                        .ok_or(ConditionRefusal::TimeOverflow)?,
+                );
+                instance.next_tick_at = Some(keep_timing(interval_ms)?);
             }
             ConditionValues::Recovery {
                 duration_ms,
                 interval_ms,
             } => {
-                instance.ends_at = Some(now + ms(duration_ms));
-                instance.next_tick_at = Some(keep_timing(interval_ms));
+                instance.ends_at = Some(
+                    now.checked_add(ms(duration_ms))
+                        .ok_or(ConditionRefusal::TimeOverflow)?,
+                );
+                instance.next_tick_at = Some(keep_timing(interval_ms)?);
             }
             ConditionValues::ManaShield { duration_ms } => {
-                instance.ends_at = Some(now + ms(duration_ms));
+                instance.ends_at = Some(
+                    now.checked_add(ms(duration_ms))
+                        .ok_or(ConditionRefusal::TimeOverflow)?,
+                );
                 instance.mana_shield_capacity = facts.mana_shield_capacity;
                 instance.mana_shield_remaining = facts.mana_shield_capacity;
             }
@@ -950,7 +1206,10 @@ impl<S: Clone> ConditionStore<S> {
                 if existing.is_some_and(|existing| ms(duration_ms) < existing.remaining_at(now)) {
                     return Err(ConditionRefusal::KeptCurrent);
                 }
-                instance.ends_at = Some(now + ms(duration_ms));
+                instance.ends_at = Some(
+                    now.checked_add(ms(duration_ms))
+                        .ok_or(ConditionRefusal::TimeOverflow)?,
+                );
             }
         }
         let sequence = instance.sequence;
@@ -983,7 +1242,7 @@ impl<S: Clone> ConditionStore<S> {
             .iter()
             .filter(|instance| {
                 let kind = instance.definition.condition_type();
-                kind.is_negative()
+                instance.definition.is_negative()
                     && kind != ConditionType::DamageOverTime(DotElement::Drown)
                     && instance.ends_at.is_none_or(|end| end > facts.now)
                     && (!matches!(kind, ConditionType::DamageOverTime(_))
@@ -1042,7 +1301,21 @@ impl<S: Clone> ConditionStore<S> {
     /// due, in order, for the next simulation tick (`RUN_EACH_BOUNDED`), and none is dropped.
     /// Instances whose time is over and whose ticks are all dealt end here.
     pub(crate) fn take_due(&mut self, now: u64, facts: TickFacts) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, true)
+        self.take_due_matching(now, facts, true, None)
+    }
+    /// Only a just-applied field's immediate tick; retained overdue conditions are untouched.
+    pub(crate) fn take_due_source_application(
+        &mut self,
+        now: u64,
+        facts: TickFacts,
+        source: &S,
+    ) -> Vec<ConditionTick<S>>
+    where
+        S: PartialEq,
+    {
+        let matches =
+            |provenance: &ConditionProvenance<S>| provenance.source.as_ref() == Some(source);
+        self.take_due_matching(now, facts, true, Some(&matches))
     }
     /// Independent qualified regeneration must not drain unknown combat ticks.
     pub(crate) fn take_due_non_damage(
@@ -1050,13 +1323,14 @@ impl<S: Clone> ConditionStore<S> {
         now: u64,
         facts: TickFacts,
     ) -> Vec<ConditionTick<S>> {
-        self.take_due_matching(now, facts, false)
+        self.take_due_matching(now, facts, false, None)
     }
     fn take_due_matching(
         &mut self,
         now: u64,
         facts: TickFacts,
         damage: bool,
+        application_source: Option<&ConditionApplicationSource<'_, S>>,
     ) -> Vec<ConditionTick<S>> {
         self.cleanse_immunities
             .retain(|immunity| immunity.until > now);
@@ -1071,6 +1345,11 @@ impl<S: Clone> ConditionStore<S> {
                 .iter()
                 .enumerate()
                 .filter_map(|(index, instance)| {
+                    if application_source.is_some_and(|matches| {
+                        !matches(&instance.provenance) || instance.immediate_due != Some(now)
+                    }) {
+                        return None;
+                    }
                     if !damage
                         && matches!(
                             instance.definition.condition_type(),
@@ -1092,6 +1371,35 @@ impl<S: Clone> ConditionStore<S> {
             let Some((due, _, index)) = next else { break };
             let instance = &mut self.instances[index];
             let kind = match instance.definition.values {
+                ConditionValues::DamageSchedule { element } => {
+                    // A malformed internal cursor must not emit a fabricated tick or remove
+                    // a condition. Preserve earlier valid ticks and this pass's consumed budget.
+                    let Some(cursor) = instance.scheduled_damage.as_mut() else {
+                        return ticks;
+                    };
+                    let Some(segment) = cursor.current() else {
+                        return ticks;
+                    };
+                    let immediate = instance.immediate_due == Some(due);
+                    if immediate {
+                        instance.immediate_due = None;
+                    }
+                    if facts.standing_on_field != Some(element) || facts.in_protection_zone {
+                        cursor.consume();
+                    }
+                    instance.remaining_total = cursor.remaining;
+                    // The next source segment's interval begins after the current tick. A
+                    // standing field reuses this same segment rather than consuming it.
+                    instance.next_tick_at = cursor.current().and_then(|next| {
+                        due.checked_add(u64::from(next.interval_ms) * MICROS_PER_MS)
+                    });
+                    TickKind::Damage {
+                        element,
+                        amount: segment.amount,
+                        refused: facts.in_protection_zone,
+                    }
+                }
+
                 ConditionValues::DamageSequence {
                     element,
                     steps,
@@ -1140,7 +1448,8 @@ impl<S: Clone> ConditionStore<S> {
                     if instance.immediate_due == Some(due) {
                         instance.immediate_due = None;
                     } else {
-                        instance.next_tick_at = Some(due + u64::from(interval_ms) * MICROS_PER_MS);
+                        instance.next_tick_at =
+                            due.checked_add(u64::from(interval_ms) * MICROS_PER_MS);
                     }
                     let amount = per_tick.min(instance.remaining_total);
                     if facts.standing_on_field != Some(element) || facts.in_protection_zone {
@@ -1155,7 +1464,7 @@ impl<S: Clone> ConditionStore<S> {
                 ConditionValues::FoodRegeneration { interval_ms, .. }
                 | ConditionValues::Recovery { interval_ms, .. } => {
                     let key = instance.definition.condition_type().conflict_key();
-                    instance.next_tick_at = Some(due + u64::from(interval_ms) * MICROS_PER_MS);
+                    instance.next_tick_at = due.checked_add(u64::from(interval_ms) * MICROS_PER_MS);
                     TickKind::Regeneration {
                         key,
                         suppressed: facts.in_protection_zone
@@ -1215,6 +1524,19 @@ impl<S: Clone> ConditionStore<S> {
             Some(end) => end > now || instance.next_tick_at.is_some_and(|due| due <= end),
         });
         ticks
+    }
+
+    pub(crate) fn dispel_key(&mut self, key: ConflictKey) -> usize {
+        let before = self.instances.len();
+        self.instances
+            .retain(|instance| instance.definition.condition_type().conflict_key() != key);
+        before - self.instances.len()
+    }
+    pub(crate) fn cleanse_negative(&mut self) -> usize {
+        let before = self.instances.len();
+        self.instances
+            .retain(|instance| !instance.definition.is_negative());
+        before - self.instances.len()
     }
 
     /// §6.1 death: every instance ends.
@@ -1283,23 +1605,52 @@ fn draw_speed_delta(
         let (x, y) = (end(range.a_min, range.b_min), end(range.a_max, range.b_max));
         (x.min(y), x.max(y))
     };
+    draw_speed_endpoints(paralysis, low, high, facts)
+}
+
+fn draw_speed_endpoints(
+    paralysis: bool,
+    low: i64,
+    high: i64,
+    facts: &ApplicationFacts<'_>,
+) -> Result<i64, ConditionRefusal> {
     let target = if low == high {
         low
     } else {
         let value =
             deterministic_decision_u64(facts.decision_root, facts.occurrence, COND_SPEED_DRAW, 0)
                 .map_err(|_| ConditionRefusal::DrawFailed)?;
-        let span = u64::try_from(high - low).map_err(|_| ConditionRefusal::DrawFailed)? + 1;
-        low + i64::try_from(value % span).map_err(|_| ConditionRefusal::DrawFailed)?
+        let span = u64::try_from(i128::from(high) - i128::from(low) + 1)
+            .map_err(|_| ConditionRefusal::DrawFailed)?;
+        i64::try_from(i128::from(low) + i128::from(value % span))
+            .map_err(|_| ConditionRefusal::DrawFailed)?
     };
     let target = if paralysis {
         target.max(PARALYSIS_SPEED_FLOOR)
     } else {
         target
     };
-    Ok(target - base)
+    target
+        .checked_sub(i64::from(facts.base_speed))
+        .ok_or(ConditionRefusal::DrawFailed)
 }
 
 #[cfg(test)]
 #[path = "condition_tests.rs"]
 mod tests;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(crate) enum StatusKind {
+    Invisible,
+    Drunk,
+    Rooted,
+    Feared,
+}
+
+#[cfg(test)]
+#[path = "reconciled_condition_tests.rs"]
+mod reconciled_condition_tests;
+
+#[cfg(test)]
+#[path = "reconciled_schedule_tests.rs"]
+mod reconciled_schedule_tests;

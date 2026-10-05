@@ -1,10 +1,10 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/services/bank/",
-  "kind": "static_content",
-  "owner": "Service/Economy",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Bank service definitions; balances remain durable state."
+  "kind": "static_content",
+  "notes": "Bank service definitions; balances remain durable state.",
+  "owner": "Service/Economy",
+  "path": "content/services/bank/",
+  "population_state": "READY_UNPOPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

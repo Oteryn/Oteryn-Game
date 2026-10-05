@@ -24,12 +24,12 @@ const SHARDS: [(&str, &[u8]); 4] = [
         include_bytes!("../../../../../content/creatures/definitions/creatures-01000-01499.json"),
     ),
     (
-        "content/creatures/definitions/creatures-01500-01762.json",
-        include_bytes!("../../../../../content/creatures/definitions/creatures-01500-01762.json"),
+        "content/creatures/definitions/creatures-01500-01862.json",
+        include_bytes!("../../../../../content/creatures/definitions/creatures-01500-01862.json"),
     ),
 ];
-const CREATURE_COUNT: usize = 1_763;
-const BESTIARY_COUNT: usize = 819;
+const CREATURE_COUNT: usize = 1_863;
+const BESTIARY_COUNT: usize = 823;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -222,14 +222,16 @@ mod tests {
     fn limits() -> ProjectEvidenceLimits {
         ProjectEvidenceLimits {
             max_documents: 5,
-            max_document_bytes: 1_400_000,
-            max_total_bytes: 4_700_000,
+            // Final canonical source encoding: max shard2,441,222B; corpus7,874,783B.
+            // Bound encoded formatting/provenance independently of unchanged decoded quotas.
+            max_document_bytes: 2_500_000,
+            max_total_bytes: 8_000_000,
             max_json_depth: 10,
             max_decoded_fields: 65_000,
             max_string_bytes: 1_000_000,
             max_locator_bytes: 128,
             max_locator_segments: 5,
-            max_reference_records: 1_763,
+            max_reference_records: CREATURE_COUNT,
             max_import_records: 1,
             max_reimport_states: 1,
         }
@@ -253,9 +255,9 @@ mod tests {
     }
 
     #[test]
-    fn canonical_projection_retains_all_819_real_bestiary_blocks() -> TestResult {
+    fn canonical_projection_retains_all_823_admitted_bestiary_blocks() -> TestResult {
         let rows = canonical_bestiary_rows(limits())?;
-        assert_eq!(rows.len(), 819);
+        assert_eq!(rows.len(), BESTIARY_COUNT);
         assert!(
             rows.windows(2)
                 .all(|pair| pair[0].0.key() < pair[1].0.key())
@@ -263,6 +265,10 @@ mod tests {
         for (key, thresholds, points) in [
             ("oteryn:creature.rat", [10, 100, 250], 5),
             ("oteryn:creature.draptor", [2, 3, 5], 50),
+            ("oteryn:creature.bride_of_night", [2, 3, 5], 50),
+            ("oteryn:creature.day_night_harpy", [100, 1000, 2500], 50),
+            ("oteryn:creature.doomsday_cultist", [2, 3, 5], 30),
+            ("oteryn:creature.midnight_warrior", [2, 3, 5], 50),
         ] {
             let (race, actual_points) = rows
                 .iter()
@@ -344,6 +350,27 @@ mod tests {
     }
 
     #[test]
+    fn current_canonical_corpus_has_bounded_source_budget() {
+        let total = INDEX.len() + SHARDS.iter().map(|(_, bytes)| bytes.len()).sum::<usize>();
+        // Native overlay metadata may be re-encoded without changing canonical Creature facts.
+        // Check the bounded corpus envelope, not a formatting-dependent index byte count.
+        assert!(total > 4_700_000);
+        assert!(total <= limits().max_total_bytes);
+        assert_eq!(limits().max_total_bytes, 8_000_000);
+        assert_eq!(limits().max_document_bytes, 2_500_000);
+        // The larger byte encoding grants no deeper/wider/string-richer source budget.
+        assert_eq!(limits().max_json_depth, 10);
+        assert_eq!(limits().max_decoded_fields, 65_000);
+        assert_eq!(limits().max_string_bytes, 1_000_000);
+        assert!(
+            SHARDS
+                .iter()
+                .all(|(_, bytes)| bytes.len() <= limits().max_document_bytes)
+        );
+        assert_eq!(limits().max_reference_records, 1_863);
+    }
+
+    #[test]
     fn source_budgets_and_duplicate_members_are_enforced() {
         let mut changed = limits();
         changed.max_documents = 4;
@@ -365,7 +392,7 @@ mod tests {
             Err(ProjectError::LimitExceeded { .. })
         ));
         changed = limits();
-        changed.max_reference_records = 1_762;
+        changed.max_reference_records = CREATURE_COUNT - 1;
         assert!(matches!(
             canonical_bestiary_rows(changed),
             Err(ProjectError::LimitExceeded { .. })

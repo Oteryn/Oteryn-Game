@@ -849,6 +849,7 @@ fn source_metadata_touches_reserve_real_slots_without_synthesized_combat_effects
         mitigation: None,
         resistances: vec![],
         damage_immunities: vec![],
+        healing_from_damage: vec![],
         preferred_distance: Some(1),
         reward_boss: Some(false),
         flags: CreatureFlags {
@@ -1011,6 +1012,7 @@ fn master_assignment_fixture() -> Fixture {
         mitigation: None,
         resistances: vec![],
         damage_immunities: vec![],
+        healing_from_damage: vec![],
         preferred_distance: Some(1),
         reward_boss: Some(false),
         flags: CreatureFlags {
