@@ -76,6 +76,12 @@ external_repositories: []
   `CommitOutcomeUnknown` with no `COMMIT` sent), and release only on a definite rejection the path
   proves, with the same result as the caster's own retry and a test per writer (#1836 thread
   r4188531931).
+- Codex round on 1174f451 is fixed: a sweep of every key-33 acquirer on `main` (`aa30141f`), Rust
+  and SQL, found the three triggers on the Ground, corpse-entry and adoption tables. Their
+  ungated Rust writers (item transfer, mint, corpse-loot mint, map mint, decay retire) and their
+  callers (`combat/pickup.rs`, `combat/death_reward.rs`, the test support) move behind the lane
+  in 2a, with a per-row Channel scope check. A SQL pin test and a Rust source-scan pin test catch
+  a new key-33 trigger or writer (#1836 thread r4188794757).
 - Makes the spell slot reservation complete: every mutator of a reserved slot either checks it or
   is shown unable to reach one. The caster stays visibly pending for the whole pass.
 - Rejects a runtime revision counter, committing under the guards, narrowing the install fence,
