@@ -42,6 +42,9 @@ external_repositories: []
   official table". The formula is never runtime authority (checkpoint 2026-09-09 §9.2).
 - The §1.3 evidence digest fields and the §2.1 owned_paths comments and acceptance tests are
   updated. Nothing else in the packet changes.
+- Codex P2 on e4944156 is fixed. The producer holds the formula once, as structured constants.
+  It renders the canonical text from them and refuses an `evidence.json` whose `formula` differs
+  byte for byte, so the metadata cannot diverge from the generator. Acceptance tests cover it.
 
 ## Validation
 
