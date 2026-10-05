@@ -121,6 +121,11 @@ owned_paths:
   - tools/content-schema/world-authoring/convert_world_base.py
   - tools/content-schema/world-authoring/test_world_base.py
   - tools/content-migration/                             # count and digest pins the cascade moves, as in #1795
+  - imports/tibiawiki/facts/items-bounded7-navigation-20261002.json   # cascade output, as in #1795
+  - imports/tibiawiki/facts/items-family-alias26-20261001.json        # cascade output, as in #1795
+  - tools/content-schema/world-object-authoring/official_corpses.py   # qualification pins, as in #1795
+  - tools/content-schema/world-object-authoring/qualified_world.py
+  - tools/content-schema/world-object-authoring/samples/              # census and qualified samples
   - docs/agents/evidence/OTV2-20261005-chest-appearance-admit-repin-receipt-v1.json
   - docs/agents/tasks/archive/OTV2-20261005-chest-appearance-admit-1.md
 validation:
@@ -149,6 +154,8 @@ Builds:
 - The regenerated palette. Exactly two entries change, 28827 and 28828, and every index is kept.
   The worker's report states the before and after provisional counts.
 - The bundle re-pin under the #1805 pin procedure.
+- If the cascade moves a file outside `owned_paths`, the worker returns a BLOCKER naming it. It
+  does not edit the file.
 
 Acceptance: on the re-pinned non-production bundle, the two claims are bound
 (`oteryn:reward-claim.quest.u15_24.targuna.mana_potions_chest`,

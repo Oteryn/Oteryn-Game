@@ -36,6 +36,8 @@ external_repositories: []
 - Amends ADR-0021 §4.5: a palette id with no `ots/item_server_id` binding takes its A12 Item key
   `oteryn:item.tibia.i<id>` when that Item record exists. This sits after the binding and before
   the Terrain, WorldObject and donor fallbacks, and duplicate keys still fail.
+- The packet owns every file the #1795 cascade moved, including the TibiaWiki navigation facts
+  and the world-object qualification pins (#1834 review 4183308722).
 - Packet CHEST-APPEARANCE-ADMIT-1 (impl worker), after #1830 and #1805 merge, with one writer on
   `content/world/pins/`.
 
