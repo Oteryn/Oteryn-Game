@@ -1,0 +1,61 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/apprentice_s_strike",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Apprentice's Strike",
+    "carrier": "instant",
+    "words": "exori min flam",
+    "reference_spell_id": 169,
+    "library_text": "This very basic spell is available free of cost, though any other magic instructor will also teach it to any sorcerer or druid who desires to learn it. The advantages and the dangers of this attack spell were the subject of heated discussions within the magic academy council. In the end, however, it was agreed to make it available as a starter spell, as it was somewhat naively hoped that this measure would reduce the death rates among freshly initiated sorcerers and druids to more acceptable levels because of the comparatively limited damage. When cast, the spell will singe the opponent facing the caster.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 6,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 6,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": true,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 3,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_flame_strike"
+    },
+    "base_power": 15,
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/apprentice_s_strike",
+        "revision": "spell-p2-r20"
+      }
+    }
+  }
+}

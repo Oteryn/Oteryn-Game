@@ -1,0 +1,101 @@
+{
+  "schema_revision": "native-ground-source-proof-r1",
+  "server": "canary",
+  "revision": "99902524e052f37574194466c2949c576e4ab269",
+  "sources": [
+    {
+      "path": "data/items/appearances.dat",
+      "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
+      "blob": "37ce9c8ee497b7edffe809f40d02c5d12ec4ccf0"
+    },
+    {
+      "path": "src/protobuf/appearances.proto",
+      "sha256": "f03674197041967fc095e48462edaa1ab27c481385aad3d85d27a7d25af325c4",
+      "blob": "f39de45976e372b2306f6ff9c4a40412f4debe4e"
+    },
+    {
+      "path": "src/items/items.cpp",
+      "sha256": "f695ed647e111923cf8e4d487c4a0706f19e7edbfb7896655c20494d6d927fd7",
+      "blob": "eecbf060ef9e85b452bb897277ff3d3d013a0cf9"
+    },
+    {
+      "path": "data/items/items.xml",
+      "sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85",
+      "blob": "70358bf36344ea9fe8ee52cb0b3d4cdcead4c8ec"
+    },
+    {
+      "path": "src/items/functions/item/item_parse.cpp",
+      "sha256": "1c92c9c0716d83d4d79d81ffeab099ef526eea2473e984b85436b291ce90d07c",
+      "blob": "e3e7f2e11e08e47fef48562f687033dd24d0e9a8"
+    }
+  ],
+  "records": [
+    {
+      "server_item_id": 416,
+      "name": "stone floor",
+      "appearance_bank_waypoints": 100,
+      "ground_speed": 100,
+      "is_ground": true,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "artificial tiles"
+        }
+      ],
+      "protobuf_flag_field_numbers": [
+        1,
+        14,
+        30,
+        32
+      ]
+    },
+    {
+      "server_item_id": 418,
+      "name": "stone floor",
+      "appearance_bank_waypoints": 100,
+      "ground_speed": 100,
+      "is_ground": true,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "artificial tiles"
+        }
+      ],
+      "protobuf_flag_field_numbers": [
+        1,
+        14,
+        30,
+        32
+      ]
+    },
+    {
+      "server_item_id": 436,
+      "name": "stone floor",
+      "appearance_bank_waypoints": 100,
+      "ground_speed": 100,
+      "is_ground": true,
+      "block_solid": false,
+      "block_projectile": false,
+      "block_pathfind": false,
+      "xml_attributes": [
+        {
+          "key": "primarytype",
+          "value": "artificial tiles"
+        }
+      ],
+      "protobuf_flag_field_numbers": [
+        1,
+        14,
+        30,
+        32
+      ]
+    }
+  ],
+  "qualification": "Ground class and speed are loaded from source appearances protobuf bank, then explicitly overridden by XML if present. Flags use source protobuf defaults where fields are absent. This proof does not attribute designed room coordinates to source OTBM coordinates."
+}

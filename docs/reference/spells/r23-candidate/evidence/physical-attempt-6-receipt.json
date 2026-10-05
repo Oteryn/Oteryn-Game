@@ -1,0 +1,180 @@
+{
+  "schema": "OTERYN_SPELL_PHYSICAL_ATTEMPT/v1",
+  "created_utc": "2026-10-02T12:19:24.474962+00:00",
+  "attempt": 6,
+  "manifest_sha256": "a0e824b3227996499f8b6d146bfd53a6eec8b38402375eaf5a49a5c6071acbd0",
+  "result": "passed_bounded_local_spell_seam",
+  "observed_process_exit_code": 0,
+  "exit_observation": "Root coordinator observed exec session 50605 complete with exit 0; report producer independently inspected the completed test/result body",
+  "passed": 1,
+  "failed": 0,
+  "ignored": 0,
+  "filtered_out": 1596,
+  "duration_seconds": 341.93,
+  "full_log": {
+    "name": "next-real-spell-seam-attempt-6.log",
+    "sha256": "121579752ab9691a0c2b9105e442cc089fbd513c8b9db86bdd0319ad839060e0",
+    "bytes": 332424,
+    "distributed": false,
+    "retention": "Host validation log; only reviewed public evidence prefixes and aggregate probe facts are included here"
+  },
+  "scope": {
+    "disposable_qualification": true,
+    "real_owner_tcp_tls": true,
+    "production_activation": false,
+    "long_lived_activation": false,
+    "gameplay_complete": false,
+    "magnitude_policy": "baseline_test"
+  },
+  "spell_probe_summary": {
+    "count": 246,
+    "unique_complete_indexes": true,
+    "caster": "free_sorcerer_level1000",
+    "target": "none",
+    "scope": "untargeted_catalog_probe",
+    "gameplay_complete": false,
+    "disposition": {
+      "Cast": 13,
+      "CoolingDown": 24,
+      "NotAvailable": 80,
+      "Rejected": 128,
+      "TargetRequired": 1
+    },
+    "selected": {
+      "false": 5,
+      "true": 241
+    },
+    "vitals_delta": {
+      "false": 233,
+      "true": 13
+    },
+    "interpretation": "These dispositions qualify untargeted admission observations, not 246 successful effects"
+  },
+  "measured_scenario": {
+    "source_movement": {
+      "normal_owner_movement": true,
+      "source_stair_steps": 9,
+      "caster_cell": [
+        0,
+        11,
+        -7
+      ],
+      "target_cell": [
+        1,
+        11,
+        -7
+      ],
+      "protection": false,
+      "proof": "pinned_thalom_source"
+    },
+    "temple_energy_strike": {
+      "protection_refused": true,
+      "mana_unchanged": true
+    },
+    "rat_spawn": {
+      "key": "oteryn:qualification.spawn/thalom-rat-r1",
+      "creature": "canary:creature/rat",
+      "revision": "canary-47dfd51f",
+      "health": 20,
+      "master": null,
+      "actual_channel_owner": true,
+      "actual_item_collision_owner": true,
+      "public_source_spawn": false
+    },
+    "monster_melee": {
+      "source": "actual_ai_cycle",
+      "player_health_before": 5145,
+      "player_health_after": 5141,
+      "shield": false,
+      "invisibility": false
+    },
+    "energy_strike": {
+      "words": "exori vis",
+      "target": "actual_native_test_rat",
+      "target_health_before": 20,
+      "target_health_after": 0,
+      "damage_magnitude": "actual_owner",
+      "mana_paid": 20,
+      "optional_modifiers": "baseline_omission"
+    },
+    "wounded_healing": {
+      "words": "exura",
+      "wound": "actual_monster_melee",
+      "player_health_before": 5141,
+      "player_health_after": 5145,
+      "healing_magnitude": "actual_owner",
+      "mana_paid": 20,
+      "optional_modifiers": "baseline_omission"
+    },
+    "training": {
+      "mana_paid": 1870,
+      "saved_training_delta": 2764,
+      "ordinary_disconnect": "complete",
+      "revision": "s3b-content-1"
+    }
+  },
+  "cleanup": "Completed runner confirms containers, volumes and ephemeral keys removed",
+  "public_evidence_whitelist": [
+    "SEAM_EVIDENCE spell_seam",
+    "SEAM_EVIDENCE spell_scenario",
+    "spell_probe_summary aggregate"
+  ],
+  "public_evidence_lines": [
+    "SEAM_EVIDENCE spell_seam stage=initial_join",
+    "SEAM_EVIDENCE spell_seam stage=initial_join_complete",
+    "SEAM_EVIDENCE spell_seam stage=character_writers_complete",
+    "SEAM_EVIDENCE spell_seam stage=classed_reentry",
+    "SEAM_EVIDENCE spell_seam stage=classed_reentry_complete health=185 max_health=185 mana=90 max_mana=90 soul=100",
+    "SEAM_EVIDENCE spell_seam stage=exura_command_send index=132",
+    "SEAM_EVIDENCE spell_seam stage=exura_command_result disposition=Cast",
+    "SEAM_EVIDENCE spell_seam definitions=246 caster=free_sorcerer_level8 setup=fenced_character_writers reentry=ordinary_grace exura=cast mana_before=90 mana_after=70 immediate_retry=cooling_down health_bounded=true wounded_heal_magnitude=not_evaluated",
+    "SEAM_EVIDENCE spell_seam caster=free_sorcerer_level1000 setup=xp_writer reentry=ordinary_grace premium=false resources=normal_admission",
+    "SEAM_EVIDENCE spell_scenario words=\"utevo lux\" disposition=cast target=None mana_paid=20 condition_visibility=not_evaluated creature_damage_magnitude=not_evaluated",
+    "SEAM_EVIDENCE spell_seam facing_owner=normal_movement path=temple_east_return",
+    "SEAM_EVIDENCE spell_scenario words=exori_vis temple_protection=refused mana=unchanged",
+    "SEAM_EVIDENCE spell_seam source_step=south observed=(0,1,-5)",
+    "SEAM_EVIDENCE spell_seam source_step=south observed=(0,2,-5)",
+    "SEAM_EVIDENCE spell_seam source_step=south observed=(0,3,-5)",
+    "SEAM_EVIDENCE spell_seam source_step=south observed=(0,4,-5)",
+    "SEAM_EVIDENCE spell_seam source_step=south observed=(0,6,-6)",
+    "SEAM_EVIDENCE spell_seam source_step=south observed=(0,7,-6)",
+    "SEAM_EVIDENCE spell_seam source_step=south observed=(0,8,-6)",
+    "SEAM_EVIDENCE spell_seam source_step=south observed=(0,9,-6)",
+    "SEAM_EVIDENCE spell_seam source_step=south observed=(0,11,-7)",
+    "SEAM_EVIDENCE spell_seam aggressive_caster_tile=(0,11,-7) target_tile=(1,11,-7) protection=false proof=pinned_thalom_source normal_movement=true",
+    "SEAM_EVIDENCE spell_seam native_test_spawn=oteryn:qualification.spawn/thalom-rat-r1 public_source_spawn=false policy=canary:creature/rat revision=canary-47dfd51f actual_health=20 position=(1,11,-7) master=none authority=current_channel_assignment dynamic_collision=actual_item_owner",
+    "SEAM_EVIDENCE spell_seam monster_melee=actual_ai_cycle target=ordinary_player hp_before=5145 hp_after=5141 shield=false invisibility=false death_loot_xp=not_evaluated",
+    "SEAM_EVIDENCE spell_seam words=exori_vis target=actual_native_test_rat hp_before=20 hp_after=0 damage_magnitude=actual_owner baseline_optional_modifiers=omitted corpse_loot_xp=not_evaluated",
+    "SEAM_EVIDENCE spell_scenario words=\"exori vis\" disposition=cast target=Position(SpellTargetPosition { x: 1, y: 11, floor: -7 }) mana_paid=20 condition_visibility=not_evaluated creature_damage_magnitude=actual_owner",
+    "SEAM_EVIDENCE spell_seam words=exura wound=actual_monster_melee hp_before=5141 hp_after=5145 healing_magnitude=actual_owner optional_modifiers=baseline_omission",
+    "SEAM_EVIDENCE spell_scenario words=\"exura\" disposition=cast target=None mana_paid=20 condition_visibility=not_evaluated creature_damage_magnitude=not_evaluated",
+    "SEAM_EVIDENCE spell_scenario words=\"utamo vita\" disposition=cast target=None mana_paid=50 condition_visibility=not_evaluated creature_damage_magnitude=not_evaluated",
+    "SEAM_EVIDENCE spell_scenario words=\"utana vid\" disposition=cast target=None mana_paid=440 condition_visibility=not_evaluated creature_damage_magnitude=not_evaluated",
+    "SEAM_EVIDENCE spell_scenario words=\"utana vid\" disposition=cast target=None mana_paid=440 condition_visibility=not_evaluated creature_damage_magnitude=not_evaluated",
+    "SEAM_EVIDENCE spell_scenario words=\"utana vid\" disposition=cast target=None mana_paid=440 condition_visibility=not_evaluated creature_damage_magnitude=not_evaluated",
+    "SEAM_EVIDENCE spell_scenario words=\"utana vid\" disposition=cast target=None mana_paid=440 condition_visibility=not_evaluated creature_damage_magnitude=not_evaluated",
+    "SEAM_EVIDENCE spell_seam training_stress observed_mana_paid=1870 checkpoint_threshold=1600",
+    "SEAM_EVIDENCE spell_seam training_save=durable ordinary_disconnect=complete mana_paid=1870 saved_training_delta=2764 content_revision=s3b-content-1",
+    "SEAM_EVIDENCE spell_seam shutdown=drained scope=real_owner_tcp_tls gameplay_complete=false"
+  ],
+  "not_qualified": [
+    "All 246 successful spell effects",
+    "Condition visibility/client rendering",
+    "Armor/shield and exact Canary random damage distribution",
+    "Full monster ranged/defense/custom scheduling, public source spawn population or chase",
+    "Corpse/loot/death XP",
+    "Soul War progression/access/rewards",
+    "Actual Platform Premium and HouseInstance admission",
+    "Production or long-lived activation",
+    "Final frozen-head required quality gates"
+  ],
+  "historical_attempts_preserved": [
+    "physical-attempt-5-failure.json",
+    "physical-attempt-4-receipt.json"
+  ],
+  "related_evidence": [
+    "current-r7-validation-receipt.json",
+    "canonical-r7-artifact-qualification.json",
+    "authoring-independent-review.json"
+  ]
+}

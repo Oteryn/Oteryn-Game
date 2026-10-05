@@ -1,0 +1,64 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/poison_wall_rune",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Poison Wall Rune",
+    "carrier": "instant",
+    "words": "adevo mas grav pox",
+    "reference_spell_id": 32,
+    "library_text": "The poison wall rune is probably the most basic of all wall spells, and it is frequently the first one to be studied by those who have just taken up the study of magic. When this rune is used a wall of concentrated toxic fumes is created which inflicts a moderate poison on all those who are foolish enough to enter it. The effect is usually impressive enough to discourage monsters from doing so, although few of the stronger monstrosities that walk the land will hesitate if there is nothing but a poison wall between them and their dinner. For this reason it is advisable not to completely rely on this rune for protection, although there is no doubt that a clever adventurer can put it to use quite often. Please note that on optional PvP game worlds this spell has no damaging effect on other characters, unless characters are war opponents.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 29,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 640,
+      "soul": 3
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/3176",
+          "revision": "spell-p2-r21"
+        },
+        "count": 4,
+        "effect_asset_binding": "canary.appearance:effect/magic_red",
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/3147",
+          "revision": "spell-p2-r21"
+        }
+      }
+    }
+  }
+}

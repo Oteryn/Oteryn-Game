@@ -129,6 +129,11 @@ pub const REFERENCE_ITEM_MAX_RESISTANCES: usize = 12;
 pub const REFERENCE_ITEM_MAX_MODIFIERS: usize = 37;
 pub const REFERENCE_ITEM_MAX_IMBUEMENT_FAMILIES: usize = 20;
 pub const REFERENCE_ITEM_MAX_IMBUEMENT_SLOTS: u8 = 3;
+/// Group 18 bounds of the typed artifact v6 (ITEM-SEM-USE-1). A food value stays below the
+/// 1,200 s regeneration cap that ITEM-USE-0 §6.1 refuses to reach.
+pub const REFERENCE_ITEM_MAX_FOOD_REGENERATION_SECONDS: u16 = 1_199;
+pub const REFERENCE_ITEM_MAX_POTION_RESTORES: usize = 2;
+pub const REFERENCE_ITEM_MAX_RESTORE_AMOUNT: u16 = 10_000;
 pub const REFERENCE_ITEM_REGISTRY_SIZE: u32 = 38_157;
 pub const REFERENCE_ITEM_EXPLICIT_UNSUPPORTED_V1: [&str; 7] = [
     "presentation.appearance_binding",
@@ -290,6 +295,8 @@ item_enum!(ReferenceBaseVocation {
 });
 // v1 admits only use-time enforcement; RUNE-USE-0 and RANGED-0 own the check (ITEM-SEM-2b-3).
 item_enum!(ReferenceUseEnforcementMode { OnUse = 1 });
+// A potion restores health, mana or both; ITEM-USE-1 owns both restores (ITEM-SEM-USE-1).
+item_enum!(ReferenceRestoreResource { Health = 1, Mana = 2 });
 item_enum!(ReferenceWeaponType {
     Ammunition = 1, Axe = 2, Club = 3, Distance = 4, Fist = 5,
     Shield = 6, Spellbook = 7, Sword = 8, Wand = 9,
@@ -688,6 +695,46 @@ pub struct ReferenceItemUseRequirements {
     pub enforcement_mode: ReferenceUseEnforcementMode,
 }
 
+/// What eating or drinking the Item does (group 18, server only; ITEM-SEM-USE-1). Content records
+/// the semantics; ITEM-USE-1 and FOOD-REGEN-1 execute them.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    content = "value",
+    rename_all = "SCREAMING_SNAKE_CASE",
+    deny_unknown_fields
+)]
+pub enum ReferenceItemConsumption {
+    Food(ReferenceItemFood),
+    Potion(ReferenceItemPotion),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemFood {
+    /// 1-1,199 seconds added to the remaining `FoodRegeneration` time.
+    pub regeneration_seconds: u16,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemPotion {
+    /// One or two entries, at most one per resource, Health before Mana.
+    pub restores: Vec<ReferencePotionRestore>,
+    /// `Known` names the flask left behind; `NotApplicable` means none. `Unknown` and `Conflict`
+    /// are refused.
+    pub empty_flask: ReferenceItemField<ReferenceItemTarget>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferencePotionRestore {
+    pub resource: ReferenceRestoreResource,
+    /// `1 <= min <= max <= 10,000`.
+    pub min: u16,
+    pub max: u16,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferenceItemFluid {
@@ -742,6 +789,10 @@ pub struct ReferenceItemSemantics {
     /// Omitted while Unknown, so records written before ITEM-SEM-2b-3 keep their bytes.
     #[serde(default, skip_serializing_if = "ReferenceItemField::is_unknown")]
     pub use_requirements: ReferenceItemField<ReferenceItemUseRequirements>,
+    /// Server only. Omitted while Unknown, so records written before ITEM-SEM-USE-1 keep their
+    /// bytes.
+    #[serde(default, skip_serializing_if = "ReferenceItemField::is_unknown")]
+    pub consumption: ReferenceItemField<ReferenceItemConsumption>,
 }
 
 impl ReferenceItemSemantics {
@@ -763,6 +814,7 @@ impl ReferenceItemSemantics {
             && matches!(self.fluid, ReferenceItemField::Unknown)
             && matches!(self.readable_writeable, ReferenceItemField::Unknown)
             && matches!(self.use_requirements, ReferenceItemField::Unknown)
+            && matches!(self.consumption, ReferenceItemField::Unknown)
     }
 
     pub fn client_projection(&self) -> Self {
@@ -1986,7 +2038,79 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
         )?;
         require_sorted_unique("Reference Item use-requirement vocation order", vocations)?;
     }
+    if let Known(value) = &semantics.consumption {
+        validate_consumption(value)?;
+    }
     Ok(())
+}
+
+fn validate_consumption(value: &ReferenceItemConsumption) -> Result<(), ContentError> {
+    match value {
+        ReferenceItemConsumption::Food(food) => {
+            if !(1..=REFERENCE_ITEM_MAX_FOOD_REGENERATION_SECONDS)
+                .contains(&food.regeneration_seconds)
+            {
+                return Err(ContentError::InvalidArtifact(
+                    "Reference Item food regeneration seconds outside 1-1199",
+                ));
+            }
+        }
+        ReferenceItemConsumption::Potion(potion) => {
+            if potion.restores.is_empty() {
+                return Err(ContentError::InvalidArtifact(
+                    "Reference Item potion requires a restore",
+                ));
+            }
+            require_limit(
+                "Reference Item potion restores",
+                potion.restores.len(),
+                REFERENCE_ITEM_MAX_POTION_RESTORES,
+            )?;
+            if potion
+                .restores
+                .windows(2)
+                .any(|pair| pair[0].resource >= pair[1].resource)
+            {
+                return Err(ContentError::InvalidArtifact(
+                    "Reference Item potion restores must be one per resource, Health before Mana",
+                ));
+            }
+            if potion.restores.iter().any(|restore| {
+                restore.min == 0
+                    || restore.min > restore.max
+                    || restore.max > REFERENCE_ITEM_MAX_RESTORE_AMOUNT
+            }) {
+                return Err(ContentError::InvalidArtifact(
+                    "Reference Item potion restore range outside 1 <= min <= max <= 10000",
+                ));
+            }
+            match &potion.empty_flask {
+                ReferenceItemField::Known(target) => validate_item_target(target)?,
+                ReferenceItemField::NotApplicable => {}
+                ReferenceItemField::Unknown | ReferenceItemField::Conflict => {
+                    return Err(ContentError::InvalidArtifact(
+                        "Reference Item potion empty flask must be Known or NotApplicable",
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Candidate profile adapter validates the complete retained semantics without granting
+/// materialization or legal destinations. Those remain the actual ItemInstance owner's input.
+pub(crate) fn validate_native_item_semantics(
+    semantics: &ReferenceItemSemantics,
+) -> Result<(), ContentError> {
+    let item = ReferenceItemDefinition {
+        physical_class: ReferenceItemPhysicalClass::Unknown,
+        materializable: false,
+        stack_class: ReferenceItemStackClass::Unknown,
+        legal_destinations: vec![],
+        semantics: semantics.clone(),
+    };
+    validate_item_semantics(&item)
 }
 
 fn validate_modifier_parameter(

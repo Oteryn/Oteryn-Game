@@ -5,6 +5,7 @@
   validation, independent review and protected integration.
 - **Amended** by A12 (`OTERYN_GAME_A12_ITEM_IDENTITY_TIBIA_ID_DECISION_2026-09-29.md` §4.6): D93 family keys use the Tibia numbering,
   `oteryn:world-object.tibia.i<id>` and `oteryn:terrain.tibia.i<id>`.
+- **Amended** by MAP-KIND-CLASS-0 (`OTERYN_GAME_MAP_KIND_CLASS0_TERRAIN_KIND_CLASSIFICATION_PACKET_2026-10-04.md` R2): §4.2 `kind` gains `roof` (WO-2c 1a) and `common`.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Routed as architecture package item A7 (#162 comments 5876505672, 5876526764)
 - Owner decisions posted: #162 comment 5876870559
@@ -84,7 +85,7 @@ these ids get, which facts belong to each family, and how do they relate to the 
 | Field | Source | Notes |
 |---|---|---|
 | `identity` | D93 key and revision | |
-| `kind` | route: `ground`, `border`, `wall` or `field` | from the converter rule |
+| `kind` | route: `ground`, `border`, `wall`, `field`, `roof` or `common` | from the converter rule; `common` (MAP-KIND-CLASS-0 R2) is the last rule, for the evidenced overlay ids only |
 | `walkable` | inverse of the unpass flag | KNOWN or UNKNOWN |
 | `ground_speed` | the bank waypoints value | ground only |
 | `blocks_projectile`, `blocks_sight` | blockprojectile, unsight | |

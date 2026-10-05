@@ -1,0 +1,45 @@
+{
+  "abilities": [
+    {
+      "area": {
+        "matrix": {
+          "north": [
+            "..xxx..",
+            ".xxxxx.",
+            "xxxxxxx",
+            "xxxCxxx",
+            "xxxxxxx",
+            ".xxxxx.",
+            "..xxx.."
+          ]
+        }
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/canary-main-current/5ced491dc945115b/ability/effect-dispel",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/5ced491dc945115b/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:spell/source/canary-main-current/5ced491dc945115b/ability/effect-dispel",
+        "revision": "source-player-r28"
+      },
+      "operation": "remove_condition",
+      "removed_condition": "invisible"
+    }
+  ],
+  "formulas": []
+}

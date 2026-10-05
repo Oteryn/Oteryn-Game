@@ -161,7 +161,7 @@ const NPC_BULK: &[u8] = include_bytes!(
 );
 const NPC_BULK_SHA256: &str = "5f6305b658489c842a1fe46ba6deb6e1db254ef30b531c23c788ab99636100c7";
 const NPC_BULK_PREDECESSOR: &str =
-    "c99ad311b40a6e518bceb5393abf259df60ba2efe9d1ce498abed2f25a6e2756";
+    "e97a2e6126485c8333820d8472fa7cc55a0ff3be8d3b71510654c59899c25666";
 const NPC_BULK_COUNT: usize = 45;
 const NPC_BULK_MORE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-bulk-remaining88/native-additions.json"
@@ -169,7 +169,7 @@ const NPC_BULK_MORE: &[u8] = include_bytes!(
 const NPC_BULK_MORE_SHA256: &str =
     "d2eb94b904b0405705d5dd044370c44f2c7cac12a112627750d980bc1c6dff24";
 const NPC_BULK_MORE_PREDECESSOR: &str =
-    "1f5580829cc3ccdae751ec28fb32a80f20a2f8ac02bfa0becd1fea0bfb38cac3";
+    "d492e007c1d8ddbe18bf846ab3f317588b599172ba76e9dbb7a440f62e5153f9";
 const NPC_BULK_MORE_COUNT: usize = 88;
 #[path = "npc_materializer/bulk_enrichment.rs"]
 mod npc_bulk_enrichment;
@@ -178,7 +178,7 @@ const NPC_ENRICH: &[u8] = include_bytes!(
 );
 const NPC_ENRICH_SHA256: &str = "fa06c44b10b6081b8389eb8cc3750b40dcc1fcb89dad71ab2e31807a6c0e2117";
 const NPC_ENRICH_PREDECESSOR: &str =
-    "b62a9541a9719b41446b411d7d8d68b92750894b2879008fa86a0cc7ab891226";
+    "b3172c4cd18ce472a6add31f713a349c5ae7caa1f63c9a55f434d3debe57a7ad";
 const NPC_ENRICH_MORE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r22/native-enrichment.json"
 );
@@ -186,49 +186,49 @@ const NPC_ENRICH_MORE: &[u8] = include_bytes!(
 const NPC_ENRICH_MORE_SHA256: &str =
     "c3a7322ddfe597ecba350b09bcac9ae224082362bcd67d84dcc796a96d9155f8";
 const NPC_ENRICH_MORE_PREDECESSOR: &str =
-    "152ebe54c30b3a0f1e310f0a04af73dfc00d72452e469f1ab1ba069a784c5128";
+    "1ef13e803d4ccd4ee58b7a257d976d8b089093413e2ec20e418886042032a7f9";
 const NPC_ENRICH_FINAL: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r23/native-enrichment.json"
 );
 const NPC_ENRICH_FINAL_SHA256: &str =
     "52022031c1b23ebaefbe3a42f4f324588935279f8601cd05b8cc89992c3ac898";
 const NPC_ENRICH_FINAL_PREDECESSOR: &str =
-    "76a633f94bb82f88a079117968f85f078d88b50175f310acc60eaa385156c8c3";
+    "235f6008bf0159113f3cd49ed224dfbfe4e9371bba70e03bcc64da8072e88664";
 const NPC_ENRICH_UPGRADE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r24/native-enrichment.json"
 );
 const NPC_ENRICH_UPGRADE_SHA256: &str =
     "ff2549f32a31799e26cfe3011a22edcb21748d7e6dca66b07337bb7126da01ed";
 const NPC_ENRICH_UPGRADE_PREDECESSOR: &str =
-    "11e2f922492105676f1390c6ef1f7e71c47ecd552d5540998840c09eee7746c7";
+    "88bb269a8b9803cb084d2986540a1aa53581bf5df5e1725ceefa6cdb58000e03";
 const NPC_APPEARANCE_VISUAL: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-appearance-r25/native-enrichment.json"
 );
 const NPC_APPEARANCE_VISUAL_SHA256: &str =
     "c99f2328ece4d00437e38cc1e712baac58d5c065ca466589a87f388348d44641";
 const NPC_APPEARANCE_VISUAL_PREDECESSOR: &str =
-    "91640b63f84d575bd6dff6453671e00e0a1958ce347599848a8602e554580d8b";
+    "5b79a8a30a7d3dc7aaf29e479c21ec7c1d2c92318d033d377ac55f97b14b1092";
 const NPC_APPEARANCE_FOLLOWUP: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-appearance-r26/native-enrichment.json"
 );
 const NPC_APPEARANCE_FOLLOWUP_SHA256: &str =
     "65c7c42873224677eaee9c11b4a267b75a5ee0c5a6a983a744df9c1332f813dd";
 const NPC_APPEARANCE_FOLLOWUP_PREDECESSOR: &str =
-    "5162597e12510caa9db0b4ddb2fdb72c982e8b78ab3836a47283e4004ec16c71";
+    "970249efdc5aed5850f8ef707a47163b159ce1cf8cf894069dc0a9d936757d33";
 const NPC_APPEARANCE_INVISIBLE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-appearance-r27/native-enrichment.json"
 );
 const NPC_APPEARANCE_INVISIBLE_SHA256: &str =
     "94ce471059d576dc4cadc3d06df22f395482b75443d061d5ef821515ac5bf3ca";
 const NPC_APPEARANCE_INVISIBLE_PREDECESSOR: &str =
-    "4bec39e269f9cff6f0f3323e9f3f1c97347c563b9367b1a0a2fba3e85a66df89";
+    "910f99144722e4157eafde5b5d130826c83d46362984d40f1ecbd023d54aa388";
 const NPC_QUEST_DIALOGUE: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-enrichment-r28/native-enrichment.json"
 );
 const NPC_QUEST_DIALOGUE_SHA256: &str =
     "4dfa43f6fda9a58dcf9f7e83da21203f63d1f7b66f0e6136f34848ee5ccd6d47";
 const NPC_QUEST_DIALOGUE_PREDECESSOR: &str =
-    "49132969a76a7f67ad134300206040b5897b25a5f4d8083172024b487a60fd30";
+    "f7ac4deddaaa3a26c2068980bb139c3411a0956047aa39e11789a4b78e1d61b1";
 fn quest_dialogue_provisional(
     draft: ProjectV2Draft,
 ) -> Result<ProjectV2Draft, Box<dyn std::error::Error>> {

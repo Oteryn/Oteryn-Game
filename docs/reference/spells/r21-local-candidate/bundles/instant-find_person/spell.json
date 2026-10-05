@@ -1,0 +1,105 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/find_person",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Find Person",
+    "carrier": "instant",
+    "words": "exiva",
+    "reference_spell_id": 20,
+    "library_text": "Another cheap, but useful spell that is highly popular with all vocations, Find Person will allow the caster to locate the life essence of any character that is currently online. Unfortunately, it is not possible to identify the exact whereabouts due to the complexity of this ritual. Rather, the caster will only learn the general direction in which the targeted character can be found. For this reason it may be necessary to cast the spell a couple of times before you will meet the character you are looking for. Players on Optional PvP game worlds can use a button in the chat console to determine which characters are able to find their characters with this spell.",
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 8,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 20,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "player_name"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_find_person"
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "locate_message",
+        "parameters": {
+          "source": "online_player",
+          "distance_metric": "chebyshev_xy",
+          "delta": "caster_minus_target",
+          "bands_tiles": [
+            5,
+            101,
+            251
+          ],
+          "direction_tangents": [
+            0.4142,
+            2.4142
+          ],
+          "vertical_direction": "positive_delta_is_higher",
+          "message_class": "look",
+          "success_effect": "magic_blue",
+          "failure_effect": "poff",
+          "beside_messages": [
+            "is below you",
+            "is standing next to you",
+            "is above you"
+          ],
+          "close_messages": [
+            "is on a lower level to the",
+            "is to the",
+            "is on a higher level to the"
+          ],
+          "far_message": "is far to the",
+          "very_far_message": "is very far to the",
+          "parameter": "player_name",
+          "parameter_length": [
+            1,
+            29
+          ],
+          "prefix_suffix": "~",
+          "case_insensitive": true,
+          "prefix_requires_unique_match": true,
+          "hide_staff_from_nonstaff": true,
+          "respect_no_pvp_exiva_restrictions": true,
+          "name_resolution_failure_starts_cooldown": true,
+          "name_resolution_failure_spends_mana": false,
+          "message_template": "{name} {location}."
+        }
+      }
+    }
+  }
+}

@@ -66,6 +66,10 @@ pub mod item_timed_promotion;
 pub mod item_use_observation_promotion;
 pub mod item_weapon_metadata_promotion;
 mod model;
+pub(crate) mod native_cell_lookup;
+pub(crate) mod native_gameplay;
+pub(crate) mod native_source_world_carrier;
+pub(crate) mod native_spell_appearances;
 mod npc_catalogue;
 mod production;
 mod project;
@@ -74,6 +78,7 @@ mod reference_artifact;
 mod reference_playable;
 #[cfg(test)]
 pub(crate) mod reference_static_cell;
+pub(crate) mod spell_wheel_profile;
 #[allow(
     dead_code,
     reason = "unactivated engineering Content carrier awaits the separate Movement consumer lease"
@@ -129,3 +134,8 @@ pub use reference_playable::*;
 
 #[cfg(test)]
 mod tests;
+
+pub(crate) mod spell_familiar_config;
+pub(crate) mod spell_familiar_defenses;
+
+pub(crate) use project::SourceFloorChange;

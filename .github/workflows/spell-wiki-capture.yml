@@ -21,6 +21,9 @@ jobs:
     name: Spell authoring / schema and validator
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      OTERYN_SPELL_SOURCE_ROOT: ${{ github.workspace }}/_sources
+      OTERYN_SPELL_SOURCES: ${{ github.workspace }}/_sources
     defaults:
       run:
         shell: bash
@@ -39,6 +42,60 @@ jobs:
 
       - name: Install pinned requirements
         run: python -m pip install -r requirements.txt
+
+      - name: Read the source pins
+        id: pins
+        run: |
+          set -euo pipefail
+          python - >> "$GITHUB_OUTPUT" <<'PY'
+          from convert_spells import SOURCES
+          for name, source in SOURCES.items():
+              print(f"{name}_repository={source['repository']}")
+              print(f"{name}_revision={source['revision']}")
+          PY
+
+      - name: Check out the pinned Canary source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.pins.outputs.canary_repository }}
+          ref: ${{ steps.pins.outputs.canary_revision }}
+          path: _sources/canary
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+                data/scripts
+                data/libs
+                data/XML
+                data/items
+                data/global.lua
+                src
+                config.lua.dist
+
+      - name: Check out the pinned Crystal source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.pins.outputs.crystal_repository }}
+          ref: ${{ steps.pins.outputs.crystal_revision }}
+          path: _sources/crystal
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+                data/scripts
+                data/libs
+                data/XML
+                data/items
+                data/global.lua
+                src
+                config.lua.dist
+
+      - name: Retrieve external completion test fixtures from pinned sources
+        run: |
+          set -euo pipefail
+          python retrieve_completion_fixtures.py \
+            --manifest "$GITHUB_WORKSPACE/docs/reference/spells/r21-local-candidate/external-fixture-inputs.json" \
+            --checkout-root "$GITHUB_WORKSPACE" --sources "$GITHUB_WORKSPACE/_sources"
 
       - name: Regenerate schemas and template byte-identically
         run: |
@@ -110,21 +167,12 @@ jobs:
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
-                data/scripts/spells
-                data/scripts/runes
-                data/scripts/lib
+                data/scripts
                 data/libs
                 data/XML
-                src/creatures/combat
-                src/creatures/creatures_definitions.hpp
-                src/creatures/players
-                src/utils/utils_definitions.hpp
-                src/game/game_definitions.hpp
-                src/items/weapons
-                src/lua/functions/creatures/combat
-                src/lua/functions/lua_functions_loader.hpp
-                src/lua/functions/lua_functions_loader.cpp
-                src/lua/functions/core/game/lua_enums.cpp
+                data/items
+                data/global.lua
+                src
                 config.lua.dist
 
       - name: Check out the pinned Crystal source
@@ -137,21 +185,12 @@ jobs:
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
-                data/scripts/spells
-                data/scripts/runes
-                data/scripts/lib
+                data/scripts
                 data/libs
                 data/XML
-                src/creatures/combat
-                src/creatures/creatures_definitions.hpp
-                src/creatures/players
-                src/utils/utils_definitions.hpp
-                src/game/game_definitions.hpp
-                src/items/weapons
-                src/lua/functions/creatures/combat
-                src/lua/functions/lua_functions_loader.hpp
-                src/lua/functions/lua_functions_loader.cpp
-                src/lua/functions/core/game/lua_enums.cpp
+                data/items
+                data/global.lua
+                src
                 config.lua.dist
 
       - name: Regenerate and compare
@@ -171,7 +210,8 @@ jobs:
           cmp "$out/verify.json" samples/spell-verify-3-sources-2026-09-28.json
           python convert_spells.py --canary "$CANARY" --crystal "$CRYSTAL" --out "$out/starter" \
             --only "cure poison" "energy strike" "great fireball rune" "ice strike" "intense healing" \
-                   "light healing" "sudden death rune" > /dev/null
+                   "light healing" "sudden death rune" "magic patch" "bruise bane" "wound cleansing" \
+                   "ultimate healing" > /dev/null
           diff -r "$out/starter" samples/starter-bundles
           echo 'census, readiness, verification and starter bundles reproduce from the pinned sources'
 
@@ -205,13 +245,22 @@ jobs:
           python wiki_spells.py facts --wiki br --all-fields --cache "$RUNNER_TEMP/br" \
             --out "$RUNNER_TEMP/out/wiki-spell-infoboxes-br.json"
           python - "$RUNNER_TEMP/out/wiki-spell-infoboxes-br.json" <<'PY'
-          import json, sys
+          import base64, gzip, json, sys
           doc = json.load(open(sys.argv[1], encoding='utf-8'))
           pages = doc['pages']
           assert doc['wiki'] == 'br' and pages, 'empty BR capture'
           assert all('content' not in p for p in pages), 'raw wikitext must not leave the runner'
           spells = sum(1 for p in pages if 'Infobox Spell' in p.get('infoboxes', {}))
           print(f"BR pages: {len(pages)}, with Infobox Spell: {spells}")
+          # Public allowlisted facts only; retain artifact and provide a bounded log fallback.
+          raw = json.dumps(doc, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+          compressed = gzip.compress(raw, mtime=0)
+          assert len(compressed) <= 1024 * 1024, 'BR factual log fallback exceeds 1 MiB'
+          encoded = base64.b64encode(compressed).decode('ascii')
+          assert gzip.decompress(base64.b64decode(encoded, validate=True)) == raw
+          chunks = [encoded[i:i + 16000] for i in range(0, len(encoded), 16000)]
+          for index, chunk in enumerate(chunks, 1):
+              print(f"OTERYN_WIKI_BR_FACTS_GZIP_BASE64={index}/{len(chunks)}:{chunk}")
           PY
 
       - name: Upload BR infobox facts

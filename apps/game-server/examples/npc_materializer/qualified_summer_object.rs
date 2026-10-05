@@ -12,7 +12,7 @@ const DIGEST: Option<&str> =
 const PREDECESSOR_ECE: Option<&str> =
     Some("7053080306c1fa53c04a3b6d364244378b7174cf583f3515acaa7f7428d95be9");
 const PREDECESSOR_REFERENCE: Option<&str> =
-    Some("f24e2196df10ffde737ff13b84c01c3af87b1db2c826b55aa416b6bf0b0fde0e");
+    Some("91cfe512170c3290cba233ad5405ba452b549dada8c2902c5371bf0230cfb7fa");
 const MAPPER: &str = "NPC_BOUNDED_D15_D16_DEFINITION_BRIDGE/v1";
 const MAPPER_DIGEST: &str = "04401177830fc930b4947ba4813ac002947dfccc978bc9a14422458206caf07f";
 const FROM: &str = "g4-npc-qualified-playerbots-r15";

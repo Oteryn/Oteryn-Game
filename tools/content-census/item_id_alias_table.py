@@ -40,7 +40,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools/content-schema/item-authoring"))
 
-from appearance_membership import INDEX_NAME, OUT_DIR, load_admitted
+from appearance_membership import INDEX_NAME, OUT_DIR, load_admitted  # noqa: E402
 
 ALIAS_TABLE = ROOT / "content/items/aliases.json"
 TOMBSTONES = ROOT / "docs/agents/evidence/OTV2-20260929-item-id-1-d149-tombstones.json"

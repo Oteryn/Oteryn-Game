@@ -35,9 +35,11 @@ use super::world_object::{
     encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
 };
 use super::world_spatial::{
-    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, DELTA_TYPE_WORLD_SPATIAL_V1,
-    SNAPSHOT_TYPE_WORLD_SPATIAL_V1, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection,
-    StepDisposition, WorldSpatialObservation, decode_step_intent, encode_step_outcome,
+    CAPABILITY_WORLD_SPATIAL_ENTITIES, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, ChannelEntities,
+    ChannelEntity, DELTA_TYPE_WORLD_SPATIAL_V1, SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+    STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, SessionVisibility, StepDirection, StepDisposition,
+    VisibilityUpdate, VisibleKind, WorldSpatialEntity, WorldSpatialError, WorldSpatialObservation,
+    decode_step_intent, encode_step_outcome, encode_visibility_delta, encode_visibility_snapshot,
     encode_world_spatial,
 };
 use crate::achievement_catalogue::AccountAchievementsRequest;
@@ -139,6 +141,8 @@ pub(crate) struct SessionContinuity {
     /// Channel-global, so this field is written from the live value actually sent, not trusted
     /// to already match it — see `serve_admitted`.
     pub(crate) overlay_revision: u64,
+    /// Last complete own-actor vitals state actually transmitted.
+    pub(crate) vitals_revision: u64,
     /// `ACCOUNT_ACHIEVEMENT_NOTICES` (domain 13, ACHIEVEMENT-0 §5): `None` when the session did
     /// not select capability 8, which production never does before capability negotiation is
     /// composed. Otherwise the domain's revision: 0 at the session's first snapshot, plus 1 for
@@ -165,6 +169,7 @@ impl SessionContinuity {
         server_sequence: 0,
         spatial_revision: 1,
         overlay_revision: 0,
+        vitals_revision: 0,
         achievement_notice_revision: None,
         selected_capabilities: SelectedCapabilities::NONE,
         item_view: ItemViewContinuity {
@@ -272,6 +277,32 @@ pub(crate) trait FreshAdmissionAuthority {
         _actor: ExactActorRef,
     ) -> impl Future<Output = Option<WorldSpatialObservation>> {
         async { None }
+    }
+
+    /// VIS-3 (MOVE-RL-11 §4): every entity of the admitted actor's Channel with the actor's own
+    /// identity among them, read in one Channel-owner work item, for domain 1 under capability 6.
+    /// `None` when it cannot be read: a session that selected capability 6 then fails closed.
+    /// An authority that knows no other entity (a fixture) shows the own actor alone, from
+    /// [`Self::observe`].
+    fn observe_visible_entities(
+        &self,
+        actor: ExactActorRef,
+    ) -> impl Future<Output = Option<ChannelEntities>> {
+        async move {
+            let own = self.observe(actor).await?;
+            let identity = actor.placement_identity();
+            Some(ChannelEntities {
+                content_generation: own.content_generation,
+                observer: identity,
+                entities: vec![ChannelEntity {
+                    kind: VisibleKind::Player,
+                    identity,
+                    generation: 0,
+                    position: own.actor_position,
+                    revision: 0,
+                }],
+            })
+        }
     }
 
     /// The Channel's current `WORLD_OBJECT_OVERLAY` for the join/resync snapshot (USE-WIRE-V1,
@@ -384,6 +415,18 @@ pub(crate) trait FreshAdmissionAuthority {
         _intent: SpellCastIntent,
     ) -> impl Future<Output = SpellCastOutcome> {
         async { SpellCastOutcome::rejected() }
+    }
+
+    /// None keeps an ambiguously committed original spell outstanding. It is
+    /// never encoded as a terminal rejection or advanced to the next CommandId.
+    fn cast_spell_completion(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: SpellCastIntent,
+    ) -> impl Future<Output = Option<SpellCastOutcome>> {
+        async move { Some(self.cast_spell(actor, session, command_id, intent).await) }
     }
 
     /// One `ACCOUNT_ACHIEVEMENTS_QUERY` page of the request's account's earned facts (display
@@ -813,6 +856,61 @@ where
 const SERENE_EVALUATION: std::time::Duration =
     std::time::Duration::from_micros(crate::spell::harmony::SERENE_EVALUATION_MICROS);
 
+/// VIS-3: how often a session with capability 6 looks for entities of its Channel that changed
+/// without its own step.
+const VISIBILITY_REFRESH: std::time::Duration = std::time::Duration::from_millis(250);
+
+/// VIS-3: the domain 1 handles of a spatial view's objects under capability 4 (ITEM-VIEW-1b
+/// §4.1); without an item view there are none to attach.
+fn attach_spatial_handles(
+    item_view: Option<&mut SessionItemView>,
+    entities: &mut [WorldSpatialEntity],
+) -> Result<(), WorldSpatialError> {
+    match item_view {
+        Some(view) => view
+            .attach_spatial_handles(entities)
+            .map_err(|_| WorldSpatialError::LimitExceeded),
+        None => Ok(()),
+    }
+}
+
+/// VIS-3: the frame of one visibility refresh after `sequence` and domain 1 `revision`, with the
+/// sequence and revision it leaves: a sequenced delta to the next revision, or nothing.
+///
+/// A change above the delta ceiling (MOVE-RL-11 §4.3 resync) returns `None`, and the caller ends
+/// the connection with its continuity at the last delivered sequence and revision. An admitted
+/// client accepts no `SnapshotBegin` after its join (`oteryn-session` reads only `StateDelta`,
+/// `CommandResult` and `LivenessProbe` there), so the resync snapshot is the one the resume of
+/// that continuity sends from the interest set. `None` also fails closed on an encoding error.
+fn visibility_frames(
+    generation: u64,
+    sequence: u64,
+    revision: u64,
+    selected: &[u32],
+    update: &VisibilityUpdate,
+) -> Option<(Vec<Vec<u8>>, u64, u64)> {
+    match update {
+        VisibilityUpdate::Unchanged => Some((Vec::new(), sequence, revision)),
+        VisibilityUpdate::Delta(delta) => {
+            let (delta_sequence, new_revision) =
+                (sequence.checked_add(1)?, revision.checked_add(1)?);
+            let (delta_type, payload) = encode_visibility_delta(selected, delta).ok()?;
+            let frame = encode_state_delta(
+                generation,
+                delta_sequence,
+                STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision,
+                new_revision,
+                delta_type,
+                &payload,
+            )
+            .ok()?;
+            Some((vec![frame], delta_sequence, new_revision))
+        }
+        VisibilityUpdate::Snapshot(_) => None,
+    }
+}
+
 pub(crate) async fn serve_admitted<S, A>(
     stream: &mut S,
     admitted: AdmittedSession,
@@ -836,18 +934,19 @@ where
         return hold_admitted(stream, admitted).await;
     };
     let mut revision = admitted.continuity.spatial_revision;
-    let payload = encode_world_spatial(&baseline);
-    let mut domains = vec![DomainSnapshot {
-        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-        revision,
-        snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-        payload: &payload,
-    }];
+    // VIS-3: domain 1 goes first; with capability 6 it is composed after the item view below, so
+    // that its objects carry their item handles under capability 4.
+    let spatial: (u32, Vec<u8>);
+    let mut domains = Vec::new();
     // USE-WIRE-V1 (#162 5868482467): the join/resync snapshot also carries the door's current
     // `WORLD_OBJECT_OVERLAY`, the same code path a reconnect resumes through, so a resumed
     // connection gets the door's current overlay exactly as a fresh join does.
     let overlay = authority.observe_world_object_overlay().await;
-    let overlay_payload;
+    // Absence qualifies the initial empty domain, not a reset of an overlay
+    // revision already delivered on this session. Refuse an unavailable owner.
+    if overlay.is_none() && admitted.continuity.overlay_revision != 0 {
+        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    }
     // Spell cast §3/§4: the own actor's `ACTOR_VITALS`, when it has them, in the same snapshot.
     let vitals = authority
         .observe_vitals(actor, admitted.game_session_id)
@@ -884,18 +983,20 @@ where
             ))
         }
     };
-    if let Some(entry) = &overlay {
-        let Ok(bytes) = encode_world_object_overlay_snapshot(std::slice::from_ref(entry)) else {
-            return ConnectionEnd::AdmittedThenDisconnected(admitted);
-        };
-        overlay_payload = bytes;
-        domains.push(DomainSnapshot {
-            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-            revision: entry.revision,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-            payload: &overlay_payload,
-        });
-    }
+    // An empty overlay is still the registered domain's complete snapshot.
+    // Source-qualified maps have no legacy entry-room door; publish no invented
+    // placement, while allowing the client to distinguish empty from missing.
+    let entries = overlay.as_slice();
+    let Ok(overlay_payload) = encode_world_object_overlay_snapshot(entries) else {
+        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    };
+    let overlay_revision = overlay.as_ref().map_or(0, |entry| entry.revision);
+    domains.push(DomainSnapshot {
+        domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+        revision: overlay_revision,
+        snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+        payload: &overlay_payload,
+    });
     if let Some((vitals_revision, value)) = &vitals {
         let Ok(bytes) = encode_actor_vitals(value) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -952,6 +1053,43 @@ where
         }
         item_view = Some(view);
     }
+    // VIS-3 (MOVE-RL-11 §4): with capability 6, domain 1 is the VIS-1 interest set of the
+    // session's Channel; without it, the v1 own-actor type. A resume resends it the same way.
+    let selected_capabilities = admitted.continuity.selected_capabilities;
+    let mut visibility = None;
+    if selected_capabilities.contains(CAPABILITY_WORLD_SPATIAL_ENTITIES) {
+        let Some(channel) = authority.observe_visible_entities(actor).await else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        let mut view = SessionVisibility::default();
+        let snapshot = view.snapshot(&channel, &mut |entities| {
+            attach_spatial_handles(item_view.as_mut(), entities)
+        });
+        if let Some(item_view) = &item_view {
+            admitted.continuity.item_view = item_view.continuity();
+        }
+        let Ok(encoded) = snapshot.and_then(|snapshot| {
+            encode_visibility_snapshot(selected_capabilities.as_slice(), &snapshot)
+        }) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        spatial = encoded;
+        visibility = Some(view);
+    } else {
+        spatial = (
+            SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+            encode_world_spatial(&baseline),
+        );
+    }
+    domains.insert(
+        0,
+        DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            revision,
+            snapshot_type: spatial.0,
+            payload: &spatial.1,
+        },
+    );
     if let Some((notice_revision, payload)) = &notices {
         domains.push(DomainSnapshot {
             domain_id: STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
@@ -1026,8 +1164,9 @@ where
     // `spatial_revision`, this actor's own counter), so the reconnect fence (`resume.rs`,
     // r4122215795) must record what was actually confirmed delivered, never a value written
     // before transmission could still fail partway through.
-    if let Some(entry) = &overlay {
-        admitted.continuity.overlay_revision = entry.revision;
+    admitted.continuity.overlay_revision = overlay_revision;
+    if let Some((vitals_revision, _)) = &vitals {
+        admitted.continuity.vitals_revision = *vitals_revision;
     }
     let mut sequence = admitted.continuity.server_sequence;
     let mut next_command = admitted.continuity.next_command_id;
@@ -1056,12 +1195,21 @@ where
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         refresh
     });
+    // VIS-3: only a session with capability 6 looks for entities that changed without its own
+    // step.
+    let mut visibility_refresh = visibility.is_some().then(|| {
+        let mut refresh = tokio::time::interval_at(
+            tokio::time::Instant::now() + VISIBILITY_REFRESH,
+            VISIBILITY_REFRESH,
+        );
+        refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        refresh
+    });
     // SPEED-1 (CONDITIONS-0 §4.3): this connection's pacing clock, its one-step buffer and the
     // frames read while a step waits in it. Those frames run, in order, only after the buffered
     // step's result, because results commit in CommandId order (FND-02 §13); a step among them
     // arrived while the buffer was full and is refused. All of it ends with the connection, so
     // the buffer is dropped at disconnect and a resumed connection starts empty.
-    let selected_capabilities = admitted.continuity.selected_capabilities;
     let mut pacer = StepPacer::default();
     let mut buffered: Option<BufferedStep> = None;
     let mut held: std::collections::VecDeque<Vec<u8>> = std::collections::VecDeque::new();
@@ -1074,6 +1222,7 @@ where
             Probe,
             Serene,
             QuestLog,
+            Visibility,
         }
         // All futures are cancel-safe: the frame reader keeps partial bytes and a dropped
         // interval tick is not consumed. The ticks are polled first so a client that keeps
@@ -1108,6 +1257,12 @@ where
                     None => std::future::pending().await,
                 }
             });
+            let mut visibility_tick = std::pin::pin!(async {
+                match visibility_refresh.as_mut() {
+                    Some(refresh) => refresh.tick().await,
+                    None => std::future::pending().await,
+                }
+            });
             std::future::poll_fn(|context| {
                 if tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Probe);
@@ -1117,6 +1272,9 @@ where
                 }
                 if quest_log_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::QuestLog);
+                }
+                if visibility_tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::Visibility);
                 }
                 if step_due.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::StepDue);
@@ -1137,13 +1295,24 @@ where
             },
             Next::Held(frame) => (frame, true),
             Next::Serene => {
-                let Some((to, value)) =
-                    authority.tick_vitals(actor, admitted.game_session_id).await
+                let changed = authority.tick_vitals(actor, admitted.game_session_id).await;
+                let current = authority
+                    .observe_vitals(actor, admitted.game_session_id)
+                    .await;
+                let Some((to, value)) = current
+                    .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
+                    .or(changed
+                        .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision))
                 else {
                     continue;
                 };
-                let Some((delta_sequence, delta)) = vitals_delta(generation, sequence, to, &value)
-                else {
+                let Some((delta_sequence, delta)) = vitals_delta(
+                    generation,
+                    sequence,
+                    admitted.continuity.vitals_revision,
+                    to,
+                    &value,
+                ) else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 };
                 sequence = delta_sequence;
@@ -1151,6 +1320,7 @@ where
                 if write_frame(stream, &delta).await.is_err() {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
+                admitted.continuity.vitals_revision = to;
                 continue;
             }
             Next::QuestLog => {
@@ -1178,6 +1348,42 @@ where
                 if write_frame(stream, &frame).await.is_err() {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
+                continue;
+            }
+            Next::Visibility => {
+                // VIS-3: entities that moved, entered or left without this actor's step.
+                let Some(view) = visibility.as_mut() else {
+                    continue;
+                };
+                let Some(channel) = authority.observe_visible_entities(actor).await else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                let update = view.refresh(&channel, &mut |entities| {
+                    attach_spatial_handles(item_view.as_mut(), entities)
+                });
+                if let Some(item_view) = &item_view {
+                    admitted.continuity.item_view = item_view.continuity();
+                }
+                let Some((frames_out, to_sequence, to_revision)) = update.ok().and_then(|update| {
+                    visibility_frames(
+                        generation,
+                        sequence,
+                        revision,
+                        selected_capabilities.as_slice(),
+                        &update,
+                    )
+                }) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                sequence = to_sequence;
+                admitted.continuity.server_sequence = sequence;
+                for frame in &frames_out {
+                    if write_frame(stream, frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                }
+                revision = to_revision;
+                admitted.continuity.spatial_revision = revision;
                 continue;
             }
             Next::Frame(Ok(frame)) if buffered.is_some() => {
@@ -1423,11 +1629,20 @@ where
             }
         } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT {
             match decode_spell_cast_intent(command.payload) {
-                Ok(intent) => Dispatch::Spell(
-                    authority
-                        .cast_spell(actor, admitted.game_session_id, command.command_id, intent)
-                        .await,
-                ),
+                Ok(intent) => match authority
+                    .cast_spell_completion(
+                        actor,
+                        admitted.game_session_id,
+                        command.command_id,
+                        intent,
+                    )
+                    .await
+                {
+                    Some(outcome) => Dispatch::Spell(outcome),
+                    // Preserve continuity's original next command and no terminal
+                    // outcome; reconnect/reconciliation cannot pay or reroll twice.
+                    None => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+                },
                 Err(_) => Dispatch::Spell(SpellCastOutcome::rejected()),
             }
         } else if command.command_type == COMMAND_TYPE_CONTAINER_VIEW_INTENT {
@@ -1595,26 +1810,66 @@ where
         match dispatch {
             Dispatch::Step(outcome) => {
                 if let Some(observation) = outcome.moved_to {
-                    let (Some(delta_sequence), Some(new_revision)) =
-                        (sequence.checked_add(1), revision.checked_add(1))
-                    else {
-                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                    };
-                    let Ok(delta) = encode_state_delta(
-                        generation,
-                        delta_sequence,
-                        STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                        revision,
-                        new_revision,
-                        DELTA_TYPE_WORLD_SPATIAL_V1,
-                        &encode_world_spatial(&observation),
-                    ) else {
-                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
-                    };
+                    // VIS-3: with capability 6 the step's delta is the interest set's change (a
+                    // resync ends the connection); without it, the v1 own-actor delta.
+                    let (frames_out, delta_sequence, new_revision) =
+                        if let Some(view) = visibility.as_mut() {
+                            let Some(mut channel) = authority.observe_visible_entities(actor).await
+                            else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            // The step's committed position is the observer's own.
+                            let observer = channel.observer;
+                            for own in channel
+                                .entities
+                                .iter_mut()
+                                .filter(|entity| entity.identity == observer)
+                            {
+                                own.position = observation.actor_position;
+                            }
+                            let update = view.refresh(&channel, &mut |entities| {
+                                attach_spatial_handles(item_view.as_mut(), entities)
+                            });
+                            if let Some(item_view) = &item_view {
+                                admitted.continuity.item_view = item_view.continuity();
+                            }
+                            let Some(sent) = update.ok().and_then(|update| {
+                                visibility_frames(
+                                    generation,
+                                    sequence,
+                                    revision,
+                                    selected_capabilities.as_slice(),
+                                    &update,
+                                )
+                            }) else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            sent
+                        } else {
+                            let (Some(delta_sequence), Some(new_revision)) =
+                                (sequence.checked_add(1), revision.checked_add(1))
+                            else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            let Ok(delta) = encode_state_delta(
+                                generation,
+                                delta_sequence,
+                                STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                                revision,
+                                new_revision,
+                                DELTA_TYPE_WORLD_SPATIAL_V1,
+                                &encode_world_spatial(&observation),
+                            ) else {
+                                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                            };
+                            (vec![delta], delta_sequence, new_revision)
+                        };
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
-                    if write_frame(stream, &delta).await.is_err() {
-                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    for frame in &frames_out {
+                        if write_frame(stream, frame).await.is_err() {
+                            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                        }
                     }
                     // r4122508665: only record the new spatial revision once the delta that
                     // carries it has actually been transmitted (this had the same
@@ -1755,10 +2010,22 @@ where
             Dispatch::Spell(outcome) => {
                 // ACTOR_VITALS (domain 3, delta type 1) carries the owner's own per-actor
                 // revision: a committed cast advances it by exactly one.
-                if let Some((to, value)) = outcome.vitals {
-                    let Some((delta_sequence, delta)) =
-                        vitals_delta(generation, sequence, to, &value)
-                    else {
+                let observed = authority
+                    .observe_vitals(actor, admitted.game_session_id)
+                    .await;
+                if let Some((to, value)) = observed
+                    .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision)
+                    .or(outcome
+                        .vitals
+                        .filter(|(revision, _)| *revision > admitted.continuity.vitals_revision))
+                {
+                    let Some((delta_sequence, delta)) = vitals_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.vitals_revision,
+                        to,
+                        &value,
+                    ) else {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     };
                     sequence = delta_sequence;
@@ -1766,6 +2033,7 @@ where
                     if write_frame(stream, &delta).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
+                    admitted.continuity.vitals_revision = to;
                 }
             }
             Dispatch::UseItem(_, Some(delta)) | Dispatch::ContainerView(_, Some(delta)) => {
@@ -1798,16 +2066,20 @@ where
     }
 }
 
-/// The `ACTOR_VITALS` delta (domain 3, delta type 1) from revision `to - 1` to `to`, at the
-/// sequence after `sequence`; `None` on an encoding fault.
+/// The `ACTOR_VITALS` delta (domain 3, delta type 1) from the last transmitted revision to `to`, at the
+/// sequence after `sequence`; `None` on an encoding fault. The complete value
+/// may coalesce multiple actual owner changes from the last transmitted revision.
 fn vitals_delta(
     generation: u64,
     sequence: u64,
+    from: u64,
     to: u64,
     value: &ActorVitals,
 ) -> Option<(u64, Vec<u8>)> {
     let delta_sequence = sequence.checked_add(1)?;
-    let from = to.checked_sub(1)?;
+    if from == 0 || to <= from {
+        return None;
+    }
     let payload = encode_actor_vitals(value).ok()?;
     let delta = encode_state_delta(
         generation,
@@ -1905,6 +2177,106 @@ mod tests {
     const SESSION: [u8; 16] = uuid_v7(0x22);
     const WORLD: [u8; 16] = uuid_v7(0x33);
     const CHANNEL: [u8; 16] = uuid_v7(0x44);
+
+    #[test]
+    fn vitals_publication_coalesces_real_changes_from_last_transmitted_revision()
+    -> Result<(), Box<dyn Error>> {
+        let (sequence, wire) = vitals_delta(2, 11, 40, 43, &SERENE_VITALS).ok_or("delta")?;
+        let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&wire)?;
+        let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+        assert_eq!(
+            (sequence, delta.base_revision, delta.new_revision),
+            (12, 40, 43)
+        );
+        assert_eq!(
+            delta.payload,
+            encode_actor_vitals(&SERENE_VITALS).map_err(|_| "vitals")?
+        );
+        assert!(vitals_delta(2, 11, 0, 43, &SERENE_VITALS).is_none());
+        assert!(vitals_delta(2, 11, 43, 43, &SERENE_VITALS).is_none());
+        assert!(vitals_delta(2, 11, 44, 43, &SERENE_VITALS).is_none());
+        Ok(())
+    }
+
+    struct PendingSpellAuthority;
+    impl FreshAdmissionAuthority for PendingSpellAuthority {
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+        async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+        async fn observe_vitals(
+            &self,
+            _: ExactActorRef,
+            _: GameSessionId,
+        ) -> Option<(u64, ActorVitals)> {
+            Some((1, SERENE_VITALS))
+        }
+        async fn cast_spell_completion(
+            &self,
+            _: ExactActorRef,
+            _: GameSessionId,
+            _: u64,
+            _: SpellCastIntent,
+        ) -> Option<SpellCastOutcome> {
+            None
+        }
+    }
+
+    #[test]
+    fn unknown_spell_commit_preserves_original_command_and_emits_no_terminal_result()
+    -> Result<(), Box<dyn Error>> {
+        use super::super::actor_spell::tests as spell;
+        run(async {
+            let (_, actor, session) = spell::runtime_with_player(0x73);
+            let admitted = AdmittedSession {
+                game_session_id: session,
+                world_id: WorldId::decode(&uuid_v7(0x60))?,
+                channel_id: ChannelId::decode(&uuid_v7(0x61))?,
+                runtime_actor: Some(actor),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            };
+            let intent = SpellCastIntent {
+                spell: std::num::NonZeroU32::new(1).ok_or("index")?,
+                target: oteryn_protocol_oteryn::actor_spell::SpellTarget::None,
+                aim_at_target: false,
+            };
+            let payload = super::super::actor_spell::encode_spell_cast_intent(&intent);
+            let (mut server, mut client) = tokio::io::duplex(1 << 16);
+            write_frame(&mut client, &cast_command(1, &payload)).await?;
+            let end =
+                serve_admitted(&mut server, admitted, &PendingSpellAuthority, IDLE_LIVENESS).await;
+            let ConnectionEnd::AdmittedThenDisconnected(retained) = end else {
+                return Err("unexpected end".into());
+            };
+            assert_eq!(retained.continuity.next_command_id, 1);
+            assert_eq!(retained.continuity.server_sequence, 0);
+            assert_eq!(retained.continuity.vitals_revision, 1);
+            drop(server);
+            let mut bytes = Vec::new();
+            client.read_to_end(&mut bytes).await?;
+            let mut remaining = bytes.as_slice();
+            while !remaining.is_empty() {
+                let prefix: [u8; 4] = remaining.get(..4).ok_or("prefix")?.try_into()?;
+                let length = usize::try_from(u32::from_be_bytes(prefix))?;
+                let wire = remaining.get(4..4 + length).ok_or("frame")?;
+                let envelope = oteryn_protocol_oteryn::decode_wire_envelope(wire)?;
+                assert_ne!(
+                    envelope.message_type(),
+                    oteryn_protocol_oteryn::MessageType::CommandResult
+                );
+                remaining = remaining.get(4 + length..).ok_or("tail")?;
+            }
+            Ok(())
+        })
+    }
 
     const fn uuid_v7(tag: u8) -> [u8; 16] {
         let mut bytes = [tag; 16];
@@ -2219,17 +2591,31 @@ mod tests {
         Ok((end, frames))
     }
 
+    // V1 encodes the empty entry list as an empty payload, while retaining
+    // the registered domain, snapshot type and initial revision in the envelope.
+    fn empty_overlay_snapshot() -> DomainSnapshot<'static> {
+        DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            revision: 0,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            payload: &[],
+        }
+    }
+
     fn baseline() -> Vec<Vec<u8>> {
         encode_single_chunk_snapshot(
             ADMITTED_GENERATION,
             1,
             0,
-            &[DomainSnapshot {
-                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                revision: 1,
-                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-                payload: &encode_world_spatial(&at(0)),
-            }],
+            &[
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    revision: 1,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                    payload: &encode_world_spatial(&at(0)),
+                },
+                empty_overlay_snapshot(),
+            ],
         )
         .expect("snapshot")
         .into()
@@ -2545,6 +2931,7 @@ mod tests {
                     server_sequence: 4,
                     spatial_revision: 2,
                     overlay_revision: 0,
+                    vitals_revision: 0,
                     achievement_notice_revision: None,
                     selected_capabilities: SelectedCapabilities::NONE,
                     item_view: ItemViewContinuity::default(),
@@ -3167,6 +3554,65 @@ mod tests {
     /// calls have gone through the inner stream, then fails every call after. Reads are
     /// unaffected. Used to prove a specific frame's transmission fails, without racing a real
     /// duplex's buffering/timing.
+    #[test]
+    fn admitted_empty_overlay_is_present_and_records_its_delivered_revision()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
+                overlay: None,
+                watermark: None,
+                outcome: UseOutcome::rejected(),
+            };
+            let world_id = WorldId::decode(&WORLD)?;
+            let channel_id = ChannelId::decode(&CHANNEL)?;
+            let mut admitted = AdmittedSession {
+                game_session_id: GameSessionId::decode(&SESSION)?,
+                world_id,
+                channel_id,
+                runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            };
+            let (end, frames) = drive_session(&authority, admitted, &[]).await?;
+            let chunk = oteryn_protocol_oteryn::decode_wire_envelope(
+                frames.get(1).ok_or("missing snapshot chunk")?,
+            )?;
+            let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(chunk.payload())?;
+            let overlay = domains
+                .iter()
+                .find(|domain| domain.domain_id == STATE_DOMAIN_WORLD_OBJECT_OVERLAY)
+                .ok_or("empty overlay domain was omitted")?;
+            assert_eq!(overlay.revision, 0);
+            assert_eq!(overlay.snapshot_type, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1);
+            assert!(
+                oteryn_protocol_oteryn::world_object::decode_world_object_overlay_snapshot(
+                    overlay.payload
+                )
+                .map_err(|error| format!("empty overlay decode: {error:?}"))?
+                .is_empty()
+            );
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.overlay_revision, 0);
+            admitted.continuity.overlay_revision = 7;
+            let (end, frames) = drive_session(&authority, admitted, &[]).await?;
+            assert!(
+                frames.is_empty(),
+                "an unavailable previous overlay must not publish empty"
+            );
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.overlay_revision, 7);
+            Ok(())
+        })
+    }
+
     struct FailNthWrite<S> {
         inner: S,
         ok_writes: usize,
@@ -3391,12 +3837,15 @@ mod tests {
                 ADMITTED_GENERATION,
                 1,
                 0,
-                &[DomainSnapshot {
-                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    revision: 1,
-                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-                    payload: &encode_world_spatial(&at(0)),
-                }],
+                &[
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        revision: 1,
+                        snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                        payload: &encode_world_spatial(&at(0)),
+                    },
+                    empty_overlay_snapshot(),
+                ],
             )?
             .into();
             expected.extend([
@@ -3567,6 +4016,7 @@ mod tests {
                         snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                         payload: &encode_world_spatial(&at(0)),
                     },
+                    empty_overlay_snapshot(),
                     DomainSnapshot {
                         domain_id: STATE_DOMAIN_ACTOR_VITALS,
                         revision: 1,
@@ -3697,6 +4147,7 @@ mod tests {
                         snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                         payload: &encode_world_spatial(&at(0)),
                     },
+                    empty_overlay_snapshot(),
                     DomainSnapshot {
                         domain_id: STATE_DOMAIN_ACTOR_VITALS,
                         revision: 1,
@@ -3846,6 +4297,7 @@ mod tests {
                         snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                         payload: &encode_world_spatial(&at(0)),
                     },
+                    empty_overlay_snapshot(),
                     DomainSnapshot {
                         domain_id: STATE_DOMAIN_ACTOR_VITALS,
                         revision: 2,
@@ -4089,6 +4541,7 @@ mod tests {
                     snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
                     payload: &encode_world_spatial(&at(0)),
                 },
+                empty_overlay_snapshot(),
                 DomainSnapshot {
                     domain_id: STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES,
                     revision,
@@ -4308,6 +4761,588 @@ mod tests {
             assert_eq!(frames, expected);
             assert_eq!(authority.uses.borrow().len(), 2);
             assert_eq!(ended_continuity(end)?.server_sequence, 2);
+            Ok(())
+        })
+    }
+}
+
+/// VIS-3 (MOVE-RL-11 §4): domain 1 composed from the interest set on the connection.
+#[cfg(test)]
+#[allow(clippy::expect_used, clippy::panic)]
+mod visibility_tests {
+    use super::*;
+    use crate::gameplay_transport::world_spatial::{
+        ActorPosition, ChannelEntity, EntityDetail, EntityKind, EntityRef,
+        PLACEHOLDER_ACTOR_DIRECTION, PLACEHOLDER_APPEARANCE_REF, PLACEHOLDER_HEALTH_PERCENT,
+        WorldSpatialEntitiesDelta, WorldSpatialEntitiesSnapshot, encode_step_intent,
+        encode_step_result,
+    };
+    use oteryn_protocol_oteryn::{ClientCommandValue, encode_client_command};
+    use std::cell::{Cell, RefCell};
+    use std::error::Error;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
+
+    type TestResult = Result<(), Box<dyn Error>>;
+
+    const fn uuid_v7(tag: u8) -> [u8; 16] {
+        let mut bytes = [tag; 16];
+        bytes[6] = 0x70 | (tag & 0x0f);
+        bytes[8] = 0x80 | (tag & 0x3f);
+        bytes
+    }
+
+    const fn at(x: i32, y: i32) -> ActorPosition {
+        ActorPosition { x, y, floor: 7 }
+    }
+
+    const CONTENT: [u8; 32] = [0x5c; 32];
+
+    fn creature(identity: [u8; 16], position: ActorPosition, revision: u64) -> ChannelEntity {
+        ChannelEntity {
+            kind: VisibleKind::Creature,
+            identity,
+            generation: 1,
+            position,
+            revision,
+        }
+    }
+
+    fn actor() -> ExactActorRef {
+        ExactActorRef::transport_fixture(
+            WorldId::decode(&uuid_v7(0x33)).expect("world"),
+            ChannelId::decode(&uuid_v7(0x44)).expect("channel"),
+        )
+    }
+
+    /// The wire entry of an actor of the fixture Channel.
+    fn wire(kind: EntityKind, identity: [u8; 16], position: ActorPosition) -> WorldSpatialEntity {
+        WorldSpatialEntity {
+            kind,
+            entity: EntityRef {
+                identity,
+                generation: 1,
+            },
+            position,
+            detail: EntityDetail::Actor {
+                direction: PLACEHOLDER_ACTOR_DIRECTION,
+                appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+                health_percent: PLACEHOLDER_HEALTH_PERCENT,
+            },
+        }
+    }
+
+    fn own(position: ActorPosition) -> WorldSpatialEntity {
+        wire(EntityKind::Player, actor().placement_identity(), position)
+    }
+
+    /// The Channel owner as domain 1 sees it: the own actor, which steps east, and the others.
+    struct Channel {
+        own: Cell<ActorPosition>,
+        others: RefCell<Vec<ChannelEntity>>,
+    }
+
+    impl Channel {
+        fn new(others: Vec<ChannelEntity>) -> Self {
+            Self {
+                own: Cell::new(at(100, 100)),
+                others: RefCell::new(others),
+            }
+        }
+
+        fn observation(&self) -> WorldSpatialObservation {
+            WorldSpatialObservation {
+                content_generation: CONTENT,
+                actor_position: self.own.get(),
+            }
+        }
+    }
+
+    impl FreshAdmissionAuthority for Channel {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Unavailable)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(self.observation())
+        }
+
+        async fn step(&self, _actor: ExactActorRef, _direction: StepDirection) -> StepOutcome {
+            let mut position = self.own.get();
+            position.x += 1;
+            self.own.set(position);
+            StepOutcome {
+                disposition: StepDisposition::Moved,
+                moved_to: Some(self.observation()),
+            }
+        }
+
+        async fn observe_visible_entities(&self, actor: ExactActorRef) -> Option<ChannelEntities> {
+            let own = actor.placement_identity();
+            let mut entities = vec![ChannelEntity {
+                kind: VisibleKind::Player,
+                identity: own,
+                generation: 1,
+                position: self.own.get(),
+                revision: u64::try_from(self.own.get().x).ok()?,
+            }];
+            entities.extend(self.others.borrow().iter().copied());
+            Some(ChannelEntities {
+                content_generation: CONTENT,
+                observer: own,
+                entities,
+            })
+        }
+    }
+
+    fn session(selected: &[u32], continuity: SessionContinuity) -> AdmittedSession {
+        AdmittedSession {
+            game_session_id: GameSessionId::decode(&uuid_v7(0x22)).expect("session"),
+            world_id: WorldId::decode(&uuid_v7(0x33)).expect("world"),
+            channel_id: ChannelId::decode(&uuid_v7(0x44)).expect("channel"),
+            runtime_actor: Some(actor()),
+            first_entry: FirstEntryOutcome::Positioned,
+            controller: None,
+            continuity: SessionContinuity {
+                selected_capabilities: SelectedCapabilities::select(
+                    PRODUCTION_OFFERED_CAPABILITIES,
+                    selected,
+                )
+                .expect("select"),
+                ..continuity
+            },
+            item_fence: None,
+        }
+    }
+
+    fn snapshot_frames(
+        generation: u64,
+        snapshot_id: u64,
+        target: u64,
+        revision: u64,
+        selected: &[u32],
+        entities: Vec<WorldSpatialEntity>,
+    ) -> Vec<Vec<u8>> {
+        let snapshot = WorldSpatialEntitiesSnapshot {
+            content_generation: CONTENT,
+            actor_position: entities[0].position,
+            own_identity: entities[0].entity.identity,
+            entities,
+        };
+        let (snapshot_type, payload) =
+            encode_visibility_snapshot(selected, &snapshot).expect("snapshot");
+        encode_single_chunk_snapshot(
+            generation,
+            snapshot_id,
+            target,
+            &[
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    revision,
+                    snapshot_type,
+                    payload: &payload,
+                },
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    revision: 0,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                    payload: &[],
+                },
+            ],
+        )
+        .expect("frames")
+        .to_vec()
+    }
+
+    fn delta_frame(
+        sequence: u64,
+        from: u64,
+        selected: &[u32],
+        delta: &WorldSpatialEntitiesDelta,
+    ) -> Vec<u8> {
+        let (delta_type, payload) = encode_visibility_delta(selected, delta).expect("delta");
+        encode_state_delta(
+            1,
+            sequence,
+            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            from,
+            from + 1,
+            delta_type,
+            &payload,
+        )
+        .expect("frame")
+    }
+
+    async fn read_one(client: &mut DuplexStream) -> Result<Vec<u8>, Box<dyn Error>> {
+        let mut length = [0_u8; 4];
+        client.read_exact(&mut length).await?;
+        let mut frame = vec![0_u8; u32::from_be_bytes(length) as usize];
+        client.read_exact(&mut frame).await?;
+        Ok(frame)
+    }
+
+    /// One step, then the client closes: every frame the connection sent.
+    async fn join_and_step(selected: &[u32]) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {
+        let channel = Channel::new(vec![creature([9; 16], at(102, 100), 0)]);
+        let (mut server, mut client) = tokio::io::duplex(1 << 20);
+        let frame = encode_client_command(
+            1,
+            &ClientCommandValue {
+                command_id: 1,
+                command_type: COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+                payload: &encode_step_intent(StepDirection::East),
+            },
+        )?;
+        let mut framed = u32::try_from(frame.len())?.to_be_bytes().to_vec();
+        framed.extend_from_slice(&frame);
+        client.write_all(&framed).await?;
+        client.shutdown().await?;
+        serve_admitted(
+            &mut server,
+            session(selected, SessionContinuity::FRESH),
+            &channel,
+            IDLE_LIVENESS,
+        )
+        .await;
+        drop(server);
+        let mut frames = Vec::new();
+        while let Ok(frame) = read_one(&mut client).await {
+            frames.push(frame);
+        }
+        Ok(frames)
+    }
+
+    fn run(test: impl Future<Output = TestResult>) -> TestResult {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()?
+            .block_on(test)
+    }
+
+    #[test]
+    fn domain_1_is_the_interest_set_with_capability_6_and_the_own_actor_without() -> TestResult {
+        run(async {
+            let result = encode_command_result(
+                1,
+                1,
+                1,
+                CommandStatus::Accepted,
+                &encode_step_result(StepDisposition::Moved),
+            )?;
+            let selected = [CAPABILITY_WORLD_SPATIAL_ENTITIES];
+            let creature = wire(EntityKind::Creature, [9; 16], at(102, 100));
+            let mut expected =
+                snapshot_frames(1, 1, 0, 1, &selected, vec![own(at(100, 100)), creature]);
+            expected.push(result.clone());
+            expected.push(delta_frame(
+                2,
+                1,
+                &selected,
+                &WorldSpatialEntitiesDelta {
+                    content_generation: CONTENT,
+                    actor_position: at(101, 100),
+                    enter: Vec::new(),
+                    update: vec![own(at(101, 100))],
+                    leave: Vec::new(),
+                },
+            ));
+            assert_eq!(join_and_step(&selected).await?, expected);
+
+            // Without capability 6: the v1 own-actor snapshot and delta, as before VIS-3.
+            let at_start = encode_world_spatial(&WorldSpatialObservation {
+                content_generation: CONTENT,
+                actor_position: at(100, 100),
+            });
+            let mut expected: Vec<Vec<u8>> = encode_single_chunk_snapshot(
+                1,
+                1,
+                0,
+                &[
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                        revision: 1,
+                        snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                        payload: &at_start,
+                    },
+                    DomainSnapshot {
+                        domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                        revision: 0,
+                        snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                        payload: &[],
+                    },
+                ],
+            )?
+            .to_vec();
+            expected.push(result);
+            expected.push(encode_state_delta(
+                1,
+                2,
+                STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                1,
+                2,
+                DELTA_TYPE_WORLD_SPATIAL_V1,
+                &encode_world_spatial(&WorldSpatialObservation {
+                    content_generation: CONTENT,
+                    actor_position: at(101, 100),
+                }),
+            )?);
+            assert_eq!(join_and_step(&[]).await?, expected);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn others_moving_send_a_delta_and_a_change_above_256_a_resync_on_resume() -> TestResult {
+        run(async {
+            let selected = [CAPABILITY_WORLD_SPATIAL_ENTITIES];
+            let channel = Channel::new(vec![creature([9; 16], at(102, 100), 0)]);
+            let crowd: Vec<[u8; 16]> = (0..257_u16)
+                .map(|n| {
+                    let mut identity = [0x40; 16];
+                    identity[14..].copy_from_slice(&n.to_be_bytes());
+                    identity
+                })
+                .collect();
+            let (mut server, mut client) = tokio::io::duplex(1 << 20);
+            let admitted = session(&selected, SessionContinuity::FRESH);
+            let serving = serve_admitted(&mut server, admitted, &channel, IDLE_LIVENESS);
+            let observing = async {
+                let mut snapshot = Vec::new();
+                for _ in 0..3 {
+                    snapshot.push(read_one(&mut client).await?);
+                }
+                assert_eq!(
+                    snapshot,
+                    snapshot_frames(
+                        1,
+                        1,
+                        0,
+                        1,
+                        &selected,
+                        vec![
+                            own(at(100, 100)),
+                            wire(EntityKind::Creature, [9; 16], at(102, 100))
+                        ],
+                    )
+                );
+                // The creature steps: one delta on the next refresh, sequence 1.
+                channel.others.borrow_mut()[0] = creature([9; 16], at(103, 100), 1);
+                assert_eq!(
+                    read_one(&mut client).await?,
+                    delta_frame(
+                        1,
+                        1,
+                        &selected,
+                        &WorldSpatialEntitiesDelta {
+                            content_generation: CONTENT,
+                            actor_position: at(100, 100),
+                            enter: Vec::new(),
+                            update: vec![wire(EntityKind::Creature, [9; 16], at(103, 100))],
+                            leave: Vec::new(),
+                        },
+                    )
+                );
+                // 200 creatures replace it: 201 changes, one delta (sequence 2, revision 3).
+                let identities = |tag: u8, count: u16| -> Vec<[u8; 16]> {
+                    (0..count)
+                        .map(|n| {
+                            let mut identity = [tag; 16];
+                            identity[14..].copy_from_slice(&n.to_be_bytes());
+                            identity
+                        })
+                        .collect()
+                };
+                *channel.others.borrow_mut() = identities(0x30, 200)
+                    .into_iter()
+                    .map(|identity| creature(identity, at(99, 100), 0))
+                    .collect();
+                let mut entered = WorldSpatialEntitiesDelta {
+                    content_generation: CONTENT,
+                    actor_position: at(100, 100),
+                    enter: identities(0x30, 200)
+                        .into_iter()
+                        .map(|identity| wire(EntityKind::Creature, identity, at(99, 100)))
+                        .collect(),
+                    update: Vec::new(),
+                    leave: vec![EntityRef {
+                        identity: [9; 16],
+                        generation: 1,
+                    }],
+                };
+                entered.enter.sort_by_key(|entity| entity.entity.identity);
+                assert_eq!(
+                    read_one(&mut client).await?,
+                    delta_frame(2, 2, &selected, &entered)
+                );
+                // 257 others replace those: 200 leave and the nearest 255 enter, more than 256
+                // changes, so a resync: no mid-session snapshot (the admitted client accepts
+                // none), the connection ends at the last delivered sequence and revision.
+                *channel.others.borrow_mut() = crowd
+                    .iter()
+                    .map(|identity| creature(*identity, at(99, 100), 0))
+                    .collect();
+                Ok::<_, Box<dyn Error>>(())
+            };
+            let (end, observed) = {
+                let (mut serving, mut observing) =
+                    (std::pin::pin!(serving), std::pin::pin!(observing));
+                let (mut end, mut observed) = (None, None);
+                std::future::poll_fn(|context| {
+                    if end.is_none()
+                        && let std::task::Poll::Ready(done) = serving.as_mut().poll(context)
+                    {
+                        end = Some(done);
+                    }
+                    if observed.is_none()
+                        && let std::task::Poll::Ready(done) = observing.as_mut().poll(context)
+                    {
+                        observed = Some(done);
+                    }
+                    if end.is_some() && observed.is_some() {
+                        std::task::Poll::Ready(())
+                    } else {
+                        std::task::Poll::Pending
+                    }
+                })
+                .await;
+                (end, observed)
+            };
+            observed.ok_or("observed")??;
+            let end = end.ok_or("ended")?;
+            drop(server);
+            assert!(
+                read_one(&mut client).await.is_err(),
+                "nothing after the last delta"
+            );
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.spatial_revision, 3);
+            assert_eq!(ended.continuity.server_sequence, 2);
+            // The resume of that continuity is the resync: a snapshot of the own actor and the
+            // 255 lowest identities (the degrade disposition) at sequence 2 and revision 3.
+            let resumed = SessionContinuity {
+                connection_generation: 2,
+                ..ended.continuity
+            };
+            let (mut server, mut client) = tokio::io::duplex(1 << 20);
+            client.shutdown().await?;
+            let end = serve_admitted(
+                &mut server,
+                session(&selected, resumed),
+                &channel,
+                IDLE_LIVENESS,
+            )
+            .await;
+            drop(server);
+            let mut frames = Vec::new();
+            while let Ok(frame) = read_one(&mut client).await {
+                frames.push(frame);
+            }
+            let mut nearest = vec![own(at(100, 100))];
+            nearest.extend(
+                crowd[..255]
+                    .iter()
+                    .map(|identity| wire(EntityKind::Creature, *identity, at(99, 100))),
+            );
+            assert_eq!(frames, snapshot_frames(2, 1, 2, 3, &selected, nearest));
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_resumed_connection_keeps_the_selection_and_gets_a_snapshot_of_the_interest_set()
+    -> TestResult {
+        run(async {
+            let selected = [CAPABILITY_WORLD_SPATIAL_ENTITIES];
+            let channel = Channel::new(vec![creature([9; 16], at(102, 100), 0)]);
+            let resumed = SessionContinuity {
+                connection_generation: 2,
+                next_command_id: 4,
+                server_sequence: 6,
+                spatial_revision: 7,
+                ..SessionContinuity::FRESH
+            };
+            let (mut server, mut client) = tokio::io::duplex(1 << 20);
+            client.shutdown().await?;
+            let end = serve_admitted(
+                &mut server,
+                session(&selected, resumed),
+                &channel,
+                IDLE_LIVENESS,
+            )
+            .await;
+            drop(server);
+            let mut frames = Vec::new();
+            while let Ok(frame) = read_one(&mut client).await {
+                frames.push(frame);
+            }
+            assert_eq!(
+                frames,
+                snapshot_frames(
+                    2,
+                    1,
+                    6,
+                    7,
+                    &selected,
+                    vec![
+                        own(at(100, 100)),
+                        wire(EntityKind::Creature, [9; 16], at(102, 100))
+                    ],
+                )
+            );
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.selected_capabilities.as_slice(), selected);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_session_with_capability_6_whose_channel_cannot_be_read_fails_closed() -> TestResult {
+        struct Unreadable;
+        impl FreshAdmissionAuthority for Unreadable {
+            async fn admit(
+                &self,
+                _attempt: FreshAdmissionAttempt<'_>,
+            ) -> Result<AdmittedSession, AdmissionRefusal> {
+                Err(AdmissionRefusal::Unavailable)
+            }
+
+            async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+                Some(WorldSpatialObservation {
+                    content_generation: CONTENT,
+                    actor_position: at(100, 100),
+                })
+            }
+
+            async fn observe_visible_entities(
+                &self,
+                _actor: ExactActorRef,
+            ) -> Option<ChannelEntities> {
+                None
+            }
+        }
+        run(async {
+            let (mut server, mut client) = tokio::io::duplex(1 << 20);
+            client.shutdown().await?;
+            let end = serve_admitted(
+                &mut server,
+                session(
+                    &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
+                    SessionContinuity::FRESH,
+                ),
+                &Unreadable,
+                IDLE_LIVENESS,
+            )
+            .await;
+            drop(server);
+            assert!(read_one(&mut client).await.is_err());
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
             Ok(())
         })
     }

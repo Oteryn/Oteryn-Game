@@ -1,0 +1,27 @@
+{
+  "all_records_schema_valid": true,
+  "artifact": "player-source-authoring-projections.jsonl.gz",
+  "artifact_sha256": "e88122c993aa851b9bdb241f7f0d5e013f70dcc6792dec9ca1c924667298c1b4",
+  "authoring_schema_sha256": "331f638a50b9b12155de7fc7de3b86928b77267841cb0e8cdb32b40488b9f01a",
+  "counts_by_snapshot": {
+    "canary": 247,
+    "canary-main-current": 234,
+    "crystal": 249,
+    "crystal-summer-current": 249
+  },
+  "coverage_report_sha256": "3aac72464b9b1503bf79d686294b36f1d25ae9efa11f03c56508879a8f977149",
+  "execution_complete": false,
+  "external_sources_used": false,
+  "full_executable_spell": false,
+  "native_consumption_established": false,
+  "payload_sha256": "58d2c7864dd4d16eb063ad1c6b9c473320bd12d0c695749e19ceea8a3a485f7a",
+  "projection_schema_sha256": "64dbf9d7b9e4092ee32eaff0db745a6880f2f16c5c85d6cff628bf7938079f91",
+  "records": 979,
+  "schema": "OTERYN_PLAYER_SOURCE_PROJECTION_PROOF/v1",
+  "scope": "Source-first partial candidate Spell authoring fields only; no defaults or executable callback inference",
+  "unique_registration_keys": 979,
+  "unmapped_field_counts": {
+    "carrier": 8,
+    "castSound": 40
+  }
+}

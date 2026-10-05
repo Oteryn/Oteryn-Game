@@ -1,0 +1,367 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/executioner_s_throw",
+      "revision": "spell-p2-r20"
+    },
+    "name": "Executioner's Throw",
+    "carrier": "instant",
+    "words": "exori amp kor",
+    "reference_spell_id": 261,
+    "library_text": "Albeit knights relying on close combat, the need of means to have an answer to attacks from distance fighters made it evident, that even a knight has need for a more diverse arsenal of abilities at his disposal. The endeavour to find such has led to several more or less effective techniques, with most of them shunned for their lack of effectiveness and impact. This changed with the development of the Executioner's Throw. Even the earliest incarnations of this technique showed great promise and many of the finest knights took effort in honing and perfecting this skill. In our days the Executioner's Throw is becoming a difficult to learn but greatly prized ability that has earned its place in the array of skills that a true knight has to possess to be recognized as equal amongst its peers.",
+    "requirements": {
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ],
+      "level": 0,
+      "premium": true,
+      "learning_required": false,
+      "wheel_unlock": true
+    },
+    "costs": {
+      "mana": 225,
+      "soul": 0
+    },
+    "cooldown_ms": 18000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": true,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "range_tiles": 5,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": true,
+    "base_power": 60,
+    "execution": {
+      "native_behavior": {
+        "key": "wheel_combat",
+        "parameters": {
+          "origin": "spell",
+          "block_armor": true,
+          "use_weapon_charges": false,
+          "sign": "positive_magnitude",
+          "target_legality": "world_combat_rules",
+          "element": "physical",
+          "missile_selection": "equipped_weapon_type",
+          "formula": {
+            "minimum": {
+              "op": "ceil",
+              "args": [
+                {
+                  "op": "mul",
+                  "args": [
+                    {
+                      "op": "add",
+                      "args": [
+                        {
+                          "op": "floor",
+                          "args": [
+                            {
+                              "fn": "level_base_damage_healing",
+                              "args": [
+                                {
+                                  "var": "level"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "op": "floor",
+                          "args": [
+                            {
+                              "op": "add",
+                              "args": [
+                                {
+                                  "op": "mul",
+                                  "args": [
+                                    {
+                                      "op": "add",
+                                      "args": [
+                                        {
+                                          "const": "1"
+                                        },
+                                        {
+                                          "op": "mul",
+                                          "args": [
+                                            {
+                                              "const": "-1"
+                                            },
+                                            {
+                                              "op": "div",
+                                              "args": [
+                                                {
+                                                  "op": "div",
+                                                  "args": [
+                                                    {
+                                                      "const": "10"
+                                                    },
+                                                    {
+                                                      "const": "60"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "const": "2"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "op": "add",
+                                      "args": [
+                                        {
+                                          "op": "mul",
+                                          "args": [
+                                            {
+                                              "op": "mul",
+                                              "args": [
+                                                {
+                                                  "op": "div",
+                                                  "args": [
+                                                    {
+                                                      "const": "60"
+                                                    },
+                                                    {
+                                                      "const": "1000"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "var": "attack_skill"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "var": "attack_value"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "op": "div",
+                                          "args": [
+                                            {
+                                              "const": "60"
+                                            },
+                                            {
+                                              "const": "4"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "const": "0.5"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "const": "1"
+                    }
+                  ]
+                }
+              ]
+            },
+            "maximum": {
+              "op": "ceil",
+              "args": [
+                {
+                  "op": "mul",
+                  "args": [
+                    {
+                      "op": "add",
+                      "args": [
+                        {
+                          "op": "floor",
+                          "args": [
+                            {
+                              "fn": "level_base_damage_healing",
+                              "args": [
+                                {
+                                  "var": "level"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "op": "floor",
+                          "args": [
+                            {
+                              "op": "add",
+                              "args": [
+                                {
+                                  "op": "mul",
+                                  "args": [
+                                    {
+                                      "op": "add",
+                                      "args": [
+                                        {
+                                          "const": "1"
+                                        },
+                                        {
+                                          "op": "mul",
+                                          "args": [
+                                            {
+                                              "const": "1"
+                                            },
+                                            {
+                                              "op": "div",
+                                              "args": [
+                                                {
+                                                  "op": "div",
+                                                  "args": [
+                                                    {
+                                                      "const": "10"
+                                                    },
+                                                    {
+                                                      "const": "60"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "const": "2"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "op": "add",
+                                      "args": [
+                                        {
+                                          "op": "mul",
+                                          "args": [
+                                            {
+                                              "op": "mul",
+                                              "args": [
+                                                {
+                                                  "op": "div",
+                                                  "args": [
+                                                    {
+                                                      "const": "60"
+                                                    },
+                                                    {
+                                                      "const": "1000"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "var": "attack_skill"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "var": "attack_value"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "op": "div",
+                                          "args": [
+                                            {
+                                              "const": "60"
+                                            },
+                                            {
+                                              "const": "4"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "const": "0.5"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "const": "1"
+                    }
+                  ]
+                }
+              ]
+            },
+            "quantization": "truncate_each_bound_before_draw",
+            "distribution": "world_damage_roll"
+          },
+          "wheel": {
+            "owner": "wheel_of_destiny",
+            "perk": "Executioner's Throw",
+            "stage_kind": "revelation",
+            "stage_min": 0,
+            "stage_max": 3,
+            "stage_zero": "reject_before_costs",
+            "snapshot": "cast_start"
+          },
+          "target_selection": "explicit_target",
+          "first_target_range": 5,
+          "chain": {
+            "further_targets": {
+              "0": 0,
+              "1": 2,
+              "2": 3,
+              "3": 4
+            },
+            "jump_radius": 3,
+            "radius_metric": "square",
+            "next_target_metric": "euclidean",
+            "tie_order": "source_spectator_iteration",
+            "first_target": "explicit_target",
+            "same_floor": true,
+            "clear_sight": true,
+            "combat_legality_required": true,
+            "exclude_caster": true,
+            "repeat_targets": false
+          },
+          "cooldown_ms": {
+            "0": 18000,
+            "1": 18000,
+            "2": 14000,
+            "3": 10000
+          },
+          "health_bonus": {
+            "health_percent_rounding": "nearest_half_away_from_zero",
+            "comparison": "less_than_or_equal",
+            "threshold": 30,
+            "bonus_percent": {
+              "0": 0,
+              "1": 100,
+              "2": 125,
+              "3": 150
+            }
+          }
+        }
+      }
+    }
+  }
+}

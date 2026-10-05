@@ -11,7 +11,13 @@ Scans `content/`, `imports/` and `apps/` for `oteryn:item.*` strings and fails c
   `imports/crystalserver/bindings/items.json` (which binds ids of the admitted CipSoft set,
   such as the epoch-2 donor ids, before a record is authored);
 - a Tibia key in `apps/` that is neither an Item record nor in the admitted set;
-- any other `oteryn:item.*` string in `content/` or `imports/`.
+- any other `oteryn:item.*` string in `content/` or `imports/`, except the source-map alias
+  form allowed in `SOURCE_ALIAS_FILES`.
+
+`oteryn:item.source.canary.id<N>` is allowed only in the two pinned r25 spell source-world
+files, and only when `<N>` has an Item record: the native spell world loader
+(`native_spell_world.rs`) requires exactly that key and revision `source-map-r3` for every
+non-native source binding, and both files are receipts of the pinned Canary revision.
 
 Synthetic keys in `apps/` tests (for example `oteryn:item.chance.never`) are allowed: they
 are not retired keys and name no content.
@@ -27,7 +33,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools/content-schema/item-authoring"))
 
-from appearance_membership import load_admitted
+from appearance_membership import load_admitted  # noqa: E402
 
 ALIAS_TABLE = "content/items/aliases.json"
 DEFINITIONS_GLOB = "content/items/definitions/items-*.json"
@@ -36,6 +42,11 @@ KEY = re.compile(r"oteryn:item\.[a-z][a-z0-9_.-]*[a-z0-9_]")
 TIBIA_KEY = re.compile(r"^oteryn:item\.tibia\.i([1-9][0-9]*)$")
 # The §4.1 rule text (`oteryn:item.tibia.i<id>`) in the membership manifests and docs.
 RULE_PREFIX = "oteryn:item.tibia.i"
+SOURCE_ALIAS_KEY = re.compile(r"^oteryn:item\.source\.canary\.id([1-9][0-9]*)$")
+SOURCE_ALIAS_FILES = {
+    "content/test-packs/spells/r25/source_world.json",
+    "imports/spells/r25/source-world.json",
+}
 SUFFIXES = (".json", ".rs", ".toml", ".md")
 SKIP_DIRS = ("content/assets/files",)
 # Files that name retired keys as history: the historical importer and its tests reproduce
@@ -106,6 +117,13 @@ def check() -> dict[str, int]:
                     continue
                 tibia = TIBIA_KEY.match(key)
                 if tibia is None:
+                    alias = SOURCE_ALIAS_KEY.match(key)
+                    if (
+                        alias is not None
+                        and relative in SOURCE_ALIAS_FILES
+                        and f"oteryn:item.tibia.i{alias.group(1)}" in records
+                    ):
+                        continue
                     if base != "apps":
                         errors.append(f"NON_CANONICAL_KEY:{relative}:{key}")
                     continue

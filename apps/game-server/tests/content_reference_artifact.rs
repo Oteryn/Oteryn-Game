@@ -186,7 +186,7 @@ fn promoted_atom_count(semantics: &ReferenceItemSemantics) -> usize {
 }
 
 #[test]
-fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v5_server_and_client()
+fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v6_server_and_client()
 -> Result<(), Box<dyn std::error::Error>> {
     let linked = promoted_family_linked()?;
     assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
@@ -233,11 +233,11 @@ fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v
     )?;
     assert_eq!(
         server.artifact_profile_id(),
-        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5"
+        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v6"
     );
     assert_eq!(
         client.artifact_profile_id(),
-        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5"
+        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v6"
     );
 
     let mut server_promoted = 0_usize;
@@ -281,7 +281,7 @@ fn presentation() -> ReferenceItemPresentation {
 }
 
 #[test]
-fn typed_item_v5_representative_families_round_trip_through_project_and_both_projections()
+fn typed_item_v6_representative_families_round_trip_through_project_and_both_projections()
 -> Result<(), Box<dyn std::error::Error>> {
     use ReferenceItemField::{Conflict, Known, NotApplicable, Unknown};
     let capabilities = std::array::from_fn(|index| match index % 4 {
@@ -508,7 +508,41 @@ fn typed_item_v5_representative_families_round_trip_through_project_and_both_pro
         },
     ));
 
-    assert_eq!(cases.len(), 12);
+    // ITEM-SEM-USE-1: the server-only consumption group (artifact v6).
+    cases.push((
+        "consumption_food",
+        ReferenceItemSemantics {
+            presentation: Known(presentation()),
+            consumption: Known(ReferenceItemConsumption::Food(ReferenceItemFood {
+                regeneration_seconds: 1_199,
+            })),
+            ..Default::default()
+        },
+    ));
+    cases.push((
+        "consumption_potion",
+        ReferenceItemSemantics {
+            presentation: Known(presentation()),
+            consumption: Known(ReferenceItemConsumption::Potion(ReferenceItemPotion {
+                restores: vec![
+                    ReferencePotionRestore {
+                        resource: ReferenceRestoreResource::Health,
+                        min: 125,
+                        max: 175,
+                    },
+                    ReferencePotionRestore {
+                        resource: ReferenceRestoreResource::Mana,
+                        min: 75,
+                        max: 125,
+                    },
+                ],
+                empty_flask: Known(item_target()),
+            })),
+            ..Default::default()
+        },
+    ));
+
+    assert_eq!(cases.len(), 14);
     let (linked, cases) = typed_family_linked(cases)?;
     assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
     let compiled = compile_reference_playable(&linked)?;
@@ -532,7 +566,7 @@ fn typed_item_v5_representative_families_round_trip_through_project_and_both_pro
             .expect(name);
         assert_eq!(
             server.artifact_profile_id(),
-            "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v5",
+            "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v6",
             "{name}"
         );
         assert_eq!(

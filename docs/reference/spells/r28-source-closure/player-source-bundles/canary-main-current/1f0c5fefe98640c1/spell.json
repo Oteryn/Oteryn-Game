@@ -1,0 +1,77 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 780,
+      "soul": 4
+    },
+    "execution": {
+      "conjure": {
+        "count": 4,
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/source/canary-main-current/3147",
+          "revision": "source-player-r28"
+        },
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/source/canary-main-current/3190",
+          "revision": "source-player-r28"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/1f0c5fefe98640c1",
+      "revision": "source-player-r28"
+    },
+    "name": "Fire Wall Rune",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "requirements": {
+      "learning_required": false,
+      "level": 33,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "adevo mas grav flam"
+  }
+}

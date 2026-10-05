@@ -1,0 +1,48 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "holy missile rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_holy_missile_rune"
+    },
+    "reference_rune_item_id": 3182,
+    "reference_spell_id": 130,
+    "requirements": {
+      "level": 27,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 5,
+      "magic_level": 4
+    },
+    "targeting": {
+      "needs_target": true
+    }
+  }
+}

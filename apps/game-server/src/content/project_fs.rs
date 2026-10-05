@@ -581,6 +581,10 @@ mod linux {
                 let native = snapshot.parse_native_entry()?;
                 (native.project().clone(), Some(native))
             }
+            ProjectAdmission::NativeSpellEntry => {
+                let native = snapshot.parse_native_spell_entry()?;
+                (native.project().clone(), Some(native))
+            }
         };
         Ok(CapturedProject {
             project,

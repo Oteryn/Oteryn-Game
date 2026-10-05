@@ -1,0 +1,65 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 40000,
+    "costs": {
+      "mana": 30,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/canary-main-current/d27e768f19cb2837/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/d27e768f19cb2837",
+      "revision": "source-player-r28"
+    },
+    "name": "Envenom",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_envenom"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 142,
+    "requirements": {
+      "learning_required": false,
+      "level": 50,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": true,
+      "parameter": "none",
+      "range_tiles": 3,
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "utori pox"
+  }
+}

@@ -2255,6 +2255,10 @@ mod check_function_privileges_postgres_cases;
 // standalone target through the same protected lane.
 #[path = "support/house_custody_postgres_cases.rs"]
 mod house_custody_postgres_cases;
+// INBOX-1a CharacterInbox and delivery (migration 0076) share their cases
+// with the focused standalone target through the same protected lane.
+#[path = "support/character_inbox_postgres_cases.rs"]
+mod character_inbox_postgres_cases;
 
 // STANCE-0 stance slot and stance receipts (migration 0017) share their cases
 // with the focused standalone target through the same protected lane.
@@ -2302,6 +2306,12 @@ mod premium_fence_postgres_cases;
 // 0030) and their admission verifier checks, on the CHARM-2 harness included above.
 #[path = "support/character_build_postgres_cases.rs"]
 mod character_build_postgres_cases;
+
+#[path = "support/character_stance_writer_postgres_cases.rs"]
+mod character_stance_writer_postgres_cases;
+
+#[path = "support/character_familiar_writer_postgres_cases.rs"]
+mod character_familiar_writer_postgres_cases;
 
 // QUEST-STATE-1 quest tracks, states and receipts (migration 0056) and their writer, on the
 // CHARM-2 harness included above.
@@ -3010,6 +3020,8 @@ mod item_fee_burn_postgres_cases;
 // standalone target through the same protected lane, on the Bestiary harness.
 #[path = "support/bank_postgres_cases.rs"]
 mod bank_postgres_cases;
+#[path = "support/gold_fee_bank_postgres_cases.rs"]
+mod gold_fee_bank_postgres_cases;
 
 // PG-COVERAGE-1: fails when a standalone `*_postgres.rs` target has cases that
 // no CI-run PostgreSQL target includes. Runs without a database.

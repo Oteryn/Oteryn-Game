@@ -1,0 +1,22 @@
+[
+  {
+    "table": "game_item_ground_locations",
+    "runtime_row_lock_sqlstate": "42501",
+    "plain_immutable_read": "PASS"
+  },
+  {
+    "table": "game_item_container_slots",
+    "runtime_row_lock_sqlstate": "42501",
+    "plain_immutable_read": "PASS"
+  },
+  {
+    "table": "game_item_container_entries",
+    "runtime_row_lock_sqlstate": "42501",
+    "plain_immutable_read": "PASS"
+  },
+  {
+    "table": "game_item_corpse_container_entries",
+    "runtime_row_lock_sqlstate": "42501",
+    "plain_immutable_read": "PASS"
+  }
+]

@@ -560,12 +560,25 @@ async fn activate_content(
         frame_binding_digest: record.frame_binding_digest,
     };
     let mut controller = ContentActivationController::new();
-    let pin = activate_native_entry_room(
-        &mut controller,
-        &NodeBootQuiescence::before_channel_runtime(),
-        world,
-        &issuance,
-    )
+    let gameplay = std::env::var_os("OTERYN_NATIVE_GAMEPLAY_MANIFEST")
+        .map(|path| {
+            crate::content::native_gameplay::NativeGameplayInput::from_manifest(
+                std::path::Path::new(&path),
+            )
+        })
+        .transpose()
+        .map_err(|_| BootError::ContentActivation("native gameplay manifest"))?;
+    let quiescence = NodeBootQuiescence::before_channel_runtime();
+    let pin = match &gameplay {
+        Some(input) => crate::content::activate_native_entry_room_with_gameplay(
+            &mut controller,
+            &quiescence,
+            world,
+            &issuance,
+            input,
+        ),
+        None => activate_native_entry_room(&mut controller, &quiescence, world, &issuance),
+    }
     .map_err(|error| {
         BootError::ContentActivation(match error {
             NativeEntryActivationError::Qualification(_) => "qualification",
@@ -1121,13 +1134,21 @@ async fn boot_and_serve(
     let fact = proof.fact();
     // The controller holds the active generation for the whole serve lifetime; the Channel
     // runtime pins exactly that generation.
-    let (_active_content, content) =
+    let (active_content, content) =
         activate_content(root, material.world, material.channel).await?;
+    let qualified_room = content.qualified_room().clone();
     let (channel_pin, movement_cells, door_content) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
-    let spells = crate::spell::cast::v1_spell_book()
-        .map_err(|_| BootError::ContentActivation("spell book"))?;
+    let gameplay = active_content
+        .active()
+        .ok_or(BootError::ContentActivation("active generation"))?
+        .native_gameplay();
+    let spells = match gameplay {
+        Some(native) => native.spell_book().clone(),
+        None => crate::spell::cast::v1_spell_book()
+            .map_err(|_| BootError::ContentActivation("spell book"))?,
+    };
     // Data-only Charm import: retain the complete typed catalogue for this serve lifetime.
     // A malformed source refuses readiness; importing it does not qualify a generation,
     // advertise Charm commands or activate effects whose gameplay consumers are unfinished.
@@ -1196,21 +1217,25 @@ async fn boot_and_serve(
             "reward claim achievement not in the catalogue",
         ));
     }
-    let runtime = Mutex::new(
-        ChannelRuntimeV1::from_committed_assignment(
-            material.world,
-            material.channel,
-            fact.node_id(),
-            fact.registration_revision(),
-            assignment.ownership_generation,
-            assignment.source_revision,
-            &assignment.decision_identity,
-            usize::try_from(config.scope.preproduction_actor_capacity)
-                .map_err(|_| BootError::Readiness("channel runtime capacity"))?,
-            channel_pin,
-        )
-        .map_err(|_| BootError::Readiness("channel runtime composition"))?,
-    );
+    let mut channel_runtime = ChannelRuntimeV1::from_committed_assignment(
+        material.world,
+        material.channel,
+        fact.node_id(),
+        fact.registration_revision(),
+        assignment.ownership_generation,
+        assignment.source_revision,
+        &assignment.decision_identity,
+        usize::try_from(config.scope.preproduction_actor_capacity)
+            .map_err(|_| BootError::Readiness("channel runtime capacity"))?,
+        channel_pin,
+    )
+    .map_err(|_| BootError::Readiness("channel runtime composition"))?;
+    if let Some(native) = gameplay {
+        native
+            .install_companion_policies(&mut channel_runtime)
+            .map_err(|_| BootError::ContentActivation("active creature policies"))?;
+    }
+    let runtime = Mutex::new(channel_runtime);
     event(&format!(
         "event=channel_runtime state=bootstrapped ownership_generation={} source_revision={} capacity={}",
         assignment.ownership_generation,
@@ -1294,6 +1319,9 @@ async fn boot_and_serve(
         door: &door,
         chest: &chest,
         spells: &spells,
+        active_generation: active_content.active(),
+        premium_coordinator: None,
+        qualified_room: Some(&qualified_room),
         achievements: &achievements,
         imported_charms: &imported_charms,
     };

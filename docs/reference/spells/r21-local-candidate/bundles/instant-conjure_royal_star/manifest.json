@@ -1,0 +1,407 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Conjure Royal Star",
+      "page_id": 80913,
+      "revision_id": 1178153,
+      "content_sha256": "7baae22200dd2cf5f6e210361cbcce301a3324439659e67c75813b11972e6254"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 10,
+      "source_field": "words",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/words",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 10,
+      "source_field": "words",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/words",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 8,
+      "source_field": "id",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 8,
+      "source_field": "id",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Conjure Royal Star",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Conjure Royal Star",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Conjure Royal Star",
+      "source_line": 1,
+      "source_field": "premium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Conjure Royal Star",
+      "source_line": 1,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Conjure Royal Star",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Conjure Royal Star",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 11,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 6000000 (source 2000)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 11,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 6000000 (source 2000)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Conjure Royal Star",
+      "source_line": 1,
+      "source_field": "subclass",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 7,
+      "source_field": "group",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 'conjure' (source 'support')."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 7,
+      "source_field": "group",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "S3: superseded by the wiki value 'conjure' (source 'support')."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "subclass",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "The wiki category 'conjure' is not a cooldown group; the source group ['support'] is used."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Conjure Royal Star",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 18,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 18,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 17,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 17,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/conjure",
+      "resolution": "Player:conjureItem(reagent, result, count) is the S2 conjure execution."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/spells/conjuring/conjure_royal_star.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/conjure",
+      "resolution": "Player:conjureItem(reagent, result, count) is the S2 conjure execution."
+    }
+  ]
+}

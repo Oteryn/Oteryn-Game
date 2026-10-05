@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         415,
-        "b4f9cc8736f89642c751e43ad457044b8365de7584890c8d71c78abdff9d6a51",
+        "9a23d499aa6d10c538dbf493a11cab638b6bab2ea141b4b915344ee327a9c032",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        26_660_496,
-        "5cb6f4e120d768010be38ed0ed44531f2d9621a0455bae5826b253c7862d7f8c",
+        26_660_681,
+        "91ad69f835c5ba12f84d3bc89404373705ea139e338c775af06a2b1b585179a5",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1956,
-        "fcaeb1a702cbe8ee15251facaa1054b39bc2b845f0bbecfff2d0934bd461a76e",
+        "01e563ce4007f70ccabd60201957366ad38a80919645a66b85c67e4b2339332c",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         407,
-        "d5a467251941e783d49c2f9de69fb32150fe4a32c3608cedbba94624a393a50b",
+        "38878525422c715e60527b7506b99d465727d84258b664aac3fc666c0586ce0a",
     ),
     (
         "provenance/imports.json",
@@ -90,7 +90,18 @@ const SHARED_DIRECTORY_SUCCESSOR_SHARDS: [&str; 1] = ["worlds/worlds-00000-00000
 /// locator, so legacy locator lookups scan no additional directory entries, except for the
 /// single explicit `SHARED_DIRECTORY_SUCCESSOR_SHARDS` entry.
 fn is_successor_shard(locator: &str) -> bool {
-    SHARED_DIRECTORY_SUCCESSOR_SHARDS.contains(&locator) || is_unshared_successor_shard(locator)
+    SHARED_DIRECTORY_SUCCESSOR_SHARDS.contains(&locator)
+        || is_unshared_successor_shard(locator)
+        || is_spawn_family_file(locator)
+}
+/// The `Spawn.Source` family (SPAWN-CONTENT-1; CREATURE-AI-0 section 6.1): its index and shards
+/// sit in `spawns/`, a successor directory that is not a contract tree node and holds no legacy
+/// locator. `convert_spawns.py --check` pins their bytes and
+/// `validate_materialized_game_tree.py` pins the index against the files on disk.
+fn is_spawn_family_file(locator: &str) -> bool {
+    locator.strip_prefix("spawns/").is_some_and(|name| {
+        name == "index.json" || (name.starts_with("spawns-") && name.ends_with(".json"))
+    })
 }
 fn is_unshared_successor_shard(locator: &str) -> bool {
     SUCCESSOR_TREE_MARKERS.iter().any(|marker| {
@@ -114,10 +125,10 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "6391b6115264194d2f2bf2fcd7a9c14d2a251f2d89145755a77f1ac52bbb88ed";
+const TREE_SHA256: &str = "5ae5b900897b278ddbef491f7eb11581aab1f550146cd6e3a5db38baa05cbaf2";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
-/// plus the 404 donor epoch-2 records and the 61 appearance-only records (ITEM-ADD-1, Snowball 53855).
-const ITEMS: usize = 34_032;
+/// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
+const ITEMS: usize = 34_033;
 /// Actual canonical package: 2,286,109 JSON values; retain a bounded 2.4M budget.
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_400_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
@@ -172,8 +183,11 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // The 10 successor world markers add 5 siblings to the package root (seen by
         // each of the 11 locator lookups) plus 1 entry in worlds/: exactly 56 more. The
         // World family adds one shard beside worlds/world.json, which the single
-        // `worlds/world.json` lookup scans once: exactly 1 more (144 + 56 + 1).
-        max_total_directory_entries_scanned: 144 + 56 + 1,
+        // `worlds/world.json` lookup scans once: exactly 1 more (144 + 56 + 1). The `spawns/`
+        // family directory adds one more sibling to the package root, which the capture
+        // scans: 4 more entries scanned in total, measured (144 + 56 + 1 + 4). Beside this
+        // branch's spell imports the capture scans that sibling twice more: 2 more, measured.
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2,
     }
 }
 

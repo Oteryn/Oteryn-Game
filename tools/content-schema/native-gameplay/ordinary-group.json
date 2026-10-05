@@ -1,0 +1,79 @@
+{
+  "schema": "OTERYN_GAME_ORDINARY_GROUP/v1",
+  "source": {
+    "repository": "opentibiabr/canary",
+    "revision": "99902524e052f37574194466c2949c576e4ab269",
+    "files": [
+      {
+        "path": "data/XML/groups.xml",
+        "sha256": "46ed9719a096341dc919ed2db2b92aca4893fffa23ff749ccaadbbfb61ce3f04"
+      },
+      {
+        "path": "src/creatures/players/grouping/groups.cpp",
+        "sha256": "3015a07dd7d3afb56db99655caeaeb05f700e257969ac99842200a79a5b0ccdc"
+      },
+      {
+        "path": "src/creatures/players/grouping/groups.hpp",
+        "sha256": "2a2bfa77d70555d5e134ab8c3f212351b87e4336d09fa8e769fef0d6ef1553e8"
+      },
+      {
+        "path": "src/utils/utils_definitions.hpp",
+        "sha256": "b66a1389bfecfe11d93338208f7e2e3f8efc14fb0941d6d12dc0d9e62ed4abac"
+      },
+      {
+        "path": "src/account/account.cpp",
+        "sha256": "d35d74b5846af4adf450ce9de46e920e3421a10755e4323f27bb75a190e739fb"
+      },
+      {
+        "path": "src/enums/account_type.hpp",
+        "sha256": "4624d6ac91cc08c1c4e6d78ac30c2bae9a7ae7f44e012bf67f84a8d685977443"
+      }
+    ]
+  },
+  "group_id": 1,
+  "account_type": 1,
+  "access": false,
+  "enabled_flags": [],
+  "known_flags": [
+    "canalwayslogin",
+    "canbroadcast",
+    "canconvinceall",
+    "canedithouses",
+    "canillusionall",
+    "canmapclickteleport",
+    "cannotattackmonster",
+    "cannotattackplayer",
+    "cannotbeattacked",
+    "cannotbebanned",
+    "cannotbemuted",
+    "cannotbepushed",
+    "cannotpickupitem",
+    "cannotusecombat",
+    "cannotusespells",
+    "canpushallcreatures",
+    "cansenseinvisibility",
+    "cansummonall",
+    "cantalkredchannel",
+    "cantalkredchannelanonymous",
+    "cantalkredprivate",
+    "hasinfinitecapacity",
+    "hasinfinitemana",
+    "hasinfinitesoul",
+    "hasnoexhaustion",
+    "ignoredbymonsters",
+    "ignoredbynpcs",
+    "ignoreprotectionzone",
+    "ignorespellcheck",
+    "ignoreweaponcheck",
+    "isalwayspremium",
+    "notgainexperience",
+    "notgainhealth",
+    "notgaininfight",
+    "notgainmana",
+    "notgainskill",
+    "notgenerateloot",
+    "setmaxspeed",
+    "specialvip",
+    "talkorangehelpchannel"
+  ]
+}

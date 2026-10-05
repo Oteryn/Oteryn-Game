@@ -1,0 +1,475 @@
+{
+  "sources": [
+    {
+      "kind": "official_capture",
+      "url": "https://www.tibia.com/library/?subtopic=spells",
+      "title": "Scorch",
+      "captured": "2026-09-28",
+      "content_sha256": "c4800d7d0fac37238a9101afbc2060a3afcf8ddc76b9e71286fd5feb628b70f2"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Scorch",
+      "page_id": 68920,
+      "revision_id": 1182895,
+      "content_sha256": "ebb87ae456fe94add9f88626731ce1d3eec81beb4410e11339f23f9454cf5b6a"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://www.tibiawiki.com.br/api.php",
+      "title": "Scorch",
+      "page_id": 34269,
+      "revision_id": 436290,
+      "content_sha256": "6f522f75e0818e1af43cefc54a5c2b5283eb2b8aa1fed12dd3851a3297c0dfa0"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "words",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/words",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "spellid",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "librarytext",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/library_text",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "voc",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "levelrequired",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "premium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "soul",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "cooldown",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "subclass",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 28,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 59,
+      "source_field": "isAggressive",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aggressive",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "isSelfTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/self_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "needTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_target",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 30,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 61,
+      "source_field": "needDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/needs_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "needCasterTargetOrDirection",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/target_or_direction",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "blockWalls",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/block_walls",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "allowOnSelf",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/allow_on_self",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "checkFloor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/check_floor",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "spellrange",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/range_tiles",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "aimattarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/targeting/aim_at_target",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "setPzLocked",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/pz_locks_caster",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "needWeapon",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 25,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 55,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "basepower",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/base_power",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
+      "source_file": "Scorch",
+      "source_line": 1,
+      "source_field": "basepower",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/base_power",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 4,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "approved_omission",
+      "resolution": "crystal runs custom logic here (custom); the plain combat of the other source is used (S4)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 12,
+      "source_field": "onCastSpell",
+      "kind": "script",
+      "status": "resolved_native_behavior",
+      "destination": "/spell/spell/execution/ability",
+      "resolution": "Plain combat converted with the monster combat_ability rules (canary)."
+    },
+    {
+      "source_index": 3,
+      "source_file": "data/scripts/spells/attack/scorch.lua",
+      "source_line": 1,
+      "source_field": "note",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "S5: the pre-2022 level contribution level / 5 is replaced by the world curve level_base_damage_healing (official scaling since 13.05.12657)."
+    }
+  ]
+}

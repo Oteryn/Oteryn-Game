@@ -1,0 +1,80 @@
+{
+  "schema": "OTERYN_SPELLS_R23_CURRENT_VALIDATION/v1",
+  "created_utc": "2026-10-02T12:08:50.414918+00:00",
+  "manifest_sha256": "a0e824b3227996499f8b6d146bfd53a6eec8b38402375eaf5a49a5c6071acbd0",
+  "classification": "Local source/data validation; not frozen-head CI or merge qualification",
+  "checks": {
+    "library": {
+      "log_name": "final-r7-lib-tests-4.log",
+      "log_sha256": "6a1ae3891355f6630203f3238e35c42dd485e4130fc85c520c80c06918c5a327",
+      "process_exit": 0,
+      "passed": 1593,
+      "ignored": 4,
+      "failed": 0,
+      "seconds": 49.32
+    },
+    "canonical_r7_admission": {
+      "log_name": "final-canonical-r7-profile-admission.log",
+      "log_sha256": "20637eb203170c98c4c6e0c26dd866f77b04a843441a6278485043ae55df6a67",
+      "process_exit": 0,
+      "passed": 1,
+      "filtered": 1596,
+      "failed": 0,
+      "seconds": 52.74
+    },
+    "dev_client": {
+      "log_name": "final-r7-dev-client-tests.log",
+      "log_sha256": "4195d9e3f6d87d71732443a94ab962f82d3c9e8aa7fd41395454242a4166dc81",
+      "process_exit": 0,
+      "passed": 32,
+      "failed": 0
+    },
+    "session": {
+      "log_name": "session-async-green.log",
+      "log_sha256": "6fa6dcf2b1a4c905085ae9c740ca21cd72c26236d9bfc6dfa161dd2e4ad5418b",
+      "process_exit": 0,
+      "passed": 7,
+      "failed": 0
+    },
+    "session_clippy": {
+      "log_name": "session-async-clippy.log",
+      "log_sha256": "4a9310a83f1c0e627bbf3ba09c13553a6fcafccaba7b2d7895ba4dedb541dd79",
+      "process_exit": 0
+    },
+    "exporter": {
+      "log_name": "final-canonical-r7-export-tests.log",
+      "log_sha256": "d41f3c846ddc49b0edee5f0cc7d1f92afb009ffd88a2bdac06fe9b8c1e024766",
+      "process_exit": 0,
+      "passed": 14,
+      "failed": 0
+    },
+    "normal_bins": {
+      "log_name": "final-r7-normal-bins.log",
+      "log_sha256": "4c385d834e7f7cc6dd92dcc5fb03d699e9bb8ae088561ae569593002a9febd5b",
+      "process_exit": 0
+    },
+    "format": {
+      "log_name": "final-r7-format-3.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "process_exit": 0
+    },
+    "required_game_clippy": {
+      "log_name": "final-r7-required-clippy-2.log",
+      "log_sha256": "2672fb2ed1a92a5aa4a93dccde146a6f7b4698488237af34b883b7961782784c",
+      "process_exit": 101,
+      "reported_library_test_errors": 864
+    }
+  },
+  "physical_attempt6": {
+    "result": "passed_bounded_local_spell_seam",
+    "receipt": "physical-attempt-6-receipt.json",
+    "receipt_sha256": "04e14a6e9250445ae286cf06d5a593bae8c563f81bb341a8fcd9b8a8daa5e429",
+    "log_sha256": "121579752ab9691a0c2b9105e442cc089fbd513c8b9db86bdd0319ad839060e0",
+    "observed_process_exit_code": 0,
+    "duration_seconds": 341.93,
+    "disposable_qualification": true,
+    "production_or_long_lived_activation": false
+  },
+  "game_gate": "not_green; required Clippy remains failed",
+  "production_or_long_lived_deployment": false
+}

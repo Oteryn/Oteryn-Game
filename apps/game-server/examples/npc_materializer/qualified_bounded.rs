@@ -12,8 +12,8 @@ const DIGEST: Option<&str> =
 const PREDECESSOR_ECE: Option<&str> =
     Some("274ea4c08204c8e0c48f57acf7a787ac124744b5c130417a2077637dfb53196c");
 const PREDECESSOR_REFERENCE: Option<&str> =
-    Some("81841499d874f01aac913193025927fe92e575ac13dc4097968b13989d826944");
-const PREDECESSOR_TREE: &str = "d65f09c5d2d2e030d1cf5d8a93d240fe719a0b19e7179b511e924115c386a958";
+    Some("6204de4f7f5ec4bf6888770e19c80b7450bb82dce56548044509d5d62ccefa73");
+const PREDECESSOR_TREE: &str = "b55d813e1ab7fecd385e6e3410a0dc02ea57c5c3df32ebe777d9b5e68d92c621";
 const MAPPER: &str = "NPC_BOUNDED_D15_D16_STRUCTURAL_DEFINITION_BRIDGE/v1";
 const MAPPER_DIGEST: &str = "3f98bbdd656be5a4e3ee0a0f9bcfaad050605cfbdf5aaa537d6c66518edc8492";
 const FROM: &str = "g4-npc-qualified-nine-definitions-r17";

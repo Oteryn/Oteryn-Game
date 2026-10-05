@@ -36,6 +36,7 @@ use oteryn_protocol_oteryn::quest_log::{
 };
 use oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1;
 use oteryn_protocol_oteryn::world_spatial::CAPABILITY_PACED_MOVEMENT_V1;
+use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
 
 /// One capability the server offers, with the capabilities that must also be selected for it
 /// (the registry entry's `requires`, empty when the entry has none).
@@ -45,13 +46,19 @@ pub(crate) struct OfferedCapability {
     pub(crate) requires: &'static [u32],
 }
 
-/// The production offered set: the registry's `offered: true` entries, ascending by ID. SPEED-1
-/// offers capability 13 `PACED_MOVEMENT_V1`. A test keeps it equal to the registry and within
-/// `REGISTERED_CAPABILITY_IDS_V1`.
-pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[OfferedCapability {
-    id: CAPABILITY_PACED_MOVEMENT_V1,
-    requires: &[],
-}];
+/// The production offered set: the registry's `offered: true` entries, ascending by ID. VIS-3
+/// offers capability 6 `WORLD_SPATIAL_ENTITIES` and SPEED-1 capability 13 `PACED_MOVEMENT_V1`. A
+/// test keeps it equal to the registry and within `REGISTERED_CAPABILITY_IDS_V1`.
+pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_PACED_MOVEMENT_V1,
+        requires: &[],
+    },
+];
 
 /// The command types and state domains each registered capability owns
 /// (`PROTOCOL_OTERYN_V1_REGISTRY.json`; a test keeps them equal). Capability 6
