@@ -59,7 +59,7 @@
 | File | Packets | Rule |
 | --- | --- | --- |
 | `apps/game-server/src/gameplay_transport/attack.rs` | KILL-REWARD-COMP-1: the lethal arm of the drain only | LOGOUT-WIRE-1 only reads `in_fight_until` |
-| `apps/game-server/src/gameplay_transport/mod.rs` | KILL-REWARD-COMP-1: the settlement call after each drain, and the drain of the session's own queue before its terminal release. LOGOUT-WIRE-1: the `TerminalRelease::Logout` variant and its release path | the two packets touch disjoint functions; the second to merge merges `main` first and wires the §1.3 release handshake into the `Logout` path |
+| `apps/game-server/src/gameplay_transport/mod.rs` | KILL-REWARD-COMP-1: the settlement call after each drain, and the drain of the session's own queue before its terminal release. LOGOUT-WIRE-1: the `TerminalRelease::Logout` variant and its release path | the two packets touch disjoint functions; the second to merge merges `main` first and wires the §1.3 release handshake into the `Logout` path. KILL-REWARD-COMP-1 owns the `Recorded` arm of `control_loss_lifecycle` and `expire_control_loss`; LOGOUT-WIRE-1 owns the `Terminal` arm |
 | `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`, `RESOURCE_LIMITS_REGISTRY.json` | LOGOUT-WIRE-1: the command and capability rows. KILL-REWARD-COMP-1: the `KILLRW-RL-01` row | numbers leased by the control plane |
 
 ### 0.3 Order
@@ -155,7 +155,8 @@
   `ProjectedCreatureDeathFacts`, and the `DeathGroundContext`. The queue lives with the attack
   state behind the existing `attack` mutex.
 - **One entry per death.** The queue is unique by the death key of the projected death. An
-  append whose death key is already queued or in flight is a no-op and consumes no capacity.
+  append whose death key is already queued, in flight or parked by the release handshake is a
+  no-op and consumes no capacity.
   A death that was already settled may be appended again by a replay (§1.4). Its settle then
   finds every descendant committed and adds nothing, because the descendants are idempotent per
   `(death, character)`. The queue keeps no settled-death history.
@@ -230,6 +231,17 @@
        reads the row. `session_state = 3` is handled as Committed. Any other state is handled as
        a retryable failure, and the next terminal release (`Abandoned` or the grace expiry)
        runs the handshake again.
+  - **The grace expiry retries an unknown outcome.** Today `release_after_grace` returns
+    `GraceExpiryResult::Unknown` after `EXPIRY_ATTEMPTS`, `expire_control_loss` then calls
+    `forget_lost`, and the `Recorded` arm of `control_loss_lifecycle` breaks after one call. A
+    long store outage would leave the fence, the `releasing` mark and the parked entries with
+    no later attempt. KILL-REWARD-COMP-1 changes that arm: on `Unknown` it does not break. It
+    sleeps the lifecycle backoff, doubled up to `EXPIRY_MAX_BACKOFF`, and calls
+    `release_after_grace` again, which runs the handshake again. The retry count is unbounded
+    and the rate is bounded. `forget_lost` runs only on a final result (`Released`,
+    `NotApplicable` or a resume), so the fence, the mark and the parked entries stay across
+    the retries. Node shutdown cancels the loop, as today, and a resume moves the session's
+    connection generation, so the next attempt returns `NotApplicable` and ends it.
   - Lock order: the projecting turns and the seal take the guards in one fixed order
     (`runtime`, then `spell_states`, then `attack`). The worker states it in `kill_reward.rs`
     and tests it. No guard is held across the terminal release transaction.
@@ -383,7 +395,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/ordinary_combat.rs  # the due path receipt walk only, if it commits creature health
   - apps/game-server/src/gameplay_transport/spell_timer_callbacks.rs  # the FireReport receipt walk in apply_due_under_current_owners, and its test module line only
   - apps/game-server/src/gameplay_transport/spell_timer_callbacks_tests.rs  # new
-  - apps/game-server/src/gameplay_transport/mod.rs         # module line, the drain after each drain or cast, the release handshake before every terminal release and in release_after_grace
+  - apps/game-server/src/gameplay_transport/mod.rs         # module line, the drain after each drain or cast, the release handshake before every terminal release and in release_after_grace, expire_control_loss and the Recorded arm of control_loss_lifecycle
   - apps/game-server/tests/support/combat_death_reward_postgres_cases.rs  # the new settle signature
   - apps/game-server/tests/support/kill_reward_live_postgres_cases.rs     # new
   - apps/game-server/tests/combat_death_reward_postgres.rs                # registration only
@@ -465,6 +477,12 @@ validation:
       settled by the `release_after_grace` handshake before `release_expired_loss` writes
       `session_state = 3`. A kill parked during the expiry is settled after a resume
       (`NotApplicable` or `Lifted`) and logs `principal_gone` after `Released`.
+    - Long store outage: the store fails for longer than `EXPIRY_ATTEMPTS` backoffs during the
+      grace expiry, then recovers. The lifecycle keeps retrying at most once per
+      `EXPIRY_MAX_BACKOFF`, the fence and the mark stay until then, and after recovery the
+      session is released, its queued and parked kills are settled or logged, and the fence is
+      forgotten. A resume during the outage ends the loop with `NotApplicable`.
+    - Uniqueness: an append whose death key is already parked is a no-op and takes no slot.
     - Bound: with 63 queued entries and one parked, a 65th death logs `queue_full`. A retryable
       release failure that moves the parked entry to the queue succeeds at 64 held slots, and an
       entry returned after an unknown settle outcome keeps its slot. The count never exceeds

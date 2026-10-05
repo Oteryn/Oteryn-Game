@@ -95,6 +95,12 @@ external_repositories: []
   - 4179937828 (P1): `KILLRW-RL-01` bounds queued, in-flight and parked entries; an entry keeps
     one slot until settled or logged, so a retryable failure neither loses it nor exceeds the
     bound (§1.3, §2.1).
+- #1802 Codex round 7 (CP), on `981b2c8b`:
+  - 4179965906 (P1): the `Recorded` arm of `control_loss_lifecycle` retries a grace-expiry
+    `Unknown` at a bounded rate and forgets the session only on a final result, so a long
+    store outage keeps the fence, mark and parked entries for the next attempt; a test covers
+    it (§0.2, §1.3, §2.1).
+  - 4179965909 (P2): the death-key uniqueness check includes parked entries (§1.3, §2.1).
 
 ## Validation
 
