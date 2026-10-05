@@ -378,7 +378,15 @@ impl CharacterProgressionContent {
         if death.loss_numerator != 1 || death.loss_denominator != 1 || death.rounding != "floor" {
             return Err(invalid("progression death policy"));
         }
-        if !table.evidence_revision.starts_with(PREFIX_EVIDENCE)
+        if !table
+            .evidence_revision
+            .strip_prefix(PREFIX_EVIDENCE)
+            .is_some_and(|digest| {
+                digest.len() == 32
+                    && digest
+                        .bytes()
+                        .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+            })
             || table.evidence_coverage.first_level != 1
             || !(1..=CHARACTER_EXPERIENCE_TABLE_LEVELS as u32)
                 .contains(&table.evidence_coverage.last_level)

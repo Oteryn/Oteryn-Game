@@ -224,3 +224,30 @@ fn committed_ruleset_files_decode_and_match_producer_revisions() {
         "character-progression-policy-v1-c7e3e8fc5040bdc7a819df5711cbcb89"
     );
 }
+
+#[test]
+fn refuses_malformed_evidence_digest_even_with_consistent_revisions() {
+    for bad in [
+        "",
+        "0",
+        &"0".repeat(31),
+        &"0".repeat(33),
+        &"A".repeat(32),
+        &"g".repeat(32),
+    ] {
+        let mut v = section_value();
+        let evidence = format!("{PREFIX_EVIDENCE}{bad}");
+        v["experience_table"]["evidence_revision"] = json!(evidence);
+        let table_rev = document_revision(PREFIX_TABLE, &v["experience_table"]).unwrap();
+        v["experience_table"]["revision"] = json!(table_rev);
+        v["revisions"]["evidence"] = json!(evidence);
+        v["revisions"]["experience_table_revision"] = json!(table_rev);
+        v["revisions"]["policy_revision"] = json!(
+            policy_revision(&table_rev, v["death_policy"]["revision"].as_str().unwrap()).unwrap()
+        );
+        assert!(
+            CharacterProgressionContent::decode(&bytes(&v)).is_err(),
+            "{bad}"
+        );
+    }
+}
