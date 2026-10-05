@@ -1,6 +1,6 @@
 # Oteryn Game Native Runtime Status Producer v1
 
-- Status: Candidate. Acceptance by the architect and the owner (#162 Q15a). Implementation, configuration and activation are not authorized by this document. Amendment RS-A1 (§16, revocation report and key separation) was accepted by the owner (option 1a, 2026-10-05, CP D747) and by Platform (2026-10-05, CP D758, Oteryn/Oteryn-Platform#1419) (`ARCH-REVOKE-REPORT-V1`).
+- Status: Candidate. Acceptance by the architect and the owner (#162 Q15a). Implementation, configuration and activation are not authorized by this document. Amendment RS-A1 (§16, revocation report and key separation) was accepted by the owner (option 1a, 2026-10-05, CP D747) and by Platform (2026-10-05, CP D758, Oteryn/Oteryn-Platform#1419) (`ARCH-REVOKE-REPORT-V1`) for §16.1 and §16.3. §16.2 (key separation) is **pending and not in effect**: it was extended after D758 with the listener-key registration and needs Platform's confirmation under #1419. Until then the ops tool keeps the #1822 check (`other_producer_certificate_files`).
 - Contract ID: `oteryn-game-native-runtime-status-v1`
 - Coordination: #162 (owner decisions Q14–Q18, comments 5899892092 and 5899942821); Oteryn/Oteryn-Platform#1419.
 - Owner decision: **Q16b** — game nodes report runtime status automatically; there is no manual operator source.
@@ -26,7 +26,7 @@ Platform may issue a fresh-entry grant for a `(WorldId, ChannelId)` only from fr
   - runtime status: one certificate per node host (new configuration keys, for example `[platform.runtime_status] client_certificate_file`, `client_key_file`); Platform lists the scopes each node-host identity may serve;
   - assignment reports: one ownership-authority certificate held only by `oteryn-game-ops`;
   - Character projection: Character Authority hosts only (projection candidate §3).
-- Key separation is checked by Platform for every identity and by `oteryn-game-ops` for the node hosts it reports for (Amendment RS-A1, §16.2).
+- Key separation is checked by Platform for every identity and by `oteryn-game-ops` for the node hosts it reports for (Amendment RS-A1, §16.2, pending and not in effect).
 - Closed operations with compiled paths (not configurable):
   - `ReportRuntimeStatusV1` → `POST /internal/v1/game-auth/native-runtime-status` (node);
   - `ReportScopeAssignmentV1` → `POST /internal/v1/game-auth/native-scope-assignments` (ownership authority);
@@ -166,8 +166,8 @@ Registry entries are a follow-up in `docs/contracts/RESOURCE_LIMITS_REGISTRY.jso
 - a revocation report has no node identity, and after it no node report for the scope is accepted, including one from the revoked holder at the revocation's generation (§16.1);
 - a byte-identical revocation replay answers `accepted` with no state change, and a revocation at the same key with a different `revoked_at` answers `409` (§16.1);
 - negative fixtures for `ReportScopeRevocationV1`, shared with the Platform consumer: one fixture each for an unknown member, a duplicate member, a `null` member, a missing member, a nested object and an over-long body. The consumer refuses each with `400` and changes no state. The Game response decoder treats as "not delivered" every response other than the exact §4 success body, with one test per shape: an unknown, duplicate or `null` member; a missing `contract_version` or `result`; a `contract_version` other than the number `1` (including `"1"`, `2` and `1.0`); a `result` that is not a string or not one of the §16.1 values; a top-level value that is not an object; and trailing bytes after the object (§16.1);
-- the ops tool refuses an authority certificate whose public key equals the key of any certificate named by a node configuration it reports for, the listener chain included; refuses a report configuration that names a scope identity no node configuration backs; and refuses to report while any node identity holding a non-revoked assignment in the durable #415 table has no named node configuration (§16.2);
-- Platform refuses an ownership-authority identity whose public key equals a registered listener key, and refuses to register a listener key equal to any registered client identity key (§16.2);
+- the ops tool refuses an authority certificate whose public key equals the key of any certificate named by a node configuration it reports for, the listener chain included; refuses a report configuration that names a scope identity no node configuration backs; and refuses to report while any node identity holding a non-revoked assignment in the durable #415 table has no named node configuration (§16.2, pending);
+- Platform refuses an ownership-authority identity whose public key equals a registered listener key, and refuses to register a listener key equal to any registered client identity key (§16.2, pending);
 - node report refused when generation, epoch or identity differs from the latest assignment report; accepted after it matches;
 - epoch raise invalidates older state;
 - a failed or refused report never changes boot, serving or admission;
@@ -186,7 +186,7 @@ Registry entries are a follow-up in `docs/contracts/RESOURCE_LIMITS_REGISTRY.jso
 
 Producers first: the node and the ops tool may ship reporting before the Platform endpoints exist (`server-first-safe`), because delivery never gates them. Activation of native routing on Platform follows the Platform contract §14. Rollback: disable reporting in the configuration; Platform sees stale evidence and stops native routing.
 
-## 16. Amendment RS-A1: revocation report and key separation (accepted 2026-10-05)
+## 16. Amendment RS-A1: revocation report and key separation (§16.1 and §16.3 accepted 2026-10-05; §16.2 pending)
 
 Proposed by `ARCH-REVOKE-REPORT-V1` (`docs/architecture/reviews/OTERYN_GAME_ARCH_REVOKE_REPORT_2026-10-05.md`, CP D745). The owner accepted it as written (option 1a, CP D747), and Platform accepted it (https://github.com/Oteryn/Oteryn-Platform/issues/1419#issuecomment-5995072150, CP D758). Until OPS-REVOKE-REPORT-1 ships, `oteryn-game-ops` reports assignments and replacements only and refuses `--node-identity` on revoke (#1822).
 
@@ -227,6 +227,8 @@ After a revocation commits, `oteryn-game-ops` sends `ReportScopeRevocationV1` wi
 - Privacy follows §10. The generation and the epoch are not logged.
 
 ### 16.2 Key separation
+
+**Pending, not in effect.** This section changed after Platform's D758 acceptance and needs Platform's confirmation under Oteryn/Oteryn-Platform#1419 (owner ruling 2a). No part of it binds Game or Platform until then. Until it is in effect, `oteryn-game-ops` keeps the #1822 check (`other_producer_certificate_files`). Its Game part is packet OPS-KEY-SEPARATION-2 of `ARCH-REVOKE-REPORT-V1`, which starts only after the confirmation.
 
 - **Platform, complete.** Platform's identity registry binds each client identity to exactly one purpose: native evidence, runtime status for listed scopes, ownership authority, or Character projection. Platform refuses to register an identity whose public key (SPKI) equals the key of an identity registered for another purpose. It authenticates each operation only with an identity of that operation's purpose. It also holds the listener key of every routed node: the route descriptor of each scope registers the SPKI of the listener certificate that serves its `tls_server_name`, and Platform refuses a listener key equal to any client identity key, and a client identity key equal to any registered listener key. A listener key is never a client identity and authenticates no operation. This is the check that covers every host, listener keys included.
 - **Game, closed set (defence in depth).** The report configuration names its node hosts by file instead of a free list: `node_config_files` (1 to 64 distinct absolute paths) replaces `other_producer_certificate_files`. The set must cover the fleet that can be routed: the ops tool refuses to report while any node identity that holds a non-revoked assignment in the durable #415 table (which it alone writes) is not the runtime-status subject of a named node configuration. Every node identity the configuration lists for a scope must equal the runtime-status certificate subject of exactly one named node configuration; otherwise the configuration is refused. The comparison set is every certificate each named node configuration names: the listener chain, `[platform]` and `[platform.runtime_status]`. One `NodeConfig` method enumerates them, so a producer purpose added later joins the set by construction. The ops tool refuses its authority certificate when that certificate's public key equals any key in the set, or when any named file cannot be read. A Character Authority host configuration joins the set the same way once it exists. A host that holds no assignment is outside this check and is covered by Platform's listener-key registration above.

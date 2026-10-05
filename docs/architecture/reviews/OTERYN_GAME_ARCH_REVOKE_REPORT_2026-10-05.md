@@ -5,7 +5,11 @@
   contract amendment RS-A1 (`docs/contracts/OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md` §16)
   takes effect only on owner acceptance and Platform acceptance (§1.4). The owner accepted RS-A1
   as written (option 1a) on 2026-10-05 (CP D747). Platform accepted it on 2026-10-05 (CP D758,
-  https://github.com/Oteryn/Oteryn-Platform/issues/1419#issuecomment-5995072150), so RS-A1 is in effect when this decision merges.
+  https://github.com/Oteryn/Oteryn-Platform/issues/1419#issuecomment-5995072150), so §16.1 and §16.3
+  of RS-A1 are in effect when this decision merges. Contract §16.2 (key separation) is
+  **pending and not in effect** (owner ruling 2a, §1.4): it changed after D758 and needs
+  Platform's confirmation under #1419. Its Game part is packet OPS-KEY-SEPARATION-2 (§2.2),
+  which starts only after that confirmation.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: control plane D745 (REVOKE-REPORT-CONTRACT-1). OPS-ASSIGN-REPORT-1 (#1822) reports
   only assignments and replacements and refuses `--node-identity` on revoke. Two Codex P1
@@ -35,11 +39,14 @@
      configuration it reports for. It reads them from `node_config_files` instead of a free
      list. Each scope identity it reports, and each identity holding a non-revoked assignment
      in the durable table, must be the runtime-status subject of one of those configurations.
-4. **OPS-REVOKE-REPORT-1 (hard)** implements both on the Game side after #1822 merges and after
-   the owner and Platform accept RS-A1 (§2). Both acceptances are recorded (§1.4).
+4. **OPS-REVOKE-REPORT-1 (hard)** implements §16.1 on the Game side after #1822 merges (§2.1).
+   The owner and Platform accepted §16.1 (§1.4).
+5. **OPS-KEY-SEPARATION-2 (hard)** implements the Game part of §16.2 (§2.2). §16.2 is pending
+   and not in effect, so the packet starts only after Platform confirms it under #1419.
 
 Owner acceptance (§1.4): accepted as written, option 1a, on 2026-10-05 (CP D747). Platform
-acceptance under Oteryn/Oteryn-Platform#1419: recorded on 2026-10-05 (CP D758).
+acceptance under Oteryn/Oteryn-Platform#1419: recorded on 2026-10-05 (CP D758) for §16.1 and for
+§16.2 as it stood then. The current §16.2 is pending Platform confirmation and not in effect.
 
 ## 1. Rulings
 
@@ -78,8 +85,8 @@ configuration. The listener certificate is included because a node host holds th
 A listener key is not a client identity, so Platform's client registry alone would miss a
 listener on a host outside the invocation (Codex round 2 on #1832). Platform therefore registers
 the listener key of each routed node with its route descriptor and refuses any reuse between
-listener and client keys. This extends the §16.2 text Platform accepted under D758, so it needs
-Platform's confirmation under #1419 (§1.4).
+listener and client keys. This extends the §16.2 text Platform accepted under D758, so §16.2 is
+pending and not in effect until Platform confirms it under #1419 (§1.4).
 
 ### 1.3 Durable and restart behaviour
 
@@ -105,8 +112,13 @@ restart is byte-identical.
    per-purpose key refusal of the identity registry (§16.2), under #1419.
 
    **Pending Platform confirmation (Codex round 2):** the listener-key registration and the
-   listener/client key refusal added to §16.2 after D758. Until Platform confirms it, the Game
-   closed-set check, extended to every assigned node, is the only listener-key check.
+   listener/client key refusal added to §16.2 after D758.
+
+   **Owner ruling 2a (2026-10-05):** this decision merges with §16.2 pending. §16.2 as a whole
+   is not in effect, and "accepted" in this decision and in the contract does not cover it.
+   Until Platform confirms it under #1419, the ops tool keeps the #1822 check
+   (`other_producer_certificate_files`), and OPS-KEY-SEPARATION-2 is not allocated. If Platform
+   declines, §16.2 returns to the architect.
 
    **Platform ruling (2026-10-05, CP D758): accepted** for §16.1 and §16.2 at frozen head
    `1c6ffc68`. It was recorded on #1419 on the owner's behalf, with the owner's explicit
@@ -123,8 +135,10 @@ restart is byte-identical.
    uint64 values.
 5. Older peers: neither the operation nor the endpoint has shipped, and the assignment wire is
    unchanged. A missing endpoint fails loudly.
-6. Split work: one Game PR (OPS-REVOKE-REPORT-1) and one Platform PR. Either order is safe,
-   because a revocation that is not delivered fails loudly and changes nothing in Game.
+6. Split work: one Game PR for §16.1 (OPS-REVOKE-REPORT-1) and one Platform PR. Either order
+   is safe, because a revocation that is not delivered fails loudly and changes nothing in Game.
+   §16.2 is a separate Game PR (OPS-KEY-SEPARATION-2) after Platform's confirmation; until then
+   the #1822 check stays, so no state is left half changed.
 
 ## 2. Packet
 
@@ -133,7 +147,7 @@ restart is byte-identical.
 ```yaml
 task_id: OTV2-20261005-ops-revoke-report-1
 decision: ARCH-REVOKE-REPORT-V1; runtime-status producer contract §16 (RS-A1)
-depends_on: [OTV2-20261005-ops-assign-report-1]  # RS-A1 accepted by the owner (D747) and Platform (D758) 2026-10-05
+depends_on: [OTV2-20261005-ops-assign-report-1]  # §16.1 accepted by the owner (D747) and Platform (D758) 2026-10-05
 worker: oteryn-hard-worker
 review: hard and security review (Codex, final frozen head)
 branch: agent/ops-revoke-report-1-20261005
@@ -143,7 +157,6 @@ owned_paths:
   - apps/game-server/src/native_admission_source/descriptor.rs     # the new operation only
   - apps/game-server/src/native_admission_source/mod.rs            # the new operation only
   - apps/game-server/src/native_admission_source/http1_mtls.rs     # the 256-byte bound for the new operation
-  - apps/game-server/src/node/config.rs                            # the certificate-enumeration method only
   - apps/game-server/src/bin/oteryn-game-ops.rs
   - apps/game-server/tests/native_scope_assignment.rs
   - apps/game-server/tests/native_admission_source_transport.rs    # exhaustive match arm
@@ -164,8 +177,7 @@ validation:
   - `assignment revoke`, and `reconcile` of a committed revoke, report the revocation after the
     commit. `assignment report` on a revoked scope re-sends it.
   - `--node-identity` stays refused on revoke. No holder identity is retained.
-  - `ReportConfig.node_config_files` replaces `other_producer_certificate_files`, together with
-    the backing rule and the comparison set of §16.2.
+  - Key separation stays the #1822 check. §16.2 is OPS-KEY-SEPARATION-2 (§2.2).
 - **Acceptance:**
   - The revocation bytes equal the contract §16.1 fixture.
   - The body has no identity member and is byte-identical after a restart.
@@ -175,12 +187,6 @@ validation:
     - `409` for an assignment and a revocation at the same key;
     - `accepted` with no state change for a byte-identical replay of the latest revocation;
     - a `404` stop with a non-zero exit naming `assignment report`.
-  - An authority certificate that shares a key with any listener, evidence or runtime-status
-    certificate of a named node configuration is refused.
-  - A report is refused while a node identity holding a non-revoked assignment in the durable
-    table has no named node configuration.
-  - A configuration whose scope identity has no backing node configuration is refused, and so is
-    one with an unreadable named file.
   - The negative fixtures of contract §13 (unknown, duplicate, `null` and missing members, nesting,
     over-long body) are committed beside the valid fixture for the Platform consumer. The
     response decoder treats every response other than the exact §4 success body as "not
@@ -193,6 +199,47 @@ validation:
   - Epoch storage or epoch raises (U-RS5).
   - Node-side changes.
   - Character Authority host configurations, which do not exist yet.
+  - Contract §16.2, which is pending (§2.2).
+
+### 2.2 OPS-KEY-SEPARATION-2 (hard worker, gated)
+
+```yaml
+task_id: OTV2-20261005-ops-key-separation-2
+decision: ARCH-REVOKE-REPORT-V1; runtime-status producer contract §16.2 (RS-A1, pending)
+depends_on: [OTV2-20261005-ops-revoke-report-1]
+gate: Platform confirms the current §16.2 under Oteryn/Oteryn-Platform#1419, recorded by the CP
+worker: oteryn-hard-worker
+review: hard and security review (Codex, final frozen head)
+branch: agent/ops-key-separation-2-20261005
+base: main after OPS-REVOKE-REPORT-1 merges and the gate is recorded
+owned_paths:
+  - apps/game-server/src/native_admission_source/scope_assignment.rs  # ReportConfig only
+  - apps/game-server/src/node/config.rs                               # the certificate-enumeration method only
+  - apps/game-server/src/bin/oteryn-game-ops.rs                       # the key-separation check only
+  - apps/game-server/tests/native_scope_assignment.rs
+  - docs/agents/tasks/archive/OTV2-20261005-ops-key-separation-2.md
+validation:
+  - cargo fmt --all -- --check
+  - cargo clippy --locked --workspace --all-targets -- -D warnings
+  - cargo test --locked -p oteryn-game-server
+  - cargo run --locked -p oteryn-architecture-check
+  - python tools/agents/validate_governance.py
+  - python tools/repository/validate_repository_policy.py
+  - git diff --check
+```
+
+- **Not allocated** until the gate is recorded. If Platform declines, §16.2 returns to the
+  architect and this packet is withdrawn.
+- **Scope:** `ReportConfig.node_config_files` replaces `other_producer_certificate_files`,
+  together with the backing rule and the comparison set of contract §16.2.
+- **Acceptance:**
+  - An authority certificate that shares a key with any listener, evidence or runtime-status
+    certificate of a named node configuration is refused.
+  - A report is refused while a node identity holding a non-revoked assignment in the durable
+    table has no named node configuration.
+  - A configuration whose scope identity has no backing node configuration is refused, and so is
+    one with an unreadable named file.
+- **Not in scope:** Platform's identity registry and listener-key registration (Platform, #1419).
 
 ## 3. Rejected options
 
@@ -215,8 +262,9 @@ The decision holds if:
   node report;
 - the revocation body is derived from durable state alone;
 - the assignment wire is unchanged;
-- an authority key shared with any certificate of a reported node host is refused by
-  `oteryn-game-ops`, and a key shared across purposes anywhere is refused by Platform.
+- once §16.2 is confirmed and in effect: an authority key shared with any certificate of a
+  reported node host is refused by `oteryn-game-ops`, and a key shared across purposes anywhere
+  is refused by Platform.
 
 **Must decide now? YES.**
 

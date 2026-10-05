@@ -23,7 +23,7 @@ owned_paths:
 public_contracts:
   - docs/contracts/OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md
 depends_on: [OTV2-20261005-ops-assign-report-1]
-blocks: [OTV2-20261005-ops-revoke-report-1]
+blocks: [OTV2-20261005-ops-revoke-report-1, OTV2-20261005-ops-key-separation-2]
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -32,7 +32,8 @@ external_repositories: []
 
 - Answers CP D745 and the two #1822 P1 findings at `1ce1363e`.
 - Amendment RS-A1 (contract §16): the owner accepted it as written (option 1a) on 2026-10-05
-  (CP D747). Platform accepted it on 2026-10-05 (CP D758, https://github.com/Oteryn/Oteryn-Platform/issues/1419#issuecomment-5995072150).
+  (CP D747). §16.2 is pending and not in effect (owner ruling 2a) until Platform confirms its
+  listener-key extension under #1419. Platform accepted §16.1 and the earlier §16.2 on 2026-10-05 (CP D758, https://github.com/Oteryn/Oteryn-Platform/issues/1419#issuecomment-5995072150).
   The architect verified that record first-hand, and the owner confirmed both directly.
   - §16.1: `ReportScopeRevocationV1` on its own endpoint, with no node identity. Platform orders
     revocations and assignments in one per-scope sequence by `(epoch, generation)`. A latest
@@ -42,7 +43,9 @@ external_repositories: []
     `other_producer_certificate_files`.
   - §16.3: no shipped peer is affected, and the assignment wire is unchanged.
 - Pointers in §3, §5, §12 and §13.
-- Packet OPS-REVOKE-REPORT-1 (hard worker), after #1822 merges and after acceptance.
+- Packet OPS-REVOKE-REPORT-1 (hard worker) implements §16.1 after #1822 merges. Packet
+  OPS-KEY-SEPARATION-2 (hard worker) implements the Game part of §16.2 and is allocated only
+  after Platform's confirmation.
 - Codex round on 5d09099d is fixed:
   - §16.1 defines the identical revocation replay as an idempotent `accepted` and corrects the
     response reference to §4;
@@ -54,6 +57,9 @@ external_repositories: []
     needs Platform's confirmation;
   - the Game check covers every node holding an assignment;
   - every malformed success-response shape has a test.
+- Codex round on dcf69165 is fixed: §16.2 is marked pending and not in effect in the decision,
+  the contract status and §16, and in this record; its Game part moves to the gated packet
+  OPS-KEY-SEPARATION-2.
 
 ## Validation
 
