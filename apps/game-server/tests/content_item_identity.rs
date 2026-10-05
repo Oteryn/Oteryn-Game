@@ -285,7 +285,7 @@ fn semantic_constants_resolve_to_existing_tibia_keys() {
 fn content_names_only_canonical_item_keys() {
     let table = table();
     let content = content_item_keys();
-    assert_eq!(content.len(), 34_032);
+    assert_eq!(content.len(), 34_033);
     for key in &content {
         assert!(is_canonical_item_key(key), "{key}");
         assert!(key.starts_with("oteryn:item.tibia.i"), "{key}");
@@ -496,7 +496,7 @@ fn appearance_extension_preserves_exact_historical_baseline_output() {
         serde_json::to_vec(&actual.core.records).expect("actual"),
         serde_json::to_vec(&expected.core.records).expect("expected")
     );
-    assert_eq!(switch.item_records, baseline.item_records + 61);
+    assert_eq!(switch.item_records, baseline.item_records + 62);
     assert_eq!(
         switch.removed_without_successor,
         baseline.removed_without_successor
@@ -523,7 +523,7 @@ fn appearance_extension_resolves_the_new_creature_stage_i44048_reference() {
         appearance_items(),
     )
     .expect("accepted appearance reference now closes");
-    assert_eq!(switch.item_records, 62);
+    assert_eq!(switch.item_records, 63);
     assert_eq!(
         candidate.state.editor[0].target.key,
         "oteryn:item.tibia.i44048"

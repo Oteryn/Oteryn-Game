@@ -1,0 +1,30 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 5,
+      "soul": 0
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "name": "Practise Magic Missile",
+    "requirements": {
+      "level": 1,
+      "vocation_display_flags": [
+        {
+          "show_in_description": false,
+          "vocation": "none"
+        }
+      ],
+      "vocations": [
+        "none"
+      ]
+    },
+    "words": "adori dis min vis"
+  }
+}

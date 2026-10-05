@@ -18,7 +18,7 @@ use sha2::{Digest, Sha256};
 type TestResult = Result<(), Box<dyn StdError>>;
 
 /// Palette keys of the fixture's B3 placements, by index.
-const KEYS: [&str; 10] = [
+const KEYS: [&str; 11] = [
     "terrain:grass",  // 0: ground, walkable, 150
     "terrain:mud",    // 1: ground, walkable, 300
     "terrain:border", // 2: border
@@ -29,6 +29,7 @@ const KEYS: [&str; 10] = [
     "item:coin",      // 7: a plain Item
     "terrain:stone",  // 8: ground, walkable, 1
     "terrain:wall",   // 9: wall
+    "terrain:mosaic", // 10: common (never the ground item)
 ];
 
 /// The fixture's catalogue: compact ids and terrain semantics of [`KEYS`].
@@ -58,6 +59,7 @@ fn resolved(key: &str) -> Option<(Family, u32, Option<Terrain>)> {
         "item:coin" => (Family::Item, 9, None),
         "terrain:stone" => (Family::Terrain, 108, ground(true, 1)),
         "terrain:wall" => (Family::Terrain, 109, other(TerrainKind::Wall)),
+        "terrain:mosaic" => (Family::Terrain, 110, other(TerrainKind::Common)),
         _ => return None,
     })
 }
@@ -152,6 +154,11 @@ fn regions() -> Result<Vec<Vec<u8>>, Box<dyn StdError>> {
                     2,
                     vec![item(6, 0), item(7, 1), item(7, 1), item(9, 0), item(0, 0)],
                 ),
+                // MAP-KIND-CLASS-0 R4: a `common` entry is never the ground item. Alone it leaves
+                // the tile with no ground, not walkable, ground speed 0; above a ground it does
+                // not change the ground item.
+                tile(10, 2, vec![item(10, 0)]),
+                tile(11, 2, vec![item(10, 0), item(0, 0)]),
                 // Two grounds: the first wins.
                 tile(9, 3, vec![item(1, 0), item(0, 0)]),
             ],
@@ -398,6 +405,19 @@ fn map_load_the_base_agrees_with_the_compiler_input_and_the_bundle_tile_by_tile(
 }
 
 #[test]
+fn map_load_a_tile_whose_only_entry_is_common_has_no_ground_and_speed_0() -> TestResult {
+    let compiled = build(BuildClass::NonProduction)?;
+    let base = map::load(&compiled.bytes, &pins(&compiled, false))?;
+    let alone = base.tile(10, 2, -7).ok_or("common-only tile")?;
+    assert_eq!(alone.ground(), None);
+    assert!(!alone.walkable());
+    assert_eq!(base.ground_speed(10, 2, -7), 0);
+    let above = base.tile(11, 2, -7).ok_or("common above a ground")?;
+    assert_eq!(above.ground(), Some((1, 101)));
+    Ok(())
+}
+
+#[test]
 fn map_load_terrain_comes_from_the_bundle_palette_only() -> TestResult {
     let compiled = build(BuildClass::NonProduction)?;
     let base = map::load(&compiled.bytes, &pins(&compiled, false))?;
@@ -455,7 +475,7 @@ fn map_load_opens_no_file_besides_the_bundle() -> TestResult {
     let loaded = map::load(&compiled.bytes, &pins(&compiled, true));
     std::env::set_current_dir(previous)?;
     std::fs::remove_dir(&empty)?;
-    assert_eq!(loaded?.tile_count(), 10);
+    assert_eq!(loaded?.tile_count(), 12);
     Ok(())
 }
 
@@ -555,7 +575,7 @@ fn map_load_refuses_corrupt_and_unknown_content_whole() -> TestResult {
     let (same, digest) = with_manifest(&bytes, &serde_json::to_vec(&manifest()?)?)?;
     assert!(map::load(&same, &pinned(digest)).is_ok());
     // A palette index past the palette.
-    let stray = sector::encode(&[tile(1, 1, vec![item(10, 0)])])?;
+    let stray = sector::encode(&[tile(1, 1, vec![item(11, 0)])])?;
     let (bytes, digest) = assemble(&manifest()?, &[(-7, 0, 0, stray)], &spawn_raw())?;
     assert!(refused_by_reader(map::load(&bytes, &pinned(digest))));
     Ok(())
@@ -867,6 +887,7 @@ impl Measurement {
                     Some("wall") => TerrainKind::Wall,
                     Some("roof") => TerrainKind::Roof,
                     Some("field") => TerrainKind::Field,
+                    Some("common") => TerrainKind::Common,
                     _ => continue,
                 };
                 let item = record["provenance"]["item_pointer"]["key"]

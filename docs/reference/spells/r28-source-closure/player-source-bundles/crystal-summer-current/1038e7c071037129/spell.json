@@ -1,0 +1,78 @@
+{
+  "spell": {
+    "base_power": 50,
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/1038e7c071037129/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/1038e7c071037129",
+      "revision": "source-player-r28"
+    },
+    "name": "avalanche rune",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_avalanche_rune"
+    },
+    "pz_locks_caster": false,
+    "reference_rune_item_id": 3161,
+    "reference_spell_id": 115,
+    "requirements": {
+      "learning_required": false,
+      "level": 30,
+      "premium": false,
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "none",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": false
+      },
+      "charges": 4,
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/source/crystal-summer-current/3161",
+        "revision": "source-player-r28"
+      },
+      "magic_level": 4
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    }
+  }
+}

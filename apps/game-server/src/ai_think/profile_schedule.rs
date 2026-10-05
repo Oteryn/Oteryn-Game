@@ -18,7 +18,7 @@ use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 
-use super::{D115_THINK_INTERVAL_MILLIS, ThinkOccurrence};
+use super::{CREATURE_THINK_INTERVAL_MILLIS, ThinkOccurrence};
 
 pub const MAX_ATTACK_ENTRIES: usize = 16;
 pub const MAX_DEFENCE_ENTRIES: usize = 8;
@@ -269,11 +269,11 @@ impl ProfileScheduleState {
         }
         let attack_ticks = self
             .attack_ticks_ms
-            .checked_add(D115_THINK_INTERVAL_MILLIS)
+            .checked_add(CREATURE_THINK_INTERVAL_MILLIS)
             .ok_or(ScheduleError::TickOverflow)?;
         let defence_ticks = self
             .defence_ticks_ms
-            .checked_add(D115_THINK_INTERVAL_MILLIS)
+            .checked_add(CREATURE_THINK_INTERVAL_MILLIS)
             .ok_or(ScheduleError::TickOverflow)?;
         let mut plan = SchedulePlan {
             proposals: Vec::new(),
@@ -302,7 +302,7 @@ impl ProfileScheduleState {
                     waits = true;
                     continue;
                 }
-                if ticks % entry.interval_ms >= D115_THINK_INTERVAL_MILLIS {
+                if ticks % entry.interval_ms >= CREATURE_THINK_INTERVAL_MILLIS {
                     continue;
                 }
                 let range = entry.range_tiles.unwrap_or(details.range_tiles);
@@ -443,7 +443,8 @@ fn prepare_summons(
             plan.defence_ticks_after_ms = ticks;
             continue;
         }
-        if ticks % entry.interval_ms >= D115_THINK_INTERVAL_MILLIS || count.count >= entry.count {
+        if ticks % entry.interval_ms >= CREATURE_THINK_INTERVAL_MILLIS || count.count >= entry.count
+        {
             continue;
         }
         let decision = deterministic_decision_u64(
@@ -469,7 +470,7 @@ fn prepare_summons(
     Ok(())
 }
 
-fn validate_entry<'a>(
+pub(crate) fn validate_entry<'a>(
     entry: &ProjectV2AbilitySchedule,
     abilities: &'a BTreeMap<ProjectV2DefinitionRef, ProjectV2AbilityAuthoring>,
 ) -> Result<&'a ProjectV2AbilityDetails, ScheduleError> {
@@ -488,7 +489,7 @@ fn validate_entry<'a>(
         .ok_or(ScheduleError::MissingAbilityProfile)
 }
 
-fn decision_occurrence(occurrence: ThinkOccurrence) -> DecisionOccurrenceId {
+pub(crate) fn decision_occurrence(occurrence: ThinkOccurrence) -> DecisionOccurrenceId {
     let digest = Sha256::new()
         .chain_update(b"oteryn:ai-profile-think:v1")
         .chain_update(occurrence.actor.placement_identity())

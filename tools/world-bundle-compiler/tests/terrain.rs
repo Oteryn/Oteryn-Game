@@ -126,11 +126,19 @@ fn every_kind() -> Vec<Value> {
         terrain_record("terrain:direct", None, Some("wall"), None, None),
         terrain_record("terrain:roof", Some("item:roof"), Some("roof"), None, None),
         terrain_record("terrain:fire", Some("item:fire"), Some("field"), None, None),
+        // A `common` record keeps its own walkable fact in the catalogue; the bundle drops it.
+        terrain_record(
+            "terrain:mosaic",
+            Some("item:mosaic"),
+            Some("common"),
+            Some(true),
+            None,
+        ),
     ]
 }
 
 /// Placed in this order; the index is the source palette index.
-const KEYS: [&str; 10] = [
+const KEYS: [&str; 11] = [
     "item:plain",
     "item:crate",
     "item:grass",
@@ -141,6 +149,7 @@ const KEYS: [&str; 10] = [
     "terrain:direct",
     "item:roof",
     "item:fire",
+    "item:mosaic",
 ];
 
 fn region(z: u8, tiles: &[Tile]) -> Result<Vec<u8>, Box<dyn StdError>> {
@@ -250,6 +259,10 @@ fn one_entry_of_each_kind_compiles_into_its_terrain_values() -> TestResult {
     );
     assert_eq!(terrain("item:roof"), Some(Some(other(TerrainKind::Roof))));
     assert_eq!(terrain("item:fire"), Some(Some(other(TerrainKind::Field))));
+    assert_eq!(
+        terrain("item:mosaic"),
+        Some(Some(other(TerrainKind::Common)))
+    );
     Ok(())
 }
 
@@ -408,10 +421,11 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
         m["format"] = "OTERYN_WORLD_BUNDLE/v1".into();
     })?;
     assert!(bundle::read(&claims_v1).is_err());
-    let (grass, edge, plain) = (
+    let (grass, edge, plain, mosaic) = (
         index(&bytes, "item:grass")?,
         index(&bytes, "item:edge")?,
         index(&bytes, "item:plain")?,
+        index(&bytes, "item:mosaic")?,
     );
     let malformed: Vec<(&str, Change)> = vec![
         (
@@ -454,6 +468,18 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
             "border with walkable",
             Box::new(move |m| {
                 m["palette"][edge]["terrain"]["walkable"] = true.into();
+            }),
+        ),
+        (
+            "common with walkable",
+            Box::new(move |m| {
+                m["palette"][mosaic]["terrain"]["walkable"] = true.into();
+            }),
+        ),
+        (
+            "common with speed",
+            Box::new(move |m| {
+                m["palette"][mosaic]["terrain"]["ground_speed"] = 150.into();
             }),
         ),
         (
@@ -541,6 +567,17 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
         ..manifest.palette[grass].clone()
     };
     assert!(bundle::write(&manifest, &read.sectors, &read.spawns).is_err());
+    // The writer refuses `common` with a non-null member as well.
+    let mosaic = index(&bytes, "item:mosaic")?;
+    manifest.palette[grass] = read.manifest.palette[grass].clone();
+    manifest.palette[mosaic] = PaletteEntry {
+        terrain: Some(Terrain {
+            walkable: Some(true),
+            ..other(TerrainKind::Common)
+        }),
+        ..manifest.palette[mosaic].clone()
+    };
+    assert!(bundle::write(&manifest, &read.sectors, &read.spawns).is_err());
     Ok(())
 }
 
@@ -564,6 +601,7 @@ fn the_parity_report_counts_placed_entries_by_class() -> TestResult {
     assert_eq!(counts.by_kind.get("wall"), Some(&1));
     assert_eq!(counts.by_kind.get("roof"), Some(&1));
     assert_eq!(counts.by_kind.get("field"), Some(&1));
+    assert_eq!(counts.by_kind.get("common"), Some(&1));
     assert_eq!((counts.world_object, counts.plain_item), (1, 1));
     assert_eq!((counts.unknown_kind, counts.refused), (1, 1));
     Ok(())

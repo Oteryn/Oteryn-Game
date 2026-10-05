@@ -1,0 +1,42 @@
+{
+  "spell": {
+    "base_power": 150,
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 170
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Energy Wave",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_energy_wave"
+    },
+    "reference_spell_id": 13,
+    "requirements": {
+      "level": 38,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "needs_direction": true
+    },
+    "words": "exevo vis hur"
+  }
+}

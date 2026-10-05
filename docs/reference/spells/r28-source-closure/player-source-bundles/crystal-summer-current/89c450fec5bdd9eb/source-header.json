@@ -1,0 +1,44 @@
+{
+  "spell": {
+    "base_power": 500,
+    "carrier": "instant",
+    "cooldown_ms": 120000,
+    "costs": {
+      "mana": 200
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "healing"
+      }
+    ],
+    "name": "Intense Wound Cleansing",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_intense_wound_cleansing"
+    },
+    "reference_spell_id": 158,
+    "requirements": {
+      "level": 80,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "exura gran ico"
+  }
+}

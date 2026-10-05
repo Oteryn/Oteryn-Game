@@ -54,7 +54,20 @@ EXCLUDED_ROUTES = {
     ("WorldObject", "no_client_appearance"),
     ("Fluid", "fluid_type_without_appearance"),
 }
-TERRAIN_KINDS = ("ground", "border", "wall", "field", "roof")
+TERRAIN_KINDS = ("ground", "border", "wall", "field", "roof", "common")
+# MAP-KIND-CLASS-0 R2: the 50 palette-placed tile records (artificial/natural tiles, no bank, clip
+# or bottom flag) evidenced as common-layer overlays. Never widened by primarytype alone: the 15
+# unplaced UNKNOWN records (e.g. 29407, 31381) are not evidenced and stay UNKNOWN.
+COMMON_TILE_IDS = frozenset(
+    {571, 572, 589, 590, 591, 592, 628, 878, 12651, 20652, 20727, 31298, 31299, 31300}
+    | {31311, 31312, 31313, 31317, 31319}
+    | set(range(18400, 18406))
+    | set(range(18566, 18578))
+    | set(range(30655, 30661))
+    | set(range(30670, 30674))
+    | set(range(36081, 36084))
+)
+COMMON_PRIMARYTYPES = ("artificial tiles", "natural tiles")
 WORLD_OBJECT_KINDS = (
     "object",
     "door",
@@ -202,7 +215,7 @@ class Facts:
 # --- kind rules ---------------------------------------------------------------------
 
 
-def terrain_kind(attrs, flags, name=""):
+def terrain_kind(attrs, flags, name="", item_id=None):
     """WO-0 §4.2 kind, first matching rule wins; None when no rule applies."""
     if attrs.get("type") in TERRAIN_FIELD_TYPES or "field" in attrs:
         return "field"
@@ -217,6 +230,9 @@ def terrain_kind(attrs, flags, name=""):
     # Owner decision WO-2c 1a: a tile named as a roof, with no ground, border or wall flag.
     if "roof" in name.lower().split():
         return "roof"
+    # MAP-KIND-CLASS-0 R2: last rule, only for the evidenced overlay ids.
+    if item_id in COMMON_TILE_IDS and attrs.get("primarytype") in COMMON_PRIMARYTYPES:
+        return "common"
     return None
 
 
@@ -273,7 +289,7 @@ def provenance(source_meta, item_id, item_key, owner, reason, facts):
 def build_terrain(item_id, item_key, reason, xml_record, appearance, source_meta):
     facts = Facts(xml_record, appearance)
     name = (xml_record.get("name") if xml_record else None) or ""
-    kind = terrain_kind(facts.attrs, facts.flags, name)
+    kind = terrain_kind(facts.attrs, facts.flags, name, item_id)
     if kind is not None:
         facts._note("kind", "converter:terrain_kind")
     unpass = facts.flag("walkable", "flags.unpass")

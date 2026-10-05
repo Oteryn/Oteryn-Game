@@ -1174,7 +1174,8 @@ mod tests {
         assert_eq!(matching[0]["name"], "WORLD_SPATIAL_ENTITIES");
         assert_eq!(matching[0]["state_domains"], serde_json::json!([1]));
         assert_eq!(matching[0]["command_types"], serde_json::json!([]));
-        assert_eq!(matching[0]["offered"], false);
+        // VIS-3 offers it.
+        assert_eq!(matching[0]["offered"], true);
 
         let domain = protocol["state_domains"]
             .as_array()

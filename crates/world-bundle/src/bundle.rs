@@ -109,6 +109,7 @@ pub enum TerrainKind {
     Wall,
     Roof,
     Field,
+    Common,
 }
 
 /// The largest `ground_speed` of a ground record (format v2).

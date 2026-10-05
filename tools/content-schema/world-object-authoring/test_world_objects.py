@@ -179,6 +179,53 @@ def test_terrain_kinds_in_rule_order():
     check(
         world_objects.validate_record(roof) == [], world_objects.validate_record(roof)
     )
+    # MAP-KIND-CLASS-0 R2: `common` is the last rule and only for the evidenced ids.
+    tiles = {"primarytype": "artificial tiles"}
+    for item_id, attrs, flags in (
+        (30655, tiles, {"flags.unmove": True}),
+        (589, tiles, {"flags.unpass": True, "flags.unmove": True}),
+        (628, {**tiles, "type": "teleport"}, {"flags.unmove": True}),
+        (18400, {"primarytype": "natural tiles"}, {"flags.unpass": True}),
+    ):
+        common = world_objects.build_terrain(
+            item_id,
+            f"oteryn:item.tibia.i{item_id}",
+            "primarytype_world_object",
+            {"name": "mosaic", "attrs": attrs},
+            {"id": item_id, "flags": flags},
+            META,
+        )
+        check(common["kind"] == {"state": "KNOWN", "value": "common"}, common["kind"])
+        check("ground_speed" not in common, "common has no ground speed")
+        check(
+            world_objects.validate_record(common) == [],
+            world_objects.validate_record(common),
+        )
+    check(
+        world_objects.build_terrain(
+            628,
+            "oteryn:item.tibia.i628",
+            "primarytype_world_object",
+            {"name": "x", "attrs": {"primarytype": "artificial tiles", "type": "teleport"}},
+            {"id": 628, "flags": {}},
+            META,
+        )["behavior"]
+        == {"state": "KNOWN", "value": "teleport"},
+        "teleport keeps its behaviour",
+    )
+    for item_id, attrs, flags, kind in (
+        (29407, tiles, {"flags.takeable": True}, None),  # unplaced, not evidenced
+        (31381, tiles, {"flags.unmove": True}, None),
+        (30655, {"primarytype": "decoration"}, {}, None),  # not a tile primarytype
+        (30655, tiles, {"flags.bank": True}, "ground"),
+        (30655, tiles, {"flags.clip": True}, "border"),
+        (30655, tiles, {"flags.bottom": True}, "wall"),
+        (30655, {"primarytype": "fields"}, {}, "field"),
+    ):
+        check(
+            world_objects.terrain_kind(attrs, flags, "mosaic", item_id) == kind,
+            (item_id, attrs, flags),
+        )
     swamp = terrain(attrs={"type": "trashholder"}, flags={"flags.bank": True})
     check(swamp["kind"]["value"] == "ground", swamp["kind"])
     check(

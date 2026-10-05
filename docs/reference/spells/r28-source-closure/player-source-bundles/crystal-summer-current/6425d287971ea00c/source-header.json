@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "base_power": 120,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 170
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Terra Wave",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_terra_wave"
+    },
+    "reference_spell_id": 120,
+    "requirements": {
+      "level": 38,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "needs_direction": true
+    },
+    "words": "exevo tera hur"
+  }
+}

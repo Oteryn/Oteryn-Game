@@ -1,0 +1,51 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/312158ed8020ae46/ability/effect-condition-1",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/312158ed8020ae46/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": true,
+      "range_tiles": 0,
+      "zero_damage_health_path": true
+    }
+  ],
+  "effects": [
+    {
+      "condition": {
+        "damage_over_time": {
+          "first_tick": "after_interval",
+          "fixed_ticks": [
+            {
+              "amount": 10,
+              "count": 10,
+              "interval_ms": 2000
+            }
+          ],
+          "tick_profile": "fixed"
+        },
+        "lifetime": "damage_schedule",
+        "type": "fire"
+      },
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/312158ed8020ae46/ability/effect-condition-1",
+        "revision": "source-player-r28"
+      },
+      "operation": "condition",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/hitbyfire",
+        "projectile_asset_binding": "canary.appearance:missile/fire"
+      }
+    }
+  ],
+  "formulas": []
+}

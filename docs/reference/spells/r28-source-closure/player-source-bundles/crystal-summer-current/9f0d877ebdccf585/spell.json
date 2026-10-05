@@ -1,0 +1,64 @@
+{
+  "spell": {
+    "base_power": 32,
+    "carrier": "instant",
+    "cooldown_ms": 8000,
+    "costs": {
+      "mana": 200,
+      "soul": 0
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:spell/source/crystal-summer-current/9f0d877ebdccf585/ability",
+        "revision": "source-player-r28"
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/9f0d877ebdccf585",
+      "revision": "source-player-r28"
+    },
+    "name": "Groundshaker",
+    "needs_weapon": true,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_groundshaker"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 106,
+    "requirements": {
+      "learning_required": false,
+      "level": 33,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        }
+      ],
+      "vocations": [
+        "elite_knight",
+        "knight"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exori mas"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3190",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:spell/source/canary-main-current/bf9dfa96eec52c07/item/2118",
+      "revision": "source-player-r28"
+    }
+  ]
+}

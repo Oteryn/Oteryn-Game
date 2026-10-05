@@ -1,0 +1,43 @@
+{
+  "spell": {
+    "base_power": 85,
+    "carrier": "instant",
+    "cooldown_ms": 6000,
+    "costs": {
+      "mana": 155
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Death Echo",
+    "reference_spell_id": 310,
+    "requirements": {
+      "learning_required": false,
+      "level": 120,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        }
+      ],
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "block_walls": true,
+      "cast_at_position": true,
+      "range_tiles": 7
+    },
+    "words": "exevo mort ora"
+  }
+}

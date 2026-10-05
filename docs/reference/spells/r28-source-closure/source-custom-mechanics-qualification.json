@@ -1,0 +1,476 @@
+{
+  "schema": "OTERYN_SOURCE_CUSTOM_MECHANICS_QUALIFICATION/v1",
+  "offline": true,
+  "lua_execution": false,
+  "runtime_activation": false,
+  "identity_allocation": false,
+  "record_count": 21,
+  "category_counts": {
+    "ground_transform": 6,
+    "boss_form_swap": 6,
+    "fixed_position_named_monster_heal": 3,
+    "random_absolute_spawn": 3,
+    "area_bound_wild_minion_counting": 3
+  },
+  "gzip_path": "source-custom-mechanics.json.gz",
+  "gzip_sha256": "db955589a77ecd5c2058d17d90d3254a57d19f8cc77f4e13235cec3e1aea3d56",
+  "payload_sha256": "bc25470586ff47570d5af65e694f3933bf70e96601df828888236fbbb42c3e0a",
+  "schema_path": "tools/content-schema/spell-authoring/source-custom-mechanics.schema.json",
+  "schema_sha256": "d84adf271c5b7fdca861070f01b6f7bcfd2d7e7e0af4367023755a4f6a74ae43",
+  "checks": {
+    "strict_schema": "pass",
+    "regression_tests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "expected_population": {
+      "ground_transform": 6,
+      "boss_form_swap": 6,
+      "fixed_position_named_monster_heal": 3,
+      "random_absolute_spawn": 3,
+      "area_bound_wild_minion_counting": 3
+    },
+    "source_pins_verified_by": "git show + rev-parse exact immutable revisions"
+  },
+  "source_revisions": {
+    "canary": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "crystal": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "records": [
+    {
+      "source_identity": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/spells/monster/mazoran_fire.lua",
+        "git_blob": "72e035354a8b04800fa25670535129144b6afb48",
+        "sha256": "4f8c27f8f13b59caae7355c600170e8f896a2e213637c5fa02e26595b730d9ea",
+        "bytes": 54432
+      },
+      "mechanic_category": "ground_transform",
+      "literal_positions": 887,
+      "item_position_bindings": 887,
+      "candidate_actions": 10,
+      "candidate_schedules": 2,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/spells/monster/charge_vortex.lua",
+        "git_blob": "4cf96614b7825c1e8a4560e708520fb66fa2a9d2",
+        "sha256": "3e529d22f9c4f78960c45744b0caa4c98700e73d573c58425fa2c20845966db8",
+        "bytes": 999
+      },
+      "mechanic_category": "ground_transform",
+      "literal_positions": 11,
+      "item_position_bindings": 0,
+      "candidate_actions": 2,
+      "candidate_schedules": 1,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/spells/monster/time_guardian.lua",
+        "git_blob": "266b811cf51c769a519c130bf27535cae6a7bfce",
+        "sha256": "a426a55ae830a65f3aec0258d2630773998ad64229d7d64ca152ebd3b18d99aa",
+        "bytes": 1811
+      },
+      "mechanic_category": "boss_form_swap",
+      "literal_positions": 4,
+      "item_position_bindings": 0,
+      "candidate_actions": 7,
+      "candidate_schedules": 1,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/spells/monster/time_guardiann.lua",
+        "git_blob": "9e4ffe6ae81a8954b9ceb6f887326422b2e303ba",
+        "sha256": "11837a0c512e8a0ec26279763c1d58d1ad5885df193a7e81672879f51017a08a",
+        "bytes": 2359
+      },
+      "mechanic_category": "boss_form_swap",
+      "literal_positions": 4,
+      "item_position_bindings": 0,
+      "candidate_actions": 7,
+      "candidate_schedules": 1,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/spells/monster/heal_brain_head.lua",
+        "git_blob": "1e9547177d85de9c851e500ddcc632fb909964f2",
+        "sha256": "f43dead6738ef01a961778164a342b7f82664e5c0b0fdecd989cba5c18411eef",
+        "bytes": 747
+      },
+      "mechanic_category": "fixed_position_named_monster_heal",
+      "literal_positions": 1,
+      "item_position_bindings": 0,
+      "candidate_actions": 3,
+      "candidate_schedules": 0,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/spells/monster/generator.lua",
+        "git_blob": "ee36912022a1bf347f3f099ceba10c54ae6cebf3",
+        "sha256": "5117addccc505a0a15b57aacf130dcee123102bb0a6f3c46ecc159c5efdac765",
+        "bytes": 669
+      },
+      "mechanic_category": "random_absolute_spawn",
+      "literal_positions": 4,
+      "item_position_bindings": 0,
+      "candidate_actions": 2,
+      "candidate_schedules": 0,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "canary",
+        "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+        "path": "data-otservbr-global/scripts/spells/monster/gaz'haragoth_summon.lua",
+        "git_blob": "aafb438ac096ec9520855f12540de3a08b3173cb",
+        "sha256": "db93fab130fdf02dd5d1697f2eb81b2058296e0ac0c8e09e8304a3349961f693",
+        "bytes": 1419
+      },
+      "mechanic_category": "area_bound_wild_minion_counting",
+      "literal_positions": 0,
+      "item_position_bindings": 0,
+      "candidate_actions": 8,
+      "candidate_schedules": 0,
+      "helper_sources": [
+        {
+          "source": "canary",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "path": "data-otservbr-global/scripts/spells/monster/gaz_functions.lua",
+          "git_blob": "ae135c9159c67859701e25da33caf3280945d591",
+          "sha256": "b0cd02bc4f06f549d23e8ec97e3c42906d6aaee5c03eb7bdb84240c5dd746f09",
+          "bytes": 53
+        }
+      ],
+      "unavailable_bindings": [
+        {
+          "source_method": "setSummon",
+          "argument_symbol": "sum",
+          "argument_declaration_status": "not_declared_in_spell_or_literal_helper",
+          "source_binding_status": "not_registered_in_pinned_lua_or_creature_sources",
+          "execution_status": "source_only_unsupported_binding"
+        }
+      ],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-global/scripts/spells/monster/mazoran_fire.lua",
+        "git_blob": "72e035354a8b04800fa25670535129144b6afb48",
+        "sha256": "4f8c27f8f13b59caae7355c600170e8f896a2e213637c5fa02e26595b730d9ea",
+        "bytes": 54432
+      },
+      "mechanic_category": "ground_transform",
+      "literal_positions": 887,
+      "item_position_bindings": 887,
+      "candidate_actions": 10,
+      "candidate_schedules": 2,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-global/scripts/spells/monster/charge_vortex.lua",
+        "git_blob": "4cf96614b7825c1e8a4560e708520fb66fa2a9d2",
+        "sha256": "3e529d22f9c4f78960c45744b0caa4c98700e73d573c58425fa2c20845966db8",
+        "bytes": 999
+      },
+      "mechanic_category": "ground_transform",
+      "literal_positions": 11,
+      "item_position_bindings": 0,
+      "candidate_actions": 2,
+      "candidate_schedules": 1,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-global/scripts/spells/monster/time_guardian.lua",
+        "git_blob": "266b811cf51c769a519c130bf27535cae6a7bfce",
+        "sha256": "a426a55ae830a65f3aec0258d2630773998ad64229d7d64ca152ebd3b18d99aa",
+        "bytes": 1811
+      },
+      "mechanic_category": "boss_form_swap",
+      "literal_positions": 4,
+      "item_position_bindings": 0,
+      "candidate_actions": 7,
+      "candidate_schedules": 1,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-global/scripts/spells/monster/time_guardiann.lua",
+        "git_blob": "9e4ffe6ae81a8954b9ceb6f887326422b2e303ba",
+        "sha256": "11837a0c512e8a0ec26279763c1d58d1ad5885df193a7e81672879f51017a08a",
+        "bytes": 2359
+      },
+      "mechanic_category": "boss_form_swap",
+      "literal_positions": 4,
+      "item_position_bindings": 0,
+      "candidate_actions": 7,
+      "candidate_schedules": 1,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-global/scripts/spells/monster/heal_brain_head.lua",
+        "git_blob": "1e9547177d85de9c851e500ddcc632fb909964f2",
+        "sha256": "f43dead6738ef01a961778164a342b7f82664e5c0b0fdecd989cba5c18411eef",
+        "bytes": 747
+      },
+      "mechanic_category": "fixed_position_named_monster_heal",
+      "literal_positions": 1,
+      "item_position_bindings": 0,
+      "candidate_actions": 3,
+      "candidate_schedules": 0,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-global/scripts/spells/monster/generator.lua",
+        "git_blob": "ee36912022a1bf347f3f099ceba10c54ae6cebf3",
+        "sha256": "5117addccc505a0a15b57aacf130dcee123102bb0a6f3c46ecc159c5efdac765",
+        "bytes": 669
+      },
+      "mechanic_category": "random_absolute_spawn",
+      "literal_positions": 4,
+      "item_position_bindings": 0,
+      "candidate_actions": 2,
+      "candidate_schedules": 0,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-global/scripts/spells/monster/gaz'haragoth_summon.lua",
+        "git_blob": "aafb438ac096ec9520855f12540de3a08b3173cb",
+        "sha256": "db93fab130fdf02dd5d1697f2eb81b2058296e0ac0c8e09e8304a3349961f693",
+        "bytes": 1419
+      },
+      "mechanic_category": "area_bound_wild_minion_counting",
+      "literal_positions": 0,
+      "item_position_bindings": 0,
+      "candidate_actions": 8,
+      "candidate_schedules": 0,
+      "helper_sources": [
+        {
+          "source": "crystal",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-global/scripts/spells/monster/gaz_functions.lua",
+          "git_blob": "ae135c9159c67859701e25da33caf3280945d591",
+          "sha256": "b0cd02bc4f06f549d23e8ec97e3c42906d6aaee5c03eb7bdb84240c5dd746f09",
+          "bytes": 53
+        }
+      ],
+      "unavailable_bindings": [
+        {
+          "source_method": "setSummon",
+          "argument_symbol": "sum",
+          "argument_declaration_status": "not_declared_in_spell_or_literal_helper",
+          "source_binding_status": "not_registered_in_pinned_lua_or_creature_sources",
+          "execution_status": "source_only_unsupported_binding"
+        }
+      ],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-crystal/scripts/spells/monster/mazoran_fire.lua",
+        "git_blob": "72e035354a8b04800fa25670535129144b6afb48",
+        "sha256": "4f8c27f8f13b59caae7355c600170e8f896a2e213637c5fa02e26595b730d9ea",
+        "bytes": 54432
+      },
+      "mechanic_category": "ground_transform",
+      "literal_positions": 887,
+      "item_position_bindings": 887,
+      "candidate_actions": 10,
+      "candidate_schedules": 2,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-crystal/scripts/spells/monster/charge_vortex.lua",
+        "git_blob": "4cf96614b7825c1e8a4560e708520fb66fa2a9d2",
+        "sha256": "3e529d22f9c4f78960c45744b0caa4c98700e73d573c58425fa2c20845966db8",
+        "bytes": 999
+      },
+      "mechanic_category": "ground_transform",
+      "literal_positions": 11,
+      "item_position_bindings": 0,
+      "candidate_actions": 2,
+      "candidate_schedules": 1,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-crystal/scripts/spells/monster/time_guardian.lua",
+        "git_blob": "266b811cf51c769a519c130bf27535cae6a7bfce",
+        "sha256": "a426a55ae830a65f3aec0258d2630773998ad64229d7d64ca152ebd3b18d99aa",
+        "bytes": 1811
+      },
+      "mechanic_category": "boss_form_swap",
+      "literal_positions": 4,
+      "item_position_bindings": 0,
+      "candidate_actions": 7,
+      "candidate_schedules": 1,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-crystal/scripts/spells/monster/time_guardiann.lua",
+        "git_blob": "9e4ffe6ae81a8954b9ceb6f887326422b2e303ba",
+        "sha256": "11837a0c512e8a0ec26279763c1d58d1ad5885df193a7e81672879f51017a08a",
+        "bytes": 2359
+      },
+      "mechanic_category": "boss_form_swap",
+      "literal_positions": 4,
+      "item_position_bindings": 0,
+      "candidate_actions": 7,
+      "candidate_schedules": 1,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-crystal/scripts/spells/monster/heal_brain_head.lua",
+        "git_blob": "1e9547177d85de9c851e500ddcc632fb909964f2",
+        "sha256": "f43dead6738ef01a961778164a342b7f82664e5c0b0fdecd989cba5c18411eef",
+        "bytes": 747
+      },
+      "mechanic_category": "fixed_position_named_monster_heal",
+      "literal_positions": 1,
+      "item_position_bindings": 0,
+      "candidate_actions": 3,
+      "candidate_schedules": 0,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-crystal/scripts/spells/monster/generator.lua",
+        "git_blob": "ee36912022a1bf347f3f099ceba10c54ae6cebf3",
+        "sha256": "5117addccc505a0a15b57aacf130dcee123102bb0a6f3c46ecc159c5efdac765",
+        "bytes": 669
+      },
+      "mechanic_category": "random_absolute_spawn",
+      "literal_positions": 4,
+      "item_position_bindings": 0,
+      "candidate_actions": 2,
+      "candidate_schedules": 0,
+      "helper_sources": [],
+      "unavailable_bindings": [],
+      "runtime_activation": false
+    },
+    {
+      "source_identity": {
+        "source": "crystal",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data-crystal/scripts/spells/monster/gaz'haragoth_summon.lua",
+        "git_blob": "aafb438ac096ec9520855f12540de3a08b3173cb",
+        "sha256": "db93fab130fdf02dd5d1697f2eb81b2058296e0ac0c8e09e8304a3349961f693",
+        "bytes": 1419
+      },
+      "mechanic_category": "area_bound_wild_minion_counting",
+      "literal_positions": 0,
+      "item_position_bindings": 0,
+      "candidate_actions": 8,
+      "candidate_schedules": 0,
+      "helper_sources": [
+        {
+          "source": "crystal",
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "path": "data-crystal/scripts/spells/monster/gaz_functions.lua",
+          "git_blob": "ae135c9159c67859701e25da33caf3280945d591",
+          "sha256": "b0cd02bc4f06f549d23e8ec97e3c42906d6aaee5c03eb7bdb84240c5dd746f09",
+          "bytes": 53
+        }
+      ],
+      "unavailable_bindings": [
+        {
+          "source_method": "setSummon",
+          "argument_symbol": "sum",
+          "argument_declaration_status": "not_declared_in_spell_or_literal_helper",
+          "source_binding_status": "not_registered_in_pinned_lua_or_creature_sources",
+          "execution_status": "source_only_unsupported_binding"
+        }
+      ],
+      "runtime_activation": false
+    }
+  ],
+  "limits": [
+    "Validated typed source-only candidate package; no native creature/item/position allocation or encounter execution claim.",
+    "Source custom consumers, accepted native identity binding, callback/control flow translation and world lookups remain unsupported.",
+    "Package preserves exact literal and expression evidence instead of source Lua code dumps."
+  ],
+  "gaz_contract": "Area name-matched wild minion count and mutable GazVariables preserved; not equivalent to caster-owned summon limit. Undefined sum and unavailable setSummon binding explicitly retained."
+}

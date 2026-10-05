@@ -1,0 +1,93 @@
+{
+  "blockers": [],
+  "candidate_key": "candidate:spell/source/canary-main-current/a1c355c3ecbd79d3",
+  "conversion_notes": [
+    "Source player health delta remains default zero; no invented direct-health formula",
+    "{\"engine_rule_proofs\": [{\"path\": \"src/creatures/creatures_definitions.hpp\", \"revision\": \"04b83b512114bfd888000d6e1433ed8ecaec7c5b\", \"sha256\": \"54f0a5bcdc10e33d8850300c5c5022eb7fe8b4549394407482c57245bdab3e33\"}, {\"path\": \"src/creatures/combat/combat.hpp\", \"revision\": \"04b83b512114bfd888000d6e1433ed8ecaec7c5b\", \"sha256\": \"3f1a109f59b9a81b09afb292049186a07cdb74c393caf967664407b454173ea3\"}, {\"path\": \"src/creatures/combat/combat.cpp\", \"revision\": \"04b83b512114bfd888000d6e1433ed8ecaec7c5b\", \"sha256\": \"c57a9cdf3d68f7d82c5cb3220a4a603e76c3992d5517a654bb01814c68f80889\"}, {\"path\": \"src/creatures/creature.hpp\", \"revision\": \"04b83b512114bfd888000d6e1433ed8ecaec7c5b\", \"sha256\": \"0a405bbf7e92606e37d407266e809a39323218727b79b2deb275bd309b2c5fad\"}, {\"path\": \"src/creatures/players/player.hpp\", \"revision\": \"04b83b512114bfd888000d6e1433ed8ecaec7c5b\", \"sha256\": \"543db347284aa85f42b1c82297a951cd64b4a1d2ce989a5a3447c7bfa87d32ab\"}, {\"path\": \"src/creatures/players/player.cpp\", \"revision\": \"04b83b512114bfd888000d6e1433ed8ecaec7c5b\", \"sha256\": \"7c572074fd7625f6f3e89626ae4dda6b7acc9296896d7c9521db9becfe14aa4c\"}], \"zero_health_delta_source_default\": true}",
+    "src/utils/utils_definitions.hpp ItemID_t binds ITEM_POISONFIELD_PVP=105 for COMBAT_PARAM_CREATEITEM.",
+    "",
+    ""
+  ],
+  "dependencies": {
+    "abilities": 1,
+    "effects": 2,
+    "formulas": 0
+  },
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "663eebe354cf2d7a14eeb11aa1a0ed7371c34562812806d6afdcbcaf19f7799d"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "d3ecc1319710012265e8225649d9cae3dbb6d1f90036310a8b81f6e40a8a3a14"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "18f44b128c5cdc1f40283e8f5527ca0d53045fcd00e3edaef7c2a778fd58a035"
+    }
+  ],
+  "external_sources_used": false,
+  "item_owner_bindings_required": [
+    {
+      "family": "Item",
+      "key": "candidate:item/source/canary-main-current/3173",
+      "revision": "source-player-r28"
+    },
+    {
+      "family": "Item",
+      "key": "candidate:spell/source/canary-main-current/a1c355c3ecbd79d3/item/105",
+      "revision": "source-player-r28"
+    }
+  ],
+  "logical_key": [
+    "rune",
+    "poison bomb rune"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "canary-main-current/data/scripts/runes/poison_bomb.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "canary-main-current-registered-spells.json",
+    "source_capture_sha256": "e2ae95ee301d9395b3ed545b496cfadb549541735fd85ee342beb78a5a64f47c"
+  },
+  "native_execution_qualified": false,
+  "registration_key": "canary-main-current/data/scripts/runes/poison_bomb.lua#1",
+  "remaining_mechanics": [],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "schema_and_semantic_validation_errors": [],
+  "source_header": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "poison bomb rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_poison_bomb_rune"
+    },
+    "pz_locks_caster": true,
+    "reference_rune_item_id": 3173,
+    "reference_spell_id": 91,
+    "requirements": {
+      "level": 25
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": false
+      },
+      "charges": 2,
+      "magic_level": 4
+    }
+  },
+  "source_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+  "source_sha256": "5ad52d5f1d4a39fea8edeeda8d50a7662701ce8cf6d5e9fd4b000ad3fa69df3e",
+  "status": "CANDIDATE_SCHEMA_VALID"
+}

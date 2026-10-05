@@ -1,0 +1,245 @@
+{
+  "phase": "AUTHORING",
+  "status": "PASS",
+  "packet_sha256": "ff2549f32a31799e26cfe3011a22edcb21748d7e6dca66b07337bb7126da01ed",
+  "canonical_tree_sha256": "efebcf97c06dd68bfb7092ff0c4b420940e06c1663f25f92c0da3ff1d35f8b75",
+  "authoring_checks": {
+    "phase": "AUTHORING",
+    "result": "PASS",
+    "checks": [
+      {
+        "check": "prepare",
+        "exit_code": 0,
+        "log_sha256": "489866bf6ff062366b54765d49c99061a1ce90da6856e44398a57d0221c2ca2f",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-schema/npc-authoring/bulk_workbench.py",
+          "prepare",
+          "--workdir",
+          "/workspace/npc-enrichment-r24/workbench"
+        ]
+      },
+      {
+        "check": "format",
+        "exit_code": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "command": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--check"
+        ]
+      },
+      {
+        "check": "clippy",
+        "exit_code": 0,
+        "log_sha256": "984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1",
+        "command": [
+          "cargo",
+          "clippy",
+          "--offline",
+          "--locked",
+          "--quiet",
+          "-p",
+          "oteryn-game-server",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ]
+      },
+      {
+        "check": "native",
+        "exit_code": 0,
+        "log_sha256": "01da017e14a996268ac385e88896f84ecf2bb7c2c006db87f1b23a97d85204e4",
+        "command": [
+          "cargo",
+          "test",
+          "--offline",
+          "--locked",
+          "--quiet",
+          "-p",
+          "oteryn-game-server",
+          "--example",
+          "materialize_content_world_project_v2",
+          "--test",
+          "content_world_project_repository",
+          "--test",
+          "content_native_entry_room"
+        ]
+      },
+      {
+        "check": "stage",
+        "exit_code": 0,
+        "log_sha256": "993e83aa815dc0a4481381bc3fe4ebae864aa9bd60ae4e26efc53865017c590d",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/content-migration",
+          "-p",
+          "test_npc_source_refine.py"
+        ]
+      },
+      {
+        "check": "successor-validate",
+        "exit_code": 0,
+        "log_sha256": "888db9e97c139e244f281dd6246ac1d7ac102bde8e4ddf43fbfdcd9bfd982305",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-migration/validate_world_project_v2_to_tree.py"
+        ]
+      },
+      {
+        "check": "successor-test",
+        "exit_code": 0,
+        "log_sha256": "a51bf448332667ae7a481793ecc857e07293b12931ac7c5175f916eb9ea2de2e",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-migration/test_world_project_v2_to_tree.py"
+        ]
+      },
+      {
+        "check": "workbench",
+        "exit_code": 0,
+        "log_sha256": "46c8014dac72eec691501d504fda95fafeb4fe51b7db90753ca9acdbb9a28dd4",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-schema/npc-authoring/bulk_workbench.py",
+          "check",
+          "--workdir",
+          "/workspace/npc-enrichment-r24/workbench"
+        ]
+      },
+      {
+        "check": "authoring-smoke",
+        "exit_code": 0,
+        "log_sha256": "9fcae151fa96ca1b7f07eeb5ddb4971b28804ead6b89839e0140182a9adfed96",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/content-schema/npc-authoring/bulk_workbench.py",
+          "smoke",
+          "--workdir",
+          "/workspace/npc-enrichment-r24/workbench"
+        ]
+      },
+      {
+        "check": "governance",
+        "exit_code": 0,
+        "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "tools/agents/validate_governance.py"
+        ]
+      },
+      {
+        "check": "governance-tests",
+        "exit_code": 0,
+        "log_sha256": "826eb7a7091cf08fe57d0a2f84247f1137d042e2afdbd802e7498837fb1ffbdb",
+        "command": [
+          "/workspace/npc-r7-work/presentation/venv/bin/python",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools/agents/tests"
+        ]
+      },
+      {
+        "check": "diff",
+        "exit_code": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ]
+      }
+    ]
+  },
+  "checks_receipt_sha256": "b0e78b3aa73bedf74133af947d3d80b1025d533d0b25383d517dc2dba05ec3c5",
+  "source_review": {
+    "verdict": "PASS",
+    "receipt_sha256": "5dc797baab6d8c793c35dbba10b997d33d02bf003120158944463f4c4b916fa9"
+  },
+  "code_scope_review": {
+    "verdict": "PASS",
+    "receipt_sha256": "90d94ee60a67208b8be3aec01499a2eebffa3f74867c2c419260243d304a2bd7"
+  },
+  "canonical_documents": [
+    {
+      "path": "assets/catalog.json",
+      "bytes": 56,
+      "sha256": "fa61df1076ef66e8c69b6182db1b13fe2ccb92653ab16a148d1fbaf773adb344"
+    },
+    {
+      "path": "content.lock.json",
+      "bytes": 415,
+      "sha256": "17351fc40bf304f5a91cd66b1837777cf212eaf03f4037508cb97ae7ee96c334"
+    },
+    {
+      "path": "definitions/declarations.json",
+      "bytes": 20409670,
+      "sha256": "92cc174df1986aea9bc18c5d3968239e1845e9dfa89cd729e446ef3589ee8da0"
+    },
+    {
+      "path": "definitions/reference.json",
+      "bytes": 22591819,
+      "sha256": "e96cbd5baa1690a54d73ecde228c18008f16b6cf352bc5001bf8b3fac45b9a97"
+    },
+    {
+      "path": "editor/author.json",
+      "bytes": 120557,
+      "sha256": "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb"
+    },
+    {
+      "path": "manifest.json",
+      "bytes": 1954,
+      "sha256": "da85361d9b27b89c1f55361b6a39badfe1f4889304195af374535b9d41f02475"
+    },
+    {
+      "path": "presentations/bindings.json",
+      "bytes": 73,
+      "sha256": "b7d27b2d7fde6370b7ae56c2c60412f2b213a4a5e92e7db82dd4b59a64359cd7"
+    },
+    {
+      "path": "project.json",
+      "bytes": 407,
+      "sha256": "f12b2a0032dcbf201076c904deca63bed99586fd9a664e024c65bc75d2810d29"
+    },
+    {
+      "path": "provenance/imports.json",
+      "bytes": 41360,
+      "sha256": "27cb79a06ac9ade63e9a447dc35e44b4267510c0d5fca0bccb40c383ac31e595"
+    },
+    {
+      "path": "provenance/sources.json",
+      "bytes": 1425775,
+      "sha256": "1ccf2a4b85d78540e142e991b42f4c005e236478dd74ac95c488b2d9c8750c9b"
+    },
+    {
+      "path": "worlds/world.json",
+      "bytes": 72,
+      "sha256": "0dcc223c4a904834a58b3ad2b1c7882636cc66c9123aafdb25bb69a1d4670dfa"
+    }
+  ],
+  "runtime_loaded": 0,
+  "interaction_passes": 0,
+  "source_qualification": "Public-source donor/currentwiki evidence and explicit Oteryn static mappings; canonicalTibia/runtimeunqualified",
+  "pending": [
+    "Exact frozen head ownedinventory/log readback",
+    "Coordinator162review/protectedCI/current-main/Jira/MQ"
+  ],
+  "full_fast_current_parity": {
+    "result": "PASS",
+    "canonical_documents": 11,
+    "tree_sha256": "efebcf97c06dd68bfb7092ff0c4b420940e06c1663f25f92c0da3ff1d35f8b75",
+    "full_log_sha256": "5672abe67ae5f58f85bf66ad6a1a520cece2fa1c88dc3ef1a67c0318205b9cd3",
+    "fast_log_sha256": "7a3a8f8e146c54fc85de24052d3e9ae58629b84a475c341d0b60561b6a7ce637",
+    "full_historical_generation_completed": true,
+    "fast_input_kind": "Regular files exactR23 complete predecessor, boundedisolatedparent; no cap weakening"
+  },
+  "full_parity_receipt_sha256": "bba112d2c32381373701c5c359efe426954e59158a2e7958a2d4e6a0a46fdaa4"
+}

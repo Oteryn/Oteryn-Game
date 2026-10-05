@@ -62,6 +62,19 @@ pub struct LoweredQuestState {
     catalogue: QuestStateCatalogue,
     source_tracks: BTreeMap<String, String>,
     requested_by: BTreeMap<String, QuestRequestedBy>,
+    counts: QuestStateCounts,
+}
+
+/// What a load lowered: the quests and transitions, and the transitions refused
+/// `NOT_SUPPORTED` (a `Computed` effect), with their explicit `COMPUTED` and inexact
+/// (`from_exact: false`) effects counted apart.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct QuestStateCounts {
+    pub quests: usize,
+    pub transitions: usize,
+    pub not_supported: usize,
+    pub explicit_computed: usize,
+    pub inexact: usize,
 }
 
 impl LoweredQuestState {
@@ -80,6 +93,11 @@ impl LoweredQuestState {
     #[must_use]
     pub fn requested_by(&self, transition: &str) -> Option<&QuestRequestedBy> {
         self.requested_by.get(transition)
+    }
+
+    #[must_use]
+    pub fn counts(&self) -> QuestStateCounts {
+        self.counts
     }
 }
 
@@ -195,6 +213,10 @@ pub fn parse_quest_state(
     let mut transitions = Vec::new();
     let mut source_tracks = BTreeMap::new();
     let mut requested_by = BTreeMap::new();
+    let mut counts = QuestStateCounts {
+        quests: document.quests.len(),
+        ..QuestStateCounts::default()
+    };
     for quest in document.quests {
         for track in quest.tracks {
             if track.quest != quest.quest {
@@ -217,6 +239,8 @@ pub fn parse_quest_state(
                 .effects
                 .into_iter()
                 .map(|effect| {
+                    counts.explicit_computed += usize::from(effect.effect.op == "COMPUTED");
+                    counts.inexact += usize::from(!effect.from_exact);
                     let from = comparison(&effect.from)
                         .ok_or_else(|| QuestLoadError::Comparison(transition.key.clone()))?;
                     let kind = effect_kind(&effect.effect)
@@ -242,6 +266,12 @@ pub fn parse_quest_state(
                     },
                 );
             }
+            counts.transitions += 1;
+            counts.not_supported += usize::from(
+                effects
+                    .iter()
+                    .any(|effect| effect.effect == QuestEffectKind::Computed),
+            );
             transitions.push(QuestTransition {
                 key: transition.key,
                 quest: transition.quest,
@@ -257,6 +287,7 @@ pub fn parse_quest_state(
         catalogue,
         source_tracks,
         requested_by,
+        counts,
     })
 }
 

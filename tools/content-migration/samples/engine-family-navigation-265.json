@@ -27016,10 +27016,10 @@
     "global_own_itemid_index_sha256": "ca5cf161016da4530c249ca49022cbea44342e2fbd78623fbb99fee92dde8190",
     "global_source_manifest_sha256": "014f140c789e554f11cee61012932d214f7bd46dd9bc6155bca08f42f3e93629",
     "native_admission_source": {
-      "explicit_ids_sha256": "9876779fad9a347536584ef7384b69e3e46b1f94b64b7aabf2d9d5e1a49b7c61",
-      "explicit_rule_only_count": 61,
+      "explicit_ids_sha256": "5db2bc941b6cb61840be4e85b392ae2fc669af30dd3b95d40698d84742b7f2f6",
+      "explicit_rule_only_count": 62,
       "path": "apps/game-server/src/content/item_identity.rs",
-      "sha256": "af45ce42e72045c2bfc8d0cc8bb9201926bdb8abe959010e415d1d7722205733"
+      "sha256": "26941af80d5877d2be7f4bdc955201bbceb61e46dab7f8ab2232ad7413b9445c"
     },
     "official": {
       "appearances_sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",

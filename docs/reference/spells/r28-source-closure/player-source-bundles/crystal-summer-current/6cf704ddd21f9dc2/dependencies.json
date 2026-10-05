@@ -1,0 +1,32 @@
+{
+  "abilities": [
+    {
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "candidate:spell/source/crystal-summer-current/6cf704ddd21f9dc2/ability/effect-dispel",
+          "revision": "source-player-r28"
+        }
+      ],
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/6cf704ddd21f9dc2/ability",
+        "revision": "source-player-r28"
+      },
+      "kind": "spell",
+      "needs_direction": false,
+      "needs_target": false,
+      "range_tiles": 0
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "candidate:spell/source/crystal-summer-current/6cf704ddd21f9dc2/ability/effect-dispel",
+        "revision": "source-player-r28"
+      },
+      "operation": "remove_condition",
+      "removed_condition": "bleeding"
+    }
+  ],
+  "formulas": []
+}

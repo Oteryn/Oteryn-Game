@@ -1,0 +1,91 @@
+{
+  "blockers": [
+    "player cast contains unrepresented custom guard/branch semantics: {\"body\": \"creature:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE) return combat:execute(creature, variant)\", \"executed_combats\": [1], \"patterns\": [\"extra_presentation_only\"], \"player_calls\": [\"getPosition\"], \"tier\": \"custom\"}"
+  ],
+  "candidate_key": "candidate:spell/source/crystal-summer-current/8138900fcc39b4d4",
+  "engine_default_proofs": [
+    {
+      "path": "src/creatures/combat/spells.hpp",
+      "sha256": "4fa2406e7a8ac297d29f25da7d5e2d07c3e9a28e2c4dfd51120390a3dfe1d972"
+    },
+    {
+      "path": "data/XML/vocations.xml",
+      "sha256": "10bfdc12090be138bdefde77f1798c29399e53ccf10e9a48579a9ffca4b7e402"
+    },
+    {
+      "path": "src/creatures/combat/spells.cpp",
+      "sha256": "06906bc067b56d89fc3f1d6c0d30fc58d405425d4d00e0127f49a14b6e01385d"
+    }
+  ],
+  "external_sources_used": false,
+  "logical_key": [
+    "instant",
+    "restore balance"
+  ],
+  "mechanics_reference": {
+    "imported_facts": "source-callback-facts.jsonl.gz",
+    "registration_key": "crystal-summer-current/data/scripts/spells/healing/restore_balance.lua#1",
+    "source_callback_scope": "cached exact source callback expressions and cast tier",
+    "source_capture": "crystal-summer-current-registered-spells.json",
+    "source_capture_sha256": "bfa49da343913ac220721208128530f1a128e99ffd9b447808489daf59043200"
+  },
+  "registration_key": "crystal-summer-current/data/scripts/spells/healing/restore_balance.lua#1",
+  "remaining_mechanics": [
+    {
+      "reason": "player cast contains unrepresented custom guard/branch semantics: {\"body\": \"creature:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE) return combat:execute(creature, variant)\", \"executed_combats\": [1], \"patterns\": [\"extra_presentation_only\"], \"player_calls\": [\"getPosition\"], \"tier\": \"custom\"}",
+      "source_field": "source.cast_or_dependency"
+    }
+  ],
+  "runtime_activation": false,
+  "schema": "OTERYN_SOURCE_PLAYER_BUNDLE_RECEIPT/v1",
+  "source_header": {
+    "base_power": 425,
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 120
+    },
+    "groups": [
+      {
+        "cooldown_ms": 1000,
+        "group": "healing"
+      }
+    ],
+    "name": "Restore Balance",
+    "presentation": {
+      "source_cast_sound": {
+        "binding_status": "unbound",
+        "constant": "SOUND_EFFECT_TYPE_SPELL_RESTORE_BALANCE"
+      }
+    },
+    "reference_spell_id": 297,
+    "requirements": {
+      "level": 18,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "exalted_monk",
+        "monk"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "allow_on_self": false,
+      "needs_target": true,
+      "parameter": "player_name"
+    },
+    "words": "exura tio sio"
+  },
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "source_sha256": "119980edbd31ee065f31f502b8b8180e86d6a9fa065ab3a0ea015a19618f8feb",
+  "status": "BLOCKED"
+}

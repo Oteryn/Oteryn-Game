@@ -1,0 +1,67 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 1400,
+      "soul": 3
+    },
+    "execution": {
+      "conjure": {
+        "count": 1,
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/source/canary-main-current/3147",
+          "revision": "source-player-r28"
+        },
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/source/canary-main-current/3165",
+          "revision": "source-player-r28"
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/canary-main-current/dd8b767fc00a11b6",
+      "revision": "source-player-r28"
+    },
+    "name": "Paralyze Rune",
+    "needs_weapon": false,
+    "pz_locks_caster": false,
+    "requirements": {
+      "learning_required": false,
+      "level": 54,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "none",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "adana ani"
+  }
+}

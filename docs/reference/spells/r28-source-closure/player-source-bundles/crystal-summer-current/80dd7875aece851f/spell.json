@@ -1,0 +1,136 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 2000,
+    "costs": {
+      "mana": 50,
+      "soul": 0
+    },
+    "execution": {
+      "native_behavior": {
+        "key": "vertical_move",
+        "parameters": {
+          "blocked_floor_pairs": [
+            [
+              7,
+              8
+            ]
+          ],
+          "case_insensitive": true,
+          "choices": [
+            "up",
+            "down"
+          ],
+          "destination": "front_adjacent_floor",
+          "destination_rejects": [
+            "immovable_block_solid",
+            "floor_change"
+          ],
+          "destination_requires_ground": true,
+          "down_probe": "front_same_floor",
+          "down_probe_rejects": [
+            "block_solid"
+          ],
+          "failure_effect": "poff",
+          "mode": "levitate",
+          "move_ignore_block_creatures": true,
+          "move_ignore_block_items": true,
+          "parameter": "choice",
+          "probe_requires_no_ground": true,
+          "respect_entry_permissions": true,
+          "success_effect": "teleport",
+          "up_probe": "above_caster",
+          "up_probe_rejects": [
+            "immovable_block_solid"
+          ]
+        }
+      }
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      }
+    ],
+    "identity": {
+      "key": "candidate:spell/source/crystal-summer-current/80dd7875aece851f",
+      "revision": "source-player-r28"
+    },
+    "name": "Levitate",
+    "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_levitate"
+    },
+    "pz_locks_caster": false,
+    "reference_spell_id": 81,
+    "requirements": {
+      "learning_required": false,
+      "level": 12,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elder_druid"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "elite_knight"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "master_sorcerer"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "monk"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "exalted_monk"
+        }
+      ],
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "block_walls": true,
+      "needs_direction": false,
+      "needs_target": false,
+      "parameter": "text",
+      "self_target": false,
+      "target_or_direction": false
+    },
+    "words": "exani hur"
+  }
+}

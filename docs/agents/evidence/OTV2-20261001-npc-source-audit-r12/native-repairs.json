@@ -1,0 +1,702 @@
+{
+  "from_project_revision": "g4-npc-d10-fandom-variants-r12",
+  "project_revision": "g4-npc-service-scope-r13",
+  "repairs": [
+    {
+      "after": {
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.official_price_resolution",
+            "value": {
+              "type": "Text",
+              "value": "{\"additional_offers\":[],\"asset\":{\"bytes\":5017996,\"manifest\":\"imports/official/client-assets/15.30/manifest.json\",\"manifest_sha256\":\"febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4\",\"path\":\"content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat\",\"role\":\"OFFICIAL_CIPSOFT_CLIENT_15_30\",\"sha256\":\"2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2\",\"source_role\":\"D15_OFFICIAL_PRICE_AUTHORITY; NOT_VENDOR_FORK_MAJORITY\"},\"resolutions\":[{\"disposition\":\"OFFICIAL_PRICE_RETAINED_QUALIFIED\",\"name\":\"Alaistar\",\"new_native_offer\":{\"direction\":\"BuyFromPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i21198\",\"revision\":\"definition-r1\"},\"unit_price\":430},\"npc\":\"oteryn:npc.alaistar\",\"official_item_id\":21198,\"official_proof\":{\"asset\":{\"bytes\":5017996,\"manifest\":\"imports/official/client-assets/15.30/manifest.json\",\"manifest_sha256\":\"febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4\",\"path\":\"content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat\",\"role\":\"OFFICIAL_CIPSOFT_CLIENT_15_30\",\"sha256\":\"2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2\",\"source_role\":\"D15_OFFICIAL_PRICE_AUTHORITY; NOT_VENDOR_FORK_MAJORITY\"},\"entries\":[{\"buy_price\":430,\"field_witnesses\":{\"buy_price\":{\"byte_end_exclusive\":1684958,\"byte_start\":1684955,\"sha256\":\"ea39be32045848c36c5800f278c3a0f20d2e6b22c32d4f4f4539e2548adc7c32\"},\"location\":{\"byte_end_exclusive\":1684953,\"byte_start\":1684937,\"sha256\":\"14c10abb7008b334caacef9b0b8fd4cb3b3701de9179458c5c3c613878528cf4\"},\"name\":{\"byte_end_exclusive\":1684937,\"byte_start\":1684927,\"sha256\":\"0b18307f1503b803b57dadcdc24a1ff1b98954300140323ccf6c708b6bcbc62f\"},\"sale_price\":{\"byte_end_exclusive\":1684955,\"byte_start\":1684953,\"sha256\":\"78a23af8da46b1b37e8767921a2d3f528fdc8eca37cea8aea775fd2b283d3776\"}},\"location\":\"Rathleton City\",\"name\":\"Alaistar\",\"sale_price\":0,\"witness\":{\"byte_end_exclusive\":1684958,\"byte_start\":1684924,\"sha256\":\"aef653765099f67b859c45d77d47b9eb54eafac60f4447c52874ad40b5b26a42\"}}],\"object_witness\":{\"byte_end_exclusive\":1684976,\"byte_start\":1684866,\"sha256\":\"95603df7271abfab18b8143936e7eb60b680b2e5c4f330e494a5f9d3d705ee7c\"}},\"official_unit_price\":430,\"old_native_offer\":{\"direction\":\"BuyFromPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i21198\",\"revision\":\"definition-r1\"},\"parity_pending\":true,\"unit_price\":430},\"price_parity_qualified\":true,\"runtime_guard_admitted\":false,\"source_candidate_pointer\":\"/candidates/53/trade_service/offers/7\",\"source_proof\":{\"path\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/price-parity-pending.json\",\"pointer\":\"/records/0\",\"row_sha256\":\"a3d2ea16aafd768b4745266b9063d9fb181814d63d0e324c0f2b9bdef86deb16\",\"sha256\":\"92c62eee5d2ed63174b4a205c6bec0ffa51e2d15fa91e7abf2bf42dcb9c2aea2\"}}],\"rule\":\"D15_OFFICIAL_OVERRIDE\",\"runtime_qualified\":false,\"schema\":\"NPC_OFFICIAL_PRICE_RESOLUTION/v1\"}"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:service.trade.alaistar",
+          "revision": "definition-r1"
+        },
+        "kind": "Service"
+      },
+      "before": {
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.official_price_resolution",
+            "value": {
+              "type": "Text",
+              "value": "{\"additional_offers\":[],\"asset\":{\"bytes\":5017996,\"manifest\":\"imports/official/client-assets/15.30/manifest.json\",\"manifest_sha256\":\"febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4\",\"path\":\"content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat\",\"role\":\"OFFICIAL_CIPSOFT_CLIENT_15_30\",\"sha256\":\"2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2\",\"source_role\":\"D15_OFFICIAL_PRICE_AUTHORITY; NOT_VENDOR_FORK_MAJORITY\"},\"resolutions\":[{\"disposition\":\"OFFICIAL_PRICE_RETAINED_QUALIFIED\",\"name\":\"Alaistar\",\"new_native_offer\":{\"direction\":\"BuyFromPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i21198\",\"revision\":\"definition-r1\"},\"unit_price\":430},\"npc\":\"oteryn:npc.alaistar\",\"official_item_id\":21198,\"official_proof\":{\"asset\":{\"bytes\":5017996,\"manifest\":\"imports/official/client-assets/15.30/manifest.json\",\"manifest_sha256\":\"febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4\",\"path\":\"content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat\",\"role\":\"OFFICIAL_CIPSOFT_CLIENT_15_30\",\"sha256\":\"2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2\",\"source_role\":\"D15_OFFICIAL_PRICE_AUTHORITY; NOT_VENDOR_FORK_MAJORITY\"},\"entries\":[{\"buy_price\":430,\"field_witnesses\":{\"buy_price\":{\"byte_end_exclusive\":1684958,\"byte_start\":1684955,\"sha256\":\"ea39be32045848c36c5800f278c3a0f20d2e6b22c32d4f4f4539e2548adc7c32\"},\"location\":{\"byte_end_exclusive\":1684953,\"byte_start\":1684937,\"sha256\":\"14c10abb7008b334caacef9b0b8fd4cb3b3701de9179458c5c3c613878528cf4\"},\"name\":{\"byte_end_exclusive\":1684937,\"byte_start\":1684927,\"sha256\":\"0b18307f1503b803b57dadcdc24a1ff1b98954300140323ccf6c708b6bcbc62f\"},\"sale_price\":{\"byte_end_exclusive\":1684955,\"byte_start\":1684953,\"sha256\":\"78a23af8da46b1b37e8767921a2d3f528fdc8eca37cea8aea775fd2b283d3776\"}},\"location\":\"Rathleton City\",\"name\":\"Alaistar\",\"sale_price\":0,\"witness\":{\"byte_end_exclusive\":1684958,\"byte_start\":1684924,\"sha256\":\"aef653765099f67b859c45d77d47b9eb54eafac60f4447c52874ad40b5b26a42\"}}],\"object_witness\":{\"byte_end_exclusive\":1684976,\"byte_start\":1684866,\"sha256\":\"95603df7271abfab18b8143936e7eb60b680b2e5c4f330e494a5f9d3d705ee7c\"}},\"official_unit_price\":430,\"old_native_offer\":{\"direction\":\"BuyFromPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i21198\",\"revision\":\"definition-r1\"},\"parity_pending\":true,\"unit_price\":430},\"price_parity_qualified\":true,\"runtime_guard_admitted\":false,\"source_candidate_pointer\":\"/candidates/53/trade_service/offers/7\",\"source_proof\":{\"path\":\"docs/agents/evidence/OTV2-20261001-npc-source-audit-r5/price-parity-pending.json\",\"pointer\":\"/records/0\",\"row_sha256\":\"a3d2ea16aafd768b4745266b9063d9fb181814d63d0e324c0f2b9bdef86deb16\",\"sha256\":\"92c62eee5d2ed63174b4a205c6bec0ffa51e2d15fa91e7abf2bf42dcb9c2aea2\"}}],\"rule\":\"D15_OFFICIAL_OVERRIDE\",\"runtime_qualified\":false,\"schema\":\"NPC_OFFICIAL_PRICE_RESOLUTION/v1\"}"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:service.trade.alaistar",
+          "revision": "definition-r1"
+        },
+        "kind": "Service",
+        "offers": [
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21103",
+              "revision": "definition-r1"
+            },
+            "unit_price": 350
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21182",
+              "revision": "definition-r1"
+            },
+            "unit_price": 125
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21193",
+              "revision": "definition-r1"
+            },
+            "unit_price": 260
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21194",
+              "revision": "definition-r1"
+            },
+            "unit_price": 160
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21195",
+              "revision": "definition-r1"
+            },
+            "unit_price": 130
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21196",
+              "revision": "definition-r1"
+            },
+            "unit_price": 390
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21197",
+              "revision": "definition-r1"
+            },
+            "unit_price": 320
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21198",
+              "revision": "definition-r1"
+            },
+            "unit_price": 430
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21199",
+              "revision": "definition-r1"
+            },
+            "unit_price": 170
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21200",
+              "revision": "definition-r1"
+            },
+            "unit_price": 140
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21201",
+              "revision": "definition-r1"
+            },
+            "unit_price": 240
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21202",
+              "revision": "definition-r1"
+            },
+            "unit_price": 110
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21204",
+              "revision": "definition-r1"
+            },
+            "unit_price": 210
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21747",
+              "revision": "definition-r1"
+            },
+            "unit_price": 400
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21800",
+              "revision": "definition-r1"
+            },
+            "unit_price": 150
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i21801",
+              "revision": "definition-r1"
+            },
+            "unit_price": 260
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i23373",
+              "revision": "definition-r1"
+            },
+            "unit_price": 488
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i23374",
+              "revision": "definition-r1"
+            },
+            "unit_price": 488
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i23375",
+              "revision": "definition-r1"
+            },
+            "unit_price": 650
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i236",
+              "revision": "definition-r1"
+            },
+            "unit_price": 115
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i237",
+              "revision": "definition-r1"
+            },
+            "unit_price": 108
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i238",
+              "revision": "definition-r1"
+            },
+            "unit_price": 158
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i239",
+              "revision": "definition-r1"
+            },
+            "unit_price": 225
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i266",
+              "revision": "definition-r1"
+            },
+            "unit_price": 50
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i268",
+              "revision": "definition-r1"
+            },
+            "unit_price": 56
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i283",
+              "revision": "definition-r1"
+            },
+            "unit_price": 5
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i284",
+              "revision": "definition-r1"
+            },
+            "unit_price": 5
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i285",
+              "revision": "definition-r1"
+            },
+            "unit_price": 5
+          },
+          {
+            "direction": "BuyFromPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2874",
+              "revision": "definition-r1"
+            },
+            "unit_price": 5
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i7642",
+              "revision": "definition-r1"
+            },
+            "unit_price": 254
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i7643",
+              "revision": "definition-r1"
+            },
+            "unit_price": 379
+          }
+        ]
+      },
+      "identity": {
+        "key": "oteryn:service.trade.alaistar",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "after": {
+        "fields": [],
+        "identity": {
+          "key": "oteryn:service.trade.lyonel",
+          "revision": "definition-r1"
+        },
+        "kind": "Service",
+        "offers": [
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3577",
+              "revision": "definition-r1"
+            },
+            "unit_price": 5
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3582",
+              "revision": "definition-r1"
+            },
+            "unit_price": 8
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3600",
+              "revision": "definition-r1"
+            },
+            "unit_price": 4
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3607",
+              "revision": "definition-r1"
+            },
+            "unit_price": 6
+          }
+        ]
+      },
+      "before": {
+        "fields": [],
+        "identity": {
+          "key": "oteryn:service.trade.lyonel",
+          "revision": "definition-r1"
+        },
+        "kind": "Service",
+        "offers": [
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3577",
+              "revision": "definition-r1"
+            },
+            "unit_price": 5
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3582",
+              "revision": "definition-r1"
+            },
+            "unit_price": 8
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3600",
+              "revision": "definition-r1"
+            },
+            "unit_price": 4
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3607",
+              "revision": "definition-r1"
+            },
+            "unit_price": 6
+          },
+          {
+            "count": 13,
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i5552",
+              "revision": "definition-r1"
+            },
+            "unit_price": 150
+          }
+        ]
+      },
+      "identity": {
+        "key": "oteryn:service.trade.lyonel",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "after": {
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.trade.held_tuple_cda9e56a66834d2d",
+            "value": {
+              "type": "Text",
+              "value": "{\"admission_eligible\":false,\"disposition\":\"SOURCE_FACT_RETAINED_NOT_EXECUTABLE_OFFER\",\"npc\":\"oteryn:npc.tanaro\",\"old_native_offer\":{\"count\":1,\"direction\":\"SellToPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i2875\",\"revision\":\"definition-r1\"},\"unit_price\":2},\"reason\":\"FLUID_WATER_VARIANT_NATIVE_BINDING_UNQUALIFIED\",\"runtime_qualified\":false,\"service\":\"oteryn:service.trade.tanaro\",\"source_observations\":[{\"native_sub_type\":null,\"npc_slug\":\"tanaro\",\"old_source_offer\":{\"buy_price\":2,\"client_id\":2875,\"count\":1,\"item_name\":\"bottle of water\",\"sell_price\":null,\"server_item_id\":null,\"stock_gate\":null,\"sub_type\":null},\"quantity_state\":\"UNKNOWN_SOURCE_FLUID_ENUM_NOT_TRANSACTION_UNITS\",\"runtime_qualified\":false,\"source_encoded_value\":1,\"source_encoding_matches_enum\":true,\"source_fluid_enum\":1,\"source_fluid_name\":\"water\",\"source_proof\":{\"line\":58,\"path\":\"data-otservbr-global/npc/tanaro.lua\",\"raw_shop_row\":\"{ itemName = \\\"bottle of water\\\", clientId = 2875, buy = 2, count = 1 }\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"46dd998e499adf1604b2a6814f940b9d85287814b17657d5cc9fa347572207df\"}}]}"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:service.trade.tanaro",
+          "revision": "definition-r1"
+        },
+        "kind": "Service",
+        "offers": [
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3577",
+              "revision": "definition-r1"
+            },
+            "unit_price": 3
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3578",
+              "revision": "definition-r1"
+            },
+            "unit_price": 5
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3579",
+              "revision": "definition-r1"
+            },
+            "unit_price": 6
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3582",
+              "revision": "definition-r1"
+            },
+            "unit_price": 6
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3598",
+              "revision": "definition-r1"
+            },
+            "unit_price": 2
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3600",
+              "revision": "definition-r1"
+            },
+            "unit_price": 2
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3601",
+              "revision": "definition-r1"
+            },
+            "unit_price": 2
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3606",
+              "revision": "definition-r1"
+            },
+            "unit_price": 2
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3607",
+              "revision": "definition-r1"
+            },
+            "unit_price": 4
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3723",
+              "revision": "definition-r1"
+            },
+            "unit_price": 6
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i6277",
+              "revision": "definition-r1"
+            },
+            "unit_price": 50
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i6392",
+              "revision": "definition-r1"
+            },
+            "unit_price": 100
+          }
+        ]
+      },
+      "before": {
+        "fields": [
+          {
+            "field_path": "oteryn:source.npc.trade.held_tuple_cda9e56a66834d2d",
+            "value": {
+              "type": "Text",
+              "value": "{\"admission_eligible\":false,\"disposition\":\"SOURCE_FACT_RETAINED_NOT_EXECUTABLE_OFFER\",\"npc\":\"oteryn:npc.tanaro\",\"old_native_offer\":{\"count\":1,\"direction\":\"SellToPlayer\",\"item\":{\"family\":\"Item\",\"key\":\"oteryn:item.tibia.i2875\",\"revision\":\"definition-r1\"},\"unit_price\":2},\"reason\":\"FLUID_WATER_VARIANT_NATIVE_BINDING_UNQUALIFIED\",\"runtime_qualified\":false,\"service\":\"oteryn:service.trade.tanaro\",\"source_observations\":[{\"native_sub_type\":null,\"npc_slug\":\"tanaro\",\"old_source_offer\":{\"buy_price\":2,\"client_id\":2875,\"count\":1,\"item_name\":\"bottle of water\",\"sell_price\":null,\"server_item_id\":null,\"stock_gate\":null,\"sub_type\":null},\"quantity_state\":\"UNKNOWN_SOURCE_FLUID_ENUM_NOT_TRANSACTION_UNITS\",\"runtime_qualified\":false,\"source_encoded_value\":1,\"source_encoding_matches_enum\":true,\"source_fluid_enum\":1,\"source_fluid_name\":\"water\",\"source_proof\":{\"line\":58,\"path\":\"data-otservbr-global/npc/tanaro.lua\",\"raw_shop_row\":\"{ itemName = \\\"bottle of water\\\", clientId = 2875, buy = 2, count = 1 }\",\"repository\":\"opentibiabr/canary\",\"revision\":\"47dfd51f45280a59a1d3e50ba7edd573d7234446\",\"sha256\":\"46dd998e499adf1604b2a6814f940b9d85287814b17657d5cc9fa347572207df\"}}]}"
+            }
+          }
+        ],
+        "identity": {
+          "key": "oteryn:service.trade.tanaro",
+          "revision": "definition-r1"
+        },
+        "kind": "Service",
+        "offers": [
+          {
+            "count": 2,
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i2877",
+              "revision": "definition-r1"
+            },
+            "unit_price": 3
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3577",
+              "revision": "definition-r1"
+            },
+            "unit_price": 3
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3578",
+              "revision": "definition-r1"
+            },
+            "unit_price": 5
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3579",
+              "revision": "definition-r1"
+            },
+            "unit_price": 6
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3582",
+              "revision": "definition-r1"
+            },
+            "unit_price": 6
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3598",
+              "revision": "definition-r1"
+            },
+            "unit_price": 2
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3600",
+              "revision": "definition-r1"
+            },
+            "unit_price": 2
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3601",
+              "revision": "definition-r1"
+            },
+            "unit_price": 2
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3606",
+              "revision": "definition-r1"
+            },
+            "unit_price": 2
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3607",
+              "revision": "definition-r1"
+            },
+            "unit_price": 4
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i3723",
+              "revision": "definition-r1"
+            },
+            "unit_price": 6
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i6277",
+              "revision": "definition-r1"
+            },
+            "unit_price": 50
+          },
+          {
+            "direction": "SellToPlayer",
+            "item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i6392",
+              "revision": "definition-r1"
+            },
+            "unit_price": 100
+          }
+        ]
+      },
+      "identity": {
+        "key": "oteryn:service.trade.tanaro",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "schema": "OTERYN_NPC_SERVICE_SCOPE_REPAIRS/v1"
+}

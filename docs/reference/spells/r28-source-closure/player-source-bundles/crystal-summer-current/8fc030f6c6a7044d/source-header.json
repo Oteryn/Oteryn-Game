@@ -1,0 +1,48 @@
+{
+  "spell": {
+    "base_power": 130,
+    "carrier": "instant",
+    "cooldown_ms": 4000,
+    "costs": {
+      "mana": 175
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "Divine Barrage",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_divine_caldera"
+    },
+    "reference_spell_id": 302,
+    "requirements": {
+      "learning_required": false,
+      "level": 70,
+      "premium": true,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": true,
+      "block_walls": true,
+      "cast_at_position": true,
+      "needs_target": true,
+      "range_tiles": 7
+    },
+    "words": "exori dir san"
+  }
+}

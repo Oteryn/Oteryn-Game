@@ -1,0 +1,32 @@
+{
+  "spell": {
+    "carrier": "rune",
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "attack"
+      }
+    ],
+    "name": "fire field rune",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_or_rune",
+      "impact_cue": "canary.sound:spell_fire_field_rune"
+    },
+    "pz_locks_caster": true,
+    "reference_rune_item_id": 3188,
+    "reference_spell_id": 25,
+    "requirements": {
+      "level": 15
+    },
+    "rune": {
+      "allow_far_use": true,
+      "blocking": {
+        "creature": false,
+        "solid": true
+      },
+      "charges": 3,
+      "magic_level": 1
+    }
+  }
+}

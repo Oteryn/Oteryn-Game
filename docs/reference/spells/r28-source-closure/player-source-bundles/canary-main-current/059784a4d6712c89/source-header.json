@@ -1,0 +1,47 @@
+{
+  "spell": {
+    "carrier": "instant",
+    "cooldown_ms": 10000,
+    "costs": {
+      "mana": 450
+    },
+    "groups": [
+      {
+        "cooldown_ms": 2000,
+        "group": "support"
+      },
+      {
+        "cooldown_ms": 10000,
+        "group": "focus"
+      }
+    ],
+    "name": "Sharpshooter",
+    "presentation": {
+      "cast_cue": "canary.sound:spell_sharpshooter"
+    },
+    "reference_spell_id": 135,
+    "requirements": {
+      "level": 60,
+      "premium": false,
+      "vocation_display_flags": [
+        {
+          "show_in_description": true,
+          "vocation": "paladin"
+        },
+        {
+          "show_in_description": true,
+          "vocation": "royal_paladin"
+        }
+      ],
+      "vocations": [
+        "paladin",
+        "royal_paladin"
+      ]
+    },
+    "targeting": {
+      "aggressive": false,
+      "self_target": true
+    },
+    "words": "utito tempo san"
+  }
+}

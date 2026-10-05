@@ -2650,7 +2650,7 @@ mod tests {
         })?
     }
 
-    /// A peer that closes before `ServerAccepted` fails admission closed: no session.
+    /// An admitted session whose join carried actor vitals, paired with the peer end.
     async fn vitals_pair() -> Result<(Session<DuplexStream>, DuplexStream), BoxError> {
         let (client, mut peer) = tokio::io::duplex(64 * 1024);
         let joining = tokio::spawn(async move {
@@ -2853,6 +2853,7 @@ mod tests {
         })?
     }
 
+    /// A peer that closes before `ServerAccepted` fails admission closed: no session.
     #[test]
     fn a_stream_closed_before_admission_fails_closed() -> Result<(), BoxError> {
         block_on(async {

@@ -260,6 +260,7 @@ impl Registry {
             Some("wall") => TerrainKind::Wall,
             Some("roof") => TerrainKind::Roof,
             Some("field") => TerrainKind::Field,
+            Some("common") => TerrainKind::Common,
             _ => return Err(unclassified("kind is UNKNOWN or not a Terrain kind")),
         };
         let terrain = if kind == TerrainKind::Ground {
