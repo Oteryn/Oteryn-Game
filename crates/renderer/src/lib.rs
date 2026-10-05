@@ -11,8 +11,9 @@ mod scene_gpu;
 mod windows;
 
 pub use batch::{
-    AtlasImage, BatchError, MAX_ATLAS_DIMENSION, MAX_BATCH_QUADS, MAX_VIEW_PIXELS,
-    QUAD_INSTANCE_BYTES, QuadInstance, SpriteBatch, TileBatch, TileCoord, TileView,
+    AtlasImage, AtlasPage, BatchError, CellKey, CellSlot, MAX_ATLAS_DIMENSION, MAX_BATCH_QUADS,
+    MAX_VIEW_PIXELS, PAGE_CELL_PX, PAGE_CELLS, PAGE_CELLS_PER_ROW, PlacedCell, QUAD_INSTANCE_BYTES,
+    QuadBatches, QuadInstance, SpriteBatch, SpriteFrame, TileBatch, TileCoord, TileView,
     VERTICES_PER_QUAD, instance_bytes,
 };
 pub use resources::ResourceCache;
