@@ -116,11 +116,22 @@ def validate(root: Path):
     require(by_key["spite_fear"]["classification"] == "OTERYN_ACCEPTED", "Spite Fear accepted ruling lost")
     require(by_key["claustrophobic_inferno_crystal_bad_spawn_token"]["classification"] == "CONFLICT",
             "Crystal bare Pos defect must remain a conflict")
+    require(by_key["claustrophobic_inferno_three_raids"]["classification"] == "CONFLICT"
+            and by_key["claustrophobic_inferno_three_raids"]["chosen"]["spawn_interval_seconds"]["crystal"] == 20
+            and by_key["claustrophobic_inferno_three_raids"]["chosen"]["spawn_interval_seconds"]["canary"] == 10,
+            "Claustrophobic wave interval conflict differs")
+    require(by_key["malice_white_safe_tiles"]["chosen"]["unsafe_tile_damage"] == 8000
+            and by_key["malice_white_safe_tiles"]["chosen"]["total_safe_tiles_target"] == 11,
+            "Malice white safe-tile source behavior differs")
+    require(by_key["megalomania_aspect_vulnerability"]["chosen"]["aspect_kills_required"] == 4,
+            "Megalomania aspect count differs")
     require(by_key["furious_crater_energy_access"]["chosen"]["floor_thresholds"] == [40, 55, 70],
             "Cruelty access thresholds differ")
     require(by_key["spite_soul_fire"]["chosen"]["create_interval_seconds"] == 14
-            and by_key["spite_soul_fire"]["chosen"]["per_player_reuse_seconds"] == 56,
-            "Spite fire timing differs")
+            and by_key["spite_soul_fire"]["chosen"]["per_player_reuse_seconds"]["crystal"] == 56
+            and by_key["spite_soul_fire"]["chosen"]["per_player_reuse_seconds"]["reference_wiki"] == 60
+            and by_key["spite_soul_fire"]["classification"] == "CONFLICT",
+            "Spite fire timing conflict differs")
     require(by_key["cruelty_mortal_essence_greedy_maw"]["chosen"]["per_player_use_cooldown_seconds"] == 30
             and by_key["cruelty_mortal_essence_greedy_maw"]["chosen"]["defense_grace_seconds"] == 15,
             "Cruelty Greedy Maw timing differs")
