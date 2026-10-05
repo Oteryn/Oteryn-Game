@@ -1870,6 +1870,7 @@ dependencies = [
  "oteryn-platform-contracts",
  "oteryn-renderer",
  "oteryn-session",
+ "oteryn-session-tcp",
  "winit",
 ]
 
