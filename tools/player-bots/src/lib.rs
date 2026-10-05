@@ -532,9 +532,19 @@ impl BotShutdown {
     }
 }
 
+#[must_use = "BotRun must be finished or shut down so worker tasks are joined"]
 pub struct BotRun {
     shutdown: watch::Sender<bool>,
     handles: Vec<((u64, String), JoinHandle<BotReport>)>,
+}
+
+impl Drop for BotRun {
+    fn drop(&mut self) {
+        let _ = self.shutdown.send(true);
+        for (_, handle) in &self.handles {
+            handle.abort();
+        }
+    }
 }
 
 impl BotRun {
@@ -545,15 +555,14 @@ impl BotRun {
         }
     }
 
-    pub async fn finish(self) -> Vec<BotReport> {
-        let Self { shutdown, handles } = self;
-        let _keep_sender_alive = shutdown;
+    pub async fn finish(mut self) -> Vec<BotReport> {
+        let handles = std::mem::take(&mut self.handles);
         collect_reports(handles).await
     }
 
-    pub async fn shutdown(self) -> Vec<BotReport> {
-        let Self { shutdown, handles } = self;
-        let _ = shutdown.send(true);
+    pub async fn shutdown(mut self) -> Vec<BotReport> {
+        let _ = self.shutdown.send(true);
+        let handles = std::mem::take(&mut self.handles);
         collect_reports(handles).await
     }
 }
