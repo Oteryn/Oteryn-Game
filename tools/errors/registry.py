@@ -49,15 +49,32 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def load_base_json(rel_path: str, root: Path = ROOT, ref: str = BASE_REF):
-    """The file at `ref`: a dict, `None` when it does not exist there, or
-    `False` when the ref cannot be read at all (shallow checkout)."""
+def _ref_readable(root: Path, ref: str) -> bool:
     verify = subprocess.run(
         ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
         capture_output=True,
         text=True,
     )
-    if verify.returncode != 0:
+    return verify.returncode == 0
+
+
+def _fetch_base(root: Path, ref: str) -> None:
+    """Best effort: a checkout of the exact head has no `origin/main`."""
+    remote, _, branch = ref.partition("/")
+    subprocess.run(
+        ["git", "-C", str(root), "fetch", "--quiet", "--depth=1", remote,
+         f"+refs/heads/{branch}:refs/remotes/{ref}"],
+        capture_output=True,
+        text=True,
+    )
+
+
+def load_base_json(rel_path: str, root: Path = ROOT, ref: str = BASE_REF):
+    """The file at `ref`: a dict, `None` when it does not exist there, or
+    `False` when the ref cannot be read even after a fetch."""
+    if not _ref_readable(root, ref):
+        _fetch_base(root, ref)
+    if not _ref_readable(root, ref):
         return False
     shown = subprocess.run(
         ["git", "-C", str(root), "show", f"{ref}:{rel_path}"], capture_output=True, text=True
@@ -240,15 +257,35 @@ def compare_to_base(
     return errors
 
 
+def compare_blocks(current: list, base: list) -> list[str]:
+    """Blocks are never split, renumbered or reassigned; new ones go above 9999."""
+    errors: list[str] = []
+    cur = {b["first"]: b for b in current if isinstance(b, dict) and "first" in b}
+    for was in base:
+        now = cur.get(was["first"])
+        if now is None:
+            errors.append(f"block {was['first']}-{was['last']}: removed, split or renumbered")
+            continue
+        for key in ("last", "registry"):
+            if now.get(key) != was[key]:
+                errors.append(f"block {was['first']}: {key} changed {was[key]!r} -> {now.get(key)!r}")
+    old_firsts = {b["first"] for b in base}
+    for first, block in cur.items():
+        if first not in old_firsts and first <= 9999:
+            errors.append(f"block {first}: new blocks must start above 9999")
+    return errors
+
+
 def validate_files(
     game: dict, protocol: dict, base_game=None, base_protocol=None
 ) -> list[str]:
-    """Validate both registries; the bases are dicts, or None to skip."""
+    """Validate both registries; the bases are dicts, or None for a new file."""
     game_codes = game.get("codes") if isinstance(game.get("codes"), list) else []
     game_numbers = {e["code"] for e in game_codes if isinstance(e, dict) and "code" in e}
     errors, protocol_names = validate_protocol(protocol, game_numbers)
     errors += validate_game(game, protocol_names)
     if isinstance(base_game, dict):
+        errors += compare_blocks(game.get("blocks", []), base_game.get("blocks", []))
         errors += compare_to_base(
             game_codes, base_game.get("codes", []), ("name", "category", "progression"), "game code"
         )
@@ -267,12 +304,14 @@ def validate(root: Path = ROOT, base_ref: str = BASE_REF) -> list[str]:
     protocol = load_json(root / PROTOCOL_PATH)
     base_game = load_base_json(GAME_PATH, root, base_ref)
     base_protocol = load_base_json(PROTOCOL_PATH, root, base_ref)
+    errors: list[str] = []
     if base_game is False or base_protocol is False:
-        print(
-            f"error-code registry: {base_ref} is not readable; append-only check skipped",
-            file=sys.stderr,
+        errors.append(
+            f"{base_ref} is not readable, so the append-only check cannot run; "
+            f"fetch it (git fetch origin main) and retry"
         )
-    return validate_files(game, protocol, base_game or None, base_protocol or None)
+        base_game = base_protocol = None
+    return errors + validate_files(game, protocol, base_game, base_protocol)
 
 
 def main() -> int:

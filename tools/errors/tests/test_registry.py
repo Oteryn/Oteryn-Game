@@ -117,6 +117,41 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(check(protocol=protocol), [])
 
 
+class BaseGuardTests(unittest.TestCase):
+    def test_block_assignments_are_immutable(self):
+        reassigned = copy.deepcopy(GAME)
+        reassigned["blocks"][-1]["registry"] = "game"
+        reassigned["codes"].append(dict(GAME["codes"][0], code=9001, name="SNEAKY"))
+        errors = check(game=reassigned, base_game=copy.deepcopy(GAME))
+        self.assertTrue(any("registry changed" in e for e in errors))
+        removed = copy.deepcopy(GAME)
+        del removed["blocks"][3]
+        self.assertTrue(any("removed, split" in e for e in check(game=removed, base_game=GAME)))
+        added = copy.deepcopy(GAME)
+        added["blocks"].append(
+            {"first": 10000, "last": 10999, "owner": "x", "registry": "game", "contents": "y"}
+        )
+        self.assertEqual(check(game=added, base_game=GAME), [])
+        low = copy.deepcopy(GAME)
+        low["blocks"][-1]["first"] = 9000
+        self.assertEqual(check(game=low, base_game=GAME), [])
+        bad = copy.deepcopy(GAME)
+        bad["blocks"].append(
+            {"first": 9500, "last": 9600, "owner": "x", "registry": "game", "contents": "y"}
+        )
+        self.assertTrue(check(game=bad, base_game=GAME))
+
+    def test_unreadable_base_fails_closed(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "docs/contracts").mkdir(parents=True)
+            for rel in (registry.GAME_PATH, registry.PROTOCOL_PATH):
+                Path(tmp, rel).write_bytes((registry.ROOT / rel).read_bytes())
+            errors = registry.validate(Path(tmp), "origin/main")
+        self.assertTrue(any("not readable" in e for e in errors))
+
+
 class ExplainTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
