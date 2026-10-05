@@ -28,6 +28,8 @@ owned_paths:
   - tools/world-bundle-compiler/tests/**
   - crates/world-bundle/src/bundle.rs
   - docs/agents/tasks/active/OTV2-20261004-world-bundle-ci-1.md
+  - apps/game-server/src/content/npc_catalogue.rs
+  - apps/game-server/tests/content_world_project_repository.rs
   - docs/agents/tasks/archive/OTV2-20261004-world-bundle-ci-1.md
 public_contracts: []
 depends_on: [ARCH-WORLD-CONTENT-SERVE-1]
