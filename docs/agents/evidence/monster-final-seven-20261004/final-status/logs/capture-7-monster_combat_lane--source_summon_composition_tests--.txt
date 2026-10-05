@@ -1,6 +1,6 @@
-Original log SHA256: 0d57f1b9c239547f7fdfe94077400776e6da56fa5eb827a155ea7ce082a1b1d4
+Original log SHA256: b6ce01c62406b62bd71ea6fc6778c14c131cce90f63fb2157ff231809ef533d0
 
 running 2 tests
 test monster_combat_lane::source_summon_composition_tests::captured_defense_summon_registers_two_source_children_and_exact_live_health ... ok
 test monster_combat_lane::source_summon_composition_tests::captured_source_summon_creates_current_child_schedule_and_inherits_actual_parent_target ... ok
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2371 filtered out; finished in 37.88s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2371 filtered out; finished in 35.32s

@@ -1,5 +1,5 @@
-Original log SHA256: 5513ff81604c669ca24e260b8cf1d0a6821e4939a5bd6a8ab848272bf497c4e7
+Original log SHA256: cb23f1bd51081068847deba0f77a9d43daf537ea8fd1bb8053f8b2439526ba46
 
 running 1 test
-test content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles ... ok
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2372 filtered out; finished in 50.13s
+test content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles ... qualified and staged full source candidate: server=980b82d3cf51b5e46c7a68e6602c16a318a80945c07bf5c38a0f103c0b3b51c6, client=c50620c32e7ea95cb7308fb221d1b09eacd5a9ca90a409f3d3ff6e238311fe54, source_world=44f860d20712a32e6bc22aa269d3e220d39d164b7738d3c150a406579849b5f5
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2372 filtered out; finished in 73.27s

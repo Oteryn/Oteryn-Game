@@ -1,7 +1,7 @@
-Original log SHA256: ea9804f87f559dccc5ab0def5d1729ece570b9f81844be269a3764d54861e6f3
+Original log SHA256: a6a409df44059a2c311c16c5ed03e4e4cf787fbf40a5e4f9d5dea3b5a8bc2466
 
 running 3 tests
 test crystal_death_composition::herald_actual_source_tests::actual_herald_death_source_produces_stable_request_only_after_projection_and_for_top_character ... ok
 test crystal_death_composition::retained_native_source_tests::actual_capture_membership_fenced_death_executes_handlers_and_blocks_map_gap ... ok
 test crystal_death_composition::retained_projection_owner_tests::actual_capture_projection_hook_executes_boreth_rum_secondary_once_and_refuses_stale_authority ... ok
-test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2365 filtered out; finished in 79.48s
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 2370 filtered out; finished in 79.06s

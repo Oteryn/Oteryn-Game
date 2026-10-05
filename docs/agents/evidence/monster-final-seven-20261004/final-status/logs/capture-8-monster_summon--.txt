@@ -1,6 +1,6 @@
-Original log SHA256: 1fedb6d904033974c530af0959d93c297789a9c49c2f9ad54037e7e53bf1916a
+Original log SHA256: a96fb73d3587ac6418401cc4a381974e92e97131f006efadde4e47c6892304de
 
 running 2 tests
 test monster_summon::captured_defense_summon_test::captured_all13_defense_instances_qualify_and_actual_source_chance_spawns_current_child ... ok
 test monster_summon::retained_native_source_test::captured_native_catalog_qualifies_all_authored_summoners_and_spawns_source_child ... ok
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2371 filtered out; finished in 33.47s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2371 filtered out; finished in 32.01s

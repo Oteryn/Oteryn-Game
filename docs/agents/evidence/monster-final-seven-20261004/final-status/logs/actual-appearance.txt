@@ -1,4 +1,4 @@
-Original log SHA256: 8669f9cf3a452013b75c2a0b88c18da72d475d65267af1dbfc9367e191e68e7d
+Original log SHA256: d65b08cda7802228dffb4a279374fc7f1dc5eaeb0a5854910fc448e50079943b
 
 running 6 tests
 test creature_damage_spell::appearance_execution_tests::appearance_all120_source_bodies_resolve_current_native110_creature10_items ... ok
@@ -7,4 +7,4 @@ test creature_damage_spell::appearance_execution_tests::mixed_appearance_receipt
 test creature_damage_spell::appearance_execution_tests::scheduled_appearance_missing_artifact_tile_refusal_wrong_revision_and_stale_owner_no_mutation ... ok
 test creature_damage_spell::appearance_execution_tests::scheduled_appearance_real_player_store_projection_expiry_and_replay ... ok
 test creature_damage_spell::appearance_execution_tests::source_target_flag_defense_still_mutates_sole_native_creature_slot ... ok
-test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 2367 filtered out; finished in 121.34s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 2367 filtered out; finished in 134.46s

@@ -20,9 +20,9 @@
           "status": "ok"
         }
       ],
-      "original_log_sha256": "8994f8568d53df92d2a37e6dbf09c1031e07f9fdb42648e2098729c99bd6eb30",
+      "original_log_sha256": "3d833833632011ee145a9fa54dcfebc73db6ffee347951b5309dff46fd5b7a0b",
       "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/whole-library.txt",
-      "summary_sha256": "313a565cbf6f95fd89680ac8ae799cb0510d7ffd9953cc0c291a9be2394505de"
+      "summary_sha256": "323c5e831e8d3f1c32d47329df170243e8cf4353c3c0c8d923d9a411c8a35267"
     },
     {
       "kind": "actual-appearance",
@@ -35,9 +35,9 @@
           "status": "ok"
         }
       ],
-      "original_log_sha256": "8669f9cf3a452013b75c2a0b88c18da72d475d65267af1dbfc9367e191e68e7d",
+      "original_log_sha256": "d65b08cda7802228dffb4a279374fc7f1dc5eaeb0a5854910fc448e50079943b",
       "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/actual-appearance.txt",
-      "summary_sha256": "ce3134b9610c8bb9ea58b1a45e4e5ad2ad1eced3727fc1e2428aa4007a1451f9"
+      "summary_sha256": "add0f4f02ac3f471e5d15d76b6bf5cb0cf79e2e1b5e01a13af204b4d51050694"
     },
     {
       "kind": "actual-native-qualification",
@@ -50,9 +50,9 @@
           "status": "ok"
         }
       ],
-      "original_log_sha256": "5513ff81604c669ca24e260b8cf1d0a6821e4939a5bd6a8ab848272bf497c4e7",
+      "original_log_sha256": "cb23f1bd51081068847deba0f77a9d43daf537ea8fd1bb8053f8b2439526ba46",
       "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/actual-native-qualification.txt",
-      "summary_sha256": "e4498725df2a6ec3b32cee35132c2d1eedf3bc084b1ae8f9c3cc6c86f6f22cd3"
+      "summary_sha256": "a3ee66dd2cdeb64e796e4ac61e76a381ee9b7aa060d8ce07949376a07bcbe2fb"
     },
     {
       "kind": "postgres-1",
@@ -65,9 +65,9 @@
           "status": "ok"
         }
       ],
-      "original_log_sha256": "51ab28f9e46f8a21d0371e59fa10e2b159e1add553eabc242ad5b1100db91281",
+      "original_log_sha256": "a6059ecc907c7681773890c5b8626ef16558f9b545eedffff38d74d32cad0cee",
       "summary_path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/postgres-1.txt",
-      "summary_sha256": "719ed5dcb9ead3cb00b3a1b5855ac0330e18d2253d6233abbe8b4045fdd1618e"
+      "summary_sha256": "0cd32a28eaf6a2fb31f58a15a1157c33bc63b5a64616cff61699b029fec6ff24"
     },
     {
       "kind": "focused-actual_native_aggregate_three_boss",
@@ -132,7 +132,7 @@
   ],
   "native_receipt": {
     "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/native-qualification-receipt.json",
-    "sha256": "2032642c8fdc88c6302230062b2ec2d43a84cdb9f3b81c4875e5f3bf684d3466"
+    "sha256": "d05dd6a817b0050959754b1346a2a7ea57a889bdbb3d938bf25da4acd7040af1"
   },
   "current_manifest_sha256": "117782c12f9309a90e41a72f9b13611771b62a71f6e7348a238824a52227fa34",
   "historical_failure_disposition": {
@@ -147,8 +147,13 @@
   },
   "scope": "Runtime library/current native qualification/explicit PostgreSQL subsets only; no shipping activation, Global parity or deployment claim",
   "postgres_ignored_limit": "Ignored/unexecuted PostgreSQL tests remain unclaimed; preserve each actual subset count",
-  "artifact_qualification_proof": {
-    "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/native-qualified-artifact-proof.json",
-    "sha256": "d05dd6a817b0050959754b1346a2a7ea57a889bdbb3d938bf25da4acd7040af1"
+  "validated_code_head": "e82070f81028c79e9bc8d3a8e57ac29e78379122",
+  "binary_sha256": "36cc962ba00e430e8beac5f5e933c9c294771692959551d924fa9d2680a933b4",
+  "additional_checks": {
+    "strict_all_target_clippy": "PASS",
+    "frozen_library_build": "PASS",
+    "native_capture_tests": 12,
+    "repository_integration_tests": 3,
+    "governance": "PASS_PREPUBLICATION; final archive checked separately"
   }
 }
