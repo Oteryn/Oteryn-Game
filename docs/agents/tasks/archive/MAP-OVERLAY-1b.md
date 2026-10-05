@@ -10,7 +10,7 @@ issue: 1622
 lane_id: map-overlay
 base_branch: main
 branch: agent/map-overlay-1b-20261005
-pr: PENDING
+pr: 1809
 base_sha: 8f174761
 owner: claude-code-session-01LZpLbhRJD359Hia74Vvg5J (oteryn-hard-worker)
 control_plane: claude-code-session-013KJX6mv8LQveCKKXYgAX94
