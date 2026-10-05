@@ -213,6 +213,7 @@ fn pg_content() -> TestResult<CanonicalReferencePlayableContent> {
                         count: *count,
                     }],
                     achievement: None,
+                    quest_transition: None,
                 })
             })
             .collect::<TestResult<Vec<_>>>()?;
@@ -1041,6 +1042,7 @@ fn a_chest_with_an_achievement_grants_it_and_a_chest_without_one_grants_none() -
                         count: 1,
                     }],
                     achievement: Some(ABSENT_ACHIEVEMENT.into()),
+                    quest_transition: None,
                 }],
             }),
             client_projection: ClientProjectionClass::ServerOnly,

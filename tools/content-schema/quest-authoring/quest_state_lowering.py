@@ -26,6 +26,11 @@ Rules, all deterministic over the source data:
   `computed: expression` -> `COMPUTED` (refused `NOT_SUPPORTED` until an amendment, §4);
 - from: the source comparison (`==`, `~=`, `<`, `<=`, `>`, `>=`), or `ANY`; a comparison the
   source reads as not exact (a compound condition) is kept, failing closed, and marked;
+- chest claim (CHEST-QUEST-BIND-1): a chest claim's `progress_write` binds to a track only when
+  `canary:quest-progress/<marker>` equals the track's source key byte for byte; its transition is
+  `oteryn:quest-transition/<marker>/chest` with one unguarded `SET` of the written value. A null
+  or out-of-bounds value binds nothing and the counts say why. Only a claim of the Canary chest data
+  binds (a CrystalServer-only chest writes a CrystalServer storage key). No marker is inferred;
 - completes: only where every mission of the quest reads one track, for a `SET` of that track to
   the greatest mission end value; any other quest's completion stays unlowered and says so.
 """
@@ -41,6 +46,7 @@ from pathlib import Path
 DEFINITIONS = 'content/quests/definitions/'
 OUTPUT = 'content/quests/missions/quest-state.json'
 MARKER = 'content/quests/missions/index.json'
+CHESTS = 'tools/content-schema/quest-authoring/samples/chests/claims.json'
 TOOL = 'tools/content-schema/quest-authoring/quest_state_lowering.py'
 SCHEMA = 'OTERYN_QUEST_STATE_LOWERING/v1'
 # QUESTSTATE0-RL-02 and -06, as `apps/game-server/src/quest/mod.rs`.
@@ -220,6 +226,40 @@ def lower_quest(definition, owned, mission_values):
             'transitions': sorted(transitions, key=lambda t: t['key'])}
 
 
+def chest_transitions(root, quests):
+    """Add the exact-match chest transitions to `quests`; the report of what bound and what did not."""
+    tracks = {t['source_key']: (q, t) for q in quests for t in q['tracks']}
+    bound, unbound, unmatched = [], [], 0
+    for claim in read(root, CHESTS)['claims']:
+        write = claim.get('progress_write')
+        if write is None or write['marker'].startswith('kv/') \
+                or not claim['identity']['key'].startswith('canary:reward-claim/'):
+            continue
+        match = tracks.get('canary:quest-progress/' + write['marker'])
+        if match is None:
+            unmatched += 1
+            continue
+        quest, track = match
+        if write['value'] is None:
+            unbound.append({'marker': write['marker'], 'reason': write['reason']})
+            continue
+        if not track['min'] <= write['value'] <= track['max']:
+            unbound.append({'marker': write['marker'], 'reason': f'value {write["value"]} is outside the track bounds [{track["min"]}, {track["max"]}]'})
+            continue
+        key = 'oteryn:quest-transition/' + write['marker'] + '/chest'
+        require(valid_key(key), f'transition key over the key rule: {key}')
+        quest['transitions'].append({
+            'key': key, 'quest': quest['quest'], 'completes': False,
+            'effects': [{'track': track['key'], 'from': {'op': 'ANY'}, 'from_exact': True,
+                         'effect': {'kind': 'SET', 'value': write['value']}}],
+            'requested_by': None,
+            'source': {'key': 'chest', 'owner': 'chest', 'script': write['source']['script'], 'servers': ['canary']}})
+        bound.append(write['marker'])
+    for quest in quests:
+        quest['transitions'].sort(key=lambda t: t['key'])
+    return {'bound': sorted(bound), 'unbound': sorted(unbound, key=lambda u: u['marker']), 'unmatched': unmatched}
+
+
 def validate(quests):
     """The QuestStateCatalogue::new rules, so the loader never meets a refused catalogue."""
     tracks, transition_keys = {}, set()
@@ -253,19 +293,21 @@ def expected(root):
     values = mission_values(records)
     quests = [lower_quest(d, owned, values) for d in records if (d.get('source_data') or {}).get('progress')]
     quests.sort(key=lambda q: q['quest'])
+    chests = chest_transitions(root, quests)
     validate(quests)
     transitions = [t for q in quests for t in q['transitions']]
     effects = [t['effects'][0]['effect']['kind'] for t in transitions]
     payload = {
         'schema': SCHEMA, 'classification': 'OTS_HYPOTHESIS_ONLY', 'family': 'Quest',
         'contract': 'docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md',
-        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (DEFINITIONS + 'index.json', *shards, TOOL)],
+        'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (DEFINITIONS + 'index.json', *shards, CHESTS, TOOL)],
         'counts': {
             'quests': len(quests), 'tracks': sum(len(q['tracks']) for q in quests), 'transitions': len(transitions),
             'effects': {kind: effects.count(kind) for kind in sorted(set(effects))},
             'inexact_from': sum(1 for t in transitions if not t['effects'][0]['from_exact']),
             'requested_by': sum(1 for t in transitions if t['requested_by']),
             'completes': sum(1 for t in transitions if t['completes']),
+            'chest_bindings': chests,
             'completion': {state: sum(1 for q in quests if q['completion'] == state) for state in sorted({q['completion'] for q in quests})},
         },
         'quests': quests,

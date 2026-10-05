@@ -1823,6 +1823,7 @@ fn reward_placement(
             count,
         }],
         achievement: None,
+        quest_transition: None,
     })
 }
 

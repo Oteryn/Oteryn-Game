@@ -136,7 +136,8 @@ def derive_definitions(packet, items, stack_problem):
                         'item': ref['key'], 'reason': problem})
             case = selected.get(source['identity']['key'])
             if case and pi == case['placement_index']:
-                if (semantic_digest(source) != case['source_claim_sha256']
+                # `progress_write` is chest-quest evidence added after the pinned digest; it is no reward semantics
+                if (semantic_digest({k: v for k, v in source.items() if k != 'progress_write'}) != case['source_claim_sha256']
                         or semantic_digest(items[case['item_identity']['key']]) != case['item_definition_sha256']):
                     raise ValueError('selected source/Item stack normalization inputs changed')
                 serialized_item_stacks(reward, items, stack_problem)

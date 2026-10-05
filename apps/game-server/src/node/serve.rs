@@ -539,6 +539,31 @@ async fn establish_custody(
     Err(BootError::SourceCustody("retained publication slots"))
 }
 
+/// CHEST-QUEST-BIND-1 (ARCH-QUEST-WIRING-PACKETS-1 §0.1): a chest placement's quest transition must
+/// be in the loaded quest catalogue. A key it lacks would record an obligation no session refresh
+/// can apply, so boot refuses it instead.
+pub(crate) fn check_chest_quest_transitions(
+    content: &crate::content::CanonicalReferencePlayableContent,
+    catalogue: &crate::durability::quest_state::quest::QuestStateCatalogue,
+) -> Result<(), BootError> {
+    let unbound = content
+        .definitions
+        .iter()
+        .filter_map(|definition| match &definition.kind {
+            crate::content::ReferenceDefinitionKind::RewardClaim(claim) => Some(claim),
+            _ => None,
+        })
+        .flat_map(|claim| &claim.placements)
+        .filter_map(|entry| entry.quest_transition.as_deref())
+        .any(|key| catalogue.transition(key).is_none());
+    if unbound {
+        return Err(BootError::ContentActivation(
+            "reward claim quest transition not in the quest catalogue",
+        ));
+    }
+    Ok(())
+}
+
 /// QUEST-CAT-BOOT-1 (ARCH-QUEST-WIRING-PACKETS-1 §1.1): the quest state catalogue `load`s for
 /// `content_revision` or refuses readiness; an empty or partial catalogue is no fallback.
 /// Boot passes the node's declared served revision, `readiness.content_revision` (D634; §1.2's
@@ -1232,6 +1257,7 @@ async fn boot_and_serve(
             "reward claim achievement not in the catalogue",
         ));
     }
+    check_chest_quest_transitions(&chest, &quest_catalogue)?;
     let mut channel_runtime = ChannelRuntimeV1::from_committed_assignment(
         material.world,
         material.channel,

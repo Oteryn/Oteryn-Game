@@ -21,6 +21,10 @@ placement rewards `items` only, no achievement. Rules:
   content/items. A claim is `ready` when every reward Item is materializable with a known stack
   class and fits it; otherwise it is `waiting_item_semantics` and the MINT fails closed on it
   (D82) until ITEM-SEM covers the Item.
+- A placement of a claim whose chest QUEST-STATE lowering bound to a track carries
+  `quest_transition`, the key of that chest transition in
+  content/quests/missions/quest-state.json (CHEST-QUEST-BIND-1). The lowering matches; this tool
+  only reads its constructed keys, so no binding is inferred here.
 - A reward that contradicts its Item's known stack facts is never guessed: it is listed in
   `source_checks` and the claim stays not ready.
 
@@ -43,6 +47,8 @@ ROOT = HERE.parents[2]
 PILOT_DIR = "tools/content-schema/quest-authoring/samples/chests/"
 CLAIMS_REL = PILOT_DIR + "claims.json"
 MANIFEST_REL = PILOT_DIR + "manifest.json"
+QUEST_STATE_REL = "content/quests/missions/quest-state.json"
+TRANSITION_PREFIX = "oteryn:quest-transition/"
 ITEMS_GLOB = "content/items/definitions/items-*.json"
 FAMILY = "RewardClaim"
 CONTENT_DIR = "content/interactions/reward_claims/"
@@ -265,8 +271,20 @@ def legacy_uid_checks(records: list) -> list[dict]:
     ]
 
 
+def chest_transitions() -> set[str]:
+    """The keys of the chest transitions the QuestState lowering constructed."""
+    return {
+        t["key"]
+        for quest in load_json(ROOT / QUEST_STATE_REL)["quests"]
+        for t in quest["transitions"]
+        if t["source"]["owner"] == "chest"
+    }
+
+
 def build_records(claims: list, manifest: dict, items: dict,
-                  charge_evidence: list | None = None) -> tuple[list, list]:
+                  charge_evidence: list | None = None,
+                  transitions: set | None = None) -> tuple[list, list]:
+    transitions = chest_transitions() if transitions is None else transitions
     charge_evidence = load_source_charge_evidence() if charge_evidence is None else charge_evidence
     bindings: dict[tuple, list] = {}
     for entry in manifest["entries"]:
@@ -282,6 +300,7 @@ def build_records(claims: list, manifest: dict, items: dict,
         marker = claim["identity"]["key"].split("reward-claim/", 1)[1].replace("/", ".")
         ready = True
         placements = []
+        transition = TRANSITION_PREFIX + claim["identity"]["key"].split("reward-claim/", 1)[1] + "/chest"
         for placement in claim["placements"]:
             position = placement["position"]
             xyz = (position["x"], position["y"], position["z"])
@@ -306,6 +325,7 @@ def build_records(claims: list, manifest: dict, items: dict,
             placements.append(
                 {
                     "appearance_tibia_id": tibia_id(placement["appearance"]),
+                    **({"quest_transition": transition} if transition in transitions else {}),
                     "reward": {"items": rewards},
                     "source_binding": {
                         "legacy_unique_ids": sorted(
@@ -447,6 +467,8 @@ def validate(records: list, items: dict, source_checks: list | None = None,
                     f"{key}: placement {where} is bound by another claim (D40)"
                 )
             bindings.add(where)
+            if "quest_transition" in placement and not str(placement["quest_transition"]).startswith(TRANSITION_PREFIX):
+                errors.append(f"{key}: quest_transition must start with {TRANSITION_PREFIX}")
             if (
                 not isinstance(placement["appearance_tibia_id"], int)
                 or placement["appearance_tibia_id"] < 1
@@ -523,6 +545,9 @@ def committed_errors() -> list[str]:
     errors += validate_variants(variants, ROOT, items, stack_problem)
     if index.get('variant_source_checks') != legacy_uid_checks(records) + stack_normalization_checks():
         errors.append('variant legacy UID diagnostics are missing or stale')
+    bound = {p["quest_transition"] for r in records for p in r["definition"]["placements"] if "quest_transition" in p}
+    if bound != chest_transitions():
+        errors.append("placement quest_transition keys differ from the chest transitions of quest-state.json")
     if len(records) != index["record_count"]:
         errors.append(
             f"index record_count {index['record_count']} != {len(records)} records"

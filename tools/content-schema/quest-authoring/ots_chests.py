@@ -180,6 +180,25 @@ def check_checkout(name, repo):
         sys.exit(f'{name}: checkout is at {head}, expected {SOURCES[name]["revision"]}')
 
 
+def script_writes(script):
+    """The storage write of each reward function of the shared script: shape -> (value, line) or a reason.
+
+    `playerAddItem` serves a chest without a `container`, `playerAddContainerItem` one with it. A shape
+    has a value only when its function holds exactly one `setStorageValue(params.storage, <integer>)`."""
+    writes, lines = {}, script.split('\n')
+    for shape, function in (('plain', 'playerAddItem'), ('container', 'playerAddContainerItem')):
+        start = next((i for i, text in enumerate(lines) if re.match(rf'local function {function}\(', text)), None)
+        end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith('end')), None) if start is not None else None
+        found = [(i + 1, m.group(1)) for i in range(start or 0, end or 0)
+                 for m in [re.search(r'player:setStorageValue\(params\.storage,\s*([^)]*)\)', lines[i])] if m]
+        if len(found) == 1 and re.fullmatch(r'-?\d+', found[0][1].strip()):
+            writes[shape] = {'value': int(found[0][1]), 'line': found[0][0]}
+        else:
+            writes[shape] = {'value': None, 'line': found[0][0] if found else 1,
+                             'reason': f'{function} has {len(found)} storage writes, not exactly one integer literal'}
+    return writes
+
+
 def read_server(name, repo):
     """Chest entries per position plus the per-uid text and achievement tables of the shared script."""
     pack = Path(repo) / SOURCES[name]['datapack']
@@ -188,6 +207,7 @@ def read_server(name, repo):
     extra = lua_tables.assignments(script, {'AttributeTable', 'achievementTable'})
     texts = {f['key']: lua_tables.as_python(f['value']) for f in extra['AttributeTable']['fields']}
     achievements = {f['key']: f['value'] for f in extra['achievementTable']['fields']}
+    writes = script_writes(script)
     entries, section = [], None
     for field in chests['fields']:
         value = lua_tables.as_python(field['value'])
@@ -201,7 +221,8 @@ def read_server(name, repo):
             entries.append({'server': name, 'uid': field['key'], 'line': field['line'], 'value': value,
                             'position': (position['x'], position['y'], position['z']) if position else None,
                             'label': labels[-1] if labels else None, 'section': section,
-                            'text': texts.get(field['key']), 'achievement': achievements.get(field['key'])})
+                            'text': texts.get(field['key']), 'achievement': achievements.get(field['key']),
+                            'write': writes['container' if value.get('container') else 'plain']})
     return entries
 
 
@@ -213,6 +234,25 @@ def marker(value):
     if isinstance(storage, dict) and storage['expr'] not in INVALID_MARKERS:
         return '/'.join(slug(part) for part in storage['expr'].split('.')[1:])
     return None
+
+
+def progress_write(claim_marker, members):
+    """What the shared script writes to the claim's storage key when the chest is claimed (§1.4).
+
+    The value stands only when every server entry of every placement writes the same integer;
+    otherwise it is null with the reason. A KV claim writes no storage key."""
+    if claim_marker.startswith('kv/'):
+        return None
+    writes = [(n, e['write']) for m in members for n, e in m[2].items()]
+    source = next(w for n, w in writes if n == members[0][1]['server'])
+    script = f'{SOURCES[members[0][1]["server"]]["datapack"]}/{SCRIPT}'
+    values = {w['value'] for _, w in writes}
+    result = {'marker': claim_marker, 'expression': members[0][1]['value']['storage']['expr'], 'value': source['value'],
+              'source': {'script': script, 'line': source['line']}}
+    if len(values) != 1 or source['value'] is None:
+        result['value'] = None
+        result['reason'] = source.get('reason') or 'the servers or placements write different values'
+    return result
 
 
 def items(pairs, server):
@@ -406,6 +446,9 @@ def build(repos, coverage):
                  'quest_link_basis': basis if quest else None, 'quest_candidate_from_section': candidate,
                  'claim': {'per': 'character', 'repeat': repeat([m[1] for m in members])},
                  'placements': [placement(m[1]) for m in members]}
+        write = progress_write(claim_marker, members)
+        if write:
+            claim['progress_write'] = write
         if timed:
             claim['source_divergence'] = ('The source data sets `time` in hours but the shared script only honours '
                                           '`timerStorage`, so both servers hand this reward out once. The wiki confirms '

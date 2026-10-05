@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 use crate::durability::quest_state::quest::loader::{load_embedded_quest_state, parse_quest_state};
 use crate::durability::quest_state::quest::{QuestRefusal, QuestStateCatalogue};
-use crate::node::serve::{BootError, load_quest_catalogue};
+use crate::node::serve::{BootError, check_chest_quest_transitions, load_quest_catalogue};
 
 type TestResult = Result<(), Box<dyn Error>>;
 
@@ -164,5 +164,95 @@ fn an_exact_transition_of_the_boot_catalogue_applies() -> TestResult {
         applied > 0,
         "no exact transition applies from the initial values"
     );
+    Ok(())
+}
+
+/// CHEST-QUEST-BIND-1 (§0.1, §1.5): the entry room's activated content with its one reward chest
+/// injected, as boot builds it, and that chest's placement key.
+fn entry_chest_content() -> Result<
+    (
+        crate::content::CanonicalReferencePlayableContent,
+        crate::content::PlacementKey,
+    ),
+    Box<dyn Error>,
+> {
+    use crate::interaction_chest_use::{entry_chest, with_entry_chest};
+    let mut bytes = [0x45_u8; 16];
+    bytes[6] = 0x75;
+    bytes[8] = 0x85;
+    let world = crate::foundation::WorldId::decode(&bytes)?;
+    let room =
+        crate::content::qualify_native_entry_room(world).map_err(|error| format!("{error:?}"))?;
+    let content = with_entry_chest(room.door()).map_err(|error| format!("{error:?}"))?;
+    let placement = crate::content::PlacementKey::new(entry_chest::PLACEMENT)
+        .map_err(|error| format!("{error:?}"))?;
+    Ok((content, placement))
+}
+
+/// A constructed chest transition of the committed document.
+fn document_chest_transition() -> Result<String, Box<dyn Error>> {
+    document_transitions()?
+        .iter()
+        .filter_map(|transition| transition["key"].as_str())
+        .find(|key| key.starts_with("oteryn:quest-transition/") && key.ends_with("/chest"))
+        .map(str::to_owned)
+        .ok_or_else(|| "no constructed chest transition in the document".into())
+}
+
+/// Bind `transition` to the entry chest's placement, as the generated reward claims bind the
+/// Beregar chests.
+fn bind_entry_chest(
+    content: &mut crate::content::CanonicalReferencePlayableContent,
+    transition: Option<String>,
+) -> TestResult {
+    use crate::content::ReferenceDefinitionKind;
+    for definition in &mut content.definitions {
+        if let ReferenceDefinitionKind::RewardClaim(claim) = &mut definition.kind {
+            for entry in &mut claim.placements {
+                entry.quest_transition = transition.clone();
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn the_entry_chest_stays_unbound_and_boots() -> TestResult {
+    let (catalogue, _) = boot_catalogue()?;
+    let (content, placement) = entry_chest_content()?;
+    let resolved = crate::interaction_chest_use::resolve_chest(&content, &placement)
+        .map_err(|error| format!("{error}"))?;
+    assert_eq!(resolved.quest_transition, None);
+    check_chest_quest_transitions(&content, &catalogue).map_err(|error| format!("{error:?}"))?;
+    Ok(())
+}
+
+#[test]
+fn a_bound_chest_resolves_its_transition_and_boots() -> TestResult {
+    let (catalogue, _) = boot_catalogue()?;
+    let key = document_chest_transition()?;
+    let (mut content, placement) = entry_chest_content()?;
+    bind_entry_chest(&mut content, Some(key.clone()))?;
+    let resolved = crate::interaction_chest_use::resolve_chest(&content, &placement)
+        .map_err(|error| format!("{error}"))?;
+    assert_eq!(resolved.quest_transition.as_deref(), Some(key.as_str()));
+    check_chest_quest_transitions(&content, &catalogue).map_err(|error| format!("{error:?}"))?;
+    Ok(())
+}
+
+#[test]
+fn a_chest_transition_the_catalogue_lacks_refuses_boot() -> TestResult {
+    let (catalogue, _) = boot_catalogue()?;
+    let (mut content, _) = entry_chest_content()?;
+    bind_entry_chest(
+        &mut content,
+        Some("oteryn:quest-transition/no-such-marker/chest".to_owned()),
+    )?;
+    assert!(matches!(
+        check_chest_quest_transitions(&content, &catalogue),
+        Err(BootError::ContentActivation(
+            "reward claim quest transition not in the quest catalogue"
+        ))
+    ));
     Ok(())
 }

@@ -376,6 +376,32 @@ def test_stackable_rune_charge_definition_keeps_piece_quantity():
 
 
 
+def test_a_placement_carries_only_the_transition_the_lowering_constructed() -> None:
+    claim = pilot_claim("quest/x/a", "canary:item/3031", 1)
+    key = "oteryn:quest-transition/quest/x/a/chest"
+    bound, _ = rca.build_records([claim], manifest_for(claim), items(), [], {key})
+    assert [p["quest_transition"] for p in bound[0]["definition"]["placements"]] == [key]
+    assert rca.validate(bound, items(), None, [claim], []) == []
+    for others in (set(), {"oteryn:quest-transition/quest/x/b/chest"}):
+        plain, _ = rca.build_records([claim], manifest_for(claim), items(), [], others)
+        assert "quest_transition" not in plain[0]["definition"]["placements"][0]
+    bound[0]["definition"]["placements"][0]["quest_transition"] = "oteryn:quest-progress/quest/x/a"
+    assert any("quest_transition" in e for e in rca.validate(bound, items(), None, [claim], []))
+
+
+def test_the_committed_content_binds_exactly_the_two_chest_transitions() -> None:
+    records = [r["definition"] for p in json.loads((rca.ROOT / rca.INDEX_PATH).read_text())["shards"]
+               for r in json.loads((rca.ROOT / p).read_text())["records"]]
+    bound = {r["identity"]["key"]: {p["quest_transition"] for p in r["placements"]}
+             for r in records if any("quest_transition" in p for p in r["placements"])}
+    assert bound == {
+        "oteryn:reward-claim.quest.u7_8.the_shattered_isles.dragahs_spellbook":
+            {"oteryn:quest-transition/quest/u7_8/the_shattered_isles/dragahs_spellbook/chest"},
+        "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots":
+            {"oteryn:quest-transition/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots/chest"},
+    }
+
+
 def test_committed_content_is_valid() -> None:
     assert rca.committed_errors() == []
     index = json.loads((rca.ROOT / rca.INDEX_PATH).read_text(encoding="utf-8"))

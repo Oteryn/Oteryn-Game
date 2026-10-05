@@ -107,6 +107,61 @@ class QuestStateLoweringTests(unittest.TestCase):
         with self.assertRaises(tool.LoweringError):
             lower([definition('x', [progress('canary:quest-progress/' + 'a' * 120, [])])])
 
+    def chest_run(self, claims, tracks):
+        import tempfile
+        quest = {'quest': 'oteryn:quest.x', 'tracks': tracks, 'transitions': []}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / tool.CHESTS
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps({'claims': claims}))
+            return quest, tool.chest_transitions(Path(directory), [quest])
+
+    @staticmethod
+    def claim(marker, value, reason=None, namespace='canary'):
+        write = {'marker': marker, 'expression': 'Storage.X', 'value': value, 'source': {'script': 's.lua', 'line': 1}}
+        if reason:
+            write['reason'] = reason
+        return {'identity': {'key': f'{namespace}:reward-claim/{marker}'}, 'progress_write': write}
+
+    @staticmethod
+    def track(source_key, low=0, high=1):
+        return {'key': tool.track_key(source_key), 'quest': 'oteryn:quest.x', 'initial': 0, 'min': low, 'max': high,
+                'bounds_basis': 'observed_values', 'source_key': source_key}
+
+    def test_a_chest_binds_only_on_a_byte_exact_canary_track_and_an_in_bounds_value(self):
+        quest, report = self.chest_run([self.claim('quest/x/a', 1)], [self.track('canary:quest-progress/quest/x/a')])
+        self.assertEqual(report['bound'], ['quest/x/a'])
+        (transition,) = quest['transitions']
+        self.assertEqual(transition['key'], 'oteryn:quest-transition/quest/x/a/chest')
+        self.assertEqual(transition['effects'], [{'track': 'oteryn:quest-progress/quest/x/a', 'from': {'op': 'ANY'},
+                                                  'from_exact': True, 'effect': {'kind': 'SET', 'value': 1}}])
+        self.assertEqual((transition['completes'], transition['requested_by']), (False, None))
+        self.assertEqual(transition['source'], {'key': 'chest', 'owner': 'chest', 'script': 's.lua', 'servers': ['canary']})
+        for marker, source in (('quest/x/A', 'canary:quest-progress/quest/x/a'), ('kv/x', 'canary:quest-progress/kv/x'),
+                               ('quest/x/a', 'crystalserver:quest-progress/quest/x/a')):
+            quest, report = self.chest_run([self.claim(marker, 1)], [self.track(source)])
+            self.assertEqual((report['bound'], quest['transitions']), ([], []), (marker, source))
+        quest, report = self.chest_run([self.claim('quest/x/a', 1, namespace='crystalserver')],
+                                       [self.track('canary:quest-progress/quest/x/a')])
+        self.assertEqual((report['bound'], report['unmatched']), ([], 0))
+
+    def test_a_null_or_out_of_bounds_value_binds_nothing_and_says_why(self):
+        track = [self.track('canary:quest-progress/quest/x/a')]
+        quest, report = self.chest_run([self.claim('quest/x/a', None, reason='two writes')], track)
+        self.assertEqual((report['bound'], report['unbound'], quest['transitions']),
+                         ([], [{'marker': 'quest/x/a', 'reason': 'two writes'}], []))
+        quest, report = self.chest_run([self.claim('quest/x/a', 2)], track)
+        self.assertEqual((report['bound'], quest['transitions']), ([], []))
+        self.assertIn('outside the track bounds [0, 1]', report['unbound'][0]['reason'])
+
+    def test_the_committed_lowering_binds_exactly_the_two_canary_chests(self):
+        payload = json.loads(tool.expected(ROOT)[tool.OUTPUT])
+        self.assertEqual(payload['counts']['chest_bindings']['bound'], [
+            'quest/u7_8/the_shattered_isles/dragahs_spellbook', 'quest/u8_4/the_hidden_city_of_beregar/firewalker_boots'])
+        self.assertEqual(payload['counts']['chest_bindings']['unbound'], [])
+        chest = [t['key'] for q in payload['quests'] for t in q['transitions'] if t['source']['owner'] == 'chest']
+        self.assertEqual(len(chest), 2)
+
     def test_committed_lowering_is_current_and_has_no_source_store_key(self):
         files = tool.expected(ROOT)
         for relative, text in files.items():

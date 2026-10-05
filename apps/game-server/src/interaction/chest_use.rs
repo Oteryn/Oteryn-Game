@@ -211,8 +211,8 @@ pub(crate) struct ResolvedChest {
     /// That placement's `oteryn:achievement/<slug>` key, if the chest grants one.
     pub(crate) achievement: Option<String>,
     /// The quest transition the chest requests (QUEST-STATE-0 §5.4), recorded as an obligation
-    /// with the claim. Content declares none until QUEST-LOWER-1 lowers chest bindings, so every
-    /// chest has none and its claim is unchanged.
+    /// with the claim. Only a placement the lowering bound (CHEST-QUEST-BIND-1) carries one; every
+    /// other chest has none and its claim is unchanged.
     pub(crate) quest_transition: Option<String>,
 }
 
@@ -265,7 +265,7 @@ pub(crate) fn resolve_chest(
         reward_item: durable_ref("Item", &reward.item),
         quantity: reward.count,
         achievement: entry.achievement.clone(),
-        quest_transition: None,
+        quest_transition: entry.quest_transition.clone(),
     })
 }
 
@@ -470,6 +470,7 @@ pub(crate) fn with_entry_chest(
                     count: entry_chest::REWARD_COUNT,
                 }],
                 achievement: None,
+                quest_transition: None,
             }],
         }),
         client_projection: ClientProjectionClass::ServerOnly,
