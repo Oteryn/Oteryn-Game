@@ -141,3 +141,108 @@ context_budget:
   usage_percent: null
   pressure_state: ECONOMY
 ```
+
+
+## Continuation handoff — 2026-10-05 22:28 CEST
+
+This section is a repository checkpoint for the next Player Swarm agent. It records read-only audit
+and local prototype evidence produced after the KAN-35A implementation commit. It does **not**
+expand D746 ownership and does not publish any `crates/session/**` or `tools/dev-client/**`
+prototype changes.
+
+### KAN-35A / PR #1835
+
+- Published branch before this docs-only checkpoint:
+  `31bd5fbd1ceec1710d4418ccb3c2fcc1baf3dac9`.
+- Protected main observed at handoff:
+  `fc3db9abfb4ae05c13b0264752cfbbca13a276e6`.
+- Exact-head Merge Gate on the published implementation passed scope, routing, dependency review,
+  governance, Rust policy/metadata, changed-crate Clippy/unit tests and supply-chain. The only
+  substantive red child was World-bundle pin validation.
+- KAN-35A code was independently composed locally with current main and remained green for locked
+  metadata, strict `oteryn-player-bots` Clippy and 7/7 unit tests.
+- Do not churn #1835 while another PR owns the shared World pin. After the pin/session owner
+  releases, perform one final current-main merge-up, recompute the compiler-owned World
+  `inputs_digest`, run exact-head CI, then FREEZE.
+- Intermediate World digest calculated against main before N4-1 integration:
+  `e928d9185e80f5419bf5d814aea097109493040a59e2e6ec953f64c655370dc2`.
+  Do **not** publish that value after main moves; recompute on the final composition.
+
+### Current shared blockers / control-plane facts
+
+- N8-1 / #1824 is merged.
+- N4-1 / #1843 is still the remaining session/dev-client seam owner for KAN-35B and also touches
+  the shared World pin. KAN-35B must not preempt those paths.
+- SPAWN-ADMIT-1 / #1845 and G4 pins-exclude / #1849 are merged.
+- Their composition exposed a protected-main G4 CI regression:
+  `.github/workflows/g4-canonical-worldproject-package-seed.yml` still downloads Canary
+  `opentibiabr/canary@47dfd51f.../data-otservbr-global/world/otservbr-monster.xml`, while
+  committed `convert_spawns.py` now pins
+  `zimbadev/crystalserver@00ce02a57ca5a12e48f32a3476e37471167e4c3f/data-global/world/world-monster.xml`
+  with SHA256
+  `a3188bc1275fbf5bac1ff5c06cc26b1d2999e51c088a7ffa464c40a1aff81570`.
+- Independent exact-head proof on #1845: the exact CrystalServer XML passes
+  `convert_spawns.py --check`; no SPAWN-ADMIT content change is required.
+- The immediate G4 donor repair and the recommended cheap composition guard are recorded in #1622
+  under the Player Swarm escalation thread. Do not weaken `--check` or change converter pins.
+
+### KAN-35B local prototype evidence — NOT PUBLISHED
+
+A local scratch prototype was built only to de-risk the post-N4 allocation. It was never committed
+to GitHub because D746 explicitly does not own `crates/session/**` or `tools/dev-client/**`.
+
+Prototype scope:
+- add capability 17 `ATTACK_V1` to `CLIENT_SUPPORTED_CAPABILITIES`;
+- route command 11 `ATTACK_TARGET_INTENT`, command 12 `FIGHT_MODES_INTENT`, and domain 10
+  `ACTOR_COMBAT_STATE`;
+- add typed domain-10 snapshot/store/revision plus `SessionEvent::ActorCombatState`;
+- add `Session::attack_target(Option<&EntityRef>)` and `Session::fight_modes(&FightModes)`;
+- add matching `DevClientSession` getters/wrappers and public re-exports;
+- return at `CommandResult`; domain-10 delta is optional/pushed and must **not** be synchronously
+  required after every attack command;
+- only `AttackIntentDisposition::Rejected` pairs with FND `CommandStatus::Rejected`; semantic
+  dispositions such as target-not-visible remain accepted command results.
+
+Important Rust/API finding:
+- `AttackWireError` and `ChatWireError` are aliases of the same shared wire-error type.
+  A second `impl From<AttackWireError> for SessionError` conflicts with the existing chat
+  conversion. Attack codec calls must use explicit `.map_err(SessionError::Attack)` so attack
+  failures retain the correct public error classification.
+
+Local prototype qualification against the then-current main:
+- `cargo +1.94.0 check --locked -p oteryn-dev-client`: PASS
+- `cargo +1.94.0 test --locked -p oteryn-session --quiet`: PASS, 58/58
+- `cargo +1.94.0 test --locked -p oteryn-dev-client --quiet`: PASS, 34/34
+- `cargo +1.94.0 fmt --package oteryn-session --package oteryn-dev-client -- --check`: PASS
+- `cargo +1.94.0 clippy --locked -p oteryn-session -p oteryn-dev-client --all-targets --quiet -- -D warnings`: PASS
+
+The session test helper needed one expected-capability update because the default advertised set
+becomes `[4, 6, 7, 13, 17]`; this is test-fixture maintenance, not a runtime defect.
+
+### Other Player Swarm packets refined during this continuation
+
+- KAN-36A: deterministic behavior must consume explicit caller-supplied
+  `behavior_seed: [u8; 32]` + `DecisionOccurrenceId`; do not derive occurrence IDs from bot
+  names, wall clock or mutable runtime state.
+- KAN-37A: canonical coverage universe is fail-closed. `definition_ready` never implies
+  `EXERCISEABLE`; only an exact-build runtime/readiness adapter may promote a target. Current
+  Quest baseline: 352 identities, with 68 explicit binding blockers, 179 implementation blockers,
+  and 105 remaining UNKNOWN from content metadata alone.
+- KAN-38: dependency chain is still
+  `CHAT-1b-2b -> CHAT-2 -> PARTY-1 -> PVP-1/PVP-RT-1 -> PVP-WIRE-1 -> session/dev-client -> KAN-38`.
+  Capability 7 is not yet in production-offered capabilities.
+- KAN-39A: reuse repository canonical JSON bytes
+  `sort_keys=True, separators=(",", ":"), UTF-8 + LF` and lowercase SHA256 sidecar; retain exact
+  opaque build/protocol/World-bundle/profile provenance.
+- KAN-40: N8 is integrated; N4-1 exists but is not integrated; full native-client cohort still
+  requires the remaining ADR-0020 production-entry work (notably N6/N7).
+
+### Next-agent order
+
+1. Fresh-read #1622, #1835, #1843 and protected main before any write.
+2. If the G4 donor repair is not merged, keep #1835 stable and work only on allocated/disjoint work.
+3. If #1843 is merged and the shared World pin is released, finish KAN-35A with one merge-up +
+   tooling-generated pin refresh + exact-head CI + FREEZE.
+4. Only after explicit KAN-35B allocation, reproduce the local prototype as a clean repository
+   patch; do not copy unpublished local bytes blindly.
+5. Continue KAN-36/37/39 only when their own allocations exist; keep Jira writes coordinator-only.
