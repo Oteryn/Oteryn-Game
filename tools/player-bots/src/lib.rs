@@ -177,7 +177,10 @@ impl BotMetrics {
     fn record_command(&mut self, class: BotCommandClass, elapsed: Duration, success: bool) {
         let commands = self.commands.entry(class).or_default();
         *commands = commands.saturating_add(1);
-        self.command_latency.entry(class).or_default().record(elapsed);
+        self.command_latency
+            .entry(class)
+            .or_default()
+            .record(elapsed);
         if !success {
             let failures = self.command_failures.entry(class).or_default();
             *failures = failures.saturating_add(1);
@@ -567,9 +570,7 @@ impl BotRun {
     }
 }
 
-async fn collect_reports(
-    handles: Vec<((u64, String), JoinHandle<BotReport>)>,
-) -> Vec<BotReport> {
+async fn collect_reports(handles: Vec<((u64, String), JoinHandle<BotReport>)>) -> Vec<BotReport> {
     let mut reports = Vec::with_capacity(handles.len());
     for ((bot_id, profile), handle) in handles {
         match handle.await {
@@ -623,10 +624,7 @@ mod tests {
             mut context: BotRunContext,
         ) -> BotFuture<'a> {
             Box::pin(async move {
-                let active = self
-                    .active
-                    .fetch_add(1, Ordering::SeqCst)
-                    .saturating_add(1);
+                let active = self.active.fetch_add(1, Ordering::SeqCst).saturating_add(1);
                 self.maximum_active.fetch_max(active, Ordering::SeqCst);
 
                 if let Some(barrier) = &self.barrier {
@@ -709,9 +707,11 @@ mod tests {
             let run = supervisor.start(specs(20)?, BotScenario::default(), config)?;
             let reports = run.finish().await;
             assert_eq!(reports.len(), 20);
-            assert!(reports
-                .iter()
-                .all(|report| report.terminal == BotTerminal::Completed));
+            assert!(
+                reports
+                    .iter()
+                    .all(|report| report.terminal == BotTerminal::Completed)
+            );
             assert_eq!(runner.maximum_active.load(Ordering::SeqCst), 20);
             assert_eq!(runner.finished.load(Ordering::SeqCst), 20);
             Ok::<(), Box<dyn Error>>(())
@@ -738,9 +738,7 @@ mod tests {
                 .await;
             let failures = reports
                 .iter()
-                .filter(|report| {
-                    report.terminal == BotTerminal::Failed(BotFailureKind::Command)
-                })
+                .filter(|report| report.terminal == BotTerminal::Failed(BotFailureKind::Command))
                 .count();
             let successes = reports
                 .iter()
@@ -771,9 +769,11 @@ mod tests {
                 .start(specs(20)?, BotScenario::default(), config)?
                 .shutdown()
                 .await;
-            assert!(reports
-                .iter()
-                .all(|report| report.terminal == BotTerminal::ShutdownRequested));
+            assert!(
+                reports
+                    .iter()
+                    .all(|report| report.terminal == BotTerminal::ShutdownRequested)
+            );
             assert_eq!(runner.finished.load(Ordering::SeqCst), 20);
             assert_eq!(runner.active.load(Ordering::SeqCst), 0);
             Ok::<(), Box<dyn Error>>(())
@@ -813,7 +813,9 @@ mod tests {
                 Duration::from_millis(25),
             )?;
             assert_eq!(
-                supervisor.start(vec![first, second], BotScenario::default(), config).err(),
+                supervisor
+                    .start(vec![first, second], BotScenario::default(), config)
+                    .err(),
                 Some(SupervisorError::DuplicateBotId(1))
             );
             assert_eq!(runner.active.load(Ordering::SeqCst), 0);
