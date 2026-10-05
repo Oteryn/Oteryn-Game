@@ -263,7 +263,7 @@ fn world_reward_claims_the_palette_appearance_id_follows_the_key_form() {
     assert_eq!(appearance("oteryn:item.custom.chest"), None);
     assert_eq!(appearance("oteryn:item.tibia.i"), None);
     assert_eq!(appearance("oteryn:item.tibia.i17x"), None);
-    assert_eq!(appearance("oteryn:item.tibia.i70000"), None);
+    assert_eq!(appearance("oteryn:terrain.tibia.i70000"), None);
     assert_eq!(appearance("oteryn:creature.tibia.i5"), None);
 }
 

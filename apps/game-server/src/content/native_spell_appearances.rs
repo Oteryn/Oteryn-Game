@@ -909,7 +909,7 @@ mod bounded_item_appearance_tests {
         }
         assert!(
             registry
-                .for_item("oteryn:item.tibia.i1", "definition-r1")
+                .for_item("oteryn:item.tibia.i1740", "definition-r1")
                 .is_none()
         );
         let doc: serde_json::Value = serde_json::from_slice(bytes).unwrap();

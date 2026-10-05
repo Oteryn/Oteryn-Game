@@ -37,22 +37,22 @@ class RawEvidenceTests(unittest.TestCase):
             )
         )
 
-    def test_actual_parent_all_thirteen_batches_are_preserved(self):
+    def test_actual_parent_all_seventeen_batches_are_preserved(self):
         document = json.loads(
             (ROOT.parents[2] / "content/world/provenance/imports.json").read_bytes()
         )
         document["batches"] = [
             b for b in document["batches"] if b["batch_id"] != m.BATCH_ID
         ]
-        self.assertEqual(len(document["batches"]), 13)
+        self.assertEqual(len(document["batches"]), 17)
         self.assertEqual(
-            sum(len(b["reimport_states"]) for b in document["batches"]), 104
+            sum(len(b["reimport_states"]) for b in document["batches"]), 108
         )
         old = m.canonical(document)
         merged = m.append_batch(document, self.batch)
         self.assertEqual(m.canonical(document), old)
-        self.assertEqual(len(merged["batches"]), 14)
-        self.assertEqual(sum(len(b["reimport_states"]) for b in merged["batches"]), 400)
+        self.assertEqual(len(merged["batches"]), 18)
+        self.assertEqual(sum(len(b["reimport_states"]) for b in merged["batches"]), 404)
         retained = {b["batch_id"]: b for b in merged["batches"]}
         self.assertTrue(
             all(

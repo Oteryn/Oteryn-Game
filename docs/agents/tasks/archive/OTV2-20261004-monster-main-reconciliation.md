@@ -8,7 +8,7 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/monster-source-mechanics-seven-20261004
-base_sha: 7cc0e758e18d3372a799a17c23bc9a03b22c2050
+base_sha: d98968d1134eef7bac863d8b8a00611fc3e8f15d
 pr: 1807
 owner: root
 execution_policy: continuous_progress
@@ -22,6 +22,7 @@ owned_paths:
   - tools/agents/qualify_monster_wiki_fields.py
   - tools/agents/tests/test_qualify_monster_wiki_fields.py
   - tools/content-schema/
+  - tools/content-migration/
   - tools/monster-lab/
   - docs/agents/evidence/monster-final-seven-20261004/
   - docs/agents/tasks/archive/OTV2-20261004-monster-main-reconciliation.md
@@ -56,10 +57,10 @@ No shipping activation or production mutation was performed.
 
 ## Validation
 
-Library: 2349 passed / 0 failed / 24 ignored. Actual appearance: 6 passed.
-Actual native-manifest qualification: 1 passed. Herald PostgreSQL: 1 passed.
+Library: 2370 passed / 0 failed / 24 ignored. Actual appearance: 6 passed.
+Actual native-manifest qualification: 1 passed. Herald PostgreSQL: historical 1 passed at `e82070f81028c79e9bc8d3a8e57ac29e78379122`; not rerun after this merge.
 Native capture regressions: 12 passed across callback, summon and death owners.
-Repository package integration: 3 passed. Full test-target compilation passed.
+Repository package integration: historical 3 passed; not rerun on this head. Full test-target compilation passed.
 Strict all-target Clippy and final Rust formatting: pass.
 `python tools/agents/validate_governance.py`: pass.
 `python -m unittest discover -s tools/agents/tests`: pass (59 tests).
@@ -71,11 +72,15 @@ Evidence: [final evidence](../../evidence/monster-final-seven-20261004/final-sta
 ## Coordination and publication
 
 Normal PR #1807: https://github.com/Oteryn/Oteryn-Game/pull/1807.
-This archive move is its final metadata authoring step. Source/content bytes
-remain identical to the executed code head e82070f81028c79e9bc8d3a8e57ac29e78379122.
+This archive move is its final metadata authoring step. Runtime implementation and content remain qualified at code head
+7a3711a95ce2f2be7fd38567998d86672a0b01f0; the successor updates two
+test fixtures and derived migration/validation metadata. Repaired fixtures
+are verified separately before final publication.
 The PR is not merged or enqueued by this task. Pending integration bindings and
 accepted local policies are explicitly listed in
 [decisions for #162](../../evidence/monster-final-seven-20261004/final-status/decisions-162.md).
 Source-map relocation, Lord Retro permanent Character wardrobe, full library
 activation at the existing Channel cadence, Herald portal binding and old-state
 migration remain separate work. No claim of Global parity or live execution.
+
+Post-merge execution binds main `d98968d1134eef7bac863d8b8a00611fc3e8f15d` and code `7a3711a95ce2f2be7fd38567998d86672a0b01f0`: 2370 library, 19 native/appearance/capture tests, strict all-target Clippy PASS. PostgreSQL history remains explicitly qualified at its original boundary.

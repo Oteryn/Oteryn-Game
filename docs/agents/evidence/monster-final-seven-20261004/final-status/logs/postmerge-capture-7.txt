@@ -1,0 +1,7 @@
+Actual executed code head: 7a3711a95ce2f2be7fd38567998d86672a0b01f0
+Binary SHA256: d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059
+Original exact log SHA256: b094c6dbddf7aca811ca1bbe6b28eb8859be7b8588a7ed4655a26d054c8e647e
+running 2 tests
+test monster_combat_lane::source_summon_composition_tests::captured_defense_summon_registers_two_source_children_and_exact_live_health ... ok
+test monster_combat_lane::source_summon_composition_tests::captured_source_summon_creates_current_child_schedule_and_inherits_actual_parent_target ... ok
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 2392 filtered out; finished in 37.24s

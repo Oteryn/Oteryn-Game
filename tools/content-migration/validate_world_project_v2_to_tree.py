@@ -29,7 +29,7 @@ CREATURE_FAMILY_NODES = {
 NPC_COUNT = 1110
 NPC_BINDING_COUNT = 2376
 # Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 E1-E5).
-ENCOUNTER_COUNT = 104
+ENCOUNTER_COUNT = 108
 DOCUMENT_COUNT = 1609
 DIALOGUE_COUNT = 694
 # Charm is a static family with no legacy source (tools/content-schema/charm-authoring).
@@ -405,7 +405,7 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
 def creature_family_counts(reference: Any) -> dict[str, int]:
     counts = {family: sum(row['identity']['family'] == family for row in reference['records'])
               for family in CREATURE_FAMILY_NODES}
-    require(counts['Creature'] == 1763, 'LEGACY_CREATURE_COUNT')
+    require(counts['Creature'] == 1863, 'LEGACY_CREATURE_COUNT')
     return counts
 
 
@@ -645,14 +645,14 @@ def main() -> int:
     if quest_families:
         require("Quest" in project["migrated_families"] and "Quest" not in project["next_population_families"], "QUEST_PROJECT_REGISTRATION")
         require(set(quest_paths).issubset({row["path"] for row in manifest["managed_files"]}), "QUEST_MANAGED_FILES")
-    require(lock["family_counts"] == {"Item": 34033, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
+    require(lock["family_counts"] == {"Item": 34043, "Mount": 252, **creature_family_counts(reference), "NPC": NPC_COUNT,
                                        "Encounter": ENCOUNTER_COUNT, "Dialogue": DIALOGUE_COUNT, "Document": DOCUMENT_COUNT, **SERVICE_FAMILY_COUNTS,
                                        "Charm": CHARM_COUNT, "Proficiency": PROFICIENCY_COUNT,
                                        "RewardClaim": REWARD_CLAIM_COUNT, "StarterKit": STARTER_KIT_COUNT,
                                        **{family: value["records"] for family, value in quest_families.items()}},
             "LOCK_COUNTS")
     require(lock["source_binding_counts"]["NPC"] == NPC_BINDING_COUNT, "LOCK_NPC_BINDING_COUNT")
-    require(item_index["record_count"] == 34033 and len(item_index["shards"]) == 69, "ITEM_INDEX")
+    require(item_index["record_count"] == 34043 and len(item_index["shards"]) == 69, "ITEM_INDEX")
     require(mount_index["record_count"] == 252 and len(mount_index["shards"]) == 1, "MOUNT_INDEX")
 
     migrated_items: list[Any] = []
@@ -680,7 +680,7 @@ def main() -> int:
         expected_start = payload["shard"]["end"] + 1
 
     legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
-    require(migrated_items == legacy_items and expected_start == 34033, "ITEM_DEFINITION_ROUNDTRIP")
+    require(migrated_items == legacy_items and expected_start == 34043, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")
     mount_payload = load(ROOT / mount_index["shards"][0])
@@ -712,7 +712,7 @@ def main() -> int:
     require(canonical_sorted(item_bindings) == canonical_sorted(legacy_item_bindings), "ITEM_BINDING_ROUNDTRIP")
     require(canonical_sorted(mount_bindings) == canonical_sorted(legacy_mount_bindings), "MOUNT_BINDING_ROUNDTRIP")
 
-    require(len({target_id(row["identity"]) for row in migrated_items}) == 34033, "ITEM_IDENTITY_UNIQUENESS")
+    require(len({target_id(row["identity"]) for row in migrated_items}) == 34043, "ITEM_IDENTITY_UNIQUENESS")
     require(len({
         ("Mount", row["identity"]["key"], row["identity"]["revision"])
         for row in migrated_mounts
@@ -803,7 +803,7 @@ def main() -> int:
         starter_kit_keys |= {(row["definition"]["template"], row["definition"]["identity"]["key"]) for row in shard["records"]}
     require(len(starter_kit_keys) == STARTER_KIT_COUNT, "STARTER_KIT_IDENTITY_UNIQUENESS")
     print(
-        "PASS items=34033 mounts=252 item_editors=165 mount_editors=252 item_bindings=165 mount_bindings=252 "
+        "PASS items=34043 mounts=252 item_editors=165 mount_editors=252 item_bindings=476 mount_bindings=252 "
         f"item_authoring={authoring_count} taxonomy={taxonomy_count} relations={relation_count} provenance_facts={fact_count} "
         f"creature_records={creature_records} creature_profiles={creature_profiles} creature_bindings={creature_bindings} "
         f"npc_records={npc_records} npc_bindings={npc_bindings} service_records={service_records} dialogue_records={dialogue_records} "

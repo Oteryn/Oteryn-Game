@@ -1,8 +1,7 @@
 {
   "status": "PASS",
   "executed_tests": 12,
-  "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0",
-  "binary_sha256": "d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059",
+  "code_head": "e82070f81028c79e9bc8d3a8e57ac29e78379122",
   "results": [
     {
       "filter": "bone_phase_registry::shared_hp_actual_source_tests::",
@@ -15,9 +14,8 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "43bb110d742f4d80e1b6a01446bbbf995ce28bb72882345a4a09098ecb95cc37",
-      "summary": "logs/postmerge-capture-1.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "original_log_sha256": "5df98b97a5ffc93e5c2bebe21dd9977ca8e4dafb91fe33db65b6679468f23154",
+      "summary": "logs/capture-1-bone_phase_registry--shared_hp_actual_source_tests--.txt"
     },
     {
       "filter": "creature_area_heal::tests::actual_corrected_native_world",
@@ -30,9 +28,8 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "72ecf3bacac11316415f87a0792f063da426e84aa00335a10bfc3a337c38e625",
-      "summary": "logs/postmerge-capture-2.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "original_log_sha256": "e844e06d65246a11a7e7a4cc7c6d96f8723301deb0074cb3967dcd58dbdf506c",
+      "summary": "logs/capture-2-creature_area_heal--tests--actual_corrected_native_world.txt"
     },
     {
       "filter": "crystal_death_composition::",
@@ -45,9 +42,8 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "3155542432b13bcc4ffd578ff3afa3db3f96a64708cccb75f269bfab2e51b2d9",
-      "summary": "logs/postmerge-capture-3.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "original_log_sha256": "a6a409df44059a2c311c16c5ed03e4e4cf787fbf40a5e4f9d5dea3b5a8bc2466",
+      "summary": "logs/capture-3-crystal_death_composition--.txt"
     },
     {
       "filter": "monster_combat_lane::bone_map_admission_actual_tests::",
@@ -60,9 +56,8 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "bd52cb73a2be484d50f6f8ec5d8ac038886ba83629d8fa877df35e5f2d30d4ce",
-      "summary": "logs/postmerge-capture-4.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "original_log_sha256": "fdee55946bbeaeefe7df90bb338af19eb8e354f3463d319cf95c4d74906e33d7",
+      "summary": "logs/capture-4-monster_combat_lane--bone_map_admission_actual_tests--.txt"
     },
     {
       "filter": "monster_combat_lane::defense_composition_tests::",
@@ -75,9 +70,8 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "89738962a00c829e5810fdd7597c7bb5dd2ed4e88695a87598557d4d3f137a1b",
-      "summary": "logs/postmerge-capture-5.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "original_log_sha256": "e1fa4bb28e53400317b77bfc820176d75e8cf70a542a722af7e6922682d11a8d",
+      "summary": "logs/capture-5-monster_combat_lane--defense_composition_tests--.txt"
     },
     {
       "filter": "monster_combat_lane::pending_summon_failure_regression::",
@@ -90,9 +84,8 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "cfc16cd86a2452fe8239b6de84ba3d5208eed1e62531a3feadd2ff1490e3e2bf",
-      "summary": "logs/postmerge-capture-6.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "original_log_sha256": "020b8d3edc2a53ff2b6287f4318c12194b21dae32e293bd95e9e88b32ea27713",
+      "summary": "logs/capture-6-monster_combat_lane--pending_summon_failure_regression--.txt"
     },
     {
       "filter": "monster_combat_lane::source_summon_composition_tests::",
@@ -105,9 +98,8 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "b094c6dbddf7aca811ca1bbe6b28eb8859be7b8588a7ed4655a26d054c8e647e",
-      "summary": "logs/postmerge-capture-7.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "original_log_sha256": "b6ce01c62406b62bd71ea6fc6778c14c131cce90f63fb2157ff231809ef533d0",
+      "summary": "logs/capture-7-monster_combat_lane--source_summon_composition_tests--.txt"
     },
     {
       "filter": "monster_summon::",
@@ -120,9 +112,8 @@
           "ignored": 0
         }
       ],
-      "original_log_sha256": "14d095bf0434834048dde7f602ed08bc773b228bd752921b6d335c4c4504143a",
-      "summary": "logs/postmerge-capture-8.txt",
-      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+      "original_log_sha256": "a96fb73d3587ac6418401cc4a381974e92e97131f006efadde4e47c6892304de",
+      "summary": "logs/capture-8-monster_summon--.txt"
     }
   ]
 }

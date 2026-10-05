@@ -1,0 +1,11 @@
+{
+  "status": "PASS_METADATA_REFRESH_ONLY",
+  "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0",
+  "main_head": "d98968d1134eef7bac863d8b8a00611fc3e8f15d",
+  "binary_sha256": "d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059",
+  "manifest_sha256": "117782c12f9309a90e41a72f9b13611771b62a71f6e7348a238824a52227fa34",
+  "library": 2370,
+  "native_appearance_capture": 19,
+  "postgres_current_claim": false,
+  "strict_clippy_log_sha256": "f24459e7a373b5a204ebb49ea70b547077f053e0988623dfa120630744324e8c"
+}

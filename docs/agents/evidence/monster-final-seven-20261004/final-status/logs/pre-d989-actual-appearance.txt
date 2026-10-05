@@ -1,6 +1,5 @@
-Actual executed code head: 7a3711a95ce2f2be7fd38567998d86672a0b01f0
-Binary SHA256: d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059
-Original exact log SHA256: f820d55a78a67a771af86016a663f5b37d38498e4eb328c080523f4604eaefde
+Original log SHA256: d65b08cda7802228dffb4a279374fc7f1dc5eaeb0a5854910fc448e50079943b
+
 running 6 tests
 test creature_damage_spell::appearance_execution_tests::appearance_all120_source_bodies_resolve_current_native110_creature10_items ... ok
 test creature_damage_spell::appearance_execution_tests::appearance_area_late_player_clock_refusal_rolls_back_creature_and_players ... ok
@@ -8,4 +7,4 @@ test creature_damage_spell::appearance_execution_tests::mixed_appearance_receipt
 test creature_damage_spell::appearance_execution_tests::scheduled_appearance_missing_artifact_tile_refusal_wrong_revision_and_stale_owner_no_mutation ... ok
 test creature_damage_spell::appearance_execution_tests::scheduled_appearance_real_player_store_projection_expiry_and_replay ... ok
 test creature_damage_spell::appearance_execution_tests::source_target_flag_defense_still_mutates_sole_native_creature_slot ... ok
-test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 2388 filtered out; finished in 143.86s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 2367 filtered out; finished in 134.46s
