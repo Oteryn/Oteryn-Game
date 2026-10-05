@@ -32,5 +32,5 @@ Merge `origin/main` into the PR head (merge commit), keep main's merged behaviou
 - `cargo test -p oteryn-game-server --test content_world_project_repository`: pass
 - spell-authoring and spell-import unit tests (5 files, 100 tests): pass
 - `tools/merge-driver/regen.sh` content checks: pass, except the two main-side `DANGLING_KEY` errors (`i65536`, `i70000`) fixed by #1821
-- `python3 tools/agents/validate_governance.py`: pass
+- `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
