@@ -1,0 +1,79 @@
+// MAP-WIRE-1 §3 (docs/contracts/protocol-oteryn/candidates/MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1.md,
+// with docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_WIRE_PACKETS_2026-10-04.md §2.1): typed
+// payloads of capability 18 WORLD_MAP_VIEW_V1 (requires 4 ITEM_VIEW_MOVE_V1 and 6
+// WORLD_SPATIAL_ENTITIES) and state domain 17 WORLD_MAP_VIEW (snapshot type 1, delta type 1),
+// registered by MAP-WIRE-2. FND-02 envelopes own the server sequence, domain ID and revisions;
+// these payloads never duplicate them. The domain carries the composed stack of every tile in the
+// 18x14 window, from (x - 8, y - 6) to (x + 9, y + 7) of the origin, over every floor in view
+// (-7..=0 for an origin floor of -7 or above, else two floors above and below it, bounded at
+// -15), each floor shifted by its floor difference to the origin.
+//
+// Unknown, repeated or zero-valued required fields, a tile outside the window, unsorted or
+// duplicate tiles, a base_ordinal of 64 or more, a zero handle, a display_only that is not true,
+// not exactly one origin, an object_revision on an entry whose origin is not base_ordinal, not
+// exactly one or a zero definition reference, a count outside 1..=100, a ground_speed above 1000,
+// an appearance_id above 65,535, a delta origin that is not the view's origin or one step from it
+// on the same floor, a first_visible_floor above 0 or below the origin floor or, with an origin
+// floor below -7, above min(origin.floor + 2, -8), an origin floor outside -15..=0, and a delta
+// with no tile and no cleared entry whose origin and first_visible_floor both equal the view's all
+// fail closed. A delta whose (content_generation, bundle_digest, reset_epoch) differs from the
+// view's is STATE_REVISION_MISMATCH, and the client resyncs.
+//
+// Limits: MAPW-RL-01 = 10 items per tile, MAPW-RL-02 = 2,016 tiles per snapshot, MAPW-RL-03 =
+// 248 tiles and cleared entries per delta, MAPW-RL-04 = 1,024 handle-bearing entries per view.
+syntax = "proto3";
+
+package oteryn.protocol.v1.world_map;
+
+import "world_spatial_v1.proto";
+
+// At most 95 bytes in its field with world coordinates in 0..=65,535.
+message MapViewHeaderV1 {
+  bytes content_generation = 1;   // 32 bytes, the World's existing content generation
+  bytes bundle_digest = 2;        // 32 bytes, the active bundle digest (format §5)
+  uint64 reset_epoch = 3;         // the channel's current World reset epoch
+  oteryn.protocol.v1.world_spatial.ActorPositionV1 origin = 4; // the actor position the window is centred on
+  sint32 first_visible_floor = 5; // the highest native floor drawn; absent means 0
+}
+
+// At most 32 bytes.
+message MapItemV1 {
+  oneof definition {              // exactly one, non-zero
+    uint32 item_definition_ref = 1;    // an Item: the WorldSpatialEntityV1 item reference space
+    uint32 terrain_definition_ref = 8; // a Terrain record: its bundle palette compact id
+  }
+  uint32 count = 2;               // 1..=100 for stackables, else 1
+  uint32 sub_type = 3;            // fluid or charge subtype, 0 if none
+  oneof origin {
+    uint32 base_ordinal = 4;      // 0..63: an unhidden base entry with no handle
+    uint64 item_handle = 5;       // non-zero: a handle-bearing entry within the handle budget
+    bool display_only = 6;        // true: a handle-bearing entry beyond the handle budget
+  }
+  uint32 appearance_id = 7;       // 0..=65535: the 15.30 appearance object id, 0 if none
+  uint64 object_revision = 9;     // base_ordinal entries only: the entry's overlay revision, 0 if none
+}
+
+// At most 360 bytes in its field.
+message MapTileV1 {
+  oteryn.protocol.v1.world_spatial.ActorPositionV1 position = 1;
+  repeated MapItemV1 items = 2;   // 1..=10 (MAPW-RL-01), stack order, ground first
+  bool more = 3;                  // the composed stack has more than 10 entries
+  uint32 ground_speed = 4;        // 0..=1000: the ground item's speed, 0 or absent without a ground
+}
+
+// StateSnapshot payload of domain 17, snapshot type 1. At most 725888 bytes (MAPW-RL-02 x 360 +
+// 128), streamed in at most two chunks.
+message WorldMapViewSnapshotV1 {
+  MapViewHeaderV1 header = 1;
+  repeated MapTileV1 tiles = 2;   // 0..=2,016 (MAPW-RL-02), strictly ascending (floor, y, x)
+}
+
+// StateDelta.payload of domain 17, delta type 1. At most 93376 bytes (MAPW-RL-03 x (360 + 16) +
+// 128). A delta over MAPW-RL-03 entries is sent as a snapshot instead, never truncated.
+message WorldMapViewDeltaV1 {
+  MapViewHeaderV1 header = 1;     // generation, digest and epoch equal the snapshot's; origin is the new window origin
+  repeated MapTileV1 tiles = 2;   // changed or newly visible tiles
+  repeated oteryn.protocol.v1.world_spatial.ActorPositionV1 cleared = 3; // tiles in view that became empty
+  // tiles and cleared together: 0..=248 (MAPW-RL-03), disjoint, each strictly ascending, each in
+  // the new window; 0 only when the origin or first_visible_floor changed
+}

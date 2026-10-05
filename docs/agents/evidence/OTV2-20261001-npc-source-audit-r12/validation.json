@@ -1,0 +1,72 @@
+{
+  "schema": "NPC_R12_AUTHORING_VALIDATION/v1",
+  "phase": "AUTHORING_PRE_PUBLICATION",
+  "baseline_head": "3af48922633e30acd8da2f97c9ac29676a894b96",
+  "checks": {
+    "authoring": {
+      "result": "PASS",
+      "log_sha256": "ef78143a09c9a16cd287e0bd6c241c4e133ee7634d5f87e88a553d0b5b799fe8",
+      "count": 172
+    },
+    "migration": {
+      "result": "PASS",
+      "log_sha256": "94bfa7a55304ff75ff954967c8e70b550a62e795d8a422417f753e4293b48ffb",
+      "count": 59
+    },
+    "governance_tests": {
+      "result": "PASS",
+      "log_sha256": "f45b28ce4c122053544db3d9cd509bfe2c522c5ceff61c7d8d96cf478b391570",
+      "count": 36
+    },
+    "governance": {
+      "result": "PASS",
+      "log_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+    },
+    "tree": {
+      "result": "PASS",
+      "log_sha256": "316693c0d79cedcef614c31630df5e8fc9ab0577079bd309a2b547e26c60bfcd"
+    },
+    "native_scope": {
+      "result": "PASS",
+      "log_sha256": "22c58e9b5ee648fd3086a6d02d923c53d467187a5a26454722a5651cc40d9f9d",
+      "count": 4
+    },
+    "native_package": {
+      "result": "PASS",
+      "log_sha256": "a57e9223355ba62858460124f8900574c4eedf679c8b7303f2499ff0045e225c",
+      "count": 4
+    },
+    "strict_clippy": {
+      "result": "PASS",
+      "log_sha256": "984a0050d7b0091cd2c5701c8ec6e6b74b8587417704637c594d8849234b24a1"
+    },
+    "format": {
+      "result": "PASS",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "server": {
+      "result": "PASS",
+      "passed": 16225,
+      "existing_ignored": 7,
+      "targets": 57,
+      "log_sha256": "5710fafeeb86ace6c95e4533203e4021d4de7c6b14b5e05e1a879eaf4af0d670"
+    }
+  },
+  "repeat_materialization": {
+    "result": "PASS",
+    "byte_identical_documents": 11
+  },
+  "packet_sha256": "46845cf6d978c622a8bd4af7c2b0dc01242742bd2eaea9f3f8820d03c19715b4",
+  "physical_attempts": [
+    "Commoner focused regression failed RED before repair then passed GREEN.",
+    "Fluid focused regression failed RED before repair then passed GREEN.",
+    "Expanded packet first regeneration rejected digest mismatch before canonical writes; digest corrected and selected checks repeated.",
+    "External summer-overlay tests first lacked Lupa; existing pinned Lupa2.8 supplied and all10 passed. This is next-batch source evidence."
+  ],
+  "original_five_area_goal_complete": false,
+  "independent_authoring_preflight": {
+    "result": "PASS",
+    "review_sha256": "c0dd097cf11fad9ad65d66ea4a80353a6bc9287b274455da50a9057422be01a3",
+    "candidate_specific_frozen_review": "Required after remote freeze, retained outside repository"
+  }
+}

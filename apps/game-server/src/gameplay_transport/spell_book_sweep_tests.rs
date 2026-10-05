@@ -108,13 +108,18 @@ enum Form {
 }
 const FORMS: [Form; 3] = [Form::None, Form::AttackTarget, Form::Position];
 
-/// No attack-target owner exists yet, so `AttackTarget` carries no creature; a `Position` is a
-/// tile on the caster's floor.
+/// `AttackTarget` carries the held attack target (SPELL-TARGET-1): the arena creature, visible and
+/// in range. A `Position` is a tile on the caster's floor and names no creature.
 fn facts(form: Form) -> OperationalCastFacts {
     OperationalCastFacts {
         caster_position: at(10),
-        target_position: (form == Form::Position).then(|| at(11)),
-        target: None,
+        target_position: (form != Form::None).then(|| at(11)),
+        target: (form == Form::AttackTarget).then(|| crate::spell::target::CastTarget {
+            caster: 1,
+            creature: 2,
+            actor: "actor:2".into(),
+            master: None,
+        }),
         line_of_sight_clear: Some(true),
         direction_available: true,
         wheel_unlocked: Some(true),
@@ -306,7 +311,10 @@ fn sweep(book: &SpellBook) -> BTreeMap<String, u32> {
             let outcome = best(book, spell, form);
             // A spell that needs a target never casts without one. The engine refuses it with a
             // typed disposition; the wire mapping to `TargetRequired` is the dispatch layer's.
-            if spell.needs_target && matches!(spell.execution, Execution::Effects(_)) {
+            if spell.needs_target
+                && form != Form::AttackTarget
+                && matches!(spell.execution, Execution::Effects(_))
+            {
                 assert_ne!(outcome, "Cast", "{} cast without its target", spell.key);
             }
             *counts
@@ -323,15 +331,15 @@ fn sweep(book: &SpellBook) -> BTreeMap<String, u32> {
 }
 
 const GOLDEN: &[(&str, u32)] = &[
-    ("Conjure AttackTarget Cast", 48),
+    ("Conjure AttackTarget Rejected", 48),
     ("Conjure None Cast", 48),
     ("Conjure Position Rejected", 48),
-    ("Effects AttackTarget Cast", 72),
-    ("Effects AttackTarget Rejected", 18),
+    ("Effects AttackTarget Cast", 90),
     ("Effects None Cast", 72),
     ("Effects None Rejected", 18),
     ("Effects Position Cast", 90),
-    ("Effects+target AttackTarget Rejected", 36),
+    ("Effects+target AttackTarget Cast", 34),
+    ("Effects+target AttackTarget TargetIllegal", 2),
     ("Effects+target None Rejected", 36),
     ("Effects+target Position Rejected", 36),
     ("Native/familiar_cast AttackTarget Classified", 9),

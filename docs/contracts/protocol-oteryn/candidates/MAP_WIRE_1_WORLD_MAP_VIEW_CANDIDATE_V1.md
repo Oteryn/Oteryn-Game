@@ -1,6 +1,6 @@
 # MAP-WIRE-1: world map view wire (contract candidate)
 
-**Status: candidate for owner acceptance. It does not bind until the owner accepts it.**
+**Status: accepted by the owner. MAP-WIRE-2 (`OTV2-20261004-map-wire-2`) registers capability 18, domain 17 and the limits of §3.**
 Until then it allocates no capability, state domain, snapshot type or delta type. It enables no
 transport route and amends no accepted schema. The numbers in §3 are proposals. The control
 plane leases them when MAP-WIRE-2 registers them.

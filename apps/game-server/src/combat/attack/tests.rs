@@ -561,6 +561,22 @@ fn swung_within_interval_tracks_the_last_swing() {
 // --- in-fight deadline ---
 
 #[test]
+fn the_resource_limits_bind_the_in_fight_deadline() {
+    let registry: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+    ))
+    .unwrap();
+    let row = registry["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|entry| entry["id"] == "ATTACK0-RL-03")
+        .expect("ATTACK0-RL-03");
+    assert_eq!(row["unit"], "milliseconds");
+    assert_eq!(row["hard_maximum"].as_u64(), Some(table().in_fight_ms));
+}
+
+#[test]
 fn in_fight_deadline_runs_sixty_seconds_after_the_last_hit() {
     let in_fight = table().in_fight_micros();
     let mut state = AttackState::<u32, u8>::default();

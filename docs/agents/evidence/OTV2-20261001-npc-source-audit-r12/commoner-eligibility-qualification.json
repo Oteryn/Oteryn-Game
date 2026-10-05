@@ -1,0 +1,510 @@
+{
+  "schema": "NPC_R12_COMMONER_ELIGIBILITY_QUALIFICATION/v1",
+  "status": "PROVEN_LITERAL_WIKI_ELIGIBILITY_NATIVE_BINDING_UNKNOWN",
+  "npc_name": "Alaistar",
+  "rank_name": "Commoner",
+  "rank_comparison": "AT_LEAST_LITERAL_RANK",
+  "native_quest_id": null,
+  "native_numeric_threshold": null,
+  "native_runtime_eligible": false,
+  "qualified_common_denominator_offers": [
+    {
+      "item_id": 21204,
+      "native_pointer": "/records/2194/offers/12",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21204",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 210
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1193,
+        "byte_end_exclusive": 1207,
+        "sha256": "fa4aaf9eab81fc6b060e353d74815511e887c59f3ffb303c0c3fafa494287195"
+      },
+      "br_table_row_witness": {
+        "byte_start": 6866,
+        "byte_end": 7047,
+        "row_sha256": "2b7a87d2d6e075fb7b6936c2edf123cfe7f01834f9972ef807cf0682d6258269",
+        "context_sha256": "1e6044a9316e52d6501ae3659c70c667e5ab8e4c8ecb9a9a3a53649d224fc63d"
+      }
+    },
+    {
+      "item_id": 21201,
+      "native_pointer": "/records/2194/offers/10",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21201",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 240
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1305,
+        "byte_end_exclusive": 1329,
+        "sha256": "add3d22e48db98acbfa597b91d526ce16a05e6ecb8d8a135a61565b62cad2164"
+      },
+      "br_table_row_witness": {
+        "byte_start": 7048,
+        "byte_end": 7269,
+        "row_sha256": "e82123f6e2615bfd82d8d7f9eee5d61f7014b7bd1693699f7752671711dcab17",
+        "context_sha256": "ccd0f7dc8b953e3d1e2c3ed28c59567788e12a5ccebdf7b9fa026dae26afc765"
+      }
+    },
+    {
+      "item_id": 21199,
+      "native_pointer": "/records/2194/offers/8",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21199",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 170
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1330,
+        "byte_end_exclusive": 1351,
+        "sha256": "b3abcf8d1fd058f54be8cb75efad92d7d4499cc0d10c51e347b34d81060dea5e"
+      },
+      "br_table_row_witness": {
+        "byte_start": 7270,
+        "byte_end": 7479,
+        "row_sha256": "70abfec4fefcf43be6571b0195a4de50dc40ad13b2398a7c476d08664ddd4311",
+        "context_sha256": "85ccb9784105f1882c2aac89a514ec6dc92ad6b071de30dc18a4daec1ad60bd6"
+      }
+    },
+    {
+      "item_id": 21182,
+      "native_pointer": "/records/2194/offers/1",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21182",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 125
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1352,
+        "byte_end_exclusive": 1373,
+        "sha256": "c7e01428503a525807a816d35732970488c0531eb36e5e5522af12ba8e0b7aa0"
+      },
+      "br_table_row_witness": {
+        "byte_start": 7480,
+        "byte_end": 7689,
+        "row_sha256": "3ef285deb979d49adb070cca62d6ec6a24d40221bcd3f39ecea61adc71f0a22f",
+        "context_sha256": "ac5590f5b5a0a983d099cb1b4facaa1656b526beed30a4ab891bee9b0f49cbfc"
+      }
+    },
+    {
+      "item_id": 21103,
+      "native_pointer": "/records/2194/offers/0",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21103",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 350
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1374,
+        "byte_end_exclusive": 1402,
+        "sha256": "a0d088d893b3379f3610168a856b767cb829fe800d6a79fdde1123de624fdc08"
+      },
+      "br_table_row_witness": {
+        "byte_start": 7690,
+        "byte_end": 7927,
+        "row_sha256": "d394b8357b3aa95e30a3c27f1e1b27272deac7976c8417fd02bef7c3a0193446",
+        "context_sha256": "8f0d2f87f926c3941d2c7f3f41da998260d1a601705d1d671326b9c889797787"
+      }
+    },
+    {
+      "item_id": 21193,
+      "native_pointer": "/records/2194/offers/2",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21193",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 260
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1403,
+        "byte_end_exclusive": 1419,
+        "sha256": "a7588696e2606255493b087042fc26c0a4bf71c2e2968a3f9be7163b77af168f"
+      },
+      "br_table_row_witness": {
+        "byte_start": 7928,
+        "byte_end": 8117,
+        "row_sha256": "f0d382f36db524e348206acf8cddc4b1f37cbccc2ba10a3c2388482bb4387bd3",
+        "context_sha256": "e83d8a1f3f60a34be87a3cdfd9b1cc4a556db24d690383a0aa4b4cab3d87cef6"
+      }
+    },
+    {
+      "item_id": 21198,
+      "native_pointer": "/records/2194/offers/7",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21198",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 430
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1420,
+        "byte_end_exclusive": 1436,
+        "sha256": "77103cf547a858e3aa158fdd74471d514b0e8eef47dace295a6ae9401a648f63"
+      },
+      "br_table_row_witness": {
+        "byte_start": 8118,
+        "byte_end": 8307,
+        "row_sha256": "d71a319285f8f3ea4147930ae4fb6d44e376e74316f5a965a41ad1de2adc03ad",
+        "context_sha256": "fd71dda75110e8cd7fa43af3358c7c58c515d1bc9f29b6d6f5f2beaecb456f9e"
+      }
+    },
+    {
+      "item_id": 21202,
+      "native_pointer": "/records/2194/offers/11",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21202",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 110
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1437,
+        "byte_end_exclusive": 1458,
+        "sha256": "975412bd5775e336c4bb24a35590de18f3036ab4d5777c8be03a41ee1ec9872b"
+      },
+      "br_table_row_witness": {
+        "byte_start": 8308,
+        "byte_end": 8521,
+        "row_sha256": "51153710924dde29065638fb0139e6f153288db5cbb79c9026e3a61868125831",
+        "context_sha256": "65b9a8e8a2c9ea8c9bc1dd738bf5e7ac5dbc29a67324841a516370669dbe9c40"
+      }
+    },
+    {
+      "item_id": 21200,
+      "native_pointer": "/records/2194/offers/9",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21200",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 140
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1459,
+        "byte_end_exclusive": 1479,
+        "sha256": "2996670e2aa87430ae3a524ab85098d779ce448365f15034488aac9d49537056"
+      },
+      "br_table_row_witness": {
+        "byte_start": 8522,
+        "byte_end": 8727,
+        "row_sha256": "e201d8d2b06fe680d709cc2cea390af685eb99c0ae82e82bd389f63d6ae3d6a1",
+        "context_sha256": "ce49988809eedb5cb6c63745eee242c986d0574dcd7c2a58c7d02ca43ad1d533"
+      }
+    },
+    {
+      "item_id": 21196,
+      "native_pointer": "/records/2194/offers/5",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21196",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 390
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1480,
+        "byte_end_exclusive": 1503,
+        "sha256": "5308cf53bd0b804bbf3e4e00229b24483710e0573938313f6c32c0c48b5fabaf"
+      },
+      "br_table_row_witness": {
+        "byte_start": 8728,
+        "byte_end": 8945,
+        "row_sha256": "f2f21e465e4a66c41a938e08d72e9b8f81bd2f27148b45d8493d1343f77c0beb",
+        "context_sha256": "dfed00b9aa5f7dd347e6be2cd09706860774c54f97a683518d0caa45d8f3b5c9"
+      }
+    },
+    {
+      "item_id": 21195,
+      "native_pointer": "/records/2194/offers/4",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21195",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 130
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1504,
+        "byte_end_exclusive": 1524,
+        "sha256": "9457e3e4a09c1e8dd22af493ec61c624dc74537446717dc60ee3798bbb2bbdaa"
+      },
+      "br_table_row_witness": {
+        "byte_start": 8946,
+        "byte_end": 9151,
+        "row_sha256": "1328ac4da68d5efe5b557b04db61481288ab20709895cb8863759d3886eb9bfe",
+        "context_sha256": "e41b733461dce5747182b0c0f3264469e3d8128cd21a291a1af84909bb2b6461"
+      }
+    },
+    {
+      "item_id": 21801,
+      "native_pointer": "/records/2194/offers/15",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21801",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 260
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1525,
+        "byte_end_exclusive": 1545,
+        "sha256": "35bbcb7709c168d98875d6f789dbd9e7044aa794c0b4b1b06be5f5057d88c10e"
+      },
+      "br_table_row_witness": {
+        "byte_start": 9152,
+        "byte_end": 9357,
+        "row_sha256": "651b342d0ae3f43152e4c9b19b304a1ca90d7d71ee0d87337226cb20e2e96400",
+        "context_sha256": "f63bba83c67c309b5b1d0213651e0eae038e455ec99e1ee31e9f1ecef315d3ee"
+      }
+    },
+    {
+      "item_id": 21747,
+      "native_pointer": "/records/2194/offers/13",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21747",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 400
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1546,
+        "byte_end_exclusive": 1567,
+        "sha256": "5107cc944f7cbb2b8c5598fa45907291a52c18480f73e94c32d33273ec55fe7b"
+      },
+      "br_table_row_witness": {
+        "byte_start": 9358,
+        "byte_end": 9567,
+        "row_sha256": "529fd85ce16bdb2ffb2a6d5bb5a1d969608ddc395c5c162fe0646af63f673b0d",
+        "context_sha256": "bc40364625749025890da0104ba09f237789fd562202970dcd5a77987a2acd1f"
+      }
+    },
+    {
+      "item_id": 21800,
+      "native_pointer": "/records/2194/offers/14",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21800",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 150
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1568,
+        "byte_end_exclusive": 1589,
+        "sha256": "8128198d26e1ab4ce9da53a77260d549cb6b4224c06b5d17627df601bed0eed2"
+      },
+      "br_table_row_witness": {
+        "byte_start": 9568,
+        "byte_end": 9777,
+        "row_sha256": "b4462227a8aada576e6b6f13b32b6647e22e53b31b4768883b313ecbb0e74211",
+        "context_sha256": "7297cddd0114624940ffec930177d96cd8f3444703db9506ac6ce96b06ddc1be"
+      }
+    },
+    {
+      "item_id": 21194,
+      "native_pointer": "/records/2194/offers/3",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21194",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 160
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1590,
+        "byte_end_exclusive": 1608,
+        "sha256": "1a466141f593d876ac5881c92f0245508cb1491ea44c19a6e23c9e761499d1fa"
+      },
+      "br_table_row_witness": {
+        "byte_start": 9778,
+        "byte_end": 9975,
+        "row_sha256": "374a9235ba7f3cb141f1b7346c2074d6fc2f781aa88a2e165fdac70fabaa8916",
+        "context_sha256": "888234195181332ffb92b97f5e31b706ce656d7302150a14f3bbfc512fe17e2b"
+      }
+    },
+    {
+      "item_id": 21197,
+      "native_pointer": "/records/2194/offers/6",
+      "native_offer": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i21197",
+          "revision": "definition-r1"
+        },
+        "direction": "BuyFromPlayer",
+        "unit_price": 320
+      },
+      "fandom_table_row_witness": {
+        "byte_start": 1609,
+        "byte_end_exclusive": 1635,
+        "sha256": "486c14b1a28deea689d812b900ee653cdc1ee6106c453b58ab60aadaf176ad4a"
+      },
+      "br_table_row_witness": {
+        "byte_start": 9976,
+        "byte_end": 10205,
+        "row_sha256": "375510fe617231d29bb53393cf4d438ab2027d6da4087be126f0435c09375495",
+        "context_sha256": "856aa9283047ccb0e06302873891dcb063a4cbe5efbecff6deb7bccb575cf828"
+      }
+    }
+  ],
+  "sources": {
+    "br": {
+      "url": "https://www.tibiawiki.com.br/wiki/Alaistar",
+      "capture_path": "/workspace/npc-r6-work/br-batch-0.json",
+      "capture_file_sha256": "a766543ffe4ba31e72d89ae7f2cd8891b5670efbfcd66db2e007cb8ad8238c38",
+      "decoded_raw_content_sha256": "f69345dadfe3160e7bb56d6a5f4bb097b3de988d37f9035ac41b4164eeac94a4",
+      "revision_hints": [
+        "420192"
+      ],
+      "condition_heading_witness": {
+        "byte_start": 6803,
+        "byte_end_exclusive": 6845,
+        "sha256": "0a3712d98f979be8dda5e9609236bd1a8ea34176aee047caf9640b078dded200",
+        "facts": {
+          "rank_name": "Commoner",
+          "quest_name": "Rathleton",
+          "numeric_threshold": null
+        }
+      },
+      "scope": "16 CREATURE_PRODUCT BuyFromPlayer rows below condition heading; other 15 rows outside that BR heading"
+    },
+    "fandom": {
+      "url": "https://tibia.fandom.com/wiki/Alaistar",
+      "capture_path": "/workspace/npc-r12-research/review/alaistar-fandom-browser-capture.json",
+      "capture_file_sha256": "fb51ccd9dd1ce1e17407f6326ae5a74a431af56e4e93ad0487c133a644615cfb",
+      "dom_field_pointer": "/dom/text",
+      "dom_utf8_sha256": "f4950599354f8e7770f5abe8bddc6ce696db40607dab90cdbdf37c85297f7eb0",
+      "api_field_pointer": "/api/body",
+      "api_body_sha256": "3641f53423deebb1db1080181d5a5d7f9c080efe65ea46402c2d47dfaab8e3ab",
+      "pageid": 68014,
+      "revid": 1073462,
+      "buys_table_witness": {
+        "byte_start": 1176,
+        "byte_end_exclusive": 1700,
+        "sha256": "ca86c802adfe997e60c6a3a5818fec2c8b8caf0441288aa2c8b754e100639348"
+      },
+      "sells_table_witness": {
+        "byte_start": 1700,
+        "byte_end_exclusive": 2059,
+        "sha256": "aa967b68395fdc6c02deb0b3edb6a3533e992b681b62354c7e409e15954cda27"
+      },
+      "buys_condition_witness": {
+        "byte_start": 1653,
+        "byte_end_exclusive": 1699,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      },
+      "sells_condition_witness": {
+        "byte_start": 2013,
+        "byte_end_exclusive": 2059,
+        "sha256": "07ea8c2403d81fd0ee3641f8143cc7e15c606e57c07181fdcf2b1c3d113acc86"
+      },
+      "table_note_applies_to_all_footnote_1_rows": true,
+      "buys_footnote1_rows": 20,
+      "sells_footnote1_rows": 11,
+      "actor_reply": false,
+      "infobox_generated_table_not_page_wikitext": "DOM note captured directly; page revision pins page identity, not transcluded dependency revisions"
+    },
+    "tibiopedia": {
+      "url": "https://tibiopedia.pl/npcs/Alaistar",
+      "capture_path": "/workspace/npc-r12-research/review/alaistar-tibiopedia-page.raw",
+      "capture_file_sha256": "b569939dfae19d93f149cbc2f6e32f55b6b3180ea801da20f3063943a94764bb",
+      "description_requirement_witness": {
+        "byte_start": 72022,
+        "byte_end_exclusive": 72100,
+        "sha256": "1ac6b464b9b497375471a32811e9abf412bd5738792c7128ff3ec200dc600fd1"
+      },
+      "facts": {
+        "trade_requires_rathleton_citizen_rank": true,
+        "literal_Commoner_present": false,
+        "direction_specific_scope": null,
+        "actor_reply": false
+      },
+      "rank_equivalence_to_Commoner_claimed": false
+    },
+    "s2ward": {
+      "url": "https://raw.githubusercontent.com/s2ward/tibia/8824eb38872a1174b0f0c923e08719e981f32ecc/data/npcs/text/Rathleton/Alaistar.txt",
+      "capture_path": "/workspace/npc-r12-research/review/alaistar-s2ward-pinned.txt",
+      "sha256": "7cc4206facdde1427b3fbfe59199b1d3f7ecfe0365cb9cb1791ca1472fcd6841",
+      "git_blob": "a476c84bb623ce6e463c2af8d3b91f2988dc099f",
+      "git_tree_capture_path": "/workspace/npc-r8-research/eremo-http/s2ward-tree.raw",
+      "git_tree_capture_sha256": "1a82377ff5d8c079073aebef3d74d93a3bf9b7d53a54410b271a004177cae27f",
+      "verified_git_blob_matches_pinned_tree": true,
+      "generic_trade_reply_witnesses": [
+        {
+          "byte_start": 941,
+          "byte_end_exclusive": 1015,
+          "sha256": "1ff48e86cbb0d3b3cae335cf6f15068549f3ff12bd6370ec09f602bd030455cc"
+        },
+        {
+          "byte_start": 1687,
+          "byte_end_exclusive": 1854,
+          "sha256": "b7c0cdd54366d45ae2a51de7f743bea83d02b5ede3bca2a150428dc341bbdf89"
+        }
+      ],
+      "literal_rank_requirement_present": false,
+      "absence_not_used_to_claim_no_gate": true
+    }
+  },
+  "scope_discrepancy": {
+    "other_native_offers_count": 15,
+    "fandom_applies_condition_to_potions_and_empty_containers": true,
+    "br_headings_do_not_qualify_these_15": "Record source disagreement/unknown scope; do not assert unguarded Global eligibility",
+    "additional_native_removal_outside_this_16_offer_proposal": false
+  },
+  "historical_or_recommendation_interpretation": false,
+  "qualification_basis": "Explicit current table prerequisite from two independent wiki pages, not NPC reply, historical walkthrough or suggested membership. Exact Commoner source semantic held until owning native Quest predicate is available.",
+  "price_evidence_preserved": {
+    "item_id": 21198,
+    "direction": "BuyFromPlayer",
+    "official_unit_price": 430,
+    "eligibility_is_separate_from_price": true
+  },
+  "raw_wiki_prose_in_structured_fields": false,
+  "repository_edits": false
+}

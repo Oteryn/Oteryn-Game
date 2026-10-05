@@ -1,0 +1,184 @@
+{
+  "archive": {
+    "bytes": 18263815,
+    "file": "npc-source-audit-r7-2026-10-01.zip",
+    "files": 2953,
+    "original_client_assets_included": false,
+    "sha256": "d2bea53f806a1308124fcbd044e606f789b0df223e7c1f8616231bf6d678fb5d"
+  },
+  "files": [
+    {
+      "bytes": 65,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/.gitattributes",
+      "sha256": "9fed9b456db47f540df35e58aa23b0e9131b9afd822135b7f81d667be00dba27"
+    },
+    {
+      "bytes": 4432,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/README.md",
+      "sha256": "7552c6bdd4944276cb9b7c70bbd09e61063d261a9f984bcc76fe6b49ba283997"
+    },
+    {
+      "bytes": 12328,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/client-identity-witnesses.json",
+      "sha256": "2c3274f290981c0de013f80591b0ea760b130a2bfbce4da66dfddca2e12cf760"
+    },
+    {
+      "bytes": 139587,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/dialogue/d10-conflict-report-r7.json",
+      "sha256": "4757efd2dc9168c688395658231b6b7d465ee0386c0bee08a0e1a838c04e61bb"
+    },
+    {
+      "bytes": 5118,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/dialogue/default-handler-source-index.json",
+      "sha256": "232283ef921909a762dfdb7e41e45b4ed30b9b3ff820175e5dfad5a524c5a79c"
+    },
+    {
+      "bytes": 8639,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/dialogue/dialogue-completion-summary-r7.json",
+      "sha256": "71aa1db6c4ccbe84c670b593468e6dbee4d695c64b837bb3f42c4acc51eaf0da"
+    },
+    {
+      "bytes": 2078,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/dialogue/positive-nonresponse-facts-r7.json",
+      "sha256": "c49df50d979245e1ae16f762c140fb148c03ac569a8a238f6b37e63b8b26d7ca"
+    },
+    {
+      "bytes": 803533,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/dialogue/program-qualification-r7.json",
+      "sha256": "ed07736031347153343b6843dd3104c3c35f7ad08ab936a35a7c5c76d152c2b8"
+    },
+    {
+      "bytes": 635472,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/dialogue/program-source-index.json",
+      "sha256": "e76aae0e402b3c81edcd3c1c80ed6bd2fd20c1c8f0de05d5c2c52e0ed48b3821"
+    },
+    {
+      "bytes": 1788387,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/identities/display-name-catalogue.json",
+      "sha256": "e6ee46a2948adcec202932b9a5d0aa13c3e1e15950f18a5e56d4bea26a53205b"
+    },
+    {
+      "bytes": 5465,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/identities/full-display-name-matches.json",
+      "sha256": "fbd8cebead776ce579ab098d3e709f7a91507036b30f133e95ddc99111a37a02"
+    },
+    {
+      "bytes": 796630,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/identities/identity-candidates-r7.json",
+      "sha256": "66ab4947d69228ba90c951aa8a90f92b0e633eceae00f36716c7c14b154fa945"
+    },
+    {
+      "bytes": 528426,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/identities/identity-lifecycle-r7.json",
+      "sha256": "1c587f801e6b233c23d201891432c0a42ef437f0c39a8c084c5d5607ebed412d"
+    },
+    {
+      "bytes": 163220,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/identities/official-target-identities.json",
+      "sha256": "b69c798f54a3f5a41d2ed802efc27b3b945a972c022cd5a0c6d9b40283ebdfb5"
+    },
+    {
+      "bytes": 387,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/identities/qualification-verification.json",
+      "sha256": "b4a3a7a134f0e0d6d0c4bf5e027746c7773655e5ecf225469bb748e6cd458fac"
+    },
+    {
+      "bytes": 1630263,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/native-price-repairs.json",
+      "sha256": "b54cc3542d029a3eeb9e93d7b2e8ecfcaa0bbeff477f23b4c02b2b4d96c65c5b"
+    },
+    {
+      "bytes": 1090261,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/native-repairs.json",
+      "sha256": "89a85ec112b25e898566597f95e1f4bcfb21ea427671e8d1ece44d284d5b550e"
+    },
+    {
+      "bytes": 2247,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/native-validation.json",
+      "sha256": "6c7fe976120f213b46d63b3da47777d04293f70d6f4dedc5a978d00119a144ec"
+    },
+    {
+      "bytes": 272775,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/official-price-evidence.json",
+      "sha256": "380b74673d380c22b10a792edad9af43415d89b2be68319c7e3a68186b67d433"
+    },
+    {
+      "bytes": 13772,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/presentation-native-repairs.json",
+      "sha256": "a86a10e3cb3911a75ff13d998f880290424e1b250f4b270a63369941b8cb22cf"
+    },
+    {
+      "bytes": 565,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/price-output-manifest.json",
+      "sha256": "f1afc3acb851b44a79e91ddd27889fb922fef7c38c937c8186e40892e8faa3ad"
+    },
+    {
+      "bytes": 488176,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/price-resolutions.json",
+      "sha256": "ad9065a8123011dd642d8de557e56a6d28bf8dc8299e30412309055640a3e4ca"
+    },
+    {
+      "bytes": 406,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/proto-source-index.json",
+      "sha256": "bcafa14c3b963235a3afa8f4b3c8e133783a37c9cd52ace920f23a9b871575ad"
+    },
+    {
+      "bytes": 33218,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/qualified-corrections.json",
+      "sha256": "56e44c655c33ea9d51f2b74f7905f63d4032ce199f094644a6c401014a7f7d8a"
+    },
+    {
+      "bytes": 839,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/quests/rust-validation.json",
+      "sha256": "254719b9e9ce37fabe314b69c830f9ab43e90852462bff556f19700f0a0b61ad"
+    },
+    {
+      "bytes": 1259022,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/quests/service-condition-report.json",
+      "sha256": "4ee6d25ae0221e1c231363f4a9f23f950db98d96d1be9502876238e1332286fc"
+    },
+    {
+      "bytes": 17313,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/quests/source-index.json",
+      "sha256": "3a97b648e9e9bd08fb5291fec2ef062c0aab5633da2f3a1e0a79981470ae428c"
+    },
+    {
+      "bytes": 2271,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/review/final-semantic-review.json",
+      "sha256": "a8c6374b0a5ab8ffbbc9d237b161718352d38d2aa9451664736f9b564feca894"
+    },
+    {
+      "bytes": 7614,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/review/implementation-boundary.json",
+      "sha256": "2112184bfe56eaef25a51579ca6da883044a2c22880eeb025744164d4fe85559"
+    },
+    {
+      "bytes": 7296,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/review/presentation-review.json",
+      "sha256": "907afacf9c4202b1368712b2935d320c28e7118187f010199804076a541527fb"
+    },
+    {
+      "bytes": 1485,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/review/price-review.json",
+      "sha256": "20febeba6bcd6663dcc5ec2e42cfa852b6591ca13fcefcde8e3df059c689fc98"
+    },
+    {
+      "bytes": 2424,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/validation.json",
+      "sha256": "b5b96aea75c5b4b1939893f72a8730502aa6812c849638ba97fca831105914bc"
+    },
+    {
+      "bytes": 12660,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/xml-identity-witnesses.json",
+      "sha256": "7185215eeb617d5823683c4fa2c3a19a509fb4c899fa5e9ad4badbdf278c8e11"
+    },
+    {
+      "bytes": 979,
+      "path": "docs/agents/evidence/OTV2-20261001-npc-source-audit-r7/xml-source-index.json",
+      "sha256": "78ba05150ef80761574cdc4d1be31a2a00265a2db8caf2e20bf7f50094755a61"
+    }
+  ],
+  "predecessor_sha": "8fd47a57183e2728dd85330f11646790105417da",
+  "protected_main_sha": "d3cfb2468510255d2495514ec975c23c1d76f32a",
+  "schema": "NPC_SOURCE_AUDIT_R7_MANIFEST/v1"
+}

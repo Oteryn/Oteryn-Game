@@ -1,0 +1,12 @@
+{
+  "kind": "PUBLISHED_FROZEN_NATIVE_STAGE",
+  "status": "QUALIFIED",
+  "head": "c2f9cf880a014ca494a32cce97bb0a19ed8b80c9",
+  "project_revision": "g4-npc-qualified-summer-object-r16",
+  "native_sha256": "f4e25dc633af56ecd9e38ea5cf8d84f47a12122dae17e988ed7ad344f53f199e",
+  "reference_sha256": "d3b66ce0b06c6ff61e6bbdac586e57f0ecdede3e24ef4487820db0ed031f6956",
+  "npc_count": 1132,
+  "freeze_sha256": "ae0cbdfdcd7532e2c271503d01b2551cc07bfda05c11f1aa8b26c69619c86035",
+  "frozen_validation_sha256": "0faad41da39874bdd4b7fb4c26007db0ea794679c0bcb096e6d15db69da3b95a",
+  "independent_review_sha256": "972c2eed9bb6eec2e05c6f8b89b32762f42f04ec9ebce2a5a79076f016e19f75"
+}
