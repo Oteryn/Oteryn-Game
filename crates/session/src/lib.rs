@@ -56,10 +56,11 @@ pub use oteryn_protocol_oteryn::{
 };
 use oteryn_protocol_oteryn::{
     CharacterId, ClientBootstrapValue, ClientCommandValue, CommandStatus, Direction,
-    FoundationProtocolError, FrameLength, GameSessionId, MessageType, decode_command_result,
-    decode_liveness_probe, decode_protocol_error, decode_server_accepted, decode_snapshot_begin,
-    decode_snapshot_body, decode_snapshot_chunk_framing, decode_snapshot_id, decode_state_delta,
-    decode_wire_envelope, encode_client_bootstrap, encode_client_command, encode_liveness_ack,
+    FoundationProtocolError, FrameLength, GameSessionId, MessageType, ProtocolDisposition,
+    decode_command_result, decode_liveness_probe, decode_protocol_error, decode_server_accepted,
+    decode_snapshot_begin, decode_snapshot_body, decode_snapshot_chunk_framing, decode_snapshot_id,
+    decode_state_delta, decode_wire_envelope, encode_client_bootstrap, encode_client_command,
+    encode_liveness_ack,
 };
 use oteryn_protocol_oteryn::{
     achievement_notices::{
@@ -940,6 +941,11 @@ impl<S: SessionStream> Session<S> {
         if accepted_envelope.message_type() == MessageType::ProtocolError
             && let Ok(refusal) = decode_protocol_error(accepted_envelope.payload())
             && ADMISSION_REFUSAL_CODES.contains(&refusal.error_code)
+            // N8 fixes the refusal shape; any other disposition or correlation fails closed below.
+            && refusal.disposition == ProtocolDisposition::TransportFatal
+            && refusal.related_command_id == 0
+            && refusal.expected_command_id == 0
+            && refusal.expected_server_sequence == 0
         {
             return Err(SessionError::AdmissionRefused {
                 code: refusal.error_code,
@@ -2974,6 +2980,41 @@ mod tests {
                     AdmissionPublicClass::TemporarilyUnavailable
                 ))
             );
+            Ok(())
+        })?
+    }
+
+    /// N8 fixes the refusal shape: a refusal-range code with any other disposition or with a
+    /// correlation field is not an admission refusal and fails closed as `NotAdmitted`.
+    #[test]
+    fn a_misshapen_admission_refusal_fails_closed() -> Result<(), BoxError> {
+        block_on(async {
+            // Type 14, generation 0; code 1103 (varint cf 08) plus the listed fields.
+            for payload in [
+                &[0x08, 0xcf, 0x08, 0x10, 0x01][..],
+                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x18, 0x01],
+                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x20, 0x01],
+                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x28, 0x01],
+            ] {
+                let mut frame = vec![0x08, 0x0e, 0x22, u8::try_from(payload.len())?];
+                frame.extend_from_slice(payload);
+                let (client, mut server) = tokio::io::duplex(1024);
+                let peer = tokio::spawn(async move {
+                    read_frame(&mut server).await?;
+                    write_frame(&mut server, &frame).await?;
+                    Ok::<_, BoxError>(())
+                });
+                let result = Session::admit(client, admission()?).await;
+                peer.await??;
+                assert!(
+                    matches!(
+                        result,
+                        Err(SessionError::NotAdmitted(MessageType::ProtocolError))
+                    ),
+                    "{payload:02x?}: {:?}",
+                    result.err()
+                );
+            }
             Ok(())
         })?
     }

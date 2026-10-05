@@ -2642,8 +2642,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 CharacterAuthorityError::Unavailable(_) => Unavailable,
                 _ => Rejected,
             })?;
+        // The grant is not authenticated yet: a classified answer here would reveal another
+        // world's character, so only 1100/1101 may precede authentication (N8 precedence).
         if record.world_id.as_bytes() != self.world_id.as_bytes() {
-            return Err(Classified(N8::AdmissionGrantWorldStale));
+            return Err(Rejected);
         }
         let subject = FreshAdmissionSubject {
             account_id: canonical_uuid(record.account_id.as_bytes()),
