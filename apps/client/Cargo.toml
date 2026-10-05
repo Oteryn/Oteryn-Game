@@ -24,9 +24,15 @@ oteryn-platform-contracts = { version = "=0.1.0", path = "../../crates/platform-
 oteryn-renderer = { version = "=0.1.0", path = "../../crates/renderer" }
 oteryn-session = { version = "=0.1.0", path = "../../crates/session" }
 oteryn-session-tcp = { version = "=0.1.0", path = "../../crates/session-tcp" }
+rustls.workspace = true
+tokio.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 winit.workspace = true
+
+[dev-dependencies]
+rcgen.workspace = true
+tokio-rustls.workspace = true
 
 [lints]
 workspace = true

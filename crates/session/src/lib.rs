@@ -16,6 +16,7 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
+pub use oteryn_protocol_oteryn::CharacterId;
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
 /// direct `protocol-oteryn` edge (ADR-0020 section 1).
@@ -50,9 +51,9 @@ pub use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityDetail, EntityKind, EntityRef, WorldSpatialEntitiesDelta, WorldSpatialEntity,
 };
 use oteryn_protocol_oteryn::{
-    CharacterId, ClientBootstrapValue, ClientCommandValue, CommandStatus, Direction,
-    FoundationProtocolError, FrameLength, GameSessionId, MessageType, decode_command_result,
-    decode_liveness_probe, decode_server_accepted, decode_snapshot_begin, decode_snapshot_body,
+    ClientBootstrapValue, ClientCommandValue, CommandStatus, Direction, FoundationProtocolError,
+    FrameLength, GameSessionId, MessageType, decode_command_result, decode_liveness_probe,
+    decode_server_accepted, decode_snapshot_begin, decode_snapshot_body,
     decode_snapshot_chunk_framing, decode_snapshot_id, decode_state_delta, decode_wire_envelope,
     encode_client_bootstrap, encode_client_command, encode_liveness_ack,
 };
