@@ -471,6 +471,7 @@ trust_roots_file = "/etc/oteryn/platform-roots.pem"
 client_certificate_file = "/etc/oteryn/scope-authority.pem"
 client_key_file = "/etc/oteryn/scope-authority.key"
 other_producer_certificate_files = ["/etc/oteryn/node/platform-client.crt", "/etc/oteryn/node/runtime-status.crt"]
+node_certificate_files = { "node-a.runtime-status" = "/etc/oteryn/nodes/node-a.crt", "node-b.runtime-status" = "/etc/oteryn/nodes/node-b.crt" }
 assignment_epoch = 1
 
 [[scope]]
@@ -490,10 +491,53 @@ fn report_config_binds_node_identities_to_scopes() {
 }
 
 #[test]
-fn report_config_epoch_must_match_the_node_runtime_status_epoch() {
+fn report_config_channel_must_match_the_node_platform_channel() {
     let config = ReportConfig::parse(CONFIG.as_bytes()).unwrap();
-    assert!(config.matches_node_epoch(1));
-    assert!(!config.matches_node_epoch(2));
+    let endpoint = "127.0.0.1:8443".parse().unwrap();
+    assert!(config.matches_node_channel(endpoint, "platform.test", 1));
+    assert!(!config.matches_node_channel(endpoint, "platform.test", 2));
+    assert!(!config.matches_node_channel(endpoint, "platform.other", 1));
+    assert!(!config.matches_node_channel("127.0.0.1:8444".parse().unwrap(), "platform.test", 1));
+}
+
+#[test]
+fn report_config_requires_a_certificate_for_every_node_identity() {
+    let config = ReportConfig::parse(CONFIG.as_bytes()).unwrap();
+    assert_eq!(config.node_certificate_files.len(), 2);
+    let node_b = r#", "node-b.runtime-status" = "/etc/oteryn/nodes/node-b.crt""#;
+    for (from, to) in [
+        // An omitted node host.
+        (node_b, ""),
+        // A certificate for an identity no scope names.
+        (
+            node_b,
+            r#", "node-b.runtime-status" = "/etc/oteryn/nodes/node-b.crt", "node-c.runtime-status" = "/etc/oteryn/nodes/node-c.crt""#,
+        ),
+        // Shared with another producer path or the authority certificate.
+        (
+            "/etc/oteryn/nodes/node-b.crt",
+            "/etc/oteryn/node/runtime-status.crt",
+        ),
+        (
+            "/etc/oteryn/nodes/node-b.crt",
+            "/etc/oteryn/nodes/node-a.crt",
+        ),
+        (
+            "/etc/oteryn/nodes/node-b.crt",
+            "/etc/oteryn/scope-authority.pem",
+        ),
+        ("/etc/oteryn/nodes/node-b.crt", "node-b.crt"),
+    ] {
+        let document = CONFIG.replace(from, to);
+        assert_ne!(document, CONFIG);
+        assert!(ReportConfig::parse(document.as_bytes()).is_err(), "{to}");
+    }
+    let without = CONFIG
+        .lines()
+        .filter(|line| !line.starts_with("node_certificate_files"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(ReportConfig::parse(without.as_bytes()).is_err());
 }
 
 #[test]

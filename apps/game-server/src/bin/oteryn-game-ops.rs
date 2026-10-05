@@ -707,10 +707,31 @@ fn reporter(
     let status = node.platform.runtime_status.as_ref().ok_or_else(|| {
         Failure::Input("--node-config platform.runtime_status is required for reporting".into())
     })?;
-    if !config.matches_node_epoch(status.assignment_epoch) {
+    // The node's Platform channel and epoch (§3), so both reports reach the
+    // same Platform and can match.
+    let node_roots = certificates(&read_file(
+        "platform.trust_roots_file",
+        &node.platform.trust_roots_file,
+        FileClass::Trusted,
+        service,
+        MAX_PEM_BYTES,
+    )?)
+    .map_err(|_| Failure::Input("platform.trust_roots_file".into()))?;
+    let set = |certificates: &[CertificateDer<'static>]| {
+        certificates
+            .iter()
+            .map(|certificate| certificate.as_ref().to_vec())
+            .collect::<std::collections::BTreeSet<_>>()
+    };
+    if !config.matches_node_channel(
+        node.platform.endpoint,
+        &node.platform.peer_name,
+        status.assignment_epoch,
+    ) || set(&roots) != set(&node_roots)
+    {
         return Err(Failure::Input(
-            "--report-config assignment_epoch differs from --node-config \
-             platform.runtime_status.assignment_epoch"
+            "--report-config endpoint, peer_name, trust roots or assignment_epoch differ \
+             from --node-config platform and platform.runtime_status"
                 .into(),
         ));
     }
@@ -734,6 +755,13 @@ fn reporter(
             &status.client_certificate_file,
         )?,
     ];
+    // Every configured node host's certificate is required (§3).
+    for path in config.node_certificate_files.values() {
+        others.push(
+            certificates(&pem("node_certificate_files", path, FileClass::Trusted)?)
+                .map_err(|_| invalid("node_certificate_files"))?,
+        );
+    }
     for path in &config.other_producer_certificate_files {
         others.push(
             certificates(&pem(

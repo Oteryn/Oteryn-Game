@@ -15,7 +15,7 @@ use super::{
 };
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde::{Deserialize, Serialize};
-use std::{net::SocketAddr, path::PathBuf, time::Duration};
+use std::{collections::BTreeMap, net::SocketAddr, path::PathBuf, time::Duration};
 
 /// Request bound (§3, `NRS-REPORT-BYTES`).
 pub const REPORT_BYTES: usize = 2048;
@@ -32,6 +32,7 @@ pub const CONFIG_BYTES: usize = 16 * 1024;
 pub const CONFIG_SCOPES_MAX: usize = 64;
 pub const CONFIG_IDENTITIES_MAX: usize = 16;
 pub const CONFIG_OTHER_PRODUCERS_MAX: usize = 8;
+pub const CONFIG_NODE_CERTIFICATES_MAX: usize = 64;
 
 /// One committed assignment as reported (§5).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -326,11 +327,15 @@ pub struct ReportConfig {
     pub trust_roots_file: PathBuf,
     pub client_certificate_file: PathBuf,
     pub client_key_file: PathBuf,
-    /// Client certificates of producer identities beyond the local node
-    /// configuration's native-evidence and runtime-status ones, which are
-    /// always checked: other node hosts' runtime-status identities and the
-    /// account-characters identity. The authority identity must not share a
-    /// public key with any of them (§3).
+    /// Runtime-status client certificate of every node-host identity named in
+    /// `scope`, exactly that set and each one required, so no node host can
+    /// share the authority's public key unchecked (§3).
+    pub node_certificate_files: BTreeMap<String, PathBuf>,
+    /// Client certificates of further producer identities, such as the
+    /// account-characters one. The local node configuration's
+    /// native-evidence and runtime-status certificates and every
+    /// `node_certificate_files` entry are always checked. The authority
+    /// identity must not share a public key with any of them (§3).
     #[serde(default)]
     pub other_producer_certificate_files: Vec<PathBuf>,
     pub assignment_epoch: u64,
@@ -359,12 +364,17 @@ impl ReportConfig {
             .iter()
             .all(|path| path.is_absolute())
             && config.other_producer_certificate_files.len() <= CONFIG_OTHER_PRODUCERS_MAX
-            && config.other_producer_certificate_files.iter().all(|path| {
-                path.is_absolute()
-                    && path != &config.client_certificate_file
-                    && path != &config.client_key_file
-                    && others.insert(path)
-            })
+            && config.node_certificate_files.len() <= CONFIG_NODE_CERTIFICATES_MAX
+            && config
+                .other_producer_certificate_files
+                .iter()
+                .chain(config.node_certificate_files.values())
+                .all(|path| {
+                    path.is_absolute()
+                        && path != &config.client_certificate_file
+                        && path != &config.client_key_file
+                        && others.insert(path)
+                })
             && !config.scope.is_empty()
             && config.scope.len() <= CONFIG_SCOPES_MAX
             && config.scope.iter().all(|scope| {
@@ -378,7 +388,12 @@ impl ReportConfig {
                     && scope.node_identities.iter().all(|identity| {
                         valid_node_identity(identity) && identities.insert(identity)
                     })
-            });
+            })
+            && config.node_certificate_files.keys().eq(config
+                .scope
+                .iter()
+                .flat_map(|scope| &scope.node_identities)
+                .collect::<std::collections::BTreeSet<_>>());
         if valid {
             Ok(config)
         } else {
@@ -386,13 +401,22 @@ impl ReportConfig {
         }
     }
 
-    /// Whether the declared epoch is the node configuration's
-    /// `platform.runtime_status.assignment_epoch`: Platform matches runtime
-    /// status against the reported assignment's epoch, so a mismatch could
-    /// never route.
+    /// Whether this channel is the node configuration's Platform channel:
+    /// the same `[platform]` endpoint and peer name (§3) and its
+    /// `platform.runtime_status.assignment_epoch`. Platform matches runtime
+    /// status against the reported assignment on that channel and epoch, so
+    /// a mismatch could never route. Trust roots are compared by content by
+    /// the caller.
     #[must_use]
-    pub fn matches_node_epoch(&self, runtime_status_epoch: u64) -> bool {
-        self.assignment_epoch == runtime_status_epoch
+    pub fn matches_node_channel(
+        &self,
+        endpoint: SocketAddr,
+        peer_name: &str,
+        runtime_status_epoch: u64,
+    ) -> bool {
+        self.endpoint == endpoint
+            && self.peer_name == peer_name
+            && self.assignment_epoch == runtime_status_epoch
     }
 
     /// Whether `identity` is configured for the scope (§5).
