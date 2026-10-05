@@ -23,6 +23,7 @@ oteryn-platform-client = { version = "=0.1.0", path = "../../crates/platform-cli
 oteryn-platform-contracts = { version = "=0.1.0", path = "../../crates/platform-contracts" }
 oteryn-renderer = { version = "=0.1.0", path = "../../crates/renderer" }
 oteryn-session = { version = "=0.1.0", path = "../../crates/session" }
+oteryn-session-tcp = { version = "=0.1.0", path = "../../crates/session-tcp" }
 
 [target.'cfg(windows)'.dependencies]
 winit.workspace = true

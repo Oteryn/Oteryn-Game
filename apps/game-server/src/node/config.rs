@@ -137,6 +137,45 @@ pub struct LaunchConfig {
     pub s2_authorization_file: Option<PathBuf>,
 }
 
+/// MAP-CUTOVER-1a: the world bundle a World's Channel boots from, by its pins. Without it the
+/// node serves the fixture entry room.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WorldBundleConfig {
+    pub path: PathBuf,
+    /// The pinned bundle digest, 64 lowercase hex digits.
+    pub digest: String,
+    pub project_format_version: String,
+    pub world_schema_version: String,
+    pub content_revision: String,
+    /// A production World; refused until production Worlds are accepted.
+    pub production: bool,
+    pub start_x: u16,
+    pub start_y: u16,
+    /// Native floor, `-15..=0`.
+    pub start_floor: i8,
+}
+
+impl WorldBundleConfig {
+    /// The pinned digest's bytes; `None` unless it is 64 lowercase hex digits.
+    pub fn digest_bytes(&self) -> Option<[u8; 32]> {
+        let hex = self.digest.as_bytes();
+        if hex.len() != 64 {
+            return None;
+        }
+        let nibble = |byte: u8| match byte {
+            b'0'..=b'9' => Some(byte - b'0'),
+            b'a'..=b'f' => Some(byte - b'a' + 10),
+            _ => None,
+        };
+        let mut digest = [0; 32];
+        for (index, pair) in hex.chunks_exact(2).enumerate() {
+            digest[index] = (nibble(pair[0])? << 4) | nibble(pair[1])?;
+        }
+        Some(digest)
+    }
+}
+
 /// `oteryn-game-server serve --config <path>`.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -149,6 +188,7 @@ pub struct NodeConfig {
     pub readiness: ReadinessConfig,
     pub platform: PlatformConfig,
     pub launch: LaunchConfig,
+    pub world_bundle: Option<WorldBundleConfig>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -372,8 +412,42 @@ impl NodeConfig {
         {
             return reject("launch.s2_authorization_file");
         }
+        if let Some(bundle) = &self.world_bundle {
+            check_world_bundle(bundle)?;
+        }
         Ok(())
     }
+}
+
+fn check_world_bundle(bundle: &WorldBundleConfig) -> Result<(), ConfigError> {
+    if !absolute(&bundle.path) {
+        return reject("world_bundle.path");
+    }
+    if bundle.digest_bytes().is_none() {
+        return reject("world_bundle.digest");
+    }
+    for (key, value) in [
+        (
+            "world_bundle.project_format_version",
+            &bundle.project_format_version,
+        ),
+        (
+            "world_bundle.world_schema_version",
+            &bundle.world_schema_version,
+        ),
+        ("world_bundle.content_revision", &bundle.content_revision),
+    ] {
+        if !token(value, 128, b"/") {
+            return reject(key);
+        }
+    }
+    if bundle.production {
+        return reject("world_bundle.production");
+    }
+    if !(-15..=0).contains(&bundle.start_floor) {
+        return reject("world_bundle.start_floor");
+    }
+    Ok(())
 }
 
 impl OpsConfig {
@@ -394,7 +468,7 @@ impl OpsConfig {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
 
@@ -508,6 +582,78 @@ assignment_epoch = 1
         // No endpoint or route is configurable for the report.
         let endpoint = status.replace("assignment_epoch = 1", "assignment_epoch = 1\nhost = \"x\"");
         assert!(NodeConfig::parse(endpoint.as_bytes()).is_err());
+    }
+
+    pub(crate) const WORLD_BUNDLE: &str = r#"
+[world_bundle]
+path = "/var/lib/oteryn/world/world.otbundle"
+digest = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+project_format_version = "OTERYN_WORLD_PROJECT/v2"
+world_schema_version = "world-schema-1"
+content_revision = "rev-1"
+production = false
+start_x = 100
+start_y = 200
+start_floor = -7
+"#;
+
+    #[test]
+    fn world_bundle_is_optional_and_checked() {
+        assert_eq!(
+            NodeConfig::parse(NODE.as_bytes())
+                .expect("fixture node")
+                .world_bundle,
+            None
+        );
+        let with = format!("{NODE}{WORLD_BUNDLE}");
+        let bundle = NodeConfig::parse(with.as_bytes())
+            .expect("bundle node")
+            .world_bundle
+            .expect("world bundle");
+        assert_eq!(
+            bundle.digest_bytes().map(|digest| digest[..4].to_vec()),
+            Some(vec![0x00, 0x11, 0x22, 0x33])
+        );
+        assert_eq!(bundle.start_floor, -7);
+        for (from, to, key) in [
+            (
+                "path = \"/var/lib/oteryn/world/world.otbundle\"",
+                "path = \"world.otbundle\"",
+                "world_bundle.path",
+            ),
+            ("digest = \"0011", "digest = \"0O11", "world_bundle.digest"),
+            ("digest = \"0011", "digest = \"00AA", "world_bundle.digest"),
+            ("eeff\"\nproject", "ee\"\nproject", "world_bundle.digest"),
+            (
+                "world_schema_version = \"world-schema-1\"",
+                "world_schema_version = \"world schema\"",
+                "world_bundle.world_schema_version",
+            ),
+            (
+                "content_revision = \"rev-1\"\nproduction",
+                "content_revision = \"\"\nproduction",
+                "world_bundle.content_revision",
+            ),
+            (
+                "production = false",
+                "production = true",
+                "world_bundle.production",
+            ),
+            (
+                "start_floor = -7",
+                "start_floor = 1",
+                "world_bundle.start_floor",
+            ),
+        ] {
+            let changed = with.replace(from, to);
+            assert_ne!(changed, with, "{key}");
+            let error = NodeConfig::parse(changed.as_bytes()).expect_err(key);
+            assert_eq!(error.key, key);
+        }
+        let unknown = with.replace("start_floor = -7", "start_floor = -7\nstart_z = 0");
+        assert!(NodeConfig::parse(unknown.as_bytes()).is_err());
+        let missing = with.replace("start_y = 200\n", "");
+        assert!(NodeConfig::parse(missing.as_bytes()).is_err());
     }
 
     #[test]

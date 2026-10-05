@@ -587,6 +587,22 @@ impl NativeEntryMovementCells {
     ) -> &crate::content::static_cell_engine::EngineeringStaticCellScope {
         &self.scope
     }
+
+    /// The movement cells of a Channel booted from a world bundle (MAP-CUTOVER-1a): the bundle
+    /// index under `scope`. `entry`'s spell and house tiles are kept under their own scope, so
+    /// their lookups refuse the bundle's cells until the bundle supplies its own.
+    pub(crate) fn from_bundle(
+        entry: &Self,
+        scope: crate::content::static_cell_engine::EngineeringStaticCellScope,
+        index: crate::map::boot::BundleCollisionIndex,
+    ) -> Self {
+        Self {
+            spell_tiles: entry.spell_tiles.clone(),
+            house_tiles: entry.house_tiles.clone(),
+            index: crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index),
+            scope,
+        }
+    }
 }
 
 /// The first-entry start cell selected by the Game-owned first-entry source (#935): the accepted
