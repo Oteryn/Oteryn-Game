@@ -179,3 +179,18 @@ are in [Item CI evidence](../../evidence/monster-final-seven-20261004/item-close
 Latest main3e5412cc was inspected: later disjoint/runtime dependency work and
 existing duplicate lint repairs do not change this retained World/Item context.
 PR1807 remains mergeable. No merge or production action is authorized.
+
+GitHub reached the later pinned Crystal World-catalogue step and exposed only two
+index key-order drifts. Four index serializer calls now sort keys to match the
+already-admitted canonical data. All54 actual catalogue outputs,22121 World
+checks, corpse/qualified-World tests and265/2 navigation records PASS with cached
+Crystal/donor inputs. Runtime/data and73fe high-risk replay/workflow bytes are
+unchanged. Exact evidence is the World serializer successor receipt.
+
+Integration dependency: current protected-main audit preapproves gatee25c0743
+from open World-bundle PR1805, while this branch retains the previous accepted
+gate860a684e. That dependency includes its missing pin-check implementation and
+classifier. The audit correctly rejects the control-plane candidate until the
+accepted dependency is reconciled; no audit/protection/gate pin was weakened.
+This is separately documented in PR1807. No foreign PR merge or production action
+is authorized or performed.

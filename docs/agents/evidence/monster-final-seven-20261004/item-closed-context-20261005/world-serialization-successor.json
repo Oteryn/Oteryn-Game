@@ -1,0 +1,51 @@
+{
+  "builder_sha256": "c87a2567e5ee5a42818448d25a990be8c2a3cf7de5833875bf213c3f61cb2010",
+  "cached_sources": {
+    "crystal": "ff7ede593c69d4c658b382c97443e8155926924a",
+    "donor": "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+  },
+  "change": "Only four index serializer calls add sort_keys=True to reproduce the already-admitted canonical index bytes. No World/Item/Creature data change.",
+  "logs": [
+    {
+      "member": "ci-world-catalogue-red.txt",
+      "sha256": "1d126c26989f8e6991f0b70394687f0875be2750484bd0d30f9438198beaf571"
+    },
+    {
+      "member": "ci-world-catalogue-green.txt",
+      "sha256": "7f890ecaac67343f1e6da5ba3276cf23e5c69a555e1853585c5efaed9b53b576"
+    },
+    {
+      "member": "ci-world-tests-final.txt",
+      "sha256": "ed7a7fcbab0883bc10f605e54336a0324537a2a3dfd2b2a05b7094e2e55b444d"
+    },
+    {
+      "member": "ci-corpse-tests-final.txt",
+      "sha256": "5226c733c5f4d767a42484d7663d0179596631450a813da51e968fba33df8c76"
+    },
+    {
+      "member": "ci-qualified-world-tests-final.txt",
+      "sha256": "ad965555e07fcd9e91040f1e0844dad8b0361c6bfcc9e508f7666887f3ed351c"
+    },
+    {
+      "member": "ci-world-engine-navigation-final.txt",
+      "sha256": "35173a2b758043b803e8fd761289d5e1899f6b04960722ecf370b777770e8a39"
+    },
+    {
+      "member": "ci-world-bounded-navigation-final.txt",
+      "sha256": "4495db12746a4ae844dd68f5c73ce1d1cddd567785b0f470e188592ac60d9c7b"
+    }
+  ],
+  "qualification": {
+    "bounded_navigation_records": 2,
+    "catalogue_check_files": 54,
+    "engine_navigation_records": 265,
+    "official_corpses": "PASS",
+    "qualified_world": "PASS",
+    "ruff_check_and_format": "PASS",
+    "runtime_and_data_changed": false,
+    "world_object_checks": 22121
+  },
+  "raw_archive_sha256": "fe1dbfd9a6cabf3cf54f62b254d9c5cb620fe7c8558e17c173c01a6203c2ecfe",
+  "review_carry": "73fe010f high-risk workflow and replay-helper bytes unchanged; this successor only fixes output key ordering and records evidence. No new paid invocation.",
+  "source_base": "73fe010f4f4ddd6b9b60a603b6ae8e853fc0353c"
+}

@@ -51,3 +51,15 @@ actual native executions and strict all-target Clippy. All apps, content, import
 rulesets and migration producers are byte-identical to that qualified source.
 The final60 sweep began at7333a194; only a separately rerun test-formatting change
 follows, with the replay helper and all60 consumed script/input bytes unchanged.
+
+## Current World catalogue serializer successor
+
+GitHub then reached the pinned-source World catalogue check and found only two
+index files with different key ordering. Four serializer calls now sort keys,
+matching the already-admitted canonical writer. Actual cached Crystalff7ede5
+and donor00ce02a5 reproduction passes all54 catalogue files; all22121 World
+checks, official-corpses/qualified-World tests and265/2 navigation records pass.
+No data or closed Item source/producer bytes changed. The replay helper and
+workflow remain identical to73fe010f, so its covered independent review retains
+the same risk scope. Exact RED/GREEN logs and source pins are in the successor
+receipt and ZIP.
