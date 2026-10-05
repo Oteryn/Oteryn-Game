@@ -12,7 +12,7 @@ import json
 from jsonschema import Draft202012Validator
 
 PATH = "tools/content-schema/quest-authoring/samples/soul-war-reconstruction/recipe-followup.json"
-SHA256 = "ee6b27e7257aba641cae928537b31a83c4c6144172a96968fd3dcde58e45fa83"
+SHA256 = "343855403c5273d5cd765e6c8d9118202954a7c9cdd755ae91c558eb2b94eae5"
 RECONSTRUCTION_SCHEMA = "tools/content-schema/quest-authoring/soul_war_reconstruction.schema.json"
 
 
@@ -54,8 +54,7 @@ def _validate_packet(packet):
     if set(stages[1]["targets"]) != expected_bosses:
         raise ValueError("Soul War mini-boss set differs")
     rewards = replacement["reward_intents"]
-    if ({row["kind"] for row in rewards} != {"item", "outfit"} or len(rewards) != 2
-            or any(row["count"] != 1 for row in rewards)):
+    if len(rewards) != 1 or rewards[0]["kind"] != "item" or rewards[0]["count"] != 1:
         raise ValueError("Soul War final reward projection differs")
     pool = packet["reward_pool"]
     if len(pool) != 18 or {row["id"] for row in pool} != set(range(34082, 34100)):
