@@ -13,7 +13,7 @@
   - the existing spell owner reservation (`pending_owner`, `reserve_spell_batch`,
     `release_definitely_uncommitted_spell_batch`);
   - the slot-compare fence `validate_staged_spell_batch`;
-  - the AlreadyCommitted reconcile path;
+  - each writer's retained retry path, with its AlreadyCommitted and `Applied` branches;
   - the Channel item advisory lock (key 33) and the guard order of ARCH-KILL-REWARD-LOGOUT-1 §1.2.
 - Runtime, persistence and production authority: NONE. Each packet needs its #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -202,9 +202,14 @@ needed only once 2b releases the guards before S.
 
 ### 1.6 Unknown outcome and restart
 
-- The reservation is kept on `CommitOutcomeUnknown`, as today. The retry goes through the
-  AlreadyCommitted reconcile path, when the client resends the same command or when control loss
-  reconciles (`reconcile_pending_native_for_control_loss` for a native cast).
+- The reservation is kept on `CommitOutcomeUnknown`, as today. The retry re-runs the retained
+  attempt, when the client resends the same command or when control loss reconciles
+  (`reconcile_pending_native_for_control_loss` for a native cast). It takes the AlreadyCommitted
+  branch when the batch committed, and the `Applied` branch, which commits again, when it did not
+  (`native_combat_cast.rs`, `world_item_cast.rs`, `parameter_cast.rs`; the familiar cast's
+  `commit_familiar_spell` or `reconcile_familiar_spell` by `allow_new_mutation`).
+  `commit_semantic_transaction` (`db.rs`) returns `CommitOutcomeUnknown` without sending `COMMIT`
+  when the deadline has already elapsed, so an unknown outcome is often a rollback.
 - **The fence covers every committing writer.** The writers that reach
   `commit_spell_owner_transaction` on `main` are:
   - the native cast (`native_combat_cast.rs`);
@@ -254,21 +259,43 @@ needed only once 2b releases the guards before S.
   - Acquiring the lane returns either a permit or, while `unresolved` is set, an
     `UnresolvedLane`. Only one function turns an `UnresolvedLane` into a permit:
     `resolve_unresolved_spell_commit`. It dispatches on the variant to that writer's resolver,
-    which lives next to the writer and uses its existing AlreadyCommitted reconcile path. The
-    compiler therefore makes every key-33 caller resolve first, and a new committing writer
-    cannot compile without a variant and a resolver.
-  - Resolution holds the lane already, so it follows the lock order of §1.2 with no Channel
-    guard taken first. It runs the writer's AlreadyCommitted reconcile for the recorded attempt
-    under key 33, then takes the guards to install it, or to release it when it is proven
-    uncommitted. After a known-successful `COMMIT` the reconcile finds the batch committed and
-    runs the remaining post-commit steps through the same idempotent AlreadyCommitted path. If one
-    of those steps fails again, `unresolved` stays set, as for an unknown outcome. On success it
-    replaces the caster's marker with the same result the caster's own retry would return, then
-    clears `unresolved`.
+    which lives next to the writer and resumes that writer's retained retry path. The compiler
+    therefore makes every key-33 caller resolve first, and a new committing writer cannot
+    compile without a variant and a resolver.
+  - **Resolution resumes the full retained retry path.** Resolution holds the lane already, so
+    it follows the lock order of §1.2 with no Channel guard taken first. The resolver runs, for
+    the recorded attempt, the same path the caster's own retry of the original command runs
+    today, from the retained attempt and under key 33:
+    - in the mode that path computes from current facts: the familiar cast's
+      `allow_new_mutation`, or the native control-loss mode when the caster has lost control,
+      as `reconcile_pending_native_for_control_loss` does;
+    - with a fresh deadline, as each retry has today;
+    - with the retry's inputs derived for the attempt's actor and session the way the
+      dispatcher derives them today (`refresh_spell_access`), never taken from the acquirer's
+      own request.
+
+    What the path finds decides the outcome:
+    - Committed batch: the AlreadyCommitted branch runs the remaining post-commit steps, and
+      the resolver takes the guards and installs.
+    - No committed receipt, including the deadline case above: the `Applied` branch commits the
+      retained attempt again inside a new commit window, as the caster's retry does. The
+      resolver never just releases the attempt and never clears the marker without a result.
+    - A definite rejection that the path itself proves, as today
+      (`definite_familiar_rejection`, a rejected item verdict,
+      `release_definitely_uncommitted_spell_batch`, `rollback_physical`): the resolver releases
+      the attempt and returns that rejection. A retained training checkpoint changes only
+      through `refresh_training_checkpoint_revision`, as on the retry.
+    - Unknown again, or a post-commit step fails again: the window parks the attempt in
+      `unresolved` again.
+
+    On success the resolver replaces the caster's marker with the same result the caster's own
+    retry would return, then clears `unresolved`. The result therefore does not depend on which
+    acquirer resolved the attempt.
   - When the outcome is still unknown, or a post-commit step still fails, `unresolved` stays
     set. The acquirer's own work is refused retryably, with no side effect.
-- If 2a finds a committing writer with no AlreadyCommitted reconcile path that can finish its
-  install, the worker returns a BLOCKER naming it. It does not invent one.
+- If 2a finds a committing writer whose retained retry path cannot be resumed this way (an input
+  only the caster's request carries, or no AlreadyCommitted branch that can finish its install),
+  the worker returns a BLOCKER naming it. It does not invent one.
 - **A parked attempt is always complete.** Today the world-item and parameter casts take `paid`,
   `player` and `physical` out of the attempt before later fallible steps
   (`world_item_cast.rs` after `COMMIT`, `parameter_cast.rs` likewise). A failure there would park
@@ -286,6 +313,30 @@ needed only once 2b releases the guards before S.
        native `prepared` and `owned`) out of the attempt and applies the plan.
   - A failure in phase 1 parks the attempt unchanged. Phase 2 cannot fail, so no exit leaves a
     half-consumed attempt.
+  - The shared install helpers are split the same way, because today the moved fields go into
+    helpers that can still fail. `commit_owner_batch` (`actor_spell_commit.rs`) receives the moved
+    `StagedSpellBatch` and `PlayerBatchPreflight`, then validates, binds and runs the physical
+    commit fallibly, and `PlayerBatchPreflight::install` is private. 2a splits:
+    - `commit_owner_batch` into a check that borrows the staged batch and the preflight
+      (`validate_current`, `matches_batch`, the binding, `validate_staged_spell_batch`) and returns
+      a checked token only it can build, and an infallible install that moves both, writes the
+      runtime slots and installs the player states. `commit_owner_batch` stays as the
+      composition of the two for callers that hold no retained attempt;
+    - `ChannelRuntimeV1::commit_spell_batch` and `release_companion_touches_for_source_commit`
+      (`runtime_actor_spell.rs`) into their existing borrowing checks and infallible writes, so
+      no runtime slot or companion touch changes before a later phase-1 check fails;
+    - `PreparedPlayerTraining::prepare_install`, which takes `installation` today, and
+      `PlayerSpellState::rebind_staged_training` (`mana_training.rs`), with
+      `PlayerBatchPreflight::rebind_training`, into borrowing checks and moves;
+    - `commit_familiar` (`companion_lifecycle.rs`), which consumes `PreparedFamiliar` and can
+      fail, into a borrowing check that also yields the `FamiliarApplyReceipt` the apply will
+      return, and an infallible apply;
+    - `FamiliarTimerInstallPreflight::finalize` (`delayed_execution.rs`), checked in phase 1
+      against that receipt.
+
+    Phase 2 keeps an `expect` only on an invariant that phase 1 proved under the same guards,
+    and adds no check of its own. The direct and corpse companion installs, the presentation
+    install and the timer install already follow their checks infallibly and stay as they are.
   - If a step cannot be split this way, the worker returns a BLOCKER naming it. It does not take
     a field before a fallible step.
   - A resolver failure that a retry cannot fix (for example, the committed batch contradicts the
@@ -338,12 +389,13 @@ worker: oteryn-hard-worker
 review: independent review on the final frozen head (Channel concurrency)
 branch: claude/spell-lock-2a-20261005
 base: main
-depends_on: ["this decision merged", "the CP orders it against KILL-REWARD-COMP-1 (attack.rs, runtime_actor_carrier.rs) and SPELL-TARGET-1 (ordinary_combat.rs)"]
+depends_on: ["this decision merged", "the CP orders it against KILL-REWARD-COMP-1 (attack.rs, runtime_actor_carrier.rs) and SPELL-TARGET-1 (ordinary_combat.rs), and against any open packet that owns runtime_actor_spell.rs, mana_training.rs, companion_lifecycle.rs or delayed_execution.rs"]
 migration_lease: none
 owned_paths:
   - apps/game-server/src/gameplay_transport/native_combat_cast.rs
   - apps/game-server/src/gameplay_transport/mod.rs                 # lane field, lane-first callers
   - apps/game-server/src/gameplay_transport/actor_spell.rs         # pending marker
+  - apps/game-server/src/gameplay_transport/actor_spell_commit.rs  # two-phase commit_owner_batch and rebind_training
   - apps/game-server/src/gameplay_transport/world_item_cast.rs     # lane acquire, commit window, resolver
   - apps/game-server/src/gameplay_transport/parameter_cast.rs      # lane acquire, commit window, resolver
   - apps/game-server/src/gameplay_transport/spell_timer_callbacks.rs  # lane acquire only
@@ -359,6 +411,10 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/attack.rs              # reserved-attacker deferral
   - apps/game-server/src/foundation/runtime_actor_carrier.rs       # §1.3 checks
   - apps/game-server/src/foundation/runtime_actor_conditions.rs    # §1.3 check
+  - apps/game-server/src/foundation/runtime_actor_spell.rs         # two-phase commit_spell_batch and companion-touch release
+  - apps/game-server/src/spell/mana_training.rs                    # borrowing checks of prepare_install and rebind_staged_training
+  - apps/game-server/src/spell/companion_lifecycle.rs              # two-phase commit_familiar
+  - apps/game-server/src/spell/delayed_execution.rs                # familiar timer check against the predicted receipt
   - apps/game-server/src/durability/spell_item_transaction.rs      # verdict instead of closure, permit, commit window
   - apps/game-server/src/durability/spell_owner_commit.rs          # commit window parameter
   - apps/game-server/src/durability/native_map_items.rs            # permit parameter
@@ -389,7 +445,13 @@ Builds:
   `resolve_unresolved_spell_commit` and one resolver per committing writer (§1.6).
 - The two-phase post-commit install of every writer (§1.6): a borrowing, fallible check phase,
   then an infallible phase that moves the install fields. The variants hold those fields by
-  value.
+  value. The shared helpers are split too: `commit_owner_batch`, `commit_spell_batch`,
+  `release_companion_touches_for_source_commit`, `prepare_install`, `rebind_staged_training`,
+  `rebind_training`, `commit_familiar` and the familiar timer `finalize`. If another helper
+  that phase 2 needs can still fail after a move, the worker returns a BLOCKER naming it.
+- Each resolver resumes its writer's retained retry path (§1.6): the AlreadyCommitted branch
+  when committed, the `Applied` branch in a new commit window when not, and release only on a
+  definite rejection that the path proves.
 
 Tests:
 
@@ -434,6 +496,20 @@ Tests:
   every install field (`paid`, `player`, `physical`, `presentation`, or the native `prepared`
   and `owned`). The resolver then installs it exactly once. The test fails if any field is
   missing.
+- For each split helper, a fault in its check leaves the staged batch, the preflight, the
+  training installation and the `PreparedFamiliar` unchanged, and changes no runtime slot or
+  companion touch. Callers of the `commit_owner_batch` composition behave as today.
+- For each writer, `commit_semantic_transaction` returns `CommitOutcomeUnknown` because the
+  deadline elapsed, with no `COMMIT` sent. A competitor that takes the lane at once makes the
+  resolver commit the retained attempt exactly once through the `Applied` branch. The marker
+  then carries the same result the caster's own retry returns in the same state. The test fails
+  if the attempt is released, the marker is cleared without a commit, or the attempt is
+  reconstructed.
+- The resolver releases an attempt only on a definite rejection that the writer's retry path
+  proves, with the same result as that retry. After control loss, it resolves a native attempt
+  as `reconcile_pending_native_for_control_loss` does, and a familiar attempt with the
+  `allow_new_mutation` its retry computes.
+- A resumed commit that is unknown again parks the attempt again, with every field present.
 - A resolver failure that a retry cannot fix keeps the lane fenced and logs its error code. A
   Channel reload clears it.
 - While the outcome stays unknown, those writers are refused retryably with no side effect.
@@ -526,4 +602,6 @@ The design holds when:
 - a reserved slot changes only through its own batch;
 - no key-33 writer runs between any committing writer's `COMMIT` and its install, also when
   the `COMMIT` outcome is unknown or a post-commit step fails;
-- no code path takes key 33 without a lane permit.
+- no code path takes key 33 without a lane permit;
+- a parked attempt resolves with the same result as the caster's own retry, whichever acquirer
+  resolves it, and is released only on a definite rejection.

@@ -65,6 +65,17 @@ external_repositories: []
 - Codex round on fb0586b7 is fixed: in 2b the read plan records the held attack target, and S
   re-reads it from `attack`, last in the lock order. A switched or cleared target is a coverage
   miss, and prepare gets S's target, with a test (#1836 thread r4188167671).
+- Codex round on 70c596e9 is fixed: 2a owns `actor_spell_commit.rs`, and the shared install
+  helpers are split into borrowing checks and infallible moves: `commit_owner_batch` (kept as
+  their composition), `commit_spell_batch` and the companion-touch release
+  (`runtime_actor_spell.rs`), `prepare_install` and `rebind_staged_training`
+  (`mana_training.rs`), `commit_familiar` (`companion_lifecycle.rs`) and the familiar timer
+  check (`delayed_execution.rs`), all now owned by 2a (#1836 thread r4188531914). The resolver
+  resumes the writer's full retained retry path: the AlreadyCommitted branch when committed, the
+  `Applied` branch in a new commit window when not (including a deadline-elapsed
+  `CommitOutcomeUnknown` with no `COMMIT` sent), and release only on a definite rejection the path
+  proves, with the same result as the caster's own retry and a test per writer (#1836 thread
+  r4188531931).
 - Makes the spell slot reservation complete: every mutator of a reserved slot either checks it or
   is shown unable to reach one. The caster stays visibly pending for the whole pass.
 - Rejects a runtime revision counter, committing under the guards, narrowing the install fence,
