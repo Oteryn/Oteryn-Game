@@ -1502,7 +1502,9 @@ pub mod fresh_admission_durability;
 
 #[cfg(test)]
 #[allow(unused_imports)]
-pub(crate) use runtime_actor_carrier::crystal_death_router_fixture;
+pub(crate) use runtime_actor_carrier::{
+    crystal_death_router_fixture, crystal_death_router_fixture_with_native,
+};
 // Append inside Foundation module. Test builds only; no production grant API.
 #[cfg(test)]
 pub(crate) fn crystal_timer_fixture(

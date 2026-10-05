@@ -10757,6 +10757,18 @@ impl ChannelRuntimeV1 {
     reason = "test-only native fixture assertions retain descriptive failures"
 )]
 pub(crate) fn crystal_death_router_fixture(world: WorldId) -> ChannelRuntimeV1 {
+    crystal_death_router_fixture_digest(world, [1; 32])
+}
+#[cfg(test)]
+pub(crate) fn crystal_death_router_fixture_with_native(
+    world: WorldId,
+    native: &crate::content::native_gameplay::NativeGameplayState,
+) -> ChannelRuntimeV1 {
+    crystal_death_router_fixture_digest(world, native.source_digest())
+}
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+fn crystal_death_router_fixture_digest(world: WorldId, digest: [u8; 32]) -> ChannelRuntimeV1 {
     let mut channel = [0u8; 16];
     channel[6] = 0x70;
     channel[8] = 0x80;
@@ -10775,7 +10787,7 @@ pub(crate) fn crystal_death_router_fixture(world: WorldId) -> ChannelRuntimeV1 {
         ChannelContentPin::from_activation(
             world,
             1,
-            [1; 32],
+            digest,
             [2; 32],
             [3; 32],
             [4; 32],
@@ -11315,6 +11327,7 @@ impl ChannelRuntimeV1 {
 )]
 pub(crate) fn bone_shared_actual_owner_harness(
     world: WorldId,
+    artifact_digest: [u8; 32],
     mut register: impl FnMut(
         &ChannelRuntimeV1,
         [ExactActorRef; 4],
@@ -11328,7 +11341,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
         b[15] = t;
         b
     }
-    fn runtime(world: super::WorldId) -> ChannelRuntimeV1 {
+    fn runtime(world: super::WorldId, artifact_digest: [u8; 32]) -> ChannelRuntimeV1 {
         ChannelRuntimeV1::from_committed_assignment(
             world,
             ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
@@ -11341,7 +11354,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
             ChannelContentPin::from_activation(
                 world,
                 1,
-                [1; 32],
+                artifact_digest,
                 [2; 32],
                 [3; 32],
                 [4; 32],
@@ -11403,7 +11416,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
             },
         )
     }
-    let mut r = runtime(world);
+    let mut r = runtime(world, artifact_digest);
     let cages = BONE_CAGE_KEYS.map(|k| actor(&mut r, k, 120000));
     let phyl = actor(&mut r, b"oteryn:creature.bonelord_s_phylactery", 50000);
     let mut state = register(&r, cages, phyl);
@@ -11488,7 +11501,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
         ),
     ];
     let healed = r
-        .commit_source_creature_heal_batch([1; 32], &heals)
+        .commit_source_creature_heal_batch(artifact_digest, &heals)
         .expect("valid native fixture operation must succeed");
     assert_eq!(healed.len(), 2);
     for a in cages {
@@ -11496,7 +11509,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
     } // source-roster lowest index chosen, oncecast
     let duplicate = vec![heals[0].clone(), heals[0].clone()];
     assert!(
-        r.commit_source_creature_heal_batch([1; 32], &duplicate)
+        r.commit_source_creature_heal_batch(artifact_digest, &duplicate)
             .is_err()
     );
     for a in cages {
@@ -11526,7 +11539,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
         .is_err()
     );
     assert!(
-        r.commit_source_creature_heal_batch([1; 32], &heals)
+        r.commit_source_creature_heal_batch(artifact_digest, &heals)
             .is_err()
     );
     assert!(
@@ -11563,7 +11576,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
         assert_eq!(hp(&r, a), 0)
     }
     assert!(
-        r.commit_source_creature_heal_batch([1; 32], &heals)
+        r.commit_source_creature_heal_batch(artifact_digest, &heals)
             .is_err()
     );
     for (i, a) in cages.into_iter().enumerate() {
@@ -11631,7 +11644,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
     assert_eq!(r.carrier.corpse_projections.len(), 5);
     assert!(r.carrier.death_reward_occurrences.is_empty());
     // Late fourth-slot conflict: three prepared native slots must remain unpublished.
-    let mut q = runtime(world);
+    let mut q = runtime(world, artifact_digest);
     let c = BONE_CAGE_KEYS.map(|k| actor(&mut q, k, 120000));
     let p = actor(&mut q, b"oteryn:creature.bonelord_s_phylactery", 50000);
     let st = register(&q, c, p);
@@ -11682,7 +11695,7 @@ pub(crate) fn bone_shared_actual_owner_harness(
     assert_eq!(q.carrier.slots, before);
     assert_ne!(replacement, c[1]);
     // Same source species and identical physical HP: only exact local generation can refuse fanout.
-    let mut replacement_case = runtime(world);
+    let mut replacement_case = runtime(world, artifact_digest);
     let rc = BONE_CAGE_KEYS.map(|k| actor(&mut replacement_case, k, 120000));
     let rp = actor(
         &mut replacement_case,
@@ -11734,14 +11747,14 @@ pub(crate) fn bone_shared_actual_owner_harness(
         100,
     )];
     assert_eq!(
-        replacement_case.commit_source_creature_heal_batch([1; 32], &heal),
+        replacement_case.commit_source_creature_heal_batch(artifact_digest, &heal),
         Err(CarrierError::StaleActorGeneration)
     );
     assert_eq!(replacement_case.carrier.slots, before);
     assert_eq!(hp(&replacement_case, reused), 119600);
     // Retired exact generations must not consume the16-group bound forever. New same-species
     // occupants in reused indexes are not the retired group's members. Keep a partially live group.
-    let mut pruning = runtime(world);
+    let mut pruning = runtime(world, artifact_digest);
     let live = BONE_CAGE_KEYS.map(|k| actor(&mut pruning, k, 120000));
     let live_phyl = actor(
         &mut pruning,

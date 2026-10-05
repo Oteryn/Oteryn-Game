@@ -47,6 +47,7 @@ impl QualifiedCrystalDeaths {
     pub(crate) fn qualify(
         project: &WorldProject,
         runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
     ) -> Result<Self, CrystalDeathCompositionError> {
         let rows: Vec<serde_json::Value> =
             serde_json::from_str(include_str!("pinned-death-registry.json"))
@@ -74,6 +75,14 @@ impl QualifiedCrystalDeaths {
             "native v2 source state missing",
         ))?;
         for row in &expected {
+            if !native.qualifies_current_creature_profile(
+                runtime.content_pin().server_artifact_digest(),
+                &row.profile,
+            ) {
+                return Err(CrystalDeathCompositionError::Source(
+                    "callback definition absent from current native artifact",
+                ));
+            }
             if !state.authoring_profiles.iter().any(|p| p == &row.profile)
                 || !state
                     .source_identity_bindings
@@ -253,8 +262,19 @@ mod retained_native_source_tests {
             },
         )?;
         let world = project.lower_reference_source()?.world_id;
-        let mut runtime = crate::foundation::crystal_death_router_fixture(world);
-        let registry = QualifiedCrystalDeaths::qualify(&project, &runtime)
+        let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
+        let mut runtime =
+            crate::foundation::crystal_death_router_fixture_with_native(world, &native);
+        assert!(
+            QualifiedCrystalDeaths::qualify(
+                &project,
+                &crate::foundation::crystal_death_router_fixture(world),
+                &native
+            )
+            .is_err(),
+            "detached source project cannot grant callbacks under an unrelated active artifact"
+        );
+        let registry = QualifiedCrystalDeaths::qualify(&project, &runtime, &native)
             .expect("actual captured15 source memberships");
         let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
         let (fence, stamp) =
@@ -364,7 +384,7 @@ mod retained_native_source_tests {
         let bad = CanonicalProjectDocuments::from_v2_draft(missing, limits)?
             .into_snapshot(limits)?
             .parse(limits)?;
-        assert!(QualifiedCrystalDeaths::qualify(&bad, &runtime).is_err());
+        assert!(QualifiedCrystalDeaths::qualify(&bad, &runtime, &native).is_err());
         Ok(())
     }
 }
@@ -403,9 +423,10 @@ impl CrystalDeathOwner {
     pub(crate) fn bind(
         project: &WorldProject,
         runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
     ) -> Result<Self, CrystalDeathCompositionError> {
         Ok(Self {
-            registry: QualifiedCrystalDeaths::qualify(project, runtime)?,
+            registry: QualifiedCrystalDeaths::qualify(project, runtime, native)?,
             boreth: BorethDeathLedger::default(),
             rum: RumBarrelDeathLedger::default(),
             speech: WeakSpotSpeechMailbox::default(),
@@ -550,8 +571,10 @@ mod retained_projection_owner_tests {
             },
         )?;
         let world = project.lower_reference_source()?.world_id;
-        let mut runtime = crate::foundation::crystal_death_router_fixture(world);
-        let mut composition = CrystalDeathOwner::bind(&project, &runtime).expect("crystal_death_composition.rs:retained_projection_owner_tests:552: qualified fixture operation must succeed");
+        let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
+        let mut runtime =
+            crate::foundation::crystal_death_router_fixture_with_native(world, &native);
+        let mut composition = CrystalDeathOwner::bind(&project, &runtime, &native).expect("crystal_death_composition.rs:retained_projection_owner_tests:552: qualified fixture operation must succeed");
         let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
         let (fence, stamp) =
             crate::foundation::crystal_timer_fixture(scope, runtime.binding().scope_generation())?;
@@ -887,9 +910,11 @@ mod herald_actual_source_tests {
             },
         )?;
         let world = project.lower_reference_source()?.world_id;
-        let mut runtime = crate::foundation::crystal_death_router_fixture(world);
+        let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
+        let mut runtime =
+            crate::foundation::crystal_death_router_fixture_with_native(world, &native);
         let mut owner =
-            CrystalDeathOwner::bind(&project, &runtime).map_err(|e| format!("{e:?}"))?;
+            CrystalDeathOwner::bind(&project, &runtime, &native).map_err(|e| format!("{e:?}"))?;
         let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
         let (fence, stamp) =
             crate::foundation::crystal_timer_fixture(scope, runtime.binding().scope_generation())?;

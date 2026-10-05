@@ -350,6 +350,23 @@ impl NativeGameplayState {
     pub(crate) fn catalog(&self) -> &executable_catalog::CompiledCatalog {
         &self.catalog
     }
+    /// Only loader-decoded profiles under the current outer artifact may authorize source actors.
+    /// A caller's detached WorldProject or digest cannot supply this membership.
+    pub(crate) fn qualifies_current_creature_profile(
+        &self,
+        server_digest: [u8; 32],
+        profile: &ProjectV2AuthoringProfile,
+    ) -> bool {
+        self.source_digest == server_digest
+            && self
+                .creatures
+                .records
+                .iter()
+                .filter(|r| r.profile.target == profile.target)
+                .count()
+                == 1
+            && self.creatures.records.iter().any(|r| &r.profile == profile)
+    }
     pub(crate) fn creature_profiles(&self) -> &CreatureProfilesDocument {
         &self.creatures
     }
@@ -1303,7 +1320,7 @@ mod tests {
             sha256: hex(sha256(bytes)),
         }
     }
-    fn input() -> NativeGameplayInput {
+    pub(super) fn input() -> NativeGameplayInput {
         NativeGameplayInput {
             native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,
             catalog: pinned(include_bytes!(
@@ -2388,4 +2405,59 @@ pub(crate) fn callback_source_native_test_policies(
         creature_policies(&creatures, &presentations)?,
     )
     .map_err(|_| invalid("callback native source fixture policy pin"))
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+pub(crate) fn retained_callback_native_fixture(
+    world: crate::foundation::WorldId,
+) -> NativeGameplayState {
+    let path = std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST")
+        .expect("explicit actual native manifest required for callback authority test");
+    let input = NativeGameplayInput::from_manifest(Path::new(&path))
+        .expect("qualified native callback test fixture");
+    let room = super::qualify_selected_native_gameplay_room(world, &input)
+        .expect("qualified native callback test fixture");
+    let staged = super::production::StagedGeneration::stage(
+        &room.compiled().server_artifact,
+        &room.compiled().client_artifact,
+        room.compiled().expectation(),
+    )
+    .expect("qualified native callback test fixture");
+    staged
+        .runtime_state()
+        .native_gameplay()
+        .expect("qualified native callback test fixture")
+        .clone()
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod callback_membership_tests {
+    use super::*;
+    #[test]
+    fn callback_membership_requires_current_digest_and_exact_loaded_profile() {
+        let input = super::tests::input();
+        let world = crate::foundation::WorldId::decode(&[
+            1, 144, 0, 0, 0, 8, 112, 0, 128, 0, 0, 0, 0, 0, 0, 8,
+        ])
+        .expect("qualified native callback test fixture");
+        let room = super::super::qualify_selected_native_gameplay_room(world, &input)
+            .expect("qualified native callback test fixture");
+        let native = decode(&room.compiled().server_artifact)
+            .expect("qualified native callback test fixture")
+            .state;
+        let profile = &native.creature_profiles().records[0].profile;
+        let digest = native.source_digest();
+        assert!(native.qualifies_current_creature_profile(digest, profile));
+        assert!(!native.qualifies_current_creature_profile([0; 32], profile));
+        let mut altered = profile.clone();
+        if let ProjectV2AuthoringProfileData::Creature(c) = &mut altered.data {
+            c.health = Some(999_999);
+        }
+        assert!(!native.qualifies_current_creature_profile(digest, &altered));
+        let mut missing = profile.clone();
+        missing.target.key = "oteryn:creature.absent_source_actor".into();
+        assert!(!native.qualifies_current_creature_profile(digest, &missing));
+    }
 }

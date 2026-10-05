@@ -11,15 +11,16 @@ const SOURCE_REVISION: &str =
 const ENCOUNTER: &str = "cc3143372125a5bd4bff66bbd1dc0b3cf2989e6892e3135901f5083f2cd689ef";
 /// Raw arrays must come from current native artifact owning loader (same trusted seam as MeleeSource).
 /// Passing a caller-authored digest is not a cryptographic proof of array membership.
-pub(crate) fn register_bone_phase(
+fn register_bone_phase(
     runtime: &ChannelRuntimeV1,
     cages: [ExactActorRef; 4],
     phylactery: ExactActorRef,
     records: &[ProjectReferenceRecord],
     profiles: &[ProjectV2AuthoringProfile],
     bindings: &[ProjectV2SourceIdentityBinding],
-    artifact_digest: [u8; 32],
+    native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> Result<BoneOverlordCagePhase, BonePhaseError> {
+    let artifact_digest = native.source_digest();
     if runtime.content_pin().server_artifact_digest() != artifact_digest {
         return Err(BonePhaseError::ContentChanged);
     }
@@ -65,6 +66,9 @@ pub(crate) fn register_bone_phase(
         if chosen.len() != 1 {
             return Err(BonePhaseError::InvalidSource);
         }
+        if !native.qualifies_current_creature_profile(artifact_digest, chosen[0]) {
+            return Err(BonePhaseError::InvalidSource);
+        }
         let Data::Creature(c) = &chosen[0].data else {
             return Err(BonePhaseError::InvalidSource);
         };
@@ -100,6 +104,7 @@ pub(crate) fn register_bone_phase(
 pub(crate) fn register_bone_phase_shared(
     runtime: &mut ChannelRuntimeV1,
     project: &crate::content::WorldProject,
+    native: &crate::content::native_gameplay::NativeGameplayState,
     map: &crate::content::CanonicalReferencePlayableContent,
     map_fence: &crate::world_runtime::ScopeContentGenerationFence,
     current: &crate::foundation::ScopeRuntimeFence,
@@ -175,7 +180,7 @@ pub(crate) fn register_bone_phase_shared(
         &draft.core.records,
         &draft.state.authoring_profiles,
         &draft.state.source_identity_bindings,
-        runtime.content_pin().server_artifact_digest(),
+        native,
     )?;
     // Full source pin/exact physical generations revalidated by native group setter before any
     // registration write. The source-authored actor stats remain untouched.
@@ -221,36 +226,41 @@ mod shared_hp_actual_source_tests {
         )?;
         let world = project.lower_reference_source()?.world_id;
         let draft = project.migrate_to_v2();
-        crate::foundation::bone_shared_actual_owner_harness(world, |runtime, cages, phyl| {
-            let good = register_bone_phase(
-                runtime,
-                cages,
-                phyl,
-                &draft.core.records,
-                &draft.state.authoring_profiles,
-                &draft.state.source_identity_bindings,
-                runtime.content_pin().server_artifact_digest(),
-            )
-            .expect("actual five source profiles/bindings");
-            let mut bad = draft.state.source_identity_bindings.clone();
-            bad.iter_mut()
-                .find(|b| b.target.key == "oteryn:creature.elyrax_s_soulcage")
-                .expect("bone_phase_registry.rs:shared_hp_actual_source_tests:145: qualified fixture operation must succeed")
-                .source_revision = "not-pinned".into();
-            assert!(
-                register_bone_phase(
+        let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
+        crate::foundation::bone_shared_actual_owner_harness(
+            world,
+            native.source_digest(),
+            |runtime, cages, phyl| {
+                let good = register_bone_phase(
                     runtime,
                     cages,
                     phyl,
                     &draft.core.records,
                     &draft.state.authoring_profiles,
-                    &bad,
-                    runtime.content_pin().server_artifact_digest()
+                    &draft.state.source_identity_bindings,
+                    &native,
                 )
-                .is_err()
-            );
-            good
-        });
+                .expect("actual five source profiles/bindings");
+                let mut bad = draft.state.source_identity_bindings.clone();
+                bad.iter_mut()
+                .find(|b| b.target.key == "oteryn:creature.elyrax_s_soulcage")
+                .expect("bone_phase_registry.rs:shared_hp_actual_source_tests:145: qualified fixture operation must succeed")
+                .source_revision = "not-pinned".into();
+                assert!(
+                    register_bone_phase(
+                        runtime,
+                        cages,
+                        phyl,
+                        &draft.core.records,
+                        &draft.state.authoring_profiles,
+                        &bad,
+                        &native
+                    )
+                    .is_err()
+                );
+                good
+            },
+        );
         Ok(())
     }
 }

@@ -4,7 +4,7 @@
 task_id: OTV2-20261004-monster-main-reconciliation
 title: Complete seven monster data and source-mechanic batches
 mode: IMPLEMENT
-status: validating
+status: in_progress
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/monster-source-mechanics-seven-20261004
@@ -88,3 +88,7 @@ Post-merge execution binds main `d98968d1134eef7bac863d8b8a00611fc3e8f15d` and c
 
 
 Final publication qualification (2026-10-05): runtime execution is bound to code head58a8d64f03564407f7501e16037892127c70f677, binary06a1a32ca2199d5ce4c397eb8bf5f85682271e97f8e111ea0d534644aa8287d6:2370 library PASS/0 failed/24 ignored and19 individually executed native captures PASS. Repository integration3 PASS and reward binding11 PASS were freshly rerun at58a. Strict all-target Clippy passed atcaef6ec33b7ed2f502e071bc4e1232511ba79a23. Every Rust source file is identical between those heads; canonical reference/declarations/sources and Quest quests[] payload remain preserved. Successor Python reproduction, typed Unknown normalization and Quest source metadata are separately qualified, not described as a fresh runtime-binary execution. Content-tree gates and Quest510/0/1skip plus four RewardClaim gates PASS. Accepted stats and seven protected source-body variants remain preserved. Historical7a/e820 receipts retain their original scope. No production activation or Global1:1 parity claimed.
+
+## Repair generation (2026-10-05)
+
+Returned to AUTHORING from published b984e329 after verified P1 findings. Both are accepted: detached same-world source projects previously acquired callback/Bone shared-HP authority by copying runtime pins. Repair consumes the actual loader-decoded NativeGameplayState, checks its independent outer digest against current runtime and requires exact loaded Creature profile membership. The raw Bone helper becomes private. RED reproduction is retained; current native positive and negative tests qualify the repair. Reconciliation target is main7358a14d, including NPC rebuild1777, held-target spell1808 and map-wire1810. No merge or production authority is requested.

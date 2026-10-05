@@ -4144,6 +4144,7 @@ impl MonsterCombatLane {
         &mut self,
         project: &crate::content::WorldProject,
         runtime: &ChannelRuntimeV1,
+        native: &crate::content::native_gameplay::NativeGameplayState,
     ) -> Result<(), crate::crystal_death_composition::CrystalDeathCompositionError> {
         if self.crystal_deaths.is_some() {
             return Err(
@@ -4153,7 +4154,7 @@ impl MonsterCombatLane {
             );
         }
         self.crystal_deaths = Some(crate::crystal_death_composition::CrystalDeathOwner::bind(
-            project, runtime,
+            project, runtime, native,
         )?);
         Ok(())
     }
@@ -5454,6 +5455,7 @@ impl MonsterCombatLane {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         project: &crate::content::WorldProject,
+        native: &crate::content::native_gameplay::NativeGameplayState,
         map: &crate::content::CanonicalReferencePlayableContent,
         map_fence: &crate::world_runtime::ScopeContentGenerationFence,
         current: &ScopeRuntimeFence,
@@ -5483,7 +5485,7 @@ impl MonsterCombatLane {
             .try_reserve(1)
             .map_err(|_| BonePhaseError::Carrier(CarrierError::AllocationFailed))?;
         let state = crate::bone_phase_registry::register_bone_phase_shared(
-            runtime, project, map, map_fence, current, stamp, placements, cages, phylactery,
+            runtime, project, native, map, map_fence, current, stamp, placements, cages, phylactery,
         )?;
         self.bone_encounters.push(BoneCombatInstance {
             cages,
@@ -5567,7 +5569,10 @@ mod bone_map_admission_actual_tests {
         )
         .expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5394: qualified fixture operation must succeed");
         let mut map = link_reference_playable(project.lower_reference_source().expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5397: qualified fixture operation must succeed")).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5397: qualified fixture operation must succeed");
-        let mut runtime = crate::foundation::crystal_death_router_fixture(map.world_id);
+        let native =
+            crate::content::native_gameplay::retained_callback_native_fixture(map.world_id);
+        let mut runtime =
+            crate::foundation::crystal_death_router_fixture_with_native(map.world_id, &native);
         let keys = [
             "oteryn:creature.elyrax_s_soulcage",
             "oteryn:creature.myzareth_s_soulcage",
@@ -5651,7 +5656,7 @@ mod bone_map_admission_actual_tests {
             ReferenceContentGeneration::from_content(&map).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5479: qualified fixture operation must succeed"),
         );
         let mut lane = MonsterCombatLane::new(&runtime, &fence).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5481: qualified fixture operation must succeed");
-        lane.bind_crystal_death_owner(&project, &runtime).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5482: qualified fixture operation must succeed");
+        lane.bind_crystal_death_owner(&project, &runtime, &native).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5482: qualified fixture operation must succeed");
         let cages = [actors[0], actors[1], actors[2], actors[3]];
         let phyl = actors[4];
         let ps = [
@@ -5667,6 +5672,7 @@ mod bone_map_admission_actual_tests {
             lane.admit_bone_shared_encounter(
                 &mut runtime,
                 &project,
+                &native,
                 &bad,
                 &map_fence,
                 &fence,
@@ -5684,6 +5690,7 @@ mod bone_map_admission_actual_tests {
             lane.admit_bone_shared_encounter(
                 &mut runtime,
                 &project,
+                &native,
                 &map,
                 &map_fence,
                 &fence,
@@ -5698,6 +5705,7 @@ mod bone_map_admission_actual_tests {
         lane.admit_bone_shared_encounter(
             &mut runtime,
             &project,
+                &native,
             &map,
             &map_fence,
             &fence,
@@ -5712,6 +5720,7 @@ mod bone_map_admission_actual_tests {
             lane.admit_bone_shared_encounter(
                 &mut runtime,
                 &project,
+                &native,
                 &map,
                 &map_fence,
                 &fence,
