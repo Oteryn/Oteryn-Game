@@ -32,6 +32,7 @@ blocks:
   - OTV2-20261005-err-tools-3
   - OTV2-20261005-err-diag-4
   - OTV2-20261005-err-trace-5
+  - OTV2-20261005-err-tools-hook-6
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -84,6 +85,14 @@ external_repositories: []
 - The owner then ruled 1b: the connection `trace` goes on the wire behind a new optional
   capability `CONNECTION_TRACE_V1` (§1.10 item 6). FND-02 §18 gains a pending amendment, and
   new packet ERR-TRACE-5 registers the fields and the capability. It needs protocol review.
+- Codex round 3 is fixed:
+  - a code without text or without a `public_class` shows the block's generic text and the
+    number, and what a player can tell apart is decided by which code the server sends;
+  - `diagnose` reads both registries;
+  - new packet ERR-TOOLS-HOOK-6 installs the panic hook in the Rust tool binaries;
+  - one build script in `oteryn-error-codes`; a build without `OTERYN_BUILD_SHA` is marked
+    `.local` instead of a `.dirty` check that could go stale;
+  - `level`, `module` and `build` have fixed positions in the §1.5 line.
 
 ## Validation
 
