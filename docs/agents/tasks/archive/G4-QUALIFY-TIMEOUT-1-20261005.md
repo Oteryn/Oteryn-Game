@@ -35,4 +35,6 @@ step changed; no step is weakened.
 
 - `python tools/agents/validate_governance.py`: pass.
 - `python -m unittest discover -s tools/agents/tests`: pass.
+- `python tools/repository/validate_repository_policy.py`: pass (23 files, 62 workflows).
+- `python tools/repository/test_<name>.py` for each of the 10 `tools/repository/test_*.py` files: pass.
 - `git diff --check`: pass.
