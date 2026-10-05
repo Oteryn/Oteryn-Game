@@ -35,6 +35,11 @@ blocks: [OTV2-20261005-npc-content-1, OTV2-20261005-npc-wire-1]
   codecs, server capability rows and limit rows `NPC0-RL-01..07`, with no send path. It runs
   after NPC-CONTENT-1 and #1824.
 - NPC-PLACE-1, NPC-TALK-1 and the later children are not packeted.
+- Codex round on b20b5371 is fixed:
+  - NPC-WIRE-1 acceptance requires the FND-02 §22 independent wire evidence: golden bytes, a
+    raw-byte verifier that does not use the production codec, a malformed corpus, table round
+    trips and additive evolution. It names the inapplicable items (#1846 review 4186908067);
+  - §4 answers the five ARCHITECTURE_DECISION_DISCIPLINE questions (#1846 review 4186908078).
 - Owner questions: none.
 
 ## Validation
