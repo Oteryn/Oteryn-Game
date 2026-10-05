@@ -1857,14 +1857,15 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // The 201 D149 records carried 204 promoted atoms; they left content with their records
     // (ITEM-ID-1b) and are kept in the tombstone archive.
     // ITEM-ADD-1: 23 donor epoch-2 Items carry 39 TibiaWiki atoms on these paths.
-    assert_eq!(promoted_items, 12_301 - 201 + 23);
+    // D3-7 admits the rat corpse (i5964) with a container capacity.
+    assert_eq!(promoted_items, 12_301 - 201 + 23 + 1);
     // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
     // never removes, the others. Capacity adds 17 unknown atoms; declared charges add one.
     // Explicit relative hit facts add 28 atoms on Items already in this census.
     // TIMED-CONTENT-1 adds one charges atom on these paths where none was promoted.
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28 + 1
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28 + 1 + 1
     );
     let (wave1_items, wave1_fields) = linked
         .definitions
@@ -1890,13 +1891,14 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // (D289 holds i901, which enters this census through no other atom; D310 holds i3450,
     // which keeps other atoms).
     // Eight successor defaults add eight false leaves; all already have Wave 1 atoms.
+    // D3-7 adds one explicit `stackable: false` leaf on the corpse, which had no atom here.
     assert_eq!(
         wave1_items,
-        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2518
+        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2518 + 1
     );
     assert_eq!(
         wave1_fields,
-        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_889 + 8
+        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_889 + 8 + 1
     );
     // The declared timer has its own census: it is not one of the older v1/Wave 1 atoms.
     let (charge_fields, duration_fields) = linked
@@ -1933,7 +1935,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // The timed promotion adds 49 durations (its 49 `temporal.duration_ms` rows; TIMED-CONTENT-2
     // omits the one-way i9394) and clears the 21 durations the stats promotion had put on
     // inactive equip forms (TIMED-ITEM-0 §4).
-    assert_eq!(duration_fields, 138 + 49 - 21);
+    // D3-7 gives the corpse a 60 s duration.
+    assert_eq!(duration_fields, 138 + 49 - 21 + 1);
     // Resistance vectors were entirely unknown in the predecessor. Count their typed
     // percentages as atoms so a missing list member cannot hide behind the vector count.
     let (mut resistance_vectors, mut resistance_atoms, mut equipment_patterns) = (0, 0, 0);

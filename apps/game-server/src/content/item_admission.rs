@@ -600,7 +600,7 @@ mod tests {
         assert!(
             apply_v2(
                 &corpse_packet(),
-                "oteryn:item.tibia.i1",
+                concat!("oteryn:item.tibia.", "i1"),
                 &mut m,
                 &mut s,
                 &mut sem
