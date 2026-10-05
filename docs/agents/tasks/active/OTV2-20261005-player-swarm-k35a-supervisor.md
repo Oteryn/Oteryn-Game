@@ -101,11 +101,15 @@ Pre-freeze focused qualification on the exact code/lock bytes published at
 These focused results are authoring evidence only. Repository exact-head CI must requalify the
 post-checkpoint candidate before freeze.
 
+The first post-lock CI reached the World-bundle pin check and exposed only protected-main drift.
+That drift was reconciled by a clean merge-up to protected main `587e01b31c7b998bd6be3a4e7b4ea2816ba4945c`;
+none of the six PR paths were modified by the intervening four main commits.
+
 ## Context checkpoint
 
 ```yaml
 programme: PLAYER_SWARM
-main_sha: dfdb4e21b54fde02b850d6b3006b4d469b710e7f
+main_sha: 587e01b31c7b998bd6be3a4e7b4ea2816ba4945c
 jira_epic: KAN-34
 current_story: KAN-35
 task_id: OTV2-20261005-player-swarm-k35a-supervisor
