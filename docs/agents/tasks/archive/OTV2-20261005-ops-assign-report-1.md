@@ -47,9 +47,13 @@ never raised here (U16).
   U-RS5 storage pending) and the node-host identities configured for each scope. Absent, the
   tool behaves as before (§15 rollback). It requires `--node-config`, whose native-evidence
   and runtime-status certificates (both required) are always compared: the authority key is
-  refused if any producer leaf shares its public key (contract §3).
+  refused if any producer leaf shares its public key (contract §3). The declared epoch must
+  equal the node configuration's `platform.runtime_status.assignment_epoch`, or the tool
+  refuses before anything is sent.
 - `assign|replace --node-identity` validate the identity against the scope before anything is
-  written and bind it to the target `(node_id, registration_revision)` in the state directory;
+  written and stage it with the operation; only a committed receipt (submit or `reconcile`)
+  binds it to the target `(node_id, registration_revision)` in the state directory, so a
+  rejected or failed operation binds nothing;
   the report body comes from the durable row (`ownership_generation`, `decided_at`), the bound
   identity and the declared epoch, so `assignment report --world --channel` re-sends it
   byte-identically. `reconcile` reports a committed assignment too. A failed report leaves the
@@ -57,7 +61,8 @@ never raised here (U16).
   holder-less `node_identity`, and any configured identity in a revocation report could be
   matched by that host (§7). `revoke --node-identity` and `assignment report` on a revoked
   scope refuse and name the follow-up; a committed revoke logs `report=not_sent`. The
-  transport bounds every response body to 256 bytes (`NRS-RESPONSE-BYTES`), not only `200`.
+  transport bounds every response body to 256 bytes (`NRS-RESPONSE-BYTES`), not only `200`,
+  whether framed by length, chunked or close-delimited.
   Logs carry scope ids, result class, attempts and elapsed time only (§10).
 
 ## Validation
@@ -65,8 +70,9 @@ never raised here (U16).
 `cargo fmt --all --check`; `cargo clippy --workspace --all-targets -- -D warnings`;
 `cargo test -p oteryn-game-server` (incl. `tests/native_scope_assignment.rs`: exact wire,
 accepted, superseded, `400`/`401`/`409` stop, wrong-purpose identity, timeout/`503`/`429`
-then success with identical bytes, exhausted retries, oversized response refused for every status, identical re-send, config
-parsing).
+then success with identical bytes, exhausted retries, oversized response refused for every status
+and framing, identical re-send, config parsing, epoch match) and the `oteryn-game-ops` unit
+tests (identity staged until commit, promotion binds once).
 
 ## Open items
 

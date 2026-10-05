@@ -386,6 +386,15 @@ impl ReportConfig {
         }
     }
 
+    /// Whether the declared epoch is the node configuration's
+    /// `platform.runtime_status.assignment_epoch`: Platform matches runtime
+    /// status against the reported assignment's epoch, so a mismatch could
+    /// never route.
+    #[must_use]
+    pub fn matches_node_epoch(&self, runtime_status_epoch: u64) -> bool {
+        self.assignment_epoch == runtime_status_epoch
+    }
+
     /// Whether `identity` is configured for the scope (§5).
     #[must_use]
     pub fn allows(&self, world_id: &str, channel_id: &str, identity: &str) -> bool {

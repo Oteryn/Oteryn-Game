@@ -385,16 +385,29 @@ fn response_over_the_bound_is_refused_in_transport_for_every_status() {
     block_on(async {
         let pki = pki();
         let oversized = " ".repeat(sa::RESPONSE_BYTES + 1);
+        let half = " ".repeat(sa::RESPONSE_BYTES / 2 + 1);
+        let raw = |response: String| Answer {
+            stall: Duration::ZERO,
+            response,
+        };
         let script = vec![
             answer("200 OK", &oversized),
             answer("409 Conflict", &oversized),
+            // Chunked: no single chunk exceeds the bound, their sum does.
+            raw(format!(
+                "HTTP/1.1 503 Service Unavailable\r\nTransfer-Encoding: chunked\r\n\r\n{0:x}\r\n{1}\r\n{0:x}\r\n{1}\r\n0\r\n\r\n",
+                half.len(),
+                half
+            )),
+            // Close-delimited: no length is declared.
+            raw(format!("HTTP/1.1 400 Bad Request\r\n\r\n{oversized}")),
             answer("200 OK", &" ".repeat(sa::RESPONSE_BYTES)),
         ];
         let (port, _) = platform(&pki, script).await;
         let d = descriptor(&pki, port, &pki.authority).unwrap();
         let capacity = TransientCapacity::new();
         let body = sa::encode(&assignment(3)).unwrap();
-        for _ in 0..2 {
+        for _ in 0..4 {
             assert_eq!(
                 sa::deliver(&d, &capacity, &body).await,
                 Err(NotDelivered::Unavailable)
@@ -474,6 +487,13 @@ fn report_config_binds_node_identities_to_scopes() {
     assert!(config.allows(WORLD, CHANNEL, "node-b.runtime-status"));
     assert!(!config.allows(WORLD, CHANNEL, "node-c.runtime-status"));
     assert!(!config.allows(CHANNEL, WORLD, NODE));
+}
+
+#[test]
+fn report_config_epoch_must_match_the_node_runtime_status_epoch() {
+    let config = ReportConfig::parse(CONFIG.as_bytes()).unwrap();
+    assert!(config.matches_node_epoch(1));
+    assert!(!config.matches_node_epoch(2));
 }
 
 #[test]

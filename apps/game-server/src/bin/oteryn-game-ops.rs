@@ -707,6 +707,13 @@ fn reporter(
     let status = node.platform.runtime_status.as_ref().ok_or_else(|| {
         Failure::Input("--node-config platform.runtime_status is required for reporting".into())
     })?;
+    if !config.matches_node_epoch(status.assignment_epoch) {
+        return Err(Failure::Input(
+            "--report-config assignment_epoch differs from --node-config \
+             platform.runtime_status.assignment_epoch"
+                .into(),
+        ));
+    }
     let producer = |key: &'static str, path: &std::path::Path| {
         certificates(&read_file(
             key,
@@ -751,6 +758,23 @@ fn reporter(
     Ok(Some(Reporter { config, descriptor }))
 }
 
+/// Retained state files, so the identity binding is independent of the
+/// database.
+trait StateFiles {
+    fn read_optional(&self, name: &str) -> Result<Option<Vec<u8>>, Failure>;
+    fn create(&self, name: &str, content: &[u8]) -> Outcome;
+}
+
+impl StateFiles for Operator {
+    fn read_optional(&self, name: &str) -> Result<Option<Vec<u8>>, Failure> {
+        self.read_state_optional(name)
+    }
+
+    fn create(&self, name: &str, content: &[u8]) -> Outcome {
+        self.create_state(name, None, content)
+    }
+}
+
 /// Retained node identity of one registered holder, so a re-send derives the
 /// same body from the durable row.
 fn identity_file(holder: &NodeRegistrationFact) -> String {
@@ -761,31 +785,81 @@ fn identity_file(holder: &NodeRegistrationFact) -> String {
     )
 }
 
+/// The identity offered with one operation, until that operation commits.
+fn staged_identity_file(operation_key: &str) -> String {
+    format!("scope-report-identity-staged-{operation_key}")
+}
+
+fn read_identity(files: &impl StateFiles, name: &str) -> Result<Option<String>, Failure> {
+    files
+        .read_optional(name)?
+        .map(|bytes| {
+            String::from_utf8(bytes).map_err(|_| Failure::Input(format!("retained file {name}")))
+        })
+        .transpose()
+}
+
+fn identity_differs() -> Failure {
+    Failure::Rejected("node identity differs from the identity bound to this registration".into())
+}
+
 /// The identity bound to `holder`, binding `offered` on first use. A
 /// different identity for an already bound holder rejects.
 fn bind_identity(
-    operator: &Operator,
+    files: &impl StateFiles,
     holder: &NodeRegistrationFact,
     offered: Option<String>,
 ) -> Result<Option<String>, Failure> {
     let name = identity_file(holder);
-    let retained = operator
-        .read_state_optional(&name)?
-        .map(|bytes| {
-            String::from_utf8(bytes).map_err(|_| Failure::Input(format!("retained file {name}")))
-        })
-        .transpose()?;
-    match (retained, offered) {
-        (Some(retained), Some(offered)) if retained != offered => Err(Failure::Rejected(
-            "node identity differs from the identity bound to this registration".into(),
-        )),
+    match (read_identity(files, &name)?, offered) {
+        (Some(retained), Some(offered)) if retained != offered => Err(identity_differs()),
         (Some(retained), _) => Ok(Some(retained)),
         (None, Some(offered)) => {
-            operator.create_state(&name, None, offered.as_bytes())?;
+            files.create(&name, offered.as_bytes())?;
             Ok(Some(offered))
         }
         (None, None) => Ok(None),
     }
+}
+
+/// Stages `offered` with the operation before anything is written. It becomes
+/// the holder's binding only when that operation commits (`promote_identity`),
+/// so a rejected or failed operation binds nothing.
+fn stage_identity(
+    files: &impl StateFiles,
+    operation_key: &str,
+    holder: &NodeRegistrationFact,
+    offered: &str,
+) -> Outcome {
+    if read_identity(files, &identity_file(holder))?.is_some_and(|retained| retained != offered) {
+        return Err(identity_differs());
+    }
+    files.create(&staged_identity_file(operation_key), offered.as_bytes())
+}
+
+/// Binds the identity staged with a committed operation to its holder.
+fn promote_identity(
+    files: &impl StateFiles,
+    operation_key: &str,
+    holder: &NodeRegistrationFact,
+) -> Outcome {
+    if let Some(staged) = read_identity(files, &staged_identity_file(operation_key))? {
+        bind_identity(files, holder, Some(staged))?;
+    }
+    Ok(())
+}
+
+/// The target holder of an assign or replace request.
+fn target_holder(file: &AssignmentRequestFile) -> Result<Option<NodeRegistrationFact>, Failure> {
+    let (Some(node), Some(revision)) = (&file.target_node_id, file.target_registration_revision)
+    else {
+        return Ok(None);
+    };
+    Ok(Some(NodeRegistrationFact::new(
+        NodeId::decode(&decode_uuid("node-id", node)?)
+            .map_err(|_| Failure::Input("node-id".into()))?,
+        revision,
+    )))
 }
 
 /// Contract §5 has no holder-less `node_identity`: any configured identity in
@@ -807,7 +881,12 @@ async fn report_committed(
             event("report=not_sent reason=revocation follow_up=REVOKE-REPORT-CONTRACT-1");
             Ok(())
         }
-        Some(reporter) => report(operator, reporter, &file.world_id, &file.channel_id, None).await,
+        Some(reporter) => {
+            if let Some(holder) = target_holder(file)? {
+                promote_identity(operator, &file.operation_key, &holder)?;
+            }
+            report(operator, reporter, &file.world_id, &file.channel_id, None).await
+        }
     }
 }
 
@@ -980,11 +1059,9 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         }
     };
     arguments.finish()?;
-    // The reported node identity is validated and bound to the target before
-    // anything is written, so a rejected identity never commits (§5).
-    if let (Some(reporter), Some(node), Some(revision)) =
-        (&reporter, &target_node_id, target_registration_revision)
-    {
+    // The reported node identity is validated before anything is written and
+    // staged with the operation; it is bound to the target only on commit (§5).
+    let staged = if let (Some(reporter), Some(_)) = (&reporter, &target_node_id) {
         let identity = node_identity.ok_or(Failure::Usage(
             "--report-config requires --node-identity for assign and replace",
         ))?;
@@ -994,12 +1071,7 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
                 "node identity is not configured for the scope".into(),
             ));
         }
-        let holder = NodeRegistrationFact::new(
-            NodeId::decode(&decode_uuid("node-id", node)?)
-                .map_err(|_| Failure::Input("node-id".into()))?,
-            revision,
-        );
-        bind_identity(operator, &holder, Some(identity))?;
+        Some(identity)
     } else if node_identity.is_some() && action == "revoke" {
         return Err(Failure::Usage(
             "--node-identity is refused for revoke: a revocation is not reported \
@@ -1009,7 +1081,9 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         return Err(Failure::Usage(
             "--node-identity is accepted by assign and replace",
         ));
-    }
+    } else {
+        None
+    };
     let predecessor = if action == "assign" {
         None
     } else {
@@ -1045,6 +1119,9 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
     let bytes = file
         .encode()
         .map_err(|_| Failure::Input("assignment request".into()))?;
+    if let (Some(identity), Some(holder)) = (&staged, target_holder(&file)?) {
+        stage_identity(operator, &file.operation_key, &holder, identity)?;
+    }
     operator.create_state(&name, None, &bytes)?;
     match writer.submit(&request).await {
         Ok(AssignmentOutcome::Committed(receipt)) => {
@@ -1210,5 +1287,81 @@ fn main() -> ExitCode {
             eprintln!("oteryn-game-ops: {failure}");
             ExitCode::from(failure.code())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used)]
+    use super::*;
+    use std::cell::RefCell;
+
+    #[derive(Default)]
+    struct Files(RefCell<BTreeMap<String, Vec<u8>>>);
+
+    impl StateFiles for Files {
+        fn read_optional(&self, name: &str) -> Result<Option<Vec<u8>>, Failure> {
+            Ok(self.0.borrow().get(name).cloned())
+        }
+
+        fn create(&self, name: &str, content: &[u8]) -> Outcome {
+            match self.0.borrow_mut().entry(name.to_owned()) {
+                std::collections::btree_map::Entry::Occupied(_) => {
+                    Err(Failure::Input(format!("file {name}: exists")))
+                }
+                std::collections::btree_map::Entry::Vacant(entry) => {
+                    entry.insert(content.to_vec());
+                    Ok(())
+                }
+            }
+        }
+    }
+
+    fn holder() -> NodeRegistrationFact {
+        NodeRegistrationFact::new(
+            NodeId::decode(
+                &decode_uuid("node-id", "0190a8f2-7c3e-7b4a-8d2f-3e4a5b6c7d8e").unwrap(),
+            )
+            .unwrap(),
+            4,
+        )
+    }
+
+    #[test]
+    fn an_uncommitted_operation_binds_no_identity() {
+        let files = Files::default();
+        stage_identity(&files, "aa", &holder(), "node-a").unwrap();
+        assert_eq!(
+            read_identity(&files, &identity_file(&holder())).unwrap(),
+            None
+        );
+        // A corrected identity for the same holder is accepted afterwards.
+        stage_identity(&files, "bb", &holder(), "node-b").unwrap();
+        promote_identity(&files, "bb", &holder()).unwrap();
+        assert_eq!(
+            read_identity(&files, &identity_file(&holder())).unwrap(),
+            Some("node-b".into())
+        );
+    }
+
+    #[test]
+    fn a_committed_operation_binds_its_staged_identity_once() {
+        let files = Files::default();
+        stage_identity(&files, "aa", &holder(), "node-a").unwrap();
+        promote_identity(&files, "aa", &holder()).unwrap();
+        // Promotion is idempotent for a re-reconciled commit.
+        promote_identity(&files, "aa", &holder()).unwrap();
+        assert_eq!(
+            bind_identity(&files, &holder(), None).unwrap(),
+            Some("node-a".into())
+        );
+        assert!(matches!(
+            stage_identity(&files, "bb", &holder(), "node-b"),
+            Err(Failure::Rejected(_))
+        ));
+        stage_identity(&files, "cc", &holder(), "node-a").unwrap();
+        promote_identity(&files, "cc", &holder()).unwrap();
+        // Nothing staged (a revoke, or reporting disabled) binds nothing.
+        promote_identity(&files, "dd", &holder()).unwrap();
     }
 }
