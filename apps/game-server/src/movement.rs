@@ -405,6 +405,7 @@ impl MovementOwnerTurn<'_> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::items_after_test_module)]
     use super::*;
     use crate::content::static_cell_engine::{
         EngineeringCollisionClaim, EngineeringStaticCellClaim,

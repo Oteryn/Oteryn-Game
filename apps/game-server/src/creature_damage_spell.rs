@@ -3168,11 +3168,11 @@ mod tests {
         let index = case["entry"].as_u64().expect("qualified fixture") as usize;
         let mut wrong = profiles.clone();
         for p in &mut wrong {
-            if p.target.key == case["parent"] {
-                if let Data::Ability(a) = &mut p.data {
-                    a.details.as_mut().expect("qualified fixture").variants[0].key =
-                        "oteryn:ability.spell.haste".into();
-                }
+            if p.target.key == case["parent"]
+                && let Data::Ability(a) = &mut p.data
+            {
+                a.details.as_mut().expect("qualified fixture").variants[0].key =
+                    "oteryn:ability.spell.haste".into();
             }
         }
         assert_eq!(
@@ -3383,10 +3383,10 @@ mod tests {
                 .expect("qualified fixture"),
         );
         for profile in &mut profiles.1 {
-            if profile.target.key == s.ability.key {
-                if let Data::Ability(a) = &mut profile.data {
-                    a.details.as_mut().expect("qualified fixture").range_tiles = 1;
-                }
+            if profile.target.key == s.ability.key
+                && let Data::Ability(a) = &mut profile.data
+            {
+                a.details.as_mut().expect("qualified fixture").range_tiles = 1;
             }
         }
         assert!(matches!(

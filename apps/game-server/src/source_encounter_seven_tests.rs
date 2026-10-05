@@ -237,7 +237,6 @@ fn actual_time_profiles_share_actor_hp_history_and_exact30s_return_not_global_sw
     let plan = o
         .prepare_cast(&r, &f, stamp, &s, &p, SemanticTimeMicros::from_micros(0))
         .expect("qualified fixture")
-        .ok()
         .expect("qualified fixture");
     let selected = TimeGuardianOwner::planned_definition(&plan).to_owned();
     let receipt = o
@@ -398,7 +397,6 @@ fn distinct_time_source_entries_qualify_and_foreign_owner_source_substitution_ne
     let plan = o
         .prepare_cast(&r, &f, stamp, &s, &p, SemanticTimeMicros::from_micros(0))
         .expect("qualified fixture")
-        .ok()
         .expect("qualified fixture");
     o.commit_cast(&mut r, &f, stamp, plan)
         .expect("qualified fixture");
@@ -503,7 +501,6 @@ fn sole_return_deadline_survives_real_reservation_refused_commit_and_foreign_sco
             SemanticTimeMicros::from_micros(0),
         )
         .expect("qualified fixture")
-        .ok()
         .expect("qualified fixture");
     owner
         .commit_cast(&mut r, &f, stamp, cast)
@@ -672,7 +669,6 @@ fn two_retained_casts_and_returns_cannot_rewind_the_same_source_owner_clock() {
             SemanticTimeMicros::from_micros(100),
         )
         .expect("qualified fixture")
-        .ok()
         .expect("qualified fixture");
     let newer = owner
         .prepare_cast(
@@ -684,7 +680,6 @@ fn two_retained_casts_and_returns_cannot_rewind_the_same_source_owner_clock() {
             SemanticTimeMicros::from_micros(200),
         )
         .expect("qualified fixture")
-        .ok()
         .expect("qualified fixture");
     owner
         .commit_cast(&mut r, &f, stamp, newer)
@@ -706,7 +701,6 @@ fn two_retained_casts_and_returns_cannot_rewind_the_same_source_owner_clock() {
             SemanticTimeMicros::from_micros(200),
         )
         .expect("qualified fixture")
-        .ok()
         .expect("qualified fixture");
     owner
         .commit_cast(&mut r, &f, stamp, current)

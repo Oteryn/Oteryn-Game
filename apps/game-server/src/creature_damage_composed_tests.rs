@@ -267,7 +267,7 @@ fn setup(
         ability: source.ability.clone(),
         list: ScheduleList::Attack,
         entry_index: index,
-        magnitude: source.magnitude.clone(),
+        magnitude: source.magnitude,
         range_tiles: source.range,
         occurrence: crate::ability::AbilityOccurrence::new(
             &format!(

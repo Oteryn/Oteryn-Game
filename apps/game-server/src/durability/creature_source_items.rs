@@ -1406,10 +1406,9 @@ fn destroy_instance_key(bytes: &[u8; 16]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod conservative_destroy_tests {
-    #![allow(clippy::expect_used)]
+    #![allow(clippy::expect_used, clippy::items_after_test_module)]
     use super::*;
     use crate::spell::native_items::NativeItemRef;
     fn listed() -> Vec<NativeItemRef> {

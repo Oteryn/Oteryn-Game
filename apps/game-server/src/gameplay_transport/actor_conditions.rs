@@ -920,6 +920,10 @@ mod native_composite_tests {
 // Explicit known self-use provenance; no production admission or authority is added.
 #[cfg(test)]
 impl ChannelSpellStates {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "test-only native CAS fixture preserves independent runtime/fence/stamp/session/definition/application facts"
+    )]
     pub(crate) fn install_owned_player_self_use_test_condition(
         &mut self,
         runtime: &ChannelRuntimeV1,

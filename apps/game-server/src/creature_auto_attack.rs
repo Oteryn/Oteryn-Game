@@ -1121,6 +1121,7 @@ fn hex(b: &[u8]) -> String {
 mod tests {
     // Positive-only fixture grant; real runtime paths receive the independently current owner fence.
     impl AutoAttackOwner {
+        #[allow(clippy::too_many_arguments)]
         fn fixture_swing(
             &mut self,
             runtime: &mut ChannelRuntimeV1,
@@ -1892,7 +1893,7 @@ mod tests {
                 zero,
                 facts.target,
                 facts.session,
-                &[source.clone()],
+                std::slice::from_ref(&source),
                 clock(0),
             )
             .expect("lawful first zero");
@@ -1904,7 +1905,7 @@ mod tests {
                 zero,
                 facts.target,
                 facts.session,
-                &[source.clone()],
+                std::slice::from_ref(&source),
                 clock(500_000),
             )
             .expect("duplicate selection");
@@ -1917,7 +1918,7 @@ mod tests {
                 one,
                 facts.target,
                 facts.session,
-                &[source.clone()],
+                std::slice::from_ref(&source),
                 clock(1_000_000),
             )
             .expect("same target later think");
@@ -1929,7 +1930,7 @@ mod tests {
                 zero,
                 facts.target,
                 facts.session,
-                &[source.clone()],
+                std::slice::from_ref(&source),
                 clock(1_500_000)
             ),
             Err(AttackError::StaleAiSelection)
@@ -1973,7 +1974,7 @@ mod tests {
                 occurrence,
                 facts.target,
                 facts.session,
-                &[source.clone()],
+                std::slice::from_ref(&source),
                 clock(0),
             )
             .expect("target");

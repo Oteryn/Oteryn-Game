@@ -8327,7 +8327,8 @@ mod native_summon_reconciliation_tests {
         let before = match &r.carrier.slots[i] {
             Slot::CreatureOccupied { committed, .. } => Some(committed.conditions.clone()),
             _ => None,
-        }.expect("fixture must contain a native creature");
+        }
+        .expect("fixture must contain a native creature");
         r.carrier
             .current_owner_exact_commit(&r.continuity)
             .commit_damage(
@@ -8351,7 +8352,8 @@ mod native_summon_reconciliation_tests {
         let after = match &r.carrier.slots[i] {
             Slot::CreatureOccupied { committed, .. } => Some(&committed.conditions),
             _ => None,
-        }.expect("fixture must contain a native creature");
+        }
+        .expect("fixture must contain a native creature");
         assert_ne!(before, *after);
         let child_death = r
             .project_native_summon_death(a)
@@ -10565,7 +10567,8 @@ impl ChannelRuntimeV1 {
         match &self.carrier.slots[index] {
             Slot::CreatureOccupied { health, .. } => Some(*health),
             _ => None,
-        }.expect("fixture requires native creature")
+        }
+        .expect("fixture requires native creature")
     }
 }
 
@@ -11025,7 +11028,10 @@ impl ChannelRuntimeV1 {
 // Test-only native owner harness. Registration callback supplied by root test reads actual project.
 // No crate::content dependency is introduced into standalone Foundation path includes.
 #[cfg(test)]
-#[allow(clippy::expect_used, reason = "test-only native fixture assertions retain descriptive failures")]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
 pub(crate) fn bone_shared_actual_owner_harness(
     world: WorldId,
     mut register: impl FnMut(
@@ -11088,11 +11094,15 @@ pub(crate) fn bone_shared_actual_owner_harness(
         ExactActorRef(a)
     }
     fn hp(r: &ChannelRuntimeV1, a: ExactActorRef) -> i64 {
-        let i = r.carrier.validate_ref(&r.continuity, a.0).expect("valid native fixture operation must succeed");
+        let i = r
+            .carrier
+            .validate_ref(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
         match r.carrier.slots[i] {
             Slot::CreatureOccupied { health, .. } => Some(health),
             _ => None,
-        }.expect("fixture must contain a native creature")
+        }
+        .expect("fixture must contain a native creature")
     }
     fn damage(
         r: &mut ChannelRuntimeV1,
@@ -11119,7 +11129,9 @@ pub(crate) fn bone_shared_actual_owner_harness(
     let scope = super::RuntimeScopeRefV1::channel(world, r.binding().channel_id());
     let generation = r.binding().scope_generation();
     let mut fence = super::ScopeRuntimeFence::from_external_grant(generation).with_scope(scope);
-    let ordinal = fence.accept_input(generation).expect("valid native fixture operation must succeed");
+    let ordinal = fence
+        .accept_input(generation)
+        .expect("valid native fixture operation must succeed");
     let stamp = fence.stamp(ordinal);
 
     let mut wrong = [0; 16];
@@ -11127,12 +11139,17 @@ pub(crate) fn bone_shared_actual_owner_harness(
     wrong[8] = 0x80;
     wrong[15] = 99;
     let wrong = super::ScopeRuntimeFence::from_external_grant(generation).with_scope(
-        super::RuntimeScopeRefV1::channel(world, ChannelId::decode(&wrong).expect("valid native fixture operation must succeed")),
+        super::RuntimeScopeRefV1::channel(
+            world,
+            ChannelId::decode(&wrong).expect("valid native fixture operation must succeed"),
+        ),
     );
     assert!(r.register_bone_shared_hp(&state, &wrong, stamp).is_err());
-    r.register_bone_shared_hp(&state, &fence, stamp).expect("valid native fixture operation must succeed");
+    r.register_bone_shared_hp(&state, &fence, stamp)
+        .expect("valid native fixture operation must succeed");
     assert_eq!(r.carrier.bone_shared_groups.len(), 1);
-    r.register_bone_shared_hp(&state, &fence, stamp).expect("valid native fixture operation must succeed");
+    r.register_bone_shared_hp(&state, &fence, stamp)
+        .expect("valid native fixture operation must succeed");
     assert_eq!(r.carrier.bone_shared_groups.len(), 1);
     assert_eq!(
         damage(
@@ -11146,7 +11163,8 @@ pub(crate) fn bone_shared_actual_owner_harness(
         Err(CarrierError::CreatureNotActionable)
     );
     assert_eq!(hp(&r, phyl), 50000);
-    let first = damage(&mut r, cages[1], BONE_CAGE_KEYS[1], b"A", b"A\0hit400", 400).expect("valid native fixture operation must succeed");
+    let first = damage(&mut r, cages[1], BONE_CAGE_KEYS[1], b"A", b"A\0hit400", 400)
+        .expect("valid native fixture operation must succeed");
     assert!(first.applied);
     for a in cages {
         assert_eq!(hp(&r, a), 119600)
@@ -11173,13 +11191,17 @@ pub(crate) fn bone_shared_actual_owner_harness(
     let heals = vec![
         (
             cages[2],
-            std::str::from_utf8(BONE_CAGE_KEYS[2]).expect("valid native fixture operation must succeed").to_owned(),
+            std::str::from_utf8(BONE_CAGE_KEYS[2])
+                .expect("valid native fixture operation must succeed")
+                .to_owned(),
             120000,
             200,
         ),
         (
             cages[0],
-            std::str::from_utf8(BONE_CAGE_KEYS[0]).expect("valid native fixture operation must succeed").to_owned(),
+            std::str::from_utf8(BONE_CAGE_KEYS[0])
+                .expect("valid native fixture operation must succeed")
+                .to_owned(),
             120000,
             100,
         ),
@@ -11265,9 +11287,16 @@ pub(crate) fn bone_shared_actual_owner_harness(
     );
     for (i, a) in cages.into_iter().enumerate() {
         let mut owner = r.borrow_combat_death();
-        let receipt = owner.committed_lethal_receipt(a).expect("valid native fixture operation must succeed");
-        owner.project_committed_lethal(receipt).expect("valid native fixture operation must succeed");
-        let projected = owner.projected_death(a).expect("valid native fixture operation must succeed").0;
+        let receipt = owner
+            .committed_lethal_receipt(a)
+            .expect("valid native fixture operation must succeed");
+        owner
+            .project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
+        let projected = owner
+            .projected_death(a)
+            .expect("valid native fixture operation must succeed")
+            .0;
         assert_eq!(projected.actor_local_id(), a.0.actor_local_id.0);
         let phase = r
             .commit_bone_overlord_projected_death(&mut state, a)
@@ -11305,8 +11334,12 @@ pub(crate) fn bone_shared_actual_owner_harness(
     .expect("valid native fixture operation must succeed");
     {
         let mut owner = r.borrow_combat_death();
-        let receipt = owner.committed_lethal_receipt(phyl).expect("valid native fixture operation must succeed");
-        owner.project_committed_lethal(receipt).expect("valid native fixture operation must succeed");
+        let receipt = owner
+            .committed_lethal_receipt(phyl)
+            .expect("valid native fixture operation must succeed");
+        owner
+            .project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
     }
     assert_eq!(
         r.commit_bone_overlord_projected_death(&mut state, phyl)
@@ -11322,7 +11355,8 @@ pub(crate) fn bone_shared_actual_owner_harness(
     let p = actor(&mut q, b"oteryn:creature.bonelord_s_phylactery", 50000);
     let st = register(&q, c, p);
     for i in 0..3 {
-        damage(&mut q, c[i], BONE_CAGE_KEYS[i], b"seed", b"seed\0hit", 400).expect("valid native fixture operation must succeed");
+        damage(&mut q, c[i], BONE_CAGE_KEYS[i], b"seed", b"seed\0hit", 400)
+            .expect("valid native fixture operation must succeed");
     }
     damage(
         &mut q,
@@ -11333,7 +11367,8 @@ pub(crate) fn bone_shared_actual_owner_harness(
         400,
     )
     .expect("valid native fixture operation must succeed");
-    q.register_bone_shared_hp(&st, &fence, stamp).expect("valid native fixture operation must succeed");
+    q.register_bone_shared_hp(&st, &fence, stamp)
+        .expect("valid native fixture operation must succeed");
     let before = q.carrier.slots.clone();
     assert_eq!(
         damage(
@@ -11347,7 +11382,9 @@ pub(crate) fn bone_shared_actual_owner_harness(
         Err(CarrierError::PlanConflict)
     );
     assert_eq!(q.carrier.slots, before);
-    q.carrier.remove(&q.continuity, c[1].0).expect("valid native fixture operation must succeed");
+    q.carrier
+        .remove(&q.continuity, c[1].0)
+        .expect("valid native fixture operation must succeed");
     let replacement = actor(&mut q, BONE_CAGE_KEYS[1], 120000);
     let before = q.carrier.slots.clone();
     assert!(
@@ -11409,7 +11446,9 @@ pub(crate) fn bone_shared_actual_owner_harness(
     assert_eq!(replacement_case.carrier.slots, before);
     let heal = vec![(
         rc[0],
-        std::str::from_utf8(BONE_CAGE_KEYS[0]).expect("valid native fixture operation must succeed").to_owned(),
+        std::str::from_utf8(BONE_CAGE_KEYS[0])
+            .expect("valid native fixture operation must succeed")
+            .to_owned(),
         120000,
         100,
     )];
@@ -11452,14 +11491,20 @@ pub(crate) fn bone_shared_actual_owner_harness(
                 .any(|g| g.cages == live)
         );
         for a in c.into_iter().chain(std::iter::once(p)) {
-            pruning.carrier.remove(&pruning.continuity, a.0).expect("valid native fixture operation must succeed");
+            pruning
+                .carrier
+                .remove(&pruning.continuity, a.0)
+                .expect("valid native fixture operation must succeed");
         }
         assert_eq!(hp(&pruning, live[0]), 120000);
         assert!(turn < 20);
     }
     // Remove four cages, retaining only the exact HP0/present or live Phyl member still holds group.
     for a in live {
-        pruning.carrier.remove(&pruning.continuity, a.0).expect("valid native fixture operation must succeed");
+        pruning
+            .carrier
+            .remove(&pruning.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
     }
     let c = BONE_CAGE_KEYS.map(|k| actor(&mut pruning, k, 120000));
     let p = actor(

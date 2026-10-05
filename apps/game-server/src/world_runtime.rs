@@ -1795,6 +1795,7 @@ impl PreparedMutation {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::items_after_test_module)]
     use super::*;
     use crate::content::{
         CW2_B1_VASE_KEY, CW2_B1_VASE_REVISION, CanonicalProjectDocuments, ClientProjectionClass,

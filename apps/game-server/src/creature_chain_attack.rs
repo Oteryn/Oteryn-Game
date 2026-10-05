@@ -618,6 +618,10 @@ fn admit_cast_capacity(
         Ok(())
     }
 }
+
+pub(crate) type ChainPulseResults =
+    Result<Vec<(u64, usize, Result<SpellOutcome, AttackError>)>, AttackError>;
+
 #[allow(clippy::expect_used)]
 #[cfg(test)]
 mod capacity_tests {
@@ -652,6 +656,3 @@ mod capacity_tests {
         );
     }
 }
-
-pub(crate) type ChainPulseResults =
-    Result<Vec<(u64, usize, Result<SpellOutcome, AttackError>)>, AttackError>;

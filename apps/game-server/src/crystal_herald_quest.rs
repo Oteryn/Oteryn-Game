@@ -179,6 +179,7 @@ impl HeraldQuestRequest {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::durability::quest_state::quest::loader::load_embedded_quest_state;

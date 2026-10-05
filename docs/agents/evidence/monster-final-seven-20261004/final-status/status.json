@@ -146,5 +146,9 @@
     "old_failure_counts_are_not_final_status": true
   },
   "scope": "Runtime library/current native qualification/explicit PostgreSQL subsets only; no shipping activation, Global parity or deployment claim",
-  "postgres_ignored_limit": "Ignored/unexecuted PostgreSQL tests remain unclaimed; preserve each actual subset count"
+  "postgres_ignored_limit": "Ignored/unexecuted PostgreSQL tests remain unclaimed; preserve each actual subset count",
+  "artifact_qualification_proof": {
+    "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/native-qualified-artifact-proof.json",
+    "sha256": "d05dd6a817b0050959754b1346a2a7ea57a889bdbb3d938bf25da4acd7040af1"
+  }
 }

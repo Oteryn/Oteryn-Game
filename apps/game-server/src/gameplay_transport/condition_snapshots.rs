@@ -507,10 +507,7 @@ mod source_player_owner_regressions {
         assert_eq!(current.owned_effective_magic_level(1_000_000).unwrap(), 10);
         assert_eq!(current.owned_conditions().instances().len(), 4);
         // This is the actual snapshot owner's projection, not a parallel test reader.
-        assert_eq!(
-            current_fields(current.owned_conditions(), 0).unwrap().0,
-            true
-        );
+        assert!(current_fields(current.owned_conditions(), 0).unwrap().0);
         // Accepted native paralysis clamps the target10 to floor40; base110 -> delta-70.
         assert_eq!(current.owned_conditions().active_speed_delta(0), -70);
         assert_eq!(

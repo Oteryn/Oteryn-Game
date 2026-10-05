@@ -973,7 +973,7 @@ pub(crate) fn complete_retained_threshold_aggregate_fixture(
                 .ok_or("actual callback records")?
             {
                 if record["identity"]["key"] == parent {
-                    records(draft, &[record.clone()], false)?;
+                    records(draft, std::slice::from_ref(record), false)?;
                 }
             }
             for binding in spawn["bindings"]

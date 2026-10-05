@@ -3297,14 +3297,13 @@ mod tests {
                 .source_player_tick_spatial_facts(&runtime, target, session, None)
                 .is_none()
         );
-        assert_eq!(
-            inputs
+        assert!(
+            !(inputs
                 .source_player_tick_spatial_facts(&runtime, target, session, Some(None))
                 .expect(
                     "monster_combat_lane.rs:tests:3172: qualified fixture operation must succeed"
                 )
-                .in_protection_zone,
-            false
+                .in_protection_zone)
         );
         let binding = runtime.binding();
         let (mut fence, _) = crystal_timer_fixture(
@@ -3936,8 +3935,7 @@ mod defense_composition_tests {
             "real source self-heal proposal committed physical creature HP"
         );
         let applied = invisible_at.expect("native chance prepared and admitted invisibility");
-        assert_eq!(
-            states
+        assert!(!(states
                 .native_creature_visible(
                     &runtime,
                     rat,
@@ -3945,11 +3943,8 @@ mod defense_composition_tests {
                     actor,
                     oteryn_simulation_determinism::SemanticTimeMicros::from_micros(applied)
                 )
-                .expect("monster_combat_lane.rs:defense_composition_tests:3772: qualified fixture operation must succeed"),
-            false
-        );
-        assert_eq!(
-            states
+                .expect("monster_combat_lane.rs:defense_composition_tests:3772: qualified fixture operation must succeed")));
+        assert!(states
                 .native_creature_visible(
                     &runtime,
                     demon,
@@ -3957,9 +3952,7 @@ mod defense_composition_tests {
                     actor,
                     oteryn_simulation_determinism::SemanticTimeMicros::from_micros(applied)
                 )
-                .expect("monster_combat_lane.rs:defense_composition_tests:3784: qualified fixture operation must succeed"),
-            true
-        );
+                .expect("monster_combat_lane.rs:defense_composition_tests:3784: qualified fixture operation must succeed"));
         let expiry = applied + u64::from(duration_ms) * 1000;
         assert!(
             states
@@ -4076,11 +4069,9 @@ mod defense_composition_tests {
                     think.schedule
                 );
                 for (ability, effect) in think.defenses {
-                    if ability.key == "oteryn:ability.creature.demon.defense-2" {
-                        if let DefenseOutcome::Speed(true) = effect.expect("monster_combat_lane.rs:defense_composition_tests:3905: qualified fixture operation must succeed") {
+                    if ability.key == "oteryn:ability.creature.demon.defense-2" && let DefenseOutcome::Speed(true) = effect.expect("monster_combat_lane.rs:defense_composition_tests:3905: qualified fixture operation must succeed") {
                             applied = Some(clock.now().get());
                         }
-                    }
                 }
             }
             if applied.is_some() {
@@ -4811,39 +4802,39 @@ mod source_summon_composition_tests {
                 .expect("monster_combat_lane.rs:source_summon_composition_tests:4635: qualified fixture operation must succeed");
             for thought in &pulse.thinks {
                 for (_, outcome) in &thought.defense_summons {
-                    if let Ok(batch) = outcome {
-                        if !batch.children.is_empty() {
-                            assert_eq!(batch.requested, 2);
-                            assert_eq!(batch.children.len(), 2);
-                            assert_eq!(batch.cap_omitted, 0);
-                            assert_eq!(batch.refused, None);
-                            let refs = batch.children.iter().map(|c| c.child).collect::<Vec<_>>();
-                            for child in &refs {
-                                let admission = pulse
-                                    .child_registration
+                    if let Ok(batch) = outcome
+                        && !batch.children.is_empty()
+                    {
+                        assert_eq!(batch.requested, 2);
+                        assert_eq!(batch.children.len(), 2);
+                        assert_eq!(batch.cap_omitted, 0);
+                        assert_eq!(batch.refused, None);
+                        let refs = batch.children.iter().map(|c| c.child).collect::<Vec<_>>();
+                        for child in &refs {
+                            let admission = pulse
+                                .child_registration
+                                .iter()
+                                .find(|entry| entry.actor == *child)
+                                .expect("each committed child retains registration result");
+                            assert!(
+                                matches!(&admission.result,Ok(Some(think))if think.actor==*child&&think.sequence==0)
+                            );
+                            assert_eq!(runtime.native_summon_role(*child), Ok(Some(parent)));
+                            assert!(runtime.matches_live_creature_identity(
+                                *child,
+                                expected_child.key.as_bytes()
+                            ));
+                            assert_eq!(
+                                runtime.crystal_router_fixture_health(*child),
+                                health(&expected_child)
+                            );
+                            assert!(
+                                lane.actors
                                     .iter()
-                                    .find(|entry| entry.actor == *child)
-                                    .expect("each committed child retains registration result");
-                                assert!(
-                                    matches!(&admission.result,Ok(Some(think))if think.actor==*child&&think.sequence==0)
-                                );
-                                assert_eq!(runtime.native_summon_role(*child), Ok(Some(parent)));
-                                assert!(runtime.matches_live_creature_identity(
-                                    *child,
-                                    expected_child.key.as_bytes()
-                                ));
-                                assert_eq!(
-                                    runtime.crystal_router_fixture_health(*child),
-                                    health(&expected_child)
-                                );
-                                assert!(
-                                    lane.actors
-                                        .iter()
-                                        .any(|a| a.actor == *child && a.creature == expected_child)
-                                );
-                            }
-                            children = Some(refs);
+                                    .any(|a| a.actor == *child && a.creature == expected_child)
+                            );
                         }
+                        children = Some(refs);
                     }
                 }
             }
@@ -4987,10 +4978,10 @@ mod source_summon_composition_tests {
                 .expect("monster_combat_lane.rs:source_summon_composition_tests:4810: qualified fixture operation must succeed");
             for thought in pulse.thinks {
                 for (_, outcome) in thought.summons {
-                    if let Ok(receipt) = outcome {
-                        if receipt.newly_created {
-                            child = Some(receipt.child);
-                        }
+                    if let Ok(receipt) = outcome
+                        && receipt.newly_created
+                    {
+                        child = Some(receipt.child);
                     }
                 }
             }

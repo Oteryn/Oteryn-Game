@@ -17,4 +17,3 @@ test repository_package_recaptures_and_rewrites_without_identity_or_layer_drift 
 test tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 94.34s
-

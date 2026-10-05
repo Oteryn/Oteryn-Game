@@ -2222,6 +2222,10 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
 
 #[cfg(test)]
 mod source_native_vitals_tests {
+    #![allow(
+        clippy::panic,
+        reason = "test-only native outcome destructuring asserts impossible fixture variants; same scope as adjacent canonical owner tests"
+    )]
     use super::tests::{runtime_with_player, wound};
     use super::*;
     use crate::player_lethal::PlayerLethalVitals;
@@ -2821,6 +2825,10 @@ impl ChannelSpellStates {
 }
 #[cfg(test)]
 mod owned_source_tick_tests {
+    #![allow(
+        clippy::panic,
+        reason = "test-only native outcome destructuring asserts impossible fixture variants; same scope as adjacent canonical owner tests"
+    )]
     use super::*;
     use crate::ability::condition::{
         ApplicationFacts, ConditionDefinition, ConditionValues, DamageSchedule, DamageSegment,

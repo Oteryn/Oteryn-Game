@@ -761,12 +761,12 @@ fn mixed_appearance_receipts_keep_longer_player_outfit_and_apply_new_creature_it
             .owned_conditions()
             .get(crate::ability::condition::ConflictKey::Outfit)
     );
-    assert!(matches!(
+    assert!(
         r.actor_conditions(p.issuer, None)
             .unwrap()
-            .displayed_temporary_appearance_at(2),
-        Some(_)
-    ));
+            .displayed_temporary_appearance_at(2)
+            .is_some()
+    );
     assert_eq!(
         owner
             .execute(

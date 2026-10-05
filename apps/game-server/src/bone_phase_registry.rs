@@ -92,78 +92,6 @@ pub(crate) fn register_bone_phase(
     runtime.bind_bone_overlord_cage_phase(cages, phylactery, ENCOUNTER, artifact_digest)
 }
 
-#[cfg(test)]
-#[allow(clippy::expect_used)]
-mod shared_hp_actual_source_tests {
-    use super::*;
-    use crate::content::*;
-    #[test]
-    #[ignore = "Requires retained actual eleven-document native import capture; no synthetic source membership"]
-    fn actual_source_shared_native_hp_generic_pin_phase_and_atomicity()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let limits = ProjectEvidenceLimits {
-            max_documents: 11,
-            max_document_bytes: 96000000,
-            max_total_bytes: 160000000,
-            max_json_depth: 24,
-            max_decoded_fields: 2120000,
-            max_string_bytes: 43000000,
-            max_locator_bytes: 160,
-            max_locator_segments: 8,
-            max_reference_records: 70000,
-            max_import_records: 16,
-            max_reimport_states: 404,
-        };
-        let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
-            .filter(|value| !value.is_empty())
-            .map(std::path::PathBuf::from)
-            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
-        let p = retained_native_capture_path.as_path();
-        let project = capture_world_project(
-            p.parent().expect("bone_phase_registry.rs:shared_hp_actual_source_tests:122: qualified fixture operation must succeed"),
-            p.file_name().expect("bone_phase_registry.rs:shared_hp_actual_source_tests:123: qualified fixture operation must succeed"),
-            ProjectFilesystemLimits {
-                project: limits,
-                max_entries_per_directory_scan: 32,
-                max_total_directory_entries_scanned: 201,
-            },
-        )?;
-        let world = project.lower_reference_source()?.world_id;
-        let draft = project.migrate_to_v2();
-        crate::foundation::bone_shared_actual_owner_harness(world, |runtime, cages, phyl| {
-            let good = register_bone_phase(
-                runtime,
-                cages,
-                phyl,
-                &draft.core.records,
-                &draft.state.authoring_profiles,
-                &draft.state.source_identity_bindings,
-                runtime.content_pin().server_artifact_digest(),
-            )
-            .expect("actual five source profiles/bindings");
-            let mut bad = draft.state.source_identity_bindings.clone();
-            bad.iter_mut()
-                .find(|b| b.target.key == "oteryn:creature.elyrax_s_soulcage")
-                .expect("bone_phase_registry.rs:shared_hp_actual_source_tests:145: qualified fixture operation must succeed")
-                .source_revision = "not-pinned".into();
-            assert!(
-                register_bone_phase(
-                    runtime,
-                    cages,
-                    phyl,
-                    &draft.core.records,
-                    &draft.state.authoring_profiles,
-                    &bad,
-                    runtime.content_pin().server_artifact_digest()
-                )
-                .is_err()
-            );
-            good
-        });
-        Ok(())
-    }
-}
-
 /// Native encounter-admission seam. Explicit placement/actor association comes from current
 /// Map owner, never a global name scan. UNKNOWN/unpromoted isolated placements are permitted
 /// as PROJECT local fixtures; they do not assert donor/Global map anchor coordinates.
@@ -253,4 +181,76 @@ pub(crate) fn register_bone_phase_shared(
     // registration write. The source-authored actor stats remain untouched.
     runtime.register_bone_shared_hp(&state, current, stamp)?;
     Ok(state)
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod shared_hp_actual_source_tests {
+    use super::*;
+    use crate::content::*;
+    #[test]
+    #[ignore = "Requires retained actual eleven-document native import capture; no synthetic source membership"]
+    fn actual_source_shared_native_hp_generic_pin_phase_and_atomicity()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let limits = ProjectEvidenceLimits {
+            max_documents: 11,
+            max_document_bytes: 96000000,
+            max_total_bytes: 160000000,
+            max_json_depth: 24,
+            max_decoded_fields: 2120000,
+            max_string_bytes: 43000000,
+            max_locator_bytes: 160,
+            max_locator_segments: 8,
+            max_reference_records: 70000,
+            max_import_records: 16,
+            max_reimport_states: 404,
+        };
+        let retained_native_capture_path = std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT")
+            .filter(|value| !value.is_empty())
+            .map(std::path::PathBuf::from)
+            .expect("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT must explicitly name the current final native eleven-document capture");
+        let p = retained_native_capture_path.as_path();
+        let project = capture_world_project(
+            p.parent().expect("bone_phase_registry.rs:shared_hp_actual_source_tests:122: qualified fixture operation must succeed"),
+            p.file_name().expect("bone_phase_registry.rs:shared_hp_actual_source_tests:123: qualified fixture operation must succeed"),
+            ProjectFilesystemLimits {
+                project: limits,
+                max_entries_per_directory_scan: 32,
+                max_total_directory_entries_scanned: 201,
+            },
+        )?;
+        let world = project.lower_reference_source()?.world_id;
+        let draft = project.migrate_to_v2();
+        crate::foundation::bone_shared_actual_owner_harness(world, |runtime, cages, phyl| {
+            let good = register_bone_phase(
+                runtime,
+                cages,
+                phyl,
+                &draft.core.records,
+                &draft.state.authoring_profiles,
+                &draft.state.source_identity_bindings,
+                runtime.content_pin().server_artifact_digest(),
+            )
+            .expect("actual five source profiles/bindings");
+            let mut bad = draft.state.source_identity_bindings.clone();
+            bad.iter_mut()
+                .find(|b| b.target.key == "oteryn:creature.elyrax_s_soulcage")
+                .expect("bone_phase_registry.rs:shared_hp_actual_source_tests:145: qualified fixture operation must succeed")
+                .source_revision = "not-pinned".into();
+            assert!(
+                register_bone_phase(
+                    runtime,
+                    cages,
+                    phyl,
+                    &draft.core.records,
+                    &draft.state.authoring_profiles,
+                    &bad,
+                    runtime.content_pin().server_artifact_digest()
+                )
+                .is_err()
+            );
+            good
+        });
+        Ok(())
+    }
 }

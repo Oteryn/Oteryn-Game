@@ -6,7 +6,7 @@
     {
       "database": "monster_seven_creature_fields_v2",
       "fixture": "docs/agents/evidence/monster-final-seven-20261004/final-status/postgres-components/creature-source-cause-pg-cases-v2.sql",
-      "log": "docs/agents/evidence/monster-final-seven-20261004/final-status/postgres-components/source-component-v2.log",
+      "log": "docs/agents/evidence/monster-final-seven-20261004/final-status/postgres-components/source-component-v2.txt",
       "exit": 0,
       "checks": [
         "actual physical Item/ground/receipt/line/audit writes",
@@ -17,18 +17,22 @@
         "receipt immutable"
       ],
       "fixture_sha256": "f69ed3d37c53b65e4d3866f314a6740507c67479d8793a0dfb9109b7f1af6317",
-      "log_sha256": "3cbd8120c172d6d65d6b5bb548553e2bdb4c2ba7bbe51aaeab8a06cec63c233f"
+      "log_sha256": "d9fe38d053ecc6363421656a0f4ed813812cb1b61ac92d3a122af7852e30bad3",
+      "original_log_sha256": "3cbd8120c172d6d65d6b5bb548553e2bdb4c2ba7bbe51aaeab8a06cec63c233f",
+      "log_normalization": "Trailing whitespace removed only; original exact log digest retained."
     },
     {
       "database": "monster_seven_player_fields_v2",
       "fixture": "docs/agents/evidence/monster-final-seven-20261004/final-status/postgres-components/player-control-public-bootstrap.sql",
-      "log": "docs/agents/evidence/monster-final-seven-20261004/final-status/postgres-components/player-control-v2.log",
+      "log": "docs/agents/evidence/monster-final-seven-20261004/final-status/postgres-components/player-control-v2.txt",
       "exit": 0,
       "marker": "SPELL_ITEM_GUARDS_PASS",
       "control": "Existing Player test body exact unchanged; only search_path test bootstrap adapted to actual public migration schema",
       "source_fixture_sha256": "0d8765f7e67824f958c2e09e5749ec9789af8637bdece8aff91fa7d87a2ba9b8",
       "fixture_sha256": "ccc009feaaf96dd6e4fc7fe4cb722f6c730c16c36858e270746b4ba8668d2825",
-      "log_sha256": "25a0d6f465668b55c48a38ad63133cd1be1c790bca2302ac38f473838d8c208a"
+      "log_sha256": "7b8305fae3a5798338a947a26c7c4a2a3a7e75184333d4ad13f235be23bf61bb",
+      "original_log_sha256": "25a0d6f465668b55c48a38ad63133cd1be1c790bca2302ac38f473838d8c208a",
+      "log_normalization": "Trailing whitespace removed only; original exact log digest retained."
     }
   ],
   "limits": [

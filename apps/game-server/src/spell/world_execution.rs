@@ -1019,6 +1019,7 @@ pub(crate) fn preflight_relocation(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::items_after_test_module)]
     // Panicking assertions are confined to regression tests.
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;

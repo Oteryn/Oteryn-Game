@@ -453,6 +453,10 @@ fn record_identity(r: &Record) -> (&str, &str, &str) {
 fn hex(v: [u8; 16]) -> String {
     v.iter().map(|b| format!("{b:02x}")).collect()
 }
+
+pub(crate) type SmellyPulseResults =
+    Result<Vec<(ExactActorRef, Result<SmellyEffect, AttackError>)>, AttackError>;
+
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
@@ -963,6 +967,3 @@ mod tests {
         );
     }
 }
-
-pub(crate) type SmellyPulseResults =
-    Result<Vec<(ExactActorRef, Result<SmellyEffect, AttackError>)>, AttackError>;

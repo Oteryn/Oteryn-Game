@@ -961,6 +961,7 @@ pub(crate) fn plan_source_item_removals(
 }
 #[cfg(test)]
 mod source_removal_tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     use crate::content::ProjectV2RemoveItemsSelection as S;
     fn item(id: u32, key: &str) -> WorldItemFacts {
@@ -993,7 +994,8 @@ mod source_removal_tests {
         let mut t = tiles(1);
         t[0].tile_items = vec![item(2129, "old-first"), item(2130, "priority")];
         t[1].tile_items = vec![item(2129, "next")];
-        let p = plan_source_item_removals(S::FirstListedPerTile, &listed, &t).unwrap();
+        let p = plan_source_item_removals(S::FirstListedPerTile, &listed, &t)
+            .expect("qualified source removal fixture");
         assert_eq!(
             p,
             vec![
@@ -1022,7 +1024,8 @@ mod source_removal_tests {
         t[2].tile_items = vec![item(2130, "later")];
         t[2].top_visible_item = Some(t[2].tile_items[0].clone());
         assert_eq!(
-            plan_source_item_removals(S::TopItemFirstTile, &listed, &t).unwrap(),
+            plan_source_item_removals(S::TopItemFirstTile, &listed, &t)
+                .expect("qualified source removal fixture"),
             vec![(
                 1,
                 ItemOperation::RemoveField {
