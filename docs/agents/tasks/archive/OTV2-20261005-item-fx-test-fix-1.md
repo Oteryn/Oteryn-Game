@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 issue: 1622
 base_branch: main
 branch: claude/item-fx-test-fix-1-20261005
-pr: PENDING
+pr: 1837
 base_sha: 9cb66e3
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 control_plane: session_013KJX6mv8LQveCKKXYgAX94
@@ -34,3 +34,12 @@ parent batch and state counts from the live parent. Kept invariants:
 `append_batch` does not mutate the parent, every parent batch is preserved
 byte-canonically, and the merged document has parent + 1 batches and parent
 states + 296. Producer, `imports.json` and the workflow are unchanged.
+
+## Validation
+
+- `python test_raw_fx_audio_reimport.py` from `tools/content-schema/item-authoring`: pass (7 tests).
+- Producer `--check` line of the workflow step: pass.
+- `ruff check` and `ruff format --check` on the test file: pass.
+- `python tools/agents/validate_governance.py`: pass.
+- `python -m unittest discover -s tools/agents/tests`: pass.
+- `git diff --check`: pass.
