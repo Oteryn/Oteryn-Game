@@ -10760,11 +10760,11 @@ pub(crate) fn crystal_death_router_fixture(world: WorldId) -> ChannelRuntimeV1 {
     crystal_death_router_fixture_digest(world, [1; 32])
 }
 #[cfg(test)]
-pub(crate) fn crystal_death_router_fixture_with_native(
+pub(crate) fn crystal_death_router_fixture_with_artifact(
     world: WorldId,
-    native: &crate::content::native_gameplay::NativeGameplayState,
+    digest: [u8; 32],
 ) -> ChannelRuntimeV1 {
-    crystal_death_router_fixture_digest(world, native.source_digest())
+    crystal_death_router_fixture_digest(world, digest)
 }
 #[cfg(test)]
 #[allow(clippy::expect_used)]

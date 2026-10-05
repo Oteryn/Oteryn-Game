@@ -5571,8 +5571,10 @@ mod bone_map_admission_actual_tests {
         let mut map = link_reference_playable(project.lower_reference_source().expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5397: qualified fixture operation must succeed")).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5397: qualified fixture operation must succeed");
         let native =
             crate::content::native_gameplay::retained_callback_native_fixture(map.world_id);
-        let mut runtime =
-            crate::foundation::crystal_death_router_fixture_with_native(map.world_id, &native);
+        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
+            map.world_id,
+            native.source_digest(),
+        );
         let keys = [
             "oteryn:creature.elyrax_s_soulcage",
             "oteryn:creature.myzareth_s_soulcage",

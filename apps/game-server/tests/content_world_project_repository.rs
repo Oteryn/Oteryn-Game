@@ -1471,7 +1471,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         }
         if binding.target.family == ProjectV2Family::Encounter {
             if binding.source_key == "oteryn:source.crystalserver" {
-                assert_eq!(binding.source_revision, legacy_sources[2].revision);
+                assert_eq!(
+                    binding.source_revision,
+                    source_for("g4-creature-crystal-1530-r1").revision
+                );
                 assert_eq!(binding.identity_namespace, "crystalserver/encounter");
                 assert_eq!(
                     binding.target.key,

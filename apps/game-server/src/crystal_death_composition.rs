@@ -263,8 +263,10 @@ mod retained_native_source_tests {
         )?;
         let world = project.lower_reference_source()?.world_id;
         let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
-        let mut runtime =
-            crate::foundation::crystal_death_router_fixture_with_native(world, &native);
+        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
+            world,
+            native.source_digest(),
+        );
         assert!(
             QualifiedCrystalDeaths::qualify(
                 &project,
@@ -572,8 +574,10 @@ mod retained_projection_owner_tests {
         )?;
         let world = project.lower_reference_source()?.world_id;
         let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
-        let mut runtime =
-            crate::foundation::crystal_death_router_fixture_with_native(world, &native);
+        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
+            world,
+            native.source_digest(),
+        );
         let mut composition = CrystalDeathOwner::bind(&project, &runtime, &native).expect("crystal_death_composition.rs:retained_projection_owner_tests:552: qualified fixture operation must succeed");
         let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
         let (fence, stamp) =
@@ -911,8 +915,10 @@ mod herald_actual_source_tests {
         )?;
         let world = project.lower_reference_source()?.world_id;
         let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
-        let mut runtime =
-            crate::foundation::crystal_death_router_fixture_with_native(world, &native);
+        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
+            world,
+            native.source_digest(),
+        );
         let mut owner =
             CrystalDeathOwner::bind(&project, &runtime, &native).map_err(|e| format!("{e:?}"))?;
         let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
