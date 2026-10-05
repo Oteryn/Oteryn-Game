@@ -1,0 +1,14 @@
+{
+  "schema": "OTERYN_WORLD_PIN/v1",
+  "digest": "444cff7a0278188ba32dc13ae397c3429adc2299c129888fb119a73b3107e0b2",
+  "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
+  "world_schema_version": "reference-schema-v1",
+  "content_revision": "g4-npc-wave-a-r9",
+  "production": false,
+  "entry_start": {
+    "x": 10228,
+    "y": 10032,
+    "floor": 0
+  },
+  "inputs_digest": "2baf0f563cd15ac968c90ceb43094ea2051e21be2aa99642d2eab027d1ed46da"
+}

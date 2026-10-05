@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import io
 import json
@@ -965,6 +966,36 @@ def test_rust_fast_recovers_large_pr_from_exact_trees() -> None:
         assert run_rust_fast_selection(repo, base, head, "true", records) == ["alpha"]
 
 
+def test_world_bundle_lane_is_a_fail_closed_validate_dependency() -> None:
+    text = MERGE_GATE.read_text(encoding="utf-8")
+    core = importlib.util.module_from_spec(spec := importlib.util.spec_from_file_location(
+        "pr_policy_core", Path(__file__).with_name("validate_repository_policy_core.py")))
+    spec.loader.exec_module(core)
+    job = core.indented_yaml_mapping_block(text, "world_bundle", 2)
+    assert job is not None and "    needs: [scope, lanes]\n" in job
+    assert "    if: needs.lanes.outputs.world_bundle != 'false'\n" in job
+    assert "pin-check . \"$RUNNER_TEMP/world-bundle\"" in job
+    validate = core.indented_yaml_mapping_block(text, "validate", 2)
+    assert validate is not None
+    assert "      - world_bundle\n" in validate
+    assert "WORLD_BUNDLE: ${{ needs.world_bundle.result }}" in validate
+    assert "WORLD_BUNDLE_REQUIRED: ${{ needs.lanes.outputs.world_bundle }}" in validate
+    # Dropping the needs entry, the required-result check or the lane condition breaks a pinned digest.
+    for block_name, pinned, mutation in (
+        ("validate", core.EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256, text.replace("      - world_bundle\n", "", 1)),
+        ("validate", core.EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256,
+         text.replace("os.environ['WORLD_BUNDLE'] not in world_bundle_allowed", "False", 1)),
+        ("world_bundle", core.EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256,
+         text.replace("if: needs.lanes.outputs.world_bundle != 'false'", "if: needs.lanes.outputs.world_bundle == 'true'", 1)),
+    ):
+        assert mutation != text
+        mutated = core.indented_yaml_mapping_block(mutation, block_name, 2)
+        assert hashlib.sha256((mutated or "").encode()).hexdigest() != pinned, block_name
+    original = core.indented_yaml_mapping_block(text, "world_bundle", 2)
+    assert hashlib.sha256(original.encode()).hexdigest() == core.EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256
+    assert "world_bundle_allowed = {'success', 'skipped'} if os.environ.get('WORLD_BUNDLE_REQUIRED', '') == 'false' else {'success'}" in validate
+
+
 def main() -> int:
     tests = (
         test_registered_postgres_targets_are_materially_routed,
@@ -997,6 +1028,7 @@ def main() -> int:
         test_audited_routing_predicate_rejects_additional_glob_consumer,
         test_postgres_digest_and_invocation_are_mandatory,
         test_rust_fast_recovers_large_pr_from_exact_trees,
+        test_world_bundle_lane_is_a_fail_closed_validate_dependency,
     )
     for test in tests:
         test()

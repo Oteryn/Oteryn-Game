@@ -653,3 +653,46 @@ fn reader_survives_every_resealed_byte_flip() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn reader_refuses_a_bundle_this_node_cannot_run() -> TestResult {
+    let (regions, palette) = (fixture()?, palette());
+    let fams = families();
+    let with = |identity: Identity| {
+        let mut built = input(&regions, &palette, BuildClass::NonProduction, &fams);
+        built.identity = identity;
+        compile(&built, &Resolver)
+    };
+    let current = Identity {
+        content_revision: "rev-1".into(),
+        min_runtime_version: bundle::RUNTIME_VERSION.to_string(),
+        ..Identity::default()
+    };
+    let bytes = with(current.clone())?.bytes;
+    assert!(bundle::read(&bytes).is_ok());
+    for refused in [
+        (bundle::RUNTIME_VERSION + 1).to_string(),
+        "+1".into(),
+        "1.0".into(),
+        "".into(),
+        "0x1".into(),
+        "-1".into(),
+        "4294967296".into(),
+    ] {
+        let result = with(Identity {
+            min_runtime_version: refused.clone(),
+            ..current.clone()
+        });
+        assert!(
+            matches!(result, Err(Error::Format(_))),
+            "{refused:?} was accepted"
+        );
+    }
+    assert!(bundle::SUPPORTED_CAPABILITIES.is_empty());
+    let result = with(Identity {
+        required_capabilities: vec!["oteryn:feature/x".into()],
+        ..current
+    });
+    assert!(matches!(result, Err(Error::Format(_))));
+    Ok(())
+}

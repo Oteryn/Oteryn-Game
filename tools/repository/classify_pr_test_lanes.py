@@ -816,6 +816,44 @@ def server_qualification_required(files, changed_count, complete=True) -> bool:
         return True
 
 
+# WORLD-BUNDLE-CI-1: the compiler inputs of the World Bundle (ARCH-WORLD-CONTENT-SERVE-1 §1.2).
+# `tools/world-bundle-compiler/src/main.rs` lists the same paths (`INPUT_PATHS`) for the
+# `inputs_digest`; `test_classify_pr_test_lanes.py` keeps the two equal. `vendor/` is excluded.
+WORLD_BUNDLE_INPUT_FILES = frozenset({"Cargo.toml", "Cargo.lock", "rust-toolchain.toml"})
+WORLD_BUNDLE_INPUT_PREFIXES = (
+    "content/world/",
+    "content/houses/",
+    "content/creatures/definitions/",
+    "content/items/definitions/",
+    "tools/world-bundle-compiler/",
+    "crates/world-bundle/",
+    ".cargo/",
+)
+
+
+def world_bundle_path(path: str) -> bool:
+    return path in WORLD_BUNDLE_INPUT_FILES or path.startswith(WORLD_BUNDLE_INPUT_PREFIXES)
+
+
+def world_bundle_required(files, changed_count, complete=True) -> bool:
+    """Select the World Bundle lane, failing closed on malformed evidence."""
+    try:
+        if complete is not True or type(changed_count) is not int or not isinstance(files, list) or len(files) != changed_count or not files:
+            return True
+        for item in files:
+            if not isinstance(item, dict):
+                return True
+            for key in ("filename", "previous_filename"):
+                path = item.get(key)
+                if path is None and key == "previous_filename":
+                    continue
+                if not valid_path(path) or world_bundle_path(path):
+                    return True
+        return False
+    except (TypeError, ValueError, AttributeError):
+        return True
+
+
 def classify_post_merge(event, metadata) -> dict:
     """Apply the same exact-candidate routing semantics to protected-main pushes."""
     try:
@@ -870,6 +908,7 @@ def main() -> int:
     post_merge = False
     atlas_fullworld = True
     server_qualification = True
+    world_bundle = True
     try:
         post_merge = sys.argv[1] == "--post-merge"
         metadata = json.loads(
@@ -884,6 +923,7 @@ def main() -> int:
             files, changed_count, complete = pr_file_records()
             atlas_fullworld = atlas_fullworld_required(files, changed_count, complete)
             server_qualification = server_qualification_required(files, changed_count, complete)
+            world_bundle = world_bundle_required(files, changed_count, complete)
             expected_head = os.environ["EXPECTED_HEAD"].strip().lower()
             result = classify(
                 files,
@@ -912,6 +952,7 @@ def main() -> int:
         if not post_merge:
             output.write(f"atlas_fullworld={str(atlas_fullworld).lower()}\n")
             output.write(f"server_qualification={str(server_qualification).lower()}\n")
+            output.write(f"world_bundle={str(world_bundle).lower()}\n")
             output.write(f"surface={result['surface']}\n")
             output.write(f"reason={result['reason']}\n")
             output.write(f"routing_health={health}\n")

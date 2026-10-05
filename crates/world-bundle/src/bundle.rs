@@ -16,6 +16,13 @@ use crate::spawn;
 pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v3";
 pub const VERSION: u16 = 3;
 pub const MAGIC: &[u8; 4] = b"OTWB";
+/// The node's runtime-compatibility version (`identity.min_runtime_version`), not the format
+/// `VERSION`. Raise it by one only in a PR whose content needs runtime behaviour a node built
+/// from the previous value lacks; it never goes down (decision ARCH-WORLD-CONTENT-SERVE-1 §1.2).
+pub const RUNTIME_VERSION: u32 = 1;
+/// The sorted, unique capabilities the node implements. A PR adds a value only with the runtime
+/// code that implements it. Empty today.
+pub const SUPPORTED_CAPABILITIES: &[&str] = &[];
 /// Header bytes: `"OTWB" | version u16 | reserved u16 | manifest_length u32 | sector_count u32`.
 pub const HEADER: usize = 16;
 /// Sector table row bytes.
@@ -169,7 +176,7 @@ impl Extent {
 }
 
 /// Compiler inputs copied into the manifest unchanged (ADR-0005 §3, DUR-04 §9).
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Identity {
     pub project_format_version: String,
@@ -180,6 +187,30 @@ pub struct Identity {
     pub required_capabilities: Vec<String>,
     pub ruleset_compatibility: Vec<String>,
     pub provenance_summary: String,
+}
+
+/// Empty values, except `min_runtime_version`, which is this node's [`RUNTIME_VERSION`] so a
+/// default identity passes [`validate_manifest`].
+impl Default for Identity {
+    fn default() -> Self {
+        Self {
+            project_format_version: String::new(),
+            world_schema_version: String::new(),
+            content_revision: String::new(),
+            content_lock_digest: String::new(),
+            min_runtime_version: RUNTIME_VERSION.to_string(),
+            required_capabilities: Vec::new(),
+            ruleset_compatibility: Vec::new(),
+            provenance_summary: String::new(),
+        }
+    }
+}
+
+/// Whether `value` is a decimal `u32` no greater than [`RUNTIME_VERSION`].
+fn runtime_supported(value: &str) -> bool {
+    !value.is_empty()
+        && value.bytes().all(|b| b.is_ascii_digit())
+        && value.parse::<u32>().is_ok_and(|v| v <= RUNTIME_VERSION)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -307,6 +338,17 @@ pub fn validate_manifest(m: &Manifest) -> Result<(), Error> {
     check(
         m.projection_class == "server",
         "projection class must be server",
+    )?;
+    check(
+        runtime_supported(&m.identity.min_runtime_version),
+        "bundle needs a newer runtime than this node",
+    )?;
+    check(
+        m.identity
+            .required_capabilities
+            .iter()
+            .all(|capability| SUPPORTED_CAPABILITIES.contains(&capability.as_str())),
+        "bundle requires a capability this node does not implement",
     )?;
     for entry in &m.palette {
         check(

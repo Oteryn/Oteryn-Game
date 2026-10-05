@@ -191,6 +191,7 @@ jobs:
       windows: ${{ steps.classify.outputs.windows }}
       atlas_fullworld: ${{ steps.classify.outputs.atlas_fullworld }}
       server_qualification: ${{ steps.classify.outputs.server_qualification }}
+      world_bundle: ${{ steps.classify.outputs.world_bundle }}
       surface: ${{ steps.classify.outputs.surface }}
       reason: ${{ steps.classify.outputs.reason }}
       routing_health: ${{ steps.classify.outputs.routing_health }}
@@ -232,6 +233,7 @@ jobs:
           WINDOWS: ${{ steps.classify.outputs.windows }}
           ATLAS_FULLWORLD: ${{ steps.classify.outputs.atlas_fullworld }}
           SERVER_QUALIFICATION: ${{ steps.classify.outputs.server_qualification }}
+          WORLD_BUNDLE: ${{ steps.classify.outputs.world_bundle }}
           SURFACE: ${{ steps.classify.outputs.surface }}
           REASON: ${{ steps.classify.outputs.reason }}
           ROUTING_HEALTH: ${{ steps.classify.outputs.routing_health }}
@@ -243,6 +245,7 @@ jobs:
             printf -- '- Windows: `%s`\n' "$WINDOWS"
             printf -- '- Atlas fullworld: `%s`\n' "$ATLAS_FULLWORLD"
             printf -- '- Server qualification: `%s`\n' "$SERVER_QUALIFICATION"
+            printf -- '- World bundle: `%s`\n' "$WORLD_BUNDLE"
             printf -- '- Surface: `%s`\n' "$SURFACE"
             printf -- '- Reason: `%s`\n' "$REASON"
             printf -- '- Routing health: `%s`\n' "$ROUTING_HEALTH"
@@ -485,6 +488,46 @@ jobs:
 
       - name: Run content-source batch consumer self-test
         run: python -S tools/reference-world-corridor-census/content_source_batch_self_test.py
+
+  world_bundle:
+    name: Merge gate / World bundle
+    needs: [scope, lanes]
+    # Fast: runs on every PR that changes a compiler input (an older protected-base
+    # classifier without the lane output counts as required).
+    if: needs.lanes.outputs.world_bundle != 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.target_sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Check the World pins and build the bundle twice
+        run: cargo +1.94.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"
+
+      - name: Name the bundle artifact by its digest
+        id: artifact
+        run: echo "name=$(cat "$RUNNER_TEMP/world-bundle/artifact-name.txt")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the World bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: ${{ runner.temp }}/world-bundle/*.otwb
+          if-no-files-found: error
+          retention-days: 14
 
   rust_policy:
     name: Merge gate / Rust policy and metadata
@@ -1311,6 +1354,7 @@ jobs:
       - codeql
       - routing_contract
       - atlas_fullworld
+      - world_bundle
       - rust_policy
       - rust_fast
       - rust_linux
@@ -1344,6 +1388,8 @@ jobs:
           SERVER_QUALIFICATION_REQUIRED: ${{ needs.lanes.outputs.server_qualification }}
           NODE_BOOT: ${{ needs.node_boot.result }}
           SERVER_SEAM: ${{ needs.server_seam.result }}
+          WORLD_BUNDLE_REQUIRED: ${{ needs.lanes.outputs.world_bundle }}
+          WORLD_BUNDLE: ${{ needs.world_bundle.result }}
         run: |
           python - <<'PY'
           import os
@@ -1387,6 +1433,12 @@ jobs:
               for name in ('NODE_BOOT', 'SERVER_SEAM'):
                   if os.environ[name] not in {'success', 'skipped'}:
                       failures.append(f'{name}={os.environ[name]}')
+
+          # The World bundle lane is fast, not full-ci: anything but an explicit
+          # protected-base `false` (including an older classifier) requires it.
+          world_bundle_allowed = {'success', 'skipped'} if os.environ.get('WORLD_BUNDLE_REQUIRED', '') == 'false' else {'success'}
+          if os.environ['WORLD_BUNDLE'] not in world_bundle_allowed:
+              failures.append(f"WORLD_BUNDLE={os.environ['WORLD_BUNDLE']}")
 
           if failures:
               print('Merge gate failed:', file=sys.stderr)

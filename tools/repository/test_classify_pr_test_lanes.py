@@ -696,6 +696,60 @@ def test_server_qualification(module):
     print("Server qualification PASS: boot/transport/durability paths select it, unrelated paths skip, malformed input fails closed")
 
 
+def test_world_bundle(module):
+    def required(*paths, previous=None):
+        files = [{"filename": path} for path in paths]
+        if previous is not None:
+            files[0]["previous_filename"] = previous
+        return module.world_bundle_required(files, len(files))
+
+    for path in (
+        "content/world/project.json",
+        "content/world/pins/oteryn.json",
+        "content/world/pins/oteryn.ruleset.json",
+        "content/houses/houses-00000-00000.json",
+        "content/creatures/definitions/creatures-00000-00000.json",
+        "content/items/definitions/items-00000-00000.json",
+        "tools/world-bundle-compiler/src/main.rs",
+        "crates/world-bundle/src/bundle.rs",
+        "Cargo.toml",
+        "Cargo.lock",
+        "rust-toolchain.toml",
+        ".cargo/config.toml",
+    ):
+        assert required(path) is True, path
+        assert required("docs/removed.md", previous=path) is True, path
+        assert required("docs/a.md", path) is True, path
+    for path in (
+        "docs/architecture/a.md",
+        "vendor/tokio-1.53.1/src/lib.rs",
+        "content/creatures/spawns/a.json",
+        "content/items/other/a.json",
+        "apps/game-server/src/main.rs",
+        "crates/world-bundle-extra/src/lib.rs",
+        "tools/world-bundle-compiler-extra/a.rs",
+        "apps/game-server/Cargo.toml",
+        ".github/workflows/merge-gate.yml",
+    ):
+        assert required(path) is False, path
+    assert required("docs/a.md", previous="docs/b.md") is False
+    # Fail closed on incomplete or malformed enumeration.
+    assert module.world_bundle_required([], 0) is True
+    assert module.world_bundle_required([{"filename": "docs/a.md"}], 2) is True
+    assert module.world_bundle_required([{"filename": "docs/a.md"}], 1, complete=False) is True
+    assert module.world_bundle_required([{"filename": "../x"}], 1) is True
+    assert module.world_bundle_required([{"filename": "docs/a.md", "previous_filename": "../x"}], 1) is True
+    assert module.world_bundle_required(["docs/a.md"], 1) is True
+    # The compiler lists the same inputs for its inputs_digest.
+    source = (ROOT / "tools/world-bundle-compiler/src/main.rs").read_text(encoding="utf-8")
+    listed = re.search(r"const INPUT_PATHS: &\[&str\] = &\[(.*?)\];", source, re.S)
+    assert listed, "INPUT_PATHS missing"
+    rust = set(re.findall(r'"([^"]+)"', listed.group(1)))
+    python = set(module.WORLD_BUNDLE_INPUT_FILES) | set(module.WORLD_BUNDLE_INPUT_PREFIXES)
+    assert rust == python, (rust ^ python)
+    print("World bundle PASS: each compiler input selects the lane, a docs-only change skips, malformed input fails closed")
+
+
 def test_cli_fallback(module):
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
@@ -714,6 +768,7 @@ def test_cli_fallback(module):
         assert "rust=true\n" in wire and "windows=true\n" in wire, wire
         assert "routing_health=degraded\n" in wire, wire
         assert "server_qualification=true\n" in wire, wire
+        assert "world_bundle=true\n" in wire, wire
     print("CLI fallback PASS: malformed classifier inputs remain conservative FULL")
 
 
@@ -752,6 +807,7 @@ def main() -> int:
     test_large_pr_fallback(module)
     test_aggregate()
     test_server_qualification(module)
+    test_world_bundle(module)
     test_cli_fallback(module)
     print("Exact-candidate PR routing regressions PASS")
     return 0

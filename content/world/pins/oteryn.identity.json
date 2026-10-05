@@ -1,0 +1,12 @@
+{
+  "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
+  "world_schema_version": "reference-schema-v1",
+  "content_revision": "g4-npc-wave-a-r9",
+  "content_lock_digest": "d4c84041cd04d03af270aefbb806ec5795701773983f125a3f7ed990a2f17da6",
+  "min_runtime_version": "1",
+  "required_capabilities": [],
+  "ruleset_compatibility": [
+    "oteryn:ruleset/entry-r1"
+  ],
+  "provenance_summary": "lock:g4-npc-wave-a-r9/59eda3f1d5994441eccf97840650b0053d7ef99a09aa58334178e0a7469507c8"
+}

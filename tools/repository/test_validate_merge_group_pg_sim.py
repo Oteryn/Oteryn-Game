@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "860a684e5ec71f50ae899f9db36b7c07f9fca623"
+APPROVED = "e25c07439c31f133eef03f3fb341130050f5be42"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -194,13 +194,13 @@ def _atlas_queue_canaries(original: str, core) -> None:
     assert "    if: needs.candidate.outputs.atlas_fullworld != 'false'\n" in job
     assert "ref: ${{ github.event.merge_group.head_sha }}" in job
     gate = core.indented_yaml_mapping_block(original, "game_gate", 2)
-    assert "codeql, atlas_fullworld, rust_linux" in gate
+    assert "codeql, atlas_fullworld, world_bundle, rust_linux" in gate
     assert "ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}" in gate
     script = textwrap.dedent(gate.split("        run: |\n", 1)[1])
     base = dict(os.environ, **dict.fromkeys((
         "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "RUST_LINUX",
         "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
-        "NODE_BOOT", "SERVER_SEAM",
+        "NODE_BOOT", "SERVER_SEAM", "WORLD_BUNDLE",
     ), "success"))
     for required in ("true", "", "invalid", "False", "0", "false"):
         for result in ("success", "skipped", "failure", "cancelled", ""):
@@ -214,12 +214,73 @@ def _atlas_queue_canaries(original: str, core) -> None:
     atlas_only = dict(base, RUST_REQUIRED="false", WINDOWS_REQUIRED="false",
         SERVER_QUALIFICATION_REQUIRED="false", ATLAS_FULLWORLD_REQUIRED="true",
         RUST_LINUX="skipped", DURABILITY_POSTGRES="skipped", RUST_WINDOWS="skipped",
-        RUST_SUPPLY_CHAIN="skipped", NODE_BOOT="skipped", SERVER_SEAM="skipped")
+        RUST_SUPPLY_CHAIN="skipped", NODE_BOOT="skipped", SERVER_SEAM="skipped",
+        WORLD_BUNDLE_REQUIRED="false", WORLD_BUNDLE="skipped")
     for result in ("success", "skipped"):
         env = dict(atlas_only, ATLAS_FULLWORLD=result)
         actual = subprocess.run(["bash", "-c", script], env=env, capture_output=True).returncode == 0
         assert actual == (result == "success"), ("atlas-only", result)
     print("Atlas MQ PASS: protected routing, exact synthetic checkout and 32 fail-closed fan-in cases")
+
+
+def _world_bundle_queue_canaries(original: str, core) -> None:
+    """Execute the protected routing and prove the World bundle lane cannot be skipped once selected."""
+    candidate = core.indented_yaml_mapping_block(original, "candidate", 2)
+    start = candidate.index("          world_bundle = 'true'")
+    end = candidate.index("          # Use protected-base exact-consumer routing", start)
+    source = textwrap.dedent(candidate[start:end])
+    spec = importlib.util.spec_from_file_location(
+        "world_bundle_lanes", ROOT / "tools/repository/classify_pr_test_lanes.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    cases = (
+        ([{"filename": "content/world/pins/oteryn.json", "status": "modified"}], "true"),
+        ([{"filename": "Cargo.lock", "status": "modified"}], "true"),
+        ([{"filename": "rust-toolchain.toml", "status": "removed"}], "true"),
+        ([{"filename": "docs/a.md", "previous_filename": ".cargo/config.toml", "status": "renamed"}], "true"),
+        ([{"filename": "docs/a.md"}], "false"),
+        ([{"filename": "docs/a.md"}, {"filename": "crates/world-bundle/src/lib.rs"}], "true"),
+        ([{"filename": "../a"}], "true"),
+        ([], "true"),
+        (None, "true"),
+    )
+    for records, expected in cases:
+        namespace = {"module": module, "records": records}
+        exec(compile(source, "<queue World bundle routing>", "exec"), namespace)
+        assert namespace["world_bundle"] == expected, (records, namespace)
+    for returned in (None, "false", 0, True):
+        namespace = dict(records=[{"filename": "docs/a.md"}], module=SimpleNamespace(
+            world_bundle_required=lambda *args: returned,
+        ))
+        exec(compile(source, "<queue World bundle routing>", "exec"), namespace)
+        assert namespace["world_bundle"] == "true", returned
+    namespace = dict(records=[{"filename": "docs/a.md"}], module=SimpleNamespace())
+    exec(compile(source, "<queue World bundle routing>", "exec"), namespace)
+    assert namespace["world_bundle"] == "true"
+
+    job = core.indented_yaml_mapping_block(original, "world_bundle", 2)
+    assert "    if: needs.candidate.outputs.world_bundle != 'false'\n" in job
+    assert "ref: ${{ github.event.merge_group.head_sha }}" in job
+    gate = core.indented_yaml_mapping_block(original, "game_gate", 2)
+    assert "world_bundle, rust_linux" in gate
+    assert "WORLD_BUNDLE: ${{ needs.world_bundle.result }}" in gate
+    script = textwrap.dedent(gate.split("        run: |\n", 1)[1])
+    base = dict(os.environ, **dict.fromkeys((
+        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "ATLAS_FULLWORLD", "RUST_LINUX",
+        "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
+        "NODE_BOOT", "SERVER_SEAM",
+    ), "success"))
+    base.pop("WORLD_BUNDLE_REQUIRED", None)
+    for required in ("true", "", "invalid", "False", "0", "false"):
+        for result in ("success", "skipped", "failure", "cancelled", ""):
+            env = dict(base, WORLD_BUNDLE_REQUIRED=required, WORLD_BUNDLE=result)
+            actual = subprocess.run(["bash", "-c", script], env=env, capture_output=True).returncode == 0
+            expected = result == "success" or (required == "false" and result == "skipped")
+            assert actual == expected, ("world-bundle", required, result, actual)
+    base.pop("WORLD_BUNDLE", None)
+    assert subprocess.run(["bash", "-c", script], env=base, capture_output=True).returncode != 0
+    print("World bundle MQ PASS: protected routing, exact synthetic checkout and fail-closed fan-in cases")
 
 
 def main() -> int:
@@ -234,6 +295,7 @@ def main() -> int:
     assert core.git_blob_sha(original.encode()) == APPROVED, "queue protected blob pin drifted"
     assert core.main() == 0, "approved queue workflow must pass full policy"
     _atlas_queue_canaries(original, core)
+    _world_bundle_queue_canaries(original, core)
 
     candidate = core.indented_yaml_mapping_block(original, "candidate", 2)
     assert candidate is not None
@@ -432,8 +494,8 @@ def main() -> int:
     assert block is not None
     script = textwrap.dedent(block.split("        run: |\n", 1)[1])
     predicates = (
-        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "ATLAS_FULLWORLD", "RUST_LINUX",
-        "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
+        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "ATLAS_FULLWORLD", "WORLD_BUNDLE",
+        "RUST_LINUX", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
         "NODE_BOOT", "SERVER_SEAM",
     )
     env = dict(os.environ, **dict.fromkeys(predicates, "success"))
@@ -458,6 +520,8 @@ def main() -> int:
         SERVER_SEAM="skipped",
         ATLAS_FULLWORLD_REQUIRED="false",
         ATLAS_FULLWORLD="skipped",
+        WORLD_BUNDLE_REQUIRED="false",
+        WORLD_BUNDLE="skipped",
     )
     assert subprocess.run(["bash", "-c", script], env=docs_env, check=False).returncode == 0
     server_env = dict(env, RUST_REQUIRED="true", WINDOWS_REQUIRED="false", RUST_WINDOWS="skipped")
