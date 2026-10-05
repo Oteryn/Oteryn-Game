@@ -31,7 +31,10 @@ This document is retained as evidence of the original 2026-09-30 design explorat
 - §8 (Bounds): All performance limits and measurements updated
 
 **Evidence sections (retained for reference):**
-- §1-§2 (Question and Facts): Core problem statement and proven facts remain valid
+- §1 (Question): Core problem statement remains valid
+- §2 (Facts): Most proven facts remain valid; however, the following facts are superseded:
+  - "MOVE-RL-11 D85: corpses and ground items are entities of WORLD_SPATIAL_VISIBILITY" — replaced by MAP_WIRE_1_WORLD_MAP_VIEW_CANDIDATE_V1 §3 lines 280-288 where Ground items and corpses are in map tiles (domain 17) only, not domain-1 entities
+  - "USE-WIRE-V1: domain 2 carries world-object states" — replaced for bundle Worlds; domain 2 is disabled in bundle Worlds per the accepted contract
 - §9-§13 (Capability through before-freeze checklist): Design rationale and testing strategy remain reference material
 
 ## Implementation brief
