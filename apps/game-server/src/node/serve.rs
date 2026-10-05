@@ -88,6 +88,11 @@ pub enum BootError {
     ClockSkew,
     Serve,
     ContentActivation(&'static str),
+    /// MAP-CUTOVER-1a: the configured world bundle failed a boot check.
+    WorldBundle(crate::map::boot::BootRefusal),
+    /// MAP-CUTOVER-1a: the world bundle passed its boot checks, but serving it needs client
+    /// capability 18 (MAP-CUTOVER-1b); no listener is opened.
+    WorldBundleUnserved,
 }
 
 impl BootError {
@@ -105,6 +110,8 @@ impl BootError {
             Self::Readiness(_) | Self::ClockSkew => 17,
             Self::Serve => 18,
             Self::ContentActivation(_) => 19,
+            Self::WorldBundle(_) => 20,
+            Self::WorldBundleUnserved => 21,
         }
     }
 }
@@ -127,6 +134,10 @@ impl std::fmt::Display for BootError {
                     "native entry Content activation refused at {stage}"
                 )
             }
+            Self::WorldBundle(refusal) => write!(formatter, "world bundle refused: {refusal}"),
+            Self::WorldBundleUnserved => formatter.write_str(
+                "world bundle booted; serving it needs client capability 18 (MAP-CUTOVER-1b)",
+            ),
         }
     }
 }
@@ -1120,6 +1131,51 @@ fn stopped_before_ready() {
     event("event=shutdown state=complete");
 }
 
+/// MAP-CUTOVER-1a: without `[world_bundle]` the node goes on to serve the fixture entry room.
+/// With it, the Channel boots from the bundle's pins (`map::boot::boot`) and its movement cells
+/// over the bundle index, then the node stops before any listener: serving the bundle needs
+/// client capability 18 (MAP-CUTOVER-1b). Item definitions are not served yet, so every item
+/// blocks.
+fn world_bundle_gate(
+    config: &NodeConfig,
+    read: impl FnOnce(&Path) -> Result<Vec<u8>, BootError>,
+    world: WorldId,
+    channel: ChannelId,
+    entry: &crate::content::NativeEntryMovementCells,
+) -> Result<(), BootError> {
+    let Some(bundle) = &config.world_bundle else {
+        return Ok(());
+    };
+    let pins = crate::map::boot::BootPins {
+        bundle: crate::map::BundlePins {
+            digest: bundle
+                .digest_bytes()
+                .ok_or_else(|| invalid("world_bundle.digest"))?,
+            project_format_version: bundle.project_format_version.clone(),
+            world_schema_version: bundle.world_schema_version.clone(),
+            content_revision: bundle.content_revision.clone(),
+            production: bundle.production,
+        },
+        map_revision: config.readiness.map_revision.clone(),
+        start: crate::map::overlay::TilePos {
+            x: bundle.start_x,
+            y: bundle.start_y,
+            floor: bundle.start_floor,
+        },
+    };
+    let data = read(&bundle.path)?;
+    let booted = crate::map::boot::boot(&data, &pins, world, channel, |_| None)
+        .map_err(BootError::WorldBundle)?;
+    booted
+        .movement_cells(entry)
+        .map_err(|_| BootError::ContentActivation("world bundle movement cells"))?;
+    event(&format!(
+        "event=world_bundle state=booted map_revision={}",
+        booted.map_revision()
+    ));
+    Err(BootError::WorldBundleUnserved)
+}
+
 async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
@@ -1172,6 +1228,21 @@ async fn boot_and_serve(
         activate_content(root, material.world, material.channel).await?;
     let qualified_room = content.qualified_room().clone();
     let (channel_pin, movement_cells, door_content) = content.into_channel_parts();
+    world_bundle_gate(
+        config,
+        |path| {
+            Ok(read_file(
+                "world_bundle.path",
+                path,
+                FileClass::Trusted,
+                effective_uid(),
+                oteryn_world_bundle::bundle::READ_CAPS.file_bytes,
+            )?)
+        },
+        material.world,
+        material.channel,
+        &movement_cells,
+    )?;
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
     let gameplay = active_content
@@ -1540,6 +1611,83 @@ mod tests {
     }
 
     #[test]
+    fn map_cutover_a_fixture_config_serves_and_a_bundle_config_refuses_after_boot() {
+        use super::super::config::tests::{NODE, WORLD_BUNDLE};
+        let id = |n: u8| [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n];
+        let world = WorldId::decode(&id(1)).expect("world");
+        let channel = ChannelId::decode(&id(2)).expect("channel");
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let cells = room.movement_cells();
+        let gate = |document: &str, bytes: &[u8]| {
+            let config = NodeConfig::parse(document.as_bytes()).expect("config");
+            world_bundle_gate(&config, |_| Ok(bytes.to_vec()), world, channel, cells)
+        };
+
+        // No `[world_bundle]`: the fixture entry room goes on to serve; nothing is read.
+        let config = NodeConfig::parse(NODE.as_bytes()).expect("fixture config");
+        let fixture = world_bundle_gate(
+            &config,
+            |_| panic!("a fixture node reads no bundle"),
+            world,
+            channel,
+            cells,
+        );
+        assert!(fixture.is_ok());
+
+        let (bytes, pins) = crate::map::boot::tests::bundle();
+        let digest: String = pins.digest.iter().map(|b| format!("{b:02x}")).collect();
+        let configured = format!("{NODE}{WORLD_BUNDLE}")
+            .replace(
+                "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
+                &digest,
+            )
+            .replace("start_x = 100", "start_x = 2")
+            .replace("start_y = 200", "start_y = 0");
+        let bundle = configured.replace(
+            "map_revision = \"map-1\"",
+            &format!("map_revision = \"sha256:{digest}\""),
+        );
+        assert!(matches!(
+            gate(&bundle, &bytes),
+            Err(BootError::WorldBundleUnserved)
+        ));
+        assert_eq!(BootError::WorldBundleUnserved.exit_code(), 21);
+        // Each boot check refuses before the unserved stop.
+        assert!(matches!(
+            gate(&configured, &bytes),
+            Err(BootError::WorldBundle(
+                crate::map::boot::BootRefusal::MapRevision
+            ))
+        ));
+        assert!(matches!(
+            gate(&bundle.replace("start_x = 2", "start_x = 4"), &bytes),
+            Err(BootError::WorldBundle(
+                crate::map::boot::BootRefusal::StartNotEnterable
+            ))
+        ));
+        assert!(matches!(
+            gate(&bundle.replace("\"rev-1\"", "\"rev-2\""), &bytes),
+            Err(BootError::WorldBundle(crate::map::boot::BootRefusal::Load(
+                crate::map::LoadError::ContentRevision
+            )))
+        ));
+        let config = NodeConfig::parse(bundle.as_bytes()).expect("bundle config");
+        let unreadable = world_bundle_gate(
+            &config,
+            |_| Err(invalid("world_bundle.path")),
+            world,
+            channel,
+            cells,
+        );
+        assert!(matches!(
+            unreadable,
+            Err(BootError::Startup(StartupError::Invalid {
+                key: "world_bundle.path"
+            }))
+        ));
+    }
+
+    #[test]
     fn exit_codes_are_distinct_per_class() {
         let codes = [
             BootError::Startup(StartupError::Invalid { key: "x" }).exit_code(),
@@ -1552,6 +1700,8 @@ mod tests {
             BootError::Readiness("x").exit_code(),
             BootError::Serve.exit_code(),
             BootError::ContentActivation("x").exit_code(),
+            BootError::WorldBundle(crate::map::boot::BootRefusal::MapRevision).exit_code(),
+            BootError::WorldBundleUnserved.exit_code(),
         ];
         let unique: std::collections::BTreeSet<_> = codes.iter().collect();
         assert_eq!(unique.len(), codes.len());
