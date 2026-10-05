@@ -13,12 +13,13 @@ class AcceptedOverlayTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Exercise real frozen-r25 verification; only the new replay stage is isolated.
-        with patch.object(overlay,'apply_overlay',side_effect=lambda root,generated:generated):
+        with patch.object(overlay,'apply_overlay',side_effect=lambda root,generated:generated), patch('bind_monster_source_definitions.bind_definitions', side_effect=lambda root,generated:generated):
             cls.base=producer.outputs(ROOT)
         cls.receipt=json.loads((ROOT/overlay.PATCH_PATH).read_bytes())
     def test_replays_exact_current_four_outputs_without_mutating_base(self):
         before={k:overlay.digest(v) for k,v in self.base.items()}
-        actual=overlay.apply_overlay(ROOT,self.base)
+        from bind_monster_source_definitions import bind_definitions
+        actual=bind_definitions(ROOT,overlay.apply_overlay(ROOT,self.base))
         for path in overlay.ALLOWED_PATHS:
             self.assertEqual(actual[path],(ROOT/path).read_bytes(),path)
         self.assertEqual(before,{k:overlay.digest(v) for k,v in self.base.items()})

@@ -184,7 +184,8 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
         if errors:
             raise ValueError(f"INVALID_FAMILY_COLLECTION:{path}:{errors[0].message}")
     from monster_seven_spell_overlay import apply_overlay
-    return apply_overlay(root, result)
+    from bind_monster_source_definitions import bind_definitions
+    return bind_definitions(root, apply_overlay(root, result))
 
 
 def descriptors(root: Path = ROOT, generated: dict[str, bytes] | None = None) -> dict[str, list[dict[str, Any]]]:

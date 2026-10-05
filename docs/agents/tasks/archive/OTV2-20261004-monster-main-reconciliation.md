@@ -4,7 +4,7 @@
 task_id: OTV2-20261004-monster-main-reconciliation
 title: Complete seven monster data and source-mechanic batches
 mode: IMPLEMENT
-status: validating
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/monster-source-mechanics-seven-20261004
@@ -100,3 +100,22 @@ The P1 repair and NPC catalogue union are complete locally, with current main98c
 ## Latest main and final mechanic execution
 
 Merged current main0ec917e6 with CREATURE-AI-1. Its target selection/think owner is preserved alongside the existing mutable damage/field-contact owner. The accepted one-second cadence and new test helpers are reconciled. Fresh current-source qualification at2081af9b:2413library PASS/0failed/25ignored,19individually executed native/appearance/capture PASS and strict all-target Clippy PASS. Actual a2c SQL/repository/reward receipts remain separately scoped with unchanged source/data/fixture proof. Crystal map candidates reproduce against the reconciled Creature catalogue:8former held groups/29points resolved, all prior candidate records and all remaining raw held data preserved, runtime admission disabled. [Latest portable evidence](../../evidence/monster-final-seven-20261004/latest-main-20261005/README.md). Normal PR1807 is updated; no protected merge/queue or production activation.
+
+## Accepted registration-membership repair (AUTHORING, 2026-10-05)
+
+Independent review `discussion_r4181989524` on `52c0fba3` is accepted. The
+current native digest could previously be combined with a detached same-world
+project at `register_project_with_native`. RED exercised an actual staged native
+manifest and the retained eleven-document project before the repair. The repair
+binds the complete consumed definition/provenance closure in the already pinned
+creature input; membership is checked before actor, fence or catalogue mutation.
+Raw registration is now private in production (synthetic wrappers are test-only).
+The sibling condition-input grant consumes the same decoded membership evidence.
+Phase and child registrations consume the previously bound private closure.
+The outer-pin rebinder is restricted to the content-loader module.
+
+The immutable adopted authoring overlay and Wiki/Canary/Crystal values are retained.
+A reproducible derived successor adds only the closure binding and updates native
+input pins/registration metadata. Item FX/audio CI now verifies preservation of
+all current parent batches and the seventeen historical IDs rather than assuming
+there can be no new NPC provenance batches. The sealed producer is unchanged.

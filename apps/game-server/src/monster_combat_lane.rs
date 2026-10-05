@@ -696,7 +696,7 @@ impl MonsterCombatLane {
     /// expected binding check, not a fabricated proof that arbitrary records came from an artifact.
     // Keep register_native source/owner ABI explicit: exact actor/source binding, occurrence, immutable definition and separately owned runtime/policy facts must not be conflated.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn register_native(
+    fn register_native_definitions(
         &mut self,
         runtime: &ChannelRuntimeV1,
         current: &mut ScopeRuntimeFence,
@@ -903,6 +903,52 @@ impl MonsterCombatLane {
         });
         Ok(occurrence)
     }
+    #[cfg(test)]
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn register_native(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        current: &mut ScopeRuntimeFence,
+        actor: ExactActorRef,
+        creature: &Ref,
+        records: &[ProjectReferenceRecord],
+        profiles: &[ProjectV2AuthoringProfile],
+        loader_digest: [u8; 32],
+        due: SemanticTimeMicros,
+    ) -> Result<ThinkOccurrence, CombatLaneError> {
+        self.register_native_definitions(
+            runtime,
+            current,
+            actor,
+            creature,
+            records,
+            profiles,
+            loader_digest,
+            due,
+        )
+    }
+    #[cfg(test)]
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn register_project(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        current: &mut ScopeRuntimeFence,
+        actor: ExactActorRef,
+        creature: &Ref,
+        draft: &ProjectV2Draft,
+        loader_digest: [u8; 32],
+        due: SemanticTimeMicros,
+    ) -> Result<ThinkOccurrence, CombatLaneError> {
+        self.register_project_definitions(
+            runtime,
+            current,
+            actor,
+            creature,
+            draft,
+            loader_digest,
+            due,
+        )
+    }
     /// The loaded artifact supplies definitions only; registration retains the existing
     /// current scope, physical actor identity and exact typed project admission checks.
     // Keep independently current runtime/fence, loaded content, source/proposal and owner facts explicit at this native composition boundary.
@@ -926,15 +972,19 @@ impl MonsterCombatLane {
         {
             return Err(CombatLaneError::Attack(AttackError::ContentChanged));
         }
-        let receipt =
-            self.register_project(runtime, current, actor, creature, draft, digest, due)?;
+        if !native.qualifies_current_project_definitions(digest, draft) {
+            return Err(CombatLaneError::Attack(AttackError::InvalidSource));
+        }
+        let receipt = self
+            .register_project_definitions(runtime, current, actor, creature, draft, digest, due)?;
         self.native_appearance_content = Some(native);
         Ok(receipt)
     }
-    /// One actual loaded typed project closure: no source membership inferred from hashes.
+    /// Private definition registrar; production admission first checks the independently
+    /// loader-pinned definition closure, rather than trusting a supplied artifact digest.
     // Keep register_project source/owner ABI explicit: exact actor/source binding, occurrence, immutable definition and separately owned runtime/policy facts must not be conflated.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn register_project(
+    fn register_project_definitions(
         &mut self,
         runtime: &ChannelRuntimeV1,
         current: &mut ScopeRuntimeFence,
@@ -1131,7 +1181,7 @@ impl MonsterCombatLane {
         } else {
             None
         };
-        let occurrence = self.register_native(
+        let occurrence = self.register_native_definitions(
             runtime,
             current,
             actor,
@@ -2843,7 +2893,7 @@ mod tests {
         runtime
             .initialize_first_entry_position(target)
             .expect("monster_combat_lane.rs:tests:2762: qualified fixture operation must succeed");
-        let inputs = TrustedMonsterConditionTickInputs::from_trusted_native_loader(
+        let inputs = TrustedMonsterConditionTickInputs::from_test_native_room(
             &runtime,
             &room,
             &draft,
@@ -2860,7 +2910,7 @@ mod tests {
             "equal World alone cannot authorize another content pin"
         );
         assert!(
-            TrustedMonsterConditionTickInputs::from_trusted_native_loader(
+            TrustedMonsterConditionTickInputs::from_test_native_room(
                 &base,
                 &room,
                 &draft,
@@ -3206,7 +3256,7 @@ mod tests {
         runtime
             .initialize_first_entry_position(target)
             .expect("monster_combat_lane.rs:tests:3079: qualified fixture operation must succeed");
-        let inputs = TrustedMonsterConditionTickInputs::from_trusted_native_loader(
+        let inputs = TrustedMonsterConditionTickInputs::from_test_native_room(
             &runtime,
             &room,
             &draft,
@@ -3223,7 +3273,7 @@ mod tests {
             "equal World alone cannot authorize another content pin"
         );
         assert!(
-            TrustedMonsterConditionTickInputs::from_trusted_native_loader(
+            TrustedMonsterConditionTickInputs::from_test_native_room(
                 &base,
                 &room,
                 &draft,
@@ -5186,7 +5236,7 @@ impl MonsterCombatLane {
             }) {
                 Ok(None)
             } else if let Some(c) = closure {
-                let registered = self.register_native(
+                let registered = self.register_native_definitions(
                     runtime,
                     current,
                     actor,
@@ -6177,6 +6227,27 @@ impl TrustedMonsterConditionTickInputs {
     pub(crate) fn from_trusted_native_loader(
         runtime: &ChannelRuntimeV1,
         room: &crate::content::QualifiedNativeEntryRoom,
+        draft: &ProjectV2Draft,
+        native: &crate::content::native_gameplay::NativeGameplayState,
+    ) -> Option<Self> {
+        let digest = runtime.content_pin().server_artifact_digest();
+        if !native.qualifies_current_project_definitions(digest, draft) {
+            return None;
+        }
+        Self::from_project_definitions(runtime, room, draft, digest)
+    }
+    #[cfg(test)]
+    fn from_test_native_room(
+        runtime: &ChannelRuntimeV1,
+        room: &crate::content::QualifiedNativeEntryRoom,
+        draft: &ProjectV2Draft,
+        verified_loader_digest: [u8; 32],
+    ) -> Option<Self> {
+        Self::from_project_definitions(runtime, room, draft, verified_loader_digest)
+    }
+    fn from_project_definitions(
+        runtime: &ChannelRuntimeV1,
+        room: &crate::content::QualifiedNativeEntryRoom,
         draft: &crate::content::ProjectV2Draft,
         verified_loader_digest: [u8; 32],
     ) -> Option<Self> {
@@ -6189,7 +6260,7 @@ impl TrustedMonsterConditionTickInputs {
         {
             return None;
         }
-        let regeneration = NativeRegenerationRegistry::from_trusted_native(
+        let regeneration = NativeRegenerationRegistry::from_project_definitions(
             runtime,
             draft,
             verified_loader_digest,
@@ -6374,7 +6445,7 @@ impl MonsterCombatLane {
                     }) {
                         Ok(None)
                     } else {
-                        let result = self.register_native(
+                        let result = self.register_native_definitions(
                             r,
                             f,
                             actor,
@@ -6429,5 +6500,208 @@ impl MonsterCombatLane {
             }
         }
         receipts
+    }
+}
+
+#[cfg(test)]
+mod project_native_registration_membership_tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+    use super::*;
+
+    #[test]
+    #[ignore = "requires actual staged native manifest and retained eleven-document project"]
+    fn current_native_registration_rejects_detached_project_before_mutation() {
+        use crate::content::{
+            ProjectEvidenceLimits, ProjectFilesystemLimits, capture_world_project,
+        };
+        let path = std::path::PathBuf::from(
+            std::env::var_os("OTERYN_MONSTER_NATIVE_CAPTURE_ROOT").unwrap(),
+        );
+        let project = capture_world_project(
+            path.parent().unwrap(),
+            path.file_name().unwrap(),
+            ProjectFilesystemLimits {
+                project: ProjectEvidenceLimits {
+                    max_documents: 11,
+                    max_document_bytes: 96_000_000,
+                    max_total_bytes: 160_000_000,
+                    max_json_depth: 24,
+                    max_decoded_fields: 2_400_000,
+                    max_string_bytes: 43_000_000,
+                    max_locator_bytes: 160,
+                    max_locator_segments: 8,
+                    max_reference_records: 70000,
+                    max_import_records: 29,
+                    max_reimport_states: 404,
+                },
+                max_entries_per_directory_scan: 32,
+                max_total_directory_entries_scanned: 201,
+            },
+        )
+        .unwrap();
+        let draft = project.migrate_to_v2();
+        let world = project.lower_reference_source().unwrap().world_id;
+        let manifest =
+            std::path::PathBuf::from(std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST").unwrap());
+        let input =
+            crate::content::native_gameplay::NativeGameplayInput::from_manifest(&manifest).unwrap();
+        let room = crate::content::qualify_selected_native_gameplay_room(world, &input).unwrap();
+        let staged = crate::content::production::StagedGeneration::stage(
+            &room.compiled().server_artifact,
+            &room.compiled().client_artifact,
+            room.compiled().expectation(),
+        )
+        .unwrap();
+        let native = std::sync::Arc::new(staged.runtime_state().native_gameplay().unwrap().clone());
+        let mut channel_id = [0u8; 16];
+        channel_id[6] = 0x70;
+        channel_id[8] = 0x80;
+        channel_id[15] = 92;
+        let mut node_id = channel_id;
+        node_id[15] = 93;
+        let start = room.entry_start();
+        let pin = crate::foundation::ChannelContentPin::from_activation(
+            world,
+            1,
+            room.compiled().server_digest(),
+            room.compiled().client_digest(),
+            room.frame_binding().digest(),
+            room.map_revision_digest(),
+            (start.x, start.y, start.floor),
+        );
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            crate::foundation::ChannelId::decode(&channel_id).unwrap(),
+            crate::foundation::NodeId::decode(&node_id).unwrap(),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            16,
+            pin,
+        )
+        .unwrap();
+        let creature = Ref {
+            family: ProjectV2Family::Creature,
+            key: "oteryn:creature.rat".into(),
+            revision: "definition-r1".into(),
+        };
+        let actor = runtime.crystal_router_fixture_actor(
+            &creature.key,
+            20,
+            crate::foundation::MovementLocalPosition {
+                x: 100,
+                y: 100,
+                floor: 7,
+            },
+        );
+        let b = runtime.binding();
+        let (mut fence, _) = crate::foundation::crystal_timer_fixture(
+            crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.scope_generation(),
+        )
+        .unwrap();
+        let mut lane = MonsterCombatLane::new(&runtime, &fence).unwrap();
+        let fence_before = format!("{fence:?}");
+        for mutation in 0..7 {
+            let mut detached = draft.clone();
+            match mutation {
+                0 | 5 => {
+                    let key = if mutation == 0 {
+                        &creature.key
+                    } else {
+                        "oteryn:creature.demon"
+                    };
+                    let profile = detached
+                        .state
+                        .authoring_profiles
+                        .iter_mut()
+                        .find(|p| p.target.key == key)
+                        .unwrap();
+                    let Data::Creature(data) = &mut profile.data else {
+                        panic!("Creature profile")
+                    };
+                    data.health = Some(data.health.unwrap() + 1);
+                }
+                1 => {
+                    detached.state.authoring_profiles.pop();
+                }
+                2 => {
+                    detached.core.records.pop();
+                }
+                3 => {
+                    detached.state.sources[0].revision.push_str("-detached");
+                }
+                4 => {
+                    detached.state.source_identity_bindings[0]
+                        .source_revision
+                        .push_str("-detached");
+                }
+                6 => {
+                    let profile = detached
+                        .state
+                        .authoring_profiles
+                        .iter_mut()
+                        .find(|p| matches!(&p.data, Data::Behavior(b) if !b.attacks.is_empty()))
+                        .unwrap();
+                    let Data::Behavior(behavior) = &mut profile.data else {
+                        panic!("Behavior profile")
+                    };
+                    behavior.attacks[0].interval_ms += 1;
+                }
+                _ => unreachable!(),
+            }
+            assert!(
+                TrustedMonsterConditionTickInputs::from_trusted_native_loader(
+                    &runtime, &room, &detached, &native
+                )
+                .is_none(),
+                "condition grant mutation {mutation}"
+            );
+            let result = lane.register_project_with_native(
+                &runtime,
+                &mut fence,
+                actor,
+                &creature,
+                &detached,
+                native.clone(),
+                SemanticTimeMicros::from_micros(0),
+            );
+            assert!(
+                matches!(
+                    result,
+                    Err(CombatLaneError::Attack(AttackError::InvalidSource))
+                ),
+                "mutation {mutation}: {result:?}"
+            );
+            assert!(lane.actors.is_empty());
+            assert!(lane.child_closure.is_none());
+            assert!(lane.area_catalog.is_none());
+            assert!(lane.native_appearance_content.is_none());
+            assert_eq!(format!("{fence:?}"), fence_before);
+        }
+        lane.register_project_with_native(
+            &runtime,
+            &mut fence,
+            actor,
+            &creature,
+            &draft,
+            native,
+            SemanticTimeMicros::from_micros(0),
+        )
+        .unwrap();
+        let current_native = lane.native_appearance_content.as_ref().unwrap();
+        assert!(
+            TrustedMonsterConditionTickInputs::from_trusted_native_loader(
+                &runtime,
+                &room,
+                &draft,
+                current_native
+            )
+            .unwrap()
+            .current(&runtime)
+            .is_some()
+        );
+        assert_eq!(lane.actors.len(), 1);
     }
 }

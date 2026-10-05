@@ -37,21 +37,45 @@ class RawEvidenceTests(unittest.TestCase):
             )
         )
 
-    def test_actual_parent_all_seventeen_batches_are_preserved(self):
+    def test_actual_parent_and_historical_batches_are_preserved(self):
         document = json.loads(
             (ROOT.parents[2] / "content/world/provenance/imports.json").read_bytes()
         )
         document["batches"] = [
             b for b in document["batches"] if b["batch_id"] != m.BATCH_ID
         ]
-        self.assertEqual(len(document["batches"]), 17)
+        historical_ids = {
+            'cw2-b1-donor-identity-epoch-2-r1',
+            'cw2-b1-full-item-family-registry-r1',
+            'g4-creature-canary-wave-a-r1',
+            'g4-creature-crystal-1530-r1',
+            'g4-item-exact-165-tibiawiki-r1',
+            'g4-item-forge289-br-r1',
+            'g4-item-wave1-tibiawiki-r1',
+            'g4-mount-252-tibiawiki-r1',
+            'g4-npc-crystal-summer-supplement-r1',
+            'g4-npc-prices-tibiawiki-br-r1',
+            'g4-npc-prices-tibiopedia-r1',
+            'g4-npc-wave-a-tibiawiki-r9',
+            'g4-wiki-authored-creature-d44-r1',
+            'monster-full-mechanics-portal25051-canary-20261004',
+            'monster-full-mechanics-portal25051-crystal-20261004',
+            'monster-full-mechanics-tentacle-items-canary-20261004',
+            'monster-full-mechanics-tentacle-items-crystal-20261004',
+        }
+        parent_ids = [b["batch_id"] for b in document["batches"]]
+        self.assertEqual(len(parent_ids), len(set(parent_ids)))
+        self.assertTrue(historical_ids.issubset(parent_ids))
         self.assertEqual(
             sum(len(b["reimport_states"]) for b in document["batches"]), 108
         )
         old = m.canonical(document)
         merged = m.append_batch(document, self.batch)
         self.assertEqual(m.canonical(document), old)
-        self.assertEqual(len(merged["batches"]), 18)
+        self.assertEqual(len(merged["batches"]), len(parent_ids) + 1)
+        self.assertEqual(
+            {b["batch_id"] for b in merged["batches"]}, set(parent_ids) | {m.BATCH_ID}
+        )
         self.assertEqual(sum(len(b["reimport_states"]) for b in merged["batches"]), 404)
         retained = {b["batch_id"]: b for b in merged["batches"]}
         self.assertTrue(

@@ -227,6 +227,10 @@ impl NativeMonsterMeleeProfile {
 pub(crate) struct CreatureProfilesDocument {
     pub(crate) schema: String,
     pub(crate) records: Vec<CreatureProfileRecord>,
+    /// Exact canonical definition/provenance closure, independently pinned in this artifact.
+    /// This is not the caller-supplied outer artifact digest or an actor identity claim.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) source_definitions_sha256: Option<String>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -367,6 +371,35 @@ impl NativeGameplayState {
                 == 1
             && self.creatures.records.iter().any(|r| &r.profile == profile)
     }
+    /// The decoded artifact, not the caller, supplies the expected source-membership digest.
+    /// Bind the entire consumed closure, including children, heals, callbacks and provenance.
+    pub(crate) fn qualifies_current_project_definitions(
+        &self,
+        server_digest: [u8; 32],
+        draft: &super::ProjectV2Draft,
+    ) -> bool {
+        if self.source_digest != server_digest {
+            return false;
+        }
+        let Some(expected) = &self.creatures.source_definitions_sha256 else {
+            return false;
+        };
+        let value = serde_json::json!({
+            "schema": "OTERYN_NATIVE_MONSTER_DEFINITIONS/v1",
+            "records": draft.core.records,
+            "authoring_profiles": draft.state.authoring_profiles,
+            "sources": draft.state.sources,
+            "source_identity_bindings": draft.state.source_identity_bindings,
+        });
+        let Ok(bytes) = serde_json::to_vec(&value) else {
+            return false;
+        };
+        let actual: String = sha256(&bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        &actual == expected
+    }
     pub(crate) fn creature_profiles(&self) -> &CreatureProfilesDocument {
         &self.creatures
     }
@@ -427,7 +460,7 @@ impl NativeGameplayState {
     }
     /// Stage invokes this only after the complete outer artifact matches independent issuance.
     /// Rebinds already validated immutable data; creates no active-generation authority.
-    pub(crate) fn bind_qualified_outer_artifact(
+    pub(super) fn bind_qualified_outer_artifact(
         &mut self,
         digest: [u8; 32],
     ) -> Result<(), ContentError> {
@@ -1138,6 +1171,20 @@ fn creature_policies(
     creatures: &CreatureProfilesDocument,
     presentations: &PresentationProfilesDocument,
 ) -> Result<Vec<CompiledCreaturePolicy>, ContentError> {
+    if creatures
+        .source_definitions_sha256
+        .as_ref()
+        .is_some_and(|value| {
+            value.len() != 64
+                || !value
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        })
+    {
+        return Err(invalid(
+            "native gameplay source definition membership digest",
+        ));
+    }
     let mut appearance = BTreeMap::new();
     for profile in &presentations.records {
         super::project::validate_native_gameplay_profile(profile)

@@ -2605,8 +2605,9 @@ struct NativeRegenerationEntry {
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 impl NativeRegenerationRegistry {
-    /// Root's trusted native loader supplies its verified input SHA, never a network caller.
-    pub(crate) fn from_trusted_native(
+    /// Immutable definitions only; the lane independently checks loaded membership before
+    /// constructing a current tick capability. This registry alone grants no tick authority.
+    pub(crate) fn from_project_definitions(
         runtime: &ChannelRuntimeV1,
         draft: &crate::content::ProjectV2Draft,
         loader_digest: [u8; 32],
