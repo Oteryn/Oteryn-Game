@@ -58,6 +58,10 @@ external_repositories: []
   unchanged. A resolver failure that a retry cannot fix keeps the lane fenced until a Channel
   reload (#1836 thread 4187324749). This record now states 2a's guarded S and 2b's await-free S
   separately (#1836 thread 4187324765).
+- Codex round on 4f565157 is fixed: 2a owns `familiar_cast_dispatch.rs`. The §1.4 marker holds
+  the attempt's identity (actor, session, `CommandId`, intent), and its pending readers
+  (`Pending`, control-loss recovery, competing-command refusal, `original_retained`) read the
+  marker, with a test (#1836 thread r4187852648).
 - Makes the spell slot reservation complete: every mutator of a reserved slot either checks it or
   is shown unable to reach one. The caster stays visibly pending for the whole pass.
 - Rejects a runtime revision counter, committing under the guards, narrowing the install fence,
