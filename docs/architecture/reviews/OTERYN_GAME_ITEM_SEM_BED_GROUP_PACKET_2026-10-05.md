@@ -84,7 +84,7 @@ with the other `part` and the opposite direction. This matches BED-0 §3 and the
 of different styles still form a valid bed, as in the engines.
 
 An `occupied_<variant>` equal to the record's own Item means "no change for that variant". The
-engine does the same for a missing or non-bed transform target.
+engine does the same for a missing or non-bed transform target (§1.5).
 
 This amends BED-0 in three ways:
 
@@ -178,8 +178,21 @@ D384 pin, OTS_HYPOTHESIS_ONLY), which BED-0 and BED-CONTENT-1 already use.
 `femaletransformto`. No bed record carries `transformonuse` or `transformto`. This corrects the
 BED-0 child row and §2.2 of the batch, which named them.
 
-**Lowering rule.** This is the engines' parse rule (Crystal `item_parse.cpp`,
-`imports/ots-source-evidence/item-fx-audio295`; Canary is the same, OTS_HYPOTHESIS_ONLY).
+**Lowering rule.** The rule lowers the observable engine behaviour, which has two steps
+(OTS_HYPOTHESIS_ONLY):
+
+- **Parse.** Crystal `ItemParse::parseBeds` (`imports/ots-source-evidence/item-fx-audio295`;
+  Canary is the same) stores every `<sex>transformto` value in `transformToOnUse`, with the
+  other-sex fallback, and sets the target's reverse `transformToFree`. It does not check the
+  target's type.
+- **Apply.** Canary `BedItem::updateAppearance` (`src/items/bed.cpp` at `04b83b51`, lines
+  283-298; Crystal is the same) transforms a bed part only when the target's type is
+  `ITEM_TYPE_BED`. For any other target it does nothing.
+
+So a non-bed target is parsed but never shown: in Canary, item 743's female target is 727, a
+lava trashholder, and a sleeping woman leaves 743 unchanged. Group 19 stores the look the engine
+shows, not the parsed value. This is the engines' behaviour, not a divergence.
+
 For each `type="bed"` Item:
 
 - `part`: `pillow` is Head and `blanket` is Foot.
@@ -187,7 +200,9 @@ For each `type="bed"` Item:
 - `occupied_male`: `maletransformto`, or `femaletransformto` when the male key is absent.
 - `occupied_female`: `femaletransformto`, or `maletransformto` when the female key is absent.
 - A target that is absent, `0` or not a `type="bed"` Item lowers to the record's own Item ("no
-  change"). The engine applies no transform for such a target.
+  change"), as `updateAppearance` does. BED-CONTENT-1 lists each such target, with the source
+  id and its source type, in the facts packet, and tests that 743 lowers to "no change" for
+  `occupied_female`.
 
 The engines also derive a "free" type from whichever id names a type first. §1.2 does not use it.
 
