@@ -111,12 +111,9 @@ The proposed numbers are:
 - delta type 1 `WORLD_MAP_VIEW_DELTA_V1`;
 - the schema `docs/contracts/protocol-oteryn/v1/world_map_v1.proto`.
 
-> Amendment MAPW-A1 (2026-10-05, proposed; effective only on owner answer 1a to
-> `ARCH-MAP-TRACK-PACKETS-V1` §1.5, `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_TRACK_PACKETS_2026-10-05.md`
-> §1.3): capability 18 requires 6 only. When 4 is not selected, every entry that would have
-> origin `item_handle` is sent with origin `display_only`, no handle is assigned and none counts
-> against `MAX_MAP_VIEW_HANDLES`. When 4 is selected, §4 is unchanged. Capability 18 was never
-> offered before this amendment. With owner answer 1b this amendment is void.
+> Amendment MAPW-A1 (2026-10-05): **rejected** by the owner (D730, answer 1b to
+> `ARCH-MAP-TRACK-PACKETS-V1` §1.5, `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_TRACK_PACKETS_2026-10-05.md`).
+> Capability 18 keeps requiring 6 and 4; this section and §4 are unchanged.
 
 ```proto
 message MapViewHeaderV1 {
