@@ -177,8 +177,9 @@
   and `serde_json` give the same bytes:
   - values are objects, arrays, strings, `true`, `false` and integers in `0..=2^53-1`. A float,
     an exponent, a negative number, `null`, an unpaired surrogate and a duplicate member name are
-    refused before canonicalization. Experience values above `2^53-1` cannot occur, because they
-    are decimal strings (§1.1);
+    refused before canonicalization. Duplicates are detected while parsing, before any map is
+    built, because a map keeps only one of two equal names. Experience values above `2^53-1`
+    cannot occur, because they are decimal strings (§1.1);
   - every member name is ASCII, so the JCS order (UTF-16 code units) equals byte order;
   - members are sorted by name at every level, arrays keep their order, and there is no
     whitespace outside strings;
@@ -187,10 +188,19 @@
     control character as `\u00xx` with lowercase hex. All other characters, non-ASCII included,
     are written as themselves;
   - integers are written in decimal with no sign, leading zero or fraction.
-  The Python producer emits `json.dumps(value, sort_keys=True, separators=(",", ":"),
-  ensure_ascii=False).encode("utf-8")` after the profile check. The Rust decoder parses into a
-  `serde_json::Value`, applies the same profile check, and emits `serde_json::to_vec`. The
-  workspace pins `serde_json` without `preserve_order`, so objects are sorted maps. A shared
+  - **Parsing.** The Python producer reads every JSON input with
+  `json.loads(text, object_pairs_hook=…)`, where the hook refuses a repeated name in one object,
+  and `parse_constant` and `parse_float` hooks that refuse. It then emits
+  `json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`
+  after the profile check. The Rust decoder never deserializes straight into
+  `serde_json::Value`, whose map keeps the last of two equal names. It parses with one strict
+  `Deserialize` implementation (a `StrictJson` value in `character_progression_content.rs`)
+  whose `visit_map` inserts each name into a `BTreeMap` and fails when the name is already
+  present, and whose number visitors refuse floats and negatives. The checked value is then
+  converted to `serde_json::Value` and emitted with `serde_json::to_vec`. The workspace pins
+  `serde_json` without `preserve_order`, so objects are sorted maps. The same strict parse is
+  used for the four ruleset documents and for the `progression` section of the native gameplay
+  artifact, so a duplicate name is refused on both paths. A shared
   test vector file in the producer tests, with an escaped control character, a non-ASCII string,
   nested objects and the largest allowed integer, holds the expected bytes, and both sides must
   produce them.
@@ -244,8 +254,8 @@
 - At play admission, when the World pins progression content, admission reads the Character's
   progression row (`read_character_progression`) before the session enters the world:
   - **no row, root at revision 1:** admission calls `initialize_character_progression` with the
-    binding's request. A retryable failure refuses the admission as retryable. On success the
-    session keeps the binding;
+    binding's request, in the step below. On `Initialized` or a matching `AlreadyInitialized`
+    the session keeps the binding;
   - **no row, root past revision 1:** admission does not call the initializer, which would
     return `InvalidStoredState`. The session is admitted with **no binding** and logs
     `progression_unbound reason=progression_uninitialized` once. There is no backfill;
@@ -253,6 +263,35 @@
     with **no binding** and logs `progression_unbound reason=progression_context_mismatch` once
     (§1.6, item B);
   - **a row that matches:** the session keeps the binding.
+- **Where the step runs, and its failure.** The fresh admission commits the GameSession and the
+  runtime slot (`commit_composed_fresh_admission`, then `commit_fresh_session`) before the
+  Character has a gameplay fence, so the initializer can only run after that commit, and a
+  failure cannot simply refuse the admission. The step therefore follows the existing first-entry
+  rule in `ComposedFreshAdmission` (`gameplay_transport/mod.rs`):
+  - it runs once the first entry is `Positioned` or `Reconciled`, before the DEATH-2b respawn
+    settle (`consume_admitted_respawn`) and `admit_quest_session`, so before the session is
+    input-eligible and before any other write of the session that could advance the root
+    revision. When the step leaves the actor not input-eligible, the respawn settle is skipped
+    and its pending row stays for the next admission, as DEATH-2b already allows;
+  - the read and the initializer are retried in the attempt, at most `RECONCILE_ATTEMPTS` rounds
+    with `RECONCILE_BACKOFF`, on a retryable durable error, an unavailable holder and a stale
+    fence, like `initialize_first_entry`;
+  - every round sends the identical request. The initializer locks the row and returns
+    `AlreadyInitialized` with the stored state when the row exists and matches, so a replay is
+    the exact-operation reconciliation: an initialization whose commit landed but whose
+    acknowledgement was lost is found by the next round and binds the session, and no second row
+    or changed row can result;
+  - `ProgressionContextMismatch` and `InvalidStoredState` from a round are decided at once as the
+    unbound cases above (`progression_context_mismatch`, `progression_uninitialized`);
+  - when the rounds are exhausted, no rollback is fabricated, as for the first entry. The session
+    gets no binding and its `first_entry` becomes `FirstEntryOutcome::RefusedUnavailable`, so the
+    actor is not input-eligible, accepts no gameplay command and makes no write that could move
+    the root past revision 1. It logs `progression_unbound reason=progression_initialization_unavailable`.
+    The committed GameSession and slot are released by the existing paths for an admitted
+    session that never became input-eligible: the connection ends, the loss is recorded, and the
+    grace expiry retires the session and frees the slot. The next fresh admission reads the row
+    again and repeats the step. A `ClientResume` does not rerun the step and resumes the session
+    as it was lost.
 - A session with no binding behaves exactly like a World without the section (§1.2): a player
   death takes the current non-durable respawn path and terminates, and kill XP and Bestiary log
   `no_progression_binding`. No durable progression write is attempted, so no death or award is
@@ -339,7 +378,10 @@ validation:
     deleted middle row, a duplicate row and a first row other than level 1 are each refused.
   - A canonical JSON test against the shared vector file (§1.3): the Python producer and the Rust
     decoder emit the same bytes, and a float, a negative number, `null`, an unpaired surrogate,
-    a non-ASCII member name and a duplicate member name are each refused on both sides.
+    a non-ASCII member name and a duplicate member name are each refused on both sides. The
+    duplicate case is tested at the top level and in a nested object, in a ruleset document and
+    in a V6 `progression` section whose digests are otherwise valid, and both are refused by the
+    strict parse, not by a later check.
   - Decode tests (`include_str!` of the ruleset files, like `domain/bestiary.rs`): the checked-in
     files decode; 1999 or 2001 rows, a non-increasing threshold, a terminal at or below level
     2000, a death ratio other than 1/1 or a rounding other than floor, and a stated revision that
@@ -367,8 +409,7 @@ owned_paths:
   - apps/game-server/src/combat/death_reward.rs                 # RewardProgressionBinding::from_content only
   - apps/game-server/src/gameplay_transport/character_progression_binding.rs        # new: per-session binding, initialization at admission
   - apps/game-server/src/gameplay_transport/character_progression_binding_tests.rs  # new
-  - apps/game-server/src/gameplay_transport/connection.rs       # the call of the admission initialization from the composed fresh admission only; AdmittedSession is not changed
-  - apps/game-server/src/gameplay_transport/mod.rs              # module line, the progression_sessions map with its construction and its removal in retire, removal of player_death_progression, respawn_after_death reading the session binding, and the kill reward accessor if KILL-REWARD-COMP-1 merged first
+  - apps/game-server/src/gameplay_transport/mod.rs              # module line, the progression step in ComposedFreshAdmission (§1.5), the progression_sessions map with its construction and its removal in retire, removal of player_death_progression, respawn_after_death reading the session binding, and the kill reward accessor if KILL-REWARD-COMP-1 merged first
   - apps/game-server/src/gameplay_transport/kill_reward.rs      # the binding read only, if KILL-REWARD-COMP-1 merged first
   - apps/game-server/tests/support/character_progression_admission_postgres_cases.rs  # new
   - apps/game-server/tests/character_progression_postgres.rs    # registration only
@@ -406,6 +447,17 @@ validation:
     current non-durable respawn.
   - A unit test that the binding's `N` is `CHARACTER_EXPERIENCE_TABLE_LEVELS` on both the death
     and the kill reward paths.
+  - PG cases for the step (§1.5), through a `#[cfg(test)]` fault seam around the initializer call
+    in `character_progression_binding.rs`:
+    - the first round fails before its commit and the second succeeds: the session is bound and
+      exactly one row exists;
+    - the first round commits and its acknowledgement is replaced by a retryable error: the next
+      round returns `AlreadyInitialized` with the same state, the session is bound, and the row
+      is unchanged;
+    - every round fails: no row exists, the session has no binding, its `first_entry` is
+      `RefusedUnavailable`, a gameplay command is refused, and after the connection ends the
+      grace expiry retires the session and frees its slot. A later fresh admission of the same
+      Character initializes the row and binds.
   - A unit test that a lost connection keeps the `progression_sessions` entry, a `ClientResume`
     of the same session reads the same `Arc`, and `retire` removes the entry. `AdmittedSession`
     still derives `Copy`.

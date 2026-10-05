@@ -35,9 +35,14 @@ external_repositories: []
 - A World pins them through a new optional native gameplay section `progression`
   (`OTERYN_NATIVE_PROGRESSION/v1`) (§1.2).
 - Admission pins nine revisions: six from the World pin, and profile, ruleset and content from
-  the Character root. The binding is built per session in `AdmittedSession` and replaces
-  `player_death_progression()`. A Character at root revision 1 is initialized eagerly at
-  admission. Others are admitted with no binding (non-durable death), with no backfill (§1.3-§1.5).
+  the Character root. The binding is built per session and held in a session-keyed
+  `progression_sessions` map, kept across resume and removed in `retire`; `AdmittedSession` is
+  unchanged and stays `Copy`. It replaces `player_death_progression()` (§1.3, §1.4).
+- Admission reads the row first (§1.5). A matching row keeps the binding. No row at root
+  revision 1 is initialized after the admission commit, in bounded idempotent rounds that also
+  reconcile a lost acknowledgement; on exhaustion the actor is left not input-eligible and the
+  existing grace path releases the session. No row past revision 1, or a mismatched row, is
+  admitted with no binding (non-durable death), with no backfill.
 - Packets: PROGRESSION-CONTENT-1 (content and pin, no `gameplay_transport/` change) and the
   re-issued PROGRESSION-OWNER-1 (composition, after #1798 and PROGRESSION-CONTENT-1) (§2).
 - Flagged for owner acceptance (§1.6): A, the pin-schema change; B, revision irreversibility
@@ -68,6 +73,15 @@ external_repositories: []
     `progression_sessions` map, kept across resume and removed in `retire` (§1.4, §2.2).
   - 4180470763 (P2): `levels.csv` covers exactly levels `1..=K`, with `K` pinned and recorded,
     and a deleted tail row is refused (§1.1, §2.1).
+- #1803 Codex round 4 (CP), on `f611b5d2`:
+  - 4180653658 (P1): a strict duplicate-detecting parse runs before any map is built, in Python
+    and Rust, for the ruleset documents and the native `progression` section, with tests (§1.3,
+    §2.1).
+  - 4180653665 (P1): the revision 1 initialization runs after the admission commit, in bounded
+    rounds of the identical idempotent request, which reconcile a lost acknowledgement; on
+    exhaustion the actor is not input-eligible and the existing grace path retires the session,
+    with PG cases (§1.5, §2.2).
+  - 4180653667 (P2): this Outcome now matches §1.4 and §1.5.
 
 ## Validation
 
