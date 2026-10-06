@@ -694,7 +694,7 @@ pub async fn resync(
                             tx.rollback().await?;
                             let epoch = current
                                 .saturating_add(1)
-                                .max(now_ms.div_euclid(1000))
+                                .max(now_ms)
                                 .try_into()
                                 .unwrap_or(0);
                             return Ok(Err(ResyncError::NotAboveFence { epoch, fence }));

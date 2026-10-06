@@ -89,8 +89,8 @@ With `LOGIN_LOCAL_RUN_CLIENT=1` a client that does not print the admission line 
 
 ## Platform commands used (Platform main, no Platform change)
 
-The projection feed needs a Platform checkout carrying PLATFORM-LCFA-1; until the pin above moves to such a
-commit, the run fails at the projection wait or at ticket issuance.
+The projection feed needs a Platform checkout carrying PLATFORM-LCFA-1 (Platform#1465); until the pin above
+moves to such a commit, the run fails at the projection wait or at ticket issuance.
 
 `game-auth:world:ensure`, `NativeTopologyRegistry::issueForPreproduction` / `publishRouteForPreproduction`,
 `NativeSigningTrustRegistry::publishTrustedKey` (via `php -r` inside the throwaway container, as node_boot does),

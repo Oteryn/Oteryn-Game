@@ -458,12 +458,12 @@ pub fn write_fence(path: &Path, value: u64) -> Result<(), FenceUnusable> {
 }
 
 /// The epoch an operator raise produces, exactly as
-/// `game_character_account_projection_resync(true)` computes it from the
-/// locked epoch and the transaction time (Unix ms), or `None` unless it is
+/// `game_character_account_projection_resync(true)` (migration 0028) computes
+/// it from the locked epoch and the transaction time (Unix ms), or `None` unless it is
 /// strictly above F (§5 epoch fence).
 #[must_use]
 pub fn raised_epoch(current: i64, transaction_ms: i64, fence: u64) -> Option<u64> {
-    let raised = current.checked_add(1)?.max(transaction_ms.div_euclid(1000));
+    let raised = current.checked_add(1)?.max(transaction_ms);
     u64::try_from(raised).ok().filter(|epoch| *epoch > fence)
 }
 

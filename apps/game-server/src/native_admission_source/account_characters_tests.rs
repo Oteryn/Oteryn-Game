@@ -663,18 +663,21 @@ fn the_fence_grammar_is_exact() {
 
 #[test]
 fn a_raise_is_the_migration_expression_and_strictly_above_the_fence() {
-    // greatest(epoch + 1, transaction seconds), as migration 0024 computes it.
-    assert_eq!(raised_epoch(1, 1_790_000_000_999, 0), Some(1_790_000_000));
+    // greatest(epoch + 1, transaction Unix ms), as migration 0028 computes it.
     assert_eq!(
-        raised_epoch(1_790_000_005, 1_790_000_000_000, 0),
-        Some(1_790_000_006)
+        raised_epoch(1, 1_790_000_000_999, 0),
+        Some(1_790_000_000_999)
+    );
+    assert_eq!(
+        raised_epoch(1_790_000_000_005, 1_790_000_000_000, 0),
+        Some(1_790_000_000_006)
     );
     // Equal to or below F: refused.
-    assert_eq!(raised_epoch(1, 1_790_000_000_000, 1_790_000_000), None);
-    assert_eq!(raised_epoch(1, 1_790_000_000_000, 1_790_000_001), None);
+    assert_eq!(raised_epoch(1, 1_790_000_000_000, 1_790_000_000_000), None);
+    assert_eq!(raised_epoch(1, 1_790_000_000_000, 1_790_000_000_001), None);
     assert_eq!(
-        raised_epoch(1, 1_790_000_000_000, 1_789_999_999),
-        Some(1_790_000_000)
+        raised_epoch(1, 1_790_000_000_000, 1_789_999_999_999),
+        Some(1_790_000_000_000)
     );
     assert_eq!(raised_epoch(i64::MAX, 0, 0), None);
     assert_eq!(raised_epoch(-5, -1_000_000, 0), None);
