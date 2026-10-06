@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import re
 import secrets
 import subprocess
@@ -39,6 +40,15 @@ PR_METADATA_SOURCE_SHA256 = {
         "4603ace39aaadbb979da4add881d01d5cc9cd962dd1db0005819af55e7e72206"
     ),
 }
+
+
+def report_failure(code: str, name: str, errors: list[str], stream) -> None:
+    """Print each failure as `E8xxx NAME: message` (+ a GitHub Actions annotation)."""
+    for error in errors:
+        print(f"{code} {name}: {error}", file=stream)
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            escaped = error.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+            print(f"::error title={code} {name}::{escaped}", file=stream)
 
 
 def load_module(path: Path, name: str):
@@ -844,8 +854,7 @@ def main() -> int:
     errors.extend(validate_error_code_registry())
     if errors:
         print("Repository policy validation failed:")
-        for error in errors:
-            print(f"- {error}")
+        report_failure("E8002", "REPOSITORY_POLICY_CHECK_FAILED", errors, sys.stdout)
         return 1
     return load_core().main()
 
