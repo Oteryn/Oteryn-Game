@@ -580,7 +580,12 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
      If the process is lost after the root commits, the plan cannot be reconstructed safely:
      its conditions read quest state that its own committed children may have changed, so
      re-evaluating them is the re-enumeration successor §6.2 forbids. Recovery takes §6.2's
-     fail-closed branch, an explicit reconciliation of the root:
+     fail-closed branch, an explicit reconciliation of the root. It applies to a root that is
+     discoverable through a durable child record keyed by its CommandRef (a quest receipt, a
+     claim's MINT outcome or pending reservation, or a claim's obligation row). A root with no
+     such record left no durable child effect: nothing reconciles or records it, and none of its
+     children runs, so it ends as if every child were `REJECTED`. Recovery never needs to find
+     it, and the ruling still adds no root durability. For a discoverable root:
      - a child with a durable record keyed by the root CommandRef is settled by that record and
        never rejected:
        - a quest child by its receipt (character, root CommandRef, transition_key), read with
@@ -595,8 +600,8 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
        retires it;
      - every child with no durable record is `REJECTED` and none runs; nothing is
        re-enumerated, added or renumbered;
-     - the reconciliation is recorded once per root (character, root CommandRef, the committed
-       transition keys and claim) as an operational diagnostic.
+     - the reconciliation is recorded once per discoverable root (character, root CommandRef,
+       the committed transition keys and claim) as an operational diagnostic.
    - What a plan loss leaves behind is bounded: the overlay children's effects are channel
      overlay state, cleared at a channel restart (WORLD-INTERACTION-0 §9.1); a relocation or
      `after_quest` child that did not run moved nothing; a quest child that committed stays
@@ -658,8 +663,9 @@ encoding and a new receipt key migration. It is decided with the first accepted 
 3. **Restart:**
    - Receipts and obligations are durable.
    - Trigger plans are not durable; recovery follows §16.2.5.
-   - A process loss between the root and a quest child loses the plan: the root is reconciled
-     explicitly. Children with a durable record (a quest receipt, a claim's MINT) keep it, a
+   - A process loss between the root and a quest child loses the plan. A root discoverable
+     through a durable child record is reconciled explicitly; a root with none left no durable
+     child effect. Children with a durable record (a quest receipt, a claim's MINT) keep it, a
      committed claim's obligation is requested again at admission, and every other child is
      `REJECTED`.
 4. **Typed references:** the root CommandRef (GameSessionId, CommandId), `transition_key`, the
