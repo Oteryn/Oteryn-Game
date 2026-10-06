@@ -581,16 +581,27 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
      its conditions read quest state that its own committed children may have changed, so
      re-evaluating them is the re-enumeration successor §6.2 forbids. Recovery takes §6.2's
      fail-closed branch, an explicit reconciliation of the root:
-     - the root's committed quest children are found by their receipts (character, root
-       CommandRef), with `reconcile_character_quest_transition`; they stay `COMMITTED`;
-     - every other child of the root is `REJECTED` and none runs; nothing is re-enumerated,
-       added or renumbered;
+     - a child with a durable record keyed by the root CommandRef is settled by that record and
+       never rejected:
+       - a quest child by its receipt (character, root CommandRef, transition_key), read with
+         `reconcile_character_quest_transition`; it stays `COMMITTED`;
+       - a `RewardClaim` child by its DUR-03 MINT outcome under the root CommandRef
+         (`chest_use.rs`): a committed MINT stays `COMMITTED`; a reservation still pending is
+         resolved only on its DUR-03 path, a replay of the same CommandRef, never by this
+         reconciliation;
+     - a committed claim's quest obligation is a durable QUEST-STATE-0 §5.4 row, not a plan
+       child: it is requested again at admission and commits once under its `ClaimObligation`
+       cause (§16.2.2 keeps its transition key distinct); the reconciliation never rejects or
+       retires it;
+     - every child with no durable record is `REJECTED` and none runs; nothing is
+       re-enumerated, added or renumbered;
      - the reconciliation is recorded once per root (character, root CommandRef, the committed
-       transition keys) as an operational diagnostic.
+       transition keys and claim) as an operational diagnostic.
    - What a plan loss leaves behind is bounded: the overlay children's effects are channel
      overlay state, cleared at a channel restart (WORLD-INTERACTION-0 §9.1); a relocation or
      `after_quest` child that did not run moved nothing; a quest child that committed stays
-     committed. A fresh `USE` or step is a new CommandRef and a new root (successor §9.3). This
+     committed; a committed claim keeps its items, and its obligation commits at a later
+     admission. A fresh `USE` or step is a new CommandRef and a new root (successor §9.3). This
      partial outcome after process loss is a declared v1 behaviour, and the ruling adds no root
      durability.
 
@@ -648,7 +659,9 @@ encoding and a new receipt key migration. It is decided with the first accepted 
    - Receipts and obligations are durable.
    - Trigger plans are not durable; recovery follows §16.2.5.
    - A process loss between the root and a quest child loses the plan: the root is reconciled
-     explicitly, committed children stay, every other child is `REJECTED`.
+     explicitly. Children with a durable record (a quest receipt, a claim's MINT) keep it, a
+     committed claim's obligation is requested again at admission, and every other child is
+     `REJECTED`.
 4. **Typed references:** the root CommandRef (GameSessionId, CommandId), `transition_key`, the
    binding's definition and `placement_key`, and the content revision.
 5. **Wire:** none new. A root refused by the plan check uses the existing `USE_INTENT` and step
