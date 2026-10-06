@@ -61,3 +61,57 @@ Return false when the Achievement key is unknown, the fact is unavailable, or co
 ## Ownership
 
 Achievement remains Achievement-owned. Quest/Gate consumes only the read-only fact. No new persistence is required.
+
+
+## Production adapter shape
+
+Fresh current-main readback closes the I/O shape.
+
+`QuestPredicate::holds()` is intentionally synchronous. Do not put a database call inside the predicate trait.
+
+The gameplay transport that will own QUEST-GATE-1 already has:
+
+```text
+DurabilityRoot
+ReconciledCharacterAuthority
+AchievementCatalogue
+```
+
+and already uses the accepted async durability read:
+
+```text
+DurabilityRoot::read_account_achievements(...)
+```
+
+for account-achievement display/query handling.
+
+Therefore the bounded runtime shape is:
+
+```text
+gate check / authoritative command occurrence
+  -> async prefetch of the account's Achievement facts through the existing owner read
+  -> build immutable QuestPredicateFacts view for this evaluation
+  -> synchronous QuestPredicate::holds(...)
+  -> discard the temporary view
+```
+
+No session-wide achievement cache is required by this amendment.
+
+On durability/read failure the gate fails closed; it must not treat an unavailable Achievement read as an unowned-but-valid fact and then persist any substitute state.
+
+The existing Achievement catalogue remains the key-validation authority. The adapter should reject an unknown achievement key before or while constructing the facts view.
+
+This keeps the change limited to:
+
+1. one new closed predicate variant;
+2. one read-only trait method;
+3. the production Gate facts adapter/prefetch;
+4. focused tests.
+
+It does not add:
+
+- new tables;
+- new outbox/event rows;
+- QuestState copies of Achievement facts;
+- a new session state domain;
+- a background cache invalidation protocol.
