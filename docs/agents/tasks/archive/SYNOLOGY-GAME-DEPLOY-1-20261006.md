@@ -49,4 +49,6 @@ git diff --check: pass
 
 ## Review and closeout
 
+Repair after Codex review 5427111614: the bundle checksum now covers every file; `oteryn-game-ops` runs as root from `/volume1/oteryn/game-preprod-root` through one `sudo -n` rule, and the authorization is issued before the service is stopped. README gained the NAS values table and the first-start sequence.
+
 Review is decided by the control plane on the frozen head. Merge result: squash merge of #1874, pending CI and Merge Queue at authoring.

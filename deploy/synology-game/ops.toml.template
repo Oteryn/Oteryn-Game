@@ -1,4 +1,4 @@
-# Mode 0600, owned by the runner user. Replace every <PLACEHOLDER>; no secrets inline.
+# Root-owned, mode 0600, at <ROOT_BASE>/ops/ops.toml. Replace every <PLACEHOLDER>; no secrets inline.
 [operator]
 state_directory = "<BASE>/state"
 service_uid = <RUNNER_UID>
@@ -8,8 +8,8 @@ port = <DB_PORT>
 tls_server_name = "<DB_TLS_SERVER_NAME>"
 database = "<DB_NAME>"
 username = "<CONTROL_ROLE>"
-password_file = "<BASE>/ops/pg-password"
-root_ca_file = "<BASE>/ops/db-ca.pem"
+password_file = "<ROOT_BASE>/ops/pg-password"
+root_ca_file = "<ROOT_BASE>/ops/db-ca.pem"
 [character]
 fence_directory = "<BASE>/fence-parent/fence"
 authority_scope_id = "character-primary"

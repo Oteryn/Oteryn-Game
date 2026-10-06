@@ -46,11 +46,12 @@ jobs:
           for name in oteryn-game-server oteryn-game-ops oteryn-game-migrate; do
             install -m 0755 "target/release/$name" "$bundle/bin/$name"
           done
+          install -m 0755 deploy/synology-game/supervisor.sh "$bundle/supervisor.sh"
           python3 deploy/synology-game/stage_gameplay.py \
             content/spells.manifest.json "$GITHUB_WORKSPACE" "$bundle/gameplay"
-          (cd "$bundle" && find bin gameplay supervisor.sh -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
-          install -m 0755 deploy/synology-game/supervisor.sh "$bundle/supervisor.sh"
           echo "$GITHUB_SHA" > "$bundle/SOURCE_SHA"
+          # Every file is in the bundle before the checksums are computed.
+          (cd "$bundle" && find bin gameplay supervisor.sh SOURCE_SHA -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
 
       - uses: actions/upload-artifact@v4
         with:
@@ -70,6 +71,8 @@ jobs:
     env:
       EXPECTED_RUNNER_NAME: oteryn-synology-game
       BASE: /volume1/oteryn/game-preprod
+      # Root-owned, runner-unwritable; installed and upgraded by the owner out of band.
+      ROOT_BASE: /volume1/oteryn/game-preprod-root
     steps:
       - name: Verify ref and runner identity
         env:
@@ -100,10 +103,29 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for path in "$BASE/ops/ops.toml" "$BASE/node/node.toml" "$BASE/ops/migration-url"; do
+          for path in "$BASE/node/node.toml" "$BASE/ops/migration-url"; do
             test -f "$path" && test ! -L "$path"
             test "$(stat -c '%a %u' "$path")" = "600 $(id -u)"
           done
+          ops="$ROOT_BASE/bin/oteryn-game-ops"
+          test -f "$ops" && test ! -L "$ops"
+          test "$(stat -c '%u' "$ops")" = 0
+          test -e "$ROOT_BASE/ops/ops.toml"
+          # The root-run ops binary must not be replaceable by the runner user.
+          test ! -w "$ops" && test ! -w "$ROOT_BASE/bin"
+          sudo -n -l >/dev/null
+
+      - name: Compare the root-installed ops binary with the bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          installed="$(sha256sum "$ROOT_BASE/bin/oteryn-game-ops" | cut -d ' ' -f 1)"
+          bundled="$(sha256sum "$RUNNER_TEMP/bundle/bin/oteryn-game-ops" | cut -d ' ' -f 1)"
+          if [[ "$installed" != "$bundled" ]]; then
+            echo "::warning::root-installed oteryn-game-ops differs from this bundle (installed $installed, bundle $bundled); the owner upgrades it out of band"
+          fi
+          echo "OPS_SHA256_INSTALLED=$installed" >> "$GITHUB_STEP_SUMMARY"
+          echo "OPS_SHA256_BUNDLE=$bundled" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Install binaries, gameplay inputs and supervisor
         shell: bash
@@ -111,7 +133,8 @@ jobs:
           set -euo pipefail
           bundle="$RUNNER_TEMP/bundle"
           install -d -m 0755 "$BASE/bin" "$BASE/gameplay"
-          for name in oteryn-game-server oteryn-game-ops oteryn-game-migrate; do
+          # oteryn-game-ops is never installed here; it runs as root from ROOT_BASE.
+          for name in oteryn-game-server oteryn-game-migrate; do
             # Replace by rename: a running binary is never rewritten in place.
             install -m 0755 "$bundle/bin/$name" "$BASE/bin/$name.new"
             mv -f "$BASE/bin/$name.new" "$BASE/bin/$name"
@@ -130,27 +153,26 @@ jobs:
           url="$(tr -d '\n' < "$BASE/ops/migration-url")"
           OTERYN_GAME_MIGRATION_DATABASE_URL="$url" "$BASE/bin/oteryn-game-migrate"
 
-      - name: Stop the service
-        shell: bash
-        run: |
-          set -euo pipefail
-          "$BASE/supervisor.sh" stop
-
-      - name: Issue launch authorization
+      - name: Issue launch authorization (as root, before touching the service)
         shell: bash
         run: |
           set -euo pipefail
           binding="preprod-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           file="launch-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
-          args=(--config "$BASE/ops/ops.toml" authorization issue --file "$file" --binding "$binding")
-          if [[ -s "$BASE/state/current-node-id" ]]; then
-            args+=(--supersedes "$(tr -d '[:space:]' < "$BASE/state/current-node-id")")
+          args=(--config "$ROOT_BASE/ops/ops.toml" authorization issue --file "$file" --binding "$binding")
+          if [[ -s "$BASE/run/current-node-id" ]]; then
+            args+=(--supersedes "$(tr -d '[:space:]' < "$BASE/run/current-node-id")")
           fi
-          export OTERYN_NATIVE_GAMEPLAY_MANIFEST="$BASE/gameplay/content/spells.manifest.json"
-          "$BASE/bin/oteryn-game-ops" "${args[@]}"
-          # Point the node at the new authorization; the file is 0600 and runner-owned.
+          sudo -n "$ROOT_BASE/bin/oteryn-game-ops" "${args[@]}"
+          # Point the node at the new authorization (state dir is BASE/state; file handed to the service uid).
           sed -i "s|^authorization_file = .*|authorization_file = \"$BASE/state/$file\"|" "$BASE/node/node.toml"
           grep -q "^authorization_file = \"$BASE/state/$file\"" "$BASE/node/node.toml"
+
+      - name: Stop the service
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$BASE/supervisor.sh" stop
 
       - name: Start the service
         shell: bash
