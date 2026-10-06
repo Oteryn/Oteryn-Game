@@ -10,9 +10,8 @@ base_branch: main
 branch: claude/runbook-1-20261006
 pr: 1872
 base_sha: 5f58dcde
-head_sha: bf725d119ffbe9ee322695e2c01ed2d39806379d
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: "exact frozen head in the control-plane FREEZE_SHA entry"
+final_head_sha: "exact frozen head in the control-plane FREEZE_SHA entry"
 owner: implementation writer (control plane session_013KJX6mv8LQveCKKXYgAX94)
 created_at: 2026-10-06
 updated_at: 2026-10-06
@@ -34,3 +33,9 @@ login path per packet §2.7 (CP D825, owner decision D824 2a), extending `node_b
 UNKNOWN until first run: Docker was unreachable here, so the run is "not executed in this environment".
 Documented gap: `WALKED` needs operator attestation (no machine-readable step signal). No Platform write; no step pending
 PLATFORM-NATIVE-PREPROD-OPS-1.
+
+## Validation
+
+bash -n and shellcheck -x on tools/qualification/login_local/run.sh: pass
+python tools/agents/validate_governance.py: pass
+python -m unittest discover -s tools/agents/tests: OK (54 tests)
