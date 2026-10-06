@@ -9,12 +9,15 @@ import unittest
 from pathlib import Path
 
 from verify_solo_item_source_recovery import (
+    DEFAULT_PACKAGE,
     MAX_RAW_FILE,
+    PRODUCER_FILES,
     MAX_REPO_PATH,
     OLD_REGISTRY,
     REPO_PREFIX,
     ability_row_sizes,
     lexeme_bytes,
+    load_producer_laws,
     recovered_digest,
     require_repo_path_length,
     safe_path,
@@ -22,6 +25,11 @@ from verify_solo_item_source_recovery import (
     verify_charge_observation,
     verify_definition_successor,
 )
+
+
+def setUpModule():
+    load_producer_laws(DEFAULT_PACKAGE)
+
 
 SCHEMA = "OTERYN_SOURCE_DEFINITION_OBSERVATIONS_CLOSED/v1"
 KEY = "oteryn:item.tibia.i100"
@@ -348,6 +356,30 @@ class RecoveryBoundaryTests(unittest.TestCase):
                 safe_path(root, "recovery/files/definition.json.gz"),
                 root / "recovery/files/definition.json.gz",
             )
+
+
+class ProducerLawLoadingTests(unittest.TestCase):
+    def test_tampered_producer_evidence_is_never_executed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            marker = root / "executed"
+            inventory = []
+            for relative in PRODUCER_FILES:
+                original = (DEFAULT_PACKAGE / relative).read_bytes()
+                inventory.append(
+                    {"path": relative, "sha256": hashlib.sha256(original).hexdigest()}
+                )
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(
+                    f"open({str(marker)!r}, 'w').close()\n".encode()
+                    if relative == PRODUCER_FILES[1]
+                    else original
+                )
+            (root / "package-inventory.json").write_text(json.dumps(inventory))
+            with self.assertRaisesRegex(ValueError, "producer evidence digest"):
+                load_producer_laws(root)
+            self.assertFalse(marker.exists())
 
 
 class RepoPathLengthTests(unittest.TestCase):

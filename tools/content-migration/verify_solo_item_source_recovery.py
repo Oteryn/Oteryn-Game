@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import sys
+import types
 from pathlib import Path
 
 DEFAULT_PACKAGE = (
@@ -186,11 +187,45 @@ CHARGE_MEMBERS = {
     "charges": ("charges_default_u32", "charges_origin"),
     "leveldoor": ("level_door_u32", "level_door_origin"),
 }
-PRODUCER_DIR = DEFAULT_PACKAGE / "producer-evidence/charges"
-sys.dont_write_bytecode = True  # never leave bytecode inside the verified package
-sys.path.insert(0, str(PRODUCER_DIR))
-from produce import u32  # noqa: E402
-from xml_attribute_law import attribute_value  # noqa: E402
+PRODUCER_FILES = (
+    "producer-evidence/charges/xml_attribute_law.py",
+    "producer-evidence/charges/produce.py",
+)
+PRODUCER_LAWS = {}
+
+
+def load_producer_laws(package):
+    """Execute the producer's decoding only from bytes matching the inventory digest.
+
+    Nothing from the quarantined package runs before its digest is verified; the
+    verified bytes themselves are executed, so the file cannot change in between.
+    """
+    inventory = json.loads((package / "package-inventory.json").read_bytes())
+    digests = {row["path"]: row["sha256"] for row in inventory}
+    modules = {}
+    saved = sys.modules.get("xml_attribute_law")
+    try:
+        for relative in PRODUCER_FILES:
+            source = safe_path(package, relative).read_bytes()
+            require(
+                hashlib.sha256(source).hexdigest() == digests.get(relative),
+                "producer evidence digest",
+            )
+            name = Path(relative).stem
+            module = types.ModuleType(name)
+            exec(compile(source, relative, "exec"), module.__dict__)
+            modules[name] = module
+            sys.modules[name] = module
+    finally:
+        if saved is None:
+            sys.modules.pop("xml_attribute_law", None)
+        else:
+            sys.modules["xml_attribute_law"] = saved
+    PRODUCER_LAWS.update(
+        u32=modules["produce"].u32,
+        attribute_value=modules["xml_attribute_law"].attribute_value,
+    )
+
 
 ABILITY_CUTS = {
     "CANARY_47DF": (
@@ -255,13 +290,16 @@ def verify_charge_observation(value):
             and isinstance(assignment["value_lexeme"], str),
             "charge assignment",
         )
+    require(bool(PRODUCER_LAWS), "producer laws not loaded")
     # Replay the producer's own decoding: XML entity decoding, case-folded key
     # and the uint32 conversion with its zero fallback.
     seen = {}
     for assignment in assignments:
         try:
-            name = attribute_value(assignment["key"]).lower()
-            number = u32(attribute_value(assignment["value_lexeme"]))
+            name = PRODUCER_LAWS["attribute_value"](assignment["key"]).lower()
+            number = PRODUCER_LAWS["u32"](
+                PRODUCER_LAWS["attribute_value"](assignment["value_lexeme"])
+            )
         except ValueError as error:
             raise ValueError("charge assignment lexeme") from error
         require(
@@ -470,6 +508,7 @@ def main():
     args = parser.parse_args()
     package = args.package.resolve()
     verify_inventory(package)
+    load_producer_laws(package)
     print(
         json.dumps(
             {
