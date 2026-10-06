@@ -31,6 +31,23 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             self.result["summary"]["donor_mode"],
         )
 
+    def test_native_lowering_is_not_misclassified_as_missing_source_data(self):
+        by_title = {row["wiki_title"]: row for row in self.result["records"]}
+        self.assertEqual(
+            "NATIVE_LOWERING_PENDING",
+            by_title["An Interest In Botany Quest"]["work_state"],
+        )
+        self.assertEqual(
+            {
+                "DEFINITION_READY_RUNTIME_UNKNOWN": 41,
+                "MAPPING_REVIEW": 1,
+                "NATIVE_BINDINGS_PENDING": 68,
+                "NATIVE_LOWERING_PENDING": 42,
+                "SOURCE_DATA_PENDING": 221,
+            },
+            self.result["summary"]["work_state"],
+        )
+
     def test_canonical_inventory_is_not_assumed_one_to_one(self):
         self.assertEqual(352, self.result["summary"]["canonical_definitions"])
         self.assertEqual(
