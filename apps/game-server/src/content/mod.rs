@@ -35,6 +35,7 @@ pub(crate) mod charm_source;
 pub(crate) mod charm_source_effect;
 pub(crate) mod charm_source_json;
 mod compiler;
+pub(crate) mod creature_reward;
 mod cw2_b1_import;
 mod cw2_b4_import;
 mod digest;
