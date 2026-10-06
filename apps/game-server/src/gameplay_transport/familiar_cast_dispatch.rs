@@ -149,19 +149,98 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !familiar_spell(spell) {
             return NativeCastDispatch::NotApplicable;
         }
+        self.cast_native_familiar_inner(actor, session, command_id, intent, access, active_spell, None)
+            .await
+    }
+
+    /// Takes the lane first (§1.2) unless a resolver already holds it and passes it in.
+    #[allow(clippy::too_many_arguments)]
+    async fn cast_native_familiar_inner<A: CurrentSpellAccessOwner + Sync>(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: &SpellCastIntent,
+        access: &A,
+        active_spell: bool,
+        lane: Option<&mut SpellLanePermit>,
+    ) -> NativeCastDispatch {
+        let mut acquired;
+        let permit = match lane {
+            Some(permit) => permit,
+            None => {
+                let Some(permit) = self.spell_lane_permit().await else {
+                    return NativeCastDispatch::Pending;
+                };
+                acquired = permit;
+                &mut acquired
+            }
+        };
         let result = self
-            .dispatch_familiar_inner(actor, session, command_id, intent, access, active_spell)
+            .dispatch_familiar_inner(permit, actor, session, command_id, intent, access, active_spell)
             .await;
         let states = self.spell_states.lock().await;
         if states
             .pending_familiars
             .iter()
-            .any(|p| p.actor == actor && p.session == session)
+            .any(|p| p.is_for(actor, session))
         {
             NativeCastDispatch::Pending
         } else {
             NativeCastDispatch::Outcome(result.unwrap_or_else(SpellCastOutcome::rejected))
         }
+    }
+
+    /// Resumes a parked familiar attempt on its own retained retry path under the held lane
+    /// (§1.6), like `resolve_parked_native`.
+    pub(in crate::gameplay_transport) async fn resolve_parked_familiar(
+        &self,
+        permit: &mut SpellLanePermit,
+        attempt: PreparedFamiliarCast,
+    ) -> &'static str {
+        let (actor, session, intent) = (attempt.actor, attempt.session, attempt.intent);
+        let command = attempt.familiar.binding().command;
+        {
+            let mut states = self.spell_states.lock().await;
+            super::super::PendingSpellMarker::restore(
+                &mut states.pending_familiars,
+                actor,
+                session,
+                command,
+                intent,
+                attempt,
+            );
+        }
+        let access = self.refresh_spell_access(actor, session).await;
+        let active_spell = self
+            .spells
+            .source_indexed(intent.spell)
+            .is_some_and(|(_, active)| active);
+        let dispatch = self
+            .cast_native_familiar_inner(
+                actor,
+                session,
+                command.command_id().get(),
+                &intent,
+                &*access,
+                active_spell,
+                Some(permit),
+            )
+            .await;
+        let leftover = {
+            let mut states = self.spell_states.lock().await;
+            super::super::PendingSpellMarker::take_attempt(
+                &mut states.pending_familiars,
+                actor,
+                session,
+            )
+        };
+        if let Some(attempt) = leftover {
+            permit
+                .open_commit_window(attempt, UnresolvedSpellCommit::park_familiar)
+                .park();
+        }
+        super::super::native_combat_cast::dispatch_outcome_token(&dispatch)
     }
 
     /// Must run before control-loss commits or detaches the current player owner. Retrying
@@ -180,8 +259,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states
                 .pending_familiars
                 .iter()
-                .find(|p| p.actor == actor && p.session == session)
-                .map(|p| (p.command_id, p.intent))
+                .find(|p| p.is_for(actor, session))
+                .map(|p| (p.command.command_id().get(), p.intent))
         };
         if let Some((command, intent)) = original {
             return Some(
@@ -312,6 +391,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     async fn dispatch_familiar_inner<A: CurrentSpellAccessOwner + Sync>(
         &self,
+        permit: &mut SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
         command_id: u64,
@@ -329,9 +409,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let states = self.spell_states.lock().await;
             if states.pending_familiars.iter().any(|p| {
-                p.actor == actor
-                    && p.session == session
-                    && (p.command_id != command_id || p.intent != *intent)
+                p.is_for(actor, session)
+                    && (p.command.command_id().get() != command_id || p.intent != *intent)
             }) {
                 return None;
             }
@@ -340,7 +419,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !states
                     .pending_familiars
                     .iter()
-                    .any(|p| p.actor == actor && p.session == session)
+                    .any(|p| p.is_for(actor, session))
             {
                 return None;
             }
@@ -420,9 +499,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let retry_access = FamiliarRetryAccess {
                 owner: access,
                 original_retained: states.pending_familiars.iter().any(|p| {
-                    p.actor == actor
-                        && p.session == session
-                        && p.command_id == command_id
+                    p.is_for(actor, session)
+                        && p.command.command_id().get() == command_id
                         && p.intent == *intent
                 }),
             };
@@ -457,8 +535,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             premium: access,
             administrative: &administrative,
         };
-        self.cast_durable_familiar(actor, session, command_id, intent, content, &owned, &source)
-            .await
+        self.cast_durable_familiar(
+            permit, actor, session, command_id, intent, content, &owned, &source,
+        )
+        .await
     }
 
     /// Advance and Death callers supply the real committed XP or lethal owner receipt.

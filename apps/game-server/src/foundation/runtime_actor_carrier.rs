@@ -3183,6 +3183,58 @@ impl ChannelActorCarrier {
         }
     }
 
+    /// The borrowing check of [`Self::remove`] (ARCH-SPELL-LOCK-2 §1.6): it changes nothing.
+    /// `released` names slots whose owner reservation the same owner turn releases first.
+    pub(super) fn check_remove(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        released: &[usize],
+    ) -> Result<(), CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        match &self.slots[index] {
+            Slot::Occupied {
+                generation,
+                spell_combat,
+                ..
+            }
+            | Slot::CreatureOccupied {
+                generation,
+                spell_combat,
+                ..
+            } if *generation == actor_ref.actor_local_generation.0 => {
+                if spell_combat.pending_source.is_some()
+                    || (spell_combat.pending_owner.is_some() && !released.contains(&index))
+                {
+                    return Err(CarrierError::PlanConflict);
+                }
+            }
+            Slot::Occupied { .. } | Slot::CreatureOccupied { .. } => {
+                return Err(CarrierError::StaleActorGeneration);
+            }
+            Slot::CreatureReserved { .. } | Slot::VacantReusable { .. } | Slot::Exhausted { .. } => {
+                return Err(CarrierError::PlanConflict);
+            }
+        }
+        let mut child_count = 0;
+        for link in &self.native_summons {
+            if link.parent == ExactActorRef(actor_ref) {
+                if child_count == 16 {
+                    return Err(CarrierError::CapacityExceeded);
+                }
+                self.validate_summon_actor(continuity, link.child)?;
+                child_count += 1;
+            }
+        }
+        for link in &self.native_summons {
+            if link.parent == ExactActorRef(actor_ref) {
+                self.check_remove(continuity, link.child.0, released)?;
+            }
+        }
+        u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+        Ok(())
+    }
+
     fn remove(
         &mut self,
         continuity: &NamespaceContinuityGuard,

@@ -871,8 +871,10 @@ impl DurabilityRoot {
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn commit_familiar_spell<
         F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,
+        T: Send + 'static,
     >(
         &self,
+        window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
@@ -880,8 +882,10 @@ impl DurabilityRoot {
         cost: super::spell_items_abi::SpellItemTransactionRequest,
         training: Option<(super::character_build::BuildChangeRequest, F)>,
     ) -> Result<FamiliarSpellCommit> {
-        self.commit_familiar_spell_inner(authority, node, fence, request, cost, training, true)
-            .await
+        self.commit_familiar_spell_inner(
+            window, authority, node, fence, request, cost, training, true,
+        )
+        .await
     }
 
     /// A missing/expired source eligibility observation can only veto a new mutation.
@@ -890,8 +894,10 @@ impl DurabilityRoot {
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn reconcile_familiar_spell<
         F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,
+        T: Send + 'static,
     >(
         &self,
+        window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
@@ -899,15 +905,19 @@ impl DurabilityRoot {
         cost: super::spell_items_abi::SpellItemTransactionRequest,
         training: Option<(super::character_build::BuildChangeRequest, F)>,
     ) -> Result<FamiliarSpellCommit> {
-        self.commit_familiar_spell_inner(authority, node, fence, request, cost, training, false)
-            .await
+        self.commit_familiar_spell_inner(
+            window, authority, node, fence, request, cost, training, false,
+        )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
     async fn commit_familiar_spell_inner<
         F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,
+        T: Send + 'static,
     >(
         &self,
+        window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
@@ -929,8 +939,9 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let root = self.clone();
         let node = node.clone();
+        let mut context = window;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, window| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let item_fence = super::item_transfer::CurrentCharacterItemFence {
@@ -944,6 +955,7 @@ impl DurabilityRoot {
                     let item_authority =
                         super::spell_item_transaction::assert_spell_item_authority_with_recovery(
                             &mut tx,
+                            window.permit(),
                             &root,
                             &recovery,
                             &node,
@@ -1058,9 +1070,10 @@ impl DurabilityRoot {
                     )
                     .await
                     .map_err(item_failure)?;
-                    let common =
-                        super::spell_owner_commit::commit_spell_owner_transaction(tx, pending)
-                            .await?;
+                    let common = super::spell_owner_commit::commit_spell_owner_transaction(
+                        tx, pending, window,
+                    )
+                    .await?;
                     let training = training
                         .map(|value| value.after_commit(&common))
                         .transpose()

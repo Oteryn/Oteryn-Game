@@ -11,8 +11,241 @@ use super::spell_item_transaction::{
 };
 use super::spell_items_abi::CommittedSpellItems;
 use super::{DurabilityError, db};
+use crate::foundation::{ChannelId, WorldId};
 use sqlx::{Postgres, Row, Transaction};
+use std::any::Any;
+use std::sync::Arc;
 use std::time::Instant;
+
+/// The spell lane (ARCH-SPELL-LOCK-2 §1.2): one async mutex per Channel owner, the in-memory
+/// mirror of the Channel item advisory lock (key 33). Every in-process key-33 caller takes it
+/// first and holds it from before `begin` to after its install or release. It is never acquired
+/// while a Channel guard is held.
+#[derive(Clone)]
+pub(crate) struct SpellLane {
+    world_id: WorldId,
+    channel_id: ChannelId,
+    state: Arc<tokio::sync::Mutex<SpellLaneState>>,
+}
+
+/// The lane's own state, inside the lane mutex (§1.6). `unresolved` holds the complete attempt
+/// of a committing writer whose `COMMIT` succeeded, or may have, without an install. It is
+/// type-erased here because the durability layer is built without the gameplay owners; the
+/// gameplay owner parks and resolves its `UnresolvedSpellCommit`. The inner mutex is never
+/// contended: it is reached only through the lane guard, and it makes a permit `Sync`.
+#[derive(Default)]
+struct SpellLaneState {
+    unresolved: std::sync::Mutex<Option<Box<dyn Any + Send>>>,
+}
+
+impl SpellLaneState {
+    fn unresolved(&mut self) -> &mut Option<Box<dyn Any + Send>> {
+        self.unresolved
+            .get_mut()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+}
+
+/// Proof that the holder owns the spell lane of one World and Channel. Its only constructor
+/// acquires the lane, and it is never handed out while an attempt is parked in `unresolved`.
+pub(crate) struct SpellLanePermit {
+    world_id: WorldId,
+    channel_id: ChannelId,
+    guard: tokio::sync::OwnedMutexGuard<SpellLaneState>,
+}
+
+/// The lane acquired while an attempt is parked in `unresolved`. It yields a permit only through
+/// the resolution of that attempt.
+pub(crate) struct UnresolvedLane {
+    permit: SpellLanePermit,
+}
+
+impl SpellLane {
+    pub(crate) fn new(world_id: WorldId, channel_id: ChannelId) -> Self {
+        Self {
+            world_id,
+            channel_id,
+            state: Arc::default(),
+        }
+    }
+
+    pub(crate) fn world_id(&self) -> WorldId {
+        self.world_id
+    }
+
+    pub(crate) fn channel_id(&self) -> ChannelId {
+        self.channel_id
+    }
+
+    /// Waits for the lane. Returns the permit, or the [`UnresolvedLane`] while a committed or
+    /// possibly committed attempt still waits for its install.
+    pub(crate) async fn acquire(&self) -> Result<SpellLanePermit, UnresolvedLane> {
+        let guard = Arc::clone(&self.state).lock_owned().await;
+        let permit = SpellLanePermit {
+            world_id: self.world_id,
+            channel_id: self.channel_id,
+            guard,
+        };
+        if permit.has_unresolved() {
+            Err(UnresolvedLane { permit })
+        } else {
+            Ok(permit)
+        }
+    }
+
+    /// A Channel reload from durable truth (§1.6): the in-memory attempt is dropped with the
+    /// runtime it belonged to.
+    pub(crate) async fn clear_after_reload(&self) {
+        *self.state.lock().await.unresolved() = None;
+    }
+}
+
+impl UnresolvedLane {
+    /// The only path from an [`UnresolvedLane`] to a permit: the caller takes the parked attempt
+    /// and must install it, release it as proven uncommitted, or park it again.
+    pub(crate) fn into_resolution(mut self) -> (SpellLanePermit, Box<dyn Any + Send>) {
+        let attempt = self
+            .permit
+            .guard
+            .unresolved()
+            .take()
+            .expect("an unresolved lane holds its parked attempt");
+        (self.permit, attempt)
+    }
+}
+
+impl SpellLanePermit {
+    pub(crate) fn world_id(&self) -> WorldId {
+        self.world_id
+    }
+
+    pub(crate) fn channel_id(&self) -> ChannelId {
+        self.channel_id
+    }
+
+    /// Whether an attempt is parked: the holder's own work must then be refused retryably.
+    pub(crate) fn has_unresolved(&self) -> bool {
+        self.guard
+            .unresolved
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .is_some()
+    }
+
+    /// The permit's scope must match the Channel of every row its holder locks or writes. A
+    /// permit whose lane holds a parked attempt is refused too: the holder's own work waits for
+    /// the resolution.
+    pub(crate) fn check_channel(
+        &self,
+        world_id: WorldId,
+        channel_id: ChannelId,
+    ) -> Result<(), DurabilityError> {
+        if self.has_unresolved() {
+            Err(DurabilityError::Unavailable)
+        } else if self.world_id == world_id && self.channel_id == channel_id {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
+    /// [`Self::check_channel`] against a runtime scope; any other scope is refused.
+    pub(crate) fn check_scope(
+        &self,
+        scope: crate::foundation::RuntimeScopeRefV1,
+    ) -> Result<(), DurabilityError> {
+        match scope {
+            crate::foundation::RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => self.check_channel(world_id, channel_id),
+            _ => Err(DurabilityError::InvalidStoredState),
+        }
+    }
+
+    /// Opens the commit window of a committing writer around its retained attempt (§1.6).
+    pub(crate) fn open_commit_window<T: Send + 'static>(
+        &mut self,
+        attempt: T,
+        park: fn(T) -> Box<dyn Any + Send>,
+    ) -> SpellCommitWindow<'_, T> {
+        SpellCommitWindow {
+            permit: self,
+            attempt: Some(attempt),
+            park,
+            commit_called: false,
+        }
+    }
+}
+
+/// The commit window (§1.6): from the `COMMIT` call on, the permit owns the attempt. It is
+/// consumed only by the install, the release of a batch proven uncommitted, or the move into
+/// `unresolved`. Dropping it unconsumed parks the attempt, so no early return after the
+/// `COMMIT` skips the fence.
+pub(crate) struct SpellCommitWindow<'p, T: Send + 'static> {
+    permit: &'p mut SpellLanePermit,
+    attempt: Option<T>,
+    park: fn(T) -> Box<dyn Any + Send>,
+    commit_called: bool,
+}
+
+impl<T: Send + 'static> SpellCommitWindow<'_, T> {
+    /// The permit that owns this window, for the scope checks of the writer's transaction.
+    pub(crate) fn permit(&self) -> &SpellLanePermit {
+        self.permit
+    }
+
+    pub(crate) fn attempt(&self) -> &T {
+        self.attempt.as_ref().expect("an open commit window holds its attempt")
+    }
+
+    pub(crate) fn attempt_mut(&mut self) -> &mut T {
+        self.attempt.as_mut().expect("an open commit window holds its attempt")
+    }
+
+    /// Consumes the window for the infallible install phase.
+    pub(crate) fn install(mut self) -> T {
+        self.attempt.take().expect("an open commit window holds its attempt")
+    }
+
+    /// Consumes the window for the release of an attempt proven uncommitted.
+    pub(crate) fn release(mut self) -> T {
+        self.attempt.take().expect("an open commit window holds its attempt")
+    }
+
+    /// Whether `commit_spell_owner_transaction` reached the `COMMIT` call through this window.
+    pub(crate) fn commit_called(&self) -> bool {
+        self.commit_called
+    }
+
+    /// Takes the attempt back when no `COMMIT` was called through this window, so the writer's
+    /// transaction rolled back and the attempt is proven uncommitted. Otherwise the window is
+    /// returned unchanged, to install or park.
+    pub(crate) fn reclaim_uncommitted(mut self) -> Result<T, Self> {
+        if self.commit_called {
+            Err(self)
+        } else {
+            Ok(self.attempt.take().expect("an open commit window holds its attempt"))
+        }
+    }
+
+    /// A historical receipt proves the attempt's decision is already durable: the window then
+    /// owns the attempt exactly as after its own `COMMIT` call.
+    pub(crate) fn mark_already_committed(&mut self) {
+        self.commit_called = true;
+    }
+
+    /// Parks the attempt in the lane's `unresolved` record.
+    pub(crate) fn park(self) {}
+}
+
+impl<T: Send + 'static> Drop for SpellCommitWindow<'_, T> {
+    fn drop(&mut self) {
+        if let Some(attempt) = self.attempt.take() {
+            *self.permit.guard.unresolved() = Some((self.park)(attempt));
+        }
+    }
+}
 
 pub(crate) struct PendingSpellOwnerTransaction {
     items: Option<CommittedSpellItems>,
@@ -217,16 +450,22 @@ pub(crate) async fn stage_parameter_result_commit(
     })
 }
 
-pub(crate) async fn commit_spell_owner_transaction(
+/// Commits inside the caller's commit window: no committing writer can `COMMIT` outside one.
+pub(crate) async fn commit_spell_owner_transaction<T: Send + 'static>(
     mut tx: Transaction<'_, Postgres>,
     pending: PendingSpellOwnerTransaction,
+    window: &mut SpellCommitWindow<'_, T>,
 ) -> Result<CommittedSpellOwnerTransaction, DurabilityError> {
+    if window.attempt.is_none() {
+        return Err(DurabilityError::InvalidStoredState);
+    }
     let current: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
         .fetch_one(&mut *tx)
         .await?;
     if current != pending.physical_transaction {
         return Err(DurabilityError::InvalidStoredState);
     }
+    window.commit_called = true;
     db::commit_semantic_transaction(tx, pending.deadline).await?;
     // The private token constructor is reached only after an observed
     // successful real COMMIT. Unknown outcome produces no install capability.

@@ -21,6 +21,7 @@ owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_ARCH_SPELL_LOCK_2_2026-10-05.md §2.1 owned_paths
   - apps/game-server/src/durability/creature_source_items.rs  # CP amendment D848
   - apps/game-server/tests/support/type2_audit_activation_postgres_cases.rs  # CP amendment D848, lane permit before commit_item_mint only
+  - apps/game-server/src/gameplay_transport/spell_access_facts.rs  # CP amendment D849 (owner-approved), pub(crate) async read / sync qualify split only
 public_contracts: []
 depends_on: []
 blocks: []
@@ -38,6 +39,10 @@ Implements `ARCH-SPELL-LOCK-2-V1` §1.1-§1.4 and §1.6 (packet §2.1).
   owned_paths, because both reach key 33 (`commit_creature_source_items` through the scope
   assert, the test case through `commit_item_mint`) and the compiler requires them to take a
   permit.
+
+- D849 (owner-approved for this file only): `spell_access_facts.rs` joins owned_paths for the
+  minimal split of the owned-fact load into an async database read and a sync qualification, so
+  the native post-commit transaction runs without Channel guards; 2b keeps the rest of the file.
 
 ## High-risk authority/recovery qualification
 

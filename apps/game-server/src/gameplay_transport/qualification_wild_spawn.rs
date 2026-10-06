@@ -18,6 +18,7 @@ pub(super) const DECLARATION: &str = "oteryn:qualification.spawn/thalom-rat-r1";
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn realize_rat_in_transaction(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     root: &DurabilityRoot,
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
@@ -71,6 +72,7 @@ pub(super) async fn realize_rat_in_transaction(
         RuntimeScopeRefV1::channel(runtime.binding().world_id(), runtime.binding().channel_id());
     let owned = crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
         tx,
+        permit,
         root,
         recovery,
         node,

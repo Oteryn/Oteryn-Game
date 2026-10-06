@@ -237,6 +237,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Option<(u64, ActorVitals)> {
         let now = self.owner_now();
+        // Lock order (§1.2): the lane before any Channel guard.
+        let permit = self.spell_lane_permit().await?;
         let mut runtime = self.runtime.lock().await;
         let mut states = self.spell_states.lock().await;
         if states.has_pending_spell_commit(actor, session) {
@@ -283,7 +285,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let read = match self
             .root
-            .read_standing_player_tile(self.character, self.holder, fence, content_digest, target)
+            .read_standing_player_tile(&permit, self.character, self.holder, fence, content_digest, target)
             .await
         {
             Ok(read) => read,
