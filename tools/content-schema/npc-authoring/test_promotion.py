@@ -822,6 +822,21 @@ class PromotionValidatorTests(unittest.TestCase):
         wrong = lambda c: c['arbitration'][0].update(positions=[])
         self.assertTrue(self.held_errors(wrong))
 
+    def test_placement_held_excludes_a_competing_placements_decision(self):
+        for extra in ({'fact': 'placements', 'rule': 'WIKI_CONFIRMED', 'chosen': 'wiki'},
+                      {'fact': 'placements', 'rule': 'WIKI_ARBITER', 'chosen': 'crystal'}):
+            add = lambda c, extra=extra: c['arbitration'].append(extra)
+            self.assertTrue(any('excludes another placements' in e for e in self.held_errors(add)), extra)
+
+    def test_d17_is_a_decision_exactly_when_a_placement_hold_is_present(self):
+        decisions = lambda report: [e for e in validate_promotion.errors(report) if e.startswith('decisions ')]
+        report = self.held_report()
+        self.assertTrue(decisions(report))  # the sample's decisions end at D16
+        report['decisions'] = report['decisions'] + ['D17']
+        self.assertEqual(decisions(report), [])
+        self.assertTrue(decisions({**load_sample(), 'decisions': load_sample()['decisions'] + ['D17']}))
+        self.assertEqual(decisions(load_sample()), [])
+
 
     # -- D15: Tibiopedia or BR confirms a single-source NPC; a disputed price stays, pending ---------
 

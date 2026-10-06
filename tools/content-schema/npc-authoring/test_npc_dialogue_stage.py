@@ -151,6 +151,11 @@ class SourceIncompleteTests(unittest.TestCase):
         declaration = stage.build_declaration('doctor_marrow', result)
         self.assertEqual([e['link'] for e in declaration['source_incomplete']], ['helping', 'traitor'])
 
+    def test_a_source_incomplete_difference_shows_in_the_conflict_diff(self):
+        with_entry = dialogue(*marrow_chain())
+        without = {key: value for key, value in with_entry.items() if key != 'source_incomplete'}
+        self.assertEqual(stage.diff_fields(with_entry, without), ['source_incomplete'])
+
 
 if __name__ == '__main__':
     unittest.main()

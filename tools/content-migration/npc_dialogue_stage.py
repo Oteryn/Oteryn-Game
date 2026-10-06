@@ -37,7 +37,7 @@ NPC_PREFIX = 'oteryn:npc.'
 SLUG = re.compile(r'[a-z0-9]+(?:_[a-z0-9]+)*')
 MAX_DEPTH = 8
 MESSAGE_KEYS = ('greet', 'farewell', 'walkaway', 'send_trade')
-DIALOGUE_FIELDS = ('greet', 'farewell', 'walkaway', 'send_trade', 'keywords', 'voices')
+DIALOGUE_FIELDS = ('greet', 'farewell', 'walkaway', 'send_trade', 'keywords', 'voices', 'source_incomplete')
 CONTROL_CHARS = frozenset(chr(c) for c in range(0x20) if c != 0x0a) | {chr(0x7f)}
 
 

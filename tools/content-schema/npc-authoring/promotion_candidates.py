@@ -917,7 +917,9 @@ def build_report(canary_dir, crystal_dir, snapshot_bytes, item_map_bytes, br_fac
         'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY',
         'decisions': ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'] + (['D12'] if br_facts_bytes else [])
         + (['D13'] if tibiopedia_bytes else []) + (['D14'] if supplement_digest else [])
-        + (['D15'] if tibiopedia_bytes else []) + ['D16'],
+        + (['D15'] if tibiopedia_bytes else []) + ['D16']
+        + (['D17'] if any(row.get('rule') == 'PLACEMENT_HELD' for record in promoted for row in record['arbitration'])
+           else []),
         'snapshot_sha256': hashlib.sha256(snapshot_bytes).hexdigest(),
         'item_map_sha256': hashlib.sha256(item_map_bytes).hexdigest(),
         **({'br_facts_sha256': hashlib.sha256(br_facts_bytes).hexdigest()} if br_facts_bytes else {}),
