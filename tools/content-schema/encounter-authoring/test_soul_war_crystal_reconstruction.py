@@ -17,6 +17,9 @@ class SoulWarCrystalReconstructionTests(unittest.TestCase):
         self.assertEqual(
             self.index["encounters"],
             [
+                "claustrophobic_inferno_raid_1",
+                "claustrophobic_inferno_raid_2",
+                "claustrophobic_inferno_raid_3",
                 "goshnars_greed",
                 "goshnars_malice",
                 "goshnars_spite",
@@ -47,6 +50,9 @@ class SoulWarCrystalReconstructionTests(unittest.TestCase):
 
     def test_known_unrepresentable_mechanics_stay_explicit(self):
         expected = {
+            "claustrophobic_inferno_raid_1": ("players", "cooldown"),
+            "claustrophobic_inferno_raid_2": ("players", "bare 'Pos'"),
+            "claustrophobic_inferno_raid_3": ("players", "cooldown"),
             "goshnars_malice": ("white", "reflect"),
             "goshnars_greed": ("Soul Sphere", "Soulsnatcher"),
             "goshnars_spite": ("per-player", "Weeping Soul"),
