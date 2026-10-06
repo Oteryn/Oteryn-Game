@@ -71,6 +71,12 @@ Pending: the item-authoring and house-authoring workflow steps (`python test_low
 
 Touched: `tools/content-schema/item-authoring/{lower_bed_packet.py,test_lower_bed_packet.py,README.md}`, `tools/content-schema/house-authoring/{validate_beds.py,test_validate_beds.py,bed-exception-houses.json,README.md}`, `docs/agents/evidence/OTV2-20261005-bed-facts-v1.json`, `apps/game-server/src/content/{item_bed_promotion.rs,mod.rs}`, `apps/game-server/examples/materialize_content_world_project_v2.rs`, the regenerated `content/**` tree and `content/world/**`, `apps/game-server/tests/content_world_project_repository.rs` pins. Repair 1: `MULTIPLE_HEADS_ON_TILE` finding plus test (two Heads on one tile collide on BedKey). Repair 2: `UNKNOWN_BED_ITEM` fail-closed finding plus test.
 
+## Rework: CONTENT-BED-DELTA-1 (D607 option A)
+
+#1861 was rebuilt as a bed-only delta on main's committed world (`739e7582`, tree digest `045776ff...ccde` before the delta). The materializer example gained a predecessor branch: when the captured tree matches the pinned main digest, only `apply_item_bed_promotion_v1` runs and the canonical documents are written. The change is exactly the 359 Item records the packet lowers, with new project revision `item-bed-promotion-20261006-r1` (DUR-04: content change, new revision). `content.lock.json`, the manifest, `pins/oteryn.json` and `pins/oteryn.identity.json` were regenerated with repo tooling (`world_project_v2_to_tree.py`, `derive-identity`, `pin-check`); the derived tree digest is `41b10815...d965`. The Rust pins (`content_world_project_repository.rs`, `content_npc_catalogue.rs`) were refreshed. `bed_promotion_is_idempotent_on_the_committed_world` re-applies the promotion to the committed world and requires no change.
+
+Known reproducibility gap (not caused by this task): `regenerate_content.py` does not reproduce main. A clean materialization yields 61,530 records, main holds 62,801. The 1,271-record difference is #1807's 100 Creatures and their spells. Its producer is not in the repository: the stage and population-census inputs (`creature_admission_stage.py` needs external census bundles) and a generator for those Creatures do not exist here. Until that producer is committed, content stages after #1807 can only be applied through the predecessor mode, as this delta does.
+
 ## Validation
 
 ### Focused
@@ -82,6 +88,7 @@ Touched: `tools/content-schema/item-authoring/{lower_bed_packet.py,test_lower_be
 
 - command/run: `cargo test -p oteryn-game-server --lib item_bed_promotion` (6 tests); `regenerate_content.py` (materializer, content tree and every check, run in parts after one unrelated-test fixture key fix); `cargo test --test content_world_project_repository`; `item_key_references.py`; house-authoring `verify_formal_schema.py`, `validate_houses.py`; `validate_repository_policy.py`, `validate_governance.py`, `tools/agents/tests`
 - result: pass
+- command/run: rework candidate, `regenerate_content.py` CHECKS list run part by part (spell families, world-to-tree validation and tests, materialized tree, item key references, five authoring tools `content --check`, engine items, weapon proficiency, crystal bindings), quest-authoring regen and `--check` chain, `cargo test --locked -p oteryn-game-server --test content_world_project_repository --test content_npc_catalogue`, `cargo fmt --check`, `pin-check`: pass
 - command/run: `python tools/agents/validate_governance.py`: pass
 - command/run: `python -m unittest discover -s tools/agents/tests`: pass
 
@@ -143,7 +150,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 2
+repair_cycles_for_current_gate: 3
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null

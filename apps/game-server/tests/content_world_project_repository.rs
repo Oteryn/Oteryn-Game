@@ -339,6 +339,28 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
 }
 
 #[test]
+fn bed_promotion_is_idempotent_on_the_committed_world() {
+    let root = project_root();
+    let mut draft = capture_world_project(
+        root.parent().expect("package has content parent"),
+        OsStr::new("world"),
+        filesystem_limits(),
+    )
+    .expect("capture tracked canonical package")
+    .migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())
+        .expect("committed world documents");
+    item_bed_promotion::apply_item_bed_promotion_v1(&mut draft)
+        .expect("bed promotion re-applies to promoted world");
+    let after = CanonicalProjectDocuments::from_v2_draft(draft, limits())
+        .expect("re-promoted world documents");
+    assert!(
+        before == after,
+        "re-applying the bed promotion changed the committed world"
+    );
+}
+
+#[test]
 fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() {
     let root = project_root();
     let project = capture_world_project(
@@ -347,10 +369,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(
-        project.project_revision(),
-        "item-bed-promotion-20261006-r1"
-    );
+    assert_eq!(project.project_revision(), "item-bed-promotion-20261006-r1");
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project
         .imports()
