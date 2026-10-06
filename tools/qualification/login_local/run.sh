@@ -10,8 +10,10 @@
 # Result lines: LOGIN_LOCAL_RESULT=BLOCKED|FAIL|READY|ADMITTED|WALKED.
 #   READY    every service is up and the client environment is written.
 #   ADMITTED the client binary printed "admitted to World ..." (non-Windows: stops there).
-#   WALKED   only with LOGIN_LOCAL_WALKED_ATTEST=<text>: the operator saw the server step result
-#            in the Windows client (the walk has no machine-readable signal; see README).
+#   WALKED   only with operator attestation of the server step result seen in the Windows client
+#            (LOGIN_LOCAL_WALKED_ATTEST=<text> after ADMITTED, or text written to the attestation file
+#            while LOGIN_LOCAL_HOLD=1; the walk has no machine-readable signal; see README).
+# A requested client run (LOGIN_LOCAL_RUN_CLIENT=1) that does not admit ends FAIL with exit 1.
 # PHP snippets are deliberately single-quoted for the container shell; the identities are JSON text.
 # shellcheck disable=SC2016,SC2089,SC2090
 set -Eeuo pipefail
@@ -342,6 +344,7 @@ evidence "character=1 source=platform_intent character_id=$CHARACTER_ID"
 
 # Client environment (public values plus the per-run test password, in a 0600 file, never in the log).
 CLIENT_ENV="${LOGIN_LOCAL_CLIENT_ENV:-$WORK/client.env}"
+ATTEST_FILE="${LOGIN_LOCAL_WALKED_ATTEST_FILE:-$WORK/walked.attest}"
 {
   echo "OTERYN_PLATFORM_URL=http://127.0.0.1:$LL_PLATFORM_HTTP_PORT"
   echo "OTERYN_GATEWAY_URL=http://127.0.0.1:$LL_GATEWAY_PORT"
@@ -361,16 +364,25 @@ if [[ "${LOGIN_LOCAL_RUN_CLIENT:-1}" == 1 ]]; then
   # shellcheck disable=SC1091
   source "$WORK/client.vars"
   set +a
-  timeout "${LOGIN_LOCAL_CLIENT_TIMEOUT:-300}" "$TARGET/oteryn-client" | tee "$WORK/client.out" || true
-  if grep -q '^Oteryn: admitted to World ' "$WORK/client.out"; then
-    result=ADMITTED
-    if [[ -n "${LOGIN_LOCAL_WALKED_ATTEST:-}" ]]; then
-      result=WALKED
-      evidence "walked attested_by_operator=1"
-    fi
+  client_rc=0
+  timeout "${LOGIN_LOCAL_CLIENT_TIMEOUT:-300}" "$TARGET/oteryn-client" | tee "$WORK/client.out" || client_rc=$?
+  # A requested client run that does not admit is a failed qualification, never READY.
+  if ! grep -q '^Oteryn: admitted to World ' "$WORK/client.out"; then
+    result=FAIL
+    evidence "client did not admit (status=$client_rc); see the client output above"
+    exit 1
+  fi
+  result=ADMITTED
+  if [[ -n "${LOGIN_LOCAL_WALKED_ATTEST:-}" ]]; then
+    result=WALKED
+    evidence "walked attested_by_operator=1"
   fi
 fi
 if [[ "${LOGIN_LOCAL_HOLD:-0}" == 1 ]]; then
-  evidence "holding services for a Windows client; press Ctrl-C to tear down"
-  while true; do sleep 60; done
+  # Windows walk: after the step result is seen in the Windows client, the operator writes the attestation
+  # text into the file below; the run then ends with WALKED. Ctrl-C without it ends with the current result.
+  evidence "holding services for a Windows client; write the step-result attestation to $ATTEST_FILE (or press Ctrl-C to tear down)"
+  while [[ ! -s "$ATTEST_FILE" ]]; do sleep 2; done
+  result=WALKED
+  evidence "walked attested_by_operator=1"
 fi

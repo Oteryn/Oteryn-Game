@@ -2,8 +2,9 @@
 
 One local run of the whole native login path (CP D825, packet §2.7 of
 `docs/architecture/reviews/OTERYN_GAME_ARCH_LOGIN_FIRST_PACKETS_2026-10-05.md`). It extends the
-`tools/qualification/node_boot` topology and is run by the RUNBOOK-1 operator and by the Game
-node-boot CI job (owner decision D824 2a). Secrets are generated per run, kept in a 0700 work
+`tools/qualification/node_boot` topology and is run by the RUNBOOK-1 operator (owner decision D824 2a).
+It is not yet invoked by any CI workflow; wiring it into the node-boot job is a follow-up outside this
+directory (gate workflows). Secrets are generated per run, kept in a 0700 work
 directory and never committed.
 
 ```text
@@ -56,7 +57,10 @@ then holds per-run secrets).
 the server step result. **Gap:** the walk happens in the Windows shell, which has no machine-readable step output,
 and the node logs no per-step event, so `WALKED` cannot be derived automatically. The non-Windows client binary stops at
 admission. For the walk, run with `LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0` and use `client.env` on Windows
-(the dev root and ports are loopback, so run the node and client on the same host).
+(the dev root and ports are loopback, so run the node and client on the same host). After seeing the server step
+result, write the attestation text to the file named in the `holding services` line
+(`LOGIN_LOCAL_WALKED_ATTEST_FILE`, default `<work dir>/walked.attest`); the run then ends with `WALKED`.
+With `LOGIN_LOCAL_RUN_CLIENT=1` a client that does not print the admission line ends `FAIL` (exit 1).
 
 ## Platform commands used (Platform main, no Platform change)
 
