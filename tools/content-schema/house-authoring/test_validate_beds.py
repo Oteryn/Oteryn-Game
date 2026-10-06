@@ -74,6 +74,21 @@ def test_exception_house_reports_an_ambiguous_head_without_counting_it():
     )
 
 
+def test_exception_house_reports_a_partner_in_another_house_without_counting_it():
+    left = house(1, 1, [(10, 10)])
+    right = house(2, 0, [(10, 11)])
+    report = v.validate([left, right], BED_A, FACTS, {1, 2})
+    assert report["errors"] == [] and report["pairs"] == {}
+    assert {e["house"] for e in report["excepted"]} == {1, 2}
+    assert "PARTNER_OUTSIDE_HOUSE" in [
+        f["code"] for e in report["excepted"] for f in e["pair_findings"]
+    ]
+    # the same pair with unlisted houses stays fatal
+    assert "PARTNER_OUTSIDE_HOUSE" in codes(
+        v.validate([left, right], BED_A, FACTS, set())
+    )
+
+
 def test_exception_house_keeps_collisions_and_unknown_items_fatal():
     heads = [(1, 10, 10, 7), (3, 10, 10, 7), (2, 10, 11, 7), (4, 11, 10, 7)]
     assert codes(v.validate([house(1, 3, GRID)], heads, FACTS, {1})) == [

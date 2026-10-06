@@ -138,7 +138,7 @@ def validate(houses, placed, facts, exceptions, held=frozenset()):
             other_tile = (tile[0] + dx, tile[1] + dy, tile[2])
             other_house = owner.get(other_tile)
             if other_house != house:
-                fail(
+                pair_fail(
                     "PARTNER_OUTSIDE_HOUSE",
                     house,
                     tile,
