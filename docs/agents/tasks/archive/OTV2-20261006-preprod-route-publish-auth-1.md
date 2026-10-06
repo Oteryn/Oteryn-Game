@@ -105,6 +105,9 @@ guard relaxation. No decision on Option B or its Synology shape.
   final §2 path list; the owner answered 1a (D831) and confirmed it directly to this architect
   session. Decision status, §2, §7 and §8 now rest answer 1a on D831 and bound the Platform write
   to exactly that list.
+- Codex P1 4194207250 (status said nothing takes effect until every §7 item is answered, while §8
+  relies on item 1): status, §7 and §8 now say each §7 item takes effect independently once its
+  answer is recorded; 1a and 2a are in effect, items 3 and 4 grant nothing.
 
 ## Validation
 
@@ -132,7 +135,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 
 - exact head: the frozen head
 - method/reviewer: Sol Supervising Architect
-- material findings: none open after the D831 record
+- material findings: none open after the independent-effect fix
 - verdict: ready for independent review
 
 ## Independent review
@@ -146,7 +149,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## PR and closeout
 
 - changed-file review: two owned paths
-- unresolved review threads: none after the D831 reply
+- unresolved review threads: none after the independent-effect reply
 - related/superseded PRs: none
 - protected auto-merge: control plane
 - merge commit/result: in PR #1871
@@ -155,7 +158,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## Context checkpoint
 
 ```yaml
-last_progress: D831 recorded for P1 4193785205
+last_progress: independent effect of §7 answers stated (P1 4194207250)
 status: completed
 branch: cand/preprod-route-publish-auth-1
 pr: 1871
