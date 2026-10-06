@@ -2,11 +2,11 @@
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "g4-npc-provisional-enrichment-r28",
-  "content_lock_digest": "9a23d499aa6d10c538dbf493a11cab638b6bab2ea141b4b915344ee327a9c032",
+  "content_lock_digest": "aa32c1da04193ceb7960d6dd8b54c4ea63e12d5ad495baeca016192344bffd93",
   "min_runtime_version": "1",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:g4-npc-provisional-enrichment-r28/108bedcf80477e5d4a2c6a93e3c0fc0fdc9264524431399cedc3e7ab7650ff99"
+  "provenance_summary": "lock:g4-npc-provisional-enrichment-r28/f2ede49b24692b0bd89ad068c8f5594563fc8fc615f603f24dac80c267c78447"
 }
