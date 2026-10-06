@@ -929,7 +929,7 @@
         "timestamp_approx": "00:22:48.5",
         "observation": "After an earlier failed chisel attempt, use of the torch produces a clear fire effect on the north-wall crack."
       },
-      "position_status": "HIGH_CONFIDENCE_DERIVED_VIDEO_PLUS_OTBM",
+      "position_status": "EXACT_CROSS_VIDEO_OTBM",
       "position": {
         "x": 31920,
         "y": 31359,
@@ -944,34 +944,22 @@
         "wall_name": "ice wall"
       },
       "position_evidence": {
-        "relation_to_skeleton": "directly north of skeleton at 31920,31360,9",
-        "video": "fire/crumbling effect appears in the same vertical axis as the player/skeleton",
-        "otbm_comparison": {
-          "west": {
-            "x": 31919,
-            "y": 31359,
-            "z": 9,
-            "debris_id": 6378,
-            "wall_id": 6729
-          },
-          "center": {
-            "x": 31920,
-            "y": 31359,
-            "z": 9,
-            "debris_id": 6374,
-            "wall_id": 6729
-          },
-          "east": {
-            "x": 31921,
-            "y": 31359,
-            "z": 9,
-            "debris_id": 6379,
-            "wall_id": 6737
-          }
-        }
+        "geometry": "Target is the tile directly north of the exact prison skeleton at 31920,31360,9.",
+        "video": "Torch fire and subsequent chisel/crumbling effect occur on the tile directly north of the player/skeleton axis at 00:22:48–00:22:51.",
+        "otbm": "Pinned world 00ce02a5 distinguishes center tile 31920,31359,9 by debris 6374 + ice wall 6729; west/east candidates carry different debris/wall stacks."
       },
       "world_stack": {
-        "debris": {
+        "ground": [
+          {
+            "id": 6869,
+            "name": "ice"
+          },
+          {
+            "id": 4728,
+            "name": "swamp"
+          }
+        ],
+        "target_debris": {
           "id": 6374,
           "name": "debris"
         },
@@ -979,9 +967,15 @@
           "id": 6729,
           "name": "ice wall"
         },
-        "overlays": [
-          6926,
-          6928
+        "decoration": [
+          {
+            "id": 6926,
+            "name": "ice"
+          },
+          {
+            "id": 6928,
+            "name": "ice"
+          }
         ]
       }
     },
@@ -1008,7 +1002,7 @@
         "video_timestamp_approx": "00:22:48.0",
         "observed_message": "You try to pry open the crack in the wall with the icicle. But it doesn't work. You'll have to find a way to widen the crack first using some other method."
       },
-      "position_status": "HIGH_CONFIDENCE_DERIVED_VIDEO_PLUS_OTBM",
+      "position_status": "EXACT_CROSS_VIDEO_OTBM",
       "position": {
         "x": 31920,
         "y": 31359,
@@ -1023,34 +1017,22 @@
         "wall_name": "ice wall"
       },
       "position_evidence": {
-        "relation_to_skeleton": "directly north of skeleton at 31920,31360,9",
-        "video": "fire/crumbling effect appears in the same vertical axis as the player/skeleton",
-        "otbm_comparison": {
-          "west": {
-            "x": 31919,
-            "y": 31359,
-            "z": 9,
-            "debris_id": 6378,
-            "wall_id": 6729
-          },
-          "center": {
-            "x": 31920,
-            "y": 31359,
-            "z": 9,
-            "debris_id": 6374,
-            "wall_id": 6729
-          },
-          "east": {
-            "x": 31921,
-            "y": 31359,
-            "z": 9,
-            "debris_id": 6379,
-            "wall_id": 6737
-          }
-        }
+        "geometry": "Target is the tile directly north of the exact prison skeleton at 31920,31360,9.",
+        "video": "Torch fire and subsequent chisel/crumbling effect occur on the tile directly north of the player/skeleton axis at 00:22:48–00:22:51.",
+        "otbm": "Pinned world 00ce02a5 distinguishes center tile 31920,31359,9 by debris 6374 + ice wall 6729; west/east candidates carry different debris/wall stacks."
       },
       "world_stack": {
-        "debris": {
+        "ground": [
+          {
+            "id": 6869,
+            "name": "ice"
+          },
+          {
+            "id": 4728,
+            "name": "swamp"
+          }
+        ],
+        "target_debris": {
           "id": 6374,
           "name": "debris"
         },
@@ -1058,9 +1040,15 @@
           "id": 6729,
           "name": "ice wall"
         },
-        "overlays": [
-          6926,
-          6928
+        "decoration": [
+          {
+            "id": 6926,
+            "name": "ice"
+          },
+          {
+            "id": 6928,
+            "name": "ice"
+          }
         ]
       }
     },
@@ -1522,6 +1510,18 @@
       "disposition": "OPTION_A_ROOT_COMMAND_REF",
       "runtime_status": "WAITING_MERGE_AND_ALLOCATION_AFTER_QUEST_GATE_1",
       "invariant": "Under one root CommandRef, quest children/claim obligations use distinct transition keys."
+    },
+    "prison_north_wall": {
+      "exact_position": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9
+      },
+      "target_stack": {
+        "debris_id": 6374,
+        "wall_id": 6729
+      },
+      "status": "EXACT_CROSS_VIDEO_OTBM"
     }
   }
 }
