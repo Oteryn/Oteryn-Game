@@ -108,6 +108,7 @@ jobs:
             test -f "$path" && test ! -L "$path"
             test "$(stat -c '%a %u' "$path")" = "600 $(id -u)"
           done
+          test "$(stat -c '%u' "$BASE")" = 0 && test ! -w "$BASE"
           ops="$ROOT_BASE/bin/oteryn-game-ops"
           test -f "$ops" && test ! -L "$ops"
           test "$(stat -c '%u' "$ops")" = 0
@@ -118,39 +119,41 @@ jobs:
           test ! -w "$ops" && test ! -w "$wrapper" && test ! -w "$ROOT_BASE/bin"
           sudo -n -l >/dev/null
 
-      - name: Compare the root-installed ops binary with the bundle
+      - name: Require the root-installed ops binary and wrapper to match the bundle
         shell: bash
         run: |
           set -euo pipefail
           installed="$(sha256sum "$ROOT_BASE/bin/oteryn-game-ops" | cut -d ' ' -f 1)"
           bundled="$(sha256sum "$RUNNER_TEMP/bundle/bin/oteryn-game-ops" | cut -d ' ' -f 1)"
-          if [[ "$installed" != "$bundled" ]]; then
-            echo "::warning::root-installed oteryn-game-ops differs from this bundle (installed $installed, bundle $bundled); the owner upgrades it out of band"
-          fi
-          if ! cmp -s "$ROOT_BASE/bin/oteryn-game-deploy-ops" "$RUNNER_TEMP/bundle/deploy-ops.sh"; then
-            echo "::warning::root-installed oteryn-game-deploy-ops differs from this bundle; the owner upgrades it out of band"
-          fi
           echo "OPS_SHA256_INSTALLED=$installed" >> "$GITHUB_STEP_SUMMARY"
           echo "OPS_SHA256_BUNDLE=$bundled" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$installed" != "$bundled" ]]; then
+            echo "::error::root-installed oteryn-game-ops does not match this bundle (installed $installed, bundle $bundled); the owner upgrades it as root, then re-run"
+            exit 1
+          fi
+          if ! cmp -s "$ROOT_BASE/bin/oteryn-game-deploy-ops" "$RUNNER_TEMP/bundle/deploy-ops.sh"; then
+            echo "::error::root-installed oteryn-game-deploy-ops does not match this bundle; the owner upgrades it as root, then re-run"
+            exit 1
+          fi
 
       - name: Install binaries, gameplay inputs and supervisor
         shell: bash
         run: |
           set -euo pipefail
           bundle="$RUNNER_TEMP/bundle"
-          install -d -m 0755 "$BASE/bin" "$BASE/gameplay"
+          # BASE is root-owned; only these runtime subdirectories belong to the runner user.
+          test -d "$BASE/bin" && test -d "$BASE/gameplay" && test -d "$BASE/run" && test -d "$BASE/log"
           # oteryn-game-ops is never installed here; it runs as root from ROOT_BASE.
           for name in oteryn-game-server oteryn-game-migrate; do
             # Replace by rename: a running binary is never rewritten in place.
             install -m 0755 "$bundle/bin/$name" "$BASE/bin/$name.new"
             mv -f "$BASE/bin/$name.new" "$BASE/bin/$name"
           done
-          rm -rf "$BASE/gameplay.new"
-          cp -R "$bundle/gameplay" "$BASE/gameplay.new"
-          rm -rf "$BASE/gameplay"
-          mv "$BASE/gameplay.new" "$BASE/gameplay"
-          install -m 0755 "$bundle/supervisor.sh" "$BASE/supervisor.sh.new"
-          mv -f "$BASE/supervisor.sh.new" "$BASE/supervisor.sh"
+          # Replace the contents of BASE/gameplay (the service reads them at boot only).
+          find "$BASE/gameplay" -mindepth 1 -delete
+          cp -R "$bundle/gameplay/." "$BASE/gameplay/"
+          install -m 0755 "$bundle/supervisor.sh" "$BASE/bin/supervisor.sh.new"
+          mv -f "$BASE/bin/supervisor.sh.new" "$BASE/bin/supervisor.sh"
 
       - name: Run database migration
         shell: bash
@@ -165,8 +168,18 @@ jobs:
           set -euo pipefail
           file="launch-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
           args=(issue "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT")
-          if [[ -s "$BASE/run/current-node-id" ]]; then
-            args+=("$(tr -d '[:space:]' < "$BASE/run/current-node-id")")
+          # Supersede the node that is actually registered: the newest incarnation's log
+          # wins over current-node-id, which a failed earlier deploy may have left stale.
+          previous=""
+          if [[ -f "$BASE/log/node.log" ]]; then
+            previous="$(grep 'event=registered' "$BASE/log/node.log" | tail -n 1 | sed -n 's/.*node_id=\([^ ]*\).*/\1/p')"
+          fi
+          if [[ -z "$previous" && -s "$BASE/run/current-node-id" ]]; then
+            previous="$(tr -d '[:space:]' < "$BASE/run/current-node-id")"
+          fi
+          if [[ -n "$previous" ]]; then
+            echo "$previous" > "$BASE/run/current-node-id"
+            args+=("$previous")
           fi
           sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" "${args[@]}"
           # Point the node at the new authorization (state dir is BASE/state; file handed to the service uid).
@@ -177,7 +190,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          "$BASE/supervisor.sh" stop
+          "$BASE/bin/supervisor.sh" stop
 
       - name: Start the service
         shell: bash
@@ -185,13 +198,13 @@ jobs:
           set -euo pipefail
           export OTERYN_NATIVE_GAMEPLAY_MANIFEST="$BASE/gameplay/content/spells.manifest.json"
           # Detach from the runner process tree so the service outlives the job.
-          env -u RUNNER_TRACKING_ID setsid "$BASE/supervisor.sh" start
+          env -u RUNNER_TRACKING_ID setsid "$BASE/bin/supervisor.sh" start
 
       - name: Health check
         shell: bash
         run: |
           set -euo pipefail
-          "$BASE/supervisor.sh" health
+          "$BASE/bin/supervisor.sh" health
 
       - name: Assign the scope to the new node (as root) and wait for ready
         shell: bash

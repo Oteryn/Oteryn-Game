@@ -4,7 +4,7 @@
 
 The workflow builds the Linux x86_64 binaries (`oteryn-game-server`, `oteryn-game-ops`, `oteryn-game-migrate`; the workflow installs only server and migrate) on a GitHub-hosted runner and passes them as an artifact; nothing is compiled on the NAS. On the `game-runners`/`oteryn-game` runner (`oteryn-synology-game`, runner user, no root, no sudo, no Docker) it installs them under `BASE`, runs `oteryn-game-migrate`, issues a launch authorization (`--supersedes <previous node id>`) before touching the service, restarts the single service, assigns the scope with `assignment replace` and waits for ready, both as root through the `oteryn-game-deploy-ops` wrapper and one sudoers rule.
 
-`BASE=/volume1/oteryn/game-preprod` (runner-owned) and `ROOT_BASE=/volume1/oteryn/game-preprod-root` (root-owned, runner-unwritable).
+`BASE=/volume1/oteryn/game-preprod` (root-owned; only its runtime subdirectories belong to the runner) and `ROOT_BASE=/volume1/oteryn/game-preprod-root` (root-owned, runner-unwritable).
 
 `oteryn-game-ops` runs only as root (euid 0) and the runner is uid 1001, so the workflow never installs it. The owner installs and upgrades it, and its config, out of band under `ROOT_BASE`.
 
@@ -17,8 +17,9 @@ Done once by the owner. The workflow never creates or changes it, and fails if i
 
    | Path | Owner | Mode | Content |
    | --- | --- | --- | --- |
-   | `BASE`, `BASE/bin`, `BASE/gameplay` | 1001 | 0755 | installed server and migrate binaries, staged content inputs |
-   | `BASE/state` | root | 0755 | launch and S2 authorization files (ops hands each to uid 1001) |
+   | `BASE` | root | 0755 | must stay root-owned: ops runs as root and rejects a non-root ancestor of `BASE/state` |
+   | `BASE/bin`, `BASE/gameplay` | 1001 | 0755 | installed server and migrate binaries, `supervisor.sh`, staged content inputs |
+   | `BASE/state` | root | 0755 (ancestors root too) | launch and S2 authorization files (ops hands each to uid 1001) |
    | `BASE/fence-parent` | root | 0755 | parent of the fence directory |
    | `BASE/fence-parent/fence` | 1001 | 0700 | Character fence directory |
    | `BASE/ops` | 1001 | 0700 | `migration-url` (one line, TLS-verified PostgreSQL URL), mode 0600 |
@@ -28,8 +29,8 @@ Done once by the owner. The workflow never creates or changes it, and fails if i
    | `ROOT_BASE`, `ROOT_BASE/bin`, `ROOT_BASE/ops` | root | 0755 / 0755 / 0700 | `bin/oteryn-game-ops`, `ops/ops.toml` (0600), control `pg-password`, `db-ca.pem` |
 
 3. **Config.** Copy `ops.toml.template` to `ROOT_BASE/ops/ops.toml` (root, 0600) and `node.toml.template` to `BASE/node/node.toml` (1001, 0600) and fill the placeholders (see "NAS values"). No secret is in the repository or the workflow.
-4. **Ops binary (root).** Install `oteryn-game-ops` from a release bundle: `install -o root -g root -m 0755 oteryn-game-ops ROOT_BASE/bin/`. Upgrade it the same way. Each deploy prints `OPS_SHA256_INSTALLED` and `OPS_SHA256_BUNDLE` in its summary and warns on mismatch; compare with `sha256sum ROOT_BASE/bin/oteryn-game-ops` against the `bin/oteryn-game-ops` of the bundle you trust (the artifact `game-preprod-bundle`, whose `SHA256SUMS` lists it).
-5. **Wrapper and sudoers (root).** Install the wrapper from the repository (it is also in the bundle as `deploy-ops.sh`): `install -o root -g root -m 0755 deploy/synology-game/deploy-ops.sh ROOT_BASE/bin/oteryn-game-deploy-ops`, and create `ROOT_BASE/ops/scope.env` (root, 0600) with the two lines `WORLD_ID=<uuid>` and `CHANNEL_ID=<uuid>` (the scope in `node.toml`). The wrapper takes only validated positional values (run id, attempt, node id, revision), fixes the binary, config and scope, and rejects extra arguments, so the runner cannot choose ops arguments. One file `/etc/sudoers.d/oteryn-game-deploy`, mode 0440, validated with `visudo -cf`:
+4. **Ops binary (root).** Install `oteryn-game-ops` from a release bundle: `install -o root -g root -m 0755 oteryn-game-ops ROOT_BASE/bin/`. Upgrade it the same way. Each deploy prints `OPS_SHA256_INSTALLED` and `OPS_SHA256_BUNDLE` in its summary and **fails before any install or migration** if the installed ops binary or wrapper differs from the bundle, so upgrade both as root before deploying a new bundle; compare with `sha256sum ROOT_BASE/bin/oteryn-game-ops` against the `bin/oteryn-game-ops` of the bundle you trust (the artifact `game-preprod-bundle`, whose `SHA256SUMS` lists it).
+5. **Wrapper and sudoers (root).** Install the wrapper from the repository (it is also in the bundle as `deploy-ops.sh`, and a mismatch fails the deploy): `install -o root -g root -m 0755 deploy/synology-game/deploy-ops.sh ROOT_BASE/bin/oteryn-game-deploy-ops`, and create `ROOT_BASE/ops/scope.env` (root, 0600) with the two lines `WORLD_ID=<uuid>` and `CHANNEL_ID=<uuid>` (the scope in `node.toml`). The wrapper takes only validated positional values (run id, attempt, node id, revision), fixes the binary, config and scope, and rejects extra arguments, so the runner cannot choose ops arguments. One file `/etc/sudoers.d/oteryn-game-deploy`, mode 0440, validated with `visudo -cf`:
 
    ```
    # runner uid 1001 may run the deploy wrapper's two subcommands (`#1001` is the uid, not a comment)
@@ -37,7 +38,7 @@ Done once by the owner. The workflow never creates or changes it, and fails if i
    ```
 
    `*` in sudoers matches spaces, so sudoers alone does not bound the arguments; the wrapper's strict regexes and argument counts do. DSM updates can reset `/etc/sudoers.d`; re-check with `sudo -n -l` as the runner user after each DSM update. The deploy fails early if `sudo -n -l` does not work. The wrapper does not set `OTERYN_NATIVE_GAMEPLAY_MANIFEST`: only `content activate` reads it, and the deploy never runs that.
-6. **Supervision without root.** The workflow installs `supervisor.sh` to `BASE/supervisor.sh`. It starts `oteryn-game-server serve --config BASE/node/node.toml` detached, records `BASE/run/node.pid`, logs to `BASE/log/node.log` and checks the pid's command line before signalling. After a NAS reboot start it from a DSM Task Scheduler boot-up task as the runner user, with `OTERYN_NATIVE_GAMEPLAY_MANIFEST=BASE/gameplay/content/spells.manifest.json` set, or by hand.
+6. **Supervision without root.** The workflow installs `supervisor.sh` to `BASE/bin/supervisor.sh`. It starts `oteryn-game-server serve --config BASE/node/node.toml` detached, records `BASE/run/node.pid`, logs to `BASE/log/node.log` and checks the pid's command line before signalling. After a NAS reboot start it from a DSM Task Scheduler boot-up task as the runner user, with `OTERYN_NATIVE_GAMEPLAY_MANIFEST=BASE/gameplay/content/spells.manifest.json` set, or by hand.
 
 ## NAS values
 
@@ -63,13 +64,13 @@ The Platform client certificate and key (`platform-client.crt`, `platform-client
 
 Run once, after steps 1 to 6. `ops` below is `sudo env OTERYN_NATIVE_GAMEPLAY_MANIFEST=BASE/gameplay/content/spells.manifest.json ROOT_BASE/bin/oteryn-game-ops --config ROOT_BASE/ops/ops.toml`; the owner (root) runs everything marked root directly; the deploy sudo rule covers only the wrapper's `issue` and `assign replace`.
 
-1. (1001) Download the `game-preprod-bundle` artifact of a build on `main`, verify it with `sha256sum --check SHA256SUMS`, and copy `bin/oteryn-game-server`, `bin/oteryn-game-migrate`, `gameplay/` and `supervisor.sh` into `BASE`. (The deploy workflow cannot be the first start: the node needs the S2 file and the first authorization below before it can boot.)
+1. (1001) Download the `game-preprod-bundle` artifact of a build on `main`, verify it with `sha256sum --check SHA256SUMS`, and copy `bin/oteryn-game-server`, `bin/oteryn-game-migrate` and `supervisor.sh` into `BASE/bin` and `gameplay/` into `BASE/gameplay`. (The deploy workflow cannot be the first start: the node needs the S2 file and the first authorization below before it can boot.)
 2. (1001) `OTERYN_GAME_MIGRATION_DATABASE_URL="$(cat BASE/ops/migration-url)" BASE/bin/oteryn-game-migrate`
 3. (root) `ops authorization issue --file launch-initial.json --binding preprod-initial` (no `--supersedes`; `node.toml` already names `BASE/state/launch-initial.json`)
 4. (root) `ops s2 issue --node-config BASE/node/node.toml --file s2-fresh-store.json --namespace preproduction --authorization <owner-authorization-text>`
 5. (root) `ops character fresh-store --request fresh-store.json` (run twice; the second run is idempotent)
 6. (root) `ops character interpretation --profile <p> --ruleset <r> --content <c> --starter <s>` after the fresh store; the four tokens are the Platform-agreed interpretation revisions
-7. (1001) `OTERYN_NATIVE_GAMEPLAY_MANIFEST=BASE/gameplay/content/spells.manifest.json BASE/supervisor.sh start`, then `BASE/supervisor.sh health` (it records `BASE/run/current-node-id`)
+7. (1001) `OTERYN_NATIVE_GAMEPLAY_MANIFEST=BASE/gameplay/content/spells.manifest.json BASE/bin/supervisor.sh start`, then `BASE/bin/supervisor.sh health` (it records `BASE/run/current-node-id`)
 8. (root) grant the control role its scope rows (`game_control_scope_grants`), then `ops content activate --request content-1.json --world <WORLD_ID> --channel <CHANNEL_ID> --sequence 1 --previous empty`
 9. (root, first start only) `ops assignment assign --request assign-1.json --world <WORLD_ID> --channel <CHANNEL_ID> --node-id <node id from current-node-id> --revision <registration_revision from the awaiting_assignment log line>`
 
