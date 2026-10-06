@@ -1529,3 +1529,146 @@ fn measure_viewports<F: MapFacts>(label: &str, overlay: &ChannelOverlay, facts: 
     report("delta", &mut deltas);
     report("stage plan (compose + rank)", &mut plans);
 }
+
+/// MAP-CUTOVER-1b: the admission path of a bundle World plans domain 17 from the bundle's own
+/// overlay and facts at the runtime position, with the native floor `-z`, a snapshot at join and
+/// a delta after a step; a fixture World has no domain 17.
+#[test]
+fn map_cutover_a_bundle_world_plans_domain_17_at_the_runtime_position() {
+    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+    use crate::foundation::{
+        ChannelContentPin, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId,
+    };
+    use crate::movement::{
+        CardinalStep, MovementEngineeringSelection, MovementOwnerTurn, MovementTurnOutcome,
+    };
+
+    let mut tiles: Vec<(TilePos, Vec<Item>)> = (16..=24)
+        .map(|x| (tp(x, 20, -7), vec![item(GRASS)]))
+        .collect();
+    tiles.push((tp(22, 21, -7), vec![item(GRASS), item(COIN)]));
+    tiles.push((tp(23, 21, -7), vec![item(GRASS), item(PILLAR)]));
+    let bundle = booted(tiles);
+    let room = crate::content::qualify_native_entry_room(world()).expect("entry room");
+    let cells = bundle
+        .movement_cells(room.movement_cells())
+        .expect("bundle cells");
+    assert!(matches!(
+        cells.index(),
+        NativeMovementCollisionIndex::Bundle(_)
+    ));
+
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world(),
+        channel(),
+        NodeId::decode(&uuid(3)).expect("fixture"),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        2,
+        ChannelContentPin::test(world()),
+    )
+    .expect("runtime");
+    let reserved = runtime
+        .reserve_fresh_session(GameSessionId::decode(&uuid(4)).expect("fixture"))
+        .expect("reserved");
+    let actor = runtime.commit_fresh_session(reserved).expect("committed");
+    let start = runtime
+        .initialize_pinned_test_position(
+            actor,
+            MovementLocalPosition {
+                x: 20,
+                y: 20,
+                floor: 7,
+            },
+        )
+        .expect("position");
+
+    // What a fresh view plans from the bundle World at a native position.
+    let generation = runtime.content_pin().client_artifact_digest();
+    let source = MapViewSource {
+        overlay: bundle.overlay(),
+        facts: bundle.facts(),
+        content_generation: generation,
+        reset_epoch: 0,
+    };
+    let mut fresh_items = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+    let mut fresh = SessionMapView::default();
+
+    let mut items = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+    let mut view = SessionMapView::default();
+    let joined = crate::gameplay_transport::bundle_world_map(
+        &mut runtime,
+        &cells,
+        actor,
+        &mut view,
+        &mut items,
+    )
+    .expect("a bundle World")
+    .expect("planned");
+    let Some(MapUpdate::Snapshot(joined)) = joined else {
+        panic!("a join snapshot");
+    };
+    let expected = fresh
+        .snapshot(&mut fresh_items, &source, at(ACTOR))
+        .expect("fresh snapshot");
+    assert_eq!(joined.payload, expected.payload);
+    let decoded = decode_world_map_snapshot(&joined.payload).expect("decoded");
+    assert_eq!(decoded.header.reset_epoch, 0);
+    assert_eq!(decoded.header.content_generation, generation);
+    let coin = decoded
+        .tiles
+        .iter()
+        .find(|tile| tile.position == at(tp(22, 21, -7)))
+        .expect("the coin tile");
+    assert_eq!(
+        definitions(coin),
+        [MapDefinition::Terrain(nz(GRASS + 1)), item_def(COIN + 1)]
+    );
+
+    // One step east is a delta that a fresh view's move agrees with.
+    let selection = MovementEngineeringSelection {
+        owner_context: start.context(),
+        content_scope: cells.scope(),
+    };
+    match MovementOwnerTurn::begin(&mut runtime, std::num::NonZeroUsize::MIN)
+        .try_step(actor, start, &selection, cells.index(), CardinalStep::East)
+        .expect("stepped")
+    {
+        MovementTurnOutcome::Applied(_) => {}
+        MovementTurnOutcome::Deferred => panic!("deferred step"),
+    }
+    let stepped = crate::gameplay_transport::bundle_world_map(
+        &mut runtime,
+        &cells,
+        actor,
+        &mut view,
+        &mut items,
+    )
+    .expect("a bundle World")
+    .expect("planned");
+    let Some(MapUpdate::Delta(stepped)) = stepped else {
+        panic!("a step delta");
+    };
+    let Some(MapUpdate::Delta(expected)) = fresh
+        .update(&mut fresh_items, &source, at(tp(21, 20, -7)))
+        .expect("fresh delta")
+    else {
+        panic!("a fresh delta");
+    };
+    assert_eq!((stepped.from, stepped.to), (expected.from, expected.to));
+    assert_eq!(stepped.payload, expected.payload);
+
+    // The entry room's own cells are not a bundle World.
+    assert!(
+        crate::gameplay_transport::bundle_world_map(
+            &mut runtime,
+            room.movement_cells(),
+            actor,
+            &mut view,
+            &mut items,
+        )
+        .is_none()
+    );
+}
