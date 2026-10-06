@@ -306,7 +306,7 @@ def expected_files(root, include_registration=False):
                 'progress/builder.py', 'progress/schema.json',
                 'progress_config/builder.py', 'progress_config/schema.json',
                 'dialogue/quest_dialogue_links_all.py', 'dialogue/quest_dialogue_links_all.schema.json')],
-            *[str(p.relative_to(root)) for p in sorted((root / 'tools/content-schema/quest-authoring/donor_sources/refinements/entity_values/dependency').glob('*')) if p.is_file()],
+            *[p.relative_to(root).as_posix() for p in sorted((root / 'tools/content-schema/quest-authoring/donor_sources/refinements/entity_values/dependency').glob('*')) if p.is_file()],
             *[f'tools/content-schema/quest-authoring/samples/donor-source/{p}' for p in (
                 'semantic-conditions.json', 'semantic-conditions-qualification.json',
                 'semantic-rewards.json', 'semantic-rewards-qualification.json',

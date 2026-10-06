@@ -56,7 +56,32 @@ enum Failure {
     Ambiguous(String),
 }
 
+oteryn_error_codes::error_kinds! {
+    /// The registered code of each [`Failure`] and of a malformed `OTERYN_LOG`.
+    enum FailureKind {
+        Usage = (6001, "OPS_USAGE", InvalidInput, Terminal),
+        InputInvalid = (6002, "OPS_INPUT_INVALID", InvalidInput, Terminal),
+        IdentityMismatch = (6003, "OPS_IDENTITY_MISMATCH", AuthenticationFailed, SecurityTerminal),
+        Unavailable = (6004, "OPS_UNAVAILABLE", DependencyUnavailable, Retryable),
+        Rejected = (6005, "OPS_REJECTED", Conflict, Terminal),
+        OutcomeAmbiguous = (6006, "OPS_OUTCOME_AMBIGUOUS", InternalUnavailable, Terminal),
+        LogSpecInvalid = (6007, "OPS_LOG_SPEC_INVALID", InvalidInput, Terminal),
+    }
+}
+
 impl Failure {
+    /// The registered kind; the match has no wildcard arm.
+    fn kind(&self) -> FailureKind {
+        match self {
+            Self::Usage(_) => FailureKind::Usage,
+            Self::Input(_) => FailureKind::InputInvalid,
+            Self::Identity(_) => FailureKind::IdentityMismatch,
+            Self::Unavailable(_) => FailureKind::Unavailable,
+            Self::Rejected(_) => FailureKind::Rejected,
+            Self::Ambiguous(_) => FailureKind::OutcomeAmbiguous,
+        }
+    }
+
     fn code(&self) -> u8 {
         match self {
             Self::Usage(_) => 2,
@@ -1357,7 +1382,22 @@ async fn run(raw: Vec<String>) -> Outcome {
 }
 
 fn main() -> ExitCode {
+    const PROCESS: &str = "oteryn-game-ops";
+    let version = env!("CARGO_PKG_VERSION");
+    if oteryn_game_server::node::serve::begin_process(
+        PROCESS,
+        version,
+        FailureKind::LogSpecInvalid.code(),
+    )
+    .is_err()
+    {
+        return ExitCode::from(2);
+    }
     let raw: Vec<String> = std::env::args().skip(1).collect();
+    if raw.first().map(String::as_str) == Some("--version") {
+        println!("{PROCESS} {}", oteryn_error_codes::build_id(version));
+        return ExitCode::SUCCESS;
+    }
     let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -1368,7 +1408,12 @@ fn main() -> ExitCode {
     match runtime.block_on(run(raw)) {
         Ok(()) => ExitCode::SUCCESS,
         Err(failure) => {
-            eprintln!("oteryn-game-ops: {failure}");
+            let detail = failure.to_string();
+            let line =
+                oteryn_error_codes::Line::new(oteryn_error_codes::Level::Error, "ops", "failed")
+                    .code(failure.kind().code())
+                    .detail(&detail);
+            oteryn_game_server::node::serve::emit(PROCESS, &line);
             ExitCode::from(failure.code())
         }
     }
@@ -1378,6 +1423,43 @@ fn main() -> ExitCode {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn ops_codes_match_the_registry() {
+        let registry: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json"
+        ))
+        .expect("game registry");
+        for kind in FailureKind::ALL {
+            let code = kind.code();
+            let entry = registry["codes"]
+                .as_array()
+                .expect("codes")
+                .iter()
+                .find(|entry| entry["code"].as_u64() == Some(u64::from(code.number)))
+                .expect("registered");
+            assert_eq!(entry["name"], code.name);
+            assert_eq!(entry["category"], code.category().as_str());
+            assert_eq!(entry["progression"], code.progression().as_str());
+        }
+    }
+
+    #[test]
+    fn failures_keep_their_exit_status_and_carry_their_own_code() {
+        let cases = [
+            (Failure::Usage("x"), 2, 6001),
+            (Failure::Input(String::new()), 3, 6002),
+            (Failure::Identity("x"), 4, 6003),
+            (Failure::Unavailable(String::new()), 5, 6004),
+            (Failure::Rejected(String::new()), 6, 6005),
+            (Failure::Ambiguous(String::new()), 7, 6006),
+        ];
+        for (failure, exit, number) in cases {
+            assert_eq!(failure.code(), exit);
+            assert_eq!(failure.kind().code().number, number);
+        }
+    }
     use std::cell::RefCell;
 
     #[derive(Default)]

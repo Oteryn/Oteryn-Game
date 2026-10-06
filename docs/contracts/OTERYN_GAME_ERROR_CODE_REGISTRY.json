@@ -211,6 +211,16 @@
       "status": "ACTIVE"
     },
     {
+      "code": 2014,
+      "name": "LOG_SPEC_INVALID",
+      "category": "INVALID_INPUT",
+      "progression": "TERMINAL",
+      "owner": "apps/game-server::log",
+      "contract": "ERR-NODE-1",
+      "hint": "OTERYN_LOG is not `level` or `module=level` entries; the process refused to start with exit 2.",
+      "status": "ACTIVE"
+    },
+    {
       "code": 3001,
       "name": "REGISTRATION_REJECTED",
       "category": "CONFLICT",
@@ -298,6 +308,36 @@
       "owner": "apps/game-server::durability",
       "contract": null,
       "hint": "SQLSTATE OTC01: Content activation conflicts with the recorded sequence, or a referenced shaping revision cannot be dropped.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 3010,
+      "name": "MIGRATION_FAILED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "apps/game-server::bin::oteryn-game-migrate",
+      "contract": "ERR-NODE-1",
+      "hint": "oteryn-game-migrate failed with no registered SQLSTATE; the error text is in detail; exit 1.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 3011,
+      "name": "PROFICIENCY_IMPORT_FAILED",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "apps/game-server::bin::oteryn-game-import-proficiencies",
+      "contract": "ERR-NODE-1",
+      "hint": "oteryn-game-import-proficiencies failed with no registered SQLSTATE; the error text is in detail; exit 1.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 4001,
+      "name": "PANIC",
+      "category": "INTERNAL_UNAVAILABLE",
+      "progression": "TERMINAL",
+      "owner": "crates/error-codes::hook",
+      "contract": "ERR-NODE-1",
+      "hint": "A thread panicked; the line has thread, location and a static payload; the process follows the panic profile.",
       "status": "ACTIVE"
     },
     {
@@ -428,6 +468,16 @@
       "owner": "apps/game-server::bin::oteryn-game-ops::Failure",
       "contract": null,
       "hint": "ops exit 7: the outcome is unknown; reconcile the retained request before retrying.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 6007,
+      "name": "OPS_LOG_SPEC_INVALID",
+      "category": "INVALID_INPUT",
+      "progression": "TERMINAL",
+      "owner": "apps/game-server::bin::oteryn-game-ops",
+      "contract": "ERR-NODE-1",
+      "hint": "OTERYN_LOG is not `level` or `module=level` entries; oteryn-game-ops refused to start with exit 2.",
       "status": "ACTIVE"
     },
     {
