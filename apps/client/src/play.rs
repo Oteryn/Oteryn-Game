@@ -9,8 +9,8 @@ use crate::scene::PlaceholderScene;
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
-    JoinSnapshot, Session, SessionError, SessionStream, StepDirection, StepDisposition,
-    StepOutcome, WorldObjectOverlayEntry,
+    ActorPosition, JoinSnapshot, Session, SessionError, SessionEvent, SessionStream, StepDirection,
+    StepDisposition, StepOutcome, WorldObjectOverlayEntry,
 };
 use std::collections::BTreeMap;
 use std::future::Future;
@@ -163,14 +163,33 @@ impl PlayView {
                 StepResult::Refused
             });
         if let Some(delta) = &outcome.world_spatial_delta {
-            let position = delta.value.actor_position;
-            self.own = TileCoord::new(position.x, position.y);
-            self.floor = position.floor;
+            self.place(delta.value.actor_position);
         }
         if let Some(delta) = &outcome.world_object_overlay_delta {
             self.set_marker(&delta.value);
         }
         self.rebuild()
+    }
+
+    /// Applies the deltas the server pushed outside any step: domain 1 moves the own actor,
+    /// domain 2 moves a marker. Every other domain is not drawn by this view.
+    pub fn apply_pushed(&mut self, events: &[SessionEvent]) -> Result<(), BatchError> {
+        for event in events {
+            match event {
+                SessionEvent::WorldSpatial(delta) => self.place(delta.value.actor_position),
+                SessionEvent::WorldSpatialEntities(delta) => {
+                    self.place(delta.value.actor_position);
+                }
+                SessionEvent::WorldObjectOverlay(delta) => self.set_marker(&delta.value),
+                _ => {}
+            }
+        }
+        self.rebuild()
+    }
+
+    fn place(&mut self, position: ActorPosition) {
+        self.own = TileCoord::new(position.x, position.y);
+        self.floor = position.floor;
     }
 
     fn set_marker(&mut self, entry: &WorldObjectOverlayEntry) {
@@ -199,6 +218,9 @@ impl PlayView {
                 PlayEvent::Stepped(outcome) => self
                     .apply(&outcome)
                     .map_err(|_error| PublicClass::SessionUnavailable)?,
+                PlayEvent::Pushed(events) => self
+                    .apply_pushed(&events)
+                    .map_err(|_error| PublicClass::SessionUnavailable)?,
                 PlayEvent::Ended(class) => return Err(class),
             }
         }
@@ -213,6 +235,8 @@ impl PlayView {
 #[derive(Debug)]
 pub enum PlayEvent {
     Stepped(Box<StepOutcome>),
+    /// Deltas pushed outside any step, in the order the session applied them.
+    Pushed(Vec<SessionEvent>),
     /// The session ended; return to login with this public class.
     Ended(PublicClass),
 }
@@ -251,6 +275,9 @@ pub trait Stepper: Send {
         &mut self,
         duration: Duration,
     ) -> impl Future<Output = Result<(), SessionError>> + Send;
+    /// The pushed deltas applied since the last call; the session fails closed when this queue
+    /// is left to fill.
+    fn drain(&mut self) -> Vec<SessionEvent>;
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
@@ -267,6 +294,10 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     ) -> impl Future<Output = Result<(), SessionError>> + Send {
         self.service_liveness(duration)
     }
+
+    fn drain(&mut self) -> Vec<SessionEvent> {
+        self.take_events()
+    }
 }
 
 /// The channel pair between the shell and `run_session`.
@@ -278,6 +309,15 @@ pub fn play_channel() -> (
     let (commands, command_rx) = tokio::sync::mpsc::unbounded_channel();
     let (event_tx, events) = std::sync::mpsc::channel();
     (PlayLink { commands, events }, command_rx, event_tx)
+}
+
+/// Forwards what the server pushed since the last call; false when the shell has gone.
+fn forward_pushed<T: Stepper>(
+    session: &mut T,
+    events: &std::sync::mpsc::Sender<PlayEvent>,
+) -> bool {
+    let pushed = session.drain();
+    pushed.is_empty() || events.send(PlayEvent::Pushed(pushed)).is_ok()
 }
 
 /// The session task, run on the client runtime: sends requested steps and, while none is
@@ -295,13 +335,21 @@ pub async fn run_session<T: Stepper>(
                     if events.send(PlayEvent::Stepped(Box::new(outcome))).is_err() {
                         return;
                     }
+                    if !forward_pushed(&mut session, &events) {
+                        return;
+                    }
                     continue;
                 }
                 Err(error) => error,
             },
             Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
                 match session.serve(IDLE_SLICE).await {
-                    Ok(()) => continue,
+                    Ok(()) => {
+                        if !forward_pushed(&mut session, &events) {
+                            return;
+                        }
+                        continue;
+                    }
                     Err(error) => error,
                 }
             }
@@ -316,7 +364,9 @@ pub async fn run_session<T: Stepper>(
 mod tests {
     use super::*;
     use oteryn_client_runtime::ClientRuntime;
-    use oteryn_session::{ActorPosition, AppliedDelta, CommandStatus, WorldSpatialObservation};
+    use oteryn_session::{
+        ActorPosition, AppliedDelta, CommandStatus, MAX_QUEUED_EVENTS, WorldSpatialObservation,
+    };
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -476,9 +526,17 @@ mod tests {
         serves: Arc<AtomicUsize>,
         fail_step: bool,
         fail_serve_after: usize,
+        queued: Vec<SessionEvent>,
+        drained: Arc<AtomicUsize>,
     }
 
     impl Stepper for Fake {
+        fn drain(&mut self) -> Vec<SessionEvent> {
+            let events = std::mem::take(&mut self.queued);
+            self.drained.fetch_add(events.len(), Ordering::SeqCst);
+            events
+        }
+
         async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
             if self.fail_step {
                 Err(SessionError::SessionUnusable)
@@ -507,6 +565,8 @@ mod tests {
             serves: Arc::clone(&serves),
             fail_step,
             fail_serve_after,
+            queued: Vec::new(),
+            drained: Arc::new(AtomicUsize::new(0)),
         };
         runtime
             .spawn(run_session(fake, commands, events))
@@ -580,6 +640,111 @@ mod tests {
         }
         assert_eq!(ended, Some(PublicClass::SessionUnavailable));
         runtime.shutdown(Duration::from_millis(250));
+        Ok(())
+    }
+
+    /// Queues pushed events like `Session` does: past the cap, the session fails closed.
+    struct Pushing {
+        queue: Vec<SessionEvent>,
+        sequence: u64,
+    }
+
+    impl Stepper for Pushing {
+        async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
+            Ok(moved_to(100, 199, 0))
+        }
+
+        async fn serve(&mut self, duration: Duration) -> Result<(), SessionError> {
+            for _ in 0..200 {
+                self.sequence += 1;
+                self.queue.push(SessionEvent::WorldSpatial(AppliedDelta {
+                    server_sequence: self.sequence,
+                    base_revision: self.sequence,
+                    new_revision: self.sequence + 1,
+                    value: WorldSpatialObservation {
+                        content_generation: [0; 32],
+                        actor_position: ActorPosition {
+                            x: 100,
+                            y: 200,
+                            floor: 0,
+                        },
+                    },
+                }));
+            }
+            if self.queue.len() > MAX_QUEUED_EVENTS {
+                return Err(SessionError::EventQueueOverflow {
+                    limit: MAX_QUEUED_EVENTS,
+                });
+            }
+            tokio::time::sleep(duration).await;
+            Ok(())
+        }
+
+        fn drain(&mut self) -> Vec<SessionEvent> {
+            std::mem::take(&mut self.queue)
+        }
+    }
+
+    #[test]
+    fn pushed_events_are_drained_so_the_queue_never_overflows() -> Result<(), String> {
+        let (link, commands, events) = play_channel();
+        let runtime = ClientRuntime::new().map_err(|error| error.to_string())?;
+        let pushing = Pushing {
+            queue: Vec::new(),
+            sequence: 0,
+        };
+        runtime
+            .spawn(run_session(pushing, commands, events))
+            .map_err(|error| error.to_string())?;
+        let mut view = view().map_err(|error| format!("{error:?}"))?;
+        let mut pushed = 0;
+        for _ in 0..400 {
+            while let Some(event) = link.poll() {
+                match event {
+                    PlayEvent::Pushed(batch) => {
+                        pushed += batch.len();
+                        view.apply_pushed(&batch)
+                            .map_err(|error| format!("{error:?}"))?;
+                    }
+                    PlayEvent::Ended(class) => return Err(format!("session ended: {class:?}")),
+                    PlayEvent::Stepped(_) => {}
+                }
+            }
+            if pushed > 2 * MAX_QUEUED_EVENTS {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(pushed > 2 * MAX_QUEUED_EVENTS);
+        runtime.shutdown(Duration::from_millis(250));
+        Ok(())
+    }
+
+    #[test]
+    fn pushed_domain_1_and_2_deltas_move_the_view() -> Result<(), BatchError> {
+        let mut view = view()?;
+        let overlay = SessionEvent::WorldObjectOverlay(AppliedDelta {
+            server_sequence: 3,
+            base_revision: 1,
+            new_revision: 2,
+            value: entry(key(101, 200, 0, 0)),
+        });
+        let spatial = SessionEvent::WorldSpatial(AppliedDelta {
+            server_sequence: 4,
+            base_revision: 2,
+            new_revision: 3,
+            value: WorldSpatialObservation {
+                content_generation: [0; 32],
+                actor_position: ActorPosition {
+                    x: 101,
+                    y: 200,
+                    floor: 0,
+                },
+            },
+        });
+        view.apply_pushed(&[overlay, spatial])?;
+        assert_eq!(view.own(), TileCoord::new(101, 200));
+        assert_eq!(view.marker_count(), 2);
         Ok(())
     }
 }
