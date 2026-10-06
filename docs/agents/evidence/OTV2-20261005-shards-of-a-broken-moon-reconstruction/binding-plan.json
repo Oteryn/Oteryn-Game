@@ -1239,7 +1239,7 @@
     "QUEST-TRIGGER-1 durable-cause architecture is resolved by PR #1886 option A (root CommandRef + distinct transition_key invariant); runtime remains serialized after QUEST-GATE-1 and waits for #1886 merge/allocation",
     "NPC-QUEST-1 remains blocked by NPC-TALK-1; accepted NPC-TALK-1 dependencies are specifically NPC-WIRE-1 (merged), NPC-PLACE-1b (not yet implemented), and MAP-CUTOVER-1b (not yet implemented)",
     "Asura Citadel door needs ITEM-USE-1 USE-WITH execution + identity-based i54262 Door/Key binding + post-completion bypass; donor has no keyNumber",
-    "Magnolia Encounter content is source-qualified, and set_phase/prevent_death/lethal_damage already exist in authoring + ProjectV2. Exact remaining representation gap: phase-2 60000 max/current HP cannot be represented above the base Creature max 52000; needs one bounded Encounter-local max-health override disposition. Runtime still waits on ENC-RT-1 -> ENC-OUTCOME-1.",
+    "Magnolia 60k phase-2 representation is architect-resolved by PR #1891 option B (`attribute max_health set 60000` -> queued `heal full`); execution still waits on #1891 merge + ENC-RT-1/ENC-COMBAT-1 -> ENC-OUTCOME-1",
     "Escape geometry and Rope Spot are resolved end-to-end (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9; Rope Spot 31923,31377,9 -> generic moveUpstairs destination 31923,31378,8). Remaining prison blocker: separate canonical admission of donor Lit Torch 54610; do not alias to i34017.",
     "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
     "No full real-character start→reward→relog/restart E2E qualification",
@@ -1574,6 +1574,19 @@
       "map_cutover_1a": "#1825 merged",
       "map_cutover_1b": "NOT_IMPLEMENTED",
       "npc_talk_1": "BLOCKED"
+    },
+    "magnolia_architect_disposition": {
+      "pr": 1891,
+      "head": "5dfe40ee3886174d3f3f56023ed5aee29c40e41a",
+      "status": "OPEN_MERGEABLE",
+      "option": "B",
+      "representation": "attribute(max_health set 60000) then queued heal(full), then phase_2",
+      "implementation_owner": "ENC-COMBAT-1",
+      "runtime_dependencies": [
+        "ENC-RT-1",
+        "ENC-COMBAT-1",
+        "ENC-OUTCOME-1"
+      ]
     }
   }
 }
