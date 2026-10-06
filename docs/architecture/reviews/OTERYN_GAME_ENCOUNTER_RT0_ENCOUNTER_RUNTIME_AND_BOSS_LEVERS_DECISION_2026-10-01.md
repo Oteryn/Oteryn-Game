@@ -167,6 +167,8 @@ Two triggers run inline, inside the damage applier, before it continues:
   `damage_modifier` with `this_hit`, `reflect_damage` and `convert_damage_to_heal` act on this hit.
 
 Their other actions run inline too, in order; any occurrence they raise goes to the queue (§4.1).
+That queue is drained only after the root hit completes and its staged effects, the drain of the
+hit included, have applied (staging, below).
 
 **Inline re-entry bound.** An inline action that changes health (`heal`, `damage`, `cast`,
 `reflect_damage`, `convert_damage_to_heal`, `shared_life` propagation) enters the damage applier
@@ -468,12 +470,22 @@ Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficu
 - **Health.** Setting a lower maximum clamps current health to it. Setting a higher one does not
   heal: health rises only through an explicit `heal` (`full` heals to the overridden maximum). No
   path sets health above the maximum in force.
-- **Reads.** `health_percent`, `health_crossed` in percent, `keep_percent` and the client health
-  percent use the maximum in force.
-- **Magnolia phase 2:** `lethal_damage(magnolia)` with `prevent_death`, then
-  `attribute(max_health set 60000)`, `heal(full)` and a flag or `set_phase`. The first lethal hit
-  emits no outcome; the outcome comes only from the death in phase 2. One Creature definition
-  stays the public identity, so the death, Bosstiary, loot and outcome keys are unchanged.
+- **Reads.** `health_percent`, `health_crossed` in percent, `damage_accumulated` in percent,
+  `keep_percent` and the client health percent use the maximum in force at the read. A
+  `damage_accumulated` percent threshold is that percent of the maximum in force when each hit is
+  counted; the count already taken is kept when the maximum changes.
+- **Magnolia phase 2.** Two rules, because an inline `heal` is followed by the drain of the lethal
+  hit (§4.2, format §7):
+  1. Inline `lethal_damage(magnolia)`, with the condition `counter_compare(magnolia_phase, <, 2)`:
+     `prevent_death`, `attribute(max_health set 60000)` and `counter(magnolia_phase) set 2`. The
+     counter raises `counter_reached(magnolia_phase, 2)` into the queue.
+  2. Queued `counter_reached(magnolia_phase, 2)`: `heal(full)` (and `set_phase` once ENC-RT-1 has
+     it). The queue drains only after the root hit completes and its drain has applied (§4.2), so
+     the heal ends at 60,000 out of 60,000.
+
+  The first lethal hit emits no outcome. In phase 2 the condition no longer holds, so the next
+  lethal hit kills and its death emits the outcome. One Creature definition stays the public
+  identity, so the death, Bosstiary, loot and outcome keys are unchanged.
 - **`set_phase`.** The schema gap is ENC-RT-1's catch-up to §6.1 (a typed `phases` list, the
   `set_phase` action and the `phase_entered` trigger). It is not a new decision. Magnolia does not
   depend on it.
@@ -493,7 +505,9 @@ Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficu
   and 25 thresholds; the Auric Moon Sigil chance) are decided by a successor decision,
   BOSS-DIFFICULTY-0. It is decided with the first allocation that admits a difficulty boss.
   - Its health scaling uses §17.2.
-  - Its danger scaling uses `damage_modifier`.
+  - Its danger scaling uses `attribute(outgoing_damage_percent)`: the boss and its encounter roles
+    deal more damage. `damage_modifier` scales the damage a role takes, which is the opposite
+    direction.
   - Its loot and drop changes belong to BOSS-REWARD-1.
   - The chosen difficulty is per encounter instance and runtime-only, as all encounter state (§9).
 - No ENC-RT-1 or ENC-OUTCOME-1 scope is added for it, and no Make Believe special case is allowed.
@@ -509,7 +523,9 @@ Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficu
 
 ### 17.5 Before-freeze checklist
 
-1. **Amendments:** the format `attribute` row and §9.4, in place; §6.2 carries a pointer.
+1. **Amendments:** the format `attribute` row, the `damage_accumulated` row (§4) and §9.4, in
+   place; §6.2 carries a pointer. This decision's §4.2 states when the queue raised by an inline
+   hook drains.
 2. **Serialization:** unchanged. The override is applied in the owner turn.
 3. **Restart:** the override is runtime-only and is lost with the fight (§9).
 4. **Typed references:** the role, the Creature definition key and the encounter key and revision.
@@ -520,6 +536,12 @@ Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficu
    - `heal(full)` reaches the overridden maximum and never exceeds it;
    - `reset` restores the type value and clamps;
    - `health_percent` reads the maximum in force;
+   - `damage_accumulated` in percent counts against the maximum in force: a 10% threshold fires
+     after 6,000 damage once the maximum is 60,000, and the damage already counted is kept when
+     the maximum changes;
+   - an occurrence raised by an inline `lethal_damage` rule drains only after the hit's drain has
+     applied, so a queued `heal(full)` ends at the full maximum;
    - content validation rejects 0, a negative value and a value above the Creature health range;
-   - an ENC-PARITY-1 fixture covers Magnolia: phase 2 at 60,000 out of 60,000, no outcome on the
-     first lethal hit, and one death and one Bosstiary kill for the public key.
+   - an ENC-PARITY-1 fixture covers Magnolia: phase 2 at 60,000 out of 60,000 after the queued
+     heal, no outcome on the first lethal hit, the phase-2 lethal hit kills, and one death and one
+     Bosstiary kill for the public key.

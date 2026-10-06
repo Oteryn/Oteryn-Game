@@ -107,7 +107,7 @@ Encounter
 | `ability_cast(role, AbilityRef)` | a monster spell script with fight effects (D29); a spell whose script only summons is converted as an ability that points to its encounter, and the encounter does the summon (D45) |
 | `damage_taken(role, source: player/any)` | `onHealthChange` per hit |
 | `heal_received(role, source: player/any)` | `onHealthChange` per heal (Canary runs the handler for heals too) (D31) |
-| `damage_accumulated(role, amount or percent)` | `onHealthChange` damage counters: fires each time one creature of the role has taken `amount` damage, or `percent` of its maximum health (the resolved creature definition's, after wiki adoption), since it appeared or since it last fired; the count then restarts at 0 and heals do not count (D34) |
+| `damage_accumulated(role, amount or percent)` | `onHealthChange` damage counters: fires each time one creature of the role has taken `amount` damage, or `percent` of its maximum health (the maximum in force: the resolved creature definition's, after wiki adoption, or a `max_health` override, ENCOUNTER-RT-0 §17.2), since it appeared or since it last fired; the count then restarts at 0 and heals do not count (D34) |
 | `timer_elapsed(timer)` | `addEvent` delays, `onThink` countdowns |
 | `counter_reached(counter, value)` | global kill/stage counters |
 | `area_entered(anchor, role or player)` / `area_left` | zone crossing (`izcandarThink`) |
