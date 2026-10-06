@@ -591,9 +591,22 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
        - a quest child by its receipt (character, root CommandRef, transition_key), read with
          `reconcile_character_quest_transition`; it stays `COMMITTED`;
        - a `RewardClaim` child by its DUR-03 MINT outcome under the root CommandRef
-         (`chest_use.rs`): a committed MINT stays `COMMITTED`; a reservation still pending is
-         resolved only on its DUR-03 path, a replay of the same CommandRef, never by this
-         reconciliation;
+         (`chest_use.rs`): a committed MINT stays `COMMITTED`. A reservation with no receipt
+         cannot be replayed after a plan loss: its `RewardClaimMintCandidate` and request are
+         process-local, the reservation keeps only the intent binding hash and the frozen
+         identities, FND-02 never re-enqueues the reserved CommandRef, and a replacement
+         GameSession fails `character_item_fence_is_current`. The reconciliation therefore
+         retires it through a new DUR-03 operation in `reward_claim_mint.rs`. That operation
+         loads the reservation by the root CommandRef, refuses unless its `character_id` is the
+         reconciled Character, and, under the current recovery fence, charges its remaining
+         DUR03-RL-08 work units one at a time. That charge is the only mutation the 0012
+         reservation guard permits, so no schema or migration changes. With the budget spent,
+         no commit pass can start for that CommandRef, and §17.2 no longer counts the
+         reservation as pending. The operation then reads the receipt under the cause lock,
+         which waits for a pass already in flight. A receipt means `COMMITTED`, and the claim's
+         obligation row exists. No receipt means `REJECTED`: no item, no RewardClaim and no
+         obligation, so the claim stays unclaimed and a fresh `USE` (a new CommandRef) can claim
+         it. A rerun of the reconciliation finds the budget spent and reads the same result;
      - a committed claim's quest obligation is a durable QUEST-STATE-0 §5.4 row, not a plan
        child: it is requested again at admission and commits once under its `ClaimObligation`
        cause (§16.2.2 keeps its transition key distinct); the reconciliation never rejects or
@@ -675,8 +688,9 @@ encoding and a new receipt key migration. It is decided with the first accepted 
    - A process loss between the root and a quest child loses the plan. A root discoverable
      through a durable child record is reconciled explicitly; a root with none left no durable
      quest or claim effect. Children with a durable record (a quest receipt, a claim's MINT) keep
-     it, a committed claim's obligation is requested again at admission, and every other child is
-     `REJECTED` and never runs again. A relocation that ran is not re-run or reverted; the
+     it, a committed claim's obligation is requested again at admission, a claim reservation with
+     no receipt is retired by spending its RL-08 budget and then settled by its receipt or
+     `REJECTED`, and every other child is `REJECTED` and never runs again. A relocation that ran is not re-run or reverted; the
      Character resumes at its last persisted position (CHAR-POSITION-0).
 4. **Typed references:** the root CommandRef (GameSessionId, CommandId), `transition_key`, the
    binding's definition and `placement_key`, and the content revision.
@@ -684,3 +698,13 @@ encoding and a new receipt key migration. It is decided with the first accepted 
    refusal results.
 6. **Atomic commit:** one transaction per quest child (QUEST-STATE-0 §5). The plan check runs
    before the root commits.
+7. **QUEST-TRIGGER-1 tests for plan loss after a claim reservation:**
+   - a process loss after the reservation and before the MINT: the reconciliation spends the
+     budget, finds no receipt and rejects the child; nothing is minted; a fresh `USE` claims the
+     chest once and is not refused with `ClaimPending`;
+   - a pass in flight that commits during the retirement: the receipt read under the cause lock
+     settles the child `COMMITTED`, its obligation commits at a later admission, and no second
+     item is minted;
+   - a reservation of another Character under the same CommandRef is refused and left unchanged;
+   - a rerun of the reconciliation changes nothing and reads the same result;
+   - a replacement GameSession never resumes the old reservation.
