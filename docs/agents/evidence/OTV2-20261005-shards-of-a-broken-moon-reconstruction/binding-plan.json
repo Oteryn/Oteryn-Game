@@ -769,25 +769,27 @@
       "visible_stage": "s14",
       "kind": "SPECIAL_ENCOUNTER_PHASE",
       "mechanics": [
-        "Furious Jaracal pressure",
-        "Bone Fiddle control",
-        "Moonsilver Drift",
-        "Death-damage healing"
+        "initial 2 Furious Jaracal",
+        "phase-1 Furious Jaracal pressure + Bone Fiddle suppression",
+        "Frost Flower Asura / Midnight Asura encounter adds",
+        "Moonsilver Drift player/asura step callbacks",
+        "Death-element damage heals Magnolia"
       ],
       "evidence": "FACT_MECHANICS_PACKETED_EXACT_AND_APPROX_SEPARATED",
       "owner": "Encounter",
       "blocker": "Implementation absent; mechanics packeted in magnolia-encounter-evidence.json. PR #1807 currently owns broad Encounter/Monster paths.",
-      "encounter_evidence_ref": "magnolia-encounter-evidence.json"
+      "encounter_evidence_ref": "magnolia-encounter-evidence.json",
+      "note": "Base Creature behavior can reuse accepted Monster runtime only where source-qualified. Special scheduling/state is Encounter-owned; do not copy Crystal's ordinary summon table as the quest encounter."
     },
     {
       "id": "magnolia_revive",
       "visible_stage": "s14",
       "kind": "SPECIAL_ENCOUNTER_THRESHOLD",
       "outcome": "magnolia_phase_2",
-      "evidence": "FACT_CURRENT_REFERENCE_PHASE2_60000_APPROX_ICE_BURST",
+      "evidence": "FACT_CURRENT_REFERENCE_PHASE2_60000 + APPROX_ICE_BURST",
       "owner": "Encounter",
       "encounter_evidence_ref": "magnolia-encounter-evidence.json",
-      "note": "Current reference: first lethal is non-terminal, ~5000 Ice burst, immediate phase 2 at 60000 HP; exact damage amount/order if player dies remains held."
+      "note": "Current reference publishes immediate return at 60000 HP after first defeat; Ice burst is only approximately 5000 and stays approximate. First lethal is non-terminal."
     },
     {
       "id": "magnolia_final_kill",
@@ -1097,7 +1099,7 @@
   "blockers": [
     "QUEST-GATE-1 is dependency-ready on current main but executable child is not yet integrated",
     "QUEST-TRIGGER-1 remains serialized after QUEST-GATE-1",
-    "NPC-QUEST-1 remains blocked by NPC-TALK-1 (NPC-WIRE-1 #1866 + NPC-PLACE-1 + MAP-CUTOVER-1 dependencies)",
+    "NPC-QUEST-1 remains blocked by NPC-TALK-1; NPC-WIRE-1 #1866 is merged, remaining dependencies include NPC-PLACE-1 + MAP-CUTOVER-1",
     "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
     "Magnolia special Encounter absent",
     "Blue Lava night-only predicate source conflict",
@@ -1106,7 +1108,7 @@
     "No full real-character start→reward→relog/restart E2E qualification"
   ],
   "readback": {
-    "refreshed_main": "22539da5f8271f473ff027699342cc06ff21d3d6",
+    "refreshed_main": "52712f633786721c0d255888a92c81165cd2d5c3",
     "quest_runtime_dependencies": {
       "quest_gate_1": "DEPENDENCY_READY_NOT_YET_INTEGRATED",
       "quest_trigger_1": "SERIALIZE_AFTER_QUEST_GATE_1",
@@ -1171,6 +1173,15 @@
       "bone_fiddle": "oteryn:item.tibia.i28493",
       "moonsilver_drift": "oteryn:item.tibia.i54235",
       "blocker": "RUNTIME_IMPLEMENTATION_NOT_ALLOCATED_WHILE_PR_1807_OWNS_ENCOUNTER_PATHS"
+    },
+    "runtime_dependency_refresh_20261006": {
+      "npc_wire_1": "MERGED",
+      "npc_talk_1": "NOT_YET_INTEGRATED",
+      "npc_place_1": "REMAINING_DEPENDENCY",
+      "map_cutover_1": "PARTIAL_1A_ONLY",
+      "quest_gate_1": "DEPENDENCY_READY_NOT_YET_INTEGRATED",
+      "quest_trigger_1": "SERIALIZE_AFTER_QUEST_GATE_1",
+      "encounter_owner_pr_1807": "OPEN_NO_MAGNOLIA_ENCOUNTER"
     }
   }
 }
