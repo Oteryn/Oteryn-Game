@@ -92,7 +92,24 @@
       "bind use of i54638 on canonical Jaracal creature to mount unlock through the accepted Mount/Item/Interaction owners",
       "qualify item consumption, success/idempotence and relog persistence",
       "do not grant the mount directly from s16"
-    ]
+    ],
+    "exact_donor_identity": {
+      "source": "zimbadev/crystalserver@00ce02a57ca5a12e48f32a3476e37471167e4c3f:data/XML/mounts.xml",
+      "mount_id": 250,
+      "clientid": 1962,
+      "name": "Jaracal",
+      "speed": 10,
+      "premium": true,
+      "type": "quest",
+      "status": "EXACT_PINNED_DONOR"
+    },
+    "current_runtime": {
+      "appearance_owner": "GAME-CHAR Character Appearance / AccountUnlock",
+      "architecture_status": "OWNER_DECIDED",
+      "pure_validation": "APP-a merged",
+      "durable_account_unlock_writer": "NOT_IMPLEMENTED",
+      "taming_action": "NOT_IMPLEMENTED"
+    }
   },
   "evidence_notes": [
     "Current TibiaWiki terminal dialogue explicitly says the fish is used to gain a Jaracal's trust as a mount.",
