@@ -1,0 +1,97 @@
+// NPC-0 §4 and §4.1 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md),
+// with NPC-BEHAVIOUR-0 §7 (the talk range) and ARCH-NPC-PACKETS §1.3 and §2.3 NPC-WIRE-1
+// (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md): typed payloads of
+// capability 3 NPC_SERVICE_V1, command types 7 NPC_TALK_INTENT and 8 NPC_TRADE_INTENT and state
+// domains 7 NPC_CONVERSATION and 8 NPC_TRADE_WINDOW (snapshot type 1 and delta type 1 each).
+// FND-02 envelopes own CommandRef, server sequence, domain ID and revisions; these payloads never
+// duplicate them. An NPC is named by the spatial identity the session sees in
+// WORLD_SPATIAL_ENTITIES: a 16-byte identity and a non-zero generation.
+//
+// Registered, not offered: the server refuses command types 7 and 8 as unsupported and sends no
+// domain 7 or 8 until NPC-TALK-1 serves them. Unknown fields, repeated singular fields, packed
+// scalars, zero and unknown enum values, empty or over-bound text, control characters and values
+// outside the declared bounds all fail closed. Limits: NPC0-RL-01..07 in
+// docs/contracts/RESOURCE_LIMITS_REGISTRY.json.
+syntax = "proto3";
+
+package oteryn.protocol.v1.npc_service;
+
+import "world_spatial_v1.proto";
+
+enum NpcTradeSide {
+  NPC_TRADE_SIDE_UNSPECIFIED = 0;
+  // The character buys from the NPC.
+  NPC_TRADE_SIDE_BUY = 1;
+  // The character sells to the NPC.
+  NPC_TRADE_SIDE_SELL = 2;
+}
+
+enum NpcIntentDisposition {
+  NPC_INTENT_DISPOSITION_UNSPECIFIED = 0;
+  NPC_INTENT_DISPOSITION_OK = 1;
+  NPC_INTENT_DISPOSITION_NOT_IN_RANGE = 2;
+  NPC_INTENT_DISPOSITION_NO_CONVERSATION = 3;
+  NPC_INTENT_DISPOSITION_RATE_LIMITED = 4;
+  // The catalogue revision, the offer or the expected price no longer matches.
+  NPC_INTENT_DISPOSITION_STALE = 5;
+  NPC_INTENT_DISPOSITION_REJECTED = 6;
+}
+
+enum NpcConversationState {
+  NPC_CONVERSATION_STATE_UNSPECIFIED = 0;
+  NPC_CONVERSATION_STATE_OPEN = 1;
+  // A travel confirmation is pending (NPC0-RL-06 seconds).
+  NPC_CONVERSATION_STATE_CONFIRMING = 2;
+}
+
+// ClientCommand.payload of command type 7. The text is non-empty UTF-8 of at most 255 bytes
+// (NPC0-RL-01) without control characters. At most 289 bytes. NPC0-RL-04 bounds these commands.
+message NpcTalkIntentV1 {
+  oteryn.protocol.v1.world_spatial.EntityRefV1 npc_actor = 1;
+  string text = 2;
+}
+
+// ClientCommand.payload of command type 8. side and quantity are required and non-zero;
+// offer_index is below 1024 (NPC0-RL-03) and indexes the projected offers of domain 8. At most
+// 62 bytes.
+message NpcTradeIntentV1 {
+  oteryn.protocol.v1.world_spatial.EntityRefV1 npc_actor = 1;
+  uint64 catalogue_revision = 2;
+  uint32 offer_index = 3;
+  NpcTradeSide side = 4;
+  uint32 quantity = 5;
+  uint32 expected_unit_price = 6;
+}
+
+// CommandResult.payload of command types 7 and 8. At most 2 bytes.
+message NpcIntentResultV1 {
+  NpcIntentDisposition disposition = 1;
+}
+
+// State domain 7, snapshot type 1 and delta type 1: the whole domain, replaced. npc_actor and
+// state are both present while a conversation is open and both absent otherwise; reply lines
+// addressed to this character (non-empty, at most 2048 bytes each, at most 32 per payload,
+// NPC0-RL-02, no control characters) may accompany a closing payload. At most 65,665 bytes.
+message NpcConversationV1 {
+  oteryn.protocol.v1.world_spatial.EntityRefV1 npc_actor = 1;
+  NpcConversationState state = 2;
+  repeated string lines = 3;
+}
+
+// One projected offer. The offer index of command type 8 is the position in NpcTradeWindowV1.
+// item_definition_ref, count and side are non-zero; the unit price is omitted at zero.
+message NpcOfferV1 {
+  uint32 item_definition_ref = 1;
+  NpcTradeSide side = 2;
+  uint32 count = 3;
+  uint32 unit_price = 4;
+}
+
+// State domain 8, snapshot type 1 and delta type 1: the whole window, replaced. Absent npc_actor
+// is a closed window with no revision and no offers. At most 1,024 offers (NPC0-RL-03, measured
+// 757), at most 22,570 bytes.
+message NpcTradeWindowV1 {
+  oteryn.protocol.v1.world_spatial.EntityRefV1 npc_actor = 1;
+  uint64 catalogue_revision = 2;
+  repeated NpcOfferV1 offers = 3;
+}

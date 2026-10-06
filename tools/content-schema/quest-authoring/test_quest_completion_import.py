@@ -45,8 +45,43 @@ class CompletionImportTests(unittest.TestCase):
                     changed.append(new['key'])
         self.assertEqual(len(changed), 5)
 
+    def test_make_believe_post_release_counts_are_finite_overlay(self):
+        outputs = tool.expected(ROOT)
+        plan = json.loads(outputs[tool.PLAN])
+        quest = next(q for q in plan['records']
+                     if q['quest'] == 'oteryn:quest.authored.make_believe_quest')
+        stages = {s['stage_key']: s['event_identity_associations'] for s in quest['stages']}
+        self.assertEqual((stages['s8']['kind'], stages['s8']['count']), ('use', 5))
+        self.assertEqual((stages['s14']['kind'], stages['s14']['count']), ('use', 8))
+        self.assertEqual(plan['input_packets'][1],
+                         {'path': tool.EVENT_CORRECTIONS, 'sha256': tool.EVENT_CORRECTIONS_SHA})
+        historical = tool.pinned(ROOT, tool.EVENTS, tool.EVENTS_SHA)
+        source = next(q for q in historical['records']
+                      if q['quest_ref']['key'] == 'oteryn:quest.authored.make_believe_quest')
+        old = {s['stage_key']: (s['kind'], s['count']) for s in source['stages']}
+        self.assertEqual(old['s8'], ('use', 3))
+        self.assertEqual(old['s14'], ('use', 6))
+
+    def test_completion_outputs_use_portable_repository_paths(self):
+        outputs = tool.expected(ROOT)
+        for output_path, encoded in outputs.items():
+            value = json.loads(encoded)
+            stack = [value]
+            while stack:
+                current = stack.pop()
+                if isinstance(current, dict):
+                    for key, item in current.items():
+                        if key == 'path' and isinstance(item, str):
+                            self.assertNotIn('\\', item, (output_path, item))
+                            self.assertFalse(Path(item).is_absolute(), (output_path, item))
+                            self.assertEqual(item, Path(item).as_posix(), (output_path, item))
+                        stack.append(item)
+                elif isinstance(current, list):
+                    stack.extend(current)
+
     def test_readonly_determinism_and_pinned_input_drift_rejection(self):
-        before = {path: (ROOT / path).stat().st_mtime_ns for path in [tool.BASE, tool.EVENTS, tool.NPC]}
+        before = {path: (ROOT / path).stat().st_mtime_ns
+                  for path in [tool.BASE, tool.EVENTS, tool.EVENT_CORRECTIONS, tool.NPC]}
         self.assertEqual(tool.expected(ROOT), tool.expected(ROOT))
         self.assertEqual(before, {path: (ROOT / path).stat().st_mtime_ns for path in before})
         with tempfile.TemporaryDirectory() as directory:

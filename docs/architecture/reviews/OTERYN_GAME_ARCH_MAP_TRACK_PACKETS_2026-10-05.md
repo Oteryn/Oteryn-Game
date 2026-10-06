@@ -60,6 +60,13 @@ A delta is measured and recorded too; it has no separate gate. No registry row i
 optimised snapshot is still over 100 us p99, the worker records the stage split and returns
 `BLOCKER` to the architect; revising the budget is an owner decision (owner answer 8a set it).
 
+**Amendment (`ARCH-MAP-VIEWPORT-BUDGET-V1`, owner answer 1a, 2026-10-06).** `MAP01-VIEWPORT-US`
+stays the 100 us assembly budget. The whole snapshot is gated by `MAP01-VIEWPORT-SNAPSHOT-US`,
+2,000 us p99, on testing and preproduction only; the §2.4 acceptance "the snapshot p99 of §2.2
+still holds" means this row. A production offer of capability 18 waits for the limits that
+MAP-VIEWPORT-MEASURE-1 and D128 give
+(`docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md`).
+
 ### 1.2 A bundle World before Ground persistence
 
 ADR-0021 D193: a World runs either the `native_entry_room` fixture or one bundle, never both.

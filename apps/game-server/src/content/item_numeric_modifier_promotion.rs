@@ -13,7 +13,7 @@ pub const ITEM_NUMERIC_MODIFIER_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20261002-item-numeric-modifier17-promotion-v1.json"
 );
 pub const ITEM_NUMERIC_MODIFIER_PACKET_SHA256: &str =
-    "5cbf042970341a02a01c450b66d5a5906decb5ab58d79b9b3ba2809c424fb21d";
+    "702153628a576e6222c8913573e7d5b7e198bec235ef494d8ab17619dd43fba8";
 const IDS: [u32; 17] = [
     36656, 36657, 36658, 36659, 36660, 36661, 36662, 36666, 36672, 36673, 39147, 39148, 39150,
     45639, 45640, 50169, 50170,
