@@ -34,18 +34,29 @@ class QuestCompletionMatrixTest(unittest.TestCase):
     def test_native_lowering_is_not_misclassified_as_missing_source_data(self):
         by_title = {row["wiki_title"]: row for row in self.result["records"]}
         self.assertEqual(
-            "NATIVE_LOWERING_PENDING",
+            "NATIVE_BINDINGS_PENDING",
             by_title["An Interest In Botany Quest"]["work_state"],
         )
         self.assertEqual(
             {
-                "BLOCKED_ON_SOURCE_FIDELITY": 14,
                 "DEFINITION_READY_RUNTIME_UNKNOWN": 41,
                 "MAPPING_REVIEW": 1,
-                "NATIVE_BINDINGS_PENDING": 68,
-                "NATIVE_LOWERING_PENDING": 249,
+                "NATIVE_BINDINGS_PENDING": 214,
+                "NATIVE_LOWERING_PENDING": 117,
             },
             self.result["summary"]["implementation_state"],
+        )
+        self.assertEqual(
+            {
+                "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 139,
+                "CHOSEN_TYPED_PROGRESS_ONLY": 68,
+                "LOWERED": 7,
+                "MULTIPLE": 1,
+                "NOT_LOWERED_MULTI_TRACK": 72,
+                "NOT_LOWERED_NO_MISSIONS": 38,
+                "NO_CANDIDATE": 48,
+            },
+            self.result["summary"]["typed_progress_state"],
         )
         self.assertEqual(
             {
