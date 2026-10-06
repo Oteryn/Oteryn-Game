@@ -733,8 +733,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.clear_target();
                 continue;
             };
+            // The owner clock of this turn, in ms, stamps the hit's contributor and, for a lethal
+            // hit, the death time the kill reward reads (§1.2).
             let committed = crate::ability::commit::commit_exact_owner_swing_damage(
-                &mut runtime.borrow_exact_actor_commit(),
+                &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
                 &resolved,
                 &plan,
                 entry.actor,
