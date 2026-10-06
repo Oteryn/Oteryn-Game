@@ -23,6 +23,8 @@ SOURCE_STAGES = TOOL + 'samples/server-completion/chosen-source-progress/builder
 REFINE = TOOL + 'samples/state-effect-refinements/effect_refinements.py'
 EVENTS = TOOL + 'samples/server-completion/events-rewards/packet.json'
 EVENTS_SHA = '4b77071f3e44e90c64260c4db6830c5acab7f0142627d9819d2b4266c6d100a1'
+SOURCE_EVENTS = TOOL + 'samples/server-completion/chosen-source-events-rewards/packet.json'
+SOURCE_EVENTS_SHA = 'a96babef6e20e151ab4aff75653a9a0026c6d2386b6caa2da9d2fe1d14212caf'
 NPC = TOOL + 'samples/server-completion/npc-dialogue/candidates.json'
 NPC_SHA = 'e72477218339f8c2527706ec877750823014843566e13bc0a134ccaf6e4b2286'
 PLAN = 'content/quests/missions/completion-binding-plan.json'
@@ -50,10 +52,11 @@ def pinned(root, path, expected_sha):
     return json.loads(raw)
 
 
-def binding_plan(choices, events, npc):
+def binding_plan(choices, events, npc, source_choices, source_events):
     event_rows = {q['quest_ref']['key']: q for q in events['records']}
+    source_event_rows = {q['quest_ref']['key']: q for q in source_events['records']}
     npc_rows = {(r['quest']['key'], r['stage']): r for r in npc['records']}
-    if len(event_rows) != 68 or len(npc_rows) != len(npc['records']):
+    if len(event_rows) != 68 or len(source_event_rows) != 139 or len(npc_rows) != len(npc['records']):
         raise ValueError('Duplicate or missing binding owner')
     records = []
     for quest in choices['quests']:
@@ -84,12 +87,40 @@ def binding_plan(choices, events, npc):
             'native_reward_delivery_binding': None,
             'runtime_enabled': False,
         })
+    for quest in source_choices['quests']:
+        owner = quest['quest']
+        event = source_event_rows[owner]
+        by_stage = {s['stage_key']: s for s in event['stages']}
+        rows = []
+        for transition in quest['transitions']:
+            stage = transition['source']['chosen_stage']
+            intent = by_stage[stage['key']]
+            if intent['kind'] != stage['kind'] or intent['count'] != stage['count']:
+                raise ValueError('Chosen source event/count mismatch')
+            rows.append({
+                'stage_key': stage['key'],
+                'quest_transition_key': transition['key'],
+                'event_identity_associations': intent,
+                'NPC_dialogue_candidates': None,
+                'selected_NPC_branch': None,
+                'native_dispatch_binding': None,
+                'runtime_enabled': False,
+            })
+        records.append({
+            'quest': owner, 'stages': rows,
+            'reward_identity_associations': event['reward_intents'],
+            'native_reward_delivery_binding': None,
+            'runtime_enabled': False,
+        })
     return {
         'schema': 'OTERYN_QUEST_COMPLETION_BINDING_PLAN/v1',
         'runtime_enabled': False,
         'counts': {'quests': len(records), 'stages': sum(len(q['stages']) for q in records)},
-        'input_packets': [{'path': EVENTS, 'sha256': EVENTS_SHA}, {'path': NPC, 'sha256': NPC_SHA}],
+        'input_packets': [{'path': EVENTS, 'sha256': EVENTS_SHA},
+                          {'path': SOURCE_EVENTS, 'sha256': SOURCE_EVENTS_SHA},
+                          {'path': NPC, 'sha256': NPC_SHA}],
         'limits': ['Identity associations and derived branch candidates are not executable bindings',
+                   'Chosen-source talk stages intentionally have no selected dialogue branch',
                    'Transition keys refer to the actual typed progress candidate, not a new family'],
         'records': records,
     }
@@ -107,14 +138,20 @@ def expected(root):
     source_choices = source_stages.build(root)
     stages.validate_packet(choices)
     source_stages.validate_packet(source_choices)
-    plan = binding_plan(choices, pinned(root, EVENTS, EVENTS_SHA), pinned(root, NPC, NPC_SHA))
+    plan = binding_plan(
+        choices,
+        pinned(root, EVENTS, EVENTS_SHA),
+        pinned(root, NPC, NPC_SHA),
+        source_choices,
+        pinned(root, SOURCE_EVENTS, SOURCE_EVENTS_SHA),
+    )
     refined, proof = refine.apply(root, source['quests'])
     base = dict(source, quests=refined)
     candidate = stages.merge(base, choices)
     candidate = source_stages.merge(candidate, source_choices)
     inputs = [BASE, STAGES, SOURCE_STAGES, REFINE, proof['path'],
               TOOL + 'samples/state-effect-refinements/effect_refinements.schema.json',
-              EVENTS, NPC,
+              EVENTS, SOURCE_EVENTS, NPC,
               TOOL + 'quest_completion_import.py']
     sources = [{'path': path, 'sha256': sha((root / path).read_bytes())} for path in inputs]
     sources += choices['authoring_sources']
