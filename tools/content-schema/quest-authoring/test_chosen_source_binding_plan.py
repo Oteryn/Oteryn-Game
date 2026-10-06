@@ -16,12 +16,12 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
         cls.by_quest = {row["quest"]: row for row in cls.plan["records"]}
 
     def test_population(self):
-        self.assertEqual({"quests": 207, "stages": 1115}, self.plan["counts"])
+        self.assertEqual({"quests": 207, "stages": 1111}, self.plan["counts"])
         self.assertEqual(139, len(self.source_keys))
         self.assertTrue(self.source_keys <= set(self.by_quest))
         source_rows = [self.by_quest[key] for key in self.source_keys]
-        self.assertEqual(699, sum(len(row["stages"]) for row in source_rows))
-        self.assertEqual(300, sum(len(row["reward_identity_associations"]) for row in source_rows))
+        self.assertEqual(695, sum(len(row["stages"]) for row in source_rows))
+        self.assertEqual(301, sum(len(row["reward_identity_associations"]) for row in source_rows))
 
     def test_source_rows_remain_non_executable(self):
         self.assertFalse(self.plan["runtime_enabled"])
@@ -42,7 +42,7 @@ class ChosenSourceBindingPlanTest(unittest.TestCase):
                 intent = stage["event_identity_associations"]
                 if intent["kind"] == "talk":
                     talks.append(intent)
-        self.assertEqual(83, len(talks))
+        self.assertEqual(84, len(talks))
         self.assertTrue(all("DIALOGUE_LANE_OWNS_TALK_BINDING" in row["unresolved"] for row in talks))
 
     def test_authored_dialogue_candidates_are_preserved(self):

@@ -24,8 +24,8 @@ class ChosenSourceProgressTest(unittest.TestCase):
 
     def test_closed_source_recipe_population(self):
         self.assertEqual(139, self.packet["summary"]["quests"])
-        self.assertEqual(699, self.packet["summary"]["tracks"])
-        self.assertEqual(699, self.packet["summary"]["transitions"])
+        self.assertEqual(695, self.packet["summary"]["tracks"])
+        self.assertEqual(695, self.packet["summary"]["transitions"])
         self.assertEqual(139, self.packet["summary"]["completion_transitions"])
         self.assertEqual(7, self.packet["summary"]["held_quests"])
         self.assertFalse(self.packet["native_admission"])
@@ -52,8 +52,8 @@ class ChosenSourceProgressTest(unittest.TestCase):
         source = dict(source, quests=[q for q in source["quests"] if q["quest"] not in incoming])
         merged = self.builder.merge(source, self.packet)
         self.assertEqual(303, merged["counts"]["quests"])
-        self.assertEqual(2445, merged["counts"]["tracks"])
-        self.assertEqual(4378, merged["counts"]["transitions"])
+        self.assertEqual(2441, merged["counts"]["tracks"])
+        self.assertEqual(4374, merged["counts"]["transitions"])
         self.assertEqual(139, merged["counts"]["completion"]["CHOSEN_SOURCE_TYPED_PROGRESS_ONLY"])
         chosen = [q for q in merged["quests"] if isinstance(q["completion"], dict)
                   and q["completion"].get("state") == "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY"]

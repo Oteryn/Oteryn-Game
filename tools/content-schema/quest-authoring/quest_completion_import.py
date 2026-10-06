@@ -27,7 +27,7 @@ EVENTS_SHA = '4b77071f3e44e90c64260c4db6830c5acab7f0142627d9819d2b4266c6d100a1'
 EVENT_CORRECTIONS = TOOL + 'samples/server-completion/events-rewards/corrections.json'
 EVENT_CORRECTIONS_SHA = 'a68d889f319fec1221cf86c92d4a354ca53acb301935834992ddf23fd0373902'
 SOURCE_EVENTS = TOOL + 'samples/server-completion/chosen-source-events-rewards/packet.json'
-SOURCE_EVENTS_SHA = '930b0ef70b152d395d9a0cc3194a195daa57b48705d53753961f981908012162'
+SOURCE_EVENTS_SHA = 'ebe3c5374225470898869b14b2a3aaa51b08e04cfbcff6d01216677c26024594'
 NPC = TOOL + 'samples/server-completion/npc-dialogue/candidates.json'
 NPC_SHA = 'e72477218339f8c2527706ec877750823014843566e13bc0a134ccaf6e4b2286'
 PLAN = 'content/quests/missions/completion-binding-plan.json'
@@ -259,7 +259,7 @@ def main():
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(raw)
-    print('Completion import: 303 quests; 2445 tracks; 4378 transitions; 382 unsupported; 7 chosen-source holds; activation=false')
+    print('Completion import: 303 quests; 2441 tracks; 4374 transitions; 382 unsupported; 7 chosen-source holds; activation=false')
 
 
 if __name__ == '__main__':
