@@ -10,6 +10,7 @@ issue: 1622
 lane_id: ci
 base_branch: main
 branch: claude/ci-win-longpaths-2-20261006
+pr: 1862
 base_sha: e953f1ef
 owner: claude-code-session-013HLWAoXJKbdvP1te3rPfVs
 control_plane: claude-code-session-013KJX6mv8LQveCKKXYgAX94
