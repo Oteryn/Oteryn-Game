@@ -247,10 +247,18 @@ how it resets, what limits it, which commands carry it; and what time it is in t
 - Replay: an act carries its CommandRef; a replay in the same overlay incarnation returns the first
   outcome; after a channel restart the old handle is `STALE` and no volatile child (overlay,
   relocation, presentation) repeats.
-- Durable trigger children are the exception. A lever, switch or plate firing whose root plan
-  admitted a durable child (a quest transition, QUEST-GATE-0 §4) keeps that plan's occurrence-based
-  recovery: after a crash or channel restart the unstarted durable children are recovered and
-  committed exactly once from the occurrence, even though the overlay children are not repeated.
+- Durable trigger children (a quest transition or a `RewardClaim`, QUEST-GATE-0 §4) are not
+  recovered from the occurrence. **Amendment (2026-10-06; QUEST-GATE-0 §16.2.5), pending on
+  acceptance of QUEST-GATE-0.** Trigger plans are not durable (QUEST-GATE-0 §16.4):
+  - while the plan is retained, an `UNSTARTED` durable child runs once if its fences authorize it,
+    else it is `REJECTED`; a `PENDING` one is resolved through its receipt (QUEST-GATE-0 §16.2.5);
+  - after a process loss or channel restart, recovery is QUEST-GATE-0 §16.2.5's explicit
+    reconciliation of the root: a child with a durable record keyed by the root CommandRef is
+    settled by that record, a committed claim's quest obligation stays a durable row, and every
+    other durable child is `REJECTED` and never runs; a root with no such record left no durable
+    effect and nothing of it runs again;
+  - the overlay, relocation and presentation children are not repeated in either case. A fresh
+    `USE` or step is a new root.
 
 ## 4. Doors (DOOR-1, KEY-1)
 

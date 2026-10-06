@@ -28,7 +28,8 @@
 - Amends, each pending on acceptance of QUEST-GATE-0, in this PR: QUEST-STATE-0 (callers and A8
   pointer); NPC-0 §3.4 and §11; the quest format §3.1; the GAME-INTERACTION-01 successor header
   (accepted sections for §4 edges); the relocation and world object owners proposal header (§3 and
-  §4 for gates and triggers); DUR-03 §15 and §39.3 (`QuestExchangeCause`, the dialogue claim
+  §4 for gates and triggers); WORLD-INTERACTION-0 §3 (durable trigger children follow §16.2.5,
+  not occurrence recovery); DUR-03 §15 and §39.3 (`QuestExchangeCause`, the dialogue claim
   source, and the reward MINT retirement of §16.2.5); the composition decision (exchange
   obligation).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
@@ -729,7 +730,8 @@ encoding and a new receipt key migration. It is decided with the first accepted 
 
 1. **Amendments:** §4 "Accepted successor sections", "Roots" and "Quest child", the header and
    the brief row, in place; QUEST-STATE-0 §4 "Request" carries a pointer; WORLD-INTERACTION-0
-   §7.1 and its PUSH-1 brief row, in place; DUR-03 §39.3 carries the reward MINT retirement
+   §7.1 and its PUSH-1 brief row, in place; WORLD-INTERACTION-0 §3 durable trigger children
+   recovery (§16.2.5), in place; DUR-03 §39.3 carries the reward MINT retirement
    amendment (§16.2.5), pending on acceptance of QUEST-GATE-0.
 2. **Serialization:** unchanged. Quest children run in canonical order in one sequencer slot.
 3. **Restart:**
