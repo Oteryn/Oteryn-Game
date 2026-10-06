@@ -194,3 +194,29 @@ This avoids all three invalid alternatives:
 - inventing a numeric key number;
 - pretending the key is a rope/shovel/pick/machete-like tool;
 - widening QUEST-TRIGGER-1 to USE-WITH only for this door.
+
+
+## Additional runtime dependency: ITEM-USE-1
+
+Fresh current-main readback adds one transport dependency that the Door/Key amendment must not bypass.
+
+`apps/game-server/src/gameplay_transport/connection.rs` currently documents and enforces:
+
+```text
+ITEM-USE-WIRE-1 decodes use_with only under capability 15.
+Until ITEM-USE-1, no item is usable on a creature or by its definition.
+A UseIntent with use_with=Some(...) is rejected fail-closed.
+```
+
+Therefore the Asura Citadel door implementation sequence is:
+
+```text
+ITEM-USE-1 accepted USE-WITH occurrence
+  -> identity-key Door/Key binding for i54262
+  -> optional read-only QuestCompleted bypass
+  -> existing WorldInteraction door overlay/open semantics
+```
+
+The Door/Key amendment must not add a private parser/dispatcher for USE-WITH and must not special-case the raw wire command.
+
+This is an execution dependency only. It does not change the source model: the key remains exact Item identity `oteryn:item.tibia.i54262`, non-consumed on use, with no synthetic numeric key number.
