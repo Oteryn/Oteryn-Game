@@ -33,9 +33,10 @@
    held list with a closed reason: `NO_PLACEMENT_SOURCE`, `POSITION_CONFLICT`, `SCHEDULE_VARIANT`
    or `SHARED_CELL`. Exact duplicates collapse into one record (§4.3).
 6. **Realization.** A position outside the World fails compilation. Otherwise the compiler writes
-   the placement or holds it with a closed reason, by the movement owner's full enterability
-   rule (walkable ground, no `wall`, no `block_solid`). A production build stops on any held
-   placement; a non-production build lists them in the manifest (§5).
+   the placement or holds it with a closed reason: an NPC the game server's `NpcServiceModel`
+   would hold (an unresolved Dialogue or Service reference), then the movement owner's full
+   enterability rule (walkable ground, no `wall`, no `block_solid`). A production build stops on
+   any held placement; a non-production build lists them in the manifest (§5).
 7. **Doctor Marrow.** Held `POSITION_CONFLICT` once the content lane admits its NPC definition;
    only a map-owner record resolves it (§4.3).
 8. **Travel.** Destinations are already in the project frame. The compiler fails on one outside
@@ -45,8 +46,9 @@
    `npcs.routes_held`), and NPC-TRAVEL-1 refuses those (§6). The bundle binds the catalogue it
    classified by `npcs.catalogue_sha256`, and the runtime compares that digest, not a project
    revision (§3.1).
-9. **CI.** The compiler now reads `content/npcs/definitions/` and `content/services/travel/`:
-   both are added to the compiler input paths and to the classifier's world-bundle prefixes (§7).
+9. **CI.** The compiler now reads `content/npcs/definitions/`, `content/dialogues/definitions/`
+   and `content/services/`: they are added to the compiler input paths and to the classifier's
+   world-bundle prefixes (§7).
 
 Packets:
 - **NPC-PLACE-1a** (content lane): the family, the generator, the held list and the pin refresh
@@ -149,12 +151,13 @@ Ruling: **a separate NPC frame** with an NPC-keyed table.
 - `catalogue_sha256` (lowercase hex) binds the bundle to the catalogue it classified. The
   bundle's `identity.content_revision` is the World project's revision (`content/world/project.json`),
   and the catalogues report the content tree's (`content/project.json`); the two are unrelated,
-  so neither is compared. The digest is SHA-256 over every file under `content/npcs/definitions/`
-  and `content/services/travel/`, in byte order of the path relative to `content/`, each as the
-  path length (u64 big-endian), the path, the byte length (u64 big-endian) and the bytes. One
-  function in `crates/world-bundle` computes it; the compiler uses it over its inputs and the game
-  server over the files of the NPC catalogue it loads at boot, so writer and runtime cannot
-  disagree on the encoding.
+  so neither is compared. The digest is SHA-256 over every file under `content/npcs/definitions/`,
+  `content/dialogues/definitions/` and `content/services/` (the NPC, Dialogue and Service records
+  that NPC admission (§5 item 1) and the routes (§6) read), in byte order of the path relative
+  to `content/`, each as the path length (u64 big-endian), the path, the byte length (u64
+  big-endian) and the bytes. One function in `crates/world-bundle` computes it; the compiler uses
+  it over its inputs and the game server over the same files of the content tree it loads at
+  boot, so writer and runtime cannot disagree on the encoding.
 - The reader accepts only v4. A v3 bundle is refused like any unknown version. No bundle has been
   published; the one testing pin is rebuilt in NPC-PLACE-1b.
 
@@ -193,8 +196,10 @@ This is the order of the checks, not of the bytes (§3.1 fixes the bytes). After
 frame and the spawn row and frame are checked: the NPC row (its contiguity is that the NPC frame
 begins where the spawn frame ends and ends at the digest), the raw and ratio limits, the running
 raw total, the frame checksum, the single canonical frame, decompression into exactly
-`raw_length` bytes, the payload grammar with the limits of §3.3, the manifest `npcs` counts, and
-`held` empty when `build_class` is `production`. Then `dropped_teleports`, as in v3.
+`raw_length` bytes, the payload grammar with the limits of §3.3, and the manifest member `npcs`:
+its counts equal to the frame, `held` and `routes_held` sorted and unique (§3.1),
+`catalogue_sha256` 64 lowercase hex digits, and `held` and `routes_held` both empty when
+`build_class` is `production`. Then `dropped_teleports`, as in v3.
 
 ### 3.5 Format text that NPC-PLACE-1b amends
 
@@ -204,7 +209,7 @@ raw total, the frame checksum, the single canonical frame, decompression into ex
 | §2 table | `format_version` `4`; an NPC row of 44 bytes after the spawn row, before the first frame; frames "sector frames, then the spawn frame, then the NPC frame, the NPC frame last"; the contiguity sentence names the NPC row (the byte order of §3.1) |
 | §3 table | `format` v4, `min_reader_version` `4`; the `npcs` row of §3.1 |
 | §6 | the domain string v4; the digest covers the NPC frame |
-| §8 | production: `npcs.held` and `npcs.routes_held` empty; the writer refuses and the reader rejects it otherwise |
+| §8 | production: `npcs.held` and `npcs.routes_held` both empty; the writer refuses and the reader rejects a production bundle with either nonempty |
 | §9 | the checks of the NPC row and frame after those of the spawn row and frame, before `dropped_teleports` (§3.4; a check order, the bytes stay as in §2) |
 | §13 | "ends at the digest" becomes "is followed by the NPC frame"; v3 is retired |
 | new §14 | Format v4: §3.1-§3.4 and §5 of this decision |
@@ -273,13 +278,18 @@ the identity file and the digest, by the pins README procedure (`derive-identity
 
 ## 5. Realization (NPC-PLACE-1b)
 
-The compiler reads the family, the NPC definitions (`content/npcs/definitions/`) and the World.
+The compiler reads the family, the NPC, Dialogue and Service records (the catalogue of §3.1) and
+the World.
 
 - A placement outside the World extent or floors **fails compilation** in every build class
   (ADR-0021 §4.3, NPC-0 §3.2).
 - Otherwise the compiler writes a placement when its NPC is admitted and its cell can hold it.
   It holds it with the first reason in this order:
-  1. `UnboundNpc`: no admitted NPC definition has the key.
+  1. The NPC, by the admission rule of `NpcServiceModel` (`npc_catalogue/service.rs`), so the
+     compiler writes a placement only for an NPC the game server creates:
+     - `UnboundNpc`: no admitted NPC definition has the key.
+     - `UnresolvedDialogue`: its Dialogue reference names no Dialogue definition.
+     - `UnresolvedService`: one of its Service references names no Service definition.
   2. The cell, from the compile-time facts of spawn realization (format §13, item 4): `NoTile`,
      `UnclassifiedTerrain`, `NoGround`, `NotWalkable`, `FloorChange`, `Teleport`; then the rest
      of the bundle enterability rule (ARCH-MAP-TRACK-PACKETS-V1 §1.2, `map/boot.rs`
@@ -297,7 +307,11 @@ The compiler reads the family, the NPC definitions (`content/npcs/definitions/`)
   (`npcs.held_by_reason`).
 - The `compile` command's equivalence proof derives the NPC table and `held` from the same inputs
   and compares them with the bundle.
-- 1b tests one placement per reason of item 2, `Wall` and `BlockSolid` included, and a test
+- 1b tests one placement per reason of items 1 and 2, `UnresolvedDialogue`, `UnresolvedService`,
+  `Wall` and `BlockSolid` included; a production build stopping on an `UnresolvedService`
+  placement; a test that the compiler's admitted NPC set of the checked-in tree equals
+  `NpcServiceModel::npcs()` of the game server's loaded catalogue, so compiler and runtime apply
+  one admission rule; and a test
   that every written placement of the testing bundle is enterable by the game server's bundle
   collision index (`map/boot.rs`), so compiler and movement owner apply one predicate.
 - The `parity` output also reports the family's held list by reason (`npcs.source_held`).
@@ -345,13 +359,15 @@ The compiler reads the family, the NPC definitions (`content/npcs/definitions/`)
   and does nothing with it until NPC-ACTOR-1.
 - NPC-ACTOR-1 creates one actor per placement in frame order. It refuses, in a production World,
   a bundle whose `npcs.catalogue_sha256` differs from the digest of the NPC catalogue loaded at
-  boot (§3.1); in a non-production World it logs that and creates no NPC actor. A
-  placement whose NPC the loaded catalogue holds gets no actor and is logged.
+  boot (§3.1); in a non-production World it logs that and creates no NPC actor. A placement
+  whose NPC the loaded catalogue holds or does not have refuses the bundle at boot in a
+  production World (the compiler should have held it, §5 item 1); in a non-production World it
+  gets no actor and is logged. NPC-ACTOR-1 tests both.
 - No wire change. NPCs use `EntityKind::Npc` (NPC-BEHAVIOUR-0 R1).
-- 1b adds `content/npcs/definitions/` and `content/services/travel/` to the compiler's
-  `INPUT_PATHS` and to `WORLD_BUNDLE_INPUT_PREFIXES`, so an NPC or travel PR runs the
-  `world_bundle` lane and re-pins. `tools/repository/classify_pr_test_lanes.py` is in 1b's owned
-  paths, with CI-routing review.
+- 1b adds `content/npcs/definitions/`, `content/dialogues/definitions/` and `content/services/`
+  to the compiler's `INPUT_PATHS` and to `WORLD_BUNDLE_INPUT_PREFIXES`, so an NPC, Dialogue or
+  Service PR runs the `world_bundle` lane and re-pins. `tools/repository/classify_pr_test_lanes.py`
+  is in 1b's owned paths, with CI-routing review.
 
 ## 8. The archived reference packet
 
@@ -400,14 +416,16 @@ placements on one cell are held `SharedCell`.
 
 - **NPC-0 §3.2**, after its last bullet: "Amendment (2026-10-06; NPC-PLACE-1). Placements are the
   `Npc.Placement` family, compiled into the v4 NPC frame. A held position is one of NPC-PLACE-1
-  §5 (`UnboundNpc`, the cell reasons, `SpawnPoint`, `SharedCell`), and a held destination one of
+  §5 (`UnboundNpc`, `UnresolvedDialogue`, `UnresolvedService`, the cell reasons, `SpawnPoint`,
+  `SharedCell`), and a held destination one of
   §6 (the cell reasons, `SpawnPoint`, `NpcPlacement`, `HouseTile`); a production build stops on any
   held position or destination. Source-level holds (NPC-PLACE-1 §4.3) are not compiler holds."
 - **NPC-0 brief, NPC-PLACE-1 row:** packeted by NPC-PLACE-1 as 1a and 1b.
 - **NPC-0 brief, NPC-TRAVEL-1 row:** adds "in a non-production World, refuses a route the loaded
   bundle lists in `npcs.routes_held` by its (Service key, route key) pair, and every route when the
-  bundle's `npcs.catalogue_sha256` differs from the loaded catalogue's; it does not classify
-  destinations itself (NPC-PLACE-1 §6)".
+  bundle's `npcs.catalogue_sha256` differs from the digest of the catalogue loaded at boot
+  (NPC-PLACE-1 §3.1); in a production World that mismatch refuses the bundle at boot; it does not
+  classify destinations itself". It compares that digest, never a content revision.
 - **NPC-BEHAVIOUR-0 §3.1:** "canonical order of the placement key (NPC key, then position)"
   becomes "canonical actor order (NPC key, then native floor, `y`, `x`; NPC-PLACE-1 §3.2)", so it
   is not confused with the format §7 placement key.
