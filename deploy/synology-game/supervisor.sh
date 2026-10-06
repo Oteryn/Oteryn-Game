@@ -60,7 +60,7 @@ health() {
       echo awaiting_assignment > "$STATE_FILE"
     fi
     if [[ -s "$STATE_FILE" ]]; then
-      node_line="$(grep 'event=registered' "$LOG_FILE" | tail -n 1)"
+      node_line="$({ grep 'event=registered' "$LOG_FILE" || true; } | tail -n 1)"
       sed -n 's/.*node_id=\([^ ]*\).*/\1/p' <<<"$node_line" > "$BASE/run/current-node-id"
       [[ -s "$BASE/run/current-node-id" ]] || { echo "no node id in log" >&2; return 1; }
       echo "health=ok state=$(cat "$STATE_FILE")"

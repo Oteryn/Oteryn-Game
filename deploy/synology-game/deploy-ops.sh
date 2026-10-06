@@ -5,8 +5,11 @@
 set -euo pipefail
 ROOT_BASE="${ROOT_BASE:-/volume1/oteryn/game-preprod-root}"
 OPS="$ROOT_BASE/bin/oteryn-game-ops"
+BASE="${BASE:-/volume1/oteryn/game-preprod}"
 CONFIG="$ROOT_BASE/ops/ops.toml"
-SCOPE_FILE="$ROOT_BASE/ops/scope.env" # root-owned: WORLD_ID=<uuid> and CHANNEL_ID=<uuid>
+REPORT_CONFIG="$ROOT_BASE/ops/report.toml"
+NODE_CONFIG="$BASE/node/node.toml"
+SCOPE_FILE="$ROOT_BASE/ops/scope.env" # root-owned: WORLD_ID=<uuid>, CHANNEL_ID=<uuid>, NODE_IDENTITY=<RFC 4514 subject>
 
 uuid='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 number='^[0-9]{1,18}$'
@@ -33,8 +36,12 @@ case "$command" in
     [[ -f "$SCOPE_FILE" && ! -L "$SCOPE_FILE" && "$(stat -c %u "$SCOPE_FILE")" = 0 ]] || fail "scope file"
     world="$(sed -n 's/^WORLD_ID=//p' "$SCOPE_FILE")"
     channel="$(sed -n 's/^CHANNEL_ID=//p' "$SCOPE_FILE")"
-    check "$uuid" "$world"; check "$uuid" "$channel"
-    args=(assignment "$1" --request "assign-$2-$3.json" --world "$world" --channel "$channel" --node-id "$4" --revision "$5")
+    identity="$(sed -n 's/^NODE_IDENTITY=//p' "$SCOPE_FILE")"
+    check "$uuid" "$world"; check "$uuid" "$channel"; check '^[A-Za-z0-9=,._-]{1,128}$' "$identity"
+    [[ -f "$REPORT_CONFIG" && ! -L "$REPORT_CONFIG" && "$(stat -c %u "$REPORT_CONFIG")" = 0 ]] || fail "report config"
+    # Report the new ownership generation to Platform with the assignment.
+    args=(assignment "$1" --report-config "$REPORT_CONFIG" --node-config "$NODE_CONFIG" --node-identity "$identity"
+      --request "assign-$2-$3.json" --world "$world" --channel "$channel" --node-id "$4" --revision "$5")
     ;;
   *) fail "unknown command" ;;
 esac

@@ -113,6 +113,7 @@ jobs:
           test -f "$ops" && test ! -L "$ops"
           test "$(stat -c '%u' "$ops")" = 0
           test -e "$ROOT_BASE/ops/ops.toml"
+          test -f "$ROOT_BASE/ops/report.toml" && test -f "$ROOT_BASE/ops/scope.env"
           wrapper="$ROOT_BASE/bin/oteryn-game-deploy-ops"
           test -f "$wrapper" && test ! -L "$wrapper" && test "$(stat -c '%u' "$wrapper")" = 0
           # The root-run binaries must not be replaceable by the runner user.
@@ -172,7 +173,7 @@ jobs:
           # wins over current-node-id, which a failed earlier deploy may have left stale.
           previous=""
           if [[ -f "$BASE/log/node.log" ]]; then
-            previous="$(grep 'event=registered' "$BASE/log/node.log" | tail -n 1 | sed -n 's/.*node_id=\([^ ]*\).*/\1/p')"
+            previous="$({ grep 'event=registered' "$BASE/log/node.log" || true; } | tail -n 1 | sed -n 's/.*node_id=\([^ ]*\).*/\1/p')"
           fi
           if [[ -z "$previous" && -s "$BASE/run/current-node-id" ]]; then
             previous="$(tr -d '[:space:]' < "$BASE/run/current-node-id")"

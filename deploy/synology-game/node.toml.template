@@ -44,6 +44,11 @@ client_certificate_file = "<BASE>/node/secrets/platform-client.crt"
 client_key_file = "<BASE>/node/secrets/platform-client.key"
 descriptor_revision = 1
 installed_at = <UNIX_SECONDS_AT_SETUP>
+[platform.runtime_status]
+# The node host's own runtime-status identity, never the evidence one above.
+client_certificate_file = "<BASE>/node/secrets/runtime-status.crt"
+client_key_file = "<BASE>/node/secrets/runtime-status.key"
+assignment_epoch = <ASSIGNMENT_EPOCH>
 [launch]
 authorization_file = "<BASE>/state/launch-initial.json"
 s2_authorization_file = "<BASE>/state/s2-fresh-store.json"
