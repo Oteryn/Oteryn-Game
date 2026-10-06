@@ -1072,7 +1072,7 @@
         "prison_wall_open"
       ],
       "outcome": "prison_escaped_from_chamber",
-      "evidence": "FACT_VIDEO_VERIFIED_POSITION_UNKNOWN",
+      "evidence": "FACT_VIDEO_VERIFIED + HIGH_CONFIDENCE_DERIVED_OPENING_TILE",
       "owner": "World Interaction + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
@@ -1093,7 +1093,7 @@
         "y": 31359,
         "z": 9
       },
-      "note": "Opening/crossing begins at the exact wall target after chisel succeeds; downstream corridor/rope-exit trigger remains unresolved."
+      "note": "Opening/crossing begins at exact wall target 31920,31359,9 after chisel succeeds; downstream Rope Spot is separately resolved."
     },
     {
       "id": "prison_rope_exit",
@@ -1109,7 +1109,7 @@
       "video": {
         "walkthrough": "Zz-7UyufXbU",
         "timestamp_window": "00:22:53-00:22:59",
-        "observation": "Character follows escape corridor and relocates out of the prison route at about 00:22:59; exact Rope Spot placement remains unresolved."
+        "observation": "Character follows the escape corridor and uses/reaches the Rope Spot route; exact Rope Spot is resolved at 31923,31377,9 with generic moveUpstairs destination 31923,31378,8."
       },
       "position": {
         "x": 31923,
@@ -1317,14 +1317,44 @@
     "terminal_reward_evidence": "terminal-reward-evidence.json",
     "jaracal_mount_catalogue_status": "ABSENT_FROM_252_CANONICAL_MOUNTS",
     "prison_topology_qualification": {
-      "status": "HIGH_CONFIDENCE_DERIVED_NOT_EXACT_SOURCE",
-      "candidate_anchor": {
+      "status": "HIGH_CONFIDENCE_DERIVED_CROSS_SOURCE",
+      "anchor": {
         "x": 31920,
         "y": 31360,
         "z": 9
       },
-      "basis": "Only full-world candidate matching skeleton + southwest icicles + north wall + north corridor + east turn.",
-      "hold": "No public guide/map link found that publishes prison-room coordinates; scripted endpoint remains unresolved."
+      "skeleton": {
+        "x": 31920,
+        "y": 31360,
+        "z": 9,
+        "item_id": 8606
+      },
+      "icicles": {
+        "x": 31914,
+        "y": 31364,
+        "z": 9,
+        "item_id": 6966
+      },
+      "north_wall": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9,
+        "wall_id": 6729,
+        "debris_id": 6374
+      },
+      "rope_spot": {
+        "x": 31923,
+        "y": 31377,
+        "z": 9,
+        "ground_id": 386
+      },
+      "rope_destination": {
+        "x": 31923,
+        "y": 31378,
+        "z": 8
+      },
+      "basis": "Unique full-world topology match plus supplied-video geometry and pinned generic Rope Spot runtime semantics.",
+      "hold": null
     },
     "jaracal_mount": {
       "status": "EXACT_SOURCE_IDENTITY_READY_CONTENT_ADMISSION_MISSING",
