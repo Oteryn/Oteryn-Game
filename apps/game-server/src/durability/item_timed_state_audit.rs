@@ -355,6 +355,7 @@ pub struct TimedExpiryEventIdentity<'a> {
 pub fn encode_timed_expiry_event(
     identity: TimedExpiryEventIdentity<'_>,
     expiry: OneItemTimedExpiryV1,
+    tuple: mint::Type2EventTuple,
 ) -> Result<Vec<u8>, AuditError> {
     check_uuid_v7(&identity.event_id)?;
     check_uuid_v7(&identity.transaction_id)?;
@@ -375,10 +376,10 @@ pub fn encode_timed_expiry_event(
         envelope_revision: mint::ENVELOPE_REVISION,
         event_id: identity.event_id.to_vec(),
         event_type_id: mint::EVENT_TYPE_ID,
-        event_schema_revision: mint::EVENT_SCHEMA_REVISION,
+        event_schema_revision: tuple.schema_revision(),
         durability_class: mint::DURABLE_AUDIT,
         privacy_class: mint::RESTRICTED_PLAYER_LINKED,
-        retention_profile_id: mint::RETENTION_PROFILE_ID.into(),
+        retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(world_id),
         channel_id: Some(channel_id),
@@ -635,7 +636,9 @@ mod tests {
             (burn(), TimedShape::ExpiryBurn),
         ] {
             assert_eq!(check_timed_expiry(&value), Ok(shape));
-            let wire = encode_timed_expiry_event(identity(), value.clone()).unwrap();
+            let wire =
+                encode_timed_expiry_event(identity(), value.clone(), mint::Type2EventTuple::V1)
+                    .unwrap();
             assert!(wire.len() <= RL07_ENVELOPE_BYTES_MAX);
             let (envelope, decoded) = decode_timed_expiry_envelope(&wire).unwrap();
             assert_eq!(decoded, value);
@@ -674,7 +677,7 @@ mod tests {
         let mut identity = identity();
         identity.server_build_id = "b".repeat(128).leak();
         identity.occurred_at_unix_ms = i64::MAX;
-        let wire = encode_timed_expiry_event(identity, value).unwrap();
+        let wire = encode_timed_expiry_event(identity, value, mint::Type2EventTuple::V1).unwrap();
         assert!(wire.len() <= RL07_ENVELOPE_BYTES_MAX, "{}", wire.len());
     }
 
@@ -732,7 +735,7 @@ mod tests {
                 "{name}"
             );
             assert!(
-                encode_timed_expiry_event(identity(), value).is_err(),
+                encode_timed_expiry_event(identity(), value, mint::Type2EventTuple::V1).is_err(),
                 "{name}"
             );
         }

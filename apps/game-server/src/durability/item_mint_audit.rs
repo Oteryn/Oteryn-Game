@@ -93,6 +93,114 @@ impl Type2EventTuple {
     }
 }
 
+/// The activation fence of event type 2 (GOLD-FEE-ACT-PACKET-1 §1.2): one transaction-scoped
+/// advisory lock key, `b"OT2AUDAC"` big-endian. Every type-2 transaction takes it shared as its
+/// first statement and activation takes it exclusive. Migration 0079 repeats the value.
+pub const TYPE2_AUDIT_ACTIVATION_FENCE: i64 = 5_716_249_083_224_801_603;
+
+/// The tuple one type-2 event is written with. It is constructed only by a [`Type2Transaction`]:
+/// the activation read when the transaction opened ([`Type2Transaction::tuple`]) or the tuple of a
+/// candidate frozen with its exact envelope ([`Type2Transaction::frozen_tuple`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SelectedType2Tuple(Type2EventTuple);
+
+impl SelectedType2Tuple {
+    pub const fn tuple(self) -> Type2EventTuple {
+        self.0
+    }
+
+    pub const fn schema_revision(self) -> u32 {
+        self.0.schema_revision()
+    }
+
+    pub const fn retention_profile_id(self) -> &'static str {
+        self.0.retention_profile_id()
+    }
+}
+
+/// A transaction that may insert a type-2 event (GOLD-FEE-ACT-PACKET-1 §1.4). Opening it takes
+/// [`TYPE2_AUDIT_ACTIVATION_FENCE`] shared and then reads the activation, as two statements before
+/// any other: under READ COMMITTED the read's snapshot is taken after the lock is granted. The
+/// fence is held until commit or rollback, so the activation cannot commit between the read and
+/// the insert.
+pub struct Type2Transaction<'a> {
+    transaction: sqlx::Transaction<'a, sqlx::Postgres>,
+    tuple: SelectedType2Tuple,
+}
+
+impl<'a> Type2Transaction<'a> {
+    /// Fences a freshly begun transaction. The caller has issued no statement on it except its
+    /// own session settings.
+    pub async fn open(
+        mut transaction: sqlx::Transaction<'a, sqlx::Postgres>,
+    ) -> Result<Self, sqlx::Error> {
+        sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")
+            .bind(TYPE2_AUDIT_ACTIVATION_FENCE)
+            .execute(&mut *transaction)
+            .await?;
+        let activated: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM game_type2_audit_activation WHERE id = 1)",
+        )
+        .fetch_one(&mut *transaction)
+        .await?;
+        let tuple = if activated {
+            Type2EventTuple::V2
+        } else {
+            Type2EventTuple::V1
+        };
+        Ok(Self {
+            transaction,
+            tuple: SelectedType2Tuple(tuple),
+        })
+    }
+
+    /// The tuple of a new event in this transaction.
+    pub const fn tuple(&self) -> SelectedType2Tuple {
+        self.tuple
+    }
+
+    /// The tuple of a candidate frozen with its exact envelope (§1.5), decoded from those bytes.
+    /// A frozen V2 under a fresh V1 cannot exist, because the reservation took the fence, so it is
+    /// refused like any other tuple.
+    pub fn frozen_tuple(&self, envelope: &[u8]) -> Result<SelectedType2Tuple, AuditError> {
+        let value = EventEnvelopeV1::decode(envelope).map_err(|_| AuditError::InvalidInput)?;
+        if value.encode_to_vec() != envelope {
+            return Err(AuditError::InvalidInput);
+        }
+        match Type2EventTuple::of(value.event_schema_revision, &value.retention_profile_id) {
+            Some(Type2EventTuple::V2) if self.tuple.0 == Type2EventTuple::V1 => {
+                Err(AuditError::InvalidInput)
+            }
+            Some(tuple) => Ok(SelectedType2Tuple(tuple)),
+            None => Err(AuditError::InvalidInput),
+        }
+    }
+
+    pub async fn commit(self, deadline: std::time::Instant) -> Result<(), super::DurabilityError> {
+        super::db::commit_semantic_transaction(self.transaction, deadline).await
+    }
+
+    /// The fenced transaction itself, for a caller that ends it directly. The fence stays held
+    /// until that transaction commits or rolls back.
+    pub fn into_inner(self) -> sqlx::Transaction<'a, sqlx::Postgres> {
+        self.transaction
+    }
+}
+
+impl<'a> std::ops::Deref for Type2Transaction<'a> {
+    type Target = sqlx::Transaction<'a, sqlx::Postgres>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.transaction
+    }
+}
+
+impl std::ops::DerefMut for Type2Transaction<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.transaction
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuditError {
     /// A malformed, oversize or unsupported field (registry `INVALID_INPUT`).
@@ -633,6 +741,7 @@ pub struct MintEventIdentity<'a> {
 pub fn encode_mint_event(
     identity: MintEventIdentity<'_>,
     mint: OneItemMintV1,
+    tuple: Type2EventTuple,
 ) -> Result<Vec<u8>, AuditError> {
     check_uuid_v7(&identity.event_id)?;
     check_uuid_v7(&identity.transaction_id)?;
@@ -653,10 +762,10 @@ pub fn encode_mint_event(
         envelope_revision: ENVELOPE_REVISION,
         event_id: identity.event_id.to_vec(),
         event_type_id: EVENT_TYPE_ID,
-        event_schema_revision: EVENT_SCHEMA_REVISION,
+        event_schema_revision: tuple.schema_revision(),
         durability_class: DURABLE_AUDIT,
         privacy_class: RESTRICTED_PLAYER_LINKED,
-        retention_profile_id: RETENTION_PROFILE_ID.into(),
+        retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(world_id),
         channel_id: Some(channel_id),
@@ -1251,7 +1360,7 @@ pub(super) mod tests {
 
     #[test]
     fn mint_event_round_trips_through_both_gates() {
-        let wire = encode_mint_event(identity(), mint()).unwrap();
+        let wire = encode_mint_event(identity(), mint(), Type2EventTuple::V1).unwrap();
         let (envelope, decoded) = decode_envelope(&wire).unwrap();
         assert_eq!(decoded, mint());
         assert_eq!(envelope.event_id, uuid(30));
@@ -1265,7 +1374,10 @@ pub(super) mod tests {
         );
         assert!(envelope.command_id.is_none() && envelope.causation.is_none());
         // Deterministic: the same frozen inputs give the same exact bytes.
-        assert_eq!(encode_mint_event(identity(), mint()).unwrap(), wire);
+        assert_eq!(
+            encode_mint_event(identity(), mint(), Type2EventTuple::V1).unwrap(),
+            wire
+        );
     }
 
     #[test]
@@ -1304,7 +1416,7 @@ pub(super) mod tests {
             .as_mut()
             .unwrap()
             .production_key = "i".repeat(512);
-        assert!(encode_mint_event(identity(), max.clone()).is_ok());
+        assert!(encode_mint_event(identity(), max.clone(), Type2EventTuple::V1).is_ok());
         for mutate in [
             |m: &mut OneItemMintV1| m.source.as_mut().unwrap().loot_purpose_key.push('p'),
             |m: &mut OneItemMintV1| m.source.as_mut().unwrap().sim_revision.push('s'),
@@ -1334,7 +1446,7 @@ pub(super) mod tests {
             let mut over = max.clone();
             mutate(&mut over);
             assert_eq!(
-                encode_mint_event(identity(), over),
+                encode_mint_event(identity(), over, Type2EventTuple::V1),
                 Err(AuditError::InvalidInput)
             );
         }
@@ -1348,7 +1460,7 @@ pub(super) mod tests {
         seventeen.push(0);
         assert_eq!(check_uuid_v7(&seventeen), Err(AuditError::InvalidInput));
 
-        let wire = encode_mint_event(identity(), mint()).unwrap();
+        let wire = encode_mint_event(identity(), mint(), Type2EventTuple::V1).unwrap();
         for width in [31_usize, 33] {
             let mut envelope = EventEnvelopeV1::decode(wire.as_slice()).unwrap();
             envelope.payload_sha256.resize(width, 0);
@@ -1429,7 +1541,7 @@ pub(super) mod tests {
             assert_eq!(usage.check(), Err(AuditError::InvalidInput));
         }
         // RL-07 events on the wire: count=1 accepted, count=2 rejected.
-        let wire = encode_mint_event(identity(), mint()).unwrap();
+        let wire = encode_mint_event(identity(), mint(), Type2EventTuple::V1).unwrap();
         let mut envelope = EventEnvelopeV1::decode(wire.as_slice()).unwrap();
         envelope.transaction_event.as_mut().unwrap().count = 2;
         assert_eq!(
@@ -1452,13 +1564,13 @@ pub(super) mod tests {
         let mut absent = mint();
         absent.before_semantically_absent = false;
         assert_eq!(
-            encode_mint_event(identity(), absent),
+            encode_mint_event(identity(), absent, Type2EventTuple::V1),
             Err(AuditError::InvalidInput)
         );
         let mut other_channel = mint();
         other_channel.destination.as_mut().unwrap().channel_id = uuid(8);
         assert_eq!(
-            encode_mint_event(identity(), other_channel),
+            encode_mint_event(identity(), other_channel, Type2EventTuple::V1),
             Err(AuditError::InvalidInput)
         );
         let mut other_generation = mint();
@@ -1468,7 +1580,7 @@ pub(super) mod tests {
             .unwrap()
             .runtime_scope_ownership_generation = 2;
         assert_eq!(
-            encode_mint_event(identity(), other_generation),
+            encode_mint_event(identity(), other_generation, Type2EventTuple::V1),
             Err(AuditError::InvalidInput)
         );
     }
@@ -1487,7 +1599,8 @@ pub(super) mod tests {
     #[test]
     fn corpse_loot_mint_round_trips_in_the_death_scope() {
         for ordinal in [1, GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX] {
-            let wire = encode_mint_event(identity(), corpse_mint(ordinal)).unwrap();
+            let wire =
+                encode_mint_event(identity(), corpse_mint(ordinal), Type2EventTuple::V1).unwrap();
             let (envelope, decoded) = decode_envelope(&wire).unwrap();
             assert_eq!(decoded, corpse_mint(ordinal));
             assert!(decoded.destination.is_none());
@@ -1495,7 +1608,7 @@ pub(super) mod tests {
             assert_eq!(envelope.world_id, Some(uuid(1)));
             assert_eq!(envelope.channel_id, Some(uuid(2)));
             assert_eq!(
-                encode_mint_event(identity(), corpse_mint(ordinal)).unwrap(),
+                encode_mint_event(identity(), corpse_mint(ordinal), Type2EventTuple::V1).unwrap(),
                 wire
             );
         }
@@ -1506,7 +1619,7 @@ pub(super) mod tests {
         // Ordinal 0 and the 17th entry are outside 1..=16.
         for ordinal in [0, GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX + 1] {
             assert_eq!(
-                encode_mint_event(identity(), corpse_mint(ordinal)),
+                encode_mint_event(identity(), corpse_mint(ordinal), Type2EventTuple::V1),
                 Err(AuditError::InvalidInput)
             );
         }
@@ -1514,13 +1627,13 @@ pub(super) mod tests {
         let mut both = corpse_mint(1);
         both.destination = mint().destination;
         assert_eq!(
-            encode_mint_event(identity(), both),
+            encode_mint_event(identity(), both, Type2EventTuple::V1),
             Err(AuditError::InvalidInput)
         );
         let mut neither = corpse_mint(1);
         neither.corpse_container_entry = None;
         assert_eq!(
-            encode_mint_event(identity(), neither),
+            encode_mint_event(identity(), neither, Type2EventTuple::V1),
             Err(AuditError::InvalidInput)
         );
         // The parent is a UUIDv7 other than the item itself.
@@ -1531,7 +1644,7 @@ pub(super) mod tests {
             .unwrap()
             .parent_item_instance_id = vec![0; 15];
         assert_eq!(
-            encode_mint_event(identity(), bad_parent),
+            encode_mint_event(identity(), bad_parent, Type2EventTuple::V1),
             Err(AuditError::InvalidInput)
         );
         let mut self_parent = corpse_mint(1);
@@ -1541,7 +1654,7 @@ pub(super) mod tests {
             .unwrap()
             .parent_item_instance_id = uuid(9);
         assert_eq!(
-            encode_mint_event(identity(), self_parent),
+            encode_mint_event(identity(), self_parent, Type2EventTuple::V1),
             Err(AuditError::InvalidInput)
         );
         // A loot entry never carries the corpse's reserved cause, and stays
@@ -1550,13 +1663,13 @@ pub(super) mod tests {
         reserved.source.as_mut().unwrap().loot_purpose_key =
             super::super::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY.into();
         assert_eq!(
-            encode_mint_event(identity(), reserved),
+            encode_mint_event(identity(), reserved, Type2EventTuple::V1),
             Err(AuditError::InvalidInput)
         );
         let mut other_world = corpse_mint(1);
         other_world.after.as_mut().unwrap().world_id = uuid(5);
         assert_eq!(
-            encode_mint_event(identity(), other_world),
+            encode_mint_event(identity(), other_world, Type2EventTuple::V1),
             Err(AuditError::InvalidInput)
         );
     }
@@ -1719,45 +1832,254 @@ pub(super) mod tests {
         let source =
             std::fs::read_to_string(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(path))
                 .unwrap();
-        let cut = source.find("\n#[cfg(test)]\nmod ").unwrap_or(source.len());
+        // Cut at the first `#[cfg(test)]` whose next non-attribute line opens a module.
+        let cut = source
+            .match_indices("\n#[cfg(test)]\n")
+            .find(|(at, marker)| {
+                source[at + marker.len()..]
+                    .lines()
+                    .map(str::trim)
+                    .find(|line| !line.starts_with("#"))
+                    .is_some_and(|line| line.contains("mod "))
+            })
+            .map_or(source.len(), |(at, _)| at);
         source[..cut].to_owned()
     }
 
+    /// Every production `.rs` file under `src/`, as (path from the crate root, production part).
+    fn production_sources() -> Vec<(String, String)> {
+        fn walk(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+            for entry in std::fs::read_dir(dir).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    walk(&path, out);
+                } else if path.extension().is_some_and(|ext| ext == "rs") {
+                    out.push(path);
+                }
+            }
+        }
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut paths = Vec::new();
+        walk(&root.join("src"), &mut paths);
+        paths.sort();
+        paths
+            .into_iter()
+            .map(|path| {
+                let relative = path
+                    .strip_prefix(root)
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned();
+                let source = production(&relative);
+                (relative, source)
+            })
+            .collect()
+    }
+
+    /// The statement that starts at `at`: up to its `.execute(`.
+    fn statement(source: &str, at: usize) -> &str {
+        let end = source[at..]
+            .find(".execute(")
+            .map_or(source.len(), |end| at + end);
+        &source[at..end]
+    }
+
     #[test]
-    fn every_type2_producer_still_emits_v1_in_phase_one() {
-        // §1.7 phase 1: mint, transfer, reward claim, decay retire and timed expiry bind the
-        // (1, V1) constants; only GOLD-FEE-ACT-1 routes a tuple through them.
-        for path in [
-            "src/durability/item_mint.rs",
-            "src/durability/item_transfer.rs",
-            "src/durability/reward_claim_mint.rs",
-            "src/durability/item_decay_retire.rs",
-            "src/durability/item_timed_state.rs",
-        ] {
-            let source = production(path);
-            assert!(source.contains("RETENTION_PROFILE_ID"), "{path}");
+    fn every_type2_insert_takes_its_tuple_from_a_type2_transaction() {
+        // GOLD-FEE-ACT-PACKET-1 §1.4, insert sites: `SelectedType2Tuple` is built only by
+        // `Type2Transaction`, so an outbox insert that binds it compiles only with a tuple read
+        // under the fence. No insert binds the compile-time constants.
+        let mut sites = Vec::new();
+        for (path, source) in production_sources() {
+            for (at, _) in source.match_indices("INSERT INTO game_item_audit_outbox(") {
+                let insert = statement(&source, at);
+                assert!(
+                    insert.contains("tuple.schema_revision()")
+                        && insert.contains("tuple.retention_profile_id()"),
+                    "{path}: an outbox insert binds no Type2 tuple"
+                );
+                assert!(
+                    !insert.contains("RETENTION_PROFILE_ID")
+                        && !insert.contains("SCHEMA_REVISION)"),
+                    "{path}: an outbox insert binds a compile-time tuple"
+                );
+                sites.push(path.clone());
+            }
+        }
+        sites.dedup();
+        assert_eq!(
+            sites,
+            [
+                "src/durability/item_decay_retire.rs",
+                "src/durability/item_fee_burn.rs",
+                "src/durability/item_mint.rs",
+                "src/durability/item_timed_state.rs",
+                "src/durability/item_transfer.rs",
+                "src/durability/map_item_mint.rs",
+                "src/durability/reward_claim_mint.rs",
+            ]
+        );
+        // Every type-2 encoder writes the tuple it is given, never this module's compile-time
+        // one (other modules reach it as `mint::` or `mint_audit::`).
+        for (path, source) in production_sources() {
+            let local = path == "src/durability/item_mint_audit.rs"
+                && source.contains("event_schema_revision: EVENT_SCHEMA_REVISION");
             assert!(
-                !source.contains("_V2") && !source.contains("Type2EventTuple"),
-                "{path} emits another tuple"
+                !local
+                    && !source.contains("event_schema_revision: mint::EVENT_SCHEMA_REVISION")
+                    && !source.contains("event_schema_revision: mint_audit::EVENT_SCHEMA_REVISION"),
+                "{path}: an encoder writes a compile-time tuple"
             );
         }
-        // The fee writer's production entry passes (1, V1); the tuple-taking entry is test-only.
+        // The tuple type has no constructor outside this module.
+        for (path, source) in production_sources() {
+            if path != "src/durability/item_mint_audit.rs" {
+                assert!(!source.contains("SelectedType2Tuple("), "{path}");
+            }
+        }
+        // The fee writer's tuple is its Type2Transaction's, and its only entry takes one.
         let fee = production("src/durability/item_fee_burn.rs");
-        assert!(fee.contains("burn_fee(connection, fence, request, Type2EventTuple::V1)"));
-        assert_eq!(
-            fee.matches("burn_fee(connection, fence, request,").count(),
-            2
-        );
         assert!(
-            fee.contains("#[cfg(test)]\n#[allow(dead_code)]")
-                && fee.contains("\npub async fn burn_fee_in_transaction_under(")
-                && fee.find("#[cfg(test)]\n#[allow(dead_code)]")
-                    < fee.find("\npub async fn burn_fee_in_transaction_under("),
-            "the (2, V2) fee entry is test-only in phase 1"
+            fee.contains(
+                "pub async fn burn_fee_in_transaction(\n    tx: &mut Type2Transaction<'_>,"
+            )
         );
+        assert_eq!(fee.matches("burn_fee(tx, fence, request, ").count(), 1);
+        assert!(fee.contains("let tuple = tx.tuple().tuple();"));
+        assert!(!fee.contains("burn_fee_in_transaction_under"));
+    }
+
+    #[test]
+    fn every_type2_transaction_takes_the_fence_before_any_other_lock() {
+        // §1.4, ordering: the fence and the activation read are the first statements after the
+        // session settings, so they precede the recovery fence, the admission relations, the
+        // gameplay fence and every row lock of the transaction.
+        let db = production("src/durability/db.rs");
+        let opener = &db[db.find("async fn begin_type2_transaction").unwrap()..];
+        let opener = &opener[..opener.find("\n}\n").unwrap()];
+        let begin = opener
+            .find("begin_semantic_transaction(holder, deadline)")
+            .unwrap();
+        let open = opener.find("Type2Transaction::open(").unwrap();
+        assert!(begin < open);
+        let between = &opener[begin..open];
+        assert!(
+            !between.contains("sqlx::") && !between.contains("lock"),
+            "{between}"
+        );
+        for (path, source) in production_sources() {
+            if path != "src/durability/db.rs" && path != "src/durability/item_mint_audit.rs" {
+                assert!(
+                    !source.contains("Type2Transaction::open("),
+                    "{path} fences late"
+                );
+            }
+            // In each opener, the next statement on the transaction is never before the fence.
+            for (at, _) in source.match_indices("= begin_type2_transaction(") {
+                let line = &source[..at];
+                assert!(
+                    line.rsplit('\n')
+                        .next()
+                        .unwrap()
+                        .trim_start()
+                        .starts_with("let mut tx"),
+                    "{path}: a type-2 transaction is opened outside `let mut tx`"
+                );
+            }
+        }
+        let open = &production("src/durability/item_mint_audit.rs");
+        let body = &open[open.find("pub async fn open(").unwrap()..];
+        let fence = body.find("pg_advisory_xact_lock_shared").unwrap();
+        let read = body.find("FROM game_type2_audit_activation").unwrap();
+        assert!(fence < read && body[..fence].matches(".execute(").count() == 0);
+    }
+
+    #[test]
+    fn the_fence_key_and_the_grandfather_list_match_the_migrations() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let migration =
+            std::fs::read_to_string(root.join("migrations/0079_type2_audit_activation.sql"))
+                .unwrap();
+        // The fence key is b"OT2AUDAC", big-endian, in Rust and in every SQL use.
         assert_eq!(
-            (EVENT_SCHEMA_REVISION, RETENTION_PROFILE_ID),
-            (1, "DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1")
+            TYPE2_AUDIT_ACTIVATION_FENCE,
+            i64::from_be_bytes(*b"OT2AUDAC")
         );
+        let key = TYPE2_AUDIT_ACTIVATION_FENCE.to_string();
+        assert_eq!(
+            migration.matches("pg_advisory_xact_lock_shared(").count(),
+            migration
+                .matches(&format!("pg_advisory_xact_lock_shared({key})"))
+                .count()
+        );
+        assert_eq!(migration.matches(&key).count(), 3);
+        // §2.1, grandfather coverage: every reservation table with an `envelope` column.
+        let mut persisted = Vec::new();
+        let mut paths: Vec<_> = std::fs::read_dir(root.join("migrations"))
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .collect();
+        paths.sort();
+        for path in paths {
+            let sql = std::fs::read_to_string(&path).unwrap();
+            let mut table = "";
+            for line in sql.lines() {
+                if let Some(rest) = line.strip_prefix("CREATE TABLE ") {
+                    table = rest.split_whitespace().next().unwrap();
+                } else if line.trim_start().starts_with("envelope ")
+                    && table.contains("reservation")
+                {
+                    persisted.push(table.to_owned());
+                }
+                assert!(
+                    !(line.contains("ADD COLUMN envelope ") && line.contains("reservation")),
+                    "{path:?}"
+                );
+            }
+        }
+        let guard = &migration[migration
+            .find("FUNCTION game_item_audit_type2_activation_guard()")
+            .unwrap()..];
+        let guard = &guard[..guard.find("$$;").unwrap()];
+        let mut grandfathered: Vec<String> = guard
+            .match_indices("SELECT 1 FROM ")
+            .map(|(at, text)| {
+                guard[at + text.len()..]
+                    .split_whitespace()
+                    .next()
+                    .unwrap()
+                    .to_owned()
+            })
+            .collect();
+        persisted.sort();
+        grandfathered.sort();
+        assert_eq!(
+            persisted,
+            [
+                "game_item_decay_retire_reservations",
+                "game_item_mint_reservations",
+            ]
+        );
+        grandfathered.retain(|table| table != "game_type2_audit_activation");
+        assert_eq!(grandfathered, persisted);
+        // Each table's marker trigger exists, and every writer of it binds the revision of a
+        // Type2Transaction.
+        for table in &persisted {
+            assert!(migration.contains(&format!(
+                "BEFORE INSERT\n    ON {table}\n    FOR EACH ROW EXECUTE FUNCTION \
+                 game_item_type2_reservation_marker()"
+            )));
+            for (path, source) in production_sources() {
+                for (at, _) in source.match_indices(&format!("INSERT INTO {table}(")) {
+                    let insert = statement(&source, at);
+                    assert!(
+                        insert.contains("type2_schema_revision")
+                            && insert.contains("tuple.schema_revision()"),
+                        "{path}: a {table} insert without its Type2 revision"
+                    );
+                    assert!(source.contains("begin_type2_transaction("), "{path}");
+                }
+            }
+        }
     }
 }

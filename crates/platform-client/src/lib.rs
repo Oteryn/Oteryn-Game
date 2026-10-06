@@ -1,5 +1,7 @@
 //! Bounded asynchronous Platform directory client.
 
+pub mod native_login;
+
 use oteryn_foundation::{BoundedText, Cancellable, CancellationToken, cancellable};
 use oteryn_platform_contracts::{
     ClientDirectoryEpoch, DirectoryChannel, DirectoryChannelRef, DirectoryCharacter,

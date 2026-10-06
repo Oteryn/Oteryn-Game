@@ -7,7 +7,7 @@
   "inputs": {
     "tools/content-schema/quest-authoring/samples/questlog/manifest.json": "be13d0f846ca8a9fb8345f572235490414f19a3132019aeadeeaa93b17f0c339",
     "tools/content-schema/quest-authoring/samples/interactions/manifest.json": "eb43648a9959311aa1c0928e49606e8b2e64018ff988df38638305b93d5ae3e1",
-    "tools/content-schema/quest-authoring/samples/source_migration/bundle.json": "60c1dabe2d4373bbcb027ec14df9ba4b6d0d118fd7d21b747c5f2ac4833bb4cc"
+    "tools/content-schema/quest-authoring/samples/source_migration/bundle.json": "12771f0d11bdf8109a017c1e4c1d113f1966e031dfcf36fef1b917e505a8571d"
   },
   "summary": {
     "quest_log_declarations": {

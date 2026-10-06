@@ -8,7 +8,7 @@
     {
       "path": "tools/content-schema/quest-authoring/samples/chests/claims.json",
       "role": "claims",
-      "sha256": "b3b8fe2d7bfca8da07f3a83f8441f52c0c80eac588cc6028a81021ad8a1be5a1"
+      "sha256": "49ca05748a893d8a3fdf6494402baf36a398cb9828b3986293c4fdb5e5bfcdf9"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/doors/gates.json",

@@ -218,6 +218,7 @@ pub struct DecayRetireEventIdentity<'a> {
 pub fn encode_decay_retire_event(
     identity: DecayRetireEventIdentity<'_>,
     retire: OneItemDecayRetireV1,
+    tuple: mint::Type2EventTuple,
 ) -> Result<Vec<u8>, AuditError> {
     check_uuid_v7(&identity.event_id)?;
     check_uuid_v7(&identity.transaction_id)?;
@@ -239,10 +240,10 @@ pub fn encode_decay_retire_event(
         envelope_revision: mint::ENVELOPE_REVISION,
         event_id: identity.event_id.to_vec(),
         event_type_id: mint::EVENT_TYPE_ID,
-        event_schema_revision: mint::EVENT_SCHEMA_REVISION,
+        event_schema_revision: tuple.schema_revision(),
         durability_class: mint::DURABLE_AUDIT,
         privacy_class: mint::RESTRICTED_PLAYER_LINKED,
-        retention_profile_id: mint::RETENTION_PROFILE_ID.into(),
+        retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(world_id),
         channel_id: Some(channel_id),
@@ -374,7 +375,12 @@ mod tests {
             (corpse_step(), DecayRetireShape::Corpse),
         ] {
             assert_eq!(check_decay_retire(&value), Ok(shape));
-            let wire = encode_decay_retire_event(identity(AT_DEADLINE), value.clone()).unwrap();
+            let wire = encode_decay_retire_event(
+                identity(AT_DEADLINE),
+                value.clone(),
+                mint::Type2EventTuple::V1,
+            )
+            .unwrap();
             let (envelope, decoded) = decode_decay_retire_envelope(&wire).unwrap();
             assert_eq!(decoded, value);
             assert_eq!(envelope.world_id.as_deref(), Some(uuid(1).as_slice()));
@@ -396,8 +402,22 @@ mod tests {
 
     #[test]
     fn a_retirement_before_its_deadline_is_not_encodable() {
-        assert!(encode_decay_retire_event(identity(AT_DEADLINE - 1), entry_step()).is_err());
-        assert!(encode_decay_retire_event(identity(AT_DEADLINE), entry_step()).is_ok());
+        assert!(
+            encode_decay_retire_event(
+                identity(AT_DEADLINE - 1),
+                entry_step(),
+                mint::Type2EventTuple::V1
+            )
+            .is_err()
+        );
+        assert!(
+            encode_decay_retire_event(
+                identity(AT_DEADLINE),
+                entry_step(),
+                mint::Type2EventTuple::V1
+            )
+            .is_ok()
+        );
     }
 
     #[test]
@@ -435,7 +455,8 @@ mod tests {
             mutate(&mut value);
             assert!(check_decay_retire(&value).is_err(), "case {index}");
             assert!(
-                encode_decay_retire_event(identity(AT_DEADLINE), value).is_err(),
+                encode_decay_retire_event(identity(AT_DEADLINE), value, mint::Type2EventTuple::V1)
+                    .is_err(),
                 "case {index}"
             );
         }
@@ -447,7 +468,12 @@ mod tests {
 
     #[test]
     fn envelope_scope_must_equal_the_corpse_ground_and_carry_no_command() {
-        let wire = encode_decay_retire_event(identity(AT_DEADLINE), entry_step()).unwrap();
+        let wire = encode_decay_retire_event(
+            identity(AT_DEADLINE),
+            entry_step(),
+            mint::Type2EventTuple::V1,
+        )
+        .unwrap();
         let tamper: [fn(&mut EventEnvelopeV1); 5] = [
             |e| e.channel_id = Some(uuid(8)),
             |e| e.world_id = None,
