@@ -5,6 +5,7 @@ members = [
     "crates/foundation",
     "crates/simulation-determinism",
     "crates/diagnostics",
+    "crates/error-codes",
     "crates/client-runtime",
     "crates/platform-contracts",
     "crates/platform-client",
