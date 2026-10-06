@@ -24,6 +24,8 @@ use std::{collections::BTreeMap, net::SocketAddr, path::PathBuf, time::Duration}
 pub const REPORT_BYTES: usize = 2048;
 /// Response bound (§3, `NRS-RESPONSE-BYTES`).
 pub const RESPONSE_BYTES: usize = 256;
+/// Statuses of §4 whose body is read; any other status is final on its own.
+pub const RESPONSE_STATUSES: [u16; 6] = [200, 400, 401, 409, 429, 503];
 /// Compiled namespace of the ownership-authority descriptor.
 pub const PURPOSE: &str = "OTERYN_GAME_SCOPE_OWNERSHIP_AUTHORITY";
 /// Compiled `ReportScopeAssignmentV1` path (§3); not configurable.

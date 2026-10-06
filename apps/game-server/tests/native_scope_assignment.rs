@@ -1214,17 +1214,52 @@ fn revocation_response_over_the_bound_is_refused_in_transport_for_every_status()
         let d = descriptor(&pki, port, &pki.authority).unwrap();
         let capacity = TransientCapacity::new();
         let body = sa::encode_revocation(&revocation(4)).unwrap();
-        for _ in 0..3 {
+        for _ in 0..2 {
             assert_eq!(
                 sa::deliver_revocation(&d, &capacity, &body).await,
                 Err(NotDelivered::Unavailable)
             );
         }
+        // A status outside §4 stays definite whatever its body.
+        assert_eq!(
+            sa::deliver_revocation(&d, &capacity, &body).await,
+            Err(NotDelivered::UnexpectedStatus)
+        );
         // At the bound the body reaches the exact decoder.
         assert_eq!(
             sa::deliver_revocation(&d, &capacity, &body).await,
             Err(NotDelivered::InvalidResponse)
         );
+    });
+}
+
+#[test]
+fn unexpected_status_with_an_oversized_body_stops_without_retry() {
+    block_on(async {
+        let pki = pki();
+        let oversized = " ".repeat(sa::RESPONSE_BYTES + 1);
+        let unframed = Answer {
+            stall: Duration::ZERO,
+            response: format!("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n{oversized}"),
+        };
+        let chunked = Answer {
+            stall: Duration::ZERO,
+            response: format!(
+                "HTTP/1.1 500 Internal Server Error\r\nTransfer-Encoding: chunked\r\n\r\n{:x}\r\n{oversized}\r\n0\r\n\r\n",
+                oversized.len()
+            ),
+        };
+        let script = vec![answer("404 Not Found", &oversized), unframed, chunked];
+        let (port, seen) = platform(&pki, script).await;
+        let d = descriptor(&pki, port, &pki.authority).unwrap();
+        for _ in 0..3 {
+            let report = sa::report_revocation(&d, &revocation(4), fast()).await;
+            assert_eq!(
+                (report.result, report.attempts),
+                (Err(NotDelivered::UnexpectedStatus), 1)
+            );
+        }
+        assert_eq!(seen.lock().unwrap().len(), 3);
     });
 }
 

@@ -143,17 +143,19 @@ async fn exchange_status(
         }
         tls.write_all(request.as_bytes()).await?;
         if operation == Operation::ReadPremiumSnapshotV1 {
-            read_response_bounded(&mut tls, require_ok, 1024, true).await
+            read_response_bounded(&mut tls, require_ok, 1024, true, &[]).await
         } else if matches!(
             operation,
             Operation::ReportScopeAssignmentV1 | Operation::ReportScopeRevocationV1
         ) {
             // `NRS-RESPONSE-BYTES` bounds the body of every status, not only 200.
+            // A status outside the §4 list is final without its body.
             read_response_bounded(
                 &mut tls,
                 require_ok,
                 super::scope_assignment::RESPONSE_BYTES,
                 false,
+                &super::scope_assignment::RESPONSE_STATUSES,
             )
             .await
         } else if require_ok {
@@ -198,13 +200,14 @@ async fn read_response_status<S: AsyncRead + Unpin>(
     stream: &mut S,
     require_ok: bool,
 ) -> Result<(u16, Vec<u8>), SourceError> {
-    read_response_bounded(stream, require_ok, 8192, false).await
+    read_response_bounded(stream, require_ok, 8192, false, &[]).await
 }
 pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
     stream: &mut S,
     require_ok: bool,
     body_max: usize,
     require_json: bool,
+    body_statuses: &[u16],
 ) -> Result<(u16, Vec<u8>), SourceError> {
     if body_max == 0 || body_max > 8192 {
         return Err(SourceError::InvalidInput);
@@ -240,6 +243,11 @@ pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
     } else {
         final_status(status)?
     };
+    // With a status list, an unlisted status is returned without its head
+    // fields or body, so no body bound can mask it.
+    if !body_statuses.is_empty() && !body_statuses.contains(&code) {
+        return Ok((code, Vec::new()));
+    }
     let mut fields = 0_usize;
     let mut length = None;
     let mut chunked = false;
@@ -440,7 +448,7 @@ mod premium_response_tests {
     use super::*;
     async fn read(bytes: &[u8]) -> Result<(u16, Vec<u8>), SourceError> {
         let mut stream = bytes;
-        read_response_bounded(&mut stream, true, 1024, true).await
+        read_response_bounded(&mut stream, true, 1024, true, &[]).await
     }
     #[test]
     fn premium_transport_enforces_actual_bound_and_framing() {
