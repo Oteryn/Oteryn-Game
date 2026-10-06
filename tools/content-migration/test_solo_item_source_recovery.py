@@ -127,6 +127,9 @@ class ChargeObservationShapeTests(unittest.TestCase):
             value["parameter"] |= parameter
             return value
 
+        verify_charge_observation(explicit(lexeme="&amp;#53;", charges_default_u32=0))
+        verify_charge_observation(explicit(lexeme="&#53;"))
+        verify_charge_observation(explicit(lexeme="0x5", charges_default_u32=0))
         initializer_with_value = charge_observation()
         initializer_with_value["parameter"]["charges_default_u32"] = 7
         for name, value in {
@@ -134,6 +137,10 @@ class ChargeObservationShapeTests(unittest.TestCase):
             "wrong member": explicit(key="levelDoor"),
             "non numeric lexeme": explicit(lexeme="5x"),
             "initializer nonzero": initializer_with_value,
+            "unescaped lexeme hides the value": explicit(
+                lexeme="&#53;", charges_default_u32=0
+            ),
+            "bad entity": explicit(lexeme="&bogus;"),
             "initializer with assignment for member": explicit(
                 charges_origin="OWN_CPP_INITIALIZER",
                 level_door_origin="EXPLICIT_ORDERED_XML",
@@ -343,13 +350,13 @@ class RecoveryBoundaryTests(unittest.TestCase):
             )
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class RepoPathLengthTests(unittest.TestCase):
     def test_paths_over_the_windows_bound_are_rejected(self):
         fits = "a" * (MAX_REPO_PATH - len(REPO_PREFIX))
         require_repo_path_length(fits)
         with self.assertRaisesRegex(ValueError, "repository path too long"):
             require_repo_path_length(fits + "a")
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -5,6 +5,7 @@ import gzip
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 
 DEFAULT_PACKAGE = (
@@ -181,7 +182,16 @@ CHARGE_PARAMETER_KEYS = {
     "level_door_origin",
     "level_door_u32",
 }
-CHARGE_MEMBERS = {"charges": "charges", "level_door": "levelDoor"}
+CHARGE_MEMBERS = {
+    "charges": ("charges_default_u32", "charges_origin"),
+    "leveldoor": ("level_door_u32", "level_door_origin"),
+}
+PRODUCER_DIR = DEFAULT_PACKAGE / "producer-evidence/charges"
+sys.dont_write_bytecode = True  # never leave bytecode inside the verified package
+sys.path.insert(0, str(PRODUCER_DIR))
+from produce import u32  # noqa: E402
+from xml_attribute_law import attribute_value  # noqa: E402
+
 ABILITY_CUTS = {
     "CANARY_47DF": (
         "canary-47df",
@@ -237,12 +247,6 @@ def verify_charge_observation(value):
     require(origins <= CHARGE_ORIGINS, "charge origin")
     assignments = value["ordered_assignments"]
     require(bool(assignments) == ("EXPLICIT_ORDERED_XML" in origins), "charge origin")
-    require(
-        sorted(a.get("key") for a in assignments)
-        == sorted(set(a.get("key") for a in assignments))
-        and {a.get("key") for a in assignments} <= set(CHARGE_MEMBERS.values()),
-        "charge assignment members",
-    )
     for assignment in assignments:
         require(
             set(assignment) == {"attribute_ordinal", "key", "value_lexeme"}
@@ -251,24 +255,28 @@ def verify_charge_observation(value):
             and isinstance(assignment["value_lexeme"], str),
             "charge assignment",
         )
-    by_key = {a["key"]: a["value_lexeme"] for a in assignments}
-    for member, xml_key in CHARGE_MEMBERS.items():
-        origin = parameter[member + "_origin"]
-        number = parameter[
-            "charges_default_u32" if member == "charges" else "level_door_u32"
-        ]
-        if origin == "EXPLICIT_ORDERED_XML":
-            lexeme = by_key.get(xml_key)
+    # Replay the producer's own decoding: XML entity decoding, case-folded key
+    # and the uint32 conversion with its zero fallback.
+    seen = {}
+    for assignment in assignments:
+        try:
+            name = attribute_value(assignment["key"]).lower()
+            number = u32(attribute_value(assignment["value_lexeme"]))
+        except ValueError as error:
+            raise ValueError("charge assignment lexeme") from error
+        require(
+            name in CHARGE_MEMBERS and name not in seen, "charge assignment members"
+        )
+        seen[name] = number
+    for name, (field, origin_field) in CHARGE_MEMBERS.items():
+        if parameter[origin_field] == "EXPLICIT_ORDERED_XML":
             require(
-                lexeme is not None
-                and lexeme.isascii()
-                and lexeme.isdigit()
-                and int(lexeme) == number,
+                seen.get(name) == parameter[field],
                 "charge value differs from its XML assignment",
             )
         else:
             require(
-                xml_key not in by_key and number == 0,
+                name not in seen and parameter[field] == 0,
                 "initializer origin inconsistent with value",
             )
 
