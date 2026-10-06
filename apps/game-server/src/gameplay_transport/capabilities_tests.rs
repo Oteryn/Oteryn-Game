@@ -996,3 +996,61 @@ fn map_wire_capability_18_is_registered_not_offered_and_requires_4_and_6()
     assert!(!original.resumable_with(&[4, 6]));
     Ok(())
 }
+
+#[test]
+fn npc_wire_capability_3_is_registered_not_offered_and_gates_commands_7_and_8()
+-> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::npc_service::{
+        CAPABILITY_NPC_SERVICE_V1, COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT,
+        STATE_DOMAIN_NPC_CONVERSATION, STATE_DOMAIN_NPC_TRADE_WINDOW,
+    };
+    let entry = registry_capabilities()?
+        .into_iter()
+        .find(|capability| capability["id"] == CAPABILITY_NPC_SERVICE_V1)
+        .ok_or("capability 3")?;
+    assert_eq!(entry["name"], "NPC_SERVICE_V1");
+    assert_eq!(entry["offered"], false);
+    assert!(entry.get("requires").is_none());
+    assert_eq!(
+        ids(&entry["command_types"])?,
+        [COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT]
+    );
+    assert_eq!(
+        ids(&entry["state_domains"])?,
+        [STATE_DOMAIN_NPC_CONVERSATION, STATE_DOMAIN_NPC_TRADE_WINDOW]
+    );
+    assert!(
+        PRODUCTION_OFFERED_CAPABILITIES
+            .iter()
+            .all(|offered| offered.id != CAPABILITY_NPC_SERVICE_V1)
+    );
+    // Without 3 selected no domain 7 or 8 is sent and no command 7 or 8 is dispatched.
+    let none = SelectedCapabilities::NONE;
+    assert!(!none.command_selected(COMMAND_TYPE_NPC_TALK_INTENT));
+    assert!(!none.command_selected(COMMAND_TYPE_NPC_TRADE_INTENT));
+    assert!(!none.domain_selected(STATE_DOMAIN_NPC_CONVERSATION));
+    assert!(!none.domain_selected(STATE_DOMAIN_NPC_TRADE_WINDOW));
+    run(async {
+        // A client asking for capability 3 is not granted it.
+        let authority = NegotiatingAuthority::new(None);
+        let (admitted, frames) = admit(&authority, &bootstrap(&[1, 3, 6])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [6]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        assert!(!admitted.continuity.selected_capabilities.contains(3));
+        // Commands 7 and 8 are refused as unsupported for everyone.
+        let frames = [command(1, 7, b"hi"), command(2, 8, b"buy")];
+        let (_, written) = serve(&authority, session(SessionContinuity::FRESH)?, &frames).await?;
+        let rejected = |sequence, id| {
+            crate::foundation::encode_command_result(
+                1,
+                sequence,
+                id,
+                crate::foundation::CommandStatus::Rejected,
+                &[],
+            )
+        };
+        assert!(written.contains(&rejected(1, 1)?));
+        assert!(written.contains(&rejected(2, 2)?));
+        Ok(())
+    })
+}

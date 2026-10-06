@@ -9587,6 +9587,226 @@
         "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 17"
       ],
       "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "NPC0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Talk text of one NPC_TALK_INTENT (command type 7)",
+      "unit": "bytes",
+      "hard_maximum": 255,
+      "configurable_range": {
+        "minimum": 255,
+        "maximum": 255
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bounds the keyword scan and the command payload at 289 bytes; the text is never broadcast, persisted or logged verbatim. One byte more fails the decode before any matching.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=255: a text of exactly 255 bytes encodes and decodes",
+        "max+1=256: one more byte is refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_TALK_TEXT_BYTES"
+      ],
+      "notes": "NPC-0 \u00a74. Worker-set: keywords are whole tokens of a short phrase, and CHAT0 bounds a chat line at 1,020 bytes. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Reply lines of one NPC_CONVERSATION payload (domain 7)",
+      "unit": "lines",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most 32 lines of at most 2,048 bytes in one payload, 65,665 bytes in all, within the FND-02 chunk bound. A longer reply is split over several deltas by the server.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=32: a payload of 32 lines encodes and decodes",
+        "max+1=33: a 33rd line is refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_REPLY_LINES"
+      ],
+      "notes": "NPC-0 \u00a74. Worker-set; measured over content/world/definitions/declarations.json (836 dialogues, at most about 133 text strings in one dialogue). Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-02-LINE-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "One reply line of domain 7",
+      "unit": "bytes",
+      "hard_maximum": 2048,
+      "configurable_range": {
+        "minimum": 2048,
+        "maximum": 2048
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured longest dialogue reply line 1,919 bytes. The server splits a line that contains a newline and refuses a line over the bound before any byte is emitted.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=2048: a line of exactly 2,048 bytes encodes and decodes",
+        "max+1=2049: one more byte is refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_REPLY_LINE_BYTES"
+      ],
+      "notes": "NPC-0 \u00a74. Four content reply lines contain a newline, and a control character is refused on the wire. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-02-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "One encoded NpcConversationV1 (domain 7 snapshot and delta)",
+      "unit": "bytes",
+      "hard_maximum": 65665,
+      "configurable_range": {
+        "minimum": 65665,
+        "maximum": 65665
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The NPC 31, the state 2 and 32 line elements of 2,051 bytes: 65,665, within the FND-02 snapshot chunk bound of 524,288.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=65665: a payload of 32 lines of 2,048 bytes encodes within the bound and decodes",
+        "max+1: a 33rd line or one more line byte is refused"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_NPC_CONVERSATION_BYTES"
+      ],
+      "notes": "NPC-0 \u00a74. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Offers of one NPC_TRADE_WINDOW projection (domain 8)",
+      "unit": "offers",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured 757 offers over the catalogue (the limit is at least 757). 1,024 offers of at most 22 bytes each, 22,570 bytes in all.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: a window of 1,024 offers encodes and decodes",
+        "max+1=1025: a 1,025th offer is refused; offer index 1,024 of a trade intent is refused"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_OFFERS"
+      ],
+      "notes": "NPC-0 \u00a74 (at least 757). Measured over content/world/definitions/declarations.json. A 757-offer window is tested within the bound. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-03-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "One encoded NpcTradeWindowV1 (domain 8 snapshot and delta)",
+      "unit": "bytes",
+      "hard_maximum": 22570,
+      "configurable_range": {
+        "minimum": 22570,
+        "maximum": 22570
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The NPC 31, the catalogue revision 11 and 1,024 offer elements of 22 bytes: 22,570, within the FND-02 snapshot chunk bound.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=22570: a window of 1,024 worst-case offers encodes within the bound and decodes",
+        "max+1: a 1,025th offer is refused"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_NPC_TRADE_WINDOW_BYTES"
+      ],
+      "notes": "NPC-0 \u00a74. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "NPC_TALK_INTENT commands (command type 7) of one GameSession",
+      "unit": "commands per second",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bounds keyword scans and conversation deltas per session; an over-rate command has no effect and is answered RATE_LIMITED. Enforced by NPC-TALK-1.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=4: four intents in one second are served",
+        "max+1=5: a fifth intent in the same second is answered RATE_LIMITED without effect"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_TALK_INTENTS_PER_SECOND"
+      ],
+      "notes": "NPC-0 \u00a74. Worker-set; the enforcing window is NPC-TALK-1's. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Open conversations of one NPC",
+      "unit": "conversations",
+      "hard_maximum": 8,
+      "configurable_range": {
+        "minimum": 8,
+        "maximum": 8
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bounds the customer queue and the domain 7 fan-out of one NPC. A further customer waits or is refused by NPC-TALK-1.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=8: eight customers are served",
+        "max+1=9: a ninth customer is not admitted"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_OPEN_CONVERSATIONS_PER_NPC"
+      ],
+      "notes": "NPC-0 \u00a74.1 and NPC-BEHAVIOUR-0 \u00a77. Worker-set; enforced by NPC-TALK-1. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Travel confirmation timeout of an NPC conversation",
+      "unit": "seconds",
+      "hard_maximum": 30,
+      "configurable_range": {
+        "minimum": 30,
+        "maximum": 30
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A pending travel confirmation holds one conversation state for at most 30 s; anything else or the timeout cancels it. No retained state after close.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=30: a yes at 30 s still confirms",
+        "max+1: a yes after 30 s cancels"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs TRAVEL_CONFIRMATION_TIMEOUT_SECONDS"
+      ],
+      "notes": "NPC-0 \u00a74. Worker-set; enforced by NPC-TALK-1. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Talk range of an NPC conversation (Chebyshev distance, same floor)",
+      "unit": "tiles",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A customer beyond 4 tiles, or on another floor, has the conversation closed on every committed move of the customer or the NPC. CHAT0-RL-08 reads this limit.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=4: a customer at distance 4 stays in conversation",
+        "max+1=5: a customer at distance 5 has the conversation closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs TALK_RANGE_TILES"
+      ],
+      "notes": "NPC-BEHAVIOUR-0 \u00a77; value fixed by the amendment of NPC-0 \u00a74.1. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
     }
   ]
 }
