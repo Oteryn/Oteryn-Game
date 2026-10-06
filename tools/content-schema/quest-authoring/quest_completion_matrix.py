@@ -113,24 +113,29 @@ NATIVE_BINDING_CODES = {
 }
 
 
-def work_state(definitions, mapping_state):
-    if mapping_state == "MULTIPLE":
-        return "MAPPING_REVIEW"
+def states(definitions, mapping_state):
     codes = {
         issue.get("code", "UNKNOWN")
         for definition in definitions
         for issue in definition.get("missing_data") or []
     }
-    if codes & SOURCE_DATA_CODES:
-        return "SOURCE_DATA_PENDING"
-    if codes & NATIVE_BINDING_CODES:
-        return "NATIVE_BINDINGS_PENDING"
-    if codes & NATIVE_LOWERING_CODES:
-        return "NATIVE_LOWERING_PENDING"
-    readiness = {d.get("readiness", "UNKNOWN") for d in definitions}
-    if readiness == {"definition_ready"}:
-        return "DEFINITION_READY_RUNTIME_UNKNOWN"
-    return "REVIEW_REQUIRED"
+    source_state = "SOURCE_HOLDS_PRESENT" if codes & SOURCE_DATA_CODES else "SOURCE_HOLDS_CLEAR"
+    if mapping_state == "MULTIPLE":
+        implementation = "MAPPING_REVIEW"
+    elif codes & NATIVE_BINDING_CODES:
+        implementation = "NATIVE_BINDINGS_PENDING"
+    elif codes & NATIVE_LOWERING_CODES:
+        implementation = "NATIVE_LOWERING_PENDING"
+    elif codes & SOURCE_DATA_CODES:
+        implementation = "BLOCKED_ON_SOURCE_FIDELITY"
+    else:
+        readiness = {d.get("readiness", "UNKNOWN") for d in definitions}
+        implementation = (
+            "DEFINITION_READY_RUNTIME_UNKNOWN"
+            if readiness == {"definition_ready"}
+            else "REVIEW_REQUIRED"
+        )
+    return source_state, implementation
 
 
 def expected(root: Path):
@@ -180,6 +185,7 @@ def expected(root: Path):
                     "counts": source.get("counts") if source else None,
                 },
             })
+        source_state, implementation_state = states(defs, mapping_state)
         records.append({
             "wiki_title": title,
             "wiki": {
@@ -196,7 +202,9 @@ def expected(root: Path):
             "catalogue_coverage_state": row["coverage_state"],
             "canonical_mapping": mapping_state,
             "canonical": canonical,
-            "work_state": work_state(defs, mapping_state),
+            "source_fidelity_state": source_state,
+            "implementation_state": implementation_state,
+            "work_state": implementation_state,
             "playable_verification": "NOT_ASSESSED",
         })
 
@@ -205,6 +213,8 @@ def expected(root: Path):
         for d in definitions if d["identity"]["key"] not in used_definitions
     ]
     work_counts = Counter(r["work_state"] for r in records)
+    source_counts = Counter(r["source_fidelity_state"] for r in records)
+    implementation_counts = Counter(r["implementation_state"] for r in records)
     donor_counts = Counter(r["donor"]["mode"] for r in records)
     mapping_counts = Counter(r["canonical_mapping"] for r in records)
     unique_readiness = Counter(d.get("readiness") for d in definitions)
@@ -227,6 +237,8 @@ def expected(root: Path):
             "canonical_definitions_not_in_wiki_title_inventory": len(unused),
             "mapping_state": dict(sorted(mapping_counts.items())),
             "donor_mode": dict(sorted(donor_counts.items())),
+            "source_fidelity_state": dict(sorted(source_counts.items())),
+            "implementation_state": dict(sorted(implementation_counts.items())),
             "work_state": dict(sorted(work_counts.items())),
             "canonical_readiness": dict(sorted(unique_readiness.items())),
             "playable_verified": 0,
