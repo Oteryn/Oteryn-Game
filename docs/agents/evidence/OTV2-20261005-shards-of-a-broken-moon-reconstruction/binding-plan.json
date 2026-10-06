@@ -1123,7 +1123,7 @@
     "Escape room/skeleton/icicles/north-wall are resolved (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9); Rope Spot/scripted exit remains unresolved, and donor Lit Torch 54610 requires separate Item admission (do not alias to i34017)",
     "Forbidden Gardens Achievement predicate composition missing",
     "No full real-character start→reward→relog/restart E2E qualification",
-    "Jaracal Mount content admission missing: refresh G4/TibiaWiki Mount source, add Jaracal Mount using existing taming_item/acquisition_interactions, bind i54638 on oteryn:creature.jaracal, grant account mount + existing achievement oteryn:achievement/six_steps_ahead@1 on successful tame; tame chance semantics remain UNKNOWN"
+    "Jaracal Mount exact donor identity is resolved (mount_id 250, clientid 1962, speed +10, premium, quest); canonical Mount admission + i54638-on-Jaracal tame/account-unlock runtime remain missing, and tame chance semantics remain UNKNOWN"
   ],
   "readback": {
     "refreshed_main": "52712f633786721c0d255888a92c81165cd2d5c3",
@@ -1214,32 +1214,32 @@
       "hold": "No public guide/map link found that publishes prison-room coordinates; scripted endpoint remains unresolved."
     },
     "jaracal_mount": {
-      "status": "SOURCE_READY_CONTENT_ADMISSION_MISSING",
+      "status": "EXACT_SOURCE_IDENTITY_READY_CONTENT_ADMISSION_MISSING",
+      "exact_donor": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data/XML/mounts.xml",
+        "git_blob": "1c93421c1141265988eb32afb9c56238eae30716",
+        "mount_id": 250,
+        "clientid": 1962,
+        "name": "Jaracal",
+        "speed_bonus": 10,
+        "premium": true,
+        "type": "quest"
+      },
       "creature_key": "oteryn:creature.jaracal",
       "taming_item": "oteryn:item.tibia.i54638",
-      "mount_catalogue_present": false,
+      "canonical_achievement": "oteryn:achievement/six_steps_ahead@1",
+      "current_mount_catalogue_present": false,
       "current_mount_record_count": 252,
-      "mount_source_gap": "Current G4/TibiaWiki Mount snapshot predates Jaracal; local tibiawiki/cipsoft-staticdata corpus has Jaracal Creature/Achievement facts but no Mount record.",
-      "reference": {
-        "premium": true,
-        "speed_bonus": 10,
-        "added": "15.30.a30dad",
-        "method": "Use Skewered Fish on a Jaracal",
-        "success_achievement": "oteryn:achievement/six_steps_ahead@1",
-        "success_achievement_source_id": 592,
-        "chance_semantics": "UNKNOWN_DO_NOT_INVENT"
-      },
-      "architecture": {
-        "mount_model_fields": [
-          "taming_item",
-          "acquisition_interactions",
-          "premium",
-          "speed_bonus",
-          "presentation"
-        ],
-        "unlock_scope": "ACCOUNT_D47",
-        "required_action": "Refresh/admit Jaracal through Mount owner pipeline, then bind item-on-creature tame interaction; do not grant mount directly from Shards s16."
-      }
+      "chance_semantics": "UNKNOWN_DO_NOT_INVENT",
+      "required_work": [
+        "Admit Jaracal Mount from exact pinned donor into canonical Mount catalogue.",
+        "Bind use of i54638 on canonical Jaracal creature through existing Mount/Item/Interaction owners.",
+        "On successful tame grant account-scoped mount unlock plus existing Six Steps Ahead achievement.",
+        "Qualify item consumption, idempotence and relog/restart persistence.",
+        "Do not grant the mount directly from Shards s16."
+      ]
     }
   }
 }
