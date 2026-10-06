@@ -4,33 +4,31 @@ import copy
 import gzip
 import hashlib
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 from verify_solo_item_source_recovery import (
-    DEFAULT_PACKAGE,
     MAX_RAW_FILE,
-    PRODUCER_FILES,
     MAX_REPO_PATH,
     OLD_REGISTRY,
     REPO_PREFIX,
     ability_row_sizes,
+    attribute_value,
     lexeme_bytes,
-    load_producer_laws,
     recovered_digest,
     require_repo_path_length,
     safe_path,
+    u32,
     verify_ability_provenance,
     verify_charge_observation,
     verify_definition_successor,
 )
 
 
-def setUpModule():
-    load_producer_laws(DEFAULT_PACKAGE)
-
-
+VERIFIER = Path(__file__).with_name("verify_solo_item_source_recovery.py")
 SCHEMA = "OTERYN_SOURCE_DEFINITION_OBSERVATIONS_CLOSED/v1"
 KEY = "oteryn:item.tibia.i100"
 
@@ -358,28 +356,45 @@ class RecoveryBoundaryTests(unittest.TestCase):
             )
 
 
-class ProducerLawLoadingTests(unittest.TestCase):
-    def test_tampered_producer_evidence_is_never_executed(self):
+class ProducerLawReplayTests(unittest.TestCase):
+    def test_replay_matches_the_producer_vectors(self):
+        self.assertEqual(attribute_value("&amp;#53;"), "&#53;")
+        self.assertEqual(attribute_value("&#53;"), "5")
+        self.assertEqual(attribute_value("a\tb\r\n"), "a b ")
+        for bad in ("&bogus;", "&amp", "&#0;", "&#xD800;"):
+            with self.assertRaises(ValueError):
+                attribute_value(bad)
+        self.assertEqual(u32("0004294967295"), 4294967295)
+        self.assertEqual(u32("4294967296"), 0)
+        self.assertEqual(u32("12345678901"), 0)
+        self.assertEqual(u32("+5"), 0)
+        self.assertEqual(u32(""), 0)
+
+    def test_a_tampered_producer_and_inventory_pair_is_never_executed(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             marker = root / "executed"
             inventory = []
-            for relative in PRODUCER_FILES:
-                original = (DEFAULT_PACKAGE / relative).read_bytes()
-                inventory.append(
-                    {"path": relative, "sha256": hashlib.sha256(original).hexdigest()}
-                )
+            for relative in (
+                "producer-evidence/charges/xml_attribute_law.py",
+                "producer-evidence/charges/produce.py",
+            ):
+                payload = f"open({str(marker)!r}, 'w').close()\n".encode()
                 target = root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_bytes(
-                    f"open({str(marker)!r}, 'w').close()\n".encode()
-                    if relative == PRODUCER_FILES[1]
-                    else original
+                target.write_bytes(payload)
+                inventory.append(
+                    {"path": relative, "sha256": hashlib.sha256(payload).hexdigest()}
                 )
             (root / "package-inventory.json").write_text(json.dumps(inventory))
-            with self.assertRaisesRegex(ValueError, "producer evidence digest"):
-                load_producer_laws(root)
+            result = subprocess.run(
+                [sys.executable, "-I", str(VERIFIER), "--package", str(root)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
             self.assertFalse(marker.exists())
+            self.assertFalse((root / "producer-evidence/charges/__pycache__").exists())
 
 
 class RepoPathLengthTests(unittest.TestCase):

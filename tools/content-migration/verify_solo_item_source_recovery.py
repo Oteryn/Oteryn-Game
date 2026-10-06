@@ -5,8 +5,6 @@ import gzip
 import hashlib
 import json
 import re
-import sys
-import types
 from pathlib import Path
 
 DEFAULT_PACKAGE = (
@@ -187,44 +185,52 @@ CHARGE_MEMBERS = {
     "charges": ("charges_default_u32", "charges_origin"),
     "leveldoor": ("level_door_u32", "level_door_origin"),
 }
-PRODUCER_FILES = (
-    "producer-evidence/charges/xml_attribute_law.py",
-    "producer-evidence/charges/produce.py",
-)
-PRODUCER_LAWS = {}
+XML_ENTITIES = {"amp": "&", "lt": "<", "gt": ">", "quot": '"', "apos": "'"}
 
 
-def load_producer_laws(package):
-    """Execute the producer's decoding only from bytes matching the inventory digest.
+def attribute_value(raw):
+    """Repo-anchored replay of the producer's XML attribute decoding.
 
-    Nothing from the quarantined package runs before its digest is verified; the
-    verified bytes themselves are executed, so the file cannot change in between.
+    Nothing from the quarantined package is imported or executed; the package
+    is data only.
     """
-    inventory = json.loads((package / "package-inventory.json").read_bytes())
-    digests = {row["path"]: row["sha256"] for row in inventory}
-    modules = {}
-    saved = sys.modules.get("xml_attribute_law")
-    try:
-        for relative in PRODUCER_FILES:
-            source = safe_path(package, relative).read_bytes()
-            require(
-                hashlib.sha256(source).hexdigest() == digests.get(relative),
-                "producer evidence digest",
+    require(isinstance(raw, str) and "\x00" not in raw, "attribute literal")
+    raw = raw.replace("\r\n", "\n").replace("\r", "\n")
+    result, position = [], 0
+    while position < len(raw):
+        char = raw[position]
+        if char != "&":
+            result.append(" " if char in "\t\n" else char)
+            position += 1
+            continue
+        end = raw.find(";", position + 1)
+        require(end >= 0, "unclosed entity")
+        entity = raw[position + 1 : end]
+        if entity in XML_ENTITIES:
+            value = XML_ENTITIES[entity]
+        elif re.fullmatch(r"#(?:[0-9]+|x[0-9a-fA-F]+)", entity):
+            codepoint = (
+                int(entity[2:], 16) if entity.startswith("#x") else int(entity[1:])
             )
-            name = Path(relative).stem
-            module = types.ModuleType(name)
-            exec(compile(source, relative, "exec"), module.__dict__)
-            modules[name] = module
-            sys.modules[name] = module
-    finally:
-        if saved is None:
-            sys.modules.pop("xml_attribute_law", None)
+            require(
+                0 < codepoint <= 0x10FFFF and not 0xD800 <= codepoint <= 0xDFFF,
+                "character reference",
+            )
+            value = chr(codepoint)
         else:
-            sys.modules["xml_attribute_law"] = saved
-    PRODUCER_LAWS.update(
-        u32=modules["produce"].u32,
-        attribute_value=modules["xml_attribute_law"].attribute_value,
-    )
+            raise ValueError("unknown entity")
+        result.append(value)
+        position = end + 1
+    return "".join(result)
+
+
+def u32(lexeme):
+    """Decimal digits only, at most ten significant digits, <= 2**32-1, else 0."""
+    if re.fullmatch(r"[0-9]+", lexeme):
+        significant = lexeme.lstrip("0") or "0"
+        if len(significant) <= 10 and int(significant) <= 4294967295:
+            return int(significant)
+    return 0
 
 
 ABILITY_CUTS = {
@@ -290,16 +296,13 @@ def verify_charge_observation(value):
             and isinstance(assignment["value_lexeme"], str),
             "charge assignment",
         )
-    require(bool(PRODUCER_LAWS), "producer laws not loaded")
     # Replay the producer's own decoding: XML entity decoding, case-folded key
     # and the uint32 conversion with its zero fallback.
     seen = {}
     for assignment in assignments:
         try:
-            name = PRODUCER_LAWS["attribute_value"](assignment["key"]).lower()
-            number = PRODUCER_LAWS["u32"](
-                PRODUCER_LAWS["attribute_value"](assignment["value_lexeme"])
-            )
+            name = attribute_value(assignment["key"]).lower()
+            number = u32(attribute_value(assignment["value_lexeme"]))
         except ValueError as error:
             raise ValueError("charge assignment lexeme") from error
         require(
@@ -508,7 +511,6 @@ def main():
     args = parser.parse_args()
     package = args.package.resolve()
     verify_inventory(package)
-    load_producer_laws(package)
     print(
         json.dumps(
             {
