@@ -228,15 +228,24 @@ jobs:
             sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" assign replace \
               "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$node_id" "$revision"
           fi
+          # The log belongs to this incarnation (start moves the previous one aside). Ready means the
+          # process is alive and the latest readiness event is ready=true, and it must hold on a re-check.
+          latest_ready() {
+            "$BASE/bin/supervisor.sh" status > /dev/null &&
+              { grep 'event=readiness' "$log" || true; } | tail -n 1 | grep -q 'ready=true'
+          }
           for _ in $(seq 1 60); do
-            if grep -q 'event=readiness ready=true' "$log"; then
-              echo ready > "$BASE/run/node-state"
-              {
-                echo 'GAME_PREPRODUCTION_DEPLOY=PASS'
-                echo "SOURCE_SHA=$GITHUB_SHA"
-                echo 'NODE_STATE=ready'
-              } >> "$GITHUB_STEP_SUMMARY"
-              exit 0
+            if latest_ready; then
+              sleep 5
+              if latest_ready; then
+                echo ready > "$BASE/run/node-state"
+                {
+                  echo 'GAME_PREPRODUCTION_DEPLOY=PASS'
+                  echo "SOURCE_SHA=$GITHUB_SHA"
+                  echo 'NODE_STATE=ready'
+                } >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
             fi
             sleep 2
           done
