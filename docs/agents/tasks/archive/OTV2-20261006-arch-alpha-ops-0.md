@@ -16,7 +16,7 @@ owner: claude-code-session_01WQyZ8BUWVpmDLpSTpXHvn1 (Sol Supervising Architect)
 created_at: 2026-10-06
 updated_at: 2026-10-06
 execution_policy: continuous_progress
-last_progress: "review round 8: Codex 4199026227 (restore admission opens only after the Platform reconciliation, its acknowledgement and a final validation) and 4199026234 (the gating live content check runs on the final migrated database before the ACTIVE row) fixed under D742, with a class sweep of gate and admission order in every deploy and restore sequence; plus ARCH-LIVE-READINESS-0 amendment 5 (restore re-applies retained revoke, mute, fence raise and hold placement requests) and the A3 Platform acknowledgement RTO risk as a Platform acceptance item"
+last_progress: "review round 9: Codex 4199169238 (every stop-the-world release stays PENDING until its final live check passes), 4199169226 (an unverifiable post-T erasure record stops the restore), 4199169252 (a bounded legacy restore path for the first rollout of the activation table) and 4199169265 (high-risk authority/recovery qualification completed) fixed under D742. Earlier, review round 8: Codex 4199026227 (restore admission opens only after the Platform reconciliation, its acknowledgement and a final validation) and 4199026234 (the gating live content check runs on the final migrated database before the ACTIVE row) fixed under D742, with a class sweep of gate and admission order in every deploy and restore sequence; plus ARCH-LIVE-READINESS-0 amendment 5 (restore re-applies retained revoke, mute, fence raise and hold placement requests) and the A3 Platform acknowledgement RTO risk as a Platform acceptance item"
 acceptance_criteria:
   - "§1-§4 rulings, packets and contract amendments are exact enough for each named packet to start without a new decision"
   - "§4 ruling 9 defines a durable, monotonic client trust-record rollback floor (build floor plus persisted trust-floor.v1 outside the install root), the order the updater checks it in, and its tests (Codex 4195138078)"
@@ -40,6 +40,10 @@ acceptance_criteria:
   - "§3 ruling 8 makes the NAS-loss reseed rebuild the retained fence chain from the restored admission row H to max(H, B), verify it by read-back, and refuse unless stack_phase is TESTING, with a test where the newest surviving backup is several generations ahead of T (Codex 4198575049)"
   - "§3 ruling 9 starts nodes and opens admission only in step 12, after the step 11 delivery reconciliation and Platform's acknowledgement of the restore notice and after the step 6 validation passes again on the final database (Codex 4199026227)"
   - "§3 ruling 5 gates every stop-the-world release on a live check run after oteryn-game-migrate and any domain migration and before the ACTIVE row, with a test for an incomplete domain migration (Codex 4199026234)"
+  - "§3 rulings 3 and 9 step 3 write PENDING for every stop-the-world release and ACTIVE only after its final live check passes, with or without a domain migration (Codex 4199169238)"
+  - "§3 ruling 9 step 7 stops the restore, with no record applied and admission closed, when any erasure journal record cannot be read, parsed or verified, until an audited repair supplies a verifying copy (Codex 4199169226)"
+  - "§3 ruling 9 step 3 defines a bounded legacy restore for the first rollout of the activation table: R1 adds only that table, names R0 as legacy_predecessor, and a table-less ledger is accepted only at R0's digest (Codex 4199169252)"
+  - "the task record carries the completed high-risk authority/recovery qualification with candidate-specific evidence (Codex 4199169265)"
   - "the document stays a proposed architecture decision with no runtime authority"
 owned_paths: [docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md, docs/agents/tasks/archive/OTV2-20261006-arch-alpha-ops-0.md]
 public_contracts: []
@@ -47,6 +51,57 @@ depends_on: []
 blocks: [OBS-LOG-1, OBS-CORR-2, OBS-METRICS-3, OBS-DEPLOY-4, OBS-BUNDLE-5, TIME-CLOCK-1, TIME-SKEW-1, PERF-ALPHA-1, PERF-CI-1, PERF-ACCEPT-1, PERF-WORLD-1, DATA-MIGRATION-GUARD-1, DATA-RESTORE-OPS-2, DATA-BACKUP-PITR-3, DATA-RESTORE-DRILL-4, DATA-CONTENT-REF-5, VERSION-FLOOR-1, VERSION-ASSET-PIN-2, RELEASE-MANIFEST-3, CLIENT-UPDATE-4, CLIENT-RELEASE-5]
 cross_repository_coordination_id: null
 external_repositories: []
+```
+
+## High-risk authority/recovery qualification
+
+```yaml
+applicable: true   # designs the restore fences, the build activation gate, replay of retained requests and how persisted recovery evidence is read
+model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
+authority_invariants:
+  - "AO-I1 Character recovery fence: advances by CAS only, never skipped or lowered; a restored database below it is bridged only from write-once retained records (§3 r9.4, r8 reseed)"
+  - "AO-I2 one exact schema per release: a binary runs only on the ledger its embedded set matches (§3 r2, F3), except R1's bounded legacy restore (r9.3)"
+  - "AO-I3 build activation: a node registers and an ops write runs only when the newest activation row is ACTIVE and names its build; every stop-the-world release is PENDING until its final live check passes (§3 r3, r9.3)"
+  - "AO-I4 one operator: deploy, restore and named backup hold the exclusive ops lock; children inherit it, never re-take or share it (§3 r3)"
+  - "AO-I5 no gate before final state: every check runs on the state the next step trusts (§3 r3, r5, r9.12)"
+  - "AO-I6 external high-waters: LCFA epoch above F and assignment_epoch above its high-water, raised once per restore event (§3 r9.8)"
+  - "AO-I7 post-T erasures and retained revokes, mutes, fence raises and hold placements are all re-applied before authority opens; an unverifiable erasure record stops the restore (§3 r9.7)"
+  - "AO-I8 admission stays closed until reconciliation, Platform acknowledgement, final validation and 35 s since step 4 (§3 r9.11-12)"
+  - "AO-I9 content references stay resolvable by the build that starts (§3 r5)"
+  - "AO-I10 Platform re-requests are selected by Game recovery generation and operation id, never by comparing clocks (§3 r10)"
+  - "AO-I11 client trust floor never lowers; a package needs a root-signed attestation (§4 r9)"
+consumer_boundaries: [node registration (serve.rs:1442), every oteryn-game-ops write command, release activate, deploy (rolling and stop-the-world), restore steps 1-12, reseed, legacy restore, Platform restore notice and delivery reconciliation, client updater]
+mutation_operators:
+  applicable: [fence CAS (begin_recovery), retained fence record write, reconcile bridge insert, activation row insert, oteryn-game-migrate, audited domain migration, live-check report write, restore journal write, registration revoke, LCFA and assignment_epoch raise, erasure and retained request re-apply, delivery re-apply, trust-floor write]
+  considered_not_applicable: [activation row update or delete (guard trigger refuses), DOWN migration (never; roll forward or restore), direct database edit (forbidden, §3 r11), fence lower (never)]
+one_invariant_per_negative_case: true   # each packet test below changes one fact and keeps the rest valid
+negative_cases:
+  AO-I1: [missing, altered or reordered retained record refuses; reseed read-back mismatch refuses; reseed while a fence value survives refuses; resumed run makes no second CAS]
+  AO-I2: [ledger no retained release matches refuses; partial ledger refuses; table-less ledger not equal to legacy_predecessor refuses]
+  AO-I3: [no activation row refuses; PENDING newest row refuses node, ops write and restore, with and without a domain migration; another build's activate while PENDING refuses; runtime role cannot insert]
+  AO-I4: [second restore or deploy under the lock refuses; shared write during a child refuses; bad, foreign or reopened OTERYN_OPS_LOCK_FD refuses]
+  AO-I5: [migration rewriting a reference fails the final live check; incomplete domain migration fails it; early run writes no baseline]
+  AO-I6: [F above computed epoch refuses; resumed run re-applies the journaled value and never raises twice]
+  AO-I7: [bad or unparsable erasure signature stops the restore before any apply; missing request store refuses; grant, unmute, lift or release after T not re-applied]
+  AO-I8: [missing Platform acknowledgement keeps admission closed; step 12 validation failure keeps it closed; resumed run waits the full 35 s]
+  AO-I9: [dropped definition fails the bundle check; same revision with changed content fails]
+  AO-I10: [Platform clock behind; Platform clock ahead; duplicate replay]
+  AO-I11: [older trust record re-presented after revocation refused; fresh install of an older build with a replayed checkpoint refused]
+independent_current_fact_sources: [external fence register and retained records (restore fence directory), live _sqlx_migrations, newest activation row in the restored database, synced release index release.json, restore journal, fstat device and inode of ops.lock, Platform signature per erasure record, roster revision named by each retained request, Platform acknowledgement of the restore notice, ops host monotonic clock]
+record_derived_matching_helper:
+  allowed_for_positive_happy_path: true
+  forbidden_for_negative_authority_or_provenance_cases: true   # backup annotations and the journal's times select nothing
+finding_family_sweep:
+  sibling_apis: done   # deploy, restore, reseed, drill and legacy restore each checked for gate order, lock and activation phase
+  protocol_versions: done   # wire code 1117 and client_build_floor only (§4); no other wire change
+  direct_and_reconciled_paths: done   # fresh deploy vs resumed deploy; fresh restore vs resumed restore; ordinary vs reseeded fence
+  fenced_durable_writes: done   # every Character write keeps assert_recovery_fence; delivery writes the same
+  restart_retry_replay_concurrency_pg_reload: done   # crash after each deploy and restore step, PITR between PENDING and ACTIVE, concurrent operator, duplicate replay
+  evidence: [DATA-RESTORE-OPS-2, DATA-BACKUP-PITR-3, DATA-RESTORE-DRILL-4 and DATA-CONTENT-REF-5 test lists in §3 Packets; §3 before-freeze checklist]
+finding_dispositions:
+  p0_p1_accepted_and_repaired: ["4195138078", "4196009699", "4196009718", "4196009733", "4196009753", "4196648601", "4197124781", "4197124797", "4197725003", "4197725014", "4198575033", "4199026227", "4199169226", "4199169238", "4199169252", "4199169265"]
+  p0_p1_rejected_with_exact_evidence: []
+  p2_fixed_accepted_or_deferred: ["4195138089 fixed", "4195138097 fixed", "4196009764 fixed", "4196648606 fixed", "4197725029 fixed", "4198575049 fixed", "4199026234 fixed"]
 ```
 
 ## Outcome
@@ -84,6 +139,11 @@ external_repositories: []
 - Self-review, round 8 (class sweep, fixed in the same candidate): every deploy and restore order was checked for a gate that runs before the state it validates is final and for registration or admission that opens before a reconciliation; restore step 6 validation now runs again in step 12 on the final state, nodes register only in step 12, `release activate` follows the final live check, and `--abandon` is refused from step 12; the deploy's start, validate, open order already held; brief items 16, 17, 20 and 21, the §3 and §5.1 checklists and two rejected options follow.
 - ARCH-LIVE-READINESS-0 amendment 5 (#1879), routed by the control plane into this PR: §3 ruling 8's restore fence directory also holds the retained signed roster revoke, staff mute, fence raise and hold placement requests; ruling 9 step 7 verifies each erasure journal record's Platform signature and re-applies those requests after T in `issued_at` order, idempotent by operation_id, never a grant, unmute, lift or release; step 9 records an `ACCOUNT_ERASED` refusal and continues; the reseed records the requests as lost; DATA-RESTORE-OPS-2 scope, tests and dependencies follow.
 - Control plane, same candidate: the A3 risk that a Platform acknowledgement outage lengthens the restore past the RTO is recorded in §3 ruling 10, in the A3 text, as an explicit Platform acceptance item of PLATFORM-RESTORE-RECONCILE-P1 and as U9; Game never opens admission without the acknowledgement.
+
+- Codex 4199169238 (P1, §3 ruling 3): a stop-the-world release without a domain migration wrote `ACTIVE` before its final live check, so a crash or PITR between them left an accepted `ACTIVE` row. Fixed under D742: every stop-the-world release writes `PENDING` after `oteryn-game-migrate` and `ACTIVE` only after the final live check passes; tests in DATA-RESTORE-OPS-2, DATA-BACKUP-PITR-3, DATA-RESTORE-DRILL-4 and DATA-CONTENT-REF-5.
+- Codex 4199169226 (P1, §3 ruling 9 step 7): an unverifiable post-T erasure record was skipped, so the restore could resurrect erased state. Fixed under D742: any unreadable, unparsable or unverifiable record stops the restore before any record is applied, with admission closed, until an audited repair supplies a verifying copy of the same request. ARCH-LIVE-READINESS-0 (#1879) is aligned in its own candidate.
+- Codex 4199169252 (P1, §3 ruling 9 step 3): the first rollout of the activation table could not restore its own named pre-migration backup. Fixed under D742: a bounded legacy restore. R1 adds only the activation table, names R0 as `legacy_predecessor`, and R1's `oteryn-game-ops` runs steps 4–12 against R0's ledger and starts R0's nodes; any other table-less ledger fails closed.
+- Codex 4199169265 (P1, task record): the high-risk authority/recovery qualification was missing. Fixed: the completed section above, with eleven invariants, single-fact negative cases from the packet tests and the restart/replay/concurrency sweep.
 
 ## Rulings
 
