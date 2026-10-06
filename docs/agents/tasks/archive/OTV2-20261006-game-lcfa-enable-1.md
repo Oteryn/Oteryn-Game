@@ -4,11 +4,12 @@
 task_id: OTV2-20261006-game-lcfa-enable-1
 title: GAME-LCFA-ENABLE-1 enable the ListCharactersForAccount projection publisher
 mode: IMPLEMENT
-status: active
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/game-lcfa-enable-1-20261006
 base_sha: ee71e79eccd1d498d6c39ea25ac01ee74ccd118c
+pr: 1898
 owner: control plane
 owned_paths:
   - apps/game-server/src/node/config.rs
@@ -17,7 +18,6 @@ owned_paths:
   - apps/game-server/src/native_admission_source/account_characters_tests.rs
   - apps/game-server/src/bin/oteryn-game-ops.rs
   - tools/qualification/login_local/
-  - docs/agents/tasks/OTV2-20261006-game-lcfa-enable-1.md
   - docs/agents/tasks/archive/OTV2-20261006-game-lcfa-enable-1.md
 public_contracts:
   - docs/contracts/OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md
@@ -59,5 +59,8 @@ No migration, wire change or Platform change.
 
 `cargo fmt --check`; `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`;
 `cargo test --locked -p oteryn-game-server --lib account_characters` (20), `--lib node::config`
-(7), `--bin oteryn-game-ops`; `bash -n` and `shellcheck -x` on `run.sh`; repository policy and
-governance validators; `git diff --check`.
+(7), `--bin oteryn-game-ops`; `bash -n` and `shellcheck -x` on `run.sh`; `git diff --check`; all pass.
+
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass (59 tests)
+- `python tools/repository/validate_repository_policy.py`: pass
