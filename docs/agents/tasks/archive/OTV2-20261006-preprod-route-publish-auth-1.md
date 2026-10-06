@@ -38,13 +38,16 @@ external_repositories: []
 - Options:
   - current route: the disposable stack of the merged RUNBOOK-1, which calls the Platform methods
     through `php -r` with no Platform change.
-  - A (deferred after RUNBOOK-1 merged): the same stack, plus one Platform PR adding two commands
-    limited to testing and preproduction; reopened only by a decision §6 trigger.
+  - A (deferred, pending the owner's ruling): the same stack, plus one Platform PR adding two
+    commands limited to testing and preproduction. A backlog entry with no frozen design; the
+    design and authority are reassessed in an amendment if the owner proceeds under 1a or a §6
+    trigger occurs.
   - B: persistent private preproduction, deferred until rollout step 7.
   - C: public staging, rejected.
 - Owner questions §7 items 1–4 are routed through the control plane. Recorded answers 1a
-  (D831, against the final §2 owned-path list; replaces D824 1a) and 2a (D824) stay recorded,
-  but no Platform PR is allocated under them while Option A is deferred; items 3 and 4 are open.
+  (D831, against the owned-path list of its question; replaces D824 1a) and 2a (D824) stay
+  recorded, but no Platform PR is allocated under them while Option A is deferred pending the
+  owner's ruling (deferral versus proceeding under 1a); items 3 and 4 are open.
 
 ## Architecture and source of truth
 
@@ -55,44 +58,38 @@ external_repositories: []
 - PROVEN: Platform native gateway login contract §14 steps 6 and 7; `ARCH-LOGIN-FIRST-PACKETS-V1`
   §2.7 (RUNBOOK-1 plan).
 - DERIVED: a persistent MariaDB in `preproduction` is refused by the unchanged guard.
-- PROVEN: Game `main` 36c586516: RUNBOOK-1 (`tools/qualification/login_local/run.sh:163-182`)
+- PROVEN: Game `main` 6560803cf (RUNBOOK-1 files unchanged since 36c586516): RUNBOOK-1 (`tools/qualification/login_local/run.sh:163-182`)
   calls `issueForPreproduction`, `publishRouteForPreproduction` and `publishTrustedKey` through
   `php -r` in its throwaway `APP_ENV=preproduction` Platform container; Platform 3896bcd has no
   route or trust command.
 - DERIVED: that runbook's Platform store is MariaDB `oteryn_s3a` on host `db`
   (`tools/qualification/wp5_s3a/compose.yml:37-40`), which `isolatedConnection()` refuses in
   `preproduction` (`NativeTopologyRegistry.php:162-168`), so its topology step fails (F7).
-- UNKNOWN: Platform hosts outside the repository; the toolchain of the `oteryn-synology-game`
-  runner; whether the rest of the Platform stack runs on the per-run SQLite profile.
+- UNKNOWN: Platform hosts outside the repository; whether RUNBOOK-1 has run anywhere (no
+  `LOGIN_LOCAL_RESULT` evidence on Game `main`); whether the rest of the Platform stack runs on
+  the per-run SQLite profile.
 
 ## High-risk authority/recovery qualification
 
 `NOT_APPLICABLE`: this task changes only a decision document and this record. It performs no
-mutation and grants no authority. The Platform PR it requests touches trust registration and gets
-its own independent review under the item 1 grant.
+mutation and grants no authority. If Option A goes ahead, its Platform PR touches trust
+registration and gets its own independent review.
 
 ## Acceptance criteria
 
-- [x] Findings F1–F6 carry evidence classes (decision §1).
-- [x] The trust-key command applies the same disposable-store guard as `isolatedConnection()`
-      before any write, with a refusal test for a non-disposable store (decision §2).
-- [x] The trust command fences the high-water directory to the run's own per-run directory, and
-      the shared-guard paths are in the write grant (review round 2); it accepts only the
-      retained per-run SQLite file so the directory is bound to the current run (round 3).
-- [x] Both commands refuse a symlinked or non-canonical per-run database directory before any
-      write, through the run-directory check of the shared guard, with a refusal test for each
-      command (P1 4194718086; round 6 places the check in the shared guard).
-- [x] `game-auth:native-topology:issue` applies the environment fence and the run-directory
-      check before its first write and refuses with nothing written, with issuer refusal tests
-      (P1 4195238904).
-- [x] Option A runs only with `APP_ENV=preproduction`, where the unchanged guard admits only the
-      retained per-run SQLite file, and both new commands require that file in `testing` too,
-      with refusal tests (P1 4195923710).
+- [x] Findings F1–F7 carry evidence classes and file:line citations (decision §1).
+- [x] The safety facts from review rounds 1–7 (unguarded trust write and its high-water lock
+      before the transaction, permanent issuance, the run-directory check, the `testing` stores
+      the guard admits) are kept as constraints for a later reassessment (decision §2, F3–F5).
+- [x] Option A is a backlog entry with no frozen class, command, flag, test or path design, and
+      no pre-allocated Platform write (P1 4197089671).
+- [x] Whether RUNBOOK-1 has run is UNKNOWN, not PROVEN (P2 4197089687).
 - [x] The mandatory decision test is answered (decision §6).
-- [x] Owner answer 1a (D831, final §2 path list) and 2a (D824) are recorded; the Synology shape of Option B is noted as not
-      decided (decision §3, §7).
-- [x] F6 and §6 reassessed against the merged RUNBOOK-1: Option A deferred with reopen triggers;
-      no new Platform command authorized now (P1 4196578216).
+- [x] Owner answer 1a (D831, the path list of its question, kept in §7) and 2a (D824) are
+      recorded; the Synology shape of Option B is noted as not decided (decision §3, §7).
+- [x] F6 and §6 reassessed against the merged RUNBOOK-1: Option A deferred, pending the owner's
+      ruling, with reopen triggers; no new Platform command authorized now (P1 4196578216).
+- [ ] The owner's ruling on Option A (deferral versus proceeding under 1a).
 - [ ] Owner answers to items 3 and 4.
 
 ## Excluded scope
@@ -177,6 +174,23 @@ guard relaxation. No decision on Option B or its Synology shape.
     persistent preproduction, a CI gate needing stable flags, a security finding on the
     unguarded trust write, Platform removing the methods). Status, §0, §2, §5, §7 and §8 follow;
     answers 1a (control plane D831) and 2a (D824) stay recorded, with no Platform PR allocated.
+- Codex P1 4197089671 (a `NO` decision still froze Option A: classes, flags, tests and a write
+  grant in §2) and P2 4197089687 (the absence of a run was classed PROVEN on README wording that
+  covers one environment). Both accepted.
+  - §2 is now a backlog entry: subject, status, the safety constraints from F2–F5 for a later
+    reassessment, and authority. The design is reassessed in an amendment if the owner proceeds
+    under 1a or a §6 trigger occurs. The D831 path list moves to §7 as the record of what 1a
+    answered, not as an allocation. §5, §6, §8 and the status follow.
+  - F6: whether the runbook has run is UNKNOWN; Game `main` has no `LOGIN_LOCAL_RESULT` evidence,
+    and RUNBOOK-1-FU (D834) is to record it. F7's failure stays DERIVED.
+  - The doc reads "Option A deferred, pending the owner's ruling"; the owner was asked, through
+    the control plane, about deferral versus 1a, and nothing records it as decided.
+  - Self-review on merged `main` 6560803cf and Platform 3896bcd: F1 named the wrong runner (the
+    staging deploy runs on `platform-runners`/`oteryn-platform`, environment `synology-staging`;
+    `oteryn-staging` is the compose project); F3 omitted the refusal of other drivers; F4 now
+    states that the trust write creates its high-water lock file before its transaction; F7 notes
+    that `game-auth:world:ensure` writes before issuance is refused; Option B no longer refers to
+    removed Option A flags and credential lists; every factual claim carries a file:line.
 
 ## Validation
 
@@ -204,7 +218,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 
 - exact head: the frozen head
 - method/reviewer: Sol Supervising Architect
-- material findings: none open after the independent-effect fix
+- material findings: none open after the P1 4197089671 and P2 4197089687 fixes
 - verdict: ready for independent review
 
 ## Independent review
@@ -218,7 +232,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## PR and closeout
 
 - changed-file review: two owned paths
-- unresolved review threads: none after the reply to 4196578216
+- unresolved review threads: none after the replies to 4197089671 and 4197089687
 - related/superseded PRs: none
 - protected auto-merge: control plane
 - merge commit/result: in PR #1871
@@ -227,7 +241,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## Context checkpoint
 
 ```yaml
-last_progress: P1 4196578216, Option A deferred after RUNBOOK-1 merged (F6 rewritten, F7 added, §6 reassessed)
+last_progress: P1 4197089671 (§2 reduced to a backlog entry, no frozen design) and P2 4197089687 (run absence UNKNOWN); merged main 6560803cf; self-review fixes
 status: completed
 branch: cand/preprod-route-publish-auth-1
 pr: 1871

@@ -4,17 +4,21 @@
 - Status: **CANDIDATE: AUTHORITY REQUEST**. Each §7 item takes effect independently, as soon as
   its own owner answer is recorded here; an item without a recorded answer grants nothing, and
   no item waits for the others. The document itself grants no authority beyond those recorded
-  answers. Recorded: 1a (control plane D831, #162, given against the final §2 owned-path list;
-  it replaces D824 1a) and 2a (D824). Open, so granting nothing: items 3 and 4.
-  **Option A is deferred (§6):** RUNBOOK-1 merged and reaches the Platform methods without new
-  commands (F6). This decision authorizes no new Platform command now; answer 1a stays recorded
-  but no Platform PR is allocated under it until a §6 reopen trigger is recorded here.
+  answers. Recorded: 1a (control plane D831, #162, given against the owned-path list of its
+  question, §7; it replaces D824 1a) and 2a (D824). Open, so granting nothing: items 3 and 4.
+  **Option A is deferred, pending the owner's ruling (§6).** This document recommends deferral,
+  because the merged RUNBOOK-1 reaches the Platform methods without new commands (F6). The owner
+  has been asked, through the control plane, whether Option A stays deferred or proceeds
+  under answer 1a; that is not decided. Until the ruling is recorded here, no Platform PR is
+  allocated under 1a, and Option A has no frozen design (§2).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the control plane, D821 item 2 (#162, 2026-10-06; owner answer **2a**). The request
   covers the route-publish operator path that the joint native-login E2E needs. That E2E is
   Platform native gateway login contract §14 step 6 (#1419 item 5).
-- Evidence read: Oteryn/Oteryn-Platform `origin/main` 3896bcd, read only; Oteryn/Oteryn-Game
-  `main` 36c586516 for RUNBOOK-1 (F6, F7).
+- Evidence read: Oteryn/Oteryn-Platform `origin/main` 3896bcd, read only (all Platform citations
+  below are at that revision; "login contract" is its
+  `docs/contracts/OTERYN_V2_NATIVE_GATEWAY_LOGIN_CONTRACT.md`); Oteryn/Oteryn-Game `main` 6560803cf for RUNBOOK-1 (F6, F7; its
+  files are unchanged since 36c586516).
 - Runtime, migration, deployment, production, protected-World and Platform write authority: NONE
   in this PR.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -28,8 +32,8 @@ The joint E2E needs four things in Platform:
 3. `native_login_enabled=true` for that Channel;
 4. the admission issuer public key in the native signing trust registry.
 
-Item 1 has an operator command. Items 2–4 exist only as PHP methods. The tests call them, and
-the merged RUNBOOK-1 calls them through `php -r` inside its throwaway Platform container (F6).
+Item 1 has an operator command. Items 2–4 exist only as PHP methods. Platform's tests call them,
+and the merged RUNBOOK-1 calls them through `php -r` inside its throwaway Platform container (F6).
 
 The owner said "preproduction". Platform has **no preproduction deployment**. Its only deployed
 environment is the public Synology staging stack, and native login code refuses to run there by
@@ -37,12 +41,12 @@ design.
 
 So the request is a choice:
 
-- **Run step 6 on a disposable stack (RUNBOOK-1), with no new Platform command (current
+- **Run step 6 on a disposable stack (RUNBOOK-1), with no new Platform command (recommended
   route).** The merged runbook already does this through `php -r` (F6). Its first run still
   needs a store fix on the Game side (F7).
-- **Option A (deferred).** The same stack, plus one small Platform PR that adds two
-  testing/preproduction-only artisan commands. Nothing persistent is mutated. Nothing needs it
-  now; §6 lists what would reopen it.
+- **Option A (deferred, pending the owner's ruling).** The same stack, plus one small Platform
+  PR that adds two testing/preproduction-only artisan commands. It is a backlog entry (§2), not a
+  frozen design; §6 lists what would reopen it.
 - **Option B.** Stand up a persistent private preproduction environment. This needs deployment,
   database, secret and Platform code authority. Ask for it only when step 7 needs a persistent
   environment.
@@ -54,60 +58,72 @@ Each finding carries an evidence class: PROVEN (read in code or configuration at
 revision), DERIVED (follows from PROVEN facts), UNKNOWN or CONFLICT. No finding is CONFLICT.
 
 **F1. No Platform preproduction environment exists.** PROVEN for the repository: the deployment
-files and workflows below at 3896bcd. UNKNOWN: whether a host outside the repository runs
-Platform; none is declared.
+files and workflows below. UNKNOWN: whether a host outside the repository runs Platform; none is
+declared.
 
-- `deploy/synology/` is the only deployment.
-- `deploy/synology/.env.example` sets `APP_ENV=staging`.
-- It is public through a Cloudflare Tunnel: `https://oteryn.molehill.cloud` maps to Platform on
-  127.0.0.1:8000, and `https://gateway.molehill.cloud` maps to the Gateway on 8080.
-- It shares one MariaDB with Canary.
-- The `Deploy Synology Staging` workflow is manual and main-only, and runs on the `oteryn-staging`
-  runner.
+- `deploy/synology/` is the only deployment; `deploy/ci/` holds only two CI Dockerfiles. No file
+  outside the documentation sets `APP_ENV=preproduction`.
+- `deploy/synology/.env.example:48` sets `APP_ENV=staging`.
+- It is public through a Cloudflare Tunnel (`deploy/synology/PUBLIC_ENDPOINTS.md:5-14`):
+  `https://oteryn.molehill.cloud` maps to Platform on 127.0.0.1:8000, and
+  `https://gateway.molehill.cloud` maps to the Gateway on 8080.
+- It shares one MariaDB with Canary: one `mariadb` service (`deploy/synology/compose.yml:4-10`)
+  is both `DB_HOST` (`:56`) and `CANARY_DB_HOST` (`:61`).
+- The `Deploy Synology Staging` workflow is manual (`workflow_dispatch`, `:4`) and main-only
+  (`:90`), and runs in the `synology-staging` environment on the `platform-runners` group,
+  label `oteryn-platform` (`.github/workflows/deploy-synology-staging.yml:91-94`).
 - In `APP_ENV=staging`, three things refuse by design:
   - the native issuer;
-  - mode 33a (`config/game-auth.php`: "Refused (NATIVE_LOGIN_UNAVAILABLE) in any other
+  - mode 33a (`config/game-auth.php:59`: "Refused (NATIVE_LOGIN_UNAVAILABLE) in any other
     environment");
-  - every route-record method, through `NativeTopologyRegistry::isolatedConnection()`.
+  - every route-record method, through `NativeTopologyRegistry::isolatedConnection()`
+    (`NativeTopologyRegistry.php:152-154`).
 
-**F2. The route-publish write exists only as a method.** PROVEN: code and tests at 3896bcd.
+**F2. The route-publish write exists only as a method.** PROVEN.
 
 `App\GameAuth\Worlds\NativeTopologyRegistry::publishRouteForPreproduction(worldRowId, channelKey,
-host, port, tlsServerName, loginEnabled)` does the write. In one transaction it:
+host, port, tlsServerName, loginEnabled)` (`NativeTopologyRegistry.php:80`) does the write. It
+calls `isolatedConnection()` (`:89`) and then, in one transaction (`:91`):
 
-- locks `game_worlds` (by `id`) FOR UPDATE;
-- locks `game_channels` (by `game_world_id`, `channel_key`) FOR UPDATE;
-- requires an already issued `world_id` and `channel_id`;
+- locks `game_worlds` (by `id`) FOR UPDATE (`:92`);
+- locks `game_channels` (by `game_world_id`, `channel_key`) FOR UPDATE (`:93-94`);
+- requires an already issued `world_id` and `channel_id` (`:95-96`);
 - updates `native_route_host`, `native_route_port`, `native_route_tls_server_name`,
-  `native_route_version`, `native_route_revision`, `native_login_enabled` and `updated_at`.
+  `native_route_version`, `native_route_revision`, `native_login_enabled` and `updated_at`
+  (`:105-112`).
 
-An endpoint change advances the version, which invalidates every outstanding grant for the old
-revision. After the commit it logs "Disposable native route record published." with `world_id`,
-`channel_id`, `route_revision` and `native_login_enabled`.
+An endpoint change advances the version (`:101-103`), and a new `route_revision` invalidates every
+outstanding grant for the old one (login contract line 259). After the commit it logs "Disposable
+native route record published." with `world_id`, `channel_id`, `route_revision` and
+`native_login_enabled` (`:118-123`).
 
-There is no artisan command, route or job for it. Only the tests call it. The N4P-3 task record
-lists "an operator path for `publishRouteForPreproduction` outside the isolated connection" as
-out of scope, under separate authority.
+There is no artisan command, route or job for it. In Platform, only the tests call it (no caller
+under `app/`, `routes/` or `config/`); Game RUNBOOK-1 calls it through `php -r` (F6). The N4P-3
+task record lists "an operator path for `publishRouteForPreproduction` outside the isolated
+connection" as out of scope, under separate authority
+(`docs/agents/tasks/archive/OTV2-20260930-n4p3-native-admission-issuer.md:21`).
 
-**F3. The connection guard admits only disposable stores.** PROVEN: `isolatedConnection()` at
-3896bcd. The consequence for a persistent MariaDB is DERIVED.
+**F3. The connection guard admits only disposable stores.** PROVEN: `isolatedConnection()`
+(`NativeTopologyRegistry.php:150-194`). The consequence for a persistent MariaDB is DERIVED.
 
-`isolatedConnection()` uses the application's default connection and refuses in these cases:
+`isolatedConnection()` uses the application's default connection (`:156`) and refuses in these
+cases:
 
-- the environment is not `testing` or `preproduction`;
-- an outer transaction is open;
+- the environment is not `testing` or `preproduction` (`:152`);
+- an outer transaction is open (`:157`);
 - the store is MySQL/MariaDB, unless all of these hold: database `oteryn_concurrency`, a loopback
-  host, no unix socket, and `APP_ENV=testing`;
-- the store is SQLite, unless it is `:memory:` in testing, or a regular retained file at
+  host, no unix socket, and `APP_ENV=testing` (`:162-168`);
+- the store uses any driver other than MySQL/MariaDB or SQLite (`:172-173`);
+- the store is SQLite, unless it is `:memory:` in testing (`:175`), or a regular retained file at
   `<sys_get_temp_dir>/oteryn-native-topology-<hex>/oteryn-native-topology.sqlite` with no
-  symlink in the file or in its directory.
+  symlink in the file or in its directory (`:181-189`).
 
 A preproduction Platform can therefore publish routes **only** when its whole default database is
-that retained temporary SQLite file. RUNBOOK-1 needs that profile; the merged runbook does not use
-it yet (F7). A persistent MariaDB is refused.
+that retained temporary SQLite file. A persistent MariaDB is refused. RUNBOOK-1 needs that profile;
+the merged runbook does not use it yet (F7).
 
-The SQLite clause also checks the per-run directory (`NativeTopologyRegistry.php:181-189` at
-3896bcd). It takes `realpath(dirname($database))` and requires that:
+The SQLite clause also checks the per-run directory. It takes `realpath(dirname($database))`
+(`:182`) and requires that:
 
 - it equals the configured `dirname($database)` (`:186`);
 - its parent is `realpath(sys_get_temp_dir())` (`:184`).
@@ -115,294 +131,140 @@ The SQLite clause also checks the per-run directory (`NativeTopologyRegistry.php
 A per-run directory that is a symlink resolves to its target, so the two paths differ and the
 guard refuses, even when the file inside is regular. The configured path must therefore be
 canonical, built from `realpath(sys_get_temp_dir())`.
-`NativeTopologyRegistryTest.php:269,293-297` proves that issuance and readback refuse in
-`preproduction` through a symlinked per-run directory. This **run-directory check** is part of
-the predicate that §2 moves unchanged. No new check is needed.
+`NativeTopologyRegistryTest.php:269,287-297` proves that issuance and readback refuse in
+`preproduction` through a symlinked per-run directory. Every caller of the guard, and any future
+operator path that calls these methods, inherits this **run-directory check**.
 
-**F4. The trust key has no operator path either.** PROVEN: `NativeSigningTrustRegistry` at
-3896bcd.
+**F4. The trust key has no operator path either.** PROVEN: `NativeSigningTrustRegistry`.
 
 The issuer public key must be in `native_game_signing_trust_profiles` (via
-`NativeSigningTrustRegistry::publishTrustedKey`) before the Gateway accepts a grant. That method
-has no command and no environment gate. It writes through `DB::transaction` on the default
-connection, which is whatever database the process is configured with; it has no disposable-store
-check like `isolatedConnection()`. It needs `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY`.
-The joint E2E needs it as much as the route, so this request covers both.
+`NativeSigningTrustRegistry::publishTrustedKey`, `NativeSigningTrustRegistry.php:19`) before the
+Gateway accepts a grant. That method has no command and no environment gate. It enters the
+high-water witness for its namespace (`:31`), which creates a lock file in
+`GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY` (`NativeEvidenceHighWaterWitness.php:43-46`;
+`config/game-auth.php:37`), and only then opens
+`DB::transaction` (`:38`) on the default connection, which is whatever database the process is
+configured with. It has no disposable-store check like `isolatedConnection()`. The joint E2E needs
+it as much as the route, so this request covers both.
 
-**F5. Issued identities are permanent.** PROVEN: the issuance code and migration at 3896bcd.
+**F5. Issued identities are permanent.** PROVEN: the issuance code and migration.
 
-The WorldId and ChannelId from `game-auth:native-topology:issue` are immutable. The migration
-refuses to roll back while issued records exist. On any persistent store, an issuance is a
-permanent change to the Registry.
+`issueForPreproduction` writes a `world_id` only where none is set
+(`NativeTopologyRegistry.php:27-34`) and re-issuing returns the same pair
+(`NativeTopologyRegistryTest.php:288-291`). The migration refuses to roll back while issued
+records exist (`database/migrations/2026_09_26_150000_add_native_world_topology.php:26-32`). On
+any persistent store, an issuance is a permanent change to the Registry.
 
-**F6. RUNBOOK-1 reaches these methods without new commands.** PROVEN: Game `main` 36c586516
-(RUNBOOK-1 merged in 3d297c9db, #1872). Its first run has not happened, so no run evidence exists
-(`tools/qualification/login_local/README.md:78-80`).
+**F6. RUNBOOK-1 reaches these methods without new commands.** PROVEN for the code: Game `main`
+6560803cf (RUNBOOK-1 merged in 3d297c9db, #1872). UNKNOWN: whether the runbook has run anywhere.
+Its README says only that the documented run was "not executed in this environment"
+(`tools/qualification/login_local/README.md:78-80`), and Game `main` holds no `LOGIN_LOCAL_RESULT`
+evidence; RUNBOOK-1-FU (D834) is to record it
+(`docs/agents/tasks/archive/OTV2-20261006-runbook-1-login-local.md:37`).
 
 - The Platform container runs with `APP_ENV=preproduction`
   (`tools/qualification/login_local/compose.override.yml:7`).
 - `tools/qualification/login_local/run.sh:163` defines `php_exec`: `compose exec ... platform
-  php -r`, which boots the Laravel kernel and evaluates a PHP snippet. node_boot uses the same pattern
-  (`tools/qualification/node_boot/run.sh:168-169`, including `publishTrustedKey`).
+  php -r`, which boots the Laravel kernel and evaluates a PHP snippet. node_boot uses the same
+  pattern (`tools/qualification/node_boot/run.sh:168-169`, including `publishTrustedKey`).
 - `run.sh:166` calls `game-auth:world:ensure` and then `issueForPreproduction`; `run.sh:170`
   calls `publishRouteForPreproduction(..., true)`; `run.sh:182` calls `publishTrustedKey` for
   the fresh issuer and profile.
 - The README lists these as "Platform main, no Platform change" and says no step is pending
   `PLATFORM-NATIVE-PREPROD-OPS-1` (`README.md:68-73`).
 - The commands that Option A would add do not exist at Platform 3896bcd: `app/Console/Commands/`
-  has `IssueNativeTopology.php` and `EnsureGameWorld.php`, but no route or trust command.
+  has `IssueNativeTopology.php` and `EnsureGameWorld.php`, but no route or trust-key command, and
+  `routes/console.php` defines none.
 
 So RUNBOOK-1 does not need the Option A commands. It runs the methods in a throwaway container.
-No protected preproduction environment exists (F1), so there is no place yet where this ad-hoc
-`php -r` path would be inadmissible.
+DERIVED: no protected preproduction environment exists (F1), so there is no place yet where this
+ad-hoc `php -r` path would be inadmissible.
 
 **F7. The merged runbook's topology steps hit the store guard.** PROVEN for the configuration;
-the failure is DERIVED (not run).
+the failure is DERIVED (no recorded run, F6).
 
 - The Platform default store is MariaDB: `DB_CONNECTION: mysql`, `DB_HOST: db`,
-  `DB_DATABASE: oteryn_s3a` (`tools/qualification/wp5_s3a/compose.yml:37-40`). No overlay in
-  `run.sh:84-87` changes it.
+  `DB_DATABASE: oteryn_s3a` (`tools/qualification/wp5_s3a/compose.yml:37-40`). None of the
+  overlays that `run.sh:84-87` adds (`run.sh:33-35`) sets a database variable.
 - With `APP_ENV=preproduction`, `isolatedConnection()` refuses any MySQL/MariaDB store
-  (`NativeTopologyRegistry.php:162-168` at 3896bcd: only `oteryn_concurrency` on loopback in
-  `testing`).
-- So `issueForPreproduction` at `run.sh:166` is refused, and under `set -e` (`run.sh:19`) the run
-  ends `FAIL` before the route and trust steps.
+  (`NativeTopologyRegistry.php:162-168`: only `oteryn_concurrency` on loopback in `testing`).
+- So `issueForPreproduction` at `run.sh:166` is refused. `game-auth:world:ensure` runs first in
+  the same snippet and does not call the guard, so its `game_worlds` row is already in the
+  throwaway MariaDB. Under `set -e` (`run.sh:19`) the run then ends with `result=FAIL`
+  (`run.sh:82`) before the route and trust steps.
 
-The Option A commands would not fix this: they call the same unchanged guard (§2). The fix
-belongs to RUNBOOK-1's own paths (for example, running the topology steps against the retained
-per-run SQLite file, F3) and is for the RUNBOOK-1 follow-up run (RUNBOOK-1-FU, D834). UNKNOWN:
-whether the rest of the Platform stack runs on that SQLite profile.
+New commands would not fix this: issuance and route publication call `isolatedConnection()`
+themselves (`NativeTopologyRegistry.php:16,89`), whoever calls them. The fix belongs to
+RUNBOOK-1's own paths (for example, running Platform with the retained per-run SQLite file as its
+whole default database, F3, so that the world row, issuance and route share one store) and is for
+RUNBOOK-1-FU (D834). UNKNOWN: whether the rest of the Platform stack runs on that SQLite profile.
 
-## 2. Option A (deferred): the joint E2E on a disposable stack, with two new commands
+## 2. Option A (deferred, pending the owner's ruling): backlog entry
 
-**Deferred (§6).** This section is the specification to use if a §6 reopen trigger is recorded.
-It authorizes nothing now.
+**Subject.** An operator command surface on a disposable stack for `publishRouteForPreproduction`
+and `publishTrustedKey`: one Platform PR, `PLATFORM-NATIVE-PREPROD-OPS-1`, adding two
+testing/preproduction-only artisan commands (§7 item 1 as asked).
 
-**What is mutated.** All mutations happen in the per-run SQLite file
-`<tmp>/oteryn-native-topology-<hex>/oteryn-native-topology.sqlite` of one disposable Platform
-process with `APP_ENV=preproduction`, in CI as on a developer machine. Option A never runs in
-`testing`. The changed rows are:
+**Status.** Registered for later, not designed. The design discussed in PR #1871 review rounds 1–7
+is history, not a specification: no class, command name, flag, test list or path list is frozen
+here. If the owner's ruling proceeds under 1a, or a §6 reopen trigger occurs, the design and its
+authority are reassessed against Platform `main` at that time and recorded in an amendment to
+this decision before the control plane allocates any Platform PR.
 
-- one `game_worlds` row from `game-auth:world:ensure` (login disabled);
-- its `world_id` and one `game_channels` row from `game-auth:native-topology:issue`;
-- the route columns and `native_login_enabled` from the new route command;
-- one `native_game_signing_trust_profiles` row from the new trust-key command, plus the high-water
-  floor file in the per-run `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY`.
+**Known constraints for that reassessment** (from F2–F5; these are safety facts, not a design):
 
-Nothing outside the run's temporary directories changes. No staging, production or shared
-database is touched. In `preproduction` the unchanged shared guard admits only the retained
-per-run SQLite file: it refuses every MySQL/MariaDB store, the loopback `oteryn_concurrency`
-test database included, and `:memory:` (F3). That fences issuance to the file, as well as the
-two new commands.
+- `publishTrustedKey` has no store or environment guard and touches the high-water directory
+  before its database transaction (F4). A check of `APP_ENV` alone is therefore not enough, and
+  any guard has to run before the witness is entered.
+- Issuance is permanent on any persistent store (F5), and it runs before the route can be
+  published.
+- In `testing`, `isolatedConnection()` also admits `:memory:` and the loopback `oteryn_concurrency`
+  database (F3).
 
-**Where.** A developer machine, or a CI job on a GitHub-hosted runner. Never inside the Synology
-staging stack or against its database. A per-run job on the self-hosted `oteryn-synology-game`
-runner is possible if it starts its own disposable Platform process (UNKNOWN: that runner's PHP
-toolchain; it has no Docker). The store guard below refuses any persistent database there too.
-
-**By whom.** One of these:
-
-- the RUNBOOK-1 operator, who is the person running `tools/qualification/login_local/run.sh`;
-- the Game node-boot CI job that wraps it.
-
-Each run has one writer. The commands run against that run's Platform only.
-
-**Platform change.** One Platform PR, `PLATFORM-NATIVE-PREPROD-OPS-1`.
-
-- Owned paths (the exact list the owner approved as answer 1a, D831; nothing outside it):
-  - `app/Console/Commands/PublishNativeRoute.php`
-  - `app/Console/Commands/PublishNativeTrustedKey.php`
-  - `app/GameAuth/Worlds/DisposableNativeStore.php` (new: the shared guard below)
-  - `app/GameAuth/Worlds/NativeTopologyRegistry.php` (only to call the shared guard from
-    `isolatedConnection()`; no other change)
-  - their tests under `tests/Feature/GameAuth/`
-  - one line in the Platform native gateway login contract §14 or §17
-  - the Platform task record
-- `php artisan game-auth:native-topology:issue` (existing, unchanged) runs first, because the
-  route needs issued IDs. Its first write is permanent (F5), so it is fenced the same way.
-  - The command calls `issueForPreproduction` (`IssueNativeTopology.php:29`). That method calls
-    `isolatedConnection()` (`NativeTopologyRegistry.php:16`) before its transaction (`:18`).
-  - The guard applies the environment fence (`:152`) and then the run-directory check
-    (`:181-189`). On any failure the command refuses with nothing written.
-  - After the move, `isolatedConnection()` calls the shared guard, so issuance and the route
-    command share one fence.
-  - In `testing` that guard also admits `:memory:` and the loopback `oteryn_concurrency` test
-    database, which Platform's own tests use. Option A therefore runs issuance only with
-    `APP_ENV=preproduction` (above). `IssueNativeTopology.php` and the predicate stay unchanged
-    and outside the D831 list. Issuance run in `testing` by mistake writes only to those test
-    stores, as it can at 3896bcd today, and both new commands then refuse, so no route or trust
-    state follows.
-- `php artisan game-auth:native-route:publish --world-row-id= --channel-key= --host= --port=
-  --tls-server-name= --login-enabled=<true|false>`
-  - It calls `publishRouteForPreproduction` unchanged.
-  - Before any write it refuses unless `APP_ENV` is `testing` or `preproduction`.
-  - Before any write it also passes the shared disposable-store guard, because
-    `publishRouteForPreproduction` calls `isolatedConnection()` before its transaction
-    (`NativeTopologyRegistry.php:89-91`). That guard includes the **run-directory check** (F3).
-    When the default store is a SQLite file:
-    - the configured per-run directory `<sys_get_temp_dir>/oteryn-native-topology-<hex>` equals
-      its own `realpath`, so neither it nor any parent is a symlink;
-    - that `realpath` sits directly beneath `realpath(sys_get_temp_dir())`;
-    - the database file is `oteryn-native-topology.sqlite`, regular, not a symlink, and equal to
-      its own `realpath`.
-
-    Otherwise the command refuses with nothing written. The clause moves with the predicate into
-    `DisposableNativeStore` unchanged, so every caller of the shared guard applies it: issuance,
-    readback, this command and the trust command. On a host whose system temporary path is a
-    symlink, the run passes the canonical path. The run's single writer owns the directory, so
-    it does not change between the check and the write.
-  - Before any write it also requires the **retained per-run SQLite file**, in `testing` as in
-    `preproduction`. It refuses `:memory:` and the loopback `oteryn_concurrency` database, which
-    the shared guard admits in `testing`, with nothing written. The trust command applies the
-    same retained-file check (below).
-  - It prints a JSON readback receipt: `world_id`, `channel_id`, `route_version`,
-    `route_revision`, `native_login_enabled`.
-  - On failure it prints only a generic error, never the exception.
-- `php artisan game-auth:native-trust:publish-key --key-id= --public-key-file=`
-  - The issuer and profile are fixed to `NativeEvidenceContract::FRESH_ISSUER` and
-    `FRESH_PROFILE`. The key purpose is `game-auth.native_evidence.fresh_key_purpose`, the value
-    the issuer uses for its lookup. The command accepts no other scope.
-  - Before any write, including the high-water floor file, it applies the **same disposable-store
-    guard as `isolatedConnection()`**, unchanged: `APP_ENV` is `testing` or `preproduction`; no
-    outer transaction; a MySQL/MariaDB store only as the loopback `oteryn_concurrency` database in
-    `testing`; a SQLite store only as `:memory:` in `testing` or the retained per-run file
-    `<sys_get_temp_dir>/oteryn-native-topology-<hex>/oteryn-native-topology.sqlite` with no
-    symlink, including the run-directory check (route command above). An environment check
-    alone is not enough, because `publishTrustedKey` writes to the default connection, which in
-    a deployed process is its persistent database.
-  - The Platform PR moves that predicate out of `NativeTopologyRegistry` into one shared guard,
-    `DisposableNativeStore`, that both the registry and this command call. It may not relax or
-    fork it; the registry's behaviour stays identical, which its existing tests prove.
-  - Before any write it also fences the high-water directory, because `publishTrustedKey` writes
-    the floor file, the witness-store lock file and the provenance row through the separately
-    configured `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY`. The configured path must be a
-    canonical directory (its `realpath` equals the configured value), neither it nor its parent
-    a symlink, and directly beneath the per-run directory that holds the current database
-    file. To bind that directory to the current run, the trust command applies the retained-file
-    check (route command above): it refuses `:memory:` and the loopback `oteryn_concurrency`
-    database, which the shared guard otherwise allows, because neither names a per-run
-    directory. Otherwise the command refuses with nothing written. Both checks live in
-    `DisposableNativeStore`. Both new commands call the retained-file check; only the trust
-    command calls the high-water check. The witness and the registry's guard are not changed.
-  - It reads 32 raw bytes from a regular file that is not a symlink, and never takes the key from
-    an argument.
-  - It prints the key ID and the profile version.
-- Not changed:
-  - the guard predicate of `isolatedConnection()`, its run-directory check included (it moves,
-    it does not change);
-  - `game-auth:native-topology:issue` and `issueForPreproduction`;
-  - the trust registry rules (two fresh keys at most; no re-trust after revocation);
-  - migrations, routes and the staging deployment.
-- Tests:
-  - each command refuses in `local`, `staging` and `production` with no row written;
-  - each command refuses in `preproduction` when the default store is not disposable (a MariaDB
-    connection as in the staging deployment, a SQLite file outside the per-run directory, a
-    symlinked file) with no row written and no high-water floor file created;
-  - the issue command and each new command refuse in `testing` and in `preproduction` when the
-    per-run directory is a symlink to a persistent directory and the database file inside it is
-    regular and not a symlink, with no row, floor file or lock file written in the target; for
-    issuance, no `world_id` and no `game_channels` row;
-  - the issue command refuses in `local`, `staging` and `production` and with a non-disposable
-    `preproduction` store, including `:memory:` and the loopback `oteryn_concurrency` database,
-    with no `world_id` and no `game_channels` row written (the issue command tests exercise the
-    shared guard through its issuance caller);
-  - the trust command refuses, with a disposable store, when the high-water directory is outside
-    the per-run directory, in another run's directory, a symlink or under a symlinked parent,
-    with no row, floor file or lock file written;
-  - each new command refuses in `testing` with a `:memory:` store or the loopback
-    `oteryn_concurrency` database, with no route column, row, floor file or lock file written;
-    the trust command does so even with a high-water directory under some other run's per-run
-    directory;
-  - the registry's existing `isolatedConnection()` tests pass unchanged after the guard moves,
-    including
-    `test_controlled_regular_file_reconnect_retains_issuer_readback_and_symlink_profile_is_refused`;
-  - the happy path in `preproduction`, with a retained per-run SQLite file (and, for the trust
-    command, a high-water directory beneath it), issues, writes the rows and prints the receipts;
-  - an endpoint change advances `route_version`;
-  - `--login-enabled=false` keeps the endpoint and clears login;
-  - a malformed selector, port or key file is refused before any write.
-- Validation: `composer format:check`, `composer analyse` and `composer test`. Add the concurrency
-  workflow only if a test is added there.
-- Review: one independent review. No production trust change, because both commands refuse
-  outside testing and preproduction.
-
-**Credentials (names only).** All are generated per run and never committed or reused:
-
-- `GAME_AUTH_NATIVE_ADMISSION_SIGNING_KEY_FILE` and `GAME_AUTH_NATIVE_ADMISSION_SIGNING_KEY_ID`
-  (an Ed25519 seed file and its key ID; the public half goes to the trust command);
-- `GAME_AUTH_GATEWAY_SERVICE_TOKEN_SHA256` and the Gateway's matching service token;
-- `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY` (a per-run directory) and
-  `GAME_AUTH_NATIVE_EVIDENCE_FRESH_KEY_PURPOSE` (configuration, not a secret);
-- `GAME_AUTH_NATIVE_RUNTIME_STATUS_IDENTITIES` and `GAME_AUTH_NATIVE_SCOPE_ASSIGNMENT_IDENTITIES`,
-  bound to certificates from the per-run development CA;
-- the per-run development root (`oteryn-dev-client`) and the server certificate for
-  `--tls-server-name`;
-- with LCFA, the projection identity from `ARCH-LCFA-PROJECTION-CONTRACT-V1` §2.
-
-No GitHub, Synology, Cloudflare or database credential of any deployed environment is used.
-
-**Rollback.**
-
-- Set `--login-enabled=false` for the Channel. The route record stays, and outstanding grants
-  expire within 30 s.
-- Or stop the stack and delete its temporary directories. That removes every issued identity with
-  it.
-- Code rollback: revert the Platform PR. The commands are additive and nothing else calls them.
-
-**Blast radius.**
-
-- One disposable Platform process and its temporary files.
-- A wrong command in a deployed environment refuses before any write. The issue command and
-  both new commands pass the environment fence and then the shared disposable-store guard, whose
-  run-directory check refuses a symlinked per-run directory. None can therefore write to a
-  staging, production or shared database, even when `APP_ENV` is set to
-  `preproduction` by mistake or the per-run directory is a symlink to a persistent one. The
-  trust command also refuses a high-water directory outside the run's own temporary directory,
-  so no trust state is written to a shared or persistent path.
-- Option A runs only in `preproduction`, where the guard admits only the retained per-run file,
-  and both new commands require that file in `testing` too. The existing issue command in
-  `testing` still admits `:memory:` and the loopback `oteryn_concurrency` test database (F3).
-  That is unchanged Platform behaviour, which Option A does not use; no route or trust state
-  can follow it.
-- Public staging, production, Canary and the Game repositories are not affected.
+**Authority.** This document grants no Platform write. Answer 1a stays recorded as given (§7);
+whether it covers a reassessed design is for the owner's ruling, not for this document.
 
 ## 3. Option B (deferred): a persistent private preproduction environment
 
-Use this only when step 7 ("enablement for internal builds in `testing`/`preproduction`") needs
-an environment that outlives one run.
+Use this only when step 7 ("enablement for internal builds in `testing`/`preproduction` only",
+login contract line 425) needs an environment that outlives one run. The items below are the
+scope that answer 3a would authorize, given so the owner can answer item 3; the design is set
+when step 7 is scheduled.
 
 **What is mutated.**
 
-- A new Synology compose project, `oteryn-preprod`, with:
+- A new Synology compose project, separate from the staging project, with:
   - `APP_ENV=preproduction`;
   - its own MariaDB volume and database;
   - its own Redis;
   - no Cloudflare Tunnel route (reached only over a private network or VPN);
   - its own Gateway and game-node ports.
-- In that database, the same rows as Option A, but **permanent**: the issued WorldId and ChannelId
-  cannot be removed (F5).
+- In that database, the issued WorldId and ChannelId, the route record and the trust key, all
+  **permanent**: the issued identities cannot be removed (F5).
 - Platform code: `isolatedConnection()` must accept the configured preproduction MariaDB, in
   `preproduction` only. That changes a guard that the issuer review relied on, so it needs its
   own security review.
-- The deployment workflow: a new manual, main-only `Deploy Synology Preproduction` job on the
-  `oteryn-staging` runner, or on a new runner label.
+- The deployment workflow: a new manual, main-only job, on the runner that `Deploy Synology
+  Staging` uses (F1) or on a new runner label.
 
 **By whom.**
 
-- A named operator identity with Synology shell or workflow-dispatch access runs the artisan
-  commands inside the preproduction Platform container.
+- A named operator identity with Synology shell or workflow-dispatch access runs the operator
+  path inside the preproduction Platform container.
 - The control plane records each run.
 
-**Credentials (names only).**
+**Credentials (by kind).**
 
-- The Option A names, held as preproduction secrets on the Synology host, never in Git.
-- `PREPROD_PLATFORM_DB_PASSWORD` and `PREPROD_MARIADB_ROOT_PASSWORD`.
+- The native-login configuration secrets (admission signing key, Gateway service token, producer
+  identities), generated for preproduction, held on the Synology host, never in Git.
+- The preproduction database passwords (new names).
 - The runner's deploy access.
 - No Cloudflare token, because no public route is created.
 
 **Rollback.**
 
-- `--login-enabled=false`; grants expire within 30 s.
+- Set `native_login_enabled=false` for the Channel; outstanding grants expire within their TTL,
+  never above 30 s (login contract lines 293, 427).
 - Stop the compose project.
 - The issued identities remain (F5).
 - Deleting the database volume removes them, but that is a separate destructive act that needs
@@ -427,17 +289,17 @@ an environment that outlives one run.
 plane proposed a separate private preproduction stack there: its own database, no Cloudflare
 route, and no guard relaxation. This is the probable form of Option B, but item 3 is open and
 nothing here records it as decided. It has one tension: with the guard unchanged, a
-`preproduction` Platform writes routes and trust keys only to the retained per-run SQLite file
-under the system temporary directory. A persistent stack with its own MariaDB would be refused
-(F3). So "no guard relaxation" means either a per-run stack on Synology (Option A on that host)
-or a reviewed guard change (above). The owner's item 3 answer decides which.
+`preproduction` Platform writes routes only to the retained per-run SQLite file under the system
+temporary directory. A persistent stack with its own MariaDB would be refused (F3). So "no guard
+relaxation" means either a per-run disposable stack on Synology (like RUNBOOK-1) or a reviewed
+guard change (above). The owner's item 3 answer decides which.
 
 ## 4. Option C (rejected): native login on public staging
 
 This would need `APP_ENV=staging` to be accepted by the issuer, mode 33a and `isolatedConnection()`
-on a publicly reachable stack that shares MariaDB with Canary. Issued identities would become
-permanent in a shared database. It contradicts the contract (§14 step 7 limits enablement to
-testing and preproduction; production needs U8). Not offered.
+on a publicly reachable stack that shares MariaDB with Canary (F1). Issued identities would become
+permanent in a shared database (F5). It contradicts the contract (§14 step 7 limits enablement to
+testing and preproduction; production needs U8; login contract line 425). Not offered.
 
 ## 5. Sequencing
 
@@ -447,23 +309,26 @@ testing and preproduction; production needs U8). Not offered.
 3. The joint E2E (§14 step 6) runs on that stack. It uses mode 33a until PLATFORM-LCFA-1 and
    GAME-LCFA-ENABLE-1 land, and the projection feed afterwards (`ARCH-LCFA-PROJECTION-CONTRACT-V1`
    §4).
-4. `PLATFORM-NATIVE-PREPROD-OPS-1` (Option A) only after a §6 reopen trigger is recorded here.
+4. `PLATFORM-NATIVE-PREPROD-OPS-1` (Option A) stays deferred until the owner rules. It starts only
+   after an amendment with a reassessed design is recorded here (§2) and the control plane
+   allocates it on #162.
 5. Option B is asked for separately when step 7 is scheduled.
 
 ## 6. Mandatory decision test
 
 `docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`:
 
-1. **Must decide now?** NO for Option A, which is deferred: nothing is blocked on it (item 2).
-   NO for Option B, which stays deferred (item 3). The only decision now is to not add new
-   Platform command surfaces.
+1. **Must decide now?** NO for Option A: nothing is blocked on it (item 2), so this document
+   recommends deferral and registers it as a backlog entry (§2) without a frozen design. The
+   owner's ruling on deferral versus proceeding under 1a is pending. NO for Option B, which stays
+   deferred (item 3).
 2. **Blocked downstream work.** None on the Option A commands. RUNBOOK-1 reaches every method it
    needs through `php -r` in its throwaway container (F6), and its README says no step is pending
-   `PLATFORM-NATIVE-PREPROD-OPS-1`. Its first run is blocked by the store guard (F7), which the
+   `PLATFORM-NATIVE-PREPROD-OPS-1`. Its first run is blocked by the store guard (F7), which new
    commands would not change. That fix is RUNBOOK-1-FU work in Game paths, not a Platform grant.
 3. **What becomes harder later.** Little. The runbook pins Platform 3896bcd (`run.sh:23`) and
    calls the methods by name, so a Platform change to those methods breaks it at the next pin
-   bump. Adding the commands later is additive.
+   bump. Adding commands later is additive.
 4. **Evidence that reopens Option A.** Any one of:
    - a protected or persistent preproduction environment (Option B, item 3), or a CI or operator
      context where evaluating ad-hoc PHP inside the Platform container is not admissible;
@@ -473,24 +338,32 @@ testing and preproduction; production needs U8). Not offered.
      against a store that is not disposable;
    - a Platform change that removes or renames the methods the runbook calls.
 
-   Reopening means amending this decision with that evidence. The control plane then allocates
-   the Platform PR on #162; answer 1a covers it only if the §2 owned-path list is unchanged.
-5. **Deliberately not decided.** Option A until reopened; Option B and its shape on Synology; any
-   guard relaxation; the RUNBOOK-1 store fix (RUNBOOK-1-FU); the release and production operator
-   path; production trust keys; Option C stays refused.
+   Reopening, like a ruling to proceed under 1a, means amending this decision with the evidence
+   and a reassessed design and authority (§2). The control plane then allocates the Platform PR on
+   #162. Whether answer 1a covers it is the owner's call; any path the D831 question did not list
+   needs a new owner answer.
+5. **Deliberately not decided.** Option A's design and the owner's ruling on it; Option B and its
+   shape on Synology; any guard relaxation; the RUNBOOK-1 store fix (RUNBOOK-1-FU); the release
+   and production operator path; production trust keys. Option C stays refused.
 
 ## 7. Owner approvals requested
 
 Each item takes effect independently once its answer is recorded here. Recorded: **1a**
-(control plane D831, #162, 2026-10-06) and **2a** (D824). Their use is deferred with Option A
-(§6): no Platform PR is allocated under 1a now. Items 3 and 4 are open and grant
-nothing. The D831 question listed the final §2 owned paths, including the new
-`DisposableNativeStore.php` and the guard-call-only change to `NativeTopologyRegistry.php`.
-Answer 1a rests on D831, which replaces the earlier D824 1a: that answer predates those two paths.
+(control plane D831, #162, 2026-10-06) and **2a** (D824). Their use waits for the owner's ruling
+on Option A (§6): no Platform PR is allocated under 1a now. Items 3 and 4 are open and grant
+nothing. Answer 1a rests on D831, which replaces the earlier D824 1a: that answer predated two of
+the paths below.
+
+Paths listed in the D831 question, kept as the record of what 1a answered (not a design and not
+an allocation): `app/Console/Commands/PublishNativeRoute.php`,
+`app/Console/Commands/PublishNativeTrustedKey.php`, `app/GameAuth/Worlds/DisposableNativeStore.php`
+(new), `app/GameAuth/Worlds/NativeTopologyRegistry.php` (guard call in `isolatedConnection()`
+only), their tests under `tests/Feature/GameAuth/`, one line in the Platform native gateway login
+contract §14 or §17, and the Platform task record.
 
 Answer as, for example, `1a 2a 3b`.
 
-1. **Platform write for one PR, `PLATFORM-NATIVE-PREPROD-OPS-1`** (the §2 owned paths, two
+1. **Platform write for one PR, `PLATFORM-NATIVE-PREPROD-OPS-1`** (the paths above, two
    commands gated to testing and preproduction, no guard change).
    - a) approve (recommended);
    - b) approve the route command only, and keep the trust key on test fixtures;
@@ -508,11 +381,8 @@ Answer as, for example, `1a 2a 3b`.
 ## 8. Non-authorization
 
 This document authorizes no code, migration, deployment, secret, runner, Cloudflare, database or
-Platform change now. Answers 1a and 2a stay recorded, but Option A is deferred (§6), so no Platform
-PR is allocated under them. Items 3 and 4 grant nothing until answered. Each approved item needs
-its own #162 allocation. If Option A is reopened (§6), the Platform PR uses only the write grant
-from item 1 (D831), and only within the §2 owned paths that D831 listed: the two commands, the new
-`DisposableNativeStore.php`, the guard call in `NativeTopologyRegistry::isolatedConnection()` and
-nothing else in that file, their tests under `tests/Feature/GameAuth/`, one line in the native
-gateway login contract §14 or §17, and the Platform task record. Any other path needs a new owner
-answer.
+Platform change now. Answers 1a and 2a stay recorded, but Option A is deferred pending the
+owner's ruling (§6), so no Platform PR is allocated under them, and §2 freezes no design. Items 3
+and 4 grant nothing until answered. Each approved item needs its own #162 allocation. A Platform
+PR for Option A starts only after the §6 amendment, and any path outside the D831 list needs a new
+owner answer.
