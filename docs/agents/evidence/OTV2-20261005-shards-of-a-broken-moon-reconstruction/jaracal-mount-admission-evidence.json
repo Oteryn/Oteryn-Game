@@ -36,7 +36,7 @@
     "typed_fields": {
       "speed_bonus": 10,
       "premium": true,
-      "taming_item": "oteryn:item.registry.i00038475"
+      "taming_item": "oteryn:item.tibia.i54638"
     },
     "presentation": {
       "clientid": 1962,
@@ -56,7 +56,7 @@
   },
   "taming_semantics": {
     "direct_terminal_reward": false,
-    "quest_terminal_reward": "oteryn:item.registry.i00038475",
+    "quest_terminal_reward": "oteryn:item.tibia.i54638",
     "target_creature": "oteryn:creature.jaracal",
     "on_success": {
       "account_mount_unlock": "oteryn:content.mount.jaracal",
@@ -100,16 +100,23 @@
     "Add a successor Mount admission input instead of modifying the immutable G4 252 selection.",
     "Admit canonical Jaracal Mount as the 253rd active Mount record through the existing Mount writer.",
     "Resolve clientid 1962 through the Presentation owner; do not synthesize a Presentation identity in Mount code.",
-    "Bind oteryn:item.registry.i00038475 use-on oteryn:creature.jaracal through the accepted Item/Interaction owner.",
+    "Bind oteryn:item.tibia.i54638 use-on oteryn:creature.jaracal through the accepted Item/Interaction owner.",
     "On qualified success, call the account-scoped Mount unlock owner and Achievement grant owner.",
     "Qualify consumption, duplicate use, relog and restart semantics.",
     "Do not invent RNG or success/failure chance."
   ],
   "item_identity_note": {
     "donor_id": 54638,
-    "canonical_key": "oteryn:item.registry.i00038475",
+    "canonical_key": "oteryn:item.tibia.i54638",
     "revision": "definition-r1",
-    "status": "EXACT_FROZEN_EPOCH2_IDENTITY_NON_MATERIALIZABLE",
-    "warning": "Do not mint oteryn:item.tibia.i54638; materialize/promote the existing opaque registry identity in place."
+    "status": "EXACT_CURRENT_A12_IDENTITY_NON_MATERIALIZABLE",
+    "retired_alias": "oteryn:item.registry.i00038475",
+    "retired_alias_target": "oteryn:item.tibia.i54638",
+    "active_record_state": {
+      "materializable": false,
+      "physical": "KNOWN_MOVABLE_PICKUPABLE_WEIGHT_200",
+      "stackable": false
+    },
+    "required_change": "PROMOTE_CURRENT_CANONICAL_ITEM_IN_PLACE; DO_NOT REMINT"
   }
 }
