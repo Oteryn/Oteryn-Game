@@ -409,11 +409,17 @@
       "outcome": "javala_alliance",
       "item_candidate": {
         "donor_id": 54262,
-        "canonical_candidate": "oteryn:item.tibia.i54262",
-        "status": "DERIVED_NOT_EXACT",
-        "public_crosscheck": "Fandom Item IDs: Key (SU26) -> 54262; TibiaWiki: Key (Asura Citadel)"
+        "canonical_key": "oteryn:item.tibia.i54262",
+        "status": "EXACT_CROSS_SOURCE",
+        "evidence": [
+          "Fandom Item IDs: Key (SU26) -> 54262",
+          "TibiaWiki 15.30: Key (Asura Citadel) is the update quest key for door 33899,32666,8",
+          "Crystal Summer 00ce02a5 items.xml: id=54262 name=key weight=100"
+        ],
+        "key_number": null,
+        "key_number_status": "SOURCE_ABSENT_DO_NOT_INVENT"
       },
-      "evidence": "FACT_DIALOGUE_DERIVED_ITEM_IDENTITY",
+      "evidence": "FACT_DIALOGUE_EXACT_ITEM_IDENTITY",
       "owner": "NPC-QUEST-1 + Item/Durability + KEY-1"
     },
     {
@@ -440,9 +446,12 @@
         "y": 32666,
         "z": 8
       },
-      "evidence": "FACT_BEHAVIOR_IDENTITY_PARTIAL",
+      "evidence": "FACT_BEHAVIOR_EXACT_ITEM_IDENTITY",
       "owner": "DOOR-1 + KEY-1",
-      "blocker": "Exact key_number/binding not proven. Source additionally requires post-completion bypass; no accepted matching_key OR quest_completed composition found."
+      "blocker": "Implement identity-based DOOR-1/KEY-1 check and post-completion bypass; do not invent a numeric keyNumber.",
+      "key_identity": "oteryn:item.tibia.i54262",
+      "key_number": null,
+      "key_number_status": "SOURCE_ABSENT_DO_NOT_INVENT"
     },
     {
       "id": "laboratory_note",
@@ -617,7 +626,17 @@
       "outcome": "blue_lava_obtained",
       "evidence": "FACT_EXCEPT_NIGHT",
       "owner": "QUEST-TRIGGER-1 + Item/Durability",
-      "source_conflict": "Fandom says night; TibiaWiki BR and another guide do not. No night-only predicate may be promoted as FACT."
+      "source_conflict": {
+        "status": "OPEN",
+        "fandom": "night-only",
+        "tibiawiki_br": "Moon Mirror + Empty Crystal Flask; no night predicate stated",
+        "itemlevel_postrelease": "Moon Mirror + Empty Crystal Flask; no night predicate stated",
+        "supplied_video": {
+          "timestamp_window": "00:15:51-00:16:47",
+          "observation": "Narrator explicitly says the wiki claims night-only, says he does not know whether it is true, supposes it happens to be night, then successfully fills the flask.",
+          "conclusion": "Video confirms successful fill but does not falsify the night requirement."
+        }
+      }
     },
     {
       "id": "niral_consecrate",
@@ -637,7 +656,7 @@
     {
       "id": "rune_silent_moon",
       "visible_stage": "s13",
-      "kind": "USE_ITEM_ON_PLACEMENT",
+      "kind": "USE_ITEM_ON_POSITION",
       "position": {
         "x": 33868,
         "y": 32664,
@@ -647,14 +666,14 @@
       "display_semantic": "Sigil of the Silent Moon",
       "input_item": "oteryn:item.tibia.i54566",
       "outcome": "rune_silent_moon",
-      "evidence": "FACT_POSITION_SEMANTIC_NEEDS_TYPED_BINDING",
+      "evidence": "FACT_EXACT_POSITION",
       "owner": "QUEST-TRIGGER-1 + World/Item",
-      "note": "Appearance 54637 currently routes only as Terrain:ground_or_border."
+      "note": "Base appearance 54637 is Terrain:ground_or_border only. Quest semantics are bound to the exact placement, not to a promoted WorldObject identity."
     },
     {
       "id": "rune_silverflow",
       "visible_stage": "s13",
-      "kind": "USE_ITEM_ON_PLACEMENT",
+      "kind": "USE_ITEM_ON_POSITION",
       "position": {
         "x": 33880,
         "y": 32664,
@@ -664,14 +683,14 @@
       "display_semantic": "Silverflow Rune",
       "input_item": "oteryn:item.tibia.i54566",
       "outcome": "rune_silverflow",
-      "evidence": "FACT_POSITION_SEMANTIC_NEEDS_TYPED_BINDING",
+      "evidence": "FACT_EXACT_POSITION",
       "owner": "QUEST-TRIGGER-1 + World/Item",
-      "note": "Appearance 54637 currently routes only as Terrain:ground_or_border."
+      "note": "Base appearance 54637 is Terrain:ground_or_border only. Quest semantics are bound to the exact placement, not to a promoted WorldObject identity."
     },
     {
       "id": "rune_veiled_night",
       "visible_stage": "s13",
-      "kind": "USE_ITEM_ON_PLACEMENT",
+      "kind": "USE_ITEM_ON_POSITION",
       "position": {
         "x": 33868,
         "y": 32676,
@@ -681,14 +700,14 @@
       "display_semantic": "Mark of the Veiled Night",
       "input_item": "oteryn:item.tibia.i54566",
       "outcome": "rune_veiled_night",
-      "evidence": "FACT_POSITION_SEMANTIC_NEEDS_TYPED_BINDING",
+      "evidence": "FACT_EXACT_POSITION",
       "owner": "QUEST-TRIGGER-1 + World/Item",
-      "note": "Appearance 54637 currently routes only as Terrain:ground_or_border."
+      "note": "Base appearance 54637 is Terrain:ground_or_border only. Quest semantics are bound to the exact placement, not to a promoted WorldObject identity."
     },
     {
       "id": "rune_fallen_star",
       "visible_stage": "s13",
-      "kind": "USE_ITEM_ON_PLACEMENT",
+      "kind": "USE_ITEM_ON_POSITION",
       "position": {
         "x": 33880,
         "y": 32676,
@@ -698,9 +717,9 @@
       "display_semantic": "Fallen Star Glyph",
       "input_item": "oteryn:item.tibia.i54566",
       "outcome": "rune_fallen_star",
-      "evidence": "FACT_POSITION_SEMANTIC_NEEDS_TYPED_BINDING",
+      "evidence": "FACT_EXACT_POSITION",
       "owner": "QUEST-TRIGGER-1 + World/Item",
-      "note": "Appearance 54637 currently routes only as Terrain:ground_or_border."
+      "note": "Base appearance 54637 is Terrain:ground_or_border only. Quest semantics are bound to the exact placement, not to a promoted WorldObject identity."
     },
     {
       "id": "ritual_join",
@@ -938,17 +957,25 @@
     }
   ],
   "blockers": [
-    "QUEST-GATE-1 executable producer/consumer not found on current main",
-    "QUEST-TRIGGER-1 executable producer not found on current main",
-    "NPC-QUEST-1 executable consumer not found on current main",
-    "Asura Citadel Key exact identity/key_number unresolved",
-    "Key-door post-completion bypass lacks accepted composition",
+    "QUEST-GATE-1 is dependency-ready on current main but executable child is not yet integrated",
+    "QUEST-TRIGGER-1 remains serialized after QUEST-GATE-1",
+    "NPC-QUEST-1 remains blocked by NPC-TALK-1 (NPC-WIRE-1 #1866 + NPC-PLACE-1 + MAP-CUTOVER-1 dependencies)",
+    "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
     "Laboratory Note exact canonical placement/document binding unresolved",
-    "Ritual appearance 54637 lacks typed quest semantics",
     "Magnolia special Encounter absent",
     "Blue Lava night-only predicate source conflict",
     "Escape order and donor Lit Torch 54610 video/source-verified; exact skeleton/icicle/north-wall/Rope Spot placement keys plus canonical Lit Torch admission unresolved",
     "Forbidden Gardens Achievement predicate composition missing",
     "No full real-character start→reward→relog/restart E2E qualification"
-  ]
+  ],
+  "readback": {
+    "refreshed_main": "22539da5f8271f473ff027699342cc06ff21d3d6",
+    "quest_runtime_dependencies": {
+      "quest_gate_1": "DEPENDENCY_READY_NOT_YET_INTEGRATED",
+      "quest_trigger_1": "SERIALIZE_AFTER_QUEST_GATE_1",
+      "npc_quest_1": "BLOCKED_BY_NPC_TALK_1",
+      "npc_wire_1_pr": 1866,
+      "monster_encounter_owner_pr": 1807
+    }
+  }
 }
