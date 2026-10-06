@@ -145,10 +145,8 @@ context_budget:
 
 ## Continuation handoff — 2026-10-05 22:28 CEST
 
-This section is a repository checkpoint for the next Player Swarm agent. It records read-only audit
-and local prototype evidence produced after the KAN-35A implementation commit. It does **not**
-expand D746 ownership and does not publish any `crates/session/**` or `tools/dev-client/**`
-prototype changes.
+Repository checkpoint only. It does **not** expand D746 ownership or publish the local
+`crates/session/**` / `tools/dev-client/**` prototype.
 
 ### KAN-35A / PR #1835
 
@@ -161,9 +159,8 @@ prototype changes.
   substantive red child was World-bundle pin validation.
 - KAN-35A code was independently composed locally with current main and remained green for locked
   metadata, strict `oteryn-player-bots` Clippy and 7/7 unit tests.
-- Do not churn #1835 while another PR owns the shared World pin. After the pin/session owner
-  releases, perform one final current-main merge-up, recompute the compiler-owned World
-  `inputs_digest`, run exact-head CI, then FREEZE.
+- After the shared World pin releases: one current-main merge-up, recompute `inputs_digest`,
+  exact-head CI, then FREEZE.
 - Intermediate World digest calculated against main before N4-1 integration:
   `e928d9185e80f5419bf5d814aea097109493040a59e2e6ec953f64c655370dc2`.
   Do **not** publish that value after main moves; recompute on the final composition.
@@ -188,8 +185,7 @@ prototype changes.
 
 ### KAN-35B local prototype evidence — NOT PUBLISHED
 
-A local scratch prototype was built only to de-risk the post-N4 allocation. It was never committed
-to GitHub because D746 explicitly does not own `crates/session/**` or `tools/dev-client/**`.
+Local post-N4 prototype only; not committed because D746 does not own session/dev-client.
 
 Prototype scope:
 - add capability 17 `ATTACK_V1` to `CLIENT_SUPPORTED_CAPABILITIES`;
@@ -216,8 +212,7 @@ Local prototype qualification against the then-current main:
 - `cargo +1.94.0 fmt --package oteryn-session --package oteryn-dev-client -- --check`: PASS
 - `cargo +1.94.0 clippy --locked -p oteryn-session -p oteryn-dev-client --all-targets --quiet -- -D warnings`: PASS
 
-The session test helper needed one expected-capability update because the default advertised set
-becomes `[4, 6, 7, 13, 17]`; this is test-fixture maintenance, not a runtime defect.
+Test fixture update required for advertised set `[4, 6, 7, 13, 17]`.
 
 ### Other Player Swarm packets refined during this continuation
 
