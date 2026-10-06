@@ -241,7 +241,8 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
   stage (§4.2).
 - **`cast`:** an Ability or the encounter's own `encounter_ability`, through GAME-ABILITY-01.
 - **`attribute`, `move_lock`:** overrides on the creature, held by the instance, read by
-  CREATURE-AI-0 and the damage applier; they end with the creature or the instance.
+  CREATURE-AI-0 and the damage applier; they end with the creature or the instance. `attribute`
+  `max_health` is §17.2.
 - **`prevent_death`:** §4.2 only.
 
 ### 6.3 World, chat and items (ENC-WORLD-1)
@@ -433,3 +434,92 @@ None. D26 and D27 settled scope and outcomes; every other choice applies Canary 
    refs; no raw coordinates.
 5. **Wire:** none new.
 6. **Split work:** none; each action is one owner call in the turn.
+
+## 17. Boss form health and Boss Difficulty (2026-10-06)
+
+Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficulty disposition
+(#1622 6021403988). Role: Sol Supervising Architect.
+
+### 17.1 Facts
+
+**PROVEN**
+- Format §3 names `phases[]` and `set_phase`; §6.1 gives `set_phase` to ENC-RT-1. The WorldProject
+  v2 Encounter schema has `phases` as a list of names and no `set_phase` action.
+- The health forms are `full`, `keep_percent`, `keep_absolute`, `remembered` and percent. None sets
+  a maximum. `attribute` (D34) overrides `outgoing_damage_percent` and `defense` on a creature,
+  held by the instance (§6.2).
+- The Bosstiary key is the Creature definition key of the Bosstiary entry (BOSS-RAID-0 §10.1).
+- The Moonsnow Magnolia: phase 1 has 52,000 health; Reference shows phase 2 returning at exactly
+  60,000.
+- Crystal SU26 `phosphorus.lua` and `phosphorus_final.lua` say the Boss Difficulty System is not
+  wired. Their 70,000 and 90,000 health and their loot are placeholders. `boss_difficulty_test.lua`
+  is a client-window test.
+
+**DERIVED**
+- A phase-2 Creature form would be a second Creature definition. Its death would credit its own
+  key unless a new mapping to the public key were added. It would also need to be excluded from the
+  Bestiary, the Bosstiary, the Cyclopedia and Atlas exports.
+
+### 17.2 Ruling: SHARDS-E1 is option B, a bounded `max_health` attribute
+
+- `attribute` gains `max_health` with `set` to an absolute positive integer within the Creature
+  health range, or `reset` to the type's value. It is an override held by the instance, like the
+  other attributes, and it ends with the creature or the instance.
+- **Health.** Setting a lower maximum clamps current health to it. Setting a higher one does not
+  heal: health rises only through an explicit `heal` (`full` heals to the overridden maximum). No
+  path sets health above the maximum in force.
+- **Reads.** `health_percent`, `health_crossed` in percent, `keep_percent` and the client health
+  percent use the maximum in force.
+- **Magnolia phase 2:** `lethal_damage(magnolia)` with `prevent_death`, then
+  `attribute(max_health set 60000)`, `heal(full)` and a flag or `set_phase`. The first lethal hit
+  emits no outcome; the outcome comes only from the death in phase 2. One Creature definition
+  stays the public identity, so the death, Bosstiary, loot and outcome keys are unchanged.
+- **`set_phase`.** The schema gap is ENC-RT-1's catch-up to §6.1 (a typed `phases` list, the
+  `set_phase` action and the `phase_entered` trigger). It is not a new decision. Magnolia does not
+  depend on it.
+- **Rejected (option A).** An internal phase-2 Creature form adds a hidden Creature identity, a
+  Bosstiary key mapping and export exclusions to carry one health value.
+
+### 17.3 Ruling: Phosphorus and Boss Difficulty
+
+- Boss Difficulty is Encounter-owned mechanics of one fight, not quest state. It never writes
+  QuestState, reward intents or quest completion. The Make Believe completion unlocks (Fate Forge,
+  shortcuts, crafting) are quest outcomes, independent of the difficulty chosen.
+- The Crystal SU26 values (70,000 and 90,000 health, loot, the test talkaction) are
+  `OTS_HYPOTHESIS_ONLY`. They are never canonical gameplay values.
+- Phosphorus and its encounter stay held, `PARITY_PENDING`, until official base values are
+  captured. Reference evidence is not enough to admit difficulty 0 without its health.
+- The difficulty tiers (+10% incoming danger, +5% monster health, +2% loot per level; the 5, 10, 15
+  and 25 thresholds; the Auric Moon Sigil chance) are decided by a successor decision,
+  BOSS-DIFFICULTY-0. It is decided with the first allocation that admits a difficulty boss.
+  - Its health scaling uses §17.2.
+  - Its danger scaling uses `damage_modifier`.
+  - Its loot and drop changes belong to BOSS-REWARD-1.
+  - The chosen difficulty is per encounter instance and runtime-only, as all encounter state (§9).
+- No ENC-RT-1 or ENC-OUTCOME-1 scope is added for it, and no Make Believe special case is allowed.
+
+### 17.4 Decision test
+
+- **Must decide now:** YES. SHARDS-E1 is blocked on it.
+- **Minimum sufficient:** one attribute name on an existing override, with no new identity, wire
+  or persistence.
+- **Superseding evidence:** a Tibia boss whose phase is a separate Bosstiary or Bestiary entry; the
+  captured official Boss Difficulty formulas.
+- **Deliberately not decided:** BOSS-DIFFICULTY-0.
+
+### 17.5 Before-freeze checklist
+
+1. **Amendments:** the format `attribute` row and §9.4, in place; §6.2 carries a pointer.
+2. **Serialization:** unchanged. The override is applied in the owner turn.
+3. **Restart:** the override is runtime-only and is lost with the fight (§9).
+4. **Typed references:** the role, the Creature definition key and the encounter key and revision.
+5. **Wire:** none new. Clients see the health percent.
+6. **Tests (ENC-COMBAT-1):**
+   - `set` above the current maximum leaves health unchanged until a `heal`;
+   - `set` below it clamps health;
+   - `heal(full)` reaches the overridden maximum and never exceeds it;
+   - `reset` restores the type value and clamps;
+   - `health_percent` reads the maximum in force;
+   - content validation rejects 0, a negative value and a value above the Creature health range;
+   - an ENC-PARITY-1 fixture covers Magnolia: phase 2 at 60,000 out of 60,000, no outcome on the
+     first lethal hit, and one death and one Bosstiary kill for the public key.
