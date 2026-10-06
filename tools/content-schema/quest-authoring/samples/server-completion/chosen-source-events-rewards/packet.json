@@ -437,11 +437,11 @@
   ],
   "counts": {
     "quests": 227,
-    "stages": 1406,
-    "non_dialogue_stages": 1159,
+    "stages": 1402,
+    "non_dialogue_stages": 1154,
     "exact_stage_target_refs": 599,
     "encounter_outcome_seams": 25,
-    "reward_intents": 485,
+    "reward_intents": 486,
     "exact_reward_refs": 353,
     "explicit_non_identity_reward_intents": 15
   },
@@ -49895,23 +49895,23 @@
         "revision": "quest-r1"
       },
       "wiki_title": "Soul War Quest",
-      "recipe_sha256": "d73a77dbd2f1512d818df9d9a828ffbd224b06a31eb37d80e21febab084a76a5",
+      "recipe_sha256": "d4b55eec9568b1e2440857c82c4efb184bf67609fdf0d8fb54988414f33d5257",
       "canonical_definition_evidence": {
         "path": "content/quests/definitions/quests-00200-00299.json",
         "json_pointer": "/records/6/definition",
-        "file_sha256": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
-        "record_sha256": "3b60f2d755ba210307d78ca1af45530a47ea1775f37a15fba1a1ccaf4e7dd1bb"
+        "file_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
+        "record_sha256": "8a560ed4a838a686860d610c1859a0f2e77433804d52ff009f6a294692e4fe74"
       },
       "identity_binding_basis": "EXACT_CANONICAL_QUEST_KEY_AND_CHOSEN_RECIPE_PAYLOAD",
       "stages": [
         {
           "stage_key": "s1",
-          "kind": "explore",
+          "kind": "talk",
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
           "targets": [
             {
-              "target": "Soul War entrance",
+              "target": "Flickering Soul",
               "status": "CANONICAL_EXACT_NAME_NOT_FOUND",
               "refs": [],
               "match_count": 0
@@ -49919,8 +49919,7 @@
           ],
           "consumer_seams": [],
           "unresolved": [
-            "AREA_LABEL_OR_POSITION_IS_NOT_QUEST_TRIGGER_BOUNDARY",
-            "NATIVE_AREA_ENTRY_CONSUMER_BINDING_PENDING",
+            "DIALOGUE_LANE_OWNS_TALK_BINDING",
             "ONE_OR_MORE_EXACT_TARGET_IDENTITIES_UNRESOLVED"
           ],
           "runtime_admitted": false
@@ -49928,9 +49927,165 @@
         {
           "stage_key": "s2",
           "kind": "kill",
-          "count": 1,
+          "count": 5,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
           "targets": [
+            {
+              "target": "Goshnar's Malice",
+              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
+              "refs": [
+                {
+                  "family": "Creature",
+                  "key": "oteryn:creature.goshnar_s_malice",
+                  "revision": "definition-r1"
+                }
+              ],
+              "declared_name": "Goshnar's Malice",
+              "identity_basis": "canonical_named_record",
+              "evidence": [
+                {
+                  "path": "content/creatures/definitions/creatures-00500-00999.json",
+                  "json_pointer": "/records/152",
+                  "record_sha256": "1e2da6cd403563937540d43d404b6374e3d48a950bf97f779e4b8b7717f10f18",
+                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
+                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+                }
+              ],
+              "source_bindings": [
+                {
+                  "disposition": "EXACT",
+                  "external_id": "quests/soul_war/goshnars_malice",
+                  "identity_namespace": "canary/monster-file",
+                  "source_key": "oteryn:source.canary",
+                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                  "target": {
+                    "family": "Creature",
+                    "key": "oteryn:creature.goshnar_s_malice",
+                    "revision": "definition-r1"
+                  }
+                }
+              ],
+              "qualified_world_presence": false,
+              "materializable": null,
+              "stack_class": null
+            },
+            {
+              "target": "Goshnar's Greed",
+              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
+              "refs": [
+                {
+                  "family": "Creature",
+                  "key": "oteryn:creature.goshnar_s_greed",
+                  "revision": "definition-r1"
+                }
+              ],
+              "declared_name": "Goshnar's Greed",
+              "identity_basis": "canonical_named_record",
+              "evidence": [
+                {
+                  "path": "content/creatures/definitions/creatures-00500-00999.json",
+                  "json_pointer": "/records/150",
+                  "record_sha256": "60245146092bc737e8f105586cac52e79e9165dfb2019b200e530631c18b1c47",
+                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
+                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+                }
+              ],
+              "source_bindings": [
+                {
+                  "disposition": "EXACT",
+                  "external_id": "quests/soul_war/goshnars_greed",
+                  "identity_namespace": "canary/monster-file",
+                  "source_key": "oteryn:source.canary",
+                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                  "target": {
+                    "family": "Creature",
+                    "key": "oteryn:creature.goshnar_s_greed",
+                    "revision": "definition-r1"
+                  }
+                }
+              ],
+              "qualified_world_presence": false,
+              "materializable": null,
+              "stack_class": null
+            },
+            {
+              "target": "Goshnar's Spite",
+              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
+              "refs": [
+                {
+                  "family": "Creature",
+                  "key": "oteryn:creature.goshnar_s_spite",
+                  "revision": "definition-r1"
+                }
+              ],
+              "declared_name": "Goshnar's Spite",
+              "identity_basis": "canonical_named_record",
+              "evidence": [
+                {
+                  "path": "content/creatures/definitions/creatures-00500-00999.json",
+                  "json_pointer": "/records/156",
+                  "record_sha256": "e2ca90d8017f897290f333d0d450b81bb62e5407ff0a15301f011de9e39f37d9",
+                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
+                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+                }
+              ],
+              "source_bindings": [
+                {
+                  "disposition": "EXACT",
+                  "external_id": "quests/soul_war/goshnars_spite",
+                  "identity_namespace": "canary/monster-file",
+                  "source_key": "oteryn:source.canary",
+                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                  "target": {
+                    "family": "Creature",
+                    "key": "oteryn:creature.goshnar_s_spite",
+                    "revision": "definition-r1"
+                  }
+                }
+              ],
+              "qualified_world_presence": false,
+              "materializable": null,
+              "stack_class": null
+            },
+            {
+              "target": "Goshnar's Cruelty",
+              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
+              "refs": [
+                {
+                  "family": "Creature",
+                  "key": "oteryn:creature.goshnar_s_cruelty",
+                  "revision": "definition-r1"
+                }
+              ],
+              "declared_name": "Goshnar's Cruelty",
+              "identity_basis": "canonical_named_record",
+              "evidence": [
+                {
+                  "path": "content/creatures/definitions/creatures-00500-00999.json",
+                  "json_pointer": "/records/149",
+                  "record_sha256": "32337de8839e40d39caa2e35e8730a6b807eeee1fbf07095a3b400e406894b82",
+                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
+                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
+                }
+              ],
+              "source_bindings": [
+                {
+                  "disposition": "EXACT",
+                  "external_id": "quests/soul_war/goshnars_cruelty",
+                  "identity_namespace": "canary/monster-file",
+                  "source_key": "oteryn:source.canary",
+                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                  "target": {
+                    "family": "Creature",
+                    "key": "oteryn:creature.goshnar_s_cruelty",
+                    "revision": "definition-r1"
+                  }
+                }
+              ],
+              "qualified_world_presence": false,
+              "materializable": null,
+              "stack_class": null
+            },
             {
               "target": "Goshnar's Hatred",
               "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
@@ -49979,214 +50134,6 @@
         },
         {
           "stage_key": "s3",
-          "kind": "kill",
-          "count": 1,
-          "basis": "CHOSEN_OTERYN_APPROXIMATION",
-          "targets": [
-            {
-              "target": "Goshnar's Spite",
-              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
-              "refs": [
-                {
-                  "family": "Creature",
-                  "key": "oteryn:creature.goshnar_s_spite",
-                  "revision": "definition-r1"
-                }
-              ],
-              "declared_name": "Goshnar's Spite",
-              "identity_basis": "canonical_named_record",
-              "evidence": [
-                {
-                  "path": "content/creatures/definitions/creatures-00500-00999.json",
-                  "json_pointer": "/records/156",
-                  "record_sha256": "e2ca90d8017f897290f333d0d450b81bb62e5407ff0a15301f011de9e39f37d9",
-                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
-                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
-                }
-              ],
-              "source_bindings": [
-                {
-                  "disposition": "EXACT",
-                  "external_id": "quests/soul_war/goshnars_spite",
-                  "identity_namespace": "canary/monster-file",
-                  "source_key": "oteryn:source.canary",
-                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-                  "target": {
-                    "family": "Creature",
-                    "key": "oteryn:creature.goshnar_s_spite",
-                    "revision": "definition-r1"
-                  }
-                }
-              ],
-              "qualified_world_presence": false,
-              "materializable": null,
-              "stack_class": null
-            }
-          ],
-          "consumer_seams": [],
-          "unresolved": [
-            "CHOSEN_STAGE_KILL_EVENT_AND_CREDIT_BINDING_PENDING"
-          ],
-          "runtime_admitted": false
-        },
-        {
-          "stage_key": "s4",
-          "kind": "kill",
-          "count": 1,
-          "basis": "CHOSEN_OTERYN_APPROXIMATION",
-          "targets": [
-            {
-              "target": "Goshnar's Greed",
-              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
-              "refs": [
-                {
-                  "family": "Creature",
-                  "key": "oteryn:creature.goshnar_s_greed",
-                  "revision": "definition-r1"
-                }
-              ],
-              "declared_name": "Goshnar's Greed",
-              "identity_basis": "canonical_named_record",
-              "evidence": [
-                {
-                  "path": "content/creatures/definitions/creatures-00500-00999.json",
-                  "json_pointer": "/records/150",
-                  "record_sha256": "60245146092bc737e8f105586cac52e79e9165dfb2019b200e530631c18b1c47",
-                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
-                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
-                }
-              ],
-              "source_bindings": [
-                {
-                  "disposition": "EXACT",
-                  "external_id": "quests/soul_war/goshnars_greed",
-                  "identity_namespace": "canary/monster-file",
-                  "source_key": "oteryn:source.canary",
-                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-                  "target": {
-                    "family": "Creature",
-                    "key": "oteryn:creature.goshnar_s_greed",
-                    "revision": "definition-r1"
-                  }
-                }
-              ],
-              "qualified_world_presence": false,
-              "materializable": null,
-              "stack_class": null
-            }
-          ],
-          "consumer_seams": [],
-          "unresolved": [
-            "CHOSEN_STAGE_KILL_EVENT_AND_CREDIT_BINDING_PENDING"
-          ],
-          "runtime_admitted": false
-        },
-        {
-          "stage_key": "s5",
-          "kind": "kill",
-          "count": 1,
-          "basis": "CHOSEN_OTERYN_APPROXIMATION",
-          "targets": [
-            {
-              "target": "Goshnar's Malice",
-              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
-              "refs": [
-                {
-                  "family": "Creature",
-                  "key": "oteryn:creature.goshnar_s_malice",
-                  "revision": "definition-r1"
-                }
-              ],
-              "declared_name": "Goshnar's Malice",
-              "identity_basis": "canonical_named_record",
-              "evidence": [
-                {
-                  "path": "content/creatures/definitions/creatures-00500-00999.json",
-                  "json_pointer": "/records/152",
-                  "record_sha256": "1e2da6cd403563937540d43d404b6374e3d48a950bf97f779e4b8b7717f10f18",
-                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
-                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
-                }
-              ],
-              "source_bindings": [
-                {
-                  "disposition": "EXACT",
-                  "external_id": "quests/soul_war/goshnars_malice",
-                  "identity_namespace": "canary/monster-file",
-                  "source_key": "oteryn:source.canary",
-                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-                  "target": {
-                    "family": "Creature",
-                    "key": "oteryn:creature.goshnar_s_malice",
-                    "revision": "definition-r1"
-                  }
-                }
-              ],
-              "qualified_world_presence": false,
-              "materializable": null,
-              "stack_class": null
-            }
-          ],
-          "consumer_seams": [],
-          "unresolved": [
-            "CHOSEN_STAGE_KILL_EVENT_AND_CREDIT_BINDING_PENDING"
-          ],
-          "runtime_admitted": false
-        },
-        {
-          "stage_key": "s6",
-          "kind": "kill",
-          "count": 1,
-          "basis": "CHOSEN_OTERYN_APPROXIMATION",
-          "targets": [
-            {
-              "target": "Goshnar's Cruelty",
-              "status": "EXACT_CANONICAL_IDENTITY_ASSOCIATION",
-              "refs": [
-                {
-                  "family": "Creature",
-                  "key": "oteryn:creature.goshnar_s_cruelty",
-                  "revision": "definition-r1"
-                }
-              ],
-              "declared_name": "Goshnar's Cruelty",
-              "identity_basis": "canonical_named_record",
-              "evidence": [
-                {
-                  "path": "content/creatures/definitions/creatures-00500-00999.json",
-                  "json_pointer": "/records/149",
-                  "record_sha256": "32337de8839e40d39caa2e35e8730a6b807eeee1fbf07095a3b400e406894b82",
-                  "file_sha256": "f24a7aa052f3a5565218bfbb07854bb543c9d73867fba8aea317b3c35b09dfb8",
-                  "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
-                }
-              ],
-              "source_bindings": [
-                {
-                  "disposition": "EXACT",
-                  "external_id": "quests/soul_war/goshnars_cruelty",
-                  "identity_namespace": "canary/monster-file",
-                  "source_key": "oteryn:source.canary",
-                  "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-                  "target": {
-                    "family": "Creature",
-                    "key": "oteryn:creature.goshnar_s_cruelty",
-                    "revision": "definition-r1"
-                  }
-                }
-              ],
-              "qualified_world_presence": false,
-              "materializable": null,
-              "stack_class": null
-            }
-          ],
-          "consumer_seams": [],
-          "unresolved": [
-            "CHOSEN_STAGE_KILL_EVENT_AND_CREDIT_BINDING_PENDING"
-          ],
-          "runtime_admitted": false
-        },
-        {
-          "stage_key": "s7",
           "kind": "explore",
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -50207,7 +50154,7 @@
           "runtime_admitted": false
         },
         {
-          "stage_key": "s8",
+          "stage_key": "s4",
           "kind": "kill",
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -50227,7 +50174,7 @@
           "runtime_admitted": false
         },
         {
-          "stage_key": "s9",
+          "stage_key": "s5",
           "kind": "complete",
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -50236,7 +50183,7 @@
             {
               "kind": "EXISTING_CHOSEN_STAGE_GRAPH",
               "incoming_stage_keys": [
-                "s8"
+                "s4"
               ],
               "next_stage_keys": [],
               "status": "CHOSEN_SOURCE_GRAPH_INTENT_ONLY",
@@ -50252,11 +50199,29 @@
       "reward_intents": [
         {
           "reward_index": 0,
+          "kind": "outfit",
+          "count": 1,
+          "basis": "CHOSEN_OTERYN_APPROXIMATION",
+          "mapping": {
+            "target": "Revenant Outfit",
+            "status": "CANONICAL_EXACT_NAME_NOT_FOUND",
+            "refs": [],
+            "match_count": 0
+          },
+          "unresolved": [
+            "NATIVE_REWARD_DELIVERY_CONSUMER_BINDING_PENDING",
+            "REWARD_EXACT_IDENTITY_UNRESOLVED",
+            "BASE_OUTFIT_OR_ADDON_DELIVERY_REQUIRES_EXPLICIT_NATIVE_POLICY"
+          ],
+          "runtime_admitted": false
+        },
+        {
+          "reward_index": 1,
           "kind": "item",
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
           "mapping": {
-            "target": "Soul Mender",
+            "target": "One random item from the Crystal Soul War finalRewards pool",
             "status": "CANONICAL_EXACT_NAME_NOT_FOUND",
             "refs": [],
             "match_count": 0

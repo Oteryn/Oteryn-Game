@@ -16,7 +16,7 @@ class CompletionImportTests(unittest.TestCase):
         state = json.loads(outputs[tool.OUTPUT])
         plan = json.loads(outputs[tool.PLAN])
         transitions = {t['key']: t for q in state['quests'] for t in q['transitions']}
-        self.assertEqual(plan['counts'], {'quests': 295, 'stages': 1822})
+        self.assertEqual(plan['counts'], {'quests': 295, 'stages': 1818})
         for quest in plan['records']:
             self.assertFalse(quest['runtime_enabled'])
             self.assertIsNone(quest['native_reward_delivery_binding'])

@@ -1,0 +1,259 @@
+{
+  "identity": {
+    "key": "crystal:encounter/goshnars_megalomania_crystal",
+    "revision": "crystal-00ce02a5"
+  },
+  "display_name": "Soul War: Goshnar's Megalomania (Crystal reconstruction)",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "goshnars_megalomania",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/goshnar_s_megalomania_purple",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/goshnar_s_megalomania_green",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/goshnar_s_megalomania_blue",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "aspect_of_power",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/aspect_of_power",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Crystal x 33701-33719, y 31626-31642, z 14.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33701,
+              33719
+            ],
+            "y": [
+              31626,
+              31642
+            ],
+            "floor": 14
+          }
+        ]
+      }
+    },
+    {
+      "key": "boss",
+      "kind": "point",
+      "description": "Crystal (33710, 31634, 14).",
+      "location": {
+        "x": 33710,
+        "y": 31634,
+        "floor": 14
+      }
+    },
+    {
+      "key": "aspect_start",
+      "kind": "point",
+      "description": "Crystal (33710, 31635, 14).",
+      "location": {
+        "x": 33710,
+        "y": 31635,
+        "floor": 14
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "aspect_deaths",
+        "initial": 0
+      }
+    ],
+    "flags": [],
+    "timers": [
+      {
+        "name": "green_to_blue",
+        "duration_ms": 60000,
+        "repeat": false
+      },
+      {
+        "name": "blue_to_purple",
+        "duration_ms": 7000,
+        "repeat": false
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "reset_aspect_count",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "aspect_deaths",
+          "operation": "set",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "aspect_death_counts",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "aspect_of_power"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "aspect_deaths",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "aspect_returns_after_five_seconds",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "aspect_of_power"
+      },
+      "delay_ms": 5000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aspect_of_power",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "aspect_of_power",
+          "count": 1,
+          "at": {
+            "role_position": "goshnars_megalomania",
+            "otherwise": "death_position"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "four_aspects_make_boss_green",
+      "trigger": {
+        "kind": "counter_reached",
+        "counter": "aspect_deaths",
+        "value": 4
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "aspect_deaths",
+          "operation": "set",
+          "value": 0
+        },
+        {
+          "kind": "transform",
+          "role": "goshnars_megalomania",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/goshnar_s_megalomania_green",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "keep_absolute"
+        },
+        {
+          "kind": "timer",
+          "timer": "green_to_blue",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "green_phase_becomes_blue",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "green_to_blue"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "goshnars_megalomania",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/goshnar_s_megalomania_blue",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "keep_absolute"
+        },
+        {
+          "kind": "timer",
+          "timer": "blue_to_purple",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "blue_phase_returns_purple",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "blue_to_purple"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "goshnars_megalomania",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/goshnar_s_megalomania_purple",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "keep_absolute"
+        }
+      ]
+    },
+    {
+      "key": "boss_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "goshnars_megalomania"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "boss_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "boss_defeated"
+  ]
+}

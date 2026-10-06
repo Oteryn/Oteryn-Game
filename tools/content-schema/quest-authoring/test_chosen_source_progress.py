@@ -29,8 +29,8 @@ class ChosenSourceProgressTest(unittest.TestCase):
         self.assertEqual(139, summary["new_quests"])
         self.assertEqual(88, summary["overlay_quests"])
         self.assertEqual(6, summary["source_lowered_skipped"])
-        self.assertEqual(1406, summary["tracks"])
-        self.assertEqual(1406, summary["transitions"])
+        self.assertEqual(1402, summary["tracks"])
+        self.assertEqual(1402, summary["transitions"])
         self.assertEqual(227, summary["completion_transitions"])
         self.assertEqual(9, summary["held_quests"])
         self.assertFalse(self.packet["native_admission"])
@@ -84,8 +84,8 @@ class ChosenSourceProgressTest(unittest.TestCase):
         merged = self.builder.merge(base, self.packet)
 
         self.assertEqual(235, merged["counts"]["quests"])
-        self.assertEqual(2734, merged["counts"]["tracks"])
-        self.assertEqual(4666, merged["counts"]["transitions"])
+        self.assertEqual(2730, merged["counts"]["tracks"])
+        self.assertEqual(4665, merged["counts"]["transitions"])
         self.assertEqual(231, merged["counts"]["completes"])
         self.assertEqual(
             {

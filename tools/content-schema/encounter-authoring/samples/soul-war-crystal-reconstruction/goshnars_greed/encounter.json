@@ -1,0 +1,633 @@
+{
+  "identity": {
+    "key": "crystal:encounter/goshnars_greed_crystal",
+    "revision": "crystal-00ce02a5"
+  },
+  "display_name": "Soul War: Goshnar's Greed (Crystal reconstruction)",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "goshnars_greed",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/goshnar_s_greed",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "greedbeast",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/greedbeast",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "soulsnatcher",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/soulsnatcher",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "weak_soul",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/weak_soul",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "strong_soul",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/strong_soul",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "powerful_soul",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/powerful_soul",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "soul_sphere",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/soul_sphere",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Crystal x 33737-33755, y 31658-31673, z 14.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33737,
+              33755
+            ],
+            "y": [
+              31658,
+              31673
+            ],
+            "floor": 14
+          }
+        ]
+      }
+    },
+    {
+      "key": "boss_normal",
+      "kind": "point",
+      "description": "Crystal (33746, 31666, 14).",
+      "location": {
+        "x": 33746,
+        "y": 31666,
+        "floor": 14
+      }
+    },
+    {
+      "key": "boss_shield",
+      "kind": "point",
+      "description": "Crystal (33741, 31659, 14).",
+      "location": {
+        "x": 33741,
+        "y": 31659,
+        "floor": 14
+      }
+    },
+    {
+      "key": "soul_sphere_spawn",
+      "kind": "point",
+      "description": "Crystal (33752, 31659, 14).",
+      "location": {
+        "x": 33752,
+        "y": 31659,
+        "floor": 14
+      }
+    },
+    {
+      "key": "greedbeast_return",
+      "kind": "point",
+      "description": "Crystal (33744, 31666, 14).",
+      "location": {
+        "x": 33744,
+        "y": 31666,
+        "floor": 14
+      }
+    },
+    {
+      "key": "soulsnatcher_return",
+      "kind": "point",
+      "description": "Crystal (33747, 31668, 14).",
+      "location": {
+        "x": 33747,
+        "y": 31668,
+        "floor": 14
+      }
+    },
+    {
+      "key": "weak_soul_return",
+      "kind": "point",
+      "description": "Crystal (33750, 31666, 14).",
+      "location": {
+        "x": 33750,
+        "y": 31666,
+        "floor": 14
+      }
+    },
+    {
+      "key": "strong_soul_return",
+      "kind": "point",
+      "description": "Crystal (33750, 31666, 14).",
+      "location": {
+        "x": 33750,
+        "y": 31666,
+        "floor": 14
+      }
+    },
+    {
+      "key": "powerful_soul_return",
+      "kind": "point",
+      "description": "Crystal (33750, 31666, 14).",
+      "location": {
+        "x": 33750,
+        "y": 31666,
+        "floor": 14
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "greedbeast_kills",
+        "initial": 0
+      }
+    ],
+    "flags": [
+      {
+        "name": "boss_immune",
+        "initial": true
+      },
+      {
+        "name": "sphere_phase_active",
+        "initial": false
+      }
+    ],
+    "timers": [
+      {
+        "name": "sphere_phase",
+        "duration_ms": 34000,
+        "repeat": false
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "boss_starts_immune",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "boss_immune",
+          "value": true
+        },
+        {
+          "kind": "counter",
+          "counter": "greedbeast_kills",
+          "operation": "set",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "key": "immune_boss_ignores_damage",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "goshnars_greed",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "boss_immune",
+          "value": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "goshnars_greed",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "greedbeast_kill_counts",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "greedbeast"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "greedbeast_kills",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "five_greedbeasts_start_sphere_phase",
+      "trigger": {
+        "kind": "counter_reached",
+        "counter": "greedbeast_kills",
+        "value": 5
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "greedbeast_kills",
+          "operation": "set",
+          "value": 0
+        },
+        {
+          "kind": "flag",
+          "flag": "boss_immune",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "sphere_phase_active",
+          "value": true
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "goshnars_greed"
+          },
+          "to": "boss_shield"
+        },
+        {
+          "kind": "move_lock",
+          "role": "goshnars_greed",
+          "locked": true
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/soul_sphere",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "soul_sphere",
+          "count": 1,
+          "at": {
+            "anchor": "soul_sphere_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "timer",
+          "timer": "sphere_phase",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "soul_sphere_kill_releases_boss",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "soul_sphere"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "sphere_phase",
+          "operation": "stop"
+        },
+        {
+          "kind": "flag",
+          "flag": "sphere_phase_active",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "boss_immune",
+          "value": false
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "goshnars_greed"
+          },
+          "to": "boss_normal"
+        },
+        {
+          "kind": "move_lock",
+          "role": "goshnars_greed",
+          "locked": false
+        }
+      ]
+    },
+    {
+      "key": "sphere_phase_timeout_releases_boss",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "sphere_phase"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "sphere_phase_active",
+          "value": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "soul_sphere"
+        },
+        {
+          "kind": "flag",
+          "flag": "sphere_phase_active",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "boss_immune",
+          "value": false
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "role": "goshnars_greed"
+          },
+          "to": "boss_normal"
+        },
+        {
+          "kind": "move_lock",
+          "role": "goshnars_greed",
+          "locked": false
+        }
+      ]
+    },
+    {
+      "key": "weak_soul_becomes_strong",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "weak_soul"
+      },
+      "delay_ms": 8000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "weak_soul",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/strong_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "strong_soul_becomes_powerful",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "strong_soul"
+      },
+      "delay_ms": 8000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "strong_soul",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/powerful_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "powerful_soul_buffs_boss",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "powerful_soul"
+      },
+      "delay_ms": 8000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "powerful_soul",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/weak_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        },
+        {
+          "kind": "attribute",
+          "role": "goshnars_greed",
+          "attribute": "defense",
+          "operation": "add",
+          "value": 10
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "goshnars_greed"
+          },
+          "amount": 10000
+        }
+      ]
+    },
+    {
+      "key": "boss_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "goshnars_greed"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "boss_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "greedbeast_returns_after_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "greedbeast"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/greedbeast",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "greedbeast",
+          "count": 1,
+          "at": {
+            "anchor": "greedbeast_return"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "soulsnatcher_returns_after_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "soulsnatcher"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/soulsnatcher",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "soulsnatcher",
+          "count": 1,
+          "at": {
+            "anchor": "soulsnatcher_return"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "weak_soul_returns_after_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "weak_soul"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/weak_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "weak_soul",
+          "count": 1,
+          "at": {
+            "anchor": "weak_soul_return"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "strong_soul_returns_after_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "strong_soul"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/strong_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "strong_soul",
+          "count": 1,
+          "at": {
+            "anchor": "strong_soul_return"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "powerful_soul_returns_after_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "powerful_soul"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/powerful_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "powerful_soul",
+          "count": 1,
+          "at": {
+            "anchor": "powerful_soul_return"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "boss_defeated"
+  ]
+}

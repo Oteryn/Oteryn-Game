@@ -1,0 +1,979 @@
+{
+  "schema": "OTERYN_SOUL_WAR_RECONSTRUCTION/v1",
+  "quest": {
+    "key": "oteryn:quest.soul_war_quest",
+    "revision": "quest-r1",
+    "display_name": "Soul War Quest"
+  },
+  "classification": "FAITHFUL_REIMPLEMENTATION_EVIDENCE_NOT_RUNTIME_ADMISSION",
+  "runtime_activation": false,
+  "target_profile": "OTERYN_NATIVE_QUEST_AND_ENCOUNTER_AUTHORING",
+  "source_policy": {
+    "primary": "zimbadev/crystalserver summer-update",
+    "primary_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "crosscheck": "opentibiabr/canary",
+    "crosscheck_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "behavioral_evidence": "six-part YouTube guide playlist PL2czNtPw97ZRaU9SIaoZF42p6K5BTu-qX",
+    "conflict_rule": "Preserve an accepted Oteryn ruling; otherwise prefer exact donor implementation for numeric behavior and use video only as behavioral/spatial evidence. Keep unresolved disagreement explicit."
+  },
+  "source_files": [
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/lib/quests/soul_war.lua",
+      "blob_sha1": "4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/spell-eye_beam.lua",
+      "blob_sha1": "7a73979930a0cdc17950fab7075334322f4cb128"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
+      "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/moveevent-claustrophobic-inferno-raid.lua",
+      "blob_sha1": "39f3e156051d8a7fa0344a0a2a4448b56014f70c"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/action-reward_soul_war.lua",
+      "blob_sha1": "652a74af84b41537fa317b387622b7a4d2697fb6"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua",
+      "blob_sha1": "3d33c27b8942d9f3dd56b6b7b9edac667c405828"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/npc/flickering_soul.lua",
+      "blob_sha1": "2010198da6e6f1aaaf39ea60df016fbf9416e09d"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnars_malice.lua",
+      "blob_sha1": "1cda5185bbe9caa2b3b01bc9fc47320005d80305"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnars_greed.lua",
+      "blob_sha1": "0a869103c09426c6e8816de9b028bc63908681c1"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnars_spite.lua",
+      "blob_sha1": "1daedf2a19178f90bc7f6ea6041f8f3fd1bacef6"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnars_cruelty.lua",
+      "blob_sha1": "468e6a312e446b328771641f2feb7878f101e8b8"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnars_hatred.lua",
+      "blob_sha1": "cc6652eb9d91f15b5d182206076bb216c0e43bf9"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua",
+      "blob_sha1": "7781c66516d83abbe905496cff7c3caf44902bf9"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_green.lua",
+      "blob_sha1": "787ab94b6627f5785fc9a574e6192f679e933235"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua",
+      "blob_sha1": "cf81168aa00b063ba9ce379e48b7254a4522e160"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/soul_cage.lua",
+      "blob_sha1": "c6c65b32547d17405f5b0e7c8084100e6a46db94"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/soul_sphere.lua",
+      "blob_sha1": "093eb9e9f2210dd6a93d131bd73b5ab9846e72c6"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye.lua",
+      "blob_sha1": "8622ed190a2da9030ce1eb111029581d88a0d922"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/aspect_of_power.lua",
+      "blob_sha1": "896cb5207226ff460039f2c96b1eee39b5cda3ee"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/mirror_image.lua",
+      "blob_sha1": "651287501e7d336eba121c7bc11c6b9c3d5e5380"
+    }
+  ],
+  "video_sources": [
+    {
+      "part": 1,
+      "video_id": "ZJKtfyRCPjQ",
+      "focus": "Claustrophobic Inferno and Goshnar's Malice",
+      "dense_windows": [
+        [
+          "00:04:30",
+          "00:05:15",
+          "Soul Cage lifecycle"
+        ],
+        [
+          "00:06:05",
+          "00:06:50",
+          "white safe-tile pattern and arena-wide hazard"
+        ]
+      ]
+    },
+    {
+      "part": 2,
+      "video_id": "X_eftME4qkY",
+      "focus": "Mirrored Nightmare and Goshnar's Greed",
+      "dense_windows": [
+        [
+          "00:06:15",
+          "00:07:05",
+          "Soul Sphere behavior"
+        ],
+        [
+          "00:07:35",
+          "00:08:05",
+          "boss vulnerability window"
+        ]
+      ]
+    },
+    {
+      "part": 3,
+      "video_id": "AR0TxuTv0rc",
+      "focus": "Ebb and Flow and Goshnar's Spite",
+      "dense_windows": [
+        [
+          "00:07:25",
+          "00:08:05",
+          "Soul/Searing Fire cycle"
+        ],
+        [
+          "00:08:45",
+          "00:09:35",
+          "Fear consequence and positioning"
+        ]
+      ]
+    },
+    {
+      "part": 4,
+      "video_id": "t3GcDyTQsPk",
+      "focus": "Furious Crater and Goshnar's Cruelty",
+      "dense_windows": [
+        [
+          "00:05:10",
+          "00:05:55",
+          "A Greedy Eye orientation and beam"
+        ],
+        [
+          "00:06:00",
+          "00:07:15",
+          "Mortal Essence/Greedy Maw and boss mechanics"
+        ]
+      ]
+    },
+    {
+      "part": 5,
+      "video_id": "oOgX3QQtJxg",
+      "focus": "Rotten Wasteland and Goshnar's Hatred",
+      "dense_windows": [
+        [
+          "00:04:20",
+          "00:05:30",
+          "personal charge/torment management"
+        ],
+        [
+          "00:05:20",
+          "00:06:30",
+          "Burning Hatred cycle"
+        ]
+      ]
+    },
+    {
+      "part": 6,
+      "video_id": "L8b-8qgQhuo",
+      "focus": "Goshnar's Megalomania",
+      "dense_windows": [
+        [
+          "00:01:20",
+          "00:02:45",
+          "Aspect of Power and splinter explanation"
+        ],
+        [
+          "00:05:05",
+          "00:07:05",
+          "vulnerability and aspect priority cycle"
+        ]
+      ]
+    }
+  ],
+  "progression": {
+    "admission": {
+      "minimum_level": 250,
+      "premium": true,
+      "party_slots": 5
+    },
+    "mini_bosses": [
+      "Goshnar's Malice",
+      "Goshnar's Greed",
+      "Goshnar's Spite",
+      "Goshnar's Cruelty",
+      "Goshnar's Hatred"
+    ],
+    "mini_boss_order": "ANY_ORDER_SOURCE_FLAGS; first-time defeat grants the next missing taint",
+    "taints": [
+      {
+        "level": 1,
+        "key": "taints-teleport"
+      },
+      {
+        "level": 2,
+        "key": "taints-spawn"
+      },
+      {
+        "level": 3,
+        "key": "taints-damage"
+      },
+      {
+        "level": 4,
+        "key": "taints-heal"
+      },
+      {
+        "level": 5,
+        "key": "taints-loss"
+      }
+    ],
+    "taint_reset_seconds": 1209600,
+    "final_access": "all five mini-boss completion flags are required",
+    "mini_boss_retry_seconds": 72000,
+    "megalomania_retry_seconds": 259200,
+    "final_reward": "one random item from the donor finalRewards set, once, only after Megalomania completion",
+    "completion_npc": "Flickering Soul reports the post-Megalomania task/outfit path in donor behavior",
+    "taint_effects": [
+      {
+        "level": 1,
+        "effect": "10% chance for a qualifying Soul War creature to teleport to the player",
+        "basis": "OTERYN_ACCEPTED"
+      },
+      {
+        "level": 2,
+        "effect": "0.5% chance that hitting a creature spawns the area's additional creature near the player",
+        "basis": "REFERENCE_WIKI"
+      },
+      {
+        "level": 3,
+        "effect": "15% increased damage received",
+        "basis": "REFERENCE_WIKI"
+      },
+      {
+        "level": 4,
+        "effect": "10% chance for a qualifying creature to fully heal instead of dying",
+        "basis": "OTERYN_ACCEPTED"
+      },
+      {
+        "level": 5,
+        "effect": "every 10 seconds lose 10% of current hit points and mana; Magic Shield does not prevent the life loss",
+        "basis": "REFERENCE_WIKI"
+      }
+    ],
+    "reference_failure_path": {
+      "classification": "REFERENCE_WIKI_NOT_DONOR_CLOSED",
+      "behavior": "Failing Goshnar's Megalomania removes taints four and five and requires two randomly selected mini-bosses to be defeated again."
+    },
+    "reference_success_path": {
+      "classification": "REFERENCE_WIKI",
+      "behavior": "After the final boss the taints are removed; a later final-boss route requires the five mini-bosses again."
+    }
+  },
+  "mechanics": [
+    {
+      "key": "claustrophobic_inferno_three_raids",
+      "scope": "access_malice",
+      "classification": "CONFLICT",
+      "chosen": {
+        "raid_count": 3,
+        "survival_seconds_each": 120,
+        "spawn_interval_seconds": {
+          "crystal": 20,
+          "canary": 10,
+          "selected": 20,
+          "selection_basis": "PRIMARY_DONOR_CRYSTAL_WITH_CONFLICT_RETAINED"
+        },
+        "kick_delay_seconds": 5,
+        "restart_cooldown_seconds": 10,
+        "spawn_types": [
+          "Brachiodemon",
+          "Infernal Demon",
+          "Infernal Phantom"
+        ]
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "three raid zones; spawnTime=20; surviveTime=120; timeToKick=5"
+        },
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/scripts/quests/soul_war/moveevent-claustrophobic-inferno-raid.lua",
+          "detail": "three monster groups and 10-second post-raid cooldown"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "ZJKtfyRCPjQ",
+          "window": [
+            "00:00:00",
+            "00:04:30"
+          ],
+          "detail": "three-stage Claustrophobic Inferno progression is visually shown"
+        },
+        {
+          "kind": "CANARY_CROSSCHECK",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "detail": "current Canary has spawnTime=10 while Crystal summer-update has 20"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "ZJKtfyRCPjQ",
+          "window": [
+            "00:00:17",
+            "00:01:00"
+          ],
+          "detail": "guide confirms waves and two-minute survival but does not provide a reliable exact wave interval"
+        }
+      ]
+    },
+    {
+      "key": "claustrophobic_inferno_crystal_bad_spawn_token",
+      "scope": "access_malice",
+      "classification": "CONFLICT",
+      "chosen": "DO_NOT_PORT_LITERAL_Pos_TOKEN",
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "second raid spawnsPhantons contains a bare Pos token after seven concrete positions"
+        },
+        {
+          "kind": "CANARY_CROSSCHECK",
+          "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+          "detail": "use current Canary/video/map evidence to resolve the missing concrete spawn rather than copying a donor typo"
+        }
+      ]
+    },
+    {
+      "key": "malice_soul_cage",
+      "scope": "goshnars_malice",
+      "classification": "PROVEN",
+      "chosen": {
+        "initial_spawn_delay_seconds": 23,
+        "cage_lifetime_seconds": 40,
+        "on_timeout": {
+          "remove_cage": true,
+          "malice_reflect_added": true,
+          "malice_defense_delta": 10
+        },
+        "repeat_after_timeout_seconds": 23
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "boss lever schedules SpawnSoulCage after 23s; surviving cage is removed after 40s, buffs Malice, and schedules another cage"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "ZJKtfyRCPjQ",
+          "window": [
+            "00:04:30",
+            "00:05:15"
+          ],
+          "detail": "Soul Cage appears as a real priority mechanic during the boss fight"
+        }
+      ]
+    },
+    {
+      "key": "malice_white_safe_tiles",
+      "scope": "goshnars_malice",
+      "classification": "PROVEN",
+      "chosen": {
+        "total_safe_tiles_target": 11,
+        "connected_group_size": 3,
+        "safe_ground_item_id": 409,
+        "unsafe_tile_damage": 8000,
+        "damage_type": "death",
+        "behavior": "connected white safe-tile groups are created around the room; players outside ground id 409 at revert take 8000 death damage"
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "createSoulWarWhiteTiles uses totalTiles=11, groupSize=3, ground id 409; revert damages players outside safe ground for 8000 death"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "ZJKtfyRCPjQ",
+          "window": [
+            "00:06:05",
+            "00:06:50"
+          ],
+          "detail": "white tiles appear, followed by a damaging/hazardous arena pattern outside the safe set"
+        }
+      ]
+    },
+    {
+      "key": "mirrored_nightmare_access",
+      "scope": "access_greed",
+      "classification": "PROVEN",
+      "chosen": {
+        "apparition_kills_each": 25,
+        "apparitions": [
+          "Druid's Apparition",
+          "Knight's Apparition",
+          "Paladin's Apparition",
+          "Sorcerer's Apparition",
+          "Monk's Apparition"
+        ]
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "requiredCountPerApparition=25; five vocation apparition names"
+        }
+      ]
+    },
+    {
+      "key": "greed_soul_sphere_cycle",
+      "scope": "goshnars_greed",
+      "classification": "PROVEN",
+      "chosen": {
+        "participants": [
+          "Greedbeast",
+          "Soulsnatcher",
+          "Weak Soul",
+          "Soul Sphere"
+        ],
+        "state": [
+          "GreedbeastKills",
+          "SoulSphereKills"
+        ],
+        "behavior": "Soul Sphere deaths are explicitly counted and participate in the Greed vulnerability cycle; do not use the older Oteryn/Canary partial encounter that lacks this event"
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "detail": "SoulSphereDeath increments SoulSphereKills; Greedbeast deaths increment GreedbeastKills"
+        },
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/monster/quests/soul_war/goshnars_greed.lua",
+          "detail": "boss behavior consumes the encounter counters"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "X_eftME4qkY",
+          "window": [
+            "00:06:15",
+            "00:08:05"
+          ],
+          "detail": "Soul Sphere and a distinct boss vulnerability period are visually confirmed"
+        }
+      ]
+    },
+    {
+      "key": "ebb_and_flow_dynamic_map",
+      "scope": "access_spite",
+      "classification": "PROVEN",
+      "chosen": {
+        "map_cycle_minutes": 2,
+        "states": [
+          "ebb-flow",
+          "empty",
+          "inundate"
+        ],
+        "preserve_player_relocation": true,
+        "pool_damage_percent_max_health": {
+          "33854": 20,
+          "34006": 15,
+          "34007": 10
+        }
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "intervalChangeMap=2 and three exact map overlays; pool damage percentages are 20/15/10"
+        },
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua",
+          "detail": "loads empty/inundate/base overlays and relocates/updates zone players"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "AR0TxuTv0rc",
+          "window": [
+            "00:00:00",
+            "00:07:20"
+          ],
+          "detail": "changing Ebb and Flow traversal states are visually present"
+        }
+      ]
+    },
+    {
+      "key": "spite_soul_fire",
+      "scope": "goshnars_spite",
+      "classification": "CONFLICT",
+      "chosen": {
+        "create_interval_seconds": 14,
+        "per_player_reuse_seconds": {
+          "crystal": 56,
+          "reference_wiki": 60,
+          "selected": 56,
+          "selection_basis": "PRIMARY_DONOR_CRYSTAL_WITH_CONFLICT_RETAINED"
+        },
+        "boss_heal_chance_percent": 10,
+        "boss_heal_percent_max_health": 10,
+        "boss_defense_delta_on_failure": 10
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "14s fire creation, 56s player cooldown, 10% heal chance/amount and +10 defense constant"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "AR0TxuTv0rc",
+          "window": [
+            "00:07:25",
+            "00:08:05"
+          ],
+          "detail": "Soul/Searing Fire cycle is visually confirmed"
+        },
+        {
+          "kind": "REFERENCE_WIKI",
+          "detail": "reference wiki describes the soul-fire stomper recovery as 60 seconds; donor constant is 56"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "AR0TxuTv0rc",
+          "window": [
+            "00:07:25",
+            "00:08:10"
+          ],
+          "detail": "guide visually confirms rotating stomp responsibility; exact recovery duration is not reliable from the video alone"
+        }
+      ]
+    },
+    {
+      "key": "spite_fear",
+      "scope": "goshnars_spite",
+      "classification": "OTERYN_ACCEPTED",
+      "chosen": {
+        "windup_seconds": 2,
+        "duration_seconds": 3,
+        "target": "caster current target at windup end"
+      },
+      "evidence": [
+        {
+          "kind": "OTERYN_DECISION",
+          "path": "docs/agents/tasks/archive/OTV2-20260930-soul-war-mechanics-design.md",
+          "detail": "accepted Fear target/timing decision"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "AR0TxuTv0rc",
+          "window": [
+            "00:08:45",
+            "00:09:35"
+          ],
+          "detail": "Fear visibly causes loss of movement control and can carry a player into a bomb/hazard"
+        }
+      ]
+    },
+    {
+      "key": "rotten_wasteland_shrines",
+      "scope": "access_hatred",
+      "classification": "PROVEN",
+      "chosen": {
+        "required_activated_shrines": 4
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "detail": "Hatred access refuses entry until activated shrine count reaches four"
+        }
+      ]
+    },
+    {
+      "key": "hatred_burning_cycle",
+      "scope": "goshnars_hatred",
+      "classification": "PROVEN",
+      "chosen": {
+        "initial_timer_seconds": 180,
+        "forms": [
+          {
+            "at": 180,
+            "name": "Ashes of Burning Hatred"
+          },
+          {
+            "at": 135,
+            "name": "Spark of Burning Hatred"
+          },
+          {
+            "at": 90,
+            "name": "Flame of Burning Hatred"
+          },
+          {
+            "at": 45,
+            "name": "Blaze of Burning Hatred"
+          }
+        ],
+        "sorrow_use_adds_seconds": 10,
+        "ashes_cycle_boss_multiplier_delta": 10
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "four 45-second transformation thresholds beginning at 180"
+        },
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "detail": "Sorrow item adds 10 seconds; reaching Ashes empowers Hatred by 10"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "oOgX3QQtJxg",
+          "window": [
+            "00:05:20",
+            "00:06:30"
+          ],
+          "detail": "Burning Hatred is a distinct recurring mechanic"
+        }
+      ]
+    },
+    {
+      "key": "hatred_torment_management",
+      "scope": "goshnars_hatred",
+      "classification": "VIDEO_PROVEN_SOURCE_PRESENT",
+      "chosen": {
+        "behavior": "retain personal torment/charge management and reset/reduction objects; exact counter operations come from donor source"
+      },
+      "evidence": [
+        {
+          "kind": "VIDEO",
+          "video_id": "oOgX3QQtJxg",
+          "window": [
+            "00:04:20",
+            "00:05:30"
+          ],
+          "detail": "personal charges and reset objects are visibly managed during the fight"
+        },
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "Goshnar torment counter helpers are shared with Hatred/Megalomania"
+        }
+      ]
+    },
+    {
+      "key": "furious_crater_energy_access",
+      "scope": "access_cruelty",
+      "classification": "PROVEN",
+      "chosen": {
+        "floor_thresholds": [
+          40,
+          55,
+          70
+        ],
+        "counter_resets_at_each_threshold": true
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "three floor gates require 40, 55, 70 Pulsating Energies"
+        },
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "detail": "counter increments on energy pickup and resets when each floor access is granted"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "t3GcDyTQsPk",
+          "window": [
+            "00:00:00",
+            "00:05:00"
+          ],
+          "detail": "quest tracker visually shows 40/55/70 progression"
+        }
+      ]
+    },
+    {
+      "key": "cruelty_greedy_eye",
+      "scope": "goshnars_cruelty",
+      "classification": "VIDEO_PROVEN_SOURCE_PRESENT",
+      "chosen": {
+        "behavior": "eye has an orientation-dependent frontal beam; model direction and beam geometry, not a generic untargeted pulse"
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/scripts/quests/soul_war/spell-eye_beam.lua",
+          "detail": "dedicated eye beam spell exists"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "t3GcDyTQsPk",
+          "window": [
+            "00:05:10",
+            "00:05:55"
+          ],
+          "detail": "eye facing, danger marks and a beam extending three tiles in front are shown"
+        }
+      ]
+    },
+    {
+      "key": "cruelty_mortal_essence_greedy_maw",
+      "scope": "goshnars_cruelty",
+      "classification": "PROVEN",
+      "chosen": {
+        "item_id": 33891,
+        "per_player_use_cooldown_seconds": 30,
+        "defense_grace_seconds": 15,
+        "defense_step": 2,
+        "defense_increase_period_seconds": 15
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "Mortal Essence id 33891; 30s use cooldown; 15s grace; defense step 2"
+        },
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "detail": "using essence on Greedy Maw removes the item and decreases accumulated Cruelty defense toward base"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "t3GcDyTQsPk",
+          "window": [
+            "00:06:00",
+            "00:07:15"
+          ],
+          "detail": "essence/skull is visibly used on Greedy Maw during the fight"
+        }
+      ]
+    },
+    {
+      "key": "megalomania_aspect_vulnerability",
+      "scope": "goshnars_megalomania",
+      "classification": "PROVEN",
+      "chosen": {
+        "aspect_respawn_seconds": 5,
+        "all_required_aspects_dead_transition": "purple_to_green_vulnerable",
+        "green_to_blue_delay_seconds": 60,
+        "return_to_immune_seconds": 70,
+        "aspect_kills_required": 4
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "detail": "Aspect death increments boss count and respawns an Aspect after 5s"
+        },
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/lib/quests/soul_war.lua",
+          "detail": "all Aspect deaths transform purple to green; blue transition is scheduled after 60s; immune return constant is 70s"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "L8b-8qgQhuo",
+          "window": [
+            "00:05:05",
+            "00:07:05"
+          ],
+          "detail": "boss becomes attackable in a distinct phase while Aspect pressure continues"
+        }
+      ]
+    },
+    {
+      "key": "megalomania_splinters_and_sanity",
+      "scope": "goshnars_megalomania",
+      "classification": "PROVEN",
+      "chosen": {
+        "splinter_chain": [
+          "Lesser Splinter of Madness",
+          "Greater Splinter of Madness",
+          "Mighty Splinter of Madness"
+        ],
+        "dead_aspect_corpse_resets_player_torment": true,
+        "dead_aspect_corpse_removes_splinter_and_becomes_cleansed_sanity": true,
+        "cleansed_sanity_use_cooldown_seconds": 30,
+        "necromantic_remains_reduce_torment_by": 5,
+        "necromantic_focus_delayed_empower_seconds": 300
+      },
+      "evidence": [
+        {
+          "kind": "CRYSTAL_SOURCE",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "detail": "dead Aspect corpse handles player torment/splinters; Cleansed Sanity and Necromantic Remains are explicit actions; Focus death schedules strength increase after 5 minutes"
+        },
+        {
+          "kind": "VIDEO",
+          "video_id": "L8b-8qgQhuo",
+          "window": [
+            "00:01:20",
+            "00:02:45"
+          ],
+          "detail": "Aspect/splinter loop and floor objects are visually explained"
+        }
+      ]
+    },
+    {
+      "key": "mirror_image",
+      "scope": "taint_zones",
+      "classification": "OTERYN_ACCEPTED",
+      "chosen": {
+        "own_player_damage_transforms_to_attacker_base_vocation_percent": 70,
+        "other_vocations_percent_each": 7.5,
+        "other_damage_hp_floor": 1
+      },
+      "evidence": [
+        {
+          "kind": "OTERYN_DECISION",
+          "path": "docs/agents/tasks/archive/OTV2-20260930-soul-war-mechanics-design.md",
+          "detail": "Q5b accepted: 70% attacker vocation plus 1 HP floor"
+        },
+        {
+          "kind": "OTERYN_FORMAT",
+          "path": "docs/architecture/OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md",
+          "detail": "accepted encounter evidence records the same ruling"
+        }
+      ]
+    }
+  ],
+  "known_donor_defects": [
+    {
+      "source": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/lib/quests/soul_war.lua",
+      "defect": "bare Pos entry in second Claustrophobic Inferno phantom spawn list",
+      "disposition": "DO_NOT_COPY; keep unresolved until exact map/source evidence identifies the intended coordinate"
+    },
+    {
+      "source": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/mirror_image.lua",
+      "defect": "Mirror Image behavior conflicts with accepted Oteryn Q5b weighting",
+      "disposition": "OTERYN_ACCEPTED_RULE_WINS"
+    },
+    {
+      "source": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "defect": "Rotten Wasteland tracks only the last shrine id plus a count, so alternating shrine ids can incorrectly reach four activations.",
+      "disposition": "DO_NOT_COPY_BUG; Oteryn intent is four distinct shrine ids 33019, 33021, 33022 and 33024."
+    },
+    {
+      "source": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/monster/quests/soul_war/soul_sphere.lua",
+      "defect": "Soul Sphere exact movement cadence is 3000ms in Crystal while guide timing can be read differently.",
+      "disposition": "USE_EXACT_PRIMARY_DONOR_3000MS_AND_RETAIN_VIDEO_AS_NON_NUMERIC_BEHAVIORAL_EVIDENCE."
+    }
+  ],
+  "existing_oteryn_baseline": {
+    "quest_identity_present": true,
+    "canonical_quest_runtime_enabled": false,
+    "source_revision": "canary-04b83b51+crystalserver-9f5a72c6",
+    "older_encounter_records": [
+      "oteryn:encounter.field_fill_goshnar_s_malice",
+      "oteryn:encounter.goshnars_greed",
+      "oteryn:encounter.goshnars_hatred",
+      "oteryn:encounter.goshnars_megalomania",
+      "oteryn:encounter.soul_war_taint_zones"
+    ],
+    "disposition": "This reconstruction supersedes those records only as evidence/authoring intent. Runtime promotion requires the normal native lowering and encounter execution path."
+  },
+  "runtime_holds": [
+    "Quest trigger/admission bindings are not fully executable for script-only Soul War.",
+    "Encounter authoring files are evidence-only; the game server does not execute encounter.schema.json records.",
+    "Dynamic Ebb and Flow overlay-map execution requires the accepted world/runtime map overlay path rather than donor Game.loadMap calls.",
+    "Boss room lever, party placement and reset lifecycle require Native interaction/world bindings.",
+    "Final random reward must be lowered through Oteryn item/reward transaction ownership; donor addItem is evidence, not a runtime primitive.",
+    "Video-only spatial observations require explicit Oteryn anchors/areas before runtime admission.",
+    "No runtime/playability claim is made by this packet."
+  ]
+}

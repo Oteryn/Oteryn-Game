@@ -1,0 +1,34 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/goshnar_s_hatred",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/ashes_of_burning_hatred",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/spark_of_burning_hatred",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/flame_of_burning_hatred",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/blaze_of_burning_hatred",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/33793",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}
