@@ -71,7 +71,11 @@ its own independent review under the item 1 grant.
       the shared-guard paths are in the write grant (review round 2); it accepts only the
       retained per-run SQLite file so the directory is bound to the current run (round 3).
 - [x] Both commands refuse a symlinked or non-canonical per-run database directory before any
-      write, with a refusal test for each command (P1 4194718086).
+      write, through the run-directory check of the shared guard, with a refusal test for each
+      command (P1 4194718086; round 6 places the check in the shared guard).
+- [x] `game-auth:native-topology:issue` applies the environment fence and the run-directory
+      check before its first write and refuses with nothing written, with issuer refusal tests
+      (P1 4195238904).
 - [x] The mandatory decision test is answered (decision §6).
 - [x] Owner answer 1a (D831, final §2 path list) and 2a (D824) are recorded; the Synology shape of Option B is noted as not
       decided (decision §3, §7).
@@ -117,6 +121,21 @@ guard relaxation. No decision on Option B or its Synology shape.
   directly beneath the canonical system temporary root, and the database file is canonical inside
   it. A refusal test covers each command. `isolatedConnection()` and the D831 path list are
   unchanged, so answer 1a still covers the Platform write.
+- Review round 6, Codex P1 4194718086 (open on 40519cc1) and P1 4195238904 on 40519cc1
+  (issuance writes permanent IDs through a symlinked per-run directory before the route command
+  refuses). Re-read at Platform `origin/main` 3896bcd. The round-5 premise was wrong.
+  `isolatedConnection()` already refuses a symlinked per-run directory: it requires
+  `realpath(dirname($database))` to equal `dirname($database)` and its parent to equal
+  `realpath(sys_get_temp_dir())` (`NativeTopologyRegistry.php:181-189`).
+  `NativeTopologyRegistryTest.php:269,293-297` proves the refusal for issuance and readback.
+  - Issuance is fenced: `IssueNativeTopology.php:29` calls `issueForPreproduction`, which calls
+    the guard (`:16`; environment `:152`) before its transaction (`:18`).
+  - F3 is corrected. The run-directory check is now named as part of the shared guard, which
+    moves unchanged into `DisposableNativeStore`. So issuance, readback, the route command and
+    the trust command all apply it. There is no separate command-only check.
+  - Tests: issuer refusal rows (symlinked per-run directory; `local`, `staging`, `production`;
+    a non-disposable store) with nothing written.
+  - `isolatedConnection()` semantics and the D831 path list are unchanged.
 
 ## Validation
 
@@ -158,7 +177,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## PR and closeout
 
 - changed-file review: two owned paths
-- unresolved review threads: none after the run-directory reply
+- unresolved review threads: none after the round-6 replies to 4194718086 and 4195238904
 - related/superseded PRs: none
 - protected auto-merge: control plane
 - merge commit/result: in PR #1871
@@ -167,7 +186,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## Context checkpoint
 
 ```yaml
-last_progress: run-directory check for both commands (P1 4194718086)
+last_progress: round 6, shared-guard run-directory check fences issuance (4194718086, 4195238904)
 status: completed
 branch: cand/preprod-route-publish-auth-1
 pr: 1871
