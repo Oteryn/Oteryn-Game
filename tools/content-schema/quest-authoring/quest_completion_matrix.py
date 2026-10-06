@@ -15,6 +15,7 @@ CATALOGUE = "tools/content-schema/quest-authoring/samples/catalogue/catalogue.js
 COVERAGE = "tools/content-schema/quest-authoring/samples/quest-coverage-2026-09-27.json"
 CROSSWALK = "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json"
 DEFINITIONS = "content/quests/definitions/index.json"
+REWARD_CLAIMS = "content/interactions/reward_claims/index.json"
 COMPLETION_CANDIDATE = "content/quests/missions/quest-state-completion-candidate.json"
 COMPLETION_RECEIPT = "content/quests/missions/completion-candidate.json"
 OUTPUT = "tools/content-schema/quest-authoring/samples/completion-matrix/all373.json"
@@ -42,6 +43,52 @@ def load_definitions(root: Path):
     if len(records) != index["record_count"]:
         raise ValueError("Quest definition index count differs from shards")
     return index, records
+
+
+def load_reward_claims(root: Path):
+    index = read(root, REWARD_CLAIMS)
+    records = []
+    for shard in index["shards"]:
+        records.extend(row["definition"] for row in read(root, shard)["records"])
+    if len(records) != index["record_count"]:
+        raise ValueError("RewardClaim index count differs from shards")
+    return {record["identity"]["key"]: record for record in records}
+
+
+def reward_claim_owner(definitions, reward_claims):
+    if not definitions or any(definition.get("kind") != "reward_only" for definition in definitions):
+        return None
+    refs = [
+        ref["key"]
+        for definition in definitions
+        for ref in definition.get("claims") or []
+        if ref.get("family") == "RewardClaim" and ref.get("key")
+    ]
+    if not refs:
+        return {
+            "state": "REWARD_CLAIM_DATA_PENDING",
+            "claim_keys": [],
+            "ready_claims": 0,
+            "placements": 0,
+        }
+    claims = [reward_claims.get(key) for key in refs]
+    ready = [
+        claim
+        for claim in claims
+        if claim is not None
+        and claim.get("readiness") == "ready"
+        and bool(claim.get("placements"))
+    ]
+    return {
+        "state": (
+            "REWARD_CLAIM_USE_PENDING"
+            if len(ready) == len(refs)
+            else "REWARD_CLAIM_DATA_PENDING"
+        ),
+        "claim_keys": sorted(refs),
+        "ready_claims": len(ready),
+        "placements": sum(len(claim.get("placements") or []) for claim in ready),
+    }
 
 
 def definition_titles(definition):
@@ -127,7 +174,7 @@ NATIVE_BINDING_CODES = {
 }
 
 
-def states(definitions, mapping_state, candidate_states, held_keys):
+def states(definitions, mapping_state, candidate_states, held_keys, reward_owner):
     codes = {
         issue.get("code", "UNKNOWN")
         for definition in definitions
@@ -150,11 +197,14 @@ def states(definitions, mapping_state, candidate_states, held_keys):
         implementation = "NATIVE_LOWERING_PENDING"
     else:
         readiness = {d.get("readiness", "UNKNOWN") for d in definitions}
-        implementation = (
-            "DEFINITION_READY_RUNTIME_UNKNOWN"
-            if readiness == {"definition_ready"}
-            else "REVIEW_REQUIRED"
-        )
+        if readiness == {"definition_ready"} and reward_owner is not None:
+            implementation = reward_owner["state"]
+        else:
+            implementation = (
+                "DEFINITION_READY_RUNTIME_UNKNOWN"
+                if readiness == {"definition_ready"}
+                else "REVIEW_REQUIRED"
+            )
     progress_state = next(iter(progress_states)) if len(progress_states) == 1 else "MULTIPLE"
     return source_state, progress_state, implementation
 
@@ -166,6 +216,7 @@ def expected(root: Path):
     completion_candidate = read(root, COMPLETION_CANDIDATE)
     completion_receipt = read(root, COMPLETION_RECEIPT)
     index, definitions = load_definitions(root)
+    reward_claims = load_reward_claims(root)
 
     catalogue = catalogue_obj["quests"]
     coverage = {q["title"]: q for q in coverage_obj["quests"]}
@@ -213,8 +264,9 @@ def expected(root: Path):
                     "counts": source.get("counts") if source else None,
                 },
             })
+        reward_owner = reward_claim_owner(defs, reward_claims)
         source_state, progress_state, implementation_state = states(
-            defs, mapping_state, candidate_states, held_keys
+            defs, mapping_state, candidate_states, held_keys, reward_owner
         )
         records.append({
             "wiki_title": title,
@@ -234,6 +286,7 @@ def expected(root: Path):
             "canonical": canonical,
             "source_fidelity_state": source_state,
             "typed_progress_state": progress_state,
+            "reward_claim_owner": reward_owner,
             "implementation_state": implementation_state,
             "work_state": implementation_state,
             "playable_verification": "NOT_ASSESSED",
@@ -247,6 +300,11 @@ def expected(root: Path):
     source_counts = Counter(r["source_fidelity_state"] for r in records)
     progress_counts = Counter(r["typed_progress_state"] for r in records)
     implementation_counts = Counter(r["implementation_state"] for r in records)
+    reward_owner_counts = Counter(
+        r["reward_claim_owner"]["state"]
+        for r in records
+        if r["reward_claim_owner"] is not None
+    )
     donor_counts = Counter(r["donor"]["mode"] for r in records)
     mapping_counts = Counter(r["canonical_mapping"] for r in records)
     unique_readiness = Counter(d.get("readiness") for d in definitions)
@@ -260,6 +318,7 @@ def expected(root: Path):
             "coverage": COVERAGE,
             "crosswalk": CROSSWALK,
             "definitions": DEFINITIONS,
+            "reward_claims": REWARD_CLAIMS,
             "completion_candidate": COMPLETION_CANDIDATE,
             "completion_receipt": COMPLETION_RECEIPT,
         },
@@ -274,6 +333,17 @@ def expected(root: Path):
             "source_fidelity_state": dict(sorted(source_counts.items())),
             "typed_progress_state": dict(sorted(progress_counts.items())),
             "implementation_state": dict(sorted(implementation_counts.items())),
+            "reward_claim_owner_state": dict(sorted(reward_owner_counts.items())),
+            "reward_claim_ready_refs": sum(
+                (r["reward_claim_owner"] or {}).get("ready_claims", 0)
+                for r in records
+                if r["implementation_state"] == "REWARD_CLAIM_USE_PENDING"
+            ),
+            "reward_claim_placements": sum(
+                (r["reward_claim_owner"] or {}).get("placements", 0)
+                for r in records
+                if r["implementation_state"] == "REWARD_CLAIM_USE_PENDING"
+            ),
             "work_state": dict(sorted(work_counts.items())),
             "canonical_readiness": dict(sorted(unique_readiness.items())),
             "playable_verified": 0,
