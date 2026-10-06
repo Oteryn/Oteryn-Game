@@ -1,0 +1,5681 @@
+{
+  "records": [
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.foam_stalker.field-fill-attacks-2-stage-1",
+        "revision": "definition-r1"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-1",
+          "revision": "definition-r1"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.foam_stalker.field-fill-attacks-2-stage-2",
+        "revision": "definition-r1"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-2",
+          "revision": "definition-r1"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.foam_stalker.field-fill-attacks-2-stage-3",
+        "revision": "definition-r1"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-3",
+          "revision": "definition-r1"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.foam_stalker.field-fill-foamsplash",
+        "revision": "definition-r1"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.energy_pulse_explosion",
+        "revision": "definition-r1"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.energy_pulse_explosion.component-1",
+        "revision": "definition-r1"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.spell.energy_pulse_explosion.component-1.effect",
+          "revision": "definition-r1"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.eruption_of_destruction_explosion",
+        "revision": "definition-r1"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.gaz_haragoth_death",
+        "revision": "definition-r1"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.outburst_explode",
+        "revision": "definition-r1"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.plagirath_bog",
+        "revision": "definition-r1"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingshaper",
+        "revision": "definition-r1"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingshaper.component-1",
+        "revision": "definition-r1"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.spell.rotthingshaper.component-1.effect",
+          "revision": "definition-r1"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingshaper.component-2",
+        "revision": "definition-r1"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.spell.rotthingshaper.component-2.effect",
+          "revision": "definition-r1"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingwave",
+        "revision": "definition-r1"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingwave.component-1",
+        "revision": "definition-r1"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.spell.rotthingwave.component-1.effect",
+          "revision": "definition-r1"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingwave.component-2",
+        "revision": "definition-r1"
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "oteryn:effect.spell.rotthingwave.component-2.effect",
+          "revision": "definition-r1"
+        }
+      ]
+    },
+    {
+      "kind": "Ability",
+      "identity": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.tenebris_ultimate",
+        "revision": "definition-r1"
+      },
+      "effects": []
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.charging_outburst",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.energy_pulse",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.eruption_of_destruction",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.foam_stalker",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.lady_tenebris",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.plagirath",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.rootthing_amber_shaper",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Generic",
+      "identity": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.rootthing_nutshell",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly"
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.charging_outburst",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.charging_outburst",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.charging_outburst",
+        "revision": "definition-r1"
+      },
+      "loot": null
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.energy_pulse",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.energy_pulse",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.energy_pulse",
+        "revision": "definition-r1"
+      },
+      "loot": null
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.eruption_of_destruction",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.eruption_of_destruction",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.eruption_of_destruction",
+        "revision": "definition-r1"
+      },
+      "loot": null
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.foam_stalker",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.foam_stalker",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.foam_stalker",
+        "revision": "definition-r1"
+      },
+      "loot": {
+        "family": "Loot",
+        "key": "oteryn:loot.creature.foam_stalker",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "loot": {
+        "family": "Loot",
+        "key": "oteryn:loot.creature.gaz_haragoth",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.lady_tenebris",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.lady_tenebris",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.lady_tenebris",
+        "revision": "definition-r1"
+      },
+      "loot": {
+        "family": "Loot",
+        "key": "oteryn:loot.creature.lady_tenebris",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.plagirath",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.plagirath",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.plagirath",
+        "revision": "definition-r1"
+      },
+      "loot": {
+        "family": "Loot",
+        "key": "oteryn:loot.creature.plagirath",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.rootthing_amber_shaper",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.rootthing_amber_shaper",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.rootthing_amber_shaper",
+        "revision": "definition-r1"
+      },
+      "loot": {
+        "family": "Loot",
+        "key": "oteryn:loot.creature.rootthing_amber_shaper",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Creature",
+      "identity": {
+        "family": "Creature",
+        "key": "oteryn:creature.rootthing_nutshell",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ClientSafe",
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.rootthing_nutshell",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.rootthing_nutshell",
+        "revision": "definition-r1"
+      },
+      "loot": {
+        "family": "Loot",
+        "key": "oteryn:loot.creature.rootthing_nutshell",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-1",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.foam_stalker.field-fill-attacks-2-stage-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-2",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.foam_stalker.field-fill-attacks-2-stage-2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-3",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.foam_stalker.field-fill-attacks-2-stage-3",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.spell.energy_pulse_explosion.component-1.effect",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.energy_pulse_explosion.component-1.magnitude",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.spell.rotthingshaper.component-1.effect",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingshaper.component-1.magnitude",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.spell.rotthingshaper.component-2.effect",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingshaper.component-2.magnitude",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.spell.rotthingwave.component-1.effect",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingwave.component-1.magnitude",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Effect",
+      "identity": {
+        "family": "Effect",
+        "key": "oteryn:effect.spell.rotthingwave.component-2.effect",
+        "revision": "definition-r1"
+      },
+      "client_projection": "ServerOnly",
+      "effect_family": "Damage",
+      "formula": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingwave.component-2.magnitude",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.foam_stalker.field-fill-attacks-2-stage-1",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.foam_stalker.field-fill-attacks-2-stage-2",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.foam_stalker.field-fill-attacks-2-stage-3",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.energy_pulse_explosion.component-1.magnitude",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingshaper.component-1.magnitude",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingshaper.component-2.magnitude",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingwave.component-1.magnitude",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "kind": "Formula",
+      "identity": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingwave.component-2.magnitude",
+        "revision": "definition-r1"
+      }
+    }
+  ],
+  "declarations": [
+    {
+      "fields": [],
+      "identity": {
+        "key": "oteryn:encounter.charging_outburst",
+        "revision": "definition-r1"
+      },
+      "kind": "Encounter"
+    },
+    {
+      "fields": [],
+      "identity": {
+        "key": "oteryn:encounter.eruption_of_destruction",
+        "revision": "definition-r1"
+      },
+      "kind": "Encounter"
+    },
+    {
+      "fields": [],
+      "identity": {
+        "key": "oteryn:encounter.field_fill_foam_stalker",
+        "revision": "definition-r1"
+      },
+      "kind": "Encounter"
+    },
+    {
+      "fields": [],
+      "identity": {
+        "key": "oteryn:encounter.gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "kind": "Encounter"
+    },
+    {
+      "fields": [],
+      "identity": {
+        "key": "oteryn:encounter.lady_tenebris",
+        "revision": "definition-r1"
+      },
+      "kind": "Encounter"
+    },
+    {
+      "fields": [],
+      "identity": {
+        "key": "oteryn:encounter.plagirath",
+        "revision": "definition-r1"
+      },
+      "kind": "Encounter"
+    },
+    {
+      "fields": [],
+      "identity": {
+        "key": "oteryn:encounter.source_core_energy_pulse",
+        "revision": "definition-r1"
+      },
+      "kind": "Encounter"
+    },
+    {
+      "fields": [],
+      "identity": {
+        "key": "oteryn:encounter.source_core_rootthing_amber_shaper",
+        "revision": "definition-r1"
+      },
+      "kind": "Encounter"
+    },
+    {
+      "fields": [],
+      "identity": {
+        "key": "oteryn:encounter.source_core_rootthing_nutshell",
+        "revision": "definition-r1"
+      },
+      "kind": "Encounter"
+    }
+  ],
+  "authoring_profiles": [
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.charging_outburst",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 12000,
+          "experience": 50000,
+          "speed": 150,
+          "armor": 100,
+          "mitigation": {
+            "numerator": 63,
+            "denominator": 20
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "drowning",
+              "percent": {
+                "numerator": 50,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "life_drain",
+              "percent": {
+                "numerator": 80,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "numerator": -10,
+                "denominator": 1
+              }
+            }
+          ],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.charging_outburst.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.charging_outburst.attack-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.charging_outburst.attack-3",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.charging_outburst.attack-4",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.anomaly_break",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.outburst_explode",
+              "revision": "definition-r1"
+            }
+          ],
+          "details": {
+            "display_name": "Charging Outburst",
+            "inspection": "Charging Outburst",
+            "defense": 100,
+            "critical_chance_ppm": 0,
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": true
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "death_residue": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2886",
+                "revision": "definition-r1"
+              },
+              "fluid_type": "slime"
+            },
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/charging_outburst",
+              "revision": "definition-r1"
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.charging_outburst",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.outburst",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.energy_pulse",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 5000,
+          "experience": 0,
+          "speed": 0,
+          "armor": 10,
+          "mitigation": {
+            "numerator": 1,
+            "denominator": 100
+          },
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.energy_pulse_explosion",
+              "revision": "definition-r1"
+            }
+          ],
+          "details": {
+            "display_name": "Energy Pulse",
+            "inspection": "an energy pulse",
+            "defense": 5,
+            "critical_chance_ppm": 0,
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i9591",
+              "revision": "definition-r1"
+            },
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/energy_pulse",
+              "revision": "definition-r1"
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.source_core_energy_pulse",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.eruption_of_destruction",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 8500,
+          "experience": 0,
+          "speed": 60,
+          "armor": 30,
+          "mitigation": {
+            "numerator": 177,
+            "denominator": 100
+          },
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.eruption_of_destruction.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.eruption_of_destruction_explosion",
+              "revision": "definition-r1"
+            }
+          ],
+          "details": {
+            "display_name": "Eruption of Destruction",
+            "article": "an",
+            "inspection": "an eruption of destruction",
+            "defense": 30,
+            "critical_chance_ppm": 0,
+            "condition_immunities": [
+              "invisible",
+              "outfit",
+              "paralyze"
+            ],
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/eruption_of_destruction",
+              "revision": "definition-r1"
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.eruption_of_destruction",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.foam_stalker",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 4500,
+          "experience": 3525,
+          "speed": 185,
+          "armor": 64,
+          "mitigation": {
+            "numerator": 69,
+            "denominator": 25
+          },
+          "resistances": [
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": -30,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "numerator": 80,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": 20,
+                "denominator": 1
+              }
+            }
+          ],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.foam_stalker.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.foam_stalker.attack-3",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.foam_stalker.attack-4",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.foam_stalker.attack-5",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.foam_stalker.defense-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.foam_stalker.field-fill-foamsplash",
+              "revision": "definition-r1"
+            }
+          ],
+          "bestiary": {
+            "difficulty": "hard",
+            "occurrence": "common",
+            "kill_thresholds": [
+              100,
+              1000,
+              2500
+            ],
+            "charm_points": 50
+          },
+          "details": {
+            "display_name": "Foam Stalker",
+            "article": "a",
+            "inspection": "a foam stalker",
+            "defense": 64,
+            "critical_chance_ppm": 0,
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "bestiary": {
+              "class": "Elemental",
+              "taxonomy": "elemental",
+              "stars": 4,
+              "locations": "Great Pearl Fan Reef"
+            },
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i39344",
+              "revision": "definition-r1"
+            },
+            "soul_core_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i48035",
+              "revision": "definition-r1"
+            },
+            "death_residue": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2886",
+                "revision": "definition-r1"
+              },
+              "fluid_type": "blood"
+            },
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/foam_stalker",
+              "revision": "definition-r1"
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.field_fill_foam_stalker",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 350000,
+          "experience": 1000000,
+          "speed": 250,
+          "armor": 55,
+          "mitigation": {
+            "numerator": 189,
+            "denominator": 100
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 50,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": 50,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": 50,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "numerator": 50,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "numerator": 50,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": 50,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "numerator": 50,
+                "denominator": 1
+              }
+            }
+          ],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.gaz_haragoth.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.gaz_haragoth.attack-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.gaz_haragoth.attack-3",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.gaz_haragoth.attack-4",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.gaz_haragoth.attack-5",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.gaz_haragoth.attack-6",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.gaz_haragoth.attack-7",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.gaz_haragoth.attack-8",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.gaz_haragoth.defense-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.gaz_haragoth.defense-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.gaz_haragoth_death",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.gaz_haragoth_iceball",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.gaz_haragoth_paralyze",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.gaz_haragoth_summon",
+              "revision": "definition-r1"
+            }
+          ],
+          "details": {
+            "display_name": "Gaz'Haragoth",
+            "inspection": "Gaz'Haragoth",
+            "defense": 65,
+            "critical_chance_ppm": 0,
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": true
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "bosstiary": {
+              "category": "nemesis",
+              "prowess_kills": 1,
+              "expertise_kills": 3,
+              "mastery_kills": 5,
+              "prowess_points": 10,
+              "expertise_points": 30,
+              "mastery_points": 60
+            },
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i20228",
+              "revision": "definition-r1"
+            },
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/gaz_haragoth",
+              "revision": "definition-r1"
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.gaz_haragoth",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lady_tenebris",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 250000,
+          "experience": 50000,
+          "speed": 185,
+          "armor": 55,
+          "mitigation": {
+            "numerator": 58,
+            "denominator": 25
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 5,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": -30,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "numerator": 5,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "numerator": 35,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "numerator": 20,
+                "denominator": 1
+              }
+            }
+          ],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lady_tenebris.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lady_tenebris.attack-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lady_tenebris.attack-3",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lady_tenebris.defense-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.lady_tenebris.defense-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.tenebris_summon",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.tenebris_ultimate",
+              "revision": "definition-r1"
+            }
+          ],
+          "details": {
+            "display_name": "Lady Tenebris",
+            "inspection": "Lady Tenebris",
+            "defense": 65,
+            "critical_chance_ppm": 0,
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": true
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "bosstiary": {
+              "category": "archfoe",
+              "prowess_kills": 5,
+              "expertise_kills": 20,
+              "mastery_kills": 60,
+              "prowess_points": 10,
+              "expertise_points": 30,
+              "mastery_points": 60
+            },
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i6560",
+              "revision": "definition-r1"
+            },
+            "death_residue": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2886",
+                "revision": "definition-r1"
+              },
+              "fluid_type": "blood"
+            },
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/lady_tenebris",
+              "revision": "definition-r1"
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.lady_tenebris",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.plagirath",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 290000,
+          "experience": 500000,
+          "speed": 160,
+          "armor": 125,
+          "mitigation": {
+            "numerator": 38,
+            "denominator": 5
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": -10,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "numerator": -25,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": 10,
+                "denominator": 1
+              }
+            }
+          ],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.plagirath.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.plagirath.attack-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.plagirath.attack-3",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.plagirath.attack-4",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.plagirath.attack-5",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.plagirath.attack-6",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.plagirath.defense-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.plagirath.defense-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.plagirath_bog",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.plagirath_heal",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.plagirath_summon",
+              "revision": "definition-r1"
+            }
+          ],
+          "details": {
+            "display_name": "Plagirath",
+            "inspection": "Plagirath",
+            "defense": 125,
+            "critical_chance_ppm": 0,
+            "condition_immunities": [
+              "invisible"
+            ],
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": true
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "bosstiary": {
+              "category": "archfoe",
+              "prowess_kills": 5,
+              "expertise_kills": 20,
+              "mastery_kills": 60,
+              "prowess_points": 10,
+              "expertise_points": 30,
+              "mastery_points": 60
+            },
+            "corpse_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i22495",
+              "revision": "definition-r1"
+            },
+            "death_residue": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2886",
+                "revision": "definition-r1"
+              },
+              "fluid_type": "slime"
+            },
+            "encyclopedia_document": {
+              "family": "Document",
+              "key": "oteryn:document/monster-encyclopedia/plagirath",
+              "revision": "definition-r1"
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.plagirath",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.rootthing_amber_shaper",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 15000,
+          "experience": 13380,
+          "speed": 185,
+          "armor": 100,
+          "mitigation": {
+            "numerator": 439,
+            "denominator": 100
+          },
+          "resistances": [
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": 25,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "numerator": -5,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "numerator": -5,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": -5,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "numerator": 5,
+                "denominator": 1
+              }
+            }
+          ],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.rootthing_amber_shaper.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.rootthing_amber_shaper.attack-2",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.rootthing_amber_shaper.attack-3",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.rootthing_amber_shaper.defense-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.poison_chain",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.rotthingshaper",
+              "revision": "definition-r1"
+            }
+          ],
+          "bestiary": {
+            "difficulty": "hard",
+            "occurrence": "common",
+            "kill_thresholds": [
+              100,
+              1000,
+              2500
+            ],
+            "charm_points": 50
+          },
+          "details": {
+            "display_name": "Rootthing Amber Shaper",
+            "article": "a",
+            "inspection": "a rootthing amber shaper",
+            "defense": 100,
+            "critical_chance_ppm": 0,
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "bestiary": {
+              "class": "Plant",
+              "taxonomy": "plant",
+              "stars": 4,
+              "locations": "Podzilla Stalk"
+            },
+            "soul_core_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i49078",
+              "revision": "definition-r1"
+            },
+            "death_residue": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2886",
+                "revision": "definition-r1"
+              },
+              "fluid_type": "slime"
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.source_core_rootthing_amber_shaper",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.rootthing_nutshell",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 13500,
+          "experience": 9940,
+          "speed": 190,
+          "armor": 85,
+          "mitigation": {
+            "numerator": 92,
+            "denominator": 25
+          },
+          "resistances": [
+            {
+              "damage_type": "death",
+              "percent": {
+                "numerator": -10,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "earth",
+              "percent": {
+                "numerator": 100,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "energy",
+              "percent": {
+                "numerator": 15,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "fire",
+              "percent": {
+                "numerator": -15,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "holy",
+              "percent": {
+                "numerator": 5,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "ice",
+              "percent": {
+                "numerator": -5,
+                "denominator": 1
+              }
+            },
+            {
+              "damage_type": "physical",
+              "percent": {
+                "numerator": 25,
+                "denominator": 1
+              }
+            }
+          ],
+          "abilities": [
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.rootthing_nutshell.attack-1",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.creature.rootthing_nutshell.attack-4",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.rotthingwave",
+              "revision": "definition-r1"
+            },
+            {
+              "family": "Ability",
+              "key": "oteryn:ability.spell.rotthligulus",
+              "revision": "definition-r1"
+            }
+          ],
+          "bestiary": {
+            "difficulty": "hard",
+            "occurrence": "common",
+            "kill_thresholds": [
+              100,
+              1000,
+              2500
+            ],
+            "charm_points": 50
+          },
+          "details": {
+            "display_name": "Rootthing Nutshell",
+            "article": "a",
+            "inspection": "a rootthing nutshell",
+            "defense": 85,
+            "critical_chance_ppm": 0,
+            "condition_immunities": [
+              "invisible",
+              "paralyze"
+            ],
+            "flags": {
+              "attackable": true,
+              "illusionable": false,
+              "health_hidden": false
+            },
+            "summoning": {
+              "summonable": false,
+              "convinceable": false,
+              "is_familiar": false
+            },
+            "system_eligibility": {
+              "prey": true,
+              "exclusive_prey": false,
+              "forge": true,
+              "reward_boss": false
+            },
+            "spawn_eligibility": {
+              "period": "All",
+              "ignore_period_underground": false,
+              "blocked_by_nearby_players": false
+            },
+            "bestiary": {
+              "class": "Plant",
+              "taxonomy": "plant",
+              "stars": 4,
+              "locations": "Podzilla Stalk"
+            },
+            "soul_core_item": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i49079",
+              "revision": "definition-r1"
+            },
+            "death_residue": {
+              "item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i2886",
+                "revision": "definition-r1"
+              },
+              "fluid_type": "slime"
+            }
+          },
+          "encounters": [
+            {
+              "family": "Encounter",
+              "key": "oteryn:encounter.source_core_rootthing_nutshell",
+              "revision": "definition-r1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.foam_stalker.field-fill-attacks-2-stage-1",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "area": {
+              "shape": "Matrix",
+              "north": [
+                ".x.",
+                "xCx",
+                ".x."
+              ]
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-1",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.foam_stalker.field-fill-attacks-2-stage-2",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "area": {
+              "shape": "Matrix",
+              "north": [
+                ".xxx.",
+                "xx.xx",
+                "x.c.x",
+                "xx.xx",
+                ".xxx."
+              ]
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-2",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.foam_stalker.field-fill-attacks-2-stage-3",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "area": {
+              "shape": "Matrix",
+              "north": [
+                "...xxx...",
+                "..xxxxx..",
+                ".xx...xx.",
+                "xx.....xx",
+                "xx..c..xx",
+                "xx.....xx",
+                ".xx...xx.",
+                "..xxxxx..",
+                "...xxx..."
+              ]
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-3",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.creature.foam_stalker.field-fill-foamsplash",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "encounter": {
+              "family": "Encounter",
+              "key": "oteryn:encounter.field_fill_foam_stalker",
+              "revision": "definition-r1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.energy_pulse_explosion",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "encounter": {
+              "family": "Encounter",
+              "key": "oteryn:encounter.source_core_energy_pulse",
+              "revision": "definition-r1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.energy_pulse_explosion.component-1",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "area": {
+              "shape": "Matrix",
+              "north": [
+                "......x......",
+                "....xxxxx....",
+                "...xxxxxxx...",
+                "..xxxxxxxxx..",
+                ".xxxxxxxxxxx.",
+                ".xxxxxxxxxxx.",
+                "xxxxxxCxxxxxx",
+                ".xxxxxxxxxxx.",
+                ".xxxxxxxxxxx.",
+                "..xxxxxxxxx..",
+                "...xxxxxxx...",
+                "....xxxxx....",
+                "......x......"
+              ]
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.spell.energy_pulse_explosion.component-1.effect",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.eruption_of_destruction_explosion",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "encounter": {
+              "family": "Encounter",
+              "key": "oteryn:encounter.eruption_of_destruction",
+              "revision": "definition-r1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.gaz_haragoth_death",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "encounter": {
+              "family": "Encounter",
+              "key": "oteryn:encounter.gaz_haragoth",
+              "revision": "definition-r1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.outburst_explode",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "encounter": {
+              "family": "Encounter",
+              "key": "oteryn:encounter.charging_outburst",
+              "revision": "definition-r1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.plagirath_bog",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "encounter": {
+              "family": "Encounter",
+              "key": "oteryn:encounter.plagirath",
+              "revision": "definition-r1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingshaper",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "encounter": {
+              "family": "Encounter",
+              "key": "oteryn:encounter.source_core_rootthing_amber_shaper",
+              "revision": "definition-r1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingshaper.component-1",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "area": {
+              "shape": "Matrix",
+              "north": [
+                "...........",
+                "....x......",
+                "...........",
+                "...........",
+                "..x.c...x..",
+                "...........",
+                "...........",
+                ".....x.....",
+                "..........."
+              ]
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.spell.rotthingshaper.component-1.effect",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingshaper.component-2",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "area": {
+              "shape": "Matrix",
+              "north": [
+                "...........",
+                "....x......",
+                "...x.x.....",
+                "....x......",
+                "..x.....x..",
+                ".x.xc..x.x.",
+                "..x.....x..",
+                ".....x.....",
+                "....xxx....",
+                ".....x.....",
+                "..........."
+              ]
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.spell.rotthingshaper.component-2.effect",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingwave",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": true,
+            "encounter": {
+              "family": "Encounter",
+              "key": "oteryn:encounter.source_core_rootthing_nutshell",
+              "revision": "definition-r1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingwave.component-1",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": true,
+            "area": {
+              "shape": "Matrix",
+              "north": [
+                ".....",
+                "..x..",
+                "..x..",
+                "..x..",
+                "..x..",
+                "..x..",
+                "..C.."
+              ]
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.spell.rotthingwave.component-1.effect",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.rotthingwave.component-2",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": true,
+            "area": {
+              "shape": "Matrix",
+              "north": [
+                ".......",
+                ".xxxxx.",
+                "..xxx..",
+                "..xxx..",
+                "...x...",
+                "...x...",
+                "...C..."
+              ]
+            },
+            "effects": [
+              {
+                "kind": "Executable",
+                "effect": {
+                  "family": "Effect",
+                  "key": "oteryn:effect.spell.rotthingwave.component-2.effect",
+                  "revision": "definition-r1"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Ability",
+        "key": "oteryn:ability.spell.tenebris_ultimate",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Ability",
+        "profile": {
+          "details": {
+            "kind": "Spell",
+            "range_tiles": 0,
+            "needs_target": false,
+            "needs_direction": false,
+            "encounter": {
+              "family": "Encounter",
+              "key": "oteryn:encounter.lady_tenebris",
+              "revision": "definition-r1"
+            }
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-1",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "ice"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-2",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "ice"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.creature.foam_stalker.field-fill-attacks-2-stage-3",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "ice"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.spell.energy_pulse_explosion.component-1.effect",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "energy",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/energyarea"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.spell.rotthingshaper.component-1.effect",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "earth",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/smallplants"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.spell.rotthingshaper.component-2.effect",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/fireattack"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.spell.rotthingwave.component-1.effect",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "holy",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/holydamage"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Effect",
+        "key": "oteryn:effect.spell.rotthingwave.component-2.effect",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Effect",
+        "profile": {
+          "damage_type": "physical",
+          "presentation": {
+            "impact_asset_binding": "canary.appearance:effect/groundshaker"
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.foam_stalker.field-fill-attacks-2-stage-1",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 100,
+          "maximum": 300
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.foam_stalker.field-fill-attacks-2-stage-2",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 100,
+          "maximum": 300
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.creature.foam_stalker.field-fill-attacks-2-stage-3",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 100,
+          "maximum": 300
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.energy_pulse_explosion.component-1.magnitude",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 5000,
+          "maximum": 6000
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingshaper.component-1.magnitude",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 700,
+          "maximum": 900
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingshaper.component-2.magnitude",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 800,
+          "maximum": 1000
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingwave.component-1.magnitude",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 700,
+          "maximum": 900
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Formula",
+        "key": "oteryn:formula.spell.rotthingwave.component-2.magnitude",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Formula",
+        "profile": {
+          "formula": "Range",
+          "minimum": 800,
+          "maximum": 1200
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.charging_outburst",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": true,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 2000,
+              "chance_ppm": 250000
+            },
+            "strategy_weights": {
+              "nearest": 70,
+              "damage": 10,
+              "health": 10,
+              "random": 10
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.charging_outburst.attack-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.charging_outburst.attack-2",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 250000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.charging_outburst.attack-3",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 250000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.charging_outburst.attack-4",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 250000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.anomaly_break",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 400000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.outburst_explode",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 10000,
+              "chance_ppm": 1000000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.energy_pulse",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": false,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 60000,
+              "chance_ppm": 0
+            },
+            "strategy_weights": {
+              "nearest": 100,
+              "damage": 0,
+              "health": 0,
+              "random": 0
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.energy_pulse_explosion",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 1000,
+              "chance_ppm": 1000000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.eruption_of_destruction",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": false,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 5000,
+              "chance_ppm": 80000
+            },
+            "strategy_weights": {
+              "nearest": 70,
+              "damage": 10,
+              "health": 10,
+              "random": 10
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.eruption_of_destruction.attack-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 250000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.eruption_of_destruction_explosion",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 10000,
+              "chance_ppm": 1000000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.foam_stalker",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": false,
+            "walks_on_energy": true,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 2,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 2000,
+              "chance_ppm": 0
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foam_stalker.attack-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foam_stalker.attack-3",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2500,
+              "chance_ppm": 350000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foam_stalker.attack-4",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 450000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foam_stalker.attack-5",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 1000,
+              "chance_ppm": 150000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foam_stalker.field-fill-foamsplash",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 5000,
+              "chance_ppm": 500000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.foam_stalker.defense-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 200000
+            }
+          ],
+          "voices": {
+            "interval_ms": 5000,
+            "chance_ppm": 100000,
+            "entries": [
+              {
+                "text": "splash",
+                "mode": "Say"
+              },
+              {
+                "text": "gurgle",
+                "mode": "Say"
+              },
+              {
+                "text": "dribble",
+                "mode": "Say"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": true,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 980000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 10000,
+              "chance_ppm": 200000
+            },
+            "strategy_weights": {
+              "nearest": 70,
+              "damage": 10,
+              "health": 10,
+              "random": 10
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.gaz_haragoth.attack-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.gaz_haragoth.attack-2",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 3000,
+              "chance_ppm": 350000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.gaz_haragoth.attack-3",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 130000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.gaz_haragoth.attack-4",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 190000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.gaz_haragoth.attack-5",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 1800,
+              "chance_ppm": 1000000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.gaz_haragoth.attack-6",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 3000,
+              "chance_ppm": 300000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.gaz_haragoth.attack-7",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 140000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.gaz_haragoth.attack-8",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2500,
+              "chance_ppm": 200000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.gaz_haragoth_iceball",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 240000,
+              "magnitude": {
+                "minimum": 1000,
+                "maximum": 1000
+              }
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.gaz_haragoth_paralyze",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 120000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.gaz_haragoth_death",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 4000,
+              "chance_ppm": 60000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.gaz_haragoth_summon",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 1000,
+              "chance_ppm": 1000000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.gaz_haragoth.defense-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 3000,
+              "chance_ppm": 350000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.gaz_haragoth.defense-2",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 4000,
+              "chance_ppm": 800000
+            }
+          ],
+          "voices": {
+            "interval_ms": 5000,
+            "chance_ppm": 100000,
+            "entries": [
+              {
+                "text": "NO ONE WILL ESCAPE ME!",
+                "mode": "Yell"
+              },
+              {
+                "text": "I'LL KEEP THE ORDER UP!",
+                "mode": "Yell"
+              },
+              {
+                "text": "I've beaten tougher demons then you even know!",
+                "mode": "Yell"
+              },
+              {
+                "text": "You puny humans will be my snacks!",
+                "mode": "Yell"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.lady_tenebris",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": true,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 980000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 2000,
+              "chance_ppm": 200000
+            },
+            "strategy_weights": {
+              "nearest": 70,
+              "damage": 10,
+              "health": 10,
+              "random": 10
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.lady_tenebris.attack-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.lady_tenebris.attack-2",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 6000,
+              "chance_ppm": 130000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.lady_tenebris.attack-3",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 130000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.tenebris_summon",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 140000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.tenebris_ultimate",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 15000,
+              "chance_ppm": 300000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.lady_tenebris.defense-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 3000,
+              "chance_ppm": 250000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.lady_tenebris.defense-2",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 150000
+            }
+          ],
+          "voices": {
+            "interval_ms": 5000,
+            "chance_ppm": 100000,
+            "entries": [
+              {
+                "text": "May the embrace of darkness kill you!",
+                "mode": "Say"
+              },
+              {
+                "text": "I'm the one and only mistress of shadows!",
+                "mode": "Say"
+              },
+              {
+                "text": "Blackout!",
+                "mode": "Say"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.plagirath",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": true,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 5000,
+              "chance_ppm": 80000
+            },
+            "strategy_weights": {
+              "nearest": 70,
+              "damage": 10,
+              "health": 10,
+              "random": 10
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.plagirath.attack-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.plagirath.attack-2",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 200000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.plagirath.attack-3",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 200000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.plagirath.attack-4",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 200000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.plagirath.attack-5",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 200000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.plagirath.attack-6",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 200000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.plagirath_bog",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 20000,
+              "chance_ppm": 250000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.plagirath.defense-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 150000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.plagirath.defense-2",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 300000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.plagirath_summon",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 150000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.plagirath_heal",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 170000
+            }
+          ],
+          "voices": {
+            "interval_ms": 5000,
+            "chance_ppm": 100000,
+            "entries": [
+              {
+                "text": "I CAN SENSE YOUR BODY ROTTING!",
+                "mode": "Yell"
+              },
+              {
+                "text": "WITHER AND DIE!",
+                "mode": "Yell"
+              },
+              {
+                "text": "COME AND RECEIVE MY GIFTS!!",
+                "mode": "Yell"
+              },
+              {
+                "text": "DEATH AND DECAY!",
+                "mode": "Yell"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.rootthing_amber_shaper",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": false,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 4000,
+              "chance_ppm": 100000
+            },
+            "strategy_weights": {
+              "nearest": 70,
+              "damage": 10,
+              "health": 10,
+              "random": 10
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.rootthing_amber_shaper.attack-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.rootthing_amber_shaper.attack-2",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 200000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.rootthing_amber_shaper.attack-3",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2500,
+              "chance_ppm": 170000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.poison_chain",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 150000,
+              "magnitude": {
+                "minimum": 600,
+                "maximum": 900
+              }
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.rotthingshaper",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 180000
+            }
+          ],
+          "defenses": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.rootthing_amber_shaper.defense-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 150000
+            }
+          ],
+          "voices": {
+            "interval_ms": 5000,
+            "chance_ppm": 100000,
+            "entries": [
+              {
+                "text": "KNARR!",
+                "mode": "Say"
+              },
+              {
+                "text": "RATTLE!",
+                "mode": "Say"
+              },
+              {
+                "text": "CROAK!",
+                "mode": "Say"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior.creature.rootthing_nutshell",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": false,
+            "push_items": true,
+            "push_creatures": false,
+            "walks_on_energy": true,
+            "walks_on_fire": true,
+            "walks_on_poison": true
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": true,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 0,
+            "change_target": {
+              "interval_ms": 4000,
+              "chance_ppm": 100000
+            },
+            "strategy_weights": {
+              "nearest": 70,
+              "damage": 10,
+              "health": 10,
+              "random": 10
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.rootthing_nutshell.attack-1",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.rotthligulus",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 200000,
+              "magnitude": {
+                "minimum": 750,
+                "maximum": 1100
+              }
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.rootthing_nutshell.attack-4",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 170000
+            },
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.rotthingwave",
+                "revision": "definition-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 200000
+            }
+          ],
+          "voices": {
+            "interval_ms": 5000,
+            "chance_ppm": 100000,
+            "entries": [
+              {
+                "text": "<CREEAK>",
+                "mode": "Yell"
+              },
+              {
+                "text": "<KNARRR>",
+                "mode": "Yell"
+              },
+              {
+                "text": "<KNOORRR>",
+                "mode": "Yell"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.charging_outburst",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Encounter",
+        "profile": {
+          "encounter_type": "Boss",
+          "scope": "Instance",
+          "details": {
+            "display_name": "Oteryn source-backed core: charging_outburst",
+            "participants": [
+              {
+                "role": "charging_outburst",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.charging_outburst",
+                    "revision": "definition-r1"
+                  }
+                ]
+              }
+            ],
+            "covers": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.charging_outburst",
+                "revision": "definition-r1"
+              }
+            ],
+            "state": {},
+            "rules": [
+              {
+                "key": "charging_outburst_explosion_cast",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "charging_outburst",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.outburst_explode",
+                    "revision": "definition-r1"
+                  }
+                },
+                "actions": [
+                  {
+                    "kind": "cast",
+                    "encounter_ability": "charging_outburst_explosion",
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  }
+                ]
+              }
+            ],
+            "abilities": [
+              {
+                "key": "charging_outburst_explosion",
+                "area": {
+                  "shape": "circle",
+                  "radius": 6
+                },
+                "damage": {
+                  "damage_type": "energy",
+                  "min": 1500,
+                  "max": 2000
+                },
+                "affects": {
+                  "players": true
+                },
+                "effect": "canary.appearance:effect/purpleenergy"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.eruption_of_destruction",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Encounter",
+        "profile": {
+          "encounter_type": "Generic",
+          "scope": "Instance",
+          "details": {
+            "display_name": "Oteryn source-backed core: eruption_of_destruction",
+            "participants": [
+              {
+                "role": "eruption_of_destruction",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.eruption_of_destruction",
+                    "revision": "definition-r1"
+                  }
+                ]
+              }
+            ],
+            "covers": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.eruption_of_destruction",
+                "revision": "definition-r1"
+              }
+            ],
+            "state": {},
+            "rules": [
+              {
+                "key": "eruption_of_destruction_explosion_cast",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "eruption_of_destruction",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.eruption_of_destruction_explosion",
+                    "revision": "definition-r1"
+                  }
+                },
+                "delay_ms": {
+                  "min": 7000,
+                  "max": 7000
+                },
+                "actions": [
+                  {
+                    "kind": "cast",
+                    "encounter_ability": "eruption_of_destruction_explosion",
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  },
+                  {
+                    "kind": "remove",
+                    "role": "eruption_of_destruction"
+                  }
+                ]
+              }
+            ],
+            "abilities": [
+              {
+                "key": "eruption_of_destruction_explosion",
+                "area": {
+                  "shape": "circle",
+                  "radius": 6
+                },
+                "damage": {
+                  "damage_type": "fire",
+                  "min": 4000,
+                  "max": 6000
+                },
+                "affects": {
+                  "players": true
+                },
+                "effect": "canary.appearance:effect/firearea"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.field_fill_foam_stalker",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Encounter",
+        "profile": {
+          "encounter_type": "Generic",
+          "scope": "Instance",
+          "details": {
+            "display_name": "Source core: foam_stalker",
+            "participants": [
+              {
+                "role": "foam_stalker",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.foam_stalker",
+                    "revision": "definition-r1"
+                  }
+                ]
+              }
+            ],
+            "covers": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.foam_stalker",
+                "revision": "definition-r1"
+              }
+            ],
+            "state": {},
+            "rules": [
+              {
+                "key": "foam_phase_1",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "foam_stalker",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.foam_stalker.field-fill-foamsplash",
+                    "revision": "definition-r1"
+                  }
+                },
+                "delay_ms": {
+                  "min": 1000,
+                  "max": 1000
+                },
+                "actions": [
+                  {
+                    "kind": "cast",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.foam_stalker.field-fill-attacks-2-stage-1",
+                      "revision": "definition-r1"
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "foam_phase_2",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "foam_stalker",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.foam_stalker.field-fill-foamsplash",
+                    "revision": "definition-r1"
+                  }
+                },
+                "delay_ms": {
+                  "min": 2000,
+                  "max": 2000
+                },
+                "actions": [
+                  {
+                    "kind": "cast",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.foam_stalker.field-fill-attacks-2-stage-2",
+                      "revision": "definition-r1"
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "foam_phase_3",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "foam_stalker",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.creature.foam_stalker.field-fill-foamsplash",
+                    "revision": "definition-r1"
+                  }
+                },
+                "delay_ms": {
+                  "min": 3000,
+                  "max": 3000
+                },
+                "actions": [
+                  {
+                    "kind": "cast",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.creature.foam_stalker.field-fill-attacks-2-stage-3",
+                      "revision": "definition-r1"
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Encounter",
+        "profile": {
+          "encounter_type": "Boss",
+          "scope": "Channel",
+          "details": {
+            "display_name": "Roshamuul: Gaz'haragoth",
+            "participants": [
+              {
+                "role": "gaz_haragoth",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.gaz_haragoth",
+                    "revision": "definition-r1"
+                  }
+                ]
+              },
+              {
+                "role": "minion_of_gaz_haragoth",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.minion_of_gaz_haragoth",
+                    "revision": "definition-r1"
+                  }
+                ]
+              }
+            ],
+            "covers": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.gaz_haragoth",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.minion_of_gaz_haragoth",
+                "revision": "definition-r1"
+              }
+            ],
+            "state": {
+              "flags": [
+                {
+                  "name": "heal_pending",
+                  "initial": false
+                }
+              ],
+              "timers": [
+                {
+                  "name": "nightmare_heal",
+                  "duration_ms": {
+                    "min": 7000,
+                    "max": 7000
+                  },
+                  "repeat": false
+                }
+              ]
+            },
+            "rules": [
+              {
+                "key": "gaz_haragoth_draws_on_nightmares",
+                "trigger": {
+                  "kind": "health_crossed",
+                  "role": "gaz_haragoth",
+                  "percent_ppm": 125000
+                },
+                "conditions": [
+                  {
+                    "kind": "flag",
+                    "flag": "heal_pending",
+                    "value": false
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "flag",
+                    "flag": "heal_pending",
+                    "value": true
+                  },
+                  {
+                    "kind": "say",
+                    "subject": {
+                      "kind": "role",
+                      "role": "gaz_haragoth"
+                    },
+                    "text": "Gaz'haragoth begins to draw on the nightmares to HEAL himself!",
+                    "mode": "yell"
+                  },
+                  {
+                    "kind": "timer",
+                    "timer": "nightmare_heal",
+                    "operation": "start"
+                  }
+                ]
+              },
+              {
+                "key": "gaz_haragoth_heals",
+                "trigger": {
+                  "kind": "timer_elapsed",
+                  "timer": "nightmare_heal"
+                },
+                "actions": [
+                  {
+                    "kind": "heal",
+                    "subject": {
+                      "kind": "role",
+                      "role": "gaz_haragoth"
+                    },
+                    "amount": {
+                      "kind": "range",
+                      "min": 300000,
+                      "max": 300000
+                    }
+                  },
+                  {
+                    "kind": "say",
+                    "subject": {
+                      "kind": "role",
+                      "role": "gaz_haragoth"
+                    },
+                    "text": "Gaz'haragoth HEALS himself!",
+                    "mode": "yell"
+                  },
+                  {
+                    "kind": "flag",
+                    "flag": "heal_pending",
+                    "value": false
+                  }
+                ]
+              },
+              {
+                "key": "minion_leaves_a_vortex",
+                "trigger": {
+                  "kind": "creature_died",
+                  "role": "minion_of_gaz_haragoth"
+                },
+                "actions": [
+                  {
+                    "kind": "map_item",
+                    "operation": "create",
+                    "item": {
+                      "family": "Item",
+                      "key": "oteryn:item.tibia.i20121",
+                      "revision": "definition-r1"
+                    },
+                    "at_death_position": true,
+                    "revert_after_ms": 60000,
+                    "interaction": "canary:interaction/33542"
+                  }
+                ]
+              },
+              {
+                "key": "gaz_haragoth_explosion_warning",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "gaz_haragoth",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.gaz_haragoth_death",
+                    "revision": "definition-r1"
+                  }
+                },
+                "actions": [
+                  {
+                    "kind": "say",
+                    "subject": {
+                      "kind": "role",
+                      "role": "gaz_haragoth"
+                    },
+                    "text": "Gaz'haragoth begins to channel DEATH AND DOOM into the area! RUN!",
+                    "mode": "yell"
+                  }
+                ]
+              },
+              {
+                "key": "gaz_haragoth_explosion_cast",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "gaz_haragoth",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.gaz_haragoth_death",
+                    "revision": "definition-r1"
+                  }
+                },
+                "delay_ms": {
+                  "min": 5000,
+                  "max": 5000
+                },
+                "actions": [
+                  {
+                    "kind": "say",
+                    "subject": {
+                      "kind": "role",
+                      "role": "gaz_haragoth"
+                    },
+                    "text": "Gaz'haragoth calls down: DEATH AND DOOM!",
+                    "mode": "yell"
+                  },
+                  {
+                    "kind": "cast",
+                    "encounter_ability": "gaz_haragoth_explosion",
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "gaz_summons_empty",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "gaz_haragoth",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.gaz_haragoth_summon",
+                    "revision": "definition-r1"
+                  }
+                },
+                "conditions": [
+                  {
+                    "kind": "summon_count",
+                    "role": "gaz_haragoth",
+                    "op": "==",
+                    "value": 0
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "creature": {
+                      "family": "Creature",
+                      "key": "oteryn:creature.minion_of_gaz_haragoth",
+                      "revision": "definition-r1"
+                    },
+                    "count": {
+                      "min": 2,
+                      "max": 2
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    },
+                    "owner": "subject",
+                    "health": {
+                      "kind": "full"
+                    }
+                  },
+                  {
+                    "kind": "say",
+                    "subject": {
+                      "kind": "role",
+                      "role": "gaz_haragoth"
+                    },
+                    "text": "Minions! Follow my call!",
+                    "mode": "say"
+                  }
+                ]
+              },
+              {
+                "key": "gaz_summons_one",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "gaz_haragoth",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.gaz_haragoth_summon",
+                    "revision": "definition-r1"
+                  }
+                },
+                "conditions": [
+                  {
+                    "kind": "summon_count",
+                    "role": "gaz_haragoth",
+                    "op": "==",
+                    "value": 1
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "creature": {
+                      "family": "Creature",
+                      "key": "oteryn:creature.minion_of_gaz_haragoth",
+                      "revision": "definition-r1"
+                    },
+                    "count": {
+                      "min": 1,
+                      "max": 1
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    },
+                    "owner": "subject",
+                    "health": {
+                      "kind": "full"
+                    }
+                  },
+                  {
+                    "kind": "say",
+                    "subject": {
+                      "kind": "role",
+                      "role": "gaz_haragoth"
+                    },
+                    "text": "Minions! Follow my call!",
+                    "mode": "say"
+                  }
+                ]
+              },
+              {
+                "key": "gaz_summons_grows",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "gaz_haragoth",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.gaz_haragoth_summon",
+                    "revision": "definition-r1"
+                  }
+                },
+                "conditions": [
+                  {
+                    "kind": "summon_count",
+                    "role": "gaz_haragoth",
+                    "op": ">=",
+                    "value": 2
+                  },
+                  {
+                    "kind": "summon_count",
+                    "role": "gaz_haragoth",
+                    "op": "<",
+                    "value": 7
+                  },
+                  {
+                    "kind": "chance_percent",
+                    "value_ppm": 247525
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "creature": {
+                      "family": "Creature",
+                      "key": "oteryn:creature.minion_of_gaz_haragoth",
+                      "revision": "definition-r1"
+                    },
+                    "count": {
+                      "min": 1,
+                      "max": 1
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    },
+                    "owner": "subject",
+                    "health": {
+                      "kind": "full"
+                    }
+                  },
+                  {
+                    "kind": "say",
+                    "subject": {
+                      "kind": "role",
+                      "role": "gaz_haragoth"
+                    },
+                    "text": "Minions! Follow my call!",
+                    "mode": "say"
+                  }
+                ]
+              }
+            ],
+            "abilities": [
+              {
+                "key": "gaz_haragoth_explosion",
+                "area": {
+                  "shape": "circle",
+                  "radius": 6
+                },
+                "damage": {
+                  "damage_type": "energy",
+                  "min": 30000,
+                  "max": 30000
+                },
+                "affects": {
+                  "players": true
+                },
+                "effect": "canary.appearance:effect/purpleenergy"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.lady_tenebris",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Encounter",
+        "profile": {
+          "encounter_type": "Boss",
+          "scope": "Instance",
+          "details": {
+            "display_name": "Forgotten Knowledge: Lady Tenebris",
+            "participants": [
+              {
+                "role": "lady_tenebris",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.lady_tenebris",
+                    "revision": "definition-r1"
+                  }
+                ]
+              },
+              {
+                "role": "shadow_tentacle",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.shadow_tentacle",
+                    "revision": "definition-r1"
+                  }
+                ]
+              }
+            ],
+            "covers": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.lady_tenebris",
+                "revision": "definition-r1"
+              }
+            ],
+            "anchors": [
+              {
+                "key": "tenebris_room",
+                "description": "Every tile from Canary (32906, 31594, 14) to (32918, 31604, 14).",
+                "location": {
+                  "kind": "area",
+                  "boxes": [
+                    {
+                      "x": [
+                        32906,
+                        32918
+                      ],
+                      "y": [
+                        31594,
+                        31604
+                      ],
+                      "floor": 14
+                    }
+                  ]
+                }
+              }
+            ],
+            "state": {},
+            "rules": [
+              {
+                "key": "lady_tenebris_death_outcome",
+                "trigger": {
+                  "kind": "creature_died",
+                  "role": "lady_tenebris"
+                },
+                "actions": [
+                  {
+                    "kind": "emit_outcome",
+                    "outcome": "lady_tenebris_defeated",
+                    "credited": "damage_contributors"
+                  }
+                ]
+              },
+              {
+                "key": "lady_tenebris_unguarded_damage_taken",
+                "trigger": {
+                  "kind": "damage_taken",
+                  "role": "lady_tenebris",
+                  "source": "any"
+                },
+                "conditions": [
+                  {
+                    "kind": "creature_present",
+                    "role": "shadow_tentacle",
+                    "near": {
+                      "role": "lady_tenebris",
+                      "radius": 7
+                    },
+                    "present": false
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "damage_modifier",
+                    "role": "lady_tenebris",
+                    "multiplier": {
+                      "kind": "fixed",
+                      "percent": 200
+                    },
+                    "component": "primary",
+                    "sources": "any",
+                    "until": "this_hit"
+                  }
+                ]
+              },
+              {
+                "key": "lady_tenebris_unguarded_heal_received",
+                "trigger": {
+                  "kind": "heal_received",
+                  "role": "lady_tenebris",
+                  "source": "any"
+                },
+                "conditions": [
+                  {
+                    "kind": "creature_present",
+                    "role": "shadow_tentacle",
+                    "near": {
+                      "role": "lady_tenebris",
+                      "radius": 7
+                    },
+                    "present": false
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "damage_modifier",
+                    "role": "lady_tenebris",
+                    "multiplier": {
+                      "kind": "fixed",
+                      "percent": 200
+                    },
+                    "component": "primary",
+                    "sources": "any",
+                    "until": "this_hit"
+                  }
+                ]
+              },
+              {
+                "key": "lady_tenebris_revives_a_shadow_fiend",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "lady_tenebris",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.tenebris_summon",
+                    "revision": "definition-r1"
+                  }
+                },
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "creature": {
+                      "family": "Creature",
+                      "key": "oteryn:creature.shadow_fiend",
+                      "revision": "definition-r1"
+                    },
+                    "count": {
+                      "min": 1,
+                      "max": 1
+                    },
+                    "at": {
+                      "kind": "random_in",
+                      "anchor": "tenebris_room"
+                    },
+                    "owner": "none",
+                    "health": {
+                      "kind": "full"
+                    }
+                  },
+                  {
+                    "kind": "say",
+                    "subject": {
+                      "kind": "spawned"
+                    },
+                    "text": "The shadow fiend revives!",
+                    "mode": "say"
+                  }
+                ]
+              },
+              {
+                "key": "lady_tenebris_explosion_warning",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "lady_tenebris",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.tenebris_ultimate",
+                    "revision": "definition-r1"
+                  }
+                },
+                "actions": [
+                  {
+                    "kind": "say",
+                    "subject": {
+                      "kind": "role",
+                      "role": "lady_tenebris"
+                    },
+                    "text": "LADY TENEBRIS BEGINS TO CHANNEL A POWERFULL SPELL! TAKE COVER!",
+                    "mode": "yell"
+                  }
+                ]
+              },
+              {
+                "key": "lady_tenebris_explosion_cast",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "lady_tenebris",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.tenebris_ultimate",
+                    "revision": "definition-r1"
+                  }
+                },
+                "delay_ms": {
+                  "min": 4000,
+                  "max": 4000
+                },
+                "actions": [
+                  {
+                    "kind": "cast",
+                    "encounter_ability": "lady_tenebris_explosion",
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  }
+                ]
+              }
+            ],
+            "outcomes": [
+              "lady_tenebris_defeated"
+            ],
+            "abilities": [
+              {
+                "key": "lady_tenebris_explosion",
+                "area": {
+                  "shape": "circle",
+                  "radius": 7
+                },
+                "damage": {
+                  "damage_type": "death",
+                  "min": 2200,
+                  "max": 2500
+                },
+                "affects": {
+                  "players": true
+                },
+                "effect": "canary.appearance:effect/mortarea"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.plagirath",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Encounter",
+        "profile": {
+          "encounter_type": "Boss",
+          "scope": "Instance",
+          "details": {
+            "display_name": "Ferumbras Ascension: Plagirath",
+            "participants": [
+              {
+                "role": "plagirath",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.plagirath",
+                    "revision": "definition-r1"
+                  }
+                ]
+              },
+              {
+                "role": "disgusting_ooze",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.disgusting_ooze",
+                    "revision": "definition-r1"
+                  }
+                ]
+              }
+            ],
+            "covers": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.disgusting_ooze",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.plagirath",
+                "revision": "definition-r1"
+              }
+            ],
+            "anchors": [
+              {
+                "key": "exit_teleporter",
+                "description": "Boss-room teleporter; Canary (33174, 31511, 13).",
+                "location": {
+                  "kind": "point",
+                  "x": 33174,
+                  "y": 31511,
+                  "floor": 13
+                }
+              },
+              {
+                "key": "godbreaker",
+                "description": "Godbreaker destination; Canary (33204, 31510, 13).",
+                "location": {
+                  "kind": "point",
+                  "x": 33204,
+                  "y": 31510,
+                  "floor": 13
+                }
+              },
+              {
+                "key": "ascendant_exit",
+                "description": "Default teleporter destination; Canary (33319, 32318, 13).",
+                "location": {
+                  "kind": "point",
+                  "x": 33319,
+                  "y": 32318,
+                  "floor": 13
+                }
+              },
+              {
+                "key": "plagirath_room",
+                "description": "Every tile from Canary (33163, 31497, 13) to (33180, 31506, 13).",
+                "location": {
+                  "kind": "area",
+                  "boxes": [
+                    {
+                      "x": [
+                        33163,
+                        33180
+                      ],
+                      "y": [
+                        31497,
+                        31506
+                      ],
+                      "floor": 13
+                    }
+                  ]
+                }
+              }
+            ],
+            "state": {},
+            "rules": [
+              {
+                "key": "plagirath_death",
+                "trigger": {
+                  "kind": "creature_died",
+                  "role": "plagirath"
+                },
+                "actions": [
+                  {
+                    "kind": "emit_outcome",
+                    "outcome": "plagirath_defeated",
+                    "credited": "damage_contributors"
+                  },
+                  {
+                    "kind": "map_item",
+                    "operation": "transform",
+                    "item": {
+                      "family": "Item",
+                      "key": "oteryn:item.tibia.i1949",
+                      "revision": "definition-r1"
+                    },
+                    "into": {
+                      "family": "Item",
+                      "key": "oteryn:item.tibia.i22761",
+                      "revision": "definition-r1"
+                    },
+                    "anchor": "exit_teleporter",
+                    "revert_after_ms": 60000,
+                    "destination": "godbreaker",
+                    "revert_destination": "ascendant_exit",
+                    "effect": "canary.appearance:effect/thunder"
+                  }
+                ]
+              },
+              {
+                "key": "disgusting_ooze_splits",
+                "trigger": {
+                  "kind": "creature_died",
+                  "role": "disgusting_ooze"
+                },
+                "conditions": [
+                  {
+                    "kind": "chance_percent",
+                    "value_ppm": 100000
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "creature": {
+                      "family": "Creature",
+                      "key": "oteryn:creature.disgusting_ooze",
+                      "revision": "definition-r1"
+                    },
+                    "role": "disgusting_ooze",
+                    "count": {
+                      "min": 2,
+                      "max": 2
+                    },
+                    "at": {
+                      "kind": "death_position"
+                    },
+                    "owner": "death_master",
+                    "health": {
+                      "kind": "full"
+                    }
+                  },
+                  {
+                    "kind": "say",
+                    "subject": {
+                      "kind": "role",
+                      "role": "disgusting_ooze"
+                    },
+                    "text": "The ooze splits and regenerates.",
+                    "mode": "say"
+                  }
+                ]
+              },
+              {
+                "key": "plagirath_summons_oozes_with_0_out",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "plagirath",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.plagirath_summon",
+                    "revision": "definition-r1"
+                  }
+                },
+                "conditions": [
+                  {
+                    "kind": "summon_count",
+                    "role": "plagirath",
+                    "op": "==",
+                    "value": 0
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "creature": {
+                      "family": "Creature",
+                      "key": "oteryn:creature.disgusting_ooze",
+                      "revision": "definition-r1"
+                    },
+                    "count": {
+                      "min": 4,
+                      "max": 4
+                    },
+                    "at": {
+                      "kind": "random_in",
+                      "anchor": "plagirath_room"
+                    },
+                    "owner": "subject",
+                    "health": {
+                      "kind": "full"
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "plagirath_summons_oozes_with_1_out",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "plagirath",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.plagirath_summon",
+                    "revision": "definition-r1"
+                  }
+                },
+                "conditions": [
+                  {
+                    "kind": "summon_count",
+                    "role": "plagirath",
+                    "op": "==",
+                    "value": 1
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "creature": {
+                      "family": "Creature",
+                      "key": "oteryn:creature.disgusting_ooze",
+                      "revision": "definition-r1"
+                    },
+                    "count": {
+                      "min": 3,
+                      "max": 3
+                    },
+                    "at": {
+                      "kind": "random_in",
+                      "anchor": "plagirath_room"
+                    },
+                    "owner": "subject",
+                    "health": {
+                      "kind": "full"
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "plagirath_summons_oozes_with_2_out",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "plagirath",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.plagirath_summon",
+                    "revision": "definition-r1"
+                  }
+                },
+                "conditions": [
+                  {
+                    "kind": "summon_count",
+                    "role": "plagirath",
+                    "op": "==",
+                    "value": 2
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "creature": {
+                      "family": "Creature",
+                      "key": "oteryn:creature.disgusting_ooze",
+                      "revision": "definition-r1"
+                    },
+                    "count": {
+                      "min": 2,
+                      "max": 2
+                    },
+                    "at": {
+                      "kind": "random_in",
+                      "anchor": "plagirath_room"
+                    },
+                    "owner": "subject",
+                    "health": {
+                      "kind": "full"
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "plagirath_summons_oozes_with_3_out",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "plagirath",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.plagirath_summon",
+                    "revision": "definition-r1"
+                  }
+                },
+                "conditions": [
+                  {
+                    "kind": "summon_count",
+                    "role": "plagirath",
+                    "op": "==",
+                    "value": 3
+                  }
+                ],
+                "actions": [
+                  {
+                    "kind": "spawn",
+                    "creature": {
+                      "family": "Creature",
+                      "key": "oteryn:creature.disgusting_ooze",
+                      "revision": "definition-r1"
+                    },
+                    "count": {
+                      "min": 1,
+                      "max": 1
+                    },
+                    "at": {
+                      "kind": "random_in",
+                      "anchor": "plagirath_room"
+                    },
+                    "owner": "subject",
+                    "health": {
+                      "kind": "full"
+                    }
+                  }
+                ]
+              },
+              {
+                "key": "plagirath_explosion_cast",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "plagirath",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.plagirath_bog",
+                    "revision": "definition-r1"
+                  }
+                },
+                "delay_ms": {
+                  "min": 10000,
+                  "max": 10000
+                },
+                "actions": [
+                  {
+                    "kind": "cast",
+                    "encounter_ability": "plagirath_explosion",
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  }
+                ]
+              }
+            ],
+            "outcomes": [
+              "plagirath_defeated"
+            ],
+            "abilities": [
+              {
+                "key": "plagirath_explosion",
+                "area": {
+                  "shape": "circle",
+                  "radius": 4
+                },
+                "damage": {
+                  "damage_type": "earth",
+                  "min": 1500,
+                  "max": 1500
+                },
+                "affects": {
+                  "players": true
+                },
+                "effect": "canary.appearance:effect/poison"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.source_core_energy_pulse",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Encounter",
+        "profile": {
+          "encounter_type": "Generic",
+          "scope": "Channel",
+          "details": {
+            "display_name": "Energy Pulse source core",
+            "participants": [
+              {
+                "role": "energy_pulse",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.energy_pulse",
+                    "revision": "definition-r1"
+                  }
+                ]
+              }
+            ],
+            "covers": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.energy_pulse",
+                "revision": "definition-r1"
+              }
+            ],
+            "state": {},
+            "rules": [
+              {
+                "key": "cast_core",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "energy_pulse",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.energy_pulse_explosion",
+                    "revision": "definition-r1"
+                  }
+                },
+                "actions": [
+                  {
+                    "kind": "cast",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.energy_pulse_explosion.component-1",
+                      "revision": "definition-r1"
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  },
+                  {
+                    "kind": "remove",
+                    "triggering": true
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.source_core_rootthing_amber_shaper",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Encounter",
+        "profile": {
+          "encounter_type": "Generic",
+          "scope": "Channel",
+          "details": {
+            "display_name": "Rootthing Amber Shaper source core",
+            "participants": [
+              {
+                "role": "rootthing_amber_shaper",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.rootthing_amber_shaper",
+                    "revision": "definition-r1"
+                  }
+                ]
+              }
+            ],
+            "covers": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.rootthing_amber_shaper",
+                "revision": "definition-r1"
+              }
+            ],
+            "state": {},
+            "rules": [
+              {
+                "key": "cast_core",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "rootthing_amber_shaper",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.rotthingshaper",
+                    "revision": "definition-r1"
+                  }
+                },
+                "actions": [
+                  {
+                    "kind": "cast",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.rotthingshaper.component-1",
+                      "revision": "definition-r1"
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  },
+                  {
+                    "kind": "cast",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.rotthingshaper.component-2",
+                      "revision": "definition-r1"
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.source_core_rootthing_nutshell",
+        "revision": "definition-r1"
+      },
+      "data": {
+        "kind": "Encounter",
+        "profile": {
+          "encounter_type": "Generic",
+          "scope": "Channel",
+          "details": {
+            "display_name": "Rootthing Nutshell source core",
+            "participants": [
+              {
+                "role": "rootthing_nutshell",
+                "creatures": [
+                  {
+                    "family": "Creature",
+                    "key": "oteryn:creature.rootthing_nutshell",
+                    "revision": "definition-r1"
+                  }
+                ]
+              }
+            ],
+            "covers": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.rootthing_nutshell",
+                "revision": "definition-r1"
+              }
+            ],
+            "state": {},
+            "rules": [
+              {
+                "key": "cast_core",
+                "trigger": {
+                  "kind": "ability_cast",
+                  "role": "rootthing_nutshell",
+                  "ability": {
+                    "family": "Ability",
+                    "key": "oteryn:ability.spell.rotthingwave",
+                    "revision": "definition-r1"
+                  }
+                },
+                "actions": [
+                  {
+                    "kind": "cast",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.rotthingwave.component-1",
+                      "revision": "definition-r1"
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  },
+                  {
+                    "kind": "cast",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.rotthingwave.component-2",
+                      "revision": "definition-r1"
+                    },
+                    "at": {
+                      "kind": "subject_position"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "sources": [
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-creature-canary-wave-a-r1",
+      "key": "oteryn:source.canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "1c54c864a5dfcd069db58719d8500a1e7c882517dd2b838759ef393b2bf35d37"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "monster-full-mechanics-portal25051-canary-20261004",
+      "key": "oteryn:source.canary",
+      "revision": "portal25051-semantics:47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "monster-full-mechanics-tentacle-items-canary-20261004",
+      "key": "oteryn:source.canary",
+      "revision": "tentacle-items-dat:47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-npc-crystal-summer-supplement-r1",
+      "key": "oteryn:source.crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "154083cc71de6e41d73c13854307c4c2cbc134df5afdd1e1c899cfc12f5b3fb5"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "g4-creature-crystal-1530-r1",
+      "key": "oteryn:source.crystalserver",
+      "revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "1c54c864a5dfcd069db58719d8500a1e7c882517dd2b838759ef393b2bf35d37"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "cw2-b1-full-item-family-registry-r1",
+      "key": "oteryn:source.crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "sha256": "7836c78cad130a5c404f648e76e0823f53ae6a34c6952b9b88c8bed2e50d96a7"
+    },
+    {
+      "evidence": "OtsHypothesisOnly",
+      "import_batch_id": "monster-full-mechanics-portal25051-crystal-20261004",
+      "key": "oteryn:source.crystalserver",
+      "revision": "portal25051-semantics:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "monster-full-mechanics-tentacle-items-crystal-20261004",
+      "key": "oteryn:source.crystalserver",
+      "revision": "tentacle-items-dat:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-prices-tibiawiki-br-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-br-npc-0773232ddd356be2",
+      "sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-item-exact-165-tibiawiki-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a",
+      "sha256": "583a0b0080f3e08633c8d6cde11d9fd073b47088d84774bfdf851382569dd675"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-item-wave1-tibiawiki-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-item-wave1-snapshot:5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5",
+      "sha256": "5d8b84eee85e226e99d516beb7b40b8dc201c923e9b63b5ef18313085c3cbdf5"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-mount-252-tibiawiki-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-nonitem-g1-snapshot:0b7caf98940305a91c5384dfb828c0afcf016f087f71572ec71d7c936c6387df",
+      "sha256": "f47dbe5832e7b1accd652852303d638a4f19367bab3951f260cc39a0d93b7713"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-wave-a-tibiawiki-r9",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-npc-52f87d29eddd1a4e",
+      "sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-wiki-authored-creature-d44-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiawiki-wiki-authored-creature-88d21c748283df4c",
+      "sha256": "88d21c748283df4cf059dbf1bd04cbcf7b9d00ca6cd14dc1e913e947f0242c8c"
+    },
+    {
+      "evidence": "Derived",
+      "import_batch_id": "g4-npc-prices-tibiopedia-r1",
+      "key": "oteryn:source.tibiawiki",
+      "revision": "tibiopedia-npc-43bfc91ec7721df1",
+      "sha256": "43bfc91ec7721df150d3803f7123df1909a167c6606e54b112075a433fda8651"
+    }
+  ],
+  "source_identity_bindings": [
+    {
+      "disposition": "EXACT",
+      "external_id": "charging_outburst",
+      "identity_namespace": "canary/encounter",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.charging_outburst",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "eruption_of_destruction",
+      "identity_namespace": "canary/encounter",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.eruption_of_destruction",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "field_fill_foam_stalker",
+      "identity_namespace": "canary/encounter",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.field_fill_foam_stalker",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "gaz_haragoth",
+      "identity_namespace": "canary/encounter",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.gaz_haragoth",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "lady_tenebris",
+      "identity_namespace": "canary/encounter",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.lady_tenebris",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "plagirath",
+      "identity_namespace": "canary/encounter",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.plagirath",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "source_core_energy_pulse",
+      "identity_namespace": "canary/encounter",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.source_core_energy_pulse",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "source_core_rootthing_amber_shaper",
+      "identity_namespace": "canary/encounter",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.source_core_rootthing_amber_shaper",
+        "revision": "definition-r1"
+      }
+    },
+    {
+      "disposition": "EXACT",
+      "external_id": "source_core_rootthing_nutshell",
+      "identity_namespace": "canary/encounter",
+      "source_key": "oteryn:source.canary",
+      "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "target": {
+        "family": "Encounter",
+        "key": "oteryn:encounter.source_core_rootthing_nutshell",
+        "revision": "definition-r1"
+      }
+    }
+  ]
+}

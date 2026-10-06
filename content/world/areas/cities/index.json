@@ -1,10 +1,10 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/world/areas/cities/",
-  "kind": "static_content",
-  "owner": "Area",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "City Area definitions: 22 cities (the 19 House towns and the hometowns Rookgaard, Roshamuul and Dawnport) from the 15.30 client map areas, with the hometown temple of the 19 hometowns; built by tools/content-schema/area-authoring/build_areas.py."
+  "kind": "static_content",
+  "notes": "City Area definitions: 22 cities (the 19 House towns and the hometowns Rookgaard, Roshamuul and Dawnport) from the 15.30 client map areas, with the hometown temple of the 19 hometowns; built by tools/content-schema/area-authoring/build_areas.py.",
+  "owner": "Area",
+  "path": "content/world/areas/cities/",
+  "population_state": "POPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

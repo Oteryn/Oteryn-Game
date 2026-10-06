@@ -1,14 +1,14 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "14da7f0971b7ab66424eedac2e5af5ffa524a2c3f1509b2eb8537b5f238ca078",
+  "digest": "eb625ff0b201f47f83f9450efd4579b6ccc5351a010a7f028fd684b82e3a086d",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "g4-npc-provisional-enrichment-r28",
+  "content_revision": "monster-npc-reconciled-20261005-r1",
   "production": false,
   "entry_start": {
     "x": 10228,
     "y": 10032,
     "floor": 0
   },
-  "inputs_digest": "d6706a609a59f563adbddc53cb1ed2297033dead354f8366e3bc710bb5792836"
+  "inputs_digest": "b08e96c737b0dc5f911cd52fa5b4bd857e8dd89ca6347891d244efbb17b44a25"
 }

@@ -1,12 +1,12 @@
 {
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "g4-npc-provisional-enrichment-r28",
-  "content_lock_digest": "13516fb6b42f4102fc2475caa6174c65f4e0e0af929d835308e3e0489e8f5475",
+  "content_revision": "monster-npc-reconciled-20261005-r1",
+  "content_lock_digest": "82cd216b159c0a6dcd20957f9806fc33ad786c497c7214f5f776e7089205ccd4",
   "min_runtime_version": "1",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:g4-npc-provisional-enrichment-r28/6d3c1820f292e3659d02ae06365c0bda86e3d73e24ae02f4c317c63285cc9421"
+  "provenance_summary": "lock:monster-npc-reconciled-20261005-r1/7d7403a5ced6677934bcc2dc75b9887cc501138b6fea7a1f3edfb714a560d2a5"
 }

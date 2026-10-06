@@ -128,6 +128,7 @@ mod tests {
             mitigation: None,
             resistances: Vec::new(),
             damage_immunities: Vec::new(),
+            healing_from_damage: vec![],
             preferred_distance: None,
             reward_boss: Some(false),
             flags: CreatureFlags {

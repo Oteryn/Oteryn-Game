@@ -1,0 +1,1745 @@
+{
+  "status": "PREPARED_ACCEPTED_ACTIVE_LINEAGE_NOT_NEW_NUMERIC_CONFIRMATION",
+  "rows": [
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.bright_percht_sleigh",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 0,
+      "new_present": true,
+      "new": 10,
+      "canonical_present": true,
+      "canonical": 10,
+      "canonical_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "canonical_file_sha256": "8c8ac44183f6498ca12f8cf9c8d882cd5798143f5895a916b9f08ef246f78c4b",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Bright_Percht_Sleigh",
+          "page_title": "Bright Percht Sleigh",
+          "revision_id": 389379,
+          "revision_timestamp": "2023-04-11T22:09:22Z",
+          "content_sha256": "3c47cfd856077692289242c9a71c26e8fe83f2238119fd239b96d05b0044d1b1",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "10",
+          "normalized": 10
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "quests/the_percht_queens_island/bright_percht_sleigh",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.bright_percht_sleigh",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/bright_percht_sleigh/manifest.json",
+        "manifest_sha256": "baaf44efdb9a21f4d6663ef64ea36787219f011ccccb1eb10340196ddb0662bd",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 2,
+              "source_file": "Bright Percht Sleigh",
+              "source_line": 14,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Bright Percht Sleigh",
+              "page_id": 45703,
+              "revision_id": 389379,
+              "content_sha256": "3c47cfd856077692289242c9a71c26e8fe83f2238119fd239b96d05b0044d1b1"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.cold_percht_sleigh",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 0,
+      "new_present": true,
+      "new": 10,
+      "canonical_present": true,
+      "canonical": 10,
+      "canonical_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "canonical_file_sha256": "8c8ac44183f6498ca12f8cf9c8d882cd5798143f5895a916b9f08ef246f78c4b",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Cold_Percht_Sleigh",
+          "page_title": "Cold Percht Sleigh",
+          "revision_id": 389383,
+          "revision_timestamp": "2023-04-11T22:13:36Z",
+          "content_sha256": "3d423851188b2868ddc686ca9961267c599436ff655e09959dc82fac8cc777e6",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "10",
+          "normalized": 10
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "quests/the_percht_queens_island/cold_percht_sleigh",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.cold_percht_sleigh",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/cold_percht_sleigh/manifest.json",
+        "manifest_sha256": "3001d51e35e4540b1841ff1eca2141348ab491287b75c4c4236dc974f742f557",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 2,
+              "source_file": "Cold Percht Sleigh",
+              "source_line": 14,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Cold Percht Sleigh",
+              "page_id": 45702,
+              "revision_id": 389383,
+              "content_sha256": "3d423851188b2868ddc686ca9961267c599436ff655e09959dc82fac8cc777e6"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.dark_percht_sleigh",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 0,
+      "new_present": true,
+      "new": 10,
+      "canonical_present": true,
+      "canonical": 10,
+      "canonical_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "canonical_file_sha256": "8c8ac44183f6498ca12f8cf9c8d882cd5798143f5895a916b9f08ef246f78c4b",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Dark_Percht_Sleigh",
+          "page_title": "Dark Percht Sleigh",
+          "revision_id": 389386,
+          "revision_timestamp": "2023-04-11T22:16:26Z",
+          "content_sha256": "7ca942f0f598952550b6141fc0f0d967a2517e34143f54e3ab080a7626a41214",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "10",
+          "normalized": 10
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "quests/the_percht_queens_island/dark_percht_sleigh",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.dark_percht_sleigh",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/dark_percht_sleigh/manifest.json",
+        "manifest_sha256": "bf2f9db120cd0ce2c5a63123f238e1a0e67e5d64d1956fd0aa6af63436082cb9",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 2,
+              "source_file": "Dark Percht Sleigh",
+              "source_line": 14,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Dark Percht Sleigh",
+              "page_id": 45704,
+              "revision_id": 389386,
+              "content_sha256": "7ca942f0f598952550b6141fc0f0d967a2517e34143f54e3ab080a7626a41214"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.donkey",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 75,
+      "new_present": true,
+      "new": 10,
+      "canonical_present": true,
+      "canonical": 10,
+      "canonical_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "canonical_file_sha256": "8c8ac44183f6498ca12f8cf9c8d882cd5798143f5895a916b9f08ef246f78c4b",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Donkey",
+          "page_title": "Donkey",
+          "revision_id": 383143,
+          "revision_timestamp": "2022-12-18T20:34:29Z",
+          "content_sha256": "995f60bde2df3e7d4ca657912a6c7b66f9d514ade2ed848bf8c0fafb61f93c26",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "10",
+          "normalized": 10
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "mammals/donkey",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.donkey",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/donkey/manifest.json",
+        "manifest_sha256": "08612667a5316e8f1089b7e64dbf285781edb1cb01f49ce889eea4e863cd2cb2",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 2,
+              "source_file": "Donkey",
+              "source_line": 14,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Donkey",
+              "page_id": 17283,
+              "revision_id": 383143,
+              "content_sha256": "995f60bde2df3e7d4ca657912a6c7b66f9d514ade2ed848bf8c0fafb61f93c26"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.dragolisk",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 165,
+      "new_present": true,
+      "new": 185,
+      "canonical_present": true,
+      "canonical": 185,
+      "canonical_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "canonical_file_sha256": "8c8ac44183f6498ca12f8cf9c8d882cd5798143f5895a916b9f08ef246f78c4b",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Dragolisk",
+          "page_title": "Dragolisk",
+          "revision_id": 443728,
+          "revision_timestamp": "2026-08-29T20:57:49Z",
+          "content_sha256": "fbe23316b11477f513af545704f69a04985de86dc9e399595d9a36f7965114ea",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "185",
+          "normalized": 185
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "dragons/dragolisk",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.dragolisk",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/dragolisk/manifest.json",
+        "manifest_sha256": "ec0ef8d8c3a6b506ec908c9171d27ab6dd3d7fddfb582f0cf810028afecc443c",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 8,
+              "source_file": "Dragolisk",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Dragolisk",
+              "page_id": 61391,
+              "revision_id": 443728,
+              "content_sha256": "fbe23316b11477f513af545704f69a04985de86dc9e399595d9a36f7965114ea"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.dragon_hoard",
+        "revision": "definition-r1"
+      },
+      "field": "experience",
+      "old_present": true,
+      "old": 600000,
+      "new_present": true,
+      "new": 600000,
+      "canonical_present": true,
+      "canonical": 0,
+      "canonical_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "canonical_file_sha256": "8c8ac44183f6498ca12f8cf9c8d882cd5798143f5895a916b9f08ef246f78c4b",
+      "apply": false,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact Fandom DragonHoard outranks misbound DragonPack lineage (different actor). Native alreadycorrect; canonical repair only.0% receiveddamage means intrinsic damageimmunity, not neutral resistance.",
+      "provenance": [
+        {
+          "url": "https://tibia.fandom.com/wiki/Dragon_Hoard",
+          "wiki_title": "Dragon Hoard",
+          "revision_id": 1181010,
+          "content_sha256": "2ce5d26faaee0e0a95c75bce707cb8dc15ec276684a30999b3b645f06b55c510",
+          "field": "experience",
+          "raw": "600000",
+          "normalized": 600000,
+          "note": null,
+          "line": 7,
+          "capture_path": "/workspace/monster-completion/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "capture_sha256": "09628441c63320fb258f63cde976fe56aa44ad580942192f24f2b60418e2a362"
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "quests/twenty_years_a_cook/bosses/dragon_hoard",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.dragon_hoard",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/dragon_hoard/manifest.json",
+        "manifest_sha256": "4a08ce25e0b94c0472855b610bd91e7fd87911758691b6c9c8169849779c16d3",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 4,
+              "source_file": "Dragon Pack",
+              "source_line": 4,
+              "source_field": "exp",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/experience",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Dragon Pack",
+              "page_id": 61659,
+              "revision_id": 445541,
+              "content_sha256": "007d1bdaa5aed5df0267b24241d7eb9b4716f068192ba7e425875512ce9d0f89"
+            }
+          }
+        ]
+      },
+      "canonical_correction": {
+        "old_present": true,
+        "old": 0,
+        "new_present": true,
+        "new": 600000
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.dragon_hoard",
+        "revision": "definition-r1"
+      },
+      "field": "immunities",
+      "old_present": true,
+      "old": [
+        "death",
+        "drowning",
+        "earth",
+        "energy",
+        "fire",
+        "holy",
+        "ice",
+        "life_drain",
+        "physical"
+      ],
+      "new_present": true,
+      "new": [
+        "death",
+        "drowning",
+        "earth",
+        "energy",
+        "fire",
+        "holy",
+        "ice",
+        "life_drain",
+        "physical"
+      ],
+      "canonical_present": true,
+      "canonical": [
+        "drowning",
+        "life_drain"
+      ],
+      "canonical_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "canonical_file_sha256": "8c8ac44183f6498ca12f8cf9c8d882cd5798143f5895a916b9f08ef246f78c4b",
+      "apply": false,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact Fandom DragonHoard outranks misbound DragonPack lineage (different actor). Native alreadycorrect; canonical repair only.0% receiveddamage means intrinsic damageimmunity, not neutral resistance.",
+      "provenance": [
+        {
+          "url": "https://tibia.fandom.com/wiki/Dragon_Hoard",
+          "wiki_title": "Dragon Hoard",
+          "revision_id": 1181010,
+          "content_sha256": "2ce5d26faaee0e0a95c75bce707cb8dc15ec276684a30999b3b645f06b55c510",
+          "field": "resistance.physical",
+          "raw": "0%",
+          "normalized": 100,
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100.",
+          "line": 31,
+          "capture_path": "/workspace/monster-completion/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "capture_sha256": "09628441c63320fb258f63cde976fe56aa44ad580942192f24f2b60418e2a362"
+        },
+        {
+          "url": "https://tibia.fandom.com/wiki/Dragon_Hoard",
+          "wiki_title": "Dragon Hoard",
+          "revision_id": 1181010,
+          "content_sha256": "2ce5d26faaee0e0a95c75bce707cb8dc15ec276684a30999b3b645f06b55c510",
+          "field": "resistance.earth",
+          "raw": "0%",
+          "normalized": 100,
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100.",
+          "line": 32,
+          "capture_path": "/workspace/monster-completion/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "capture_sha256": "09628441c63320fb258f63cde976fe56aa44ad580942192f24f2b60418e2a362"
+        },
+        {
+          "url": "https://tibia.fandom.com/wiki/Dragon_Hoard",
+          "wiki_title": "Dragon Hoard",
+          "revision_id": 1181010,
+          "content_sha256": "2ce5d26faaee0e0a95c75bce707cb8dc15ec276684a30999b3b645f06b55c510",
+          "field": "resistance.fire",
+          "raw": "0%",
+          "normalized": 100,
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100.",
+          "line": 33,
+          "capture_path": "/workspace/monster-completion/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "capture_sha256": "09628441c63320fb258f63cde976fe56aa44ad580942192f24f2b60418e2a362"
+        },
+        {
+          "url": "https://tibia.fandom.com/wiki/Dragon_Hoard",
+          "wiki_title": "Dragon Hoard",
+          "revision_id": 1181010,
+          "content_sha256": "2ce5d26faaee0e0a95c75bce707cb8dc15ec276684a30999b3b645f06b55c510",
+          "field": "resistance.death",
+          "raw": "0%",
+          "normalized": 100,
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100.",
+          "line": 34,
+          "capture_path": "/workspace/monster-completion/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "capture_sha256": "09628441c63320fb258f63cde976fe56aa44ad580942192f24f2b60418e2a362"
+        },
+        {
+          "url": "https://tibia.fandom.com/wiki/Dragon_Hoard",
+          "wiki_title": "Dragon Hoard",
+          "revision_id": 1181010,
+          "content_sha256": "2ce5d26faaee0e0a95c75bce707cb8dc15ec276684a30999b3b645f06b55c510",
+          "field": "resistance.energy",
+          "raw": "0%",
+          "normalized": 100,
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100.",
+          "line": 35,
+          "capture_path": "/workspace/monster-completion/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "capture_sha256": "09628441c63320fb258f63cde976fe56aa44ad580942192f24f2b60418e2a362"
+        },
+        {
+          "url": "https://tibia.fandom.com/wiki/Dragon_Hoard",
+          "wiki_title": "Dragon Hoard",
+          "revision_id": 1181010,
+          "content_sha256": "2ce5d26faaee0e0a95c75bce707cb8dc15ec276684a30999b3b645f06b55c510",
+          "field": "resistance.holy",
+          "raw": "0%",
+          "normalized": 100,
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100.",
+          "line": 36,
+          "capture_path": "/workspace/monster-completion/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "capture_sha256": "09628441c63320fb258f63cde976fe56aa44ad580942192f24f2b60418e2a362"
+        },
+        {
+          "url": "https://tibia.fandom.com/wiki/Dragon_Hoard",
+          "wiki_title": "Dragon Hoard",
+          "revision_id": 1181010,
+          "content_sha256": "2ce5d26faaee0e0a95c75bce707cb8dc15ec276684a30999b3b645f06b55c510",
+          "field": "resistance.ice",
+          "raw": "0%",
+          "normalized": 100,
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100.",
+          "line": 37,
+          "capture_path": "/workspace/monster-completion/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "capture_sha256": "09628441c63320fb258f63cde976fe56aa44ad580942192f24f2b60418e2a362"
+        },
+        {
+          "url": "https://tibia.fandom.com/wiki/Dragon_Hoard",
+          "wiki_title": "Dragon Hoard",
+          "revision_id": 1181010,
+          "content_sha256": "2ce5d26faaee0e0a95c75bce707cb8dc15ec276684a30999b3b645f06b55c510",
+          "field": "resistance.life_drain",
+          "raw": "0%",
+          "normalized": 100,
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100.",
+          "line": 38,
+          "capture_path": "/workspace/monster-completion/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "capture_sha256": "09628441c63320fb258f63cde976fe56aa44ad580942192f24f2b60418e2a362"
+        },
+        {
+          "url": "https://tibia.fandom.com/wiki/Dragon_Hoard",
+          "wiki_title": "Dragon Hoard",
+          "revision_id": 1181010,
+          "content_sha256": "2ce5d26faaee0e0a95c75bce707cb8dc15ec276684a30999b3b645f06b55c510",
+          "field": "resistance.drowning",
+          "raw": "0%",
+          "normalized": 100,
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100.",
+          "line": 39,
+          "capture_path": "/workspace/monster-completion/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "capture_sha256": "09628441c63320fb258f63cde976fe56aa44ad580942192f24f2b60418e2a362"
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "quests/twenty_years_a_cook/bosses/dragon_hoard",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.dragon_hoard",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/dragon_hoard/manifest.json",
+        "manifest_sha256": "4a08ce25e0b94c0472855b610bd91e7fd87911758691b6c9c8169849779c16d3",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 4,
+              "source_file": "Dragon Pack",
+              "source_line": 44,
+              "source_field": "physicalDmgMod,energyDmgMod,earthDmgMod,fireDmgMod,deathDmgMod,holyDmgMod,iceDmgMod",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/immunities/damage_types",
+              "resolution": "Guarded field-fill stats: Remove only damage immunities explicitly contradicted by numeric received-damage cell; resistance expresses new percentage."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Dragon Pack",
+              "page_id": 61659,
+              "revision_id": 445541,
+              "content_sha256": "007d1bdaa5aed5df0267b24241d7eb9b4716f068192ba7e425875512ce9d0f89"
+            }
+          }
+        ]
+      },
+      "canonical_correction": {
+        "old_present": true,
+        "old": [
+          "drowning",
+          "life_drain"
+        ],
+        "new_present": true,
+        "new": [
+          "death",
+          "drowning",
+          "earth",
+          "energy",
+          "fire",
+          "holy",
+          "ice",
+          "life_drain",
+          "physical"
+        ]
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.dworc_shadowstalker",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 170,
+      "new_present": true,
+      "new": 195,
+      "canonical_present": true,
+      "canonical": 195,
+      "canonical_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "canonical_file_sha256": "8c8ac44183f6498ca12f8cf9c8d882cd5798143f5895a916b9f08ef246f78c4b",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Dworc_Shadowstalker",
+          "page_title": "Dworc Shadowstalker",
+          "revision_id": 441526,
+          "revision_timestamp": "2026-07-29T13:41:16Z",
+          "content_sha256": "77f2f947bbd799cb27914aaa44d01ee629d7e92286b46940c172f105e6453993",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "195",
+          "normalized": 195
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "data-global/monster/undeads/dworc_shadowstalker.lua",
+          "identity_namespace": "crystalserver/monster-file",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.dworc_shadowstalker",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/dworc_shadowstalker/manifest.json",
+        "manifest_sha256": "34342e9b9eea4d12f4618fc7ed5fa2c0da9aded9624dd4195a7f5433709f9184",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 8,
+              "source_file": "Dworc Shadowstalker",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Dworc Shadowstalker",
+              "page_id": 64785,
+              "revision_id": 441526,
+              "content_sha256": "77f2f947bbd799cb27914aaa44d01ee629d7e92286b46940c172f105e6453993"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.egg",
+        "revision": "definition-r1"
+      },
+      "field": "immunities",
+      "old_present": false,
+      "old": null,
+      "new_present": false,
+      "new": null,
+      "canonical_present": true,
+      "canonical": [
+        "death"
+      ],
+      "canonical_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "canonical_file_sha256": "8c8ac44183f6498ca12f8cf9c8d882cd5798143f5895a916b9f08ef246f78c4b",
+      "apply": false,
+      "status": "UNKNOWN",
+      "reason": "Accepted canonicaldeath has only broad donor immunity receipt, no activeWiki field receipt. CachedSourceEgg has neutraldeathpercent0 and only condition immunities; no source-exact damageproof supportsaddingdeath. Identity review required; do not invent immunity.",
+      "provenance": [],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "raids/egg_the_welter",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.egg",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/egg/manifest.json",
+        "manifest_sha256": "60bed1965384485ce697731e1514fb2c19f1111d2d59f807716018ea2882aeae",
+        "receipts": []
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.elf_overseer",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 110,
+      "new_present": true,
+      "new": 88,
+      "canonical_present": true,
+      "canonical": 88,
+      "canonical_path": "content/creatures/definitions/creatures-00000-00499.json",
+      "canonical_file_sha256": "8c8ac44183f6498ca12f8cf9c8d882cd5798143f5895a916b9f08ef246f78c4b",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Elf_Overseer",
+          "page_title": "Elf Overseer",
+          "revision_id": 441095,
+          "revision_timestamp": "2026-07-25T08:41:50Z",
+          "content_sha256": "890e663a782462578a72c13c9d0aae53744e76e33fafb9c7e1595b1f835f0b32",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "88",
+          "normalized": 88
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "humanoids/elf_overseer",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.elf_overseer",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/elf_overseer/manifest.json",
+        "manifest_sha256": "5f802c6c57b0136061fc1f420ed9c714834cbfdc14a5dfc9329914decd855a74",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 6,
+              "source_file": "Elf Overseer",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Elf Overseer",
+              "page_id": 17090,
+              "revision_id": 441095,
+              "content_sha256": "890e663a782462578a72c13c9d0aae53744e76e33fafb9c7e1595b1f835f0b32"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.gloom_maw",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 190,
+      "new_present": true,
+      "new": 215,
+      "canonical_present": true,
+      "canonical": 215,
+      "canonical_path": "content/creatures/definitions/creatures-00500-00999.json",
+      "canonical_file_sha256": "455e5a369f56cff3efad8b3a5a02a27b9b49f5543c28c2d604b0b019e8d3e44a",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Gloom_Maw",
+          "page_title": "Gloom Maw",
+          "revision_id": 429380,
+          "revision_timestamp": "2025-10-24T18:18:12Z",
+          "content_sha256": "dab43ed10edaf3846e1bd8df3e5e35e08420303bcc5f27efb5d856c603e660df",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "215",
+          "normalized": 215
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "data-global/monster/humanoids/gloom_maw.lua",
+          "identity_namespace": "crystalserver/monster-file",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.gloom_maw",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/gloom_maw/manifest.json",
+        "manifest_sha256": "da5e1766e70d5577dafb8b9cb437ca3e1240dda2209d384325de0c881975419b",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 8,
+              "source_file": "Gloom Maw",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Gloom Maw",
+              "page_id": 64850,
+              "revision_id": 429380,
+              "content_sha256": "dab43ed10edaf3846e1bd8df3e5e35e08420303bcc5f27efb5d856c603e660df"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.hydra",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 180,
+      "new_present": true,
+      "new": 103,
+      "canonical_present": true,
+      "canonical": 103,
+      "canonical_path": "content/creatures/definitions/creatures-00500-00999.json",
+      "canonical_file_sha256": "455e5a369f56cff3efad8b3a5a02a27b9b49f5543c28c2d604b0b019e8d3e44a",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Hydra",
+          "page_title": "Hydra",
+          "revision_id": 441274,
+          "revision_timestamp": "2026-07-25T10:19:09Z",
+          "content_sha256": "3cd9260e1ef706cf2155ad5f79242b3d1c3e7d21cfe78c4aaa3f6e6dc5323500",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "103",
+          "normalized": 103
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "dragons/hydra",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.hydra",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/hydra/manifest.json",
+        "manifest_sha256": "17f750aa9209f4ea48adc8551be185cd62a72152a7e81aa3ee8cb73df5e57e73",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 7,
+              "source_file": "Hydra",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Hydra",
+              "page_id": 5562,
+              "revision_id": 441274,
+              "content_sha256": "3cd9260e1ef706cf2155ad5f79242b3d1c3e7d21cfe78c4aaa3f6e6dc5323500"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.lizard_snakecharmer",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 172,
+      "new_present": true,
+      "new": 92,
+      "canonical_present": true,
+      "canonical": 92,
+      "canonical_path": "content/creatures/definitions/creatures-00500-00999.json",
+      "canonical_file_sha256": "455e5a369f56cff3efad8b3a5a02a27b9b49f5543c28c2d604b0b019e8d3e44a",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Lizard_Snakecharmer",
+          "page_title": "Lizard Snakecharmer",
+          "revision_id": 440873,
+          "revision_timestamp": "2026-07-25T06:58:31Z",
+          "content_sha256": "3e3eabfac337d2a9bd47ada2e51030603d9947917d0c26aaed4a6f3e46a7cbf4",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "92",
+          "normalized": 92
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "reptiles/lizard_snakecharmer",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.lizard_snakecharmer",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/lizard_snakecharmer/manifest.json",
+        "manifest_sha256": "ea5a95927885607e6fd005743a272e2d0bd20321b49653ecdf21ff00dfc7042e",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 7,
+              "source_file": "Lizard Snakecharmer",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Lizard Snakecharmer",
+              "page_id": 5420,
+              "revision_id": 440873,
+              "content_sha256": "3e3eabfac337d2a9bd47ada2e51030603d9947917d0c26aaed4a6f3e46a7cbf4"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.magma_bubble",
+        "revision": "definition-r1"
+      },
+      "field": "experience",
+      "old_present": true,
+      "old": 80000,
+      "new_present": true,
+      "new": 80000,
+      "canonical_present": true,
+      "canonical": 80,
+      "canonical_path": "content/creatures/definitions/creatures-00500-00999.json",
+      "canonical_file_sha256": "455e5a369f56cff3efad8b3a5a02a27b9b49f5543c28c2d604b0b019e8d3e44a",
+      "apply": false,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Portuguese wiki thousands separator80.000 means80000. Native80000 alreadycorrect; canonical80 is locale parser error. Repair canonical only.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Magma_Bubble",
+          "revision_id": 445175,
+          "content_sha256": "22f562564ec1488e39bd067175fb0dd7a8e3b092c5e5b94aae8a00df9a9f564a",
+          "field": "exp",
+          "raw": "80.000",
+          "normalized": 80000,
+          "normalization": "Portuguese dot thousands grouping"
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "quests/primal_ordeal_quest/magma_bubble",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.magma_bubble",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/magma_bubble/manifest.json",
+        "manifest_sha256": "6b6c3966af2dfbfc3359f1c5ac2f31a068b932671d0e64a6cbe5b0d5c55be20f",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 3,
+              "source_file": "Magma Bubble",
+              "source_line": 4,
+              "source_field": "exp",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/experience",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Magma Bubble",
+              "page_id": 55665,
+              "revision_id": 445175,
+              "content_sha256": "22f562564ec1488e39bd067175fb0dd7a8e3b092c5e5b94aae8a00df9a9f564a"
+            }
+          }
+        ]
+      },
+      "canonical_correction": {
+        "old_present": true,
+        "old": 80,
+        "new_present": true,
+        "new": 80000
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.norcferatu_heartless",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 130,
+      "new_present": true,
+      "new": 175,
+      "canonical_present": true,
+      "canonical": 175,
+      "canonical_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "canonical_file_sha256": "7995231dec787284aa5652f53f268322fdc649211d300341c7c5d4d2e8f0d80e",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Norcferatu_Heartless",
+          "page_title": "Norcferatu Heartless",
+          "revision_id": 443721,
+          "revision_timestamp": "2026-08-29T20:41:24Z",
+          "content_sha256": "4581106e80ba2e7837fe233203ec2787c8300a43c373a8ccd8c19ac6f4e25033",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "175",
+          "normalized": 175
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "data-global/monster/humanoids/norcferatu_heartless.lua",
+          "identity_namespace": "crystalserver/monster-file",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.norcferatu_heartless",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/norcferatu_heartless/manifest.json",
+        "manifest_sha256": "3328568f6a2620c0761e5aa629e453c2007791bdbdbc2a29abb9bd724d8057dd",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 5,
+              "source_file": "Norcferatu Heartless",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Norcferatu Heartless",
+              "page_id": 64848,
+              "revision_id": 443721,
+              "content_sha256": "4581106e80ba2e7837fe233203ec2787c8300a43c373a8ccd8c19ac6f4e25033"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.norcferatu_nightweaver",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 130,
+      "new_present": true,
+      "new": 175,
+      "canonical_present": true,
+      "canonical": 175,
+      "canonical_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "canonical_file_sha256": "7995231dec787284aa5652f53f268322fdc649211d300341c7c5d4d2e8f0d80e",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Norcferatu_Nightweaver",
+          "page_title": "Norcferatu Nightweaver",
+          "revision_id": 443702,
+          "revision_timestamp": "2026-08-28T00:21:26Z",
+          "content_sha256": "da7f7c142401f3906bf985836e1887b048ae971af825ac3e62b93f2f96b7f028",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "175",
+          "normalized": 175
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "data-global/monster/humanoids/norcferatu_nightweaver.lua",
+          "identity_namespace": "crystalserver/monster-file",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.norcferatu_nightweaver",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/norcferatu_nightweaver/manifest.json",
+        "manifest_sha256": "ea56e509ad6c8ad6b225d47359a88f0577e8460709db331536c6669f5ec1df10",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 8,
+              "source_file": "Norcferatu Nightweaver",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Norcferatu Nightweaver",
+              "page_id": 64763,
+              "revision_id": 443702,
+              "content_sha256": "da7f7c142401f3906bf985836e1887b048ae971af825ac3e62b93f2f96b7f028"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.orclops_bloodbreaker",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 130,
+      "new_present": true,
+      "new": 160,
+      "canonical_present": true,
+      "canonical": 160,
+      "canonical_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "canonical_file_sha256": "7995231dec787284aa5652f53f268322fdc649211d300341c7c5d4d2e8f0d80e",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Orclops_Bloodbreaker",
+          "page_title": "Orclops Bloodbreaker",
+          "revision_id": 443722,
+          "revision_timestamp": "2026-08-29T20:42:08Z",
+          "content_sha256": "a53f21ff2001c83cb5116c6279a611e099cae5b36ee45046175d35073e9c8ec6",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "160",
+          "normalized": 160
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "data-global/monster/undeads/orclops_bloodbreaker.lua",
+          "identity_namespace": "crystalserver/monster-file",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.orclops_bloodbreaker",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/orclops_bloodbreaker/manifest.json",
+        "manifest_sha256": "9b5ee71c121339e096419ced9d0ca5d80f0c0c85dab5f8b5ee94520d0bd11b85",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 8,
+              "source_file": "Orclops Bloodbreaker",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Orclops Bloodbreaker",
+              "page_id": 64783,
+              "revision_id": 443722,
+              "content_sha256": "a53f21ff2001c83cb5116c6279a611e099cae5b36ee45046175d35073e9c8ec6"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.pink_butterfly",
+        "revision": "definition-r1"
+      },
+      "field": "armor",
+      "old_present": true,
+      "old": 10,
+      "new_present": true,
+      "new": 0,
+      "canonical_present": true,
+      "canonical": 0,
+      "canonical_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "canonical_file_sha256": "7995231dec787284aa5652f53f268322fdc649211d300341c7c5d4d2e8f0d80e",
+      "apply": true,
+      "status": "WIKI_NORMALIZED_LINEAGE",
+      "reason": "Accepted active Fandom Butterfly(Purple) armor0 normalized into PinkButterfly source variant. Retain honest existing variant-lineage qualification, not exact same-title numeric confirmation.",
+      "provenance": [
+        {
+          "entry": {
+            "source_index": 1,
+            "source_file": "Butterfly (Purple)",
+            "source_line": 8,
+            "source_field": "Infobox Creature.armor",
+            "kind": "field",
+            "status": "mapped",
+            "resolution": "Wiki armor \"0\" (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, summon/convince mana cost, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
+            "destination": "/monster/creature/stats/armor"
+          },
+          "source": {
+            "kind": "mediawiki",
+            "api": "https://tibia.fandom.com/api.php",
+            "title": "Butterfly (Purple)",
+            "page_id": 3235,
+            "revision_id": 1192358,
+            "content_sha256": "f4efcffad77b35d34ad68c2eef3bb50b5fe4dc144b5faaee4fb6376168bd0ed0"
+          }
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "quests/the_explorer_society/pink_butterfly",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.pink_butterfly",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/pink_butterfly/manifest.json",
+        "manifest_sha256": "c98b57656651e9477e1fb437d51c9c8eee932c3c9983249a29de2e05984ca263",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 1,
+              "source_file": "Butterfly (Purple)",
+              "source_line": 8,
+              "source_field": "Infobox Creature.armor",
+              "kind": "field",
+              "status": "mapped",
+              "resolution": "Wiki armor \"0\" (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, summon/convince mana cost, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
+              "destination": "/monster/creature/stats/armor"
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibia.fandom.com/api.php",
+              "title": "Butterfly (Purple)",
+              "page_id": 3235,
+              "revision_id": 1192358,
+              "content_sha256": "f4efcffad77b35d34ad68c2eef3bb50b5fe4dc144b5faaee4fb6376168bd0ed0"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_ACCEPTED_VARIANT_WIKI_LINEAGE_GLOBAL_IDENTITY_UNVERIFIED"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.spit_nettle",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 0,
+      "new_present": true,
+      "new": 39,
+      "canonical_present": true,
+      "canonical": 39,
+      "canonical_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "canonical_file_sha256": "7995231dec787284aa5652f53f268322fdc649211d300341c7c5d4d2e8f0d80e",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Spit_Nettle",
+          "page_title": "Spit Nettle",
+          "revision_id": 440904,
+          "revision_timestamp": "2026-07-25T07:10:16Z",
+          "content_sha256": "a8536bdabb8077839b8b3228b4263173fb752b4bed39a14611d8e27566a96f85",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "39",
+          "normalized": 39
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "plants/spit_nettle",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.spit_nettle",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/spit_nettle/manifest.json",
+        "manifest_sha256": "44ba3fbc39f9ffbb6e146782187e11d3407e9b89db2974bd3d4a780729758e08",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 7,
+              "source_file": "Spit Nettle",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Spit Nettle",
+              "page_id": 2986,
+              "revision_id": 440904,
+              "content_sha256": "a8536bdabb8077839b8b3228b4263173fb752b4bed39a14611d8e27566a96f85"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.sugar_cube_worker",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 240,
+      "new_present": true,
+      "new": 135,
+      "canonical_present": true,
+      "canonical": 135,
+      "canonical_path": "content/creatures/definitions/creatures-01500-01862.json",
+      "canonical_file_sha256": "c5cd11979f67aed21c9fcef0a894e3c27737bf0c643b57a950d6781058fe8cb8",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Sugar_Cube_Worker",
+          "page_title": "Sugar Cube Worker",
+          "revision_id": 445453,
+          "revision_timestamp": "2026-09-29T15:11:29Z",
+          "content_sha256": "e208c410bca16921986da94cfaab8ec8c73ed7241fe16026fd8e672ba47d70b3",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "135",
+          "normalized": 135
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "fey/sugar_cube_worker",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.sugar_cube_worker",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/sugar_cube_worker/manifest.json",
+        "manifest_sha256": "40495012925ec15d0b72dd1240f0ba3454a513a38508d28053baec1c23142684",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 6,
+              "source_file": "Sugar Cube Worker",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Sugar Cube Worker",
+              "page_id": 62136,
+              "revision_id": 445453,
+              "content_sha256": "e208c410bca16921986da94cfaab8ec8c73ed7241fe16026fd8e672ba47d70b3"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.thanatursus",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 200,
+      "new_present": true,
+      "new": 180,
+      "canonical_present": true,
+      "canonical": 180,
+      "canonical_path": "content/creatures/definitions/creatures-01500-01862.json",
+      "canonical_file_sha256": "c5cd11979f67aed21c9fcef0a894e3c27737bf0c643b57a950d6781058fe8cb8",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Thanatursus",
+          "page_title": "Thanatursus",
+          "revision_id": 441225,
+          "revision_timestamp": "2026-07-25T09:55:57Z",
+          "content_sha256": "4adad51e19093f324a7108fc9d0fb88a5f1a3dba7aac0aed386c750ba3d957df",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "180",
+          "normalized": 180
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "magicals/thanatursus",
+          "identity_namespace": "canary/monster-file",
+          "source_key": "oteryn:source.canary",
+          "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.thanatursus",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/thanatursus/manifest.json",
+        "manifest_sha256": "bd6372b20f93bd2f01b6088e74e316a28b115e5e1bd9964bb4cf553788e2dba4",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 8,
+              "source_file": "Thanatursus",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Thanatursus",
+              "page_id": 44945,
+              "revision_id": 441225,
+              "content_sha256": "4adad51e19093f324a7108fc9d0fb88a5f1a3dba7aac0aed386c750ba3d957df"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.varg",
+        "revision": "definition-r1"
+      },
+      "field": "speed",
+      "old_present": true,
+      "old": 200,
+      "new_present": true,
+      "new": 190,
+      "canonical_present": true,
+      "canonical": 190,
+      "canonical_path": "content/creatures/definitions/creatures-01500-01862.json",
+      "canonical_file_sha256": "c5cd11979f67aed21c9fcef0a894e3c27737bf0c643b57a950d6781058fe8cb8",
+      "apply": true,
+      "status": "WIKI_CONFIRMED",
+      "reason": "Exact cached wiki observed speed equals accepted canonical. Root accepts this value as PROJECT_NATIVE_BASE_SPEED_FROM_WIKI; no engine-unit conversion or Global parity claimed.",
+      "provenance": [
+        {
+          "url": "https://tibiawiki.com.br/wiki/Varg",
+          "page_title": "Varg",
+          "revision_id": 429381,
+          "revision_timestamp": "2025-10-24T18:19:29Z",
+          "content_sha256": "045427a144db6ce6ad843f360c9423c433dbf3247402ebab17640dd294c708b7",
+          "method": "REMOTE_DESKTOP_CHROME_CDP_PUBLIC_API",
+          "field": "speed",
+          "raw": "190",
+          "normalized": 190
+        }
+      ],
+      "source_bindings": [
+        {
+          "disposition": "EXACT",
+          "external_id": "data-global/monster/humanoids/varg.lua",
+          "identity_namespace": "crystalserver/monster-file",
+          "source_key": "oteryn:source.crystalserver",
+          "source_revision": "crystalserver-creature-1530:00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.varg",
+            "revision": "definition-r1"
+          }
+        }
+      ],
+      "active_normalized_lineage": {
+        "manifest_path": "/tmp/monster-final-fill-20261004/population/bundles/varg/manifest.json",
+        "manifest_sha256": "eb6b27d30498feb3e0f5f6068e81dc74d692836cc2afe39831eccbfee870b3ef",
+        "receipts": [
+          {
+            "entry": {
+              "source_index": 8,
+              "source_file": "Varg",
+              "source_line": 18,
+              "source_field": "speed",
+              "kind": "field",
+              "status": "mapped",
+              "destination": "/monster/creature/stats/speed",
+              "resolution": "Guarded field-fill stats: Direct same-actor actual WikiBR numeric cell."
+            },
+            "source": {
+              "kind": "mediawiki",
+              "api": "https://tibiawiki.com.br/api.php",
+              "title": "Varg",
+              "page_id": 64764,
+              "revision_id": 429381,
+              "content_sha256": "045427a144db6ce6ad843f360c9423c433dbf3247402ebab17640dd294c708b7"
+            }
+          }
+        ]
+      },
+      "qualification": "PROJECT_NATIVE_BASE_SPEED_FROM_WIKI"
+    }
+  ]
+}

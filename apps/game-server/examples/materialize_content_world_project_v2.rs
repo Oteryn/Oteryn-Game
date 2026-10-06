@@ -476,6 +476,48 @@ fn document_tree_digest(documents: &CanonicalProjectDocuments) -> String {
     value
 }
 
+// The monster/NPC-reconciled package (#1807) was authored outside this materializer, so the
+// D3-7 corpse admission is applied to exactly that captured package.
+const MONSTER_NPC_RECONCILED_PREDECESSOR: &str =
+    "045776ffda71f9199431bd0ca02615d2e94a8956fda1d3ff2fcc81ad54b2ccde";
+
+fn reconciled_limits() -> ProjectEvidenceLimits {
+    ProjectEvidenceLimits {
+        max_decoded_fields: 2_400_000,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + 26_194 + 2_564,
+        max_import_records: 29,
+        max_reimport_states: 404,
+        ..limits()
+    }
+}
+
+fn admit_corpse_on_reconciled(
+    parent: &Path,
+    name: &std::ffi::OsStr,
+    output: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let filesystem = ProjectFilesystemLimits {
+        project: reconciled_limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
+    };
+    let Ok(captured) = capture_world_project(parent, name, filesystem) else {
+        return Ok(false);
+    };
+    let mut draft = captured.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
+    if document_tree_digest(&before) != MONSTER_NPC_RECONCILED_PREDECESSOR {
+        return Ok(false);
+    }
+    let corpse_admitted = apply_item_admission_v2(&mut draft)?;
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!(
+        "corpse_admitted_items={corpse_admitted} tree_sha256={tree_sha256} predecessor_mode=true"
+    );
+    Ok(true)
+}
+
 fn materialize_from_predecessor(
     source: &Path,
     output: &Path,
@@ -483,6 +525,9 @@ fn materialize_from_predecessor(
     require_fresh_root(output)?;
     let parent = source.parent().ok_or("predecessor parent missing")?;
     let name = source.file_name().ok_or("predecessor basename missing")?;
+    if admit_corpse_on_reconciled(parent, name, output)? {
+        return Ok(());
+    }
     let filesystem = ProjectFilesystemLimits {
         project: limits(),
         max_entries_per_directory_scan: 32,

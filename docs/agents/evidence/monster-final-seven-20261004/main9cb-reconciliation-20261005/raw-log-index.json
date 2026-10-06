@@ -1,0 +1,674 @@
+[
+  {
+    "member": "main9cb-adopted-overlay-tests.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-adopted-overlay-tests.txt",
+    "bytes": 107,
+    "sha256": "b6ada18ea224d6a00c7d817ff38a2465881aa7dad79a745590204fd8480f72f2"
+  },
+  {
+    "member": "main9cb-agents-unit.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-agents-unit.txt",
+    "bytes": 158,
+    "sha256": "5a1f62f4901fb1645a769a96f4c3462b2d4112aea575818c4359a2ec9a92753f"
+  },
+  {
+    "member": "main9cb-all-target-clippy.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-all-target-clippy.txt",
+    "bytes": 1653,
+    "sha256": "84f168096bcd55c35ab217b4f878df1e6d7402697d5bc5637942d9c3c190b738"
+  },
+  {
+    "member": "main9cb-binding-tests.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-binding-tests.txt",
+    "bytes": 100,
+    "sha256": "cbe4b84d897ac017db0552ccb3a31855ff0fb172bc344c967c4c4c92eb19e624"
+  },
+  {
+    "member": "main9cb-census-all.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-census-all.txt",
+    "bytes": 262889,
+    "sha256": "825f2d6d025bef3ba5f867cbd2c068308fbc8357a96c89901df855a9ae70009e"
+  },
+  {
+    "member": "main9cb-census-ignored.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-census-ignored.txt",
+    "bytes": 3222,
+    "sha256": "12e3509a36d74b1bfd76308af5a9c55decb81dbeb72c36f050b2a74f3f45a03b"
+  },
+  {
+    "member": "main9cb-closed-context-controls.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-closed-context-controls.txt",
+    "bytes": 103,
+    "sha256": "87e1383ed624c34cc21915765cce3e990b09ea998c2933db7056bf74e1bf849e"
+  },
+  {
+    "member": "main9cb-composed-register-spells.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-composed-register-spells.txt",
+    "bytes": 55,
+    "sha256": "e2b69f506906fe15786eeff784edca14f0c9e5ea7dcda2761918e4c58ba552be"
+  },
+  {
+    "member": "main9cb-composition-tests.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-composition-tests.txt",
+    "bytes": 102,
+    "sha256": "7d6225a3184e3add704b58d260827f748a7364dceac3b7a3d68f8312f885c4d6"
+  },
+  {
+    "member": "main9cb-current-source-final20-green.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-current-source-final20-green.txt",
+    "bytes": 120,
+    "sha256": "99ef8689cae035c7317c2dda72d6f3d23b7837729a872ee38520c890bba40298"
+  },
+  {
+    "member": "main9cb-current-source-focused-green.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-current-source-focused-green.txt",
+    "bytes": 99,
+    "sha256": "055d6ac9d70da75460f0249787b9b1a8d60f2522feb6a958103a68d1ec5c076c"
+  },
+  {
+    "member": "main9cb-current-source-tests.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-current-source-tests.txt",
+    "bytes": 1081,
+    "sha256": "8d8ea53d9029dd9f6a8fcb10b29eecb43cb507a3fe3a11418edd69a6b3201581"
+  },
+  {
+    "member": "main9cb-final-governance.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-final-governance.txt",
+    "bytes": 113,
+    "sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+  },
+  {
+    "member": "main9cb-final-policy.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-final-policy.txt",
+    "bytes": 114,
+    "sha256": "8dfbfea61f31baf9f4f6f0a55e8e5ef6f1e2813feb547c8e198cd2971d9aef0f"
+  },
+  {
+    "member": "main9cb-g4-alias.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-g4-alias.txt",
+    "bytes": 224,
+    "sha256": "cfe0299803a4b54f69ed70b6cfbc0b1100abed12b883de83f5b666f59ebaaffa"
+  },
+  {
+    "member": "main9cb-g4-all5-ruff-check.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-g4-all5-ruff-check.txt",
+    "bytes": 19,
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "member": "main9cb-g4-all5-ruff-format.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-g4-all5-ruff-format.txt",
+    "bytes": 26,
+    "sha256": "f114d83b30c5c657ee43a847a45bafccaea255d82673feb87c26d252c61e29c1"
+  },
+  {
+    "member": "main9cb-g4-binding.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-g4-binding.txt",
+    "bytes": 77,
+    "sha256": "071a24ad0579b9477bcb54118178b6c2b76ef7ef24c89811d8a243011a59426e"
+  },
+  {
+    "member": "main9cb-g4-ruff-check.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-g4-ruff-check.txt",
+    "bytes": 19,
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "member": "main9cb-g4-ruff-format.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-g4-ruff-format.txt",
+    "bytes": 26,
+    "sha256": "3bc53bf3e981a98a34a852e175bf9b77af841edea74fca595d9aedcbaf9a4938"
+  },
+  {
+    "member": "main9cb-governance.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-governance.txt",
+    "bytes": 113,
+    "sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+  },
+  {
+    "member": "main9cb-item-driver.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-item-driver.txt",
+    "bytes": 8855,
+    "sha256": "cadd419b774327afae0bcfda71a252af1c8be40c87fa5bcb025b22f181376b6b"
+  },
+  {
+    "member": "main9cb-item-ruff-check.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-item-ruff-check.txt",
+    "bytes": 19,
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "member": "main9cb-item-ruff-format.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-item-ruff-format.txt",
+    "bytes": 27,
+    "sha256": "cbf904f92d0c089ca66e45970eb6a69574fe7b4ee91d4caa1a94cf9e781ef67c"
+  },
+  {
+    "member": "main9cb-library-pg-bounded-green.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-library-pg-bounded-green.txt",
+    "bytes": 280677,
+    "sha256": "e6a5cee07cdd3340e445bcc3cb22be47cfd272fe7f45fad56b154560000c20d9"
+  },
+  {
+    "member": "main9cb-library-pg-green.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-library-pg-green.txt",
+    "bytes": 4286,
+    "sha256": "2dbcaadbf61cfe95186a77aa7014f57a5105638b8ea423c1fde698316017e62b"
+  },
+  {
+    "member": "main9cb-library.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-library.txt",
+    "bytes": 296968,
+    "sha256": "27118c2da07dfcb1f939f6051c048cc6602323fbc87055427df93978abc1dc27"
+  },
+  {
+    "member": "main9cb-membership-green.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-membership-green.txt",
+    "bytes": 265,
+    "sha256": "ef12c9a4fb55765644aad4f793efa2813f9ee55211afa6da63caaa7242cf6431"
+  },
+  {
+    "member": "main9cb-native-driver.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-native-driver.txt",
+    "bytes": 1444,
+    "sha256": "f059531c1cc68332e486aacb19727b4c693f3889260cbae35c9902a78a304a2d"
+  },
+  {
+    "member": "main9cb-ordinary-field-rust.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-ordinary-field-rust.txt",
+    "bytes": 2205,
+    "sha256": "84e0843d4273538dc408278512171622357578f2804cdaa3c842f7d7746657c6"
+  },
+  {
+    "member": "main9cb-pg-components.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-pg-components.txt",
+    "bytes": 3468,
+    "sha256": "d7b60b95e6c80166253168bca1f766abf38a94908b1ebd45a61bdfb44ce624d2"
+  },
+  {
+    "member": "main9cb-policy.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-policy.txt",
+    "bytes": 114,
+    "sha256": "8dfbfea61f31baf9f4f6f0a55e8e5ef6f1e2813feb547c8e198cd2971d9aef0f"
+  },
+  {
+    "member": "main9cb-references.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-references.txt",
+    "bytes": 83,
+    "sha256": "a3fda10ef48a10afd8f3a57bb202c36cf1a69a976b250af1a8b53c4a09adfd05"
+  },
+  {
+    "member": "main9cb-register-check.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-register-check.txt",
+    "bytes": 55,
+    "sha256": "e2b69f506906fe15786eeff784edca14f0c9e5ea7dcda2761918e4c58ba552be"
+  },
+  {
+    "member": "main9cb-register-final-green.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-register-final-green.txt",
+    "bytes": 55,
+    "sha256": "e2b69f506906fe15786eeff784edca14f0c9e5ea7dcda2761918e4c58ba552be"
+  },
+  {
+    "member": "main9cb-register-spells.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-register-spells.txt",
+    "bytes": 1160,
+    "sha256": "c41c6b083ddc56a6ab6722d6b019be2bff30edda62e81e53a4f21e6e5af7a959"
+  },
+  {
+    "member": "main9cb-routing-p1-final-green.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-routing-p1-final-green.txt",
+    "bytes": 104,
+    "sha256": "f98cae24f897f698209a52c8f72fbeb1444f70cb2b5ae3dbd96182b7657f87d2"
+  },
+  {
+    "member": "main9cb-routing-p1-green.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-routing-p1-green.txt",
+    "bytes": 104,
+    "sha256": "169d888ced95785335748520c88fd94adb00bdb05967e1ecc0a6a527af9d568a"
+  },
+  {
+    "member": "main9cb-routing-p1-red.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-routing-p1-red.txt",
+    "bytes": 1540,
+    "sha256": "01735bc99e9eec8d32a2b6a5081c16a18992fe71e9ae833fbd9a71b9c2546bce"
+  },
+  {
+    "member": "main9cb-rustfmt-final.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-rustfmt-final.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/1.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/1.txt",
+    "bytes": 60,
+    "sha256": "817ebe42a39a4f2b9969928c575ae2f492c97ef3a0fa4c6fb54e3239e8dd5dee"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/10.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/10.txt",
+    "bytes": 102,
+    "sha256": "19ddf9432f2031ec2fc0854805f5d2dd7122ab181533deee4b2b9205f81e0de9"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/11.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/11.txt",
+    "bytes": 102,
+    "sha256": "e833b27b68e7c9171883b8c0587e7c4258016361f57dd5e659a2dbe7f1f83027"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/12.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/12.txt",
+    "bytes": 105,
+    "sha256": "630b5bfa9143279a6693f0797df89cd5cd3b21611aec1399315c8a6058a8e984"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/13.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/13.txt",
+    "bytes": 267,
+    "sha256": "909e28fa97e1da9c2eff3c7b92718e25e604d6f1b572f3c8634c908b10489f25"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/14.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/14.txt",
+    "bytes": 103,
+    "sha256": "26b52baef24b38461f06b33fa622a4abb803894f36374c05291642e9e5e7675d"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/15.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/15.txt",
+    "bytes": 103,
+    "sha256": "6743a2c3450f90c00969075e5939ba224a3c4ce066481ea1acd7c6bd0f7d85d0"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/16.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/16.txt",
+    "bytes": 267,
+    "sha256": "909e28fa97e1da9c2eff3c7b92718e25e604d6f1b572f3c8634c908b10489f25"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/17.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/17.txt",
+    "bytes": 104,
+    "sha256": "4b88063ad9189ca848608672d165fee9a05b34651919ade03d202a655ba47b2b"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/18.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/18.txt",
+    "bytes": 47,
+    "sha256": "182def43eb5ba4d90c790f39ff463cf847b1582990f5d08043d5799ec14dfa5d"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/19.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/19.txt",
+    "bytes": 105,
+    "sha256": "745bbba0cf3d94ac2e1fc7c3dd0a4132332a884f53d054a71852201f028dfe03"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/2.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/2.txt",
+    "bytes": 103,
+    "sha256": "d03ce458f2a6cd2b4f27522f3aacad03ce1872c028853507c3ad02ca621bdcad"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/20.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/20.txt",
+    "bytes": 141,
+    "sha256": "55907cec26bb7b8cfa7cf0896bd117e06329b79e3709738a09295bf6848097f3"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/21.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/21.txt",
+    "bytes": 308,
+    "sha256": "7b455a59fdd47699c70da790733503cf9a8b44dc7020010f9fee2aec14da9c0d"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/22.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/22.txt",
+    "bytes": 72,
+    "sha256": "78cbe0714156db6a87e425b3ea8594500522dc76c0e66e016dc067ac377d7ac8"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/23.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/23.txt",
+    "bytes": 251,
+    "sha256": "361d2e41d60f1510ed374c92fe483cd8c8941edd5028abdfaf6706a37272ad87"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/24.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/24.txt",
+    "bytes": 142,
+    "sha256": "d2d428e136c0d779315237d5940b173c4f5d80fc34862617a6d34ddbc80fba6b"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/25.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/25.txt",
+    "bytes": 106,
+    "sha256": "88ae908d9a9ad49f71f40297cb3d889f32d1072d107646979d1814eaeea2b75a"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/26.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/26.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/27.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/27.txt",
+    "bytes": 112,
+    "sha256": "7ebaca7bfe7ceca4d9662e37c7d51bb7d63acb858cc15fc5eba4dc26e5e5f81f"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/28.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/28.txt",
+    "bytes": 144,
+    "sha256": "e565c114082272032066ee008997bec6300a0602b15f799781a2ede582e7cdfa"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/29.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/29.txt",
+    "bytes": 102,
+    "sha256": "7137eeba0f1475e79f6dce65a349431fdd4c73ecad493315cc596f599d3a273f"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/3.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/3.txt",
+    "bytes": 103,
+    "sha256": "464e0ee629edf74de09ef21e4232fbcedc26588ff7cc23c470f47fe2da88c255"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/30.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/30.txt",
+    "bytes": 35,
+    "sha256": "20faae33d501ddb8c552ec612730d1fdf132a4c84c4369aacfeb53199b366cb9"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/31.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/31.txt",
+    "bytes": 102,
+    "sha256": "df6b9afbbae2c80e7c5d34809d6b83a118a776e64e8ad4467062f55bb80a9153"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/32.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/32.txt",
+    "bytes": 50,
+    "sha256": "9fc3c240b89c3544bce897e59a530d3f30e9213cd1bbd2b566bb663f9672b577"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/33.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/33.txt",
+    "bytes": 100,
+    "sha256": "16836bd3f6f11dcd9b32b151c03dce0391525953e206d4a7c2e15f9b0f8c9552"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/34.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/34.txt",
+    "bytes": 35,
+    "sha256": "47692ba32f2c060598aed68393d5ef2a574b6b75d9e81e6726c7dbc84778e5ea"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/35.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/35.txt",
+    "bytes": 98,
+    "sha256": "6a582a5e174479069687ad2e231bbe8fabd3532378d965d7081182ee6e32cadb"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/36.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/36.txt",
+    "bytes": 50,
+    "sha256": "a076b9ae71f39ed411cf0d3abf7cc36b11b500e7afc5413b1c2b43aae76942eb"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/37.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/37.txt",
+    "bytes": 102,
+    "sha256": "e7a97df3ffd0d62c1cb63ed4ef9477f51f1d54a38086537e208e80a3993a9903"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/38.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/38.txt",
+    "bytes": 41,
+    "sha256": "d7aef1660b7abdd3b004bb1f04234001811dbb7802d9b431c0e6e1d38dcd15ca"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/39.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/39.txt",
+    "bytes": 105,
+    "sha256": "c5068cbe8da3ab89b73b767800d6af459b0bd7234294cfe718971585d982efa5"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/4.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/4.txt",
+    "bytes": 101,
+    "sha256": "d679a0ff02ad7a1e0c17fdfac8b1541a19147159e1b0868368b52488bc7dbf59"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/40.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/40.txt",
+    "bytes": 69,
+    "sha256": "88daf9182fd19902b06313c678b0f31a76a6147763d9b124b96be6f6915b35bd"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/41.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/41.txt",
+    "bytes": 103,
+    "sha256": "caf02e592f0ffc5bfc49032ef2f1c2b757571f0950b40999a9f42a6824258ec9"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/42.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/42.txt",
+    "bytes": 116,
+    "sha256": "8c0e1d86e402e87c43ad3b3d98ec7e086b679c993952383302e95813559c007e"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/43.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/43.txt",
+    "bytes": 102,
+    "sha256": "5610bb341ae4df72930d9f88afd8d925eec567770a8ccf6387603ee214544c29"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/44.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/44.txt",
+    "bytes": 25,
+    "sha256": "305acf14547656f25ac56bc8e72a0d75567c71c66317cc50f88229e44a0c856d"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/45.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/45.txt",
+    "bytes": 103,
+    "sha256": "b4edd5dc687109fbc67213af0c851ca0458ad24dc9f150b5bffb22e698a717a6"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/46.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/46.txt",
+    "bytes": 74,
+    "sha256": "9b309fdf9760439a8cd88a631a4bb335b54a95f31dce396a9fa46d287ca12fac"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/47.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/47.txt",
+    "bytes": 102,
+    "sha256": "b4e632c114e9e60483973c319c91444daa6518b62de279de5a2d122e752347d5"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/48.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/48.txt",
+    "bytes": 31,
+    "sha256": "0705efb8e82f681421cc799893e11fec8ca5ed3b315113e9c955b3aa8aaa88b9"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/49.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/49.txt",
+    "bytes": 102,
+    "sha256": "f54e1ec0eeef57fd81d0589d27340a62f8d72f41e39b6a376175d2ba9a555594"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/5.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/5.txt",
+    "bytes": 122,
+    "sha256": "27f62915f3c4dc2707908ca1b6c51a9092cda03e4a94580dc8480ddf945531c0"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/50.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/50.txt",
+    "bytes": 83,
+    "sha256": "7d4edb7f2e99bb877b4eea74674f0fd68f451205775041b05085d964aa59bb85"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/51.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/51.txt",
+    "bytes": 107,
+    "sha256": "3a8a430d8f4ed907a7ebd6980eeeda48982d35bae5051b4f9e0744a6bb9d91c3"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/52.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/52.txt",
+    "bytes": 106,
+    "sha256": "312e415c8ab5927248512edad058006a39c20f94e7cd97d5bb1f7fffead9931b"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/53.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/53.txt",
+    "bytes": 103,
+    "sha256": "9dda8088a3b68dc0065faaad45a3565b3ccfbdb207fa7285f1d9b44727a26298"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/54.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/54.txt",
+    "bytes": 96,
+    "sha256": "533ce9ca7989720d08d9d9eeae06d777e27d90f85cc378f8f2a3070a3761163c"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/55.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/55.txt",
+    "bytes": 15,
+    "sha256": "9aee204309545359b5d3e769048f5caafcd9e7b64d9af801b1275aae8a76720a"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/56.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/56.txt",
+    "bytes": 36,
+    "sha256": "ed7a7fcbab0883bc10f605e54336a0324537a2a3dfd2b2a05b7094e2e55b444d"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/57.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/57.txt",
+    "bytes": 104,
+    "sha256": "4e466e40b776074e7a38b473d9d1664865e0320484fe25cf7101ba5be03ea7d6"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/58.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/58.txt",
+    "bytes": 106,
+    "sha256": "59864fb4bd3a8e0742957efa209fcc26b17ed3a3abdd0bfecb6bd4012e12a0e4"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/59.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/59.txt",
+    "bytes": 81,
+    "sha256": "c7dd5cd86083158cd48e35301c5907b32d4ce688d06fbc711a11cc7db98975bd"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/6.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/6.txt",
+    "bytes": 649,
+    "sha256": "85738fdb26b318771bc201aad1bc2d2f1148c250566fad3434d4180eb6db8ec9"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/60.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/60.txt",
+    "bytes": 27,
+    "sha256": "b427c3a892077b30efa49c88588c560f00da23fb5ea7302ca2b66394497ef99e"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/7.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/7.txt",
+    "bytes": 34,
+    "sha256": "576c6d9bbd2230dcaa62d811b1978bd59994a61155f490ff78a225d6101ba6bf"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/8.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/8.txt",
+    "bytes": 150,
+    "sha256": "e31ecd5d40c884ab961d8e854a1c2942b83d7dfdc5dcce7a5ad7c014f4344d6b"
+  },
+  {
+    "member": "ci-item-main9cb-qualified/9.txt",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/9.txt",
+    "bytes": 44,
+    "sha256": "ebb0644d5121d5acdb9d6ef06b96a5ed236b48129761d577379ff0453077c7e2"
+  },
+  {
+    "member": "main9cb-native-qualified/capture-final-frozen/1-bone_phase_registry--shared_hp_actual_source_tests--.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/1-bone_phase_registry--shared_hp_actual_source_tests--.log",
+    "bytes": 550,
+    "sha256": "164108e5586c64bf2c2905cfa2b614cb3bdaa309a8885269ba238b381ae93ef2"
+  },
+  {
+    "member": "main9cb-native-qualified/capture-final-frozen/2-creature_area_heal--tests--actual_corrected_native_world.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/2-creature_area_heal--tests--actual_corrected_native_world.log",
+    "bytes": 246,
+    "sha256": "810c4a154af813d6e4e4ab7365f451a2dd896560a7a46618e7e216c1e39c2966"
+  },
+  {
+    "member": "main9cb-native-qualified/capture-final-frozen/3-crystal_death_composition--.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/3-crystal_death_composition--.log",
+    "bytes": 591,
+    "sha256": "a913fb04fe89818d1e9c9194a4f89e6ae81e5ea87b86c2019c62c02bd1498902"
+  },
+  {
+    "member": "main9cb-native-qualified/capture-final-frozen/4-monster_combat_lane--bone_map_admission_actual_tests--.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/4-monster_combat_lane--bone_map_admission_actual_tests--.log",
+    "bytes": 246,
+    "sha256": "51548838f0c31e238400ac489ec56d843956f481f38513390eea50bec2af0351"
+  },
+  {
+    "member": "main9cb-native-qualified/capture-final-frozen/5-monster_combat_lane--defense_composition_tests--.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/5-monster_combat_lane--defense_composition_tests--.log",
+    "bytes": 267,
+    "sha256": "01e7341bc5d7a4a1be610136014fb8d0ada04c8eef645bf71e8cb1211ce98190"
+  },
+  {
+    "member": "main9cb-native-qualified/capture-final-frozen/6-monster_combat_lane--pending_summon_failure_regression--.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/6-monster_combat_lane--pending_summon_failure_regression--.log",
+    "bytes": 260,
+    "sha256": "7deedc4330f912292ba49ee4fd3014a42cf10e95692aeee6557c0fbe56bd3d03"
+  },
+  {
+    "member": "main9cb-native-qualified/capture-final-frozen/7-monster_combat_lane--source_summon_composition_tests--.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/7-monster_combat_lane--source_summon_composition_tests--.log",
+    "bytes": 413,
+    "sha256": "dd6a48687ce1c694020fa7562253ba7439d4b4f9e4b9492f3bc9cff2ccacd7e0"
+  },
+  {
+    "member": "main9cb-native-qualified/capture-final-frozen/8-monster_summon--.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/capture-final-frozen/8-monster_summon--.log",
+    "bytes": 400,
+    "sha256": "c655223c4439912057899c14da3722a1fe84c5c1bdaf0d890a094e63fd403e6b"
+  },
+  {
+    "member": "main9cb-native-qualified/native-final-frozen/appearance.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/native-final-frozen/appearance.log",
+    "bytes": 954,
+    "sha256": "3472ad82327799f73f52bf075a447bfeecaf22dd203007ae18bb46d19dc0bc8e"
+  },
+  {
+    "member": "main9cb-native-qualified/native-final-frozen/native-qualification.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/main9cb-native-qualified/native-final-frozen/native-qualification.log",
+    "bytes": 496,
+    "sha256": "9d4eb7d9c2a06149c76af65aa5c27e8967b472309980953357e9593403cd849d"
+  },
+  {
+    "member": "monster_main9cb_creature_fields.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/monster_main9cb_creature_fields.log",
+    "bytes": 17381,
+    "sha256": "d9182f83e5af85223c1471f1368f2090ffd2b3518abb87238852f42521723bff"
+  },
+  {
+    "member": "monster_main9cb_player_fields.log",
+    "original_path": "/tmp/monster-final-seven/repair-20261005/monster_main9cb_player_fields.log",
+    "bytes": 17093,
+    "sha256": "11523f0d2004bdba39a69f1638dbc6bc5b7fb86decb2d1e40ddda72f7df4b54e"
+  }
+]

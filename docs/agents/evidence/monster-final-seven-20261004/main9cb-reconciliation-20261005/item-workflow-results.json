@@ -1,0 +1,736 @@
+[
+  {
+    "step": "TibiaWiki Item stat promotion packet tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_wiki_stats_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/1.txt",
+    "exit": 0
+  },
+  {
+    "step": "TibiaWiki Item stat promotion packet tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "-m",
+      "unittest",
+      "test_wiki_modifiers_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/2.txt",
+    "exit": 0
+  },
+  {
+    "step": "TibiaWiki Item stat promotion packet tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "-m",
+      "unittest",
+      "test_key_ring5801_source_selection.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/3.txt",
+    "exit": 0
+  },
+  {
+    "step": "Bounded physical source facts and magic rune limit",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_client_physical_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/4.txt",
+    "exit": 0
+  },
+  {
+    "step": "Bounded physical source facts and magic rune limit",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_client_physical_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/5.txt",
+    "exit": 0
+  },
+  {
+    "step": "Timed Item facts (charges, duration, forms) tests and packet drift",
+    "argv": [
+      "python3",
+      "test_lower_timed_item_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/6.txt",
+    "exit": 0
+  },
+  {
+    "step": "Timed Item facts (charges, duration, forms) tests and packet drift",
+    "argv": [
+      "python3",
+      "lower_timed_item_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/7.txt",
+    "exit": 0
+  },
+  {
+    "step": "Equipment ability facts (wiki first, Canary fallback) tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_equip_abilities_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/8.txt",
+    "exit": 0
+  },
+  {
+    "step": "Equipment ability facts (wiki first, Canary fallback) tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_equip_abilities_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/9.txt",
+    "exit": 0
+  },
+  {
+    "step": "Bounded source-qualified container capacity tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_wiki_capacity_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/10.txt",
+    "exit": 0
+  },
+  {
+    "step": "Explicit wiki non-stackability tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_wiki_stack_false_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/11.txt",
+    "exit": 0
+  },
+  {
+    "step": "Documented wiki non-stackability default tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_wiki_stack_default_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/12.txt",
+    "exit": 0
+  },
+  {
+    "step": "Documented wiki non-stackability default tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "check_stack_default_historical_context.py",
+      "--cohort",
+      "default"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/13.txt",
+    "exit": 0
+  },
+  {
+    "step": "Documented wiki non-stackability default tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_stack_default_historical_context.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/14.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed historical source frames for seven stack defaults",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_wiki_stack_historical_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/15.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed historical source frames for seven stack defaults",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "check_stack_default_historical_context.py",
+      "--cohort",
+      "historical"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/16.txt",
+    "exit": 0
+  },
+  {
+    "step": "Source-only Item use observations tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_item_use_observation_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/17.txt",
+    "exit": 0
+  },
+  {
+    "step": "Source-only Item use observations tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_item_use_observation_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/18.txt",
+    "exit": 0
+  },
+  {
+    "step": "Singleton explicit Forge pair qualification guards and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_item_forge3332_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/19.txt",
+    "exit": 0
+  },
+  {
+    "step": "Singleton explicit Forge pair qualification guards and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "check_tibiawiki165_historical_context.py",
+      "--cohort",
+      "forge"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/20.txt",
+    "exit": 0
+  },
+  {
+    "step": "Singleton explicit Forge pair qualification guards and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_item_forge289_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/21.txt",
+    "exit": 0
+  },
+  {
+    "step": "Singleton explicit Forge pair qualification guards and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_item_forge289_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/22.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed intrinsic weapon source metadata tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "check_tibiawiki165_historical_context.py",
+      "--cohort",
+      "weapon-tests"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/23.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed intrinsic weapon source metadata tests and drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "check_tibiawiki165_historical_context.py",
+      "--cohort",
+      "weapon"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/24.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed successor eight documented stack defaults and source replay",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_stack_default_successor8.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/25.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed successor eight documented stack defaults and source replay",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_wiki_stack_default_successor8_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/26.txt",
+    "exit": 0
+  },
+  {
+    "step": "Weapon proficiency tests and artifact drift",
+    "argv": [
+      "python3",
+      "test_item_weapon_proficiency.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/27.txt",
+    "exit": 0
+  },
+  {
+    "step": "Weapon proficiency tests and artifact drift",
+    "argv": [
+      "python3",
+      "item_weapon_proficiency.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/28.txt",
+    "exit": 0
+  },
+  {
+    "step": "Positive official market qualification guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_client_market_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/29.txt",
+    "exit": 0
+  },
+  {
+    "step": "Positive official market qualification guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_client_market_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/30.txt",
+    "exit": 0
+  },
+  {
+    "step": "Explicit own-Wiki movable qualification guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_wiki_movable_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/31.txt",
+    "exit": 0
+  },
+  {
+    "step": "Explicit own-Wiki movable qualification guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_wiki_movable_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/32.txt",
+    "exit": 0
+  },
+  {
+    "step": "D289 Market v2 holds and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_client_market_d289_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/33.txt",
+    "exit": 0
+  },
+  {
+    "step": "D289 Market v2 holds and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_client_market_d289_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/34.txt",
+    "exit": 0
+  },
+  {
+    "step": "D289 movable v2 holds and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_wiki_movable_d289_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/35.txt",
+    "exit": 0
+  },
+  {
+    "step": "D289 movable v2 holds and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_wiki_movable_d289_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/36.txt",
+    "exit": 0
+  },
+  {
+    "step": "Explicit document qualification guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_item_document_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/37.txt",
+    "exit": 0
+  },
+  {
+    "step": "Explicit document qualification guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_item_document_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/38.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed own-source descriptions guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_item_description_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/39.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed own-source descriptions guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_item_description_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/40.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed own-source descriptions guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_item_description_wiki_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/41.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed own-source descriptions guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_item_description_wiki_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/42.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed imported display name correction guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_item_name_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/43.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed imported display name correction guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_item_name_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/44.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed imported display name correction guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_item_name15_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/45.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed imported display name correction guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_item_name15_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/46.txt",
+    "exit": 0
+  },
+  {
+    "step": "Explicit relative hit and Rune magic level guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_item_hit_magic_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/47.txt",
+    "exit": 0
+  },
+  {
+    "step": "Explicit relative hit and Rune magic level guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_item_hit_magic_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/48.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed numeric13 plus observed Magic4 source successor guards",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_numeric_modifier17_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/49.txt",
+    "exit": 0
+  },
+  {
+    "step": "Closed numeric13 plus observed Magic4 source successor guards",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_numeric_modifier17_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/50.txt",
+    "exit": 0
+  },
+  {
+    "step": "Whole Mantra and elemental Bond source qualification and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_mantra_bond_modifier_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/51.txt",
+    "exit": 0
+  },
+  {
+    "step": "Whole Mantra and elemental Bond source qualification and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_mantra_bond_modifier_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/52.txt",
+    "exit": 0
+  },
+  {
+    "step": "Complete elemental magic modifier qualification guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "test_lower_elemental_magic_modifier_packet.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/53.txt",
+    "exit": 0
+  },
+  {
+    "step": "Complete elemental magic modifier qualification guards and packet drift",
+    "argv": [
+      "python3",
+      "replay_closed_item_context.py",
+      "--",
+      "lower_elemental_magic_modifier_packet.py",
+      "--check"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/54.txt",
+    "exit": 0
+  },
+  {
+    "step": "Client appearance census fixture tests",
+    "argv": [
+      "python3",
+      "test_client_appearance_census.py"
+    ],
+    "cwd": "tools/content-schema/item-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/55.txt",
+    "exit": 0
+  },
+  {
+    "step": "WorldObject and Terrain authoring tests",
+    "argv": [
+      "python3",
+      "test_world_objects.py"
+    ],
+    "cwd": "tools/content-schema/world-object-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/56.txt",
+    "exit": 0
+  },
+  {
+    "step": "WorldObject and Terrain authoring tests",
+    "argv": [
+      "python3",
+      "test_official_corpses.py"
+    ],
+    "cwd": "tools/content-schema/world-object-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/57.txt",
+    "exit": 0
+  },
+  {
+    "step": "WorldObject and Terrain authoring tests",
+    "argv": [
+      "python3",
+      "test_qualified_world.py"
+    ],
+    "cwd": "tools/content-schema/world-object-authoring",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/58.txt",
+    "exit": 0
+  },
+  {
+    "step": "Item Master census",
+    "argv": [
+      "python3",
+      "tools/content-schema/validate_item_master_schema.py"
+    ],
+    "cwd": ".",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/59.txt",
+    "exit": 0
+  },
+  {
+    "step": "Item Master census",
+    "argv": [
+      "python3",
+      "tools/content-schema/test_validate_item_master_schema.py"
+    ],
+    "cwd": ".",
+    "log": "/tmp/monster-final-seven/repair-20261005/ci-item-main9cb-qualified/60.txt",
+    "exit": 0
+  }
+]
