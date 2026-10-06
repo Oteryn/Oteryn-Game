@@ -177,6 +177,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # An earlier run whose assignment replace outcome was unknown left the ops writer slot occupied,
+          # and ops refuses new work until it is reconciled. Do it with the ops tool's own reconcile
+          # path before the service is touched; the command (and so its Platform report) must succeed.
+          if [[ -s "$BASE/run/pending-assignment" ]]; then
+            read -r prev_run prev_attempt < "$BASE/run/pending-assignment"
+            sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" reconcile "$prev_run" "$prev_attempt"
+            rm -f "$BASE/run/pending-assignment"
+          fi
           file="launch-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
           args=(issue "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT")
           # Supersede the node that is actually registered: the newest incarnation's log
@@ -216,7 +224,11 @@ jobs:
             echo "$previous" > "$BASE/run/current-node-id"
             args+=("$previous")
           fi
-          sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" "${args[@]}"
+          if ! sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" "${args[@]}"; then
+            # Outcome unknown: the ops tool's own reconcile must succeed before anything else happens.
+            sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" reconcile-launch "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" ||
+              { echo "::error::launch authorization was not issued and could not be reconciled"; exit 1; }
+          fi
           # Point the node at the new authorization (state dir is BASE/state; file handed to the service uid).
           sed -i "s|^authorization_file = .*|authorization_file = \"$BASE/state/$file\"|" "$BASE/node/node.toml"
           grep -q "^authorization_file = \"$BASE/state/$file\"" "$BASE/node/node.toml"
@@ -247,13 +259,6 @@ jobs:
           set -euo pipefail
           log="$BASE/log/node.log"
           node_id="$(tr -d '[:space:]' < "$BASE/run/current-node-id")"
-          # An earlier run whose replace outcome was unknown left the writer slot occupied: the ops
-          # tool's own reconcile path clears it before any new assignment (it refuses new work otherwise).
-          if [[ -s "$BASE/run/pending-assignment" ]]; then
-            read -r prev_run prev_attempt < "$BASE/run/pending-assignment"
-            sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" reconcile "$prev_run" "$prev_attempt"
-            rm -f "$BASE/run/pending-assignment"
-          fi
           if [[ "$(cat "$BASE/run/node-state")" = awaiting_assignment ]]; then
             line="$(grep 'event=awaiting_assignment' "$log" | tail -n 1)"
             revision="$(sed -n 's/.*registration_revision=\([0-9]\{1,18\}\).*/\1/p' <<< "$line")"
@@ -263,11 +268,17 @@ jobs:
             sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" assign replace \
               "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$node_id" "$revision" ||
               {
-                # Outcome unknown (or rejected): reconcile at once. Committed counts as success; anything
-                # else fails the deploy, and the marker makes the next run reconcile before it assigns.
-                out="$(sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" reconcile "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" 2>&1)" || true
+                # Outcome unknown (or rejected): reconcile at once. Success needs the reconcile command
+                # itself to exit 0 (so its Platform report succeeded) AND to confirm the commit; an
+                # absent or rejected assignment fails the deploy. The marker stays, so the next run
+                # reconciles before it touches the service.
+                rc=0
+                out="$(sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" reconcile "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" 2>&1)" || rc=$?
                 echo "$out"
-                grep -q 'assignment=committed' <<< "$out" || { echo "::error::assignment replace did not commit"; exit 1; }
+                if [[ "$rc" != 0 ]] || ! grep -q 'assignment=committed' <<< "$out"; then
+                  echo "::error::assignment replace did not commit and report"
+                  exit 1
+                fi
               }
             rm -f "$BASE/run/pending-assignment"
           fi

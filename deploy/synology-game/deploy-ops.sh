@@ -58,6 +58,12 @@ case "$command" in
     # reconcile does not accept --node-identity (the retained request carries it).
     args=(assignment reconcile --report-config "$REPORT_CONFIG" --node-config "$NODE_CONFIG" --request "assign-$1-$2.json")
     ;;
+  reconcile-launch)
+    # reconcile-launch <run-id> <attempt>: the ops tool's own reconcile of an issued launch authorization.
+    [[ $# -eq 2 ]] || fail "usage: reconcile-launch <run-id> <attempt>"
+    check "$number" "$1"; check "$number" "$2"
+    args=(authorization reconcile --file "launch-$1-$2.json")
+    ;;
   *) fail "unknown command" ;;
 esac
 # Authorization issue and assignment do not read OTERYN_NATIVE_GAMEPLAY_MANIFEST (only content activate does).
