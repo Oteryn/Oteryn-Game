@@ -451,7 +451,13 @@
       "blocker": "Implement identity-based DOOR-1/KEY-1 check and post-completion bypass; do not invent a numeric keyNumber.",
       "key_identity": "oteryn:item.tibia.i54262",
       "key_number": null,
-      "key_number_status": "SOURCE_ABSENT_DO_NOT_INVENT"
+      "key_number_status": "SOURCE_ABSENT_DO_NOT_INVENT",
+      "runtime_dependencies": [
+        "ITEM-USE-1",
+        "DOOR-1/KEY-1 identity-key amendment",
+        "QUEST-GATE-1 read-only QuestCompleted bypass"
+      ],
+      "note": " Current gameplay transport rejects use_with fail-closed until ITEM-USE-1; do not add a quest-private USE-WITH dispatcher."
     },
     {
       "id": "laboratory_note",
@@ -1232,7 +1238,7 @@
     "QUEST-GATE-1 is dependency-ready on current main but executable child is not yet integrated",
     "QUEST-TRIGGER-1 durable-cause architecture is resolved by PR #1886 option A (root CommandRef + distinct transition_key invariant); runtime remains serialized after QUEST-GATE-1 and waits for #1886 merge/allocation",
     "NPC-QUEST-1 remains blocked by NPC-TALK-1; NPC-WIRE-1 #1866 is merged, remaining dependencies include NPC-PLACE-1 + MAP-CUTOVER-1; this child must also realize the already-accepted dialogue RewardClaim source/content representation for s16",
-    "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
+    "Asura Citadel door needs ITEM-USE-1 USE-WITH execution + identity-based i54262 Door/Key binding + post-completion bypass; donor has no keyNumber",
     "Magnolia Encounter content is source-qualified, and set_phase/prevent_death/lethal_damage already exist in authoring + ProjectV2. Exact remaining representation gap: phase-2 60000 max/current HP cannot be represented above the base Creature max 52000; needs one bounded Encounter-local max-health override disposition. Runtime still waits on ENC-RT-1 -> ENC-OUTCOME-1.",
     "Escape geometry and Rope Spot are resolved end-to-end (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9; Rope Spot 31923,31377,9 -> generic moveUpstairs destination 31923,31378,8). Remaining prison blocker: separate canonical admission of donor Lit Torch 54610; do not alias to i34017.",
     "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
