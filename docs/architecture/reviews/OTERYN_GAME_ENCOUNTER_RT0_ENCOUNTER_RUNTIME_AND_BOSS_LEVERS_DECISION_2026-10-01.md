@@ -451,6 +451,12 @@ Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficu
   a maximum. `attribute` (D34) overrides `outgoing_damage_percent` and `defense` on a creature,
   held by the instance (§6.2).
 - The Bosstiary key is the Creature definition key of the Bosstiary entry (BOSS-RAID-0 §10.1).
+- Creature maximum health has no single upper bound today:
+  - the monster authoring schema accepts any positive integer
+    (`tools/content-schema/monster-authoring/monster.schema.json`, `stats.max_health`);
+  - `ProjectV2CreatureAuthoring.health` is a `u64`;
+  - the runtime creature paths refuse a maximum above `i64::MAX` (`bind_creature_self_heal` in
+    `foundation/runtime_actor_carrier.rs`, `self_heal_qualification.rs`).
 - The Moonsnow Magnolia: phase 1 has 52,000 health; Reference shows phase 2 returning at exactly
   60,000.
 - Crystal SU26 `phosphorus.lua` and `phosphorus_final.lua` say the Boss Difficulty System is not
@@ -464,9 +470,15 @@ Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficu
 
 ### 17.2 Ruling: SHARDS-E1 is option B, a bounded `max_health` attribute
 
-- `attribute` gains `max_health` with `set` to an absolute positive integer within the Creature
-  health range, or `reset` to the type's value. It is an override held by the instance, like the
+- `attribute` gains `max_health` with `set` to an absolute integer in **1..=9,223,372,036,854,775,807**
+  (`i64::MAX`), or `reset` to the type's value. It is an override held by the instance, like the
   other attributes, and it ends with the creature or the instance.
+- **Bound.** This range is the Creature health range: the runtime bound, applied at every layer.
+  - The encounter schema and the encounter content lowering reject a `set` outside it, and so does the
+    runtime, so no layer accepts a value that another refuses.
+  - The monster authoring schema's `stats.max_health` and `initial_health` take the same `maximum`.
+    Creature admission refuses a definition above it.
+  - The type value that `reset` restores is therefore in range.
 - **Health.** Setting a lower maximum clamps current health to it. Setting a higher one does not
   heal: health rises only through an explicit `heal` (`full` heals to the overridden maximum). No
   path sets health above the maximum in force.
@@ -523,8 +535,9 @@ Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficu
 
 ### 17.5 Before-freeze checklist
 
-1. **Amendments:** the format `attribute` row, the `damage_accumulated` row (§4) and §9.4, in
-   place; §6.2 carries a pointer. This decision's §4.2 states when the queue raised by an inline
+1. **Amendments:** the format `attribute` row (with the exact bound), the `damage_accumulated` row
+   (§4) and §9.4, in place; ENC-COMBAT-1 adds the bound to the encounter and monster authoring
+   schemas; §6.2 carries a pointer. This decision's §4.2 states when the queue raised by an inline
    hook drains.
 2. **Serialization:** unchanged. The override is applied in the owner turn.
 3. **Restart:** the override is runtime-only and is lost with the fight (§9).
@@ -541,7 +554,9 @@ Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficu
      the maximum changes;
    - an occurrence raised by an inline `lethal_damage` rule drains only after the hit's drain has
      applied, so a queued `heal(full)` ends at the full maximum;
-   - content validation rejects 0, a negative value and a value above the Creature health range;
+   - content validation rejects 0, a negative value and 9,223,372,036,854,775,808, and accepts
+     9,223,372,036,854,775,807; the runtime refuses the same out-of-range value;
+   - the monster authoring schema and Creature admission reject a maximum health above `i64::MAX`;
    - an ENC-PARITY-1 fixture covers Magnolia: phase 2 at 60,000 out of 60,000 after the queued
      heal, no outcome on the first lethal hit, the phase-2 lethal hit kills, and one death and one
      Bosstiary kill for the public key.

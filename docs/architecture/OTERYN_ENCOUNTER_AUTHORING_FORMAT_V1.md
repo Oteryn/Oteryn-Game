@@ -158,7 +158,7 @@ rules.
 | `message` | text to every player in an anchor area (D31) |
 | `one_of` | two or more weighted branches, each a list of actions; the encounter instance draws one (D31) |
 | `drop_item` | ItemRef, chance, at role position |
-| `attribute` | role, `outgoing_damage_percent` (extra percent on the primary damage the role deals to players) or `defense`, `add` a value or a counter's value, or `reset` to the creature type's value (D34); `max_health` `set` to an absolute positive value or `reset` (ENCOUNTER-RT-0 §17.2) |
+| `attribute` | role, `outgoing_damage_percent` (extra percent on the primary damage the role deals to players) or `defense`, `add` a value or a counter's value, or `reset` to the creature type's value (D34); `max_health` `set` to an absolute integer in 1..=9,223,372,036,854,775,807 (`i64::MAX`, the Creature health range) or `reset` (ENCOUNTER-RT-0 §17.2) |
 | `move_lock` | role, `locked`: a locked creature keeps fighting and casting but does not move (D34) |
 | `emit_outcome` | named outcome for quests, cooldowns and rewards (§2.5), `credited`: `damage_contributors`, `killer`, `players_in_anchor(anchor)` or `party`: the party of the top damage contributor, wherever its members are (D31) |
 
