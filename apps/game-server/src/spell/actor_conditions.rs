@@ -68,6 +68,7 @@ pub(crate) fn supports_condition_change(change: &OwnerCombatChange) -> bool {
         | OwnerCombatChange::DispelParalysis => true,
         OwnerCombatChange::PlayerConditions { .. }
         | OwnerCombatChange::Damage { .. }
+        | OwnerCombatChange::DamageWithHealing { .. }
         | OwnerCombatChange::Heal { .. }
         | OwnerCombatChange::MonsterAi(_)
         | OwnerCombatChange::CompanionMaster(_)
@@ -158,6 +159,7 @@ pub(crate) fn apply_combat_change(
         }
         OwnerCombatChange::PlayerConditions { .. }
         | OwnerCombatChange::Damage { .. }
+        | OwnerCombatChange::DamageWithHealing { .. }
         | OwnerCombatChange::Heal { .. }
         | OwnerCombatChange::MonsterAi(_)
         | OwnerCombatChange::CompanionMaster(_)
@@ -569,6 +571,9 @@ pub(crate) fn stage_creature_hit(
     }
     let damage = crate::ability::creature_bite::floor_creature_damage(next.health, remaining);
     next.health = damage.health_after;
+    if next.health == 0 {
+        clear_on_lifecycle(&mut next);
+    }
     if next != *state {
         next.advance_batch_revision()?;
     }
@@ -944,10 +949,15 @@ impl PlayerSpellState {
     pub(crate) fn owned_skill_adjustments(
         &self,
         now_us: u64,
-    ) -> Result<crate::ability::condition::SkillAdjustments, SpellCastDisposition> {
-        self.conditions
+    ) -> Result<OwnedSkillAdjustments, SpellCastDisposition> {
+        let native = self
+            .conditions
             .skill_adjustments(now_us)
-            .ok_or(SpellCastDisposition::Rejected)
+            .ok_or(SpellCastDisposition::Rejected)?;
+        Ok(OwnedSkillAdjustments {
+            native,
+            source: self.conditions.effective_attributes(now_us),
+        })
     }
     pub(crate) fn owned_effective_magic_level(
         &self,
@@ -962,5 +972,180 @@ impl PlayerSpellState {
             return rejected();
         }
         Ok(self.conditions.invisible_at(now_us))
+    }
+}
+
+/// Current read projection of existing stored modifiers; no base Character mutation.
+/// Every percent delta is computed from the independently provided immutable base.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct OwnedSkillAdjustments {
+    native: crate::ability::condition::SkillAdjustments,
+    source: crate::ability::condition::AttributeModifiers,
+}
+impl OwnedSkillAdjustments {
+    fn adjust(
+        base: u32,
+        native: i32,
+        modifier: Option<crate::ability::condition::AttributeModifier>,
+    ) -> Option<u32> {
+        use crate::ability::condition::AttributeModifier;
+        let source = match modifier {
+            None | Some(AttributeModifier::PercentOfBase(0)) => 0,
+            Some(AttributeModifier::Add(delta)) => i128::from(delta),
+            Some(AttributeModifier::PercentOfBase(percent)) => {
+                if !(1..=100).contains(&percent) {
+                    return None;
+                }
+                i128::from(base) * (i128::from(percent) - 100) / 100
+            }
+        };
+        u32::try_from((i128::from(base) + i128::from(native) + source).max(0)).ok()
+    }
+    pub(crate) fn adjust_magic_level(self, base: u32) -> Option<u32> {
+        Self::adjust(base, self.native.magic_level, self.source.magic_points)
+    }
+    pub(crate) fn adjust_shielding(self, base: u32) -> Option<u32> {
+        Self::adjust(base, self.native.shielding, None)
+    }
+    pub(crate) fn adjust_skill(self, base: u32, index: usize) -> Option<u32> {
+        let (native, modifier) = match index {
+            0 => (self.native.fist, None),
+            1..=3 => (self.native.melee, self.source.melee),
+            4 => (self.native.distance, self.source.distance),
+            5 => (self.native.shielding, None),
+            6 => (0, None),
+            _ => return None,
+        };
+        Self::adjust(base, native, modifier)
+    }
+}
+
+#[cfg(test)]
+mod source_attribute_projection_tests {
+    #![allow(clippy::unwrap_used)]
+    use super::*;
+    use crate::ability::condition::{
+        AttributeModifier as M, AttributeModifiers, ConditionDefinition, ConditionValues,
+    };
+    fn actor(magic: u32) -> PlayerSpellState {
+        PlayerSpellState::new(
+            super::super::cast::CharacterCastFacts {
+                vocation: super::super::Vocation::Knight,
+                level: 100,
+                magic_level: magic,
+                max_health: 1000,
+                max_mana: 500,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .unwrap()
+    }
+    fn apply(state: &mut PlayerSpellState, modifiers: AttributeModifiers) {
+        apply_definition(
+            state,
+            ConditionDefinition::new(
+                "source.native.attributes",
+                1,
+                ConditionValues::SourceAttributes {
+                    modifiers,
+                    duration_ms: 1000,
+                },
+            )
+            .unwrap(),
+            0,
+            0,
+        )
+        .unwrap();
+    }
+    #[test]
+    fn source_flat_magic_reaches_actual_cast_reader_and_exact_expiry_keeps_base() {
+        let mut state = actor(10);
+        let base = state.character_facts();
+        apply(
+            &mut state,
+            AttributeModifiers {
+                magic_points: Some(M::Add(-1)),
+                ..Default::default()
+            },
+        );
+        assert_eq!(state.owned_effective_magic_level(0), Ok(9));
+        assert_eq!(state.owned_effective_magic_level(999_999), Ok(9));
+        assert_eq!(state.owned_effective_magic_level(1_000_000), Ok(10));
+        assert_eq!(state.character_facts(), base);
+    }
+    #[test]
+    fn percent_uses_original_base_and_melee_does_not_modify_fist_shield_or_fishing() {
+        let mut state = actor(53);
+        apply(
+            &mut state,
+            AttributeModifiers {
+                magic_points: Some(M::PercentOfBase(90)),
+                melee: Some(M::PercentOfBase(40)),
+                distance: Some(M::Add(-15)),
+            },
+        );
+        let read = state.owned_skill_adjustments(0).unwrap();
+        assert_eq!(read.adjust_magic_level(53), Some(48));
+        for index in 1..=3 {
+            assert_eq!(read.adjust_skill(53, index), Some(22));
+        }
+        assert_eq!(read.adjust_skill(53, 4), Some(38));
+        for index in [0, 5, 6] {
+            assert_eq!(read.adjust_skill(53, index), Some(53));
+        }
+        assert_eq!(read.adjust_shielding(53), Some(53));
+        assert_eq!(read.adjust_skill(53, 7), None);
+    }
+    #[test]
+    fn composed_deltas_clamp_once_and_overflow_or_clock_regression_refuse() {
+        let mut state = actor(10);
+        apply(
+            &mut state,
+            AttributeModifiers {
+                magic_points: Some(M::Add(-20)),
+                ..Default::default()
+            },
+        );
+        apply_definition(
+            &mut state,
+            ConditionDefinition::new(
+                "native.skills",
+                1,
+                ConditionValues::SpellSkills {
+                    duration_ms: 1000,
+                    sub_id: 0,
+                    magic_level: 10,
+                    fist: 0,
+                    melee: 0,
+                    distance: 0,
+                    shielding: 0,
+                },
+            )
+            .unwrap(),
+            0,
+            0,
+        )
+        .unwrap();
+        assert_eq!(state.owned_effective_magic_level(0), Ok(0));
+        let before = state.clone();
+        assert_eq!(
+            OwnedSkillAdjustments::adjust(u32::MAX, 0, Some(M::Add(1))),
+            None
+        );
+        assert_eq!(
+            OwnedSkillAdjustments::adjust(10, 0, Some(M::PercentOfBase(101))),
+            None
+        );
+        assert_eq!(state, before);
+        state.conditions.take_due(
+            2000,
+            crate::ability::condition::TickFacts {
+                in_protection_zone: false,
+                standing_on_field: None,
+            },
+        );
+        assert!(state.owned_skill_adjustments(1999).is_err());
     }
 }

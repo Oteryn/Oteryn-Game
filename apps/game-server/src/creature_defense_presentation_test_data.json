@@ -1,0 +1,112 @@
+{
+  "rows": [
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.blood_hand",
+        "revision": "definition-r1"
+      },
+      "index": 1,
+      "ability": "oteryn:ability.creature.blood_hand.defense-2"
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.chayenne",
+        "revision": "definition-r1"
+      },
+      "index": 2,
+      "ability": "oteryn:ability.creature.chayenne.defense-3"
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.eliz_the_unyielding",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "ability": "oteryn:ability.spell.cults_of_tibia_armor_buff"
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.eliz_the_unyielding_stop",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "ability": "oteryn:ability.spell.cults_of_tibia_armor_buff"
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.grimeleech",
+        "revision": "definition-r1"
+      },
+      "index": 1,
+      "ability": "oteryn:ability.creature.grimeleech.defense-2"
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.hive_pore",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "ability": "oteryn:ability.creature.hive_pore.defense-1"
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.starving_wolf",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "ability": "oteryn:ability.creature.starving_wolf.defense-1"
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.wild_fire_magic",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "ability": "oteryn:ability.creature.wild_fire_magic.defense-1"
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.wild_fury_magic",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "ability": "oteryn:ability.creature.wild_fury_magic.defense-1"
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.wild_nature_magic",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "ability": "oteryn:ability.creature.wild_nature_magic.defense-1"
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.wild_water_magic",
+        "revision": "definition-r1"
+      },
+      "index": 0,
+      "ability": "oteryn:ability.creature.wild_water_magic.defense-1"
+    },
+    {
+      "creature": {
+        "family": "Creature",
+        "key": "oteryn:creature.wyrm",
+        "revision": "definition-r1"
+      },
+      "index": 1,
+      "ability": "oteryn:ability.creature.wyrm.defense-2"
+    }
+  ]
+}

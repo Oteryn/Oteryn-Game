@@ -1,0 +1,332 @@
+{
+  "classification": "PROVEN",
+  "validated_code_head": "a2c9e9145dba045971aff6060fa4228d5c2b8c1c",
+  "published_predecessor": "b984e32962cf4186e99f3b618eae39f3669c3dd3",
+  "merged_main": "98ca4aeaf7d579af64d43269e9b3b9bd65d49915",
+  "catalogue": {
+    "canonical_creatures": 1863,
+    "native_profiles": 1870,
+    "items": 34043,
+    "npcs": 1282,
+    "dialogues": 836,
+    "encounters": 108,
+    "reference_records": 62801,
+    "sources": 29,
+    "batches": 31
+  },
+  "accepted_review_findings": [
+    "discussion_r4180811085",
+    "discussion_r4180811093"
+  ],
+  "strict_all_target_clippy": "PASS",
+  "integration_counts": [
+    {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 948,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "passed": 11,
+      "failed": 0,
+      "ignored": 0
+    }
+  ],
+  "library": {
+    "scope": "fdf0559a3608e6720437c404c8d80853fcbf6b92",
+    "passed": 2395,
+    "failed": 0,
+    "ignored": 25
+  },
+  "actual_native_capture": {
+    "scope": "fdf0559a3608e6720437c404c8d80853fcbf6b92",
+    "passed": 19
+  },
+  "execution_scope": "Library/native receipts retain exact fdf binary scope. Successor c8 changes only test fixture helper compatibility and source-row lookup. Incoming main98 adds map-item MINT/pickup; current all-target Clippy and actual map-item PostgreSQL integration qualify that composition. No claim that the fdf binary executed a2c. Current migration0078 has identical bytes to our prior0077; incoming main0077 retained.",
+  "receipts": [
+    {
+      "path": "integration-origin.json",
+      "sha256": "edd8bdba5b122036313034c94bad4f2bd5caab764b1e471ef17e66b30ea25b2a"
+    },
+    {
+      "path": "rustfmt.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "governance.txt",
+      "sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+    },
+    {
+      "path": "repository-policy.txt",
+      "sha256": "8dfbfea61f31baf9f4f6f0a55e8e5ef6f1e2813feb547c8e198cd2971d9aef0f"
+    },
+    {
+      "path": "test-helper-scope.diff",
+      "sha256": "95a621e8650a2b83d384df69843c62f6fc1456221fc5348c897e571b7915ffc6"
+    },
+    {
+      "path": "canonical-preservation.json",
+      "sha256": "0f7caefcc29980f35246a57df624763de38937fb5cc2861b36a88dd1da150018"
+    },
+    {
+      "path": "semantic-merge-report.json",
+      "sha256": "c39189424527557fba60d33db337111b6f75b06261cf0051d808454db3056053"
+    },
+    {
+      "path": "library-qualified.json",
+      "sha256": "1b7f978a1b089027f40483880885bf04b7139a30b8e3bacccbc059b65a8e0f44"
+    },
+    {
+      "path": "library-original-driver.json",
+      "sha256": "6b0c00375bdd903becfd8a87d185e0b5bdb77685f599d7a049399ed2f436db56"
+    },
+    {
+      "path": "library.txt",
+      "sha256": "81cfa2bff99451023021e4af2d9ced4cb77642b74450ef9b7d42432bbb2c53bb",
+      "raw_sha256": "03b8b011b11b99841716b4347bc4954ec27f7143f2a8c1bc50da49e32bbf32cc",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/library.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "ignored-test-census.txt",
+      "sha256": "06057b20ab7c434ab39ce021352a6c466978908ecff36cb3afd07f6c11e82e3a"
+    },
+    {
+      "path": "native-qualified.json",
+      "sha256": "713f8e302898ba285c34fde2357d8da2b0a09e48c7bab17b9cdd2766f74429bf"
+    },
+    {
+      "path": "python-qualified.json",
+      "sha256": "052166bceb0da0c8c121aaf875e5f41b87717eecbba9562ccd0f180922e04d8b"
+    },
+    {
+      "path": "pg-qualified.json",
+      "sha256": "59c603d0e2d499f48796e4bff38a8b7a73d6c3bacb2a4e6a2d4baa1e287531be"
+    },
+    {
+      "path": "clippy.txt",
+      "sha256": "8f6ac00d16289c10fb22885470f98abba8a5319a9ecceb8e7924b47e6df36efc"
+    },
+    {
+      "path": "repository-integration.txt",
+      "sha256": "ceae10b58ec79f9c1c30581536f83b1b0fcc61a4a4dc24e975e1951abdfc9842",
+      "raw_sha256": "ee82ae5f68c1b262011faac305d72902dcea877d3d2695599ca1059d8a4d7db4",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/repository-integration.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "red-detached-project.txt",
+      "sha256": "1cdfe9f645f176732b8c666b83da52790ec3c4214784704e6622199c7bfda185",
+      "raw_sha256": "d704bc5bfb282dd39091eebd600eede5cf4af2cc48f2244abfd5eacda59d6bb8",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/red-detached-project.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "canonical-writer.txt",
+      "sha256": "401bbf62e2bc17a2fb94576f51ef11bc99266007945499491fc8d95e28bb25c0",
+      "raw_sha256": "b46a21d2345b3d1b53cc4ef26370ef23ee634831f07dad856aed7803f531eebe",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/canonical-writer.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "tree-tests.txt",
+      "sha256": "efc2f3b5961058d214a9408fb4375f6972731553cc9cabe5e52814c70051fb2d"
+    },
+    {
+      "path": "tree-validator.txt",
+      "sha256": "245784ac80b7ac8c4c787c5ce25014d7d8dcbd299653f8242f21d2fb963d6694"
+    },
+    {
+      "path": "spell-import.txt",
+      "sha256": "4ba13967ccb2c6f1f4a98d4f3587d836d4ad53b6f572a9880c73c624017d27b7"
+    },
+    {
+      "path": "agent-tests.txt",
+      "sha256": "58b1f3541bf58b050b0ca8eef97514e87b2d01ed4269d4dca49a58758c03e0b2"
+    },
+    {
+      "path": "native/native-qualification.txt",
+      "sha256": "09117e2a0664319830264b6fe5fb1dfdcfb5030f944f45113a1783e3a272b269",
+      "raw_sha256": "75a81cf6df475ab81199e5be1c58525f3af3200f8142a4659d1656192d03506b",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/native-qualification.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "native/appearance.txt",
+      "sha256": "fb8d162dc327a4ac17480785ffc9a1039109bf02f1d00b15b2c24c915ba1fecf",
+      "raw_sha256": "2e25681a56df342319694fb2d94aa51ab3d89b0b44b9b33df59f4d4dc7701ad0",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/appearance.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "native/1-bone_phase_registry--shared_hp_actual_source_tests--.txt",
+      "sha256": "507db8473344613fde3142ce4e47d712033e563abce83d376f77eb64243432be",
+      "raw_sha256": "8eddbc89724d8d7bcda38c5ba53dcf4fd65bcf629cd29daa8eb5e64c56e9d8bf",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/1-bone_phase_registry--shared_hp_actual_source_tests--.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "native/2-creature_area_heal--tests--actual_corrected_native_world.txt",
+      "sha256": "37f3cbea95757412e610b8ecfbc74de1e805404a872c501d2a3b8b70a5793a63",
+      "raw_sha256": "38fce4f235ec88acbca3da17620b3ce239e1e8e434f39194f9667f1455701042",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/2-creature_area_heal--tests--actual_corrected_native_world.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "native/3-crystal_death_composition--.txt",
+      "sha256": "f8d255c74a0b98f6504252802c57a68c1f1836e820be9d104409423a4f231d8f",
+      "raw_sha256": "33828d798159d7fc424e5297bb141bc1c185f4070823426b00a7812ab051ef79",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/3-crystal_death_composition--.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "native/4-monster_combat_lane--bone_map_admission_actual_tests--.txt",
+      "sha256": "5bb2b4035979613448cf1313017987a5b548286b346906a561dcefb4416709b4",
+      "raw_sha256": "e1e4464fe816a0e18963d116a5cda7c0da2f29101def7490ee9790e395439d3c",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/4-monster_combat_lane--bone_map_admission_actual_tests--.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "native/5-monster_combat_lane--defense_composition_tests--.txt",
+      "sha256": "2c627c0b685c8a0c43917cc433313b23a7e6ec619408befd2e065072a0740369",
+      "raw_sha256": "4338f20db25818f12ce6fc7b190a8dda317fe538341c9b535e6960288d32120c",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/5-monster_combat_lane--defense_composition_tests--.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "native/6-monster_combat_lane--pending_summon_failure_regression--.txt",
+      "sha256": "076565a5fd4abc9f652fb098bcf36cf9db1f68adec5e61592037329e619938e8",
+      "raw_sha256": "4ed3656e6f3c0aab8f3322afa83f31bccbfdca0754803ad8506f613730db89bb",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/6-monster_combat_lane--pending_summon_failure_regression--.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "native/7-monster_combat_lane--source_summon_composition_tests--.txt",
+      "sha256": "bed5963b36ebc5c6df37876dd24a44baace33b591b32d210c4730511b187118f",
+      "raw_sha256": "8ec6c0ed898006d24da82d295372dc8e4d9865d38c4df0ac0d1f1625a6514a41",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/7-monster_combat_lane--source_summon_composition_tests--.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "native/8-monster_summon--.txt",
+      "sha256": "6266344554da11420aac8dc8df1ed1ba1c26361894623cf8235d11412b0f7a9e",
+      "raw_sha256": "ab96872c09615923148f68e3134895b7d59d22c416984f90cc341190fc6c7b4b",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/8-monster_summon--.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "python/imbuement-tests-retry.txt",
+      "sha256": "d0db646a13e18e394ad66d8502f35d59c05ee72f8bf41f4830a765b2aa007873"
+    },
+    {
+      "path": "python/repository-policy.txt",
+      "sha256": "8dfbfea61f31baf9f4f6f0a55e8e5ef6f1e2813feb547c8e198cd2971d9aef0f"
+    },
+    {
+      "path": "python/governance.txt",
+      "sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+    },
+    {
+      "path": "python/agent-tests.txt",
+      "sha256": "f51c73fc554cfd1fc169344978030598a897a62b81b3923f7f23511e1628584f"
+    },
+    {
+      "path": "python/overlay-negative.txt",
+      "sha256": "a1431709cd0ce2fd5a4f7a5f37a73c336a0034bb08aaeed4b7fb963d52ba5221"
+    },
+    {
+      "path": "python/starter-seals.txt",
+      "sha256": "dcfe00e165162028c9a3917f8b30c9fda0c6f78db106e3deb7dea6a8023e9b8c"
+    },
+    {
+      "path": "python/imbuement-tests.txt",
+      "sha256": "e2fd4bf75f175e85c5292047742131fb3644ca5b923b864a67905ae0f0ae52c0"
+    },
+    {
+      "path": "python/imbuement-check.txt",
+      "sha256": "2df93350d5f388b9f36c5e52dc542b65eec36d4710e4783cd02f15b382b5c013"
+    },
+    {
+      "path": "python/item-bounded-nav.txt",
+      "sha256": "d63dcbbcc4be3e2708b60c8c5c264e23c37ed48bc09cdc8339830933635c6cf6"
+    },
+    {
+      "path": "python/item-refinement.txt",
+      "sha256": "55ee3c35df3931d9ef5bbb324ce15d57d21ca096082a372d854d517afd0f73fa"
+    },
+    {
+      "path": "python/item-engine-nav.txt",
+      "sha256": "064dcef38b172dafab3e718457616c4acf537db32ee5abc475442cd222cd41ee"
+    },
+    {
+      "path": "python/item-nav-supplement.txt",
+      "sha256": "395db91918e4f70209942d715400f6d0f360765cce980a13fb3e718a4d91e49d"
+    },
+    {
+      "path": "python/item-taxonomy.txt",
+      "sha256": "0426a274a22908fe65640fadd22128a2065011ee0b9e38a7919521cd45fe97ef"
+    },
+    {
+      "path": "python/reward-content-check.txt",
+      "sha256": "766d44c371f8afd6aa34b7ab3a4359590d8a32fc3c37048ddb65c26958d261f0"
+    },
+    {
+      "path": "python/reward-authoring-test.txt",
+      "sha256": "b7a13177d52ae09dc94e8d7967ab036cad574105f6c2a1601ddfeb478193978f"
+    },
+    {
+      "path": "python/reward-variants-check.txt",
+      "sha256": "f0efc74c649ba0a02c6790760be33201ad42c58fd6afdd2f4c958701d2f1c19b"
+    },
+    {
+      "path": "python/reward-variants-test.txt",
+      "sha256": "63c122b8cd7e2a906dcc45fe8040f0be82350f2ea2c2d565a9b53890e31484cc"
+    },
+    {
+      "path": "python/quest.txt",
+      "sha256": "63e2a72c9150c29388ea62045f70d10143dfadffd431f7f97391a2cec7eceeff"
+    },
+    {
+      "path": "postgres/monster_repair_player_fields_v4.txt",
+      "sha256": "57fcbe2771b19dcceb4ca70de8b8d86541789a8b81a4c87b6dc7ea18e01053cd",
+      "raw_sha256": "e25ba034c2eef8de7f8ce44f64d557a3b14c9de7d92debfc8233626e558ee3fc",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/postgres/monster_repair_player_fields_v4.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    },
+    {
+      "path": "postgres/monster_repair_creature_fields_v4.txt",
+      "sha256": "229b42b75d454ee804475971280cff2f31dfc1ff87efb10b6340bb36119fb6e9",
+      "raw_sha256": "9cbf8fa16d98ea2354366e6075e1a99a444e81837c30c43d0b4f38399fb564b8",
+      "raw_archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+      "raw_archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/postgres/monster_repair_creature_fields_v4.txt",
+      "storage": "text display normalized; original execution bytes in ZIP"
+    }
+  ],
+  "excluded": [
+    "production activation",
+    "protected main merge/queue",
+    "five absolute map callbacks",
+    "LordRetro permanent Character wardrobe",
+    "Herald portal placement and populated-state migration",
+    "full Channel cadence activation and pin-aware direct Bone Character swings"
+  ]
+}

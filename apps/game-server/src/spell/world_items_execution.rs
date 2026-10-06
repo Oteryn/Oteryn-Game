@@ -319,3 +319,118 @@ impl QualifiedRuneDefinition {
         })
     }
 }
+pub(crate) fn source_magic_field(
+    policy: crate::content::native_gameplay::QualifiedItemPolicy<'_>,
+) -> Result<bool, crate::durability::spell_item_transaction::SpellItemError> {
+    match &policy.record().semantics.classification {
+        crate::content::ReferenceItemField::Known(c) => match c.item_type {
+            crate::content::ReferenceItemField::Known(t) => {
+                Ok(t == crate::content::ReferenceItemType::MagicField)
+            }
+            crate::content::ReferenceItemField::NotApplicable => Ok(false),
+            _ => Err(
+                crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                    "unknown source Item classification",
+                ),
+            ),
+        },
+        _ => Err(
+            crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                "unknown source Item classification",
+            ),
+        ),
+    }
+}
+pub(crate) fn qualify_source_field_chain(
+    content: &crate::content::native_gameplay::NativeGameplayState,
+    mut item: QualifiedItemDefinition,
+) -> Result<QualifiedItemDefinition, crate::durability::spell_item_transaction::SpellItemError> {
+    let mut current = item.definition.clone();
+    let mut seen = std::collections::BTreeSet::new();
+    let mut stages = Vec::new();
+    for _ in 0..32 {
+        if !seen.insert((current.production_key.clone(), current.revision_ref.clone())) {
+            return Err(
+                crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                    "cyclic field source decay",
+                ),
+            );
+        }
+        let policy = content
+            .item_policy(&current.production_key, &current.revision_ref)
+            .ok_or(
+                crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                    "field decay target source missing",
+                ),
+            )?;
+        if !source_magic_field(policy)? {
+            return Err(
+                crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                    "field decay target classification",
+                ),
+            );
+        }
+        let record = policy.record();
+        let qualified = QualifiedItemDefinition::from_native_policy(policy)
+            .map_err(crate::durability::spell_item_transaction::SpellItemError::Rejected)?;
+        if qualified.definition != current
+            || !qualified.ground_destination
+            || qualified.stack_maximum != 1
+            || qualified.content_generation_digest != content.source_digest()
+        {
+            return Err(
+                crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                    "field source capability mismatch",
+                ),
+            );
+        }
+        let Some(decay) = qualified.decay.as_ref() else {
+            // Permanent source fields have no schedule. A final permanent
+            // transformation requires its own explicit immutable collision
+            // closure; current supported source chains end by retiring.
+            if !stages.is_empty() {
+                return Err(
+                    crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                        "permanent transformed field source unsupported",
+                    ),
+                );
+            }
+            return Ok(item);
+        };
+        let blocks = record.attributes.blocks_movement.ok_or(
+            crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                "field source movement unknown",
+            ),
+        )?;
+        let projectile = record.attributes.blocks_projectile.ok_or(
+            crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                "field source projectile unknown",
+            ),
+        )?;
+        let immovable = record.attributes.immovable_block_solid.ok_or(
+            crate::durability::spell_item_transaction::SpellItemError::Rejected(
+                "field source immovability unknown",
+            ),
+        )?;
+        stages.push(QualifiedItemDecayStage {
+            definition: current.clone(),
+            duration_millis: decay.duration_millis,
+            target: decay.target.clone(),
+            blocks_movement: blocks,
+            blocks_projectile: projectile,
+            immovable_block_solid: immovable,
+        });
+        match decay.target.as_ref() {
+            Some(next) => current = next.clone(),
+            None => {
+                item.decay_chain = stages;
+                return Ok(item);
+            }
+        }
+    }
+    Err(
+        crate::durability::spell_item_transaction::SpellItemError::Rejected(
+            "field decay chain bound",
+        ),
+    )
+}

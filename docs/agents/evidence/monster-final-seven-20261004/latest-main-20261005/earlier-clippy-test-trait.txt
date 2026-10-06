@@ -1,0 +1,55 @@
+warning: missing documentation for a function
+   --> vendor/tokio-1.53.1/src/sync/oneshot.rs:502:1
+    |
+502 | pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: the lint level is defined here
+   --> vendor/tokio-1.53.1/src/lib.rs:9:5
+    |
+  9 |     missing_docs,
+    |     ^^^^^^^^^^^^
+
+warning: `tokio` (lib) generated 1 warning
+warning: `tokio` (lib) generated 1 warning (1 duplicate)
+    Checking oteryn-game-server v0.1.0 (/dev/shm/monster-seven-publication-20261004/apps/game-server)
+error[E0053]: method `apply_creature_damage` has an incompatible type for trait
+   --> apps/game-server/src/ai_think/../foundation/channel_owner_creature_ai_tests.rs:33:12
+    |
+ 33 |         _: &ChannelRuntimeV1,
+    |            ^^^^^^^^^^^^^^^^^ types differ in mutability
+    |
+note: type in trait
+   --> apps/game-server/src/ability/creature_bite.rs:159:18
+    |
+159 |         runtime: &mut ChannelRuntimeV1,
+    |                  ^^^^^^^^^^^^^^^^^^^^^
+    = note: expected signature `fn(&mut ai_think::channel_owner::channel_owner_creature_ai_tests::Vitals, &mut foundation::runtime_actor_carrier::ChannelRuntimeV1, foundation::runtime_actor_carrier::ExactActorRef, oteryn_protocol_oteryn::GameSessionId, _, foundation::owner_timer::SemanticTimeMicros) -> std::option::Option<_>`
+               found signature `fn(&mut ai_think::channel_owner::channel_owner_creature_ai_tests::Vitals, &foundation::runtime_actor_carrier::ChannelRuntimeV1, foundation::runtime_actor_carrier::ExactActorRef, oteryn_protocol_oteryn::GameSessionId, _, foundation::owner_timer::SemanticTimeMicros) -> std::option::Option<_>`
+help: change the parameter type to match the trait
+    |
+ 33 |         _: &mut foundation::runtime_actor_carrier::ChannelRuntimeV1,
+    |             +++++++++++++++++++++++++++++++++++++++
+
+error[E0308]: mismatched types
+   --> apps/game-server/src/ai_think/../foundation/channel_owner_creature_ai_tests.rs:268:17
+    |
+267 |             .think(
+    |              ----- arguments to this method are incorrect
+268 |                 &self.runtime,
+    |                 ^^^^^^^^^^^^^ types differ in mutability
+    |
+    = note: expected mutable reference `&mut foundation::runtime_actor_carrier::ChannelRuntimeV1`
+                       found reference `&foundation::runtime_actor_carrier::ChannelRuntimeV1`
+note: method defined here
+   --> apps/game-server/src/ai_monster_melee.rs:85:19
+    |
+ 85 |     pub(crate) fn think(
+    |                   ^^^^^
+ 86 |         &mut self,
+ 87 |         runtime: &mut ChannelRuntimeV1,
+    |         ------------------------------
+
+Some errors have detailed explanations: E0053, E0308.
+For more information about an error, try `rustc --explain E0053`.
+error: could not compile `oteryn-game-server` (lib test) due to 2 previous errors

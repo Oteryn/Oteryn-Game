@@ -1,14 +1,14 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "0d8a57ca5dd55ff73d4784bfc0ecb8a2a7672ee7ff320978c2ff6728c8dd8dee",
+  "digest": "ff812f26e5e002f61936ca6fc946e41c8bf056cf29a2dca1f17c6f9afc921278",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "g4-npc-provisional-enrichment-r28",
+  "content_revision": "item-bed-promotion-20261006-r1",
   "production": false,
   "entry_start": {
     "x": 10228,
     "y": 10032,
     "floor": 0
   },
-  "inputs_digest": "a771614c6a60f4c15a6403bf793e38db71179a049f7aee12d0e90065cc40d8a3"
+  "inputs_digest": "6b62d5711f7e70cba4279a5e0bcaf05cc9dfc31b87c03e069958e2fd5c97a63f"
 }

@@ -38,6 +38,79 @@ fn standing_element(
     Some(None)
 }
 impl ChannelSpellStates {
+    /// A preview is read-only. Canonical Creature-origin damage is consumed by
+    /// the existing HP/conditions/death owner, including after its creator dies.
+    /// Player/unknown provenance continues through the independent PvP path.
+    pub(super) fn tick_current_creature_field_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: oteryn_simulation_determinism::SemanticTimeMicros,
+        facts: TickFacts,
+        native: Option<&NativeGameplayState>,
+    ) -> Option<Option<(u64, ActorVitals)>> {
+        use crate::ability::condition::{ConditionSourceKind, TickKind};
+        let before = self.get(runtime, actor, session)?;
+        let preview = crate::spell::actor_conditions::stage_source_owner_cycle(
+            before,
+            now,
+            Some(facts),
+            None,
+        )
+        .ok()??;
+        if !preview.combat_ticks.iter().any(|t| {
+            matches!(t.kind, TickKind::Damage { .. })
+                && t.provenance.source_kind == ConditionSourceKind::Creature
+        }) {
+            return None;
+        }
+        if preview.combat_ticks.iter().any(|t| {
+            matches!(t.kind, TickKind::Damage { .. })
+                && (t.provenance.source_kind != ConditionSourceKind::Creature
+                    || !t
+                        .provenance
+                        .source
+                        .as_deref()
+                        .is_some_and(|s| s.starts_with("creature:")))
+        }) {
+            return Some(None);
+        }
+        // Immutable Creature field provenance remains historical after caster
+        // retirement, but never survives a foreign/current content generation.
+        for tick in &preview.combat_ticks {
+            if let Some(key) = tick
+                .provenance
+                .source
+                .as_deref()
+                .filter(|key| key.starts_with("creature:field:"))
+            {
+                let Some(origin)=crate::durability::spell_items_abi::DurableCreatureFieldOrigin::from_condition_source(key) else{return Some(None);};
+                if !native.is_some_and(|content| origin.matches_current_content(runtime, content)) {
+                    return Some(None);
+                }
+            }
+        }
+        // This ID scopes the owner pass only; actual DOT occurrence/provenance
+        // is issued by the retained canonical ConditionStore, not this value.
+        let mut bytes = actor.placement_identity();
+        for (i, b) in now.get().to_be_bytes().iter().enumerate() {
+            bytes[i] ^= *b;
+        }
+        let receipt = self.tick_source_player_conditions(
+            runtime,
+            actor,
+            session,
+            oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(bytes),
+            facts,
+            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
+        );
+        Some(receipt.and_then(|r| {
+            self.get(runtime, actor, session)
+                .map(|s| (r.revision, s.vitals()))
+        }))
+    }
+
     /// The sealed read came from the real current DB owner. The caller keeps
     /// runtime/state locked; current physical position/pin are compared again.
     #[allow(
@@ -88,6 +161,19 @@ impl ChannelSpellStates {
             };
             element
         };
+        if let Some(source_result) = self.tick_current_creature_field_damage(
+            runtime,
+            actor,
+            session,
+            now,
+            TickFacts {
+                in_protection_zone,
+                standing_on_field,
+            },
+            Some(source),
+        ) {
+            return source_result;
+        }
         let stamp = runtime.issue_owner_work().ok()?;
         let before = self.get(runtime, actor, session)?;
         let prepared_result = crate::spell::periodic_execution::stage_player_periodic_turn(

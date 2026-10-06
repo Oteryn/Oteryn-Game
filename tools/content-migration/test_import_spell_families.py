@@ -14,6 +14,7 @@ import unittest
 from unittest.mock import patch
 
 import import_spell_families as importer
+import monster_seven_spell_overlay as overlay
 
 
 class SpellFamilyImportTests(unittest.TestCase):
@@ -105,25 +106,35 @@ class SpellFamilyImportTests(unittest.TestCase):
         self.assertFalse(any(path.startswith("content/world/") for path in self.planned))
 
     def test_runtime_manifest_uses_exact_imported_providers_within_repository(self):
+        # The r25 import baseline, before the accepted monster-seven overlay, is the exact pack.
         path = "content/spells.manifest.json"
-        manifest = json.loads(self.planned[path])
+        baseline = importer.baseline_outputs()
         old = json.loads((importer.ROOT / importer.PACK / "manifest.json").read_bytes())
-        self.assertEqual(manifest["schema"], old["schema"])
-        self.assertEqual(manifest.get("native_map_profile"), old.get("native_map_profile"))
-        keys = {key for key, value in manifest.items() if isinstance(value, dict)}
-        self.assertEqual(keys, set(self.runtime))
-        for key in keys:
-            with self.subTest(provider=key):
-                pin = manifest[key]
-                resolved = (importer.ROOT / Path(path).parent / pin["path"]).resolve()
-                self.assertTrue(resolved.is_relative_to(importer.ROOT.resolve()))
-                relative = resolved.relative_to(importer.ROOT.resolve()).as_posix()
-                self.assertNotIn("test-packs", relative)
-                self.assertFalse(relative.startswith("docs/"))
-                self.assertEqual(self.planned[relative], self.runtime[key])
-                self.assertEqual(hashlib.sha256(self.planned[relative]).hexdigest(), pin["sha256"])
-                self.assertEqual({k: v for k, v in pin.items() if k != "path"},
-                                 {k: v for k, v in old[key].items() if k != "path"})
+        for planned, exact in ((baseline, True), (self.planned, False)):
+            manifest = json.loads(planned[path])
+            self.assertEqual(manifest["schema"], old["schema"])
+            self.assertEqual(manifest.get("native_map_profile"), old.get("native_map_profile"))
+            keys = {key for key, value in manifest.items() if isinstance(value, dict)}
+            self.assertEqual(keys, set(self.runtime))
+            for key in keys:
+                with self.subTest(provider=key, baseline=exact):
+                    pin = manifest[key]
+                    resolved = (importer.ROOT / Path(path).parent / pin["path"]).resolve()
+                    self.assertTrue(resolved.is_relative_to(importer.ROOT.resolve()))
+                    relative = resolved.relative_to(importer.ROOT.resolve()).as_posix()
+                    self.assertNotIn("test-packs", relative)
+                    self.assertFalse(relative.startswith("docs/"))
+                    self.assertEqual(hashlib.sha256(planned[relative]).hexdigest(), pin["sha256"])
+                    if exact:
+                        self.assertEqual(planned[relative], self.runtime[key])
+                        self.assertEqual({k: v for k, v in pin.items() if k != "path"},
+                                         {k: v for k, v in old[key].items() if k != "path"})
+                    else:
+                        # The overlay and source binding may change only the paths they own.
+                        if planned[relative] != self.runtime[key]:
+                            self.assertIn(relative, overlay.ALLOWED_PATHS)
+                        self.assertEqual({k: v for k, v in pin.items() if k not in ("path", "sha256")},
+                                         {k: v for k, v in old[key].items() if k not in ("path", "sha256")})
 
     def test_generation_and_write_check_are_deterministic_and_idempotent(self):
         self.assertEqual(importer.outputs(), self.planned)

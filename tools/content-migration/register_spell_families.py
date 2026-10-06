@@ -30,13 +30,18 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     Legacy shard counts describe legacy definitions only. Imported collections have
     their own schema, identity and counts; they are not silently coerced into v2.
     """
-    generated = spell_import.outputs(root)
+    baseline = spell_import.baseline_outputs(root)
+    generated = baseline
     generated = current_sources.outputs(root, generated)
+    from compose_monster_current_sources import compose
+    generated = compose(root, baseline, generated)
     descriptors = spell_import.descriptors(root, generated)
     for family, path in FAMILY_INDEXES.items():
         index = json.loads((root / path).read_bytes())
         index["spell_imports"] = descriptors.get(family, [])
-        generated[path] = encoded(index)
+        # Registration is semantic metadata; retain the existing index's explicit
+        # pretty/compact convention instead of reformatting unchanged family data.
+        generated[path] = encoded(index, registry=b'\n  "' in (root / path).read_bytes())
     for path, prefix in (
         ("content/presentations/bindings/index.json", "content/presentations/bindings/"),
         ("rulesets/progression/wheel-of-destiny/index.json", "rulesets/progression/wheel-of-destiny/"),
@@ -46,7 +51,7 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
             entry for entries in descriptors.values() for entry in entries
             if entry["path"].startswith(prefix)
         ]
-        generated[path] = encoded(index, registry=True)
+        generated[path] = encoded(index, registry=b'\n  "' in (root / path).read_bytes())
     registration = {
         "native_manifest": "content/spells.manifest.json",
         "collections": descriptors,

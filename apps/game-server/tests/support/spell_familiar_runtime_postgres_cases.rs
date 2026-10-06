@@ -124,6 +124,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
                         mitigation: None,
                         resistances: Vec::new(),
                         damage_immunities: Vec::new(),
+                        healing_from_damage: Vec::new(),
                         flags: CreatureFlags {
                             attackable: true,
                             illusionable: false,
