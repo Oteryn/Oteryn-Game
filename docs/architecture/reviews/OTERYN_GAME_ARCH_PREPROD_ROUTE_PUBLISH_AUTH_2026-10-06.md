@@ -2,7 +2,8 @@
 
 - Decision: `ARCH-PREPROD-ROUTE-PUBLISH-AUTH-V1`
 - Status: **CANDIDATE: AUTHORITY REQUEST**. Nothing here takes effect until the owner answers
-  §6 item by item. This document grants no authority.
+  §7 item by item. This document grants no authority. Recorded answers: 1a and 2a (control plane
+  D824, #162); items 3 and 4 are open.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the control plane, D821 item 2 (#162, 2026-10-06; owner answer **2a**). The request
   covers the route-publish operator path that the joint native-login E2E needs. That E2E is
@@ -39,7 +40,12 @@ So the request is a choice:
 
 ## 1. Findings
 
-**F1. No Platform preproduction environment exists.**
+Each finding carries an evidence class: PROVEN (read in code or configuration at the cited
+revision), DERIVED (follows from PROVEN facts), UNKNOWN or CONFLICT. No finding is CONFLICT.
+
+**F1. No Platform preproduction environment exists.** PROVEN for the repository: the deployment
+files and workflows below at 3896bcd. UNKNOWN: whether a host outside the repository runs
+Platform; none is declared.
 
 - `deploy/synology/` is the only deployment.
 - `deploy/synology/.env.example` sets `APP_ENV=staging`.
@@ -54,7 +60,7 @@ So the request is a choice:
     environment");
   - every route-record method, through `NativeTopologyRegistry::isolatedConnection()`.
 
-**F2. The route-publish write exists only as a method.**
+**F2. The route-publish write exists only as a method.** PROVEN: code and tests at 3896bcd.
 
 `App\GameAuth\Worlds\NativeTopologyRegistry::publishRouteForPreproduction(worldRowId, channelKey,
 host, port, tlsServerName, loginEnabled)` does the write. In one transaction it:
@@ -73,7 +79,8 @@ There is no artisan command, route or job for it. Only the tests call it. The N4
 lists "an operator path for `publishRouteForPreproduction` outside the isolated connection" as
 out of scope, under separate authority.
 
-**F3. The connection guard admits only disposable stores.**
+**F3. The connection guard admits only disposable stores.** PROVEN: `isolatedConnection()` at
+3896bcd. The consequence for a persistent MariaDB is DERIVED.
 
 `isolatedConnection()` uses the application's default connection and refuses in these cases:
 
@@ -89,20 +96,24 @@ A preproduction Platform can therefore publish routes **only** when its whole de
 that retained temporary SQLite file. That is the RUNBOOK-1 profile. A persistent MariaDB is
 refused.
 
-**F4. The trust key has no operator path either.**
+**F4. The trust key has no operator path either.** PROVEN: `NativeSigningTrustRegistry` at
+3896bcd.
 
 The issuer public key must be in `native_game_signing_trust_profiles` (via
 `NativeSigningTrustRegistry::publishTrustedKey`) before the Gateway accepts a grant. That method
-has no command and no environment gate. It needs `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY`.
+has no command and no environment gate. It writes through `DB::transaction` on the default
+connection, which is whatever database the process is configured with; it has no disposable-store
+check like `isolatedConnection()`. It needs `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY`.
 The joint E2E needs it as much as the route, so this request covers both.
 
-**F5. Issued identities are permanent.**
+**F5. Issued identities are permanent.** PROVEN: the issuance code and migration at 3896bcd.
 
 The WorldId and ChannelId from `game-auth:native-topology:issue` are immutable. The migration
 refuses to roll back while issued records exist. On any persistent store, an issuance is a
 permanent change to the Registry.
 
-**F6. RUNBOOK-1 already assumes these entrypoints.**
+**F6. RUNBOOK-1 already assumes these entrypoints.** PROVEN for the plan (the Game decision
+cited below). RUNBOOK-1 itself is not implemented, so its final shape is UNKNOWN.
 
 RUNBOOK-1 (`ARCH-LOGIN-FIRST-PACKETS-V1` §2.7, `tools/qualification/login_local/`, not yet
 implemented) plans:
@@ -128,7 +139,10 @@ process (`APP_ENV=preproduction`, or `testing` in CI). The changed rows are:
 Nothing outside the run's temporary directories changes. No staging, production or shared
 database is touched.
 
-**Where.** A developer machine, or a CI job on a GitHub-hosted runner. Never on the Synology host.
+**Where.** A developer machine, or a CI job on a GitHub-hosted runner. Never inside the Synology
+staging stack or against its database. A per-run job on the self-hosted `oteryn-synology-game`
+runner is possible if it starts its own disposable Platform process (UNKNOWN: that runner's PHP
+toolchain; it has no Docker). The store guard below refuses any persistent database there too.
 
 **By whom.** One of these:
 
@@ -156,16 +170,29 @@ Each run has one writer. The commands run against that run's Platform only.
   - The issuer and profile are fixed to `NativeEvidenceContract::FRESH_ISSUER` and
     `FRESH_PROFILE`. The key purpose is `game-auth.native_evidence.fresh_key_purpose`, the value
     the issuer uses for its lookup. The command accepts no other scope.
-  - Before any write it refuses unless `APP_ENV` is `testing` or `preproduction`.
+  - Before any write, including the high-water floor file, it applies the **same disposable-store
+    guard as `isolatedConnection()`**, unchanged: `APP_ENV` is `testing` or `preproduction`; no
+    outer transaction; a MySQL/MariaDB store only as the loopback `oteryn_concurrency` database in
+    `testing`; a SQLite store only as `:memory:` in `testing` or the retained per-run file
+    `<sys_get_temp_dir>/oteryn-native-topology-<hex>/oteryn-native-topology.sqlite` with no
+    symlink. An environment check alone is not enough, because `publishTrustedKey` writes to the
+    default connection, which in a deployed process is its persistent database.
+  - The Platform PR moves that predicate out of `NativeTopologyRegistry` into one shared guard
+    that both the registry and this command call. It may not relax or fork it; the registry's
+    behaviour stays identical, which its existing tests prove.
   - It reads 32 raw bytes from a regular file that is not a symlink, and never takes the key from
     an argument.
   - It prints the key ID and the profile version.
 - Not changed:
-  - `isolatedConnection()` and its guards;
+  - the guard predicate of `isolatedConnection()` (it moves, it does not change);
   - the trust registry rules (two fresh keys at most; no re-trust after revocation);
   - migrations, routes and the staging deployment.
 - Tests:
   - each command refuses in `local`, `staging` and `production` with no row written;
+  - each command refuses in `preproduction` when the default store is not disposable (a MariaDB
+    connection as in the staging deployment, a SQLite file outside the per-run directory, a
+    symlinked file) with no row written and no high-water floor file created;
+  - the registry's existing `isolatedConnection()` tests pass unchanged after the guard moves;
   - the happy path in `testing` writes the rows and prints the receipt;
   - an endpoint change advances `route_version`;
   - `--login-enabled=false` keeps the endpoint and clears login;
@@ -201,8 +228,10 @@ No GitHub, Synology, Cloudflare or database credential of any deployed environme
 **Blast radius.**
 
 - One disposable Platform process and its temporary files.
-- A wrong command in a deployed environment refuses before any write: the environment gate, then
-  `isolatedConnection()`.
+- A wrong command in a deployed environment refuses before any write. Both commands check the
+  environment and then the shared disposable-store guard, so neither can write to a staging,
+  production or other persistent database, even when `APP_ENV` is set to `preproduction` by
+  mistake.
 - Public staging, production, Canary and the Game repositories are not affected.
 
 ## 3. Option B (deferred): a persistent private preproduction environment
@@ -262,6 +291,15 @@ an environment that outlives one run.
 - The workflow change.
 - The named operator.
 
+**The likely shape on Synology (not an owner decision).** The owner prefers Synology. The control
+plane proposed a separate private preproduction stack there: its own database, no Cloudflare
+route, and no guard relaxation. This is the probable form of Option B, but item 3 is open and
+nothing here records it as decided. It has one tension: with the guard unchanged, a
+`preproduction` Platform writes routes and trust keys only to the retained per-run SQLite file
+under the system temporary directory. A persistent stack with its own MariaDB would be refused
+(F3). So "no guard relaxation" means either a per-run stack on Synology (Option A on that host)
+or a reviewed guard change (above). The owner's item 3 answer decides which.
+
 ## 4. Option C (rejected): native login on public staging
 
 This would need `APP_ENV=staging` to be accepted by the issuer, mode 33a and `isolatedConnection()`
@@ -278,7 +316,26 @@ testing and preproduction; production needs U8). Not offered.
    §4).
 4. Option B is asked for separately when step 7 is scheduled.
 
-## 6. Owner approvals requested
+## 6. Mandatory decision test
+
+`docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`:
+
+1. **Must decide now?** YES for Option A. NO for Option B, which stays deferred (item 3).
+2. **Blocked downstream work.** The joint native-login E2E (Platform contract §14 step 6, #1419
+   item 5) and RUNBOOK-1 (`ARCH-LOGIN-FIRST-PACKETS-V1` §2.7). Neither can publish a route or a
+   trust key from a shell today (F2, F4, F6).
+3. **What becomes harder later.** Two operator commands become a Platform surface that runbooks
+   and CI depend on. Changing their flags or receipts later means changing those callers. Moving
+   the guard into a shared class makes it one place to keep correct.
+4. **Evidence to supersede.** A persistent preproduction environment (Option B) that needs a
+   different operator path; Platform operations tooling that replaces artisan commands; a security
+   finding on either command or on the shared guard.
+5. **Deliberately not decided.** Option B and its shape on Synology; any guard relaxation; the
+   release and production operator path; production trust keys; Option C stays refused.
+
+## 7. Owner approvals requested
+
+Recorded answers: **1a** and **2a** (control plane D824, #162). Items 3 and 4 are open.
 
 Answer as, for example, `1a 2a 3b`.
 
@@ -297,7 +354,7 @@ Answer as, for example, `1a 2a 3b`.
 4. **Public staging (Option C).**
    - a) confirm that it stays refused (recommended).
 
-## 7. Non-authorization
+## 8. Non-authorization
 
 This document authorizes no code, migration, deployment, secret, runner, Cloudflare, database or
 Platform change. Each approved item needs its own #162 allocation. The Platform PR uses only the
