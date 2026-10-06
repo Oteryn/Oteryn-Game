@@ -1,0 +1,67 @@
+Quest check: verify_quest_schema.py
+{
+  "cases": 262,
+  "passed": 262,
+  "failed": []
+}
+Quest check: ../reward-claim-authoring/test_reward_claim_variant_authoring.py
+.............
+----------------------------------------------------------------------
+Ran 13 tests in 28.464s
+
+OK
+Quest check: ../reward-claim-authoring/test_variant_stack_serialization.py
+......
+----------------------------------------------------------------------
+Ran 6 tests in 14.239s
+
+OK
+Quest check: ../reward-claim-authoring/reward_claim_authoring.py content --check
+reward claim content check: ok
+Quest check: ../reward-claim-authoring/reward_claim_variant_migration.py --check
+RewardClaim variants: 105; eligible plain missing=0; native lowering waits for implementation
+Quest check: -m unittest discover -s . -p test_*.py
+......................................................................................................................................................................................................................................................................................................................................s.......................................................................................................................................................................................
+----------------------------------------------------------------------
+Ran 510 tests in 343.881s
+
+OK (skipped=1)
+Quest check: validate_quest_content.py samples/chests/claims.json samples/questlog/quests.json --catalog samples/chests/catalog.json --manifest samples/chests/manifest.json --gates samples/doors/gates.json --gates-manifest samples/doors/manifest.json --progress samples/questlog/progress.json --interactions samples/interactions/interactions.json --interactions-manifest samples/interactions/manifest.json
+{
+  "valid": true,
+  "errors": [],
+  "error_count": 0
+}
+Quest check: refresh_quest_source_checks.py --check
+{
+  "valid": true,
+  "updated": []
+}
+Quest check: quest_catalogue_authoring.py --check
+{"authored_records": 284, "coverage_states": {"conflict": 97, "directly_authored": 192, "represented_by_family": 23, "unrepresented": 61}, "duplicate_title_checks": 0, "quest_log_conflicts": 31, "source_titles": 373}
+Quest check: source_text_authoring.py --check
+{"valid": true, "scope": "source_reference_prose_only; no native or runtime admission", "summary": {"wanted": 1617, "known": 1617, "unknown": 0}}
+Quest check: build_wiki_source_schema.py --check
+Quest check: wiki_source_inventory.py --check
+Pinned SOURCE inventory passed; current source bindings do not change snapshot selection
+Quest check: wiki_source_supplements.py --check
+Offline authored SOURCE reconstruction passed; raw bodies and spans NOT rechecked
+Quest check: wiki_all_source_inventory.py --check
+{"titles": 373, "preserved_detailed_titles": 105, "new_structured_titles": 268, "preserved_source_revisions": 249, "new_structured_source_revisions": 729, "new_prerequisite_expressions": 1559, "new_unparsed_requirement_holds": 158, "new_mission_heading_references": 2539, "new_reward_entity_references": 1880, "new_requirement_entity_references": 1542, "new_location_entity_references": 1223, "new_titles_with_rewards": 266, "new_titles_with_requirements": 213, "new_titles_with_locations": 265, "new_titles_with_mission_headings": 252, "new_full_body_captures": 0}
+Quest check: wiki_all_source_inventory.py --schema-out wiki_all_source_specs.schema.json --check
+Quest check: wiki_requirement_interpretations.py --check
+{"historical_unparsed_holds": 205, "full_syntax_interpretations": 18, "partial_syntax_interpretations": 29, "unparsed": 158, "effective_unparsed_or_partial": 187}
+Quest check: source_facts_authoring.py --specifications samples/wiki-source-all373/source-specs-373.json --samples samples/unbound-source-facts --check
+{"titles": 69, "raw_body_rechecked": false, "runtime_promotion": false}
+Quest check: authored_quest_authoring.py --check
+Authored recipes: 68 complete chosen DATA recipes; Native admission held
+Quest check: quest_completion_authoring.py --check
+242 chosen recipes complete; original SOURCE witnesses and Native non-admission preserved
+Quest check: quest_rollout_authoring.py --check
+{"bindings": {"authored": 68, "direct": 278, "family": 27}, "flags": {"authored": 68, "imported": 305, "needs_runtime": 373, "partial": 373}, "runtime_enabled": 0, "smoke_verified": 0, "titles": 373}
+Quest check: bundle_authoring.py --check
+{"valid": true, "validation_mode": "SOURCE_BACKED", "input_provenance_verification": "VERIFIED_AGAINST_LOCAL_INPUTS", "scope": "source_inventory_only; no native or runtime authority", "summary": {"quests": 284, "progress": 1491, "interactions": 1221, "gates": 237, "claims": 336, "wiki_quests": 373, "quests_with_reported_gaps": 203, "reference_gaps": 0, "unassigned_gaps": 896, "progress_source_transitions": 3516, "source_write_occurrences": 6636}}
+Quest check: quest_tree_authoring.py content --check --source-packet /dev/shm/monster-seven-publication-20261004/tools/content-schema/quest-authoring/samples/migration/quest-source-packet.json
+Quest tree: 4 shards; check=True; family registries regenerated
+Quest check: quest_state_lowering.py --check
+QuestState lowering: 96 quests, 1330 tracks, 3266 transitions; check=True

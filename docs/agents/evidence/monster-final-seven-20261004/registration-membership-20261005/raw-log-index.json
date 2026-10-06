@@ -1,0 +1,143 @@
+{
+  "encoding": "raw exact bytes in ZIP; normalized display text",
+  "logs": [
+    {
+      "path": "logs/qualification/full-lib-tests-final-frozen.txt",
+      "zip_member": "qualification/full-lib-tests-final-frozen.log",
+      "raw_sha256": "f29b44d929122575a7c10a5276cc843d2cfa3ebb72667157ac493b2665226311",
+      "display_sha256": "9a26a4562dc4dd9aef4222f33baa3f8907f0774d82f6e9a55901417859607267"
+    },
+    {
+      "path": "logs/qualification/capture-final-frozen/8-monster_summon--.txt",
+      "zip_member": "qualification/capture-final-frozen/8-monster_summon--.log",
+      "raw_sha256": "538d52506ec01ee601797ae4a8ffc1b86b4d8d4d07b4f550656ecc8fe7948626",
+      "display_sha256": "2a6f9e6ba788c073389c4a9749cbbf1e6b8b6a09664c7b2f1fabb4d55d93c9fa"
+    },
+    {
+      "path": "logs/qualification/capture-final-frozen/7-monster_combat_lane--source_summon_composition_tests--.txt",
+      "zip_member": "qualification/capture-final-frozen/7-monster_combat_lane--source_summon_composition_tests--.log",
+      "raw_sha256": "e413a0581172172476e6b4d6fa750422b9ded5c1c89c1d16257a486d8bf45ed6",
+      "display_sha256": "152d035601853d637141d3bcb006fe63ff15b3e64f4206e995ba35aaea4a4b62"
+    },
+    {
+      "path": "logs/qualification/capture-final-frozen/6-monster_combat_lane--pending_summon_failure_regression--.txt",
+      "zip_member": "qualification/capture-final-frozen/6-monster_combat_lane--pending_summon_failure_regression--.log",
+      "raw_sha256": "39510d46898b08866ecf1029af832b5e6370a4360b88b708e48c330d8b77f4c5",
+      "display_sha256": "b847210e37301822bc4c72db2c1a30dd8f881b60883df07e05c6a7b9ff2c0a95"
+    },
+    {
+      "path": "logs/qualification/capture-final-frozen/5-monster_combat_lane--defense_composition_tests--.txt",
+      "zip_member": "qualification/capture-final-frozen/5-monster_combat_lane--defense_composition_tests--.log",
+      "raw_sha256": "657b2f6b8fe0a840d3453ddd376f2c9aa60d635a154c63c8aac42225b4d1d8a7",
+      "display_sha256": "61affa8c90f363fe0de7509d824fe0e0d810da23f1730d58b59b1dd3abde0c0b"
+    },
+    {
+      "path": "logs/qualification/capture-final-frozen/4-monster_combat_lane--bone_map_admission_actual_tests--.txt",
+      "zip_member": "qualification/capture-final-frozen/4-monster_combat_lane--bone_map_admission_actual_tests--.log",
+      "raw_sha256": "50130d04cfc05d0813bbb4c2e4a848dfd0f9e38ad3708e7148a206b783413c27",
+      "display_sha256": "2b40ff426960d25aea4286b48a5346fb7d0586480cf15823c019088d338f44f1"
+    },
+    {
+      "path": "logs/qualification/capture-final-frozen/3-crystal_death_composition--.txt",
+      "zip_member": "qualification/capture-final-frozen/3-crystal_death_composition--.log",
+      "raw_sha256": "3edf76ac0c1cb745cd1404d7811c4f5b28453e1904597bb3eb80b1a1b7cb96f4",
+      "display_sha256": "201758470c72f9d80295db47f8d9f88d1278bf9eccf6daaae2cfa14b6ce53ac4"
+    },
+    {
+      "path": "logs/qualification/capture-final-frozen/2-creature_area_heal--tests--actual_corrected_native_world.txt",
+      "zip_member": "qualification/capture-final-frozen/2-creature_area_heal--tests--actual_corrected_native_world.log",
+      "raw_sha256": "177a8ebfe378946e7c7d46d6aa34338e37a597c7d89c493e46be0d1d609f5208",
+      "display_sha256": "6704ec2af221eb18add8a1b775e56ae9b4ced02a0db9ca0843791f85eef6f077"
+    },
+    {
+      "path": "logs/qualification/capture-final-frozen/1-bone_phase_registry--shared_hp_actual_source_tests--.txt",
+      "zip_member": "qualification/capture-final-frozen/1-bone_phase_registry--shared_hp_actual_source_tests--.log",
+      "raw_sha256": "f419354fc89096c806a943568d86e5d2234419f04903f8c029c4313888350d31",
+      "display_sha256": "740cbf1333aeb71bed6128ff4f107224138534c3ca9facb60317f3c4943276f6"
+    },
+    {
+      "path": "logs/qualification/native-final-frozen/appearance.txt",
+      "zip_member": "qualification/native-final-frozen/appearance.log",
+      "raw_sha256": "54718fb5b1f8dbe5f8db546ef4206492835888ad3239c6f4086f933df4417fe3",
+      "display_sha256": "535d49c996470bcee15601719c41aa6e256dda7ff9f71568819838ee8a971a19"
+    },
+    {
+      "path": "logs/qualification/native-final-frozen/native-qualification.txt",
+      "zip_member": "qualification/native-final-frozen/native-qualification.log",
+      "raw_sha256": "44750439510f4e8b35b3e1ddbbc999dbbc6d87cd3249bf4df2679ed72192c4d4",
+      "display_sha256": "c0d61e853195cae6cccbbb40acd12ee62d69ad1ef424fc294a470c460e0fac06"
+    },
+    {
+      "path": "logs/checks/project-binding-qualified-membership.txt",
+      "zip_member": "checks/project-binding-qualified-membership.log",
+      "raw_sha256": "1faa669dd1921ebdd3fd62bf14eba761d7a99ca0737670d9c0aa1a2ed780dcc0",
+      "display_sha256": "f4a2495bb21ec2b3584d8e84558942ff9fc6f96cd21abbec414d455037ee76e7"
+    },
+    {
+      "path": "logs/checks/project-binding-qualified-build.txt",
+      "zip_member": "checks/project-binding-qualified-build.log",
+      "raw_sha256": "e1bb656a7ebafaec1f6cbc09d0b2f6ac08a3ab2d00db3e059f4da442321ecc17",
+      "display_sha256": "e1bb656a7ebafaec1f6cbc09d0b2f6ac08a3ab2d00db3e059f4da442321ecc17"
+    },
+    {
+      "path": "logs/checks/project-binding-qualified-clippy.txt",
+      "zip_member": "checks/project-binding-qualified-clippy.log",
+      "raw_sha256": "eea954f1433b389e08303f0f4e38121f94b0ddacc68e3b0c55fa46b53ce7d043",
+      "display_sha256": "eea954f1433b389e08303f0f4e38121f94b0ddacc68e3b0c55fa46b53ce7d043"
+    },
+    {
+      "path": "logs/checks/project-binding-red.txt",
+      "zip_member": "checks/project-binding-red.log",
+      "raw_sha256": "dfb2f5bf13cee16d56636d65f83797158428ccabadaa17eeb63e16727581fd87",
+      "display_sha256": "acd0e8603d242e7c21855b8f0f61c2bbe45d1c662347269cbdb635230d9a3ed6"
+    },
+    {
+      "path": "logs/checks/project-binding-item-fx.txt",
+      "zip_member": "checks/project-binding-item-fx.log",
+      "raw_sha256": "28a4c54c1548ff688840ef5eb889943369e4754233edafb2b85405ce1ddddf33",
+      "display_sha256": "28a4c54c1548ff688840ef5eb889943369e4754233edafb2b85405ce1ddddf33"
+    },
+    {
+      "path": "logs/checks/project-binding-item-references.txt",
+      "zip_member": "checks/project-binding-item-references.log",
+      "raw_sha256": "6a74958cad54265025bc2714480abd99e573dc3897e02948ba1153fe3b92b629",
+      "display_sha256": "6a74958cad54265025bc2714480abd99e573dc3897e02948ba1153fe3b92b629"
+    },
+    {
+      "path": "logs/checks/project-binding-item-references-green.txt",
+      "zip_member": "checks/project-binding-item-references-green.log",
+      "raw_sha256": "a3fda10ef48a10afd8f3a57bb202c36cf1a69a976b250af1a8b53c4a09adfd05",
+      "display_sha256": "a3fda10ef48a10afd8f3a57bb202c36cf1a69a976b250af1a8b53c4a09adfd05"
+    },
+    {
+      "path": "logs/checks/project-binding-final-overlay.txt",
+      "zip_member": "checks/project-binding-final-overlay.log",
+      "raw_sha256": "55c1d39137d25ea8069370d7afb613408b34afe2f34bd6d4a8be0f8bbd7d9f8b",
+      "display_sha256": "55c1d39137d25ea8069370d7afb613408b34afe2f34bd6d4a8be0f8bbd7d9f8b"
+    },
+    {
+      "path": "logs/checks/project-binding-qualified-import-check.txt",
+      "zip_member": "checks/project-binding-qualified-import-check.log",
+      "raw_sha256": "4ba13967ccb2c6f1f4a98d4f3587d836d4ad53b6f572a9880c73c624017d27b7",
+      "display_sha256": "4ba13967ccb2c6f1f4a98d4f3587d836d4ad53b6f572a9880c73c624017d27b7"
+    },
+    {
+      "path": "logs/checks/project-binding-final-registration.txt",
+      "zip_member": "checks/project-binding-final-registration.log",
+      "raw_sha256": "e2b69f506906fe15786eeff784edca14f0c9e5ea7dcda2761918e4c58ba552be",
+      "display_sha256": "e2b69f506906fe15786eeff784edca14f0c9e5ea7dcda2761918e4c58ba552be"
+    },
+    {
+      "path": "logs/checks/project-binding-qualified-producer-tests.txt",
+      "zip_member": "checks/project-binding-qualified-producer-tests.log",
+      "raw_sha256": "24adda79e21044fef19cdc7f0606a9cd7770fc9a99c705a8622ee923c13bce5d",
+      "display_sha256": "24adda79e21044fef19cdc7f0606a9cd7770fc9a99c705a8622ee923c13bce5d"
+    },
+    {
+      "path": "logs/checks/project-binding-governance.txt",
+      "zip_member": "checks/project-binding-governance.log",
+      "raw_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f",
+      "display_sha256": "ed5de0b194f14550187fbb13e78364869d9be5848032f691f807fecb2abe0a1f"
+    }
+  ]
+}

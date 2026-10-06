@@ -1,0 +1,6 @@
+Actual executed code head: 7a3711a95ce2f2be7fd38567998d86672a0b01f0
+Binary SHA256: d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059
+Original exact log SHA256: 43bb110d742f4d80e1b6a01446bbbf995ce28bb72882345a4a09098ecb95cc37
+running 1 test
+test bone_phase_registry::shared_hp_actual_source_tests::actual_source_shared_native_hp_generic_pin_phase_and_atomicity ... PASS actual5 source roster/bindings; native generic4slot shareddamage/heal coalescence; fullpin/map/fence guards; replay/conflict/late-fourth atomicity; real4sealed cage keys openPhyl only after4; distinct finaldeath; no reward mint; stale replacement untouched. PROJECT120000, no spirit/map Global claims.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2393 filtered out; finished in 15.01s

@@ -1,0 +1,12 @@
+{
+  "changed_documents": [
+    "content.lock.json",
+    "definitions/declarations.json",
+    "manifest.json",
+    "project.json"
+  ],
+  "tree_sha256": "5fc9ba7b8e296018c343fff3ef74bab74411f2ceaac4caaa03944154ecabccde",
+  "source_before": "13fe40250b0428615704de9ed7efb4cf6326e37a72a38d7e51f639cbec3acb07",
+  "source_after": "9a2911d90febf6a731b372115dd0de89b1a227f8ad994151565d1fbe127b9972",
+  "assertions_preserved": true
+}

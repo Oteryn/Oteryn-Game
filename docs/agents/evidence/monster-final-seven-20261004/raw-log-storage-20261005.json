@@ -1,0 +1,248 @@
+{
+  "purpose": "Byte-exact original logs retained in standard ZIP; text paths are whitespace-normalized display copies. Historical execution/qualification JSON hashes refer to original archived bytes, not normalized display. No runtime/data/test/checker changes.",
+  "source_head": "52c0fba3e7719de6be07adf77a2c0474e0023179",
+  "archive": "docs/agents/evidence/monster-final-seven-20261004/raw-log-originals-20261005.zip",
+  "archive_sha256": "7357be096bf4998190db42cde1e65e306dad607b5d0c27a424176f5c6290c7df",
+  "records": [
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-library-9b8c18c06d84f0cd.txt",
+      "raw_sha256": "04ece2ea16566b3b57d6c383f77dcaf139c60515356b2057027fdb0b1c40c1a2",
+      "rendered_sha256": "62701f9b8a636eab7dde5a5ee342c45612590c14f1f895129a02778434acda7e",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-library-9b8c18c06d84f0cd.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-1-421cc247c278ed3d.txt",
+      "raw_sha256": "a73e9f708041215eb8cae92ca70ca33fb86de82e2d9ae6b0486ea7f43b16b578",
+      "rendered_sha256": "059baa2af21f193a74929e5cab71800ee930ae62b0be1f3d83fa91b39368e93d",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-1-421cc247c278ed3d.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-10-685a295e7dac299c.txt",
+      "raw_sha256": "899930e63e98761799d83464c26f44ad835b51a41d6325074a75fb0b0e2d5cad",
+      "rendered_sha256": "93eeb320fc9cef72854cc49eb742185c4acc44d6fb9e524242a8731dfe53a080",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-10-685a295e7dac299c.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-2-148583f330a59a8b.txt",
+      "raw_sha256": "21f7573a6bd825434ae219f5d0eb41eea58beb6ebbf671ae322b51c78b6112e0",
+      "rendered_sha256": "df8d3ee10783240d66f45896eda29e2ad2775aba6d9d3b85919b6f9f377eaf2b",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-2-148583f330a59a8b.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-3-601eff784d4067a4.txt",
+      "raw_sha256": "22eddc1f3e4b356d8b04a568f6913d5ee78ac1fd03974cc434dd53856c6b33da",
+      "rendered_sha256": "201ee8f7359279738452f8b3d560409c1c84982c2b5077611d24e28c627a811d",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-3-601eff784d4067a4.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-4-e7997cba708ecf55.txt",
+      "raw_sha256": "47e692bf8b86d40b1db32cea566623b0ec7746fc3115f8379732ae228b7d2be1",
+      "rendered_sha256": "ec05e69ae7615b9d9135f07fdfd4730ef1faff837ae6482442a2c5a29f7e6282",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-4-e7997cba708ecf55.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-5-4496dc21e3ce1e11.txt",
+      "raw_sha256": "0858156e7e463f01a8d0c2da9d160c0b894d0ad159d61d18c0d06b19ad60728e",
+      "rendered_sha256": "fbe78d8c68701287ec3300fee127400c8cf907ca31406f0561c885c4c1b627e8",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-5-4496dc21e3ce1e11.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-6-c26e9777be20e2c0.txt",
+      "raw_sha256": "87ac14393ccafbcde4e7556d896166fae5a9824b5dcd31204fae5a81fd60973d",
+      "rendered_sha256": "dfa108e4781305cb258daaef692fcd52fd3c710265149c4baa5a068e88dee594",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-6-c26e9777be20e2c0.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-7-e0e18c6852023e47.txt",
+      "raw_sha256": "994d8b421e781f48da896f66483d541bdbf50c4c096ee630b95ef1645edb8cf5",
+      "rendered_sha256": "f2bf028f986ab3c214ffbd3bf0de8ac2c84ca551fd6bdfe6581768a01176dc1f",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-7-e0e18c6852023e47.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-8-415cda8bae0b8232.txt",
+      "raw_sha256": "958c71571e34bae65428a41f8e3e51269ab781e903d6bb87905f49e9ac9e9aa6",
+      "rendered_sha256": "f52547e899d81cd65f319f42ad0dcd1525e6fd5f545d8531014838a34531cd6b",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-8-415cda8bae0b8232.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-9-c6f5fe41aaefe553.txt",
+      "raw_sha256": "4ee671172fcc2d99a99b975f3015c5a519e1812be86ceb86a9ea11688d5e6cf2",
+      "rendered_sha256": "227087e4e88429f4d346021cc4306946440aa19de4189c533aece0b9e1043aca",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-native-9-c6f5fe41aaefe553.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-repository-reward-9429b208ec8b4c82.txt",
+      "raw_sha256": "afff30fa5bf826c7acc8688f77993848467f1c8151d97ba992e0d364aa454a82",
+      "rendered_sha256": "ac2e566bf91fb434e6727145531ea2ed430d38f27ce0060f60fb7ac2b949f3b1",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/final-status/logs/final-58a-repository-reward-9429b208ec8b4c82.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/1-bone_phase_registry--shared_hp_actual_source_tests--.txt",
+      "raw_sha256": "4b8cc3de870d826bb510e755040783e4f5a88b08614f75b1f9371e148e63a259",
+      "rendered_sha256": "4e60a4a145bab6ac5e3322beac298af173faa80a3f31eb841f607def3e8c5897",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/1-bone_phase_registry--shared_hp_actual_source_tests--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/2-creature_area_heal--tests--actual_corrected_native_world.txt",
+      "raw_sha256": "34573235194cb352b69250ce15321f52cdb89617f1a1c17eb995b0107a353a73",
+      "rendered_sha256": "1a48b290ab3526246c8308beb8772476de1407d3db750218a33975e6153dddd9",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/2-creature_area_heal--tests--actual_corrected_native_world.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/3-crystal_death_composition--.txt",
+      "raw_sha256": "92f703cae5df7f0a3367688b84a0ed7a66f1c0d6273edf37b0ec8ca63ee3efcc",
+      "rendered_sha256": "9fed1528a71cb28aebfdff261e9bbc0c6a2a345b9a997a64cb3f089f5bae88c4",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/3-crystal_death_composition--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/4-monster_combat_lane--bone_map_admission_actual_tests--.txt",
+      "raw_sha256": "be4842b27f0044ae95be94b2f3d6e65f6b4e811d88551cb81c842be596d60a74",
+      "rendered_sha256": "c96aa3f97854917591199467d232366c9d0f5beb6a15ab1cacd4e4a88079e429",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/4-monster_combat_lane--bone_map_admission_actual_tests--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/5-monster_combat_lane--defense_composition_tests--.txt",
+      "raw_sha256": "6586f815047cffda1bc096af9ad6a386b96cde73b757a1d3a915459db7b11656",
+      "rendered_sha256": "8848093f369798067d05d4c783a5533b03f4df92b7bbf161dab97ccbb02ed1d9",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/5-monster_combat_lane--defense_composition_tests--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/6-monster_combat_lane--pending_summon_failure_regression--.txt",
+      "raw_sha256": "89bb9e25bf9cd610111eaec59494cb2e54b3bcbc2b0146f9cc101dbb128bdfcd",
+      "rendered_sha256": "efe10705c56f10a3cb646cbcfff63e4dcaf3e831c1c098cfb0662ccbff2041e1",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/6-monster_combat_lane--pending_summon_failure_regression--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/7-monster_combat_lane--source_summon_composition_tests--.txt",
+      "raw_sha256": "d39cff431b41a38731bfdca7d9b0e8a171836259a05db937bbe55a9f2bb6f963",
+      "rendered_sha256": "813060b57a2209f61394efe3ef97ed78fb409fca0e8ffb2fc2fa73b0d0883206",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/7-monster_combat_lane--source_summon_composition_tests--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/8-monster_summon--.txt",
+      "raw_sha256": "af53319a02c304f00773dc5983f60bf138f81c1dbcbed419b7a02b6993194ca4",
+      "rendered_sha256": "2fe36831becbf13975dc6381dd9c1e2a9c5f4845f2616148c6ec4a437dbc6fd7",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/8-monster_summon--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/appearance.txt",
+      "raw_sha256": "1c8d68470895eff012a4917ebea32321d236b6a29e4b4e8a0bfd316c84e916dc",
+      "rendered_sha256": "b7996e59c90c28c23bde37fa90af2eeef070fedee485213d153bab96fe160de2",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/appearance.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/full-lib-tests-final-frozen.txt",
+      "raw_sha256": "770b7e73a53a87e8270c8852b86bb3fedfbd905c91a92dcdf64a999277036664",
+      "rendered_sha256": "ab5ea85a9293c9969bdce8b3f6b77e75e260e01f54c443dd1eee0d8b5dbd66d3",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/full-lib-tests-final-frozen.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/native-qualification.txt",
+      "raw_sha256": "30410118512ce01d86bbbff6437863c7078841634ad143a4c2a1105f6df208c4",
+      "rendered_sha256": "03cae6aaa059d8a56636ed1fbcf3bd50660fccc5d72b8bdab85fd990cd1b4020",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/executed/native-qualification.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/initial-capture-limit-failure.txt",
+      "raw_sha256": "ffe4a753414d313fb42b6327765f7d07c6844e96c6cb186a7d92335b4aa0ae82",
+      "rendered_sha256": "886f188b13eae42e2479dab2eb866b780bdbc02a55e8aeb31509e51980fff0fa",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/latest-main-20261005/initial-capture-limit-failure.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/canonical-writer.txt",
+      "raw_sha256": "b46a21d2345b3d1b53cc4ef26370ef23ee634831f07dad856aed7803f531eebe",
+      "rendered_sha256": "401bbf62e2bc17a2fb94576f51ef11bc99266007945499491fc8d95e28bb25c0",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/canonical-writer.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/library.txt",
+      "raw_sha256": "03b8b011b11b99841716b4347bc4954ec27f7143f2a8c1bc50da49e32bbf32cc",
+      "rendered_sha256": "81cfa2bff99451023021e4af2d9ced4cb77642b74450ef9b7d42432bbb2c53bb",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/library.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/1-bone_phase_registry--shared_hp_actual_source_tests--.txt",
+      "raw_sha256": "8eddbc89724d8d7bcda38c5ba53dcf4fd65bcf629cd29daa8eb5e64c56e9d8bf",
+      "rendered_sha256": "507db8473344613fde3142ce4e47d712033e563abce83d376f77eb64243432be",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/1-bone_phase_registry--shared_hp_actual_source_tests--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/2-creature_area_heal--tests--actual_corrected_native_world.txt",
+      "raw_sha256": "38fce4f235ec88acbca3da17620b3ce239e1e8e434f39194f9667f1455701042",
+      "rendered_sha256": "37f3cbea95757412e610b8ecfbc74de1e805404a872c501d2a3b8b70a5793a63",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/2-creature_area_heal--tests--actual_corrected_native_world.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/3-crystal_death_composition--.txt",
+      "raw_sha256": "33828d798159d7fc424e5297bb141bc1c185f4070823426b00a7812ab051ef79",
+      "rendered_sha256": "f8d255c74a0b98f6504252802c57a68c1f1836e820be9d104409423a4f231d8f",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/3-crystal_death_composition--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/4-monster_combat_lane--bone_map_admission_actual_tests--.txt",
+      "raw_sha256": "e1e4464fe816a0e18963d116a5cda7c0da2f29101def7490ee9790e395439d3c",
+      "rendered_sha256": "5bb2b4035979613448cf1313017987a5b548286b346906a561dcefb4416709b4",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/4-monster_combat_lane--bone_map_admission_actual_tests--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/5-monster_combat_lane--defense_composition_tests--.txt",
+      "raw_sha256": "4338f20db25818f12ce6fc7b190a8dda317fe538341c9b535e6960288d32120c",
+      "rendered_sha256": "2c627c0b685c8a0c43917cc433313b23a7e6ec619408befd2e065072a0740369",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/5-monster_combat_lane--defense_composition_tests--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/6-monster_combat_lane--pending_summon_failure_regression--.txt",
+      "raw_sha256": "4ed3656e6f3c0aab8f3322afa83f31bccbfdca0754803ad8506f613730db89bb",
+      "rendered_sha256": "076565a5fd4abc9f652fb098bcf36cf9db1f68adec5e61592037329e619938e8",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/6-monster_combat_lane--pending_summon_failure_regression--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/7-monster_combat_lane--source_summon_composition_tests--.txt",
+      "raw_sha256": "8ec6c0ed898006d24da82d295372dc8e4d9865d38c4df0ac0d1f1625a6514a41",
+      "rendered_sha256": "bed5963b36ebc5c6df37876dd24a44baace33b591b32d210c4730511b187118f",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/7-monster_combat_lane--source_summon_composition_tests--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/8-monster_summon--.txt",
+      "raw_sha256": "ab96872c09615923148f68e3134895b7d59d22c416984f90cc341190fc6c7b4b",
+      "rendered_sha256": "6266344554da11420aac8dc8df1ed1ba1c26361894623cf8235d11412b0f7a9e",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/8-monster_summon--.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/appearance.txt",
+      "raw_sha256": "2e25681a56df342319694fb2d94aa51ab3d89b0b44b9b33df59f4d4dc7701ad0",
+      "rendered_sha256": "fb8d162dc327a4ac17480785ffc9a1039109bf02f1d00b15b2c24c915ba1fecf",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/appearance.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/native-qualification.txt",
+      "raw_sha256": "75a81cf6df475ab81199e5be1c58525f3af3200f8142a4659d1656192d03506b",
+      "rendered_sha256": "09117e2a0664319830264b6fe5fb1dfdcfb5030f944f45113a1783e3a272b269",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/native/native-qualification.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/postgres/monster_repair_creature_fields_v4.txt",
+      "raw_sha256": "9cbf8fa16d98ea2354366e6075e1a99a444e81837c30c43d0b4f38399fb564b8",
+      "rendered_sha256": "229b42b75d454ee804475971280cff2f31dfc1ff87efb10b6340bb36119fb6e9",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/postgres/monster_repair_creature_fields_v4.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/postgres/monster_repair_player_fields_v4.txt",
+      "raw_sha256": "e25ba034c2eef8de7f8ce44f64d557a3b14c9de7d92debfc8233626e558ee3fc",
+      "rendered_sha256": "57fcbe2771b19dcceb4ca70de8b8d86541789a8b81a4c87b6dc7ea18e01053cd",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/postgres/monster_repair_player_fields_v4.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/red-detached-project.txt",
+      "raw_sha256": "d704bc5bfb282dd39091eebd600eede5cf4af2cc48f2244abfd5eacda59d6bb8",
+      "rendered_sha256": "1cdfe9f645f176732b8c666b83da52790ec3c4214784704e6622199c7bfda185",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/red-detached-project.txt"
+    },
+    {
+      "path": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/repository-integration.txt",
+      "raw_sha256": "ee82ae5f68c1b262011faac305d72902dcea877d3d2695599ca1059d8a4d7db4",
+      "rendered_sha256": "ceae10b58ec79f9c1c30581536f83b1b0fcc61a4a4dc24e975e1951abdfc9842",
+      "archive_member": "docs/agents/evidence/monster-final-seven-20261004/repair-20261005/repository-integration.txt"
+    }
+  ]
+}

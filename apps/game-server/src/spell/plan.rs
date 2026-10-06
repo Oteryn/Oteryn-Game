@@ -219,3 +219,14 @@ fn plan(
         side_effects,
     })
 }
+
+/// Stable source-chain child identity, shared by native monster HP/MP consumers.
+pub(crate) fn chain_step_occurrence(
+    base: &AbilityOccurrence,
+    index: usize,
+) -> Result<AbilityOccurrence, AbilityError> {
+    AbilityOccurrence::new(
+        &format!("{}/chain-{index}", base.id().as_str()),
+        base.revisions().clone(),
+    )
+}

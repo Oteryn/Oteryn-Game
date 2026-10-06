@@ -1,0 +1,128 @@
+{
+  "status": "PASS",
+  "executed_tests": 12,
+  "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0",
+  "binary_sha256": "d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059",
+  "results": [
+    {
+      "filter": "bone_phase_registry::shared_hp_actual_source_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "43bb110d742f4d80e1b6a01446bbbf995ce28bb72882345a4a09098ecb95cc37",
+      "summary": "logs/postmerge-capture-1.txt",
+      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+    },
+    {
+      "filter": "creature_area_heal::tests::actual_corrected_native_world",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "72ecf3bacac11316415f87a0792f063da426e84aa00335a10bfc3a337c38e625",
+      "summary": "logs/postmerge-capture-2.txt",
+      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+    },
+    {
+      "filter": "crystal_death_composition::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "3155542432b13bcc4ffd578ff3afa3db3f96a64708cccb75f269bfab2e51b2d9",
+      "summary": "logs/postmerge-capture-3.txt",
+      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+    },
+    {
+      "filter": "monster_combat_lane::bone_map_admission_actual_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "bd52cb73a2be484d50f6f8ec5d8ac038886ba83629d8fa877df35e5f2d30d4ce",
+      "summary": "logs/postmerge-capture-4.txt",
+      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+    },
+    {
+      "filter": "monster_combat_lane::defense_composition_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "89738962a00c829e5810fdd7597c7bb5dd2ed4e88695a87598557d4d3f137a1b",
+      "summary": "logs/postmerge-capture-5.txt",
+      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+    },
+    {
+      "filter": "monster_combat_lane::pending_summon_failure_regression::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "cfc16cd86a2452fe8239b6de84ba3d5208eed1e62531a3feadd2ff1490e3e2bf",
+      "summary": "logs/postmerge-capture-6.txt",
+      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+    },
+    {
+      "filter": "monster_combat_lane::source_summon_composition_tests::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "b094c6dbddf7aca811ca1bbe6b28eb8859be7b8588a7ed4655a26d054c8e647e",
+      "summary": "logs/postmerge-capture-7.txt",
+      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+    },
+    {
+      "filter": "monster_summon::",
+      "status": "PASS",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "original_log_sha256": "14d095bf0434834048dde7f602ed08bc773b228bd752921b6d335c4c4504143a",
+      "summary": "logs/postmerge-capture-8.txt",
+      "code_head": "7a3711a95ce2f2be7fd38567998d86672a0b01f0"
+    }
+  ]
+}

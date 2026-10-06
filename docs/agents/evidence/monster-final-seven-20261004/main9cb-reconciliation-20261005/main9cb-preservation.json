@@ -1,0 +1,41 @@
+{
+  "base": "63a29ff2",
+  "incoming_main": "9cb66e38040fecf4d7b70818b1b92251bd237a0a",
+  "preserved": [
+    {
+      "path": "imports/spells/monster-seven/accepted-authoring-overlay.json",
+      "sha256": "4aa9ae460c13fcaee1f95b6ea9c71df3e8ca3db03c98d9cf739682755d187517",
+      "unchanged": true
+    },
+    {
+      "path": "imports/spells/monster-seven/adopted-qualification.json",
+      "sha256": "90346147aa742e9b9f70dababec95b1843b3aef6e2ad4dd3a257e77e679969c1",
+      "unchanged": true
+    },
+    {
+      "path": "content/world/definitions/reference.json",
+      "sha256": "d8680c42f767c29c977b0a3a00afde93f7a6f3eea28de5f549d30323bb0bfd2a",
+      "unchanged": true
+    },
+    {
+      "path": "content/world/definitions/declarations.json",
+      "sha256": "b6c28de9a38da6bf0c5bca39f0936f6ccf69ed59df4d1266a1ff4641116dbe95",
+      "unchanged": true
+    },
+    {
+      "path": "content/world/provenance/sources.json",
+      "sha256": "6414fc9da96985e0529bf986fd2e021a75a145ba6cb899af5ad992e4699147c6",
+      "unchanged": true
+    },
+    {
+      "path": "apps/game-server/src/monster_combat_lane.rs",
+      "sha256": "a19d409a4e9f613cd99d84527a007847da4a012c79621499b7e7206b5f23b526",
+      "unchanged": true
+    },
+    {
+      "path": "apps/game-server/src/content/native_gameplay.rs",
+      "sha256": "678b7eaccefc4b9a9ca197fbe381e98396fa069b8a8818c89427861f5f6f47f6",
+      "unchanged": true
+    }
+  ]
+}

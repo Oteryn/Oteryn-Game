@@ -54,7 +54,7 @@ impl StepIngressRead<'_, '_> {
         session: GameSessionId,
         direction: CardinalStep,
         prepared: Option<&crate::movement::source_floor_change::PreparedCurrentSourceStep<'_>>,
-    ) -> Result<(), MovementError> {
+    ) -> Result<Option<super::CreatureFieldContact>, MovementError> {
         let fence = self.read.fence();
         if actor != self.actor
             || session != self.session
@@ -117,6 +117,7 @@ impl StepIngressRead<'_, '_> {
         // SQL rows are the actual ordered destination items. An expired row is
         // not silently erased here: only the durable expiry writer may remove it.
         let mut first_magic_field = true;
+        let mut creature_contact = None;
         for item in self.read.items() {
             if item.blocks_movement {
                 return Err(MovementError::Blocked);
@@ -145,6 +146,45 @@ impl StepIngressRead<'_, '_> {
                     let values = recipe
                         .condition_values()
                         .map_err(|_| MovementError::NotQualified)?;
+                    if let Some(values) = values
+                        && !tile.flags().protection_zone
+                        && let Some(historical) = &item.creature_field_origin
+                    {
+                        if !historical.matches_current_content(runtime, source)
+                            || historical.item_instance != item.item_instance_id
+                            || historical.item_key != item.definition.production_key
+                            || historical.item_revision != item.definition.revision_ref
+                            || historical.created_at_unix_ms > self.read.observed_at_unix_ms()
+                            || item.field_origin.is_some()
+                        {
+                            return Err(MovementError::NotQualified);
+                        }
+                        let element = recipe
+                            .element()
+                            .map_err(|_| MovementError::NotQualified)?
+                            .ok_or(MovementError::NotQualified)?;
+                        let definition = crate::ability::condition::ConditionDefinition::new(
+                            &format!(
+                                "native.field.{}",
+                                historical
+                                    .item_key
+                                    .strip_prefix("oteryn:item.tibia.")
+                                    .ok_or(MovementError::NotQualified)?
+                            ),
+                            1,
+                            values,
+                        )
+                        .ok_or(MovementError::NotQualified)?;
+                        creature_contact = Some(super::CreatureFieldContact {
+                            source: historical
+                                .condition_source_key()
+                                .ok_or(MovementError::NotQualified)?,
+                            definition,
+                            element,
+                            content: source.source_digest(),
+                        });
+                        continue;
+                    }
                     if values.is_some() && !tile.flags().protection_zone {
                         let creator = self.creator.as_ref().ok_or(MovementError::NotQualified)?;
                         // A current player owns this field, so source onStepInField
@@ -237,7 +277,7 @@ impl StepIngressRead<'_, '_> {
                 }
             }
         }
-        Ok(())
+        Ok(creature_contact)
     }
 }
 fn destination(
@@ -401,9 +441,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             drop(world);
             match validation {
-                Ok(())=>{
+                Ok(contact)=>{
                     let proof=if let Some(prepared)=prepared {Some(crate::movement::source_floor_change::bind_current_source_step(&mut tx,runtime,prepared).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)} else {None};
-                    *outcome=Some(super::actor_movement::step_in_channel_with_source_step(runtime,states,owner.movement_cells,actor,session,now_us,direction,blocking,equipment_delta,proof));
+                    *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells,actor,session,now_us,direction,blocking,equipment_delta,proof,contact));
                 },
                 Err(error)=>*outcome=Some(Err(error)),
             }

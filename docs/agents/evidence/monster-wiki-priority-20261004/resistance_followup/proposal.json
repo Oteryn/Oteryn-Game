@@ -1,0 +1,2099 @@
+{
+  "schema": "monster-wiki-resistance-followup-v1",
+  "rows": [
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.amenef_the_burning",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": true,
+      "old": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -20
+          }
+        }
+      ],
+      "new_present": true,
+      "new": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -20
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": false,
+      "confirmed_element_updates": [],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.eliz_the_unyielding",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": true,
+      "old": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        }
+      ],
+      "new_present": true,
+      "new": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": true,
+      "confirmed_element_updates": [
+        {
+          "damage_type": "earth",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 20,
+            "denominator": 1
+          },
+          "wiki_raw": "80%",
+          "page": "Eliz the Unyielding",
+          "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+          "revision_id": 1206117,
+          "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+          "line": 25,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "ExactActorNameBaselineCapture"
+          }
+        },
+        {
+          "damage_type": "fire",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 20,
+            "denominator": 1
+          },
+          "wiki_raw": "80%",
+          "page": "Eliz the Unyielding",
+          "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+          "revision_id": 1206117,
+          "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+          "line": 26,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "ExactActorNameBaselineCapture"
+          }
+        },
+        {
+          "damage_type": "energy",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 20,
+            "denominator": 1
+          },
+          "wiki_raw": "80%",
+          "page": "Eliz the Unyielding",
+          "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+          "revision_id": 1206117,
+          "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+          "line": 28,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "ExactActorNameBaselineCapture"
+          }
+        },
+        {
+          "damage_type": "ice",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 20,
+            "denominator": 1
+          },
+          "wiki_raw": "80%",
+          "page": "Eliz the Unyielding",
+          "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+          "revision_id": 1206117,
+          "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+          "line": 30,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "ExactActorNameBaselineCapture"
+          }
+        }
+      ],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": [
+        {
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.eliz_the_unyielding",
+            "revision": "definition-r1"
+          },
+          "field": "resistances",
+          "damage_type": "earth",
+          "canonical_old": {
+            "denominator": 1,
+            "numerator": 100
+          },
+          "new": {
+            "numerator": 20,
+            "denominator": 1
+          },
+          "proof": {
+            "damage_type": "earth",
+            "provenance": "WIKI_CONFIRMED",
+            "value": {
+              "numerator": 20,
+              "denominator": 1
+            },
+            "wiki_raw": "80%",
+            "page": "Eliz the Unyielding",
+            "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+            "revision_id": 1206117,
+            "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+            "line": 25,
+            "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+            "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+            "exact_actor_binding": {
+              "method": "ExactActorNameBaselineCapture"
+            }
+          }
+        },
+        {
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.eliz_the_unyielding",
+            "revision": "definition-r1"
+          },
+          "field": "resistances",
+          "damage_type": "fire",
+          "canonical_old": {
+            "denominator": 1,
+            "numerator": 100
+          },
+          "new": {
+            "numerator": 20,
+            "denominator": 1
+          },
+          "proof": {
+            "damage_type": "fire",
+            "provenance": "WIKI_CONFIRMED",
+            "value": {
+              "numerator": 20,
+              "denominator": 1
+            },
+            "wiki_raw": "80%",
+            "page": "Eliz the Unyielding",
+            "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+            "revision_id": 1206117,
+            "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+            "line": 26,
+            "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+            "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+            "exact_actor_binding": {
+              "method": "ExactActorNameBaselineCapture"
+            }
+          }
+        },
+        {
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.eliz_the_unyielding",
+            "revision": "definition-r1"
+          },
+          "field": "resistances",
+          "damage_type": "energy",
+          "canonical_old": {
+            "denominator": 1,
+            "numerator": 100
+          },
+          "new": {
+            "numerator": 20,
+            "denominator": 1
+          },
+          "proof": {
+            "damage_type": "energy",
+            "provenance": "WIKI_CONFIRMED",
+            "value": {
+              "numerator": 20,
+              "denominator": 1
+            },
+            "wiki_raw": "80%",
+            "page": "Eliz the Unyielding",
+            "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+            "revision_id": 1206117,
+            "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+            "line": 28,
+            "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+            "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+            "exact_actor_binding": {
+              "method": "ExactActorNameBaselineCapture"
+            }
+          }
+        },
+        {
+          "target": {
+            "family": "Creature",
+            "key": "oteryn:creature.eliz_the_unyielding",
+            "revision": "definition-r1"
+          },
+          "field": "resistances",
+          "damage_type": "ice",
+          "canonical_old": {
+            "denominator": 1,
+            "numerator": 100
+          },
+          "new": {
+            "numerator": 20,
+            "denominator": 1
+          },
+          "proof": {
+            "damage_type": "ice",
+            "provenance": "WIKI_CONFIRMED",
+            "value": {
+              "numerator": 20,
+              "denominator": 1
+            },
+            "wiki_raw": "80%",
+            "page": "Eliz the Unyielding",
+            "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+            "revision_id": 1206117,
+            "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+            "line": 30,
+            "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+            "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+            "exact_actor_binding": {
+              "method": "ExactActorNameBaselineCapture"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.essence_of_malice",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": true,
+      "old": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        }
+      ],
+      "new_present": true,
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": -30
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": false,
+      "confirmed_element_updates": [],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.fallen_mooh_tah_master_ghar",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": true,
+      "old": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 60
+          }
+        }
+      ],
+      "new_present": true,
+      "new": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 60
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": false,
+      "confirmed_element_updates": [],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.hacker",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": true,
+      "old": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "new_present": true,
+      "new": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": false,
+      "confirmed_element_updates": [],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.hairman_the_huge",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": true,
+      "old": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 25
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        }
+      ],
+      "new_present": true,
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 25
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": false,
+      "confirmed_element_updates": [],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.irgix_the_flimsy",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": true,
+      "old": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        }
+      ],
+      "new_present": true,
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 75
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": true,
+      "confirmed_element_updates": [
+        {
+          "damage_type": "earth",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 0,
+            "denominator": 1
+          },
+          "wiki_raw": "100%",
+          "page": "Irgix The Flimsy",
+          "url": "https://tibia.fandom.com/wiki/Irgix_The_Flimsy",
+          "revision_id": 1140895,
+          "content_sha256": "84c435ba87866157aedecd7793a1c990b956e0205b19ad6d3dc2d5a878f72489",
+          "line": 25,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "ExactActorNameBaselineCapture"
+          }
+        },
+        {
+          "damage_type": "fire",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 0,
+            "denominator": 1
+          },
+          "wiki_raw": "100%",
+          "page": "Irgix The Flimsy",
+          "url": "https://tibia.fandom.com/wiki/Irgix_The_Flimsy",
+          "revision_id": 1140895,
+          "content_sha256": "84c435ba87866157aedecd7793a1c990b956e0205b19ad6d3dc2d5a878f72489",
+          "line": 26,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "ExactActorNameBaselineCapture"
+          }
+        },
+        {
+          "damage_type": "ice",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": -10,
+            "denominator": 1
+          },
+          "wiki_raw": "110%",
+          "page": "Irgix The Flimsy",
+          "url": "https://tibia.fandom.com/wiki/Irgix_The_Flimsy",
+          "revision_id": 1140895,
+          "content_sha256": "84c435ba87866157aedecd7793a1c990b956e0205b19ad6d3dc2d5a878f72489",
+          "line": 30,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "ExactActorNameBaselineCapture"
+          }
+        }
+      ],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.memory_of_a_banshee",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": false,
+      "old": null,
+      "new_present": false,
+      "new": [],
+      "canonical": [
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -25
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": true,
+      "confirmed_element_updates": [
+        {
+          "damage_type": "earth",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "wiki_raw": "0%",
+          "page": "Memory of a Banshee",
+          "url": "https://tibia.fandom.com/wiki/Memory_of_a_Banshee",
+          "revision_id": 1057451,
+          "content_sha256": "b9f30a0ce67fa760783986ee3f755b6f668357142324ca89556ad1e81af518d3",
+          "line": 27,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "ExactActorNameBaselineCapture"
+          },
+          "already_represented_by_canonical_immunity": true
+        },
+        {
+          "damage_type": "fire",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "wiki_raw": "0%",
+          "page": "Memory of a Banshee",
+          "url": "https://tibia.fandom.com/wiki/Memory_of_a_Banshee",
+          "revision_id": 1057451,
+          "content_sha256": "b9f30a0ce67fa760783986ee3f755b6f668357142324ca89556ad1e81af518d3",
+          "line": 28,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "ExactActorNameBaselineCapture"
+          },
+          "already_represented_by_canonical_immunity": true
+        },
+        {
+          "damage_type": "death",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 100,
+            "denominator": 1
+          },
+          "wiki_raw": "0%",
+          "page": "Memory of a Banshee",
+          "url": "https://tibia.fandom.com/wiki/Memory_of_a_Banshee",
+          "revision_id": 1057451,
+          "content_sha256": "b9f30a0ce67fa760783986ee3f755b6f668357142324ca89556ad1e81af518d3",
+          "line": 29,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "ExactActorNameBaselineCapture"
+          },
+          "already_represented_by_canonical_immunity": true
+        }
+      ],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.memory_of_a_dwarf",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": false,
+      "old": null,
+      "new_present": false,
+      "new": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": false,
+      "confirmed_element_updates": [],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.memory_of_a_faun",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": false,
+      "old": null,
+      "new_present": false,
+      "new": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 40
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 70
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": false,
+      "confirmed_element_updates": [],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.memory_of_a_frazzlemaw",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": false,
+      "old": null,
+      "new_present": false,
+      "new": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": false,
+      "confirmed_element_updates": [],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.memory_of_a_fungus",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": false,
+      "old": null,
+      "new_present": false,
+      "new": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 35
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_a",
+      "provenance": "UNKNOWN",
+      "apply": false,
+      "confirmed_element_updates": [],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.swarmer_hatchling",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": true,
+      "old": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -400
+          }
+        }
+      ],
+      "new_present": true,
+      "new": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -400
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -200
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_b",
+      "provenance": "UNKNOWN",
+      "apply": false,
+      "confirmed_element_updates": [],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_armored_voidborn",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": true,
+      "old": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1400
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        }
+      ],
+      "new_present": true,
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1400
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -200
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_b",
+      "provenance": "UNKNOWN",
+      "apply": false,
+      "confirmed_element_updates": [],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.the_sinister_hermit_dirty",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "old_present": true,
+      "old": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "mana_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "new_present": true,
+      "new": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 85,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 85,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 85,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "mana_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 85
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 85
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 85
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "mana_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "canonical_present": true,
+      "parent_lane": "resistance_b",
+      "provenance": "UNKNOWN",
+      "apply": true,
+      "confirmed_element_updates": [
+        {
+          "damage_type": "earth",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 85,
+            "denominator": 1
+          },
+          "wiki_raw": "15%",
+          "page": "The Sinister Hermit (Yellow)",
+          "url": "https://tibia.fandom.com/wiki/The_Sinister_Hermit_%28Yellow%29",
+          "revision_id": 1116463,
+          "content_sha256": "19eb7a2ec0f8783e6883a5e8073b7ba65a14193c282b2b455eb67b1c5e6b38c9",
+          "line": 23,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "EncounterFormAndSourceFile",
+            "source_registration_name": "The Sinister Hermit Dirty",
+            "source_file": "quests/cults_of_tibia/bosses/the_sinister_hermit_dirty",
+            "source_display_name": "The Sinister Hermit",
+            "source_outfit": {
+              "lookType": 153,
+              "lookHead": 0,
+              "lookBody": 97,
+              "lookLegs": 79,
+              "lookFeet": 9,
+              "lookAddons": 3,
+              "lookMount": 0
+            },
+            "mechanic_context_conflict": "Pinned source changes dirty to clean on geyser step-in; Wiki describes elemental damage on geyser. Identity phase context only; transformation trigger is not adopted or runtime-qualified.",
+            "wiki_context_links": {
+              "notes": [
+                "Cults of Tibia Quest"
+              ],
+              "strategy": [
+                "The Sinister Hermit (Blue)"
+              ]
+            },
+            "status": "VERIFIED"
+          },
+          "raw_page_cache": "/workspace/monster-round3-output/wiki-cache/2026-09-27/the_sinister_hermit_yellow.json",
+          "raw_content_hash_verified": true
+        },
+        {
+          "damage_type": "fire",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 85,
+            "denominator": 1
+          },
+          "wiki_raw": "15%",
+          "page": "The Sinister Hermit (Yellow)",
+          "url": "https://tibia.fandom.com/wiki/The_Sinister_Hermit_%28Yellow%29",
+          "revision_id": 1116463,
+          "content_sha256": "19eb7a2ec0f8783e6883a5e8073b7ba65a14193c282b2b455eb67b1c5e6b38c9",
+          "line": 24,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "EncounterFormAndSourceFile",
+            "source_registration_name": "The Sinister Hermit Dirty",
+            "source_file": "quests/cults_of_tibia/bosses/the_sinister_hermit_dirty",
+            "source_display_name": "The Sinister Hermit",
+            "source_outfit": {
+              "lookType": 153,
+              "lookHead": 0,
+              "lookBody": 97,
+              "lookLegs": 79,
+              "lookFeet": 9,
+              "lookAddons": 3,
+              "lookMount": 0
+            },
+            "mechanic_context_conflict": "Pinned source changes dirty to clean on geyser step-in; Wiki describes elemental damage on geyser. Identity phase context only; transformation trigger is not adopted or runtime-qualified.",
+            "wiki_context_links": {
+              "notes": [
+                "Cults of Tibia Quest"
+              ],
+              "strategy": [
+                "The Sinister Hermit (Blue)"
+              ]
+            },
+            "status": "VERIFIED"
+          },
+          "raw_page_cache": "/workspace/monster-round3-output/wiki-cache/2026-09-27/the_sinister_hermit_yellow.json",
+          "raw_content_hash_verified": true
+        },
+        {
+          "damage_type": "energy",
+          "provenance": "WIKI_CONFIRMED",
+          "value": {
+            "numerator": 85,
+            "denominator": 1
+          },
+          "wiki_raw": "15%",
+          "page": "The Sinister Hermit (Yellow)",
+          "url": "https://tibia.fandom.com/wiki/The_Sinister_Hermit_%28Yellow%29",
+          "revision_id": 1116463,
+          "content_sha256": "19eb7a2ec0f8783e6883a5e8073b7ba65a14193c282b2b455eb67b1c5e6b38c9",
+          "line": 26,
+          "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+          "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+          "exact_actor_binding": {
+            "method": "EncounterFormAndSourceFile",
+            "source_registration_name": "The Sinister Hermit Dirty",
+            "source_file": "quests/cults_of_tibia/bosses/the_sinister_hermit_dirty",
+            "source_display_name": "The Sinister Hermit",
+            "source_outfit": {
+              "lookType": 153,
+              "lookHead": 0,
+              "lookBody": 97,
+              "lookLegs": 79,
+              "lookFeet": 9,
+              "lookAddons": 3,
+              "lookMount": 0
+            },
+            "mechanic_context_conflict": "Pinned source changes dirty to clean on geyser step-in; Wiki describes elemental damage on geyser. Identity phase context only; transformation trigger is not adopted or runtime-qualified.",
+            "wiki_context_links": {
+              "notes": [
+                "Cults of Tibia Quest"
+              ],
+              "strategy": [
+                "The Sinister Hermit (Blue)"
+              ]
+            },
+            "status": "VERIFIED"
+          },
+          "raw_page_cache": "/workspace/monster-round3-output/wiki-cache/2026-09-27/the_sinister_hermit_yellow.json",
+          "raw_content_hash_verified": true
+        }
+      ],
+      "unknown_policy": "Keep current native unconfirmed elements; exact cached Fandom DIFF observations confirm only listed fields. Missing/MATCH count summaries do not prove field values. Dirty phase uses qualified Yellow page, not generic BR article.",
+      "canonical_changes": []
+    }
+  ],
+  "counts": {
+    "actors": 15,
+    "actors_with_additional_confirmed_fields": 4,
+    "confirmed_fields": 13,
+    "canonical_element_changes": 4
+  },
+  "canonical_changes": [
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.eliz_the_unyielding",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "damage_type": "earth",
+      "canonical_old": {
+        "denominator": 1,
+        "numerator": 100
+      },
+      "new": {
+        "numerator": 20,
+        "denominator": 1
+      },
+      "proof": {
+        "damage_type": "earth",
+        "provenance": "WIKI_CONFIRMED",
+        "value": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "wiki_raw": "80%",
+        "page": "Eliz the Unyielding",
+        "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+        "revision_id": 1206117,
+        "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+        "line": 25,
+        "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+        "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+        "exact_actor_binding": {
+          "method": "ExactActorNameBaselineCapture"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.eliz_the_unyielding",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "damage_type": "fire",
+      "canonical_old": {
+        "denominator": 1,
+        "numerator": 100
+      },
+      "new": {
+        "numerator": 20,
+        "denominator": 1
+      },
+      "proof": {
+        "damage_type": "fire",
+        "provenance": "WIKI_CONFIRMED",
+        "value": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "wiki_raw": "80%",
+        "page": "Eliz the Unyielding",
+        "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+        "revision_id": 1206117,
+        "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+        "line": 26,
+        "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+        "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+        "exact_actor_binding": {
+          "method": "ExactActorNameBaselineCapture"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.eliz_the_unyielding",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "damage_type": "energy",
+      "canonical_old": {
+        "denominator": 1,
+        "numerator": 100
+      },
+      "new": {
+        "numerator": 20,
+        "denominator": 1
+      },
+      "proof": {
+        "damage_type": "energy",
+        "provenance": "WIKI_CONFIRMED",
+        "value": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "wiki_raw": "80%",
+        "page": "Eliz the Unyielding",
+        "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+        "revision_id": 1206117,
+        "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+        "line": 28,
+        "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+        "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+        "exact_actor_binding": {
+          "method": "ExactActorNameBaselineCapture"
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature.eliz_the_unyielding",
+        "revision": "definition-r1"
+      },
+      "field": "resistances",
+      "damage_type": "ice",
+      "canonical_old": {
+        "denominator": 1,
+        "numerator": 100
+      },
+      "new": {
+        "numerator": 20,
+        "denominator": 1
+      },
+      "proof": {
+        "damage_type": "ice",
+        "provenance": "WIKI_CONFIRMED",
+        "value": {
+          "numerator": 20,
+          "denominator": 1
+        },
+        "wiki_raw": "80%",
+        "page": "Eliz the Unyielding",
+        "url": "https://tibia.fandom.com/wiki/Eliz_the_Unyielding",
+        "revision_id": 1206117,
+        "content_sha256": "75eb2806dd23fc7ba5de2bbbb2a03e08f38acf44ddf2f80d182aa9683c2dfb2c",
+        "line": 30,
+        "cache": "/workspace/monster-resource-plan/tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json",
+        "cache_sha256": "78a2923621c383cfde520e372807237b0cdf69e112c7c5a6fb02c16c1b64f66b",
+        "exact_actor_binding": {
+          "method": "ExactActorNameBaselineCapture"
+        }
+      }
+    }
+  ],
+  "no_network": true,
+  "no_product_edits": true
+}

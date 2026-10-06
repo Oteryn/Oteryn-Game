@@ -1,0 +1,70 @@
+{
+  "lane_summary": {
+    "core": {
+      "rows": 156,
+      "semantic_new_differs_canonical": 26,
+      "sha256": "1432f8e64a6f005e86b7015bbc2a79da81e02cfb675f3a7a54bffac586826ef8",
+      "examples": [
+        [
+          "oteryn:creature.bright_percht_sleigh",
+          "speed"
+        ],
+        [
+          "oteryn:creature.butterfly",
+          "armor"
+        ],
+        [
+          "oteryn:creature.cold_percht_sleigh",
+          "speed"
+        ],
+        [
+          "oteryn:creature.dark_percht_sleigh",
+          "speed"
+        ]
+      ]
+    },
+    "mitigation_a": {
+      "rows": 304,
+      "semantic_new_differs_canonical": 0,
+      "sha256": "f140a76225b1d0b6109c78de1b504406feee8cc6bb1eb7d277009699f1352db0",
+      "examples": []
+    },
+    "mitigation_b": {
+      "rows": 303,
+      "semantic_new_differs_canonical": 0,
+      "sha256": "bb30443fd16b730035a824ef9eeb2f17dcacb6c3bd638cc7ea2c5e0659b8771d",
+      "examples": []
+    },
+    "resistance_a": {
+      "rows": 197,
+      "semantic_new_differs_canonical": 13,
+      "sha256": "20530f079abe90ca7c69f7352377135ad18463aec9defc7e9eaaba65f2cac089",
+      "examples": [
+        [
+          "oteryn:creature.amenef_the_burning",
+          "resistances"
+        ],
+        [
+          "oteryn:creature.eliz_the_unyielding",
+          "resistances"
+        ],
+        [
+          "oteryn:creature.essence_of_malice",
+          "resistances"
+        ],
+        [
+          "oteryn:creature.fallen_mooh_tah_master_ghar",
+          "resistances"
+        ]
+      ]
+    },
+    "resistance_b": {
+      "rows": 196,
+      "semantic_new_differs_canonical": 0,
+      "sha256": "01ad6ee34a4a63db067a3009e6ba7d569b86e2263e80c595b29b0849830ddac6",
+      "examples": []
+    }
+  },
+  "scope_guard_findings": [],
+  "note": "Mitigation_b schema omits canonical; compared only present guard keys. Resistance normalized type/order/zero."
+}

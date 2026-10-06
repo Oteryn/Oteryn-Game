@@ -1,0 +1,30 @@
+{
+  "before_sha": "6794257dd0211a6163b0667d89d93f4fef9c70eb4fa089af37a38208f41f05b4",
+  "after_sha": "9700d91330a565c2b43159ce984941a104ee533c16acb0927a8d9c09c9d6b92c",
+  "actors": [
+    "oteryn:creature.ancient_lion_knight",
+    "oteryn:creature.annihilon",
+    "oteryn:creature.arbaziloth",
+    "oteryn:creature.axeitus_headbanger",
+    "oteryn:creature.baron_brute",
+    "oteryn:creature.blazing_fire_elemental",
+    "oteryn:creature.bovinus",
+    "oteryn:creature.brain_head",
+    "oteryn:creature.bretzecutioner",
+    "oteryn:creature.captain_jones",
+    "oteryn:creature.damned_soul",
+    "oteryn:creature.dragon_essence",
+    "oteryn:creature.dragon_servant",
+    "oteryn:creature.enthralled_demon",
+    "oteryn:creature.fazzrah",
+    "oteryn:creature.fernfang",
+    "oteryn:creature.force_field",
+    "oteryn:creature.fury_of_the_emperor",
+    "oteryn:creature.gorzindel",
+    "oteryn:creature.grand_chaplain_gaunder",
+    "oteryn:creature.humorless_fungus",
+    "oteryn:creature.mad_mage",
+    "oteryn:creature.makeshift_home"
+  ],
+  "values_unchanged": true
+}

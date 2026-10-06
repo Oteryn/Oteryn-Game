@@ -84,7 +84,7 @@ impl MonsterMeleeOwner {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn think(
         &mut self,
-        runtime: &ChannelRuntimeV1,
+        runtime: &mut ChannelRuntimeV1,
         vitals: &mut dyn CreatureBiteVitals,
         issuer: ExactActorRef,
         sequence: u64,
@@ -264,7 +264,7 @@ mod tests {
     impl CreatureBiteVitals for Vitals {
         fn apply_creature_damage(
             &mut self,
-            _: &ChannelRuntimeV1,
+            _: &mut ChannelRuntimeV1,
             _: ExactActorRef,
             _: GameSessionId,
             magnitude: u32,
@@ -380,7 +380,7 @@ mod tests {
     #[test]
     fn typed_think_dispatch_pays_one_hit_replays_and_preserves_source_interval()
     -> Result<(), String> {
-        let (runtime, issuer, target, session) = fixture()?;
+        let (mut runtime, issuer, target, session) = fixture()?;
         let mut owner = MonsterMeleeOwner::default();
         let mut vitals = Vitals {
             health: 20,
@@ -398,7 +398,7 @@ mod tests {
         };
         let result = owner
             .think(
-                &runtime,
+                &mut runtime,
                 &mut vitals,
                 issuer,
                 1,
@@ -415,7 +415,7 @@ mod tests {
         assert_eq!(
             owner
                 .think(
-                    &runtime,
+                    &mut runtime,
                     &mut vitals,
                     issuer,
                     1,
@@ -432,7 +432,7 @@ mod tests {
         assert_eq!((vitals.health, vitals.revision), (12, 1));
         let early = owner
             .think(
-                &runtime,
+                &mut runtime,
                 &mut vitals,
                 issuer,
                 2,
@@ -448,7 +448,7 @@ mod tests {
         assert_eq!(vitals.health, 12);
         let due = owner
             .think(
-                &runtime,
+                &mut runtime,
                 &mut vitals,
                 issuer,
                 3,
@@ -464,7 +464,7 @@ mod tests {
         assert_eq!((vitals.health, vitals.revision), (4, 2));
         owner
             .think(
-                &runtime,
+                &mut runtime,
                 &mut vitals,
                 issuer,
                 4,
@@ -485,7 +485,7 @@ mod tests {
     }
     #[test]
     fn failed_chance_and_protected_targets_never_damage_or_retry_later() -> Result<(), String> {
-        let (runtime, issuer, target, session) = fixture()?;
+        let (mut runtime, issuer, target, session) = fixture()?;
         let mut owner = MonsterMeleeOwner::default();
         let mut vitals = Vitals {
             health: 20,
@@ -494,7 +494,7 @@ mod tests {
         let def = definition(&runtime, 0)?;
         let result = owner
             .think(
-                &runtime,
+                &mut runtime,
                 &mut vitals,
                 issuer,
                 1,
@@ -521,7 +521,7 @@ mod tests {
         let def = definition(&runtime, 1_000_000)?;
         let result = protected
             .think(
-                &runtime,
+                &mut runtime,
                 &mut vitals,
                 issuer,
                 1,
@@ -545,7 +545,7 @@ mod tests {
         assert_eq!(
             protected
                 .think(
-                    &runtime,
+                    &mut runtime,
                     &mut vitals,
                     issuer,
                     1,
@@ -570,7 +570,7 @@ mod tests {
     }
     #[test]
     fn wrong_content_and_player_issuers_do_not_allocate_schedule_state() -> Result<(), String> {
-        let (runtime, issuer, target, _) = fixture()?;
+        let (mut runtime, issuer, target, _) = fixture()?;
         let mut owner = MonsterMeleeOwner::default();
         let mut vitals = Vitals {
             health: 20,
@@ -580,7 +580,7 @@ mod tests {
         def.content_digest[0] ^= 1;
         assert_eq!(
             owner.think(
-                &runtime,
+                &mut runtime,
                 &mut vitals,
                 issuer,
                 1,
@@ -593,13 +593,14 @@ mod tests {
             ),
             Err(BiteRejection::InvalidPlan)
         );
+        let def = definition(&runtime, 1_000_000)?;
         assert_eq!(
             owner.think(
-                &runtime,
+                &mut runtime,
                 &mut vitals,
                 target,
                 1,
-                definition(&runtime, 1_000_000)?,
+                def,
                 input(1),
                 &perceived(),
                 |_| None,
