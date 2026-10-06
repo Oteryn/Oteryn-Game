@@ -47,11 +47,12 @@ jobs:
             install -m 0755 "target/release/$name" "$bundle/bin/$name"
           done
           install -m 0755 deploy/synology-game/supervisor.sh "$bundle/supervisor.sh"
+          install -m 0755 deploy/synology-game/deploy-ops.sh "$bundle/deploy-ops.sh"
           python3 deploy/synology-game/stage_gameplay.py \
             content/spells.manifest.json "$GITHUB_WORKSPACE" "$bundle/gameplay"
           echo "$GITHUB_SHA" > "$bundle/SOURCE_SHA"
           # Every file is in the bundle before the checksums are computed.
-          (cd "$bundle" && find bin gameplay supervisor.sh SOURCE_SHA -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          (cd "$bundle" && find bin gameplay supervisor.sh deploy-ops.sh SOURCE_SHA -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
 
       - uses: actions/upload-artifact@v4
         with:
@@ -111,8 +112,10 @@ jobs:
           test -f "$ops" && test ! -L "$ops"
           test "$(stat -c '%u' "$ops")" = 0
           test -e "$ROOT_BASE/ops/ops.toml"
-          # The root-run ops binary must not be replaceable by the runner user.
-          test ! -w "$ops" && test ! -w "$ROOT_BASE/bin"
+          wrapper="$ROOT_BASE/bin/oteryn-game-deploy-ops"
+          test -f "$wrapper" && test ! -L "$wrapper" && test "$(stat -c '%u' "$wrapper")" = 0
+          # The root-run binaries must not be replaceable by the runner user.
+          test ! -w "$ops" && test ! -w "$wrapper" && test ! -w "$ROOT_BASE/bin"
           sudo -n -l >/dev/null
 
       - name: Compare the root-installed ops binary with the bundle
@@ -123,6 +126,9 @@ jobs:
           bundled="$(sha256sum "$RUNNER_TEMP/bundle/bin/oteryn-game-ops" | cut -d ' ' -f 1)"
           if [[ "$installed" != "$bundled" ]]; then
             echo "::warning::root-installed oteryn-game-ops differs from this bundle (installed $installed, bundle $bundled); the owner upgrades it out of band"
+          fi
+          if ! cmp -s "$ROOT_BASE/bin/oteryn-game-deploy-ops" "$RUNNER_TEMP/bundle/deploy-ops.sh"; then
+            echo "::warning::root-installed oteryn-game-deploy-ops differs from this bundle; the owner upgrades it out of band"
           fi
           echo "OPS_SHA256_INSTALLED=$installed" >> "$GITHUB_STEP_SUMMARY"
           echo "OPS_SHA256_BUNDLE=$bundled" >> "$GITHUB_STEP_SUMMARY"
@@ -157,13 +163,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          binding="preprod-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           file="launch-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
-          args=(--config "$ROOT_BASE/ops/ops.toml" authorization issue --file "$file" --binding "$binding")
+          args=(issue "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT")
           if [[ -s "$BASE/run/current-node-id" ]]; then
-            args+=(--supersedes "$(tr -d '[:space:]' < "$BASE/run/current-node-id")")
+            args+=("$(tr -d '[:space:]' < "$BASE/run/current-node-id")")
           fi
-          sudo -n "$ROOT_BASE/bin/oteryn-game-ops" "${args[@]}"
+          sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" "${args[@]}"
           # Point the node at the new authorization (state dir is BASE/state; file handed to the service uid).
           sed -i "s|^authorization_file = .*|authorization_file = \"$BASE/state/$file\"|" "$BASE/node/node.toml"
           grep -q "^authorization_file = \"$BASE/state/$file\"" "$BASE/node/node.toml"
@@ -187,8 +192,32 @@ jobs:
         run: |
           set -euo pipefail
           "$BASE/supervisor.sh" health
-          {
-            echo 'GAME_PREPRODUCTION_DEPLOY=PASS'
-            echo "SOURCE_SHA=$GITHUB_SHA"
-            echo "NODE_STATE=$(cat "$BASE/run/node-state")"
-          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Assign the scope to the new node (as root) and wait for ready
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$BASE/log/node.log"
+          node_id="$(tr -d '[:space:]' < "$BASE/run/current-node-id")"
+          if [[ "$(cat "$BASE/run/node-state")" = awaiting_assignment ]]; then
+            line="$(grep 'event=awaiting_assignment' "$log" | tail -n 1)"
+            revision="$(sed -n 's/.*registration_revision=\([0-9]\{1,18\}\).*/\1/p' <<< "$line")"
+            test -n "$revision"
+            # The manual first start already assigned the scope, so every deploy replaces.
+            sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" assign replace \
+              "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$node_id" "$revision"
+          fi
+          for _ in $(seq 1 60); do
+            if grep -q 'event=readiness ready=true' "$log"; then
+              echo ready > "$BASE/run/node-state"
+              {
+                echo 'GAME_PREPRODUCTION_DEPLOY=PASS'
+                echo "SOURCE_SHA=$GITHUB_SHA"
+                echo 'NODE_STATE=ready'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::node did not report ready after assignment"
+          exit 1
