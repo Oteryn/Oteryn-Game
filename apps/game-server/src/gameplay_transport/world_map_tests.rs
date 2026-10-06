@@ -133,6 +133,12 @@ fn content(id: u32) -> Item {
 
 /// A server bundle over `0..=127` holding `tiles`, loaded as a base.
 fn base(tiles: Vec<(TilePos, Vec<Item>)>) -> Arc<WorldBase> {
+    let (bytes, pins) = bundle_bytes(tiles);
+    Arc::new(crate::map::load(&bytes, &pins).expect("loaded base"))
+}
+
+/// The bytes and pins of a server bundle over `0..=127` holding `tiles`.
+fn bundle_bytes(tiles: Vec<(TilePos, Vec<Item>)>) -> (Vec<u8>, crate::map::BundlePins) {
     let terrain = |key: &str, id, kind| PaletteEntry {
         key: key.into(),
         family: Family::Terrain,
@@ -230,7 +236,7 @@ fn base(tiles: Vec<(TilePos, Vec<Item>)>) -> Arc<WorldBase> {
         content_revision: "rev-1".into(),
         production: true,
     };
-    Arc::new(crate::map::load(&bytes, &pins).expect("loaded base"))
+    (bytes, pins)
 }
 
 fn uuid(seed: u8) -> [u8; 16] {
@@ -1419,41 +1425,93 @@ const GOLDEN: (usize, usize, &str) = (
 #[test]
 #[ignore = "measurement; run in release"]
 fn map_viewport_measure() {
+    let floors: Vec<i8> = (-7..=0).collect();
+    let fixture = Fixture::new(seeded_world(7, &floors, 24..72));
+    measure_viewports("", &fixture.overlay, &fixture.facts, &floors);
+}
+
+/// [`map_viewport_measure`] over the production [`BundleFacts`](crate::map::facts::BundleFacts)
+/// of the same seeded world booted as a bundle World (MAP-CUTOVER-1b).
+#[test]
+#[ignore = "measurement; run in release"]
+fn map_viewport_measure_production_facts() {
+    let floors: Vec<i8> = (-7..=0).collect();
+    let world = booted(seeded_world(7, &floors, 24..72));
+    measure_viewports(" production-facts", world.overlay(), world.facts(), &floors);
+}
+
+/// The served definition of a test palette Item key: its §1.6 reference is 1 + its palette `id`.
+fn production_item(key: &str) -> Option<crate::map::facts::ItemDefinition> {
+    let id = match key {
+        "item:coin" => COIN,
+        "item:door" => DOOR,
+        "item:chest" => CHEST,
+        "item:table" => TABLE,
+        "item:bag" => BAG,
+        "item:pillar" => PILLAR,
+        _ => return None,
+    };
+    let solid = matches!(id, DOOR | CHEST | PILLAR);
+    Some(crate::map::facts::ItemDefinition {
+        reference: nz(id + 1),
+        solid: Some(solid),
+        blocks_projectile: id == PILLAR,
+        pickupable: matches!(id, COIN | BAG),
+    })
+}
+
+/// `tiles` booted as a bundle World with [`production_item`], starting at the first tile that
+/// holds grass alone.
+fn booted(tiles: Vec<(TilePos, Vec<Item>)>) -> crate::map::boot::BundleWorld {
+    let start = tiles
+        .iter()
+        .find(|(_, items)| items.len() == 1 && items[0].palette == GRASS - 1)
+        .map(|(pos, _)| *pos)
+        .expect("a grass tile");
+    let (bytes, bundle) = bundle_bytes(tiles);
+    let map_revision = map_revision(&crate::map::load(&bytes, &bundle).expect("loaded base"));
+    let pins = crate::map::boot::BootPins {
+        bundle,
+        map_revision,
+        start,
+    };
+    crate::map::boot::boot(&bytes, &pins, world(), channel(), production_item).expect("booted")
+}
+
+fn measure_viewports<F: MapFacts>(label: &str, overlay: &ChannelOverlay, facts: &F, floors: &[i8]) {
     use std::time::{Duration, Instant};
     const SAMPLES: usize = 20_000;
-    let floors: Vec<i8> = (-7..=0).collect();
-    let mut fixture = Fixture::new(seeded_world(7, &floors, 24..72));
+    let mut items = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+    let mut view = SessionMapView::default();
     let mut rng = Seeded(0x5eed_0007);
     let (mut snapshots, mut deltas) = (Vec::with_capacity(SAMPLES), Vec::with_capacity(SAMPLES));
     let mut plans = Vec::with_capacity(SAMPLES);
+    let source = MapViewSource {
+        overlay,
+        facts,
+        content_generation: [7; 32],
+        reset_epoch: 1,
+    };
     for _ in 0..SAMPLES {
         let actor = tp(
             34 + rng.below(28) as u16,
             34 + rng.below(28) as u16,
             floors[rng.below(floors.len() as u64) as usize],
         );
-        let source = MapViewSource {
-            overlay: &fixture.overlay,
-            facts: &fixture.facts,
-            content_generation: [7; 32],
-            reset_epoch: fixture.reset_epoch,
-        };
         let started = Instant::now();
         let planned = plan(&source, at(actor)).expect("plan");
         plans.push(started.elapsed());
         std::hint::black_box(planned);
         let started = Instant::now();
-        let snapshot = fixture
-            .view
-            .snapshot(&mut fixture.items, &source, at(actor))
+        let snapshot = view
+            .snapshot(&mut items, &source, at(actor))
             .expect("snapshot");
         snapshots.push(started.elapsed());
         std::hint::black_box(snapshot);
         let stepped = tp(actor.x + 1, actor.y, actor.floor);
         let started = Instant::now();
-        let delta = fixture
-            .view
-            .update(&mut fixture.items, &source, at(stepped))
+        let delta = view
+            .update(&mut items, &source, at(stepped))
             .expect("delta");
         deltas.push(started.elapsed());
         std::hint::black_box(delta);
@@ -1461,7 +1519,7 @@ fn map_viewport_measure() {
     let report = |name: &str, samples: &mut Vec<Duration>| {
         samples.sort_unstable();
         println!(
-            "MAP01-VIEWPORT-US {name} p50={:?} p99={:?} max={:?}",
+            "MAP01-VIEWPORT-US{label} {name} p50={:?} p99={:?} max={:?}",
             samples[samples.len() / 2],
             samples[samples.len() * 99 / 100],
             samples[samples.len() - 1]

@@ -22,8 +22,10 @@
 //! - **Domain 1.** With capability 18, Ground items and corpses are carried only in map tiles
 //!   ([`carried_in_domain_1`]).
 //!
-//! Capability 18 stays `offered: false` until MAP-CUTOVER-1, and no runtime holds a bundle World
-//! yet, so only the tests reach this module.
+//! MAP-CUTOVER-1b: a bundle World offers capability 18 and its sessions plan their window over
+//! the Channel's map view ([`crate::map::boot::BundleMap`]); a fixture World never offers it.
+//! The registry entry stays `offered: false`. Map targets and handles have no consumer before
+//! MAP-PICKUP-1.
 
 #![cfg_attr(not(test), allow(dead_code))]
 

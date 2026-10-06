@@ -1,11 +1,14 @@
 //! MAP-CUTOVER-1a: boot a World's Channel from a configured world bundle (MAP track packets
 //! §2.3).
 //!
-//! [`boot`] loads the bundle with the configured pins, refuses a `map_revision` other than the
-//! one the bundle names and a start tile a player cannot enter, and returns a [`BundleWorld`]:
-//! the shared base, an empty Channel overlay and the set of walkable tiles an entry blocks.
+//! [`check`] loads the bundle with the configured pins and refuses a `map_revision` other than
+//! the one the bundle names and a start tile without walkable ground; [`CheckedBundle::boot`]
+//! then resolves the palette against the served item definitions (MAP-CUTOVER-1b), refuses a
+//! start tile a solid item blocks, and returns a [`BundleWorld`]: the shared base, the Channel's
+//! map view (an empty overlay and the map facts) and the set of walkable tiles an entry blocks.
 //! Nothing durable names the bundle; a restart rebuilds an equal World from the same pins.
 
+use super::facts::{BundleFacts, FactsRefusal, ItemDefinition};
 use super::overlay::{ChannelOverlay, TilePos, map_revision};
 use super::{BundlePins, LoadError, WorldBase};
 use crate::content::static_cell_engine::{EngineeringStaticCellScope, StaticCellEngineError};
@@ -15,7 +18,7 @@ use crate::content::{
 };
 use crate::foundation::{ChannelId, WorldId};
 use crate::movement::speed::{EngineeringGroundSpeed, GroundSpeedSource};
-use oteryn_world_bundle::bundle::{self, Family, TerrainKind};
+use oteryn_world_bundle::bundle;
 use std::collections::BTreeSet;
 use std::fmt;
 use std::sync::Arc;
@@ -42,6 +45,8 @@ pub enum BootRefusal {
     MapRevision,
     /// The configured start tile cannot be entered.
     StartNotEnterable,
+    /// A palette Item key the §1.6 item index lacks or places at another `id`.
+    ItemReference,
 }
 
 impl fmt::Display for BootRefusal {
@@ -50,6 +55,9 @@ impl fmt::Display for BootRefusal {
             Self::Load(error) => write!(f, "{error}"),
             Self::MapRevision => f.write_str("map_revision is not the world bundle's revision"),
             Self::StartNotEnterable => f.write_str("the world bundle start tile is not enterable"),
+            Self::ItemReference => {
+                f.write_str("a world bundle palette item does not match the item index")
+            }
         }
     }
 }
@@ -62,12 +70,21 @@ impl From<LoadError> for BootRefusal {
     }
 }
 
+impl From<FactsRefusal> for BootRefusal {
+    fn from(refusal: FactsRefusal) -> Self {
+        match refusal {
+            FactsRefusal::Load(error) => Self::Load(error),
+            FactsRefusal::ItemReference => Self::ItemReference,
+        }
+    }
+}
+
 /// A Channel booted from a world bundle: the shared base, its empty overlay, the start tile and
 /// the walkable tiles a wall or a solid item blocks.
 #[derive(Debug)]
 pub struct BundleWorld {
     base: Arc<WorldBase>,
-    overlay: ChannelOverlay,
+    map: Arc<BundleMap>,
     map_revision: String,
     start: TilePos,
     blocked: Arc<BTreeSet<TilePos>>,
@@ -84,69 +101,114 @@ impl PartialEq for BundleWorld {
             && self.map_revision == other.map_revision
             && self.start == other.start
             && self.blocked == other.blocked
-            && self.overlay.world_id() == other.overlay.world_id()
-            && self.overlay.channel_id() == other.overlay.channel_id()
-            && self.overlay.tiles().next().is_none()
-            && other.overlay.tiles().next().is_none()
+            && self.map.overlay.world_id() == other.map.overlay.world_id()
+            && self.map.overlay.channel_id() == other.map.overlay.channel_id()
+            && self.map.overlay.tiles().next().is_none()
+            && other.map.overlay.tiles().next().is_none()
     }
 }
 
 impl Eq for BundleWorld {}
 
-/// Boots `world_id`'s Channel `channel_id` from the bundle bytes. `solid` answers whether the
-/// item definition a palette key names has `block_solid`; an unknown definition (`None`)
-/// blocks.
+/// Boots `world_id`'s Channel `channel_id` from the bundle bytes: [`check`], then
+/// [`CheckedBundle::boot`].
 pub fn boot(
     data: &[u8],
     pins: &BootPins,
     world_id: WorldId,
     channel_id: ChannelId,
-    solid: impl Fn(&str) -> Option<bool>,
+    item: impl Fn(&str) -> Option<ItemDefinition>,
 ) -> Result<BundleWorld, BootRefusal> {
-    let base = Arc::new(super::load(data, &pins.bundle)?);
+    check(data.to_vec(), pins.clone())?.boot(world_id, channel_id, item)
+}
+
+/// The checks that need no item definition, which a node runs before any durable step: the
+/// bundle loads with its pins, `map_revision` is the bundle's and the start tile's ground is
+/// walkable.
+pub fn check(data: Vec<u8>, pins: BootPins) -> Result<CheckedBundle, BootRefusal> {
+    let base = Arc::new(super::load(&data, &pins.bundle)?);
     let revision = map_revision(&base);
     if revision != pins.map_revision {
         return Err(BootRefusal::MapRevision);
     }
-    let blocked = Arc::new(blocked_tiles(data, &solid)?);
-    if !enterable(&base, &blocked, pins.start) {
+    if !enterable(&base, &BTreeSet::new(), pins.start) {
         return Err(BootRefusal::StartNotEnterable);
     }
-    Ok(BundleWorld {
-        overlay: ChannelOverlay::new(Arc::clone(&base), world_id, channel_id),
+    Ok(CheckedBundle {
+        data,
         base,
         map_revision: revision,
         start: pins.start,
-        blocked,
     })
 }
 
-/// The walkable-or-not tiles one of whose top-level entries is a `wall` Terrain or an item
-/// whose definition is solid.
-fn blocked_tiles(
+/// A bundle that passed [`check`] and waits for the served item definitions.
+#[derive(Debug)]
+pub struct CheckedBundle {
+    data: Vec<u8>,
+    base: Arc<WorldBase>,
+    map_revision: String,
+    start: TilePos,
+}
+
+impl CheckedBundle {
+    /// Builds the World. `item` serves the definition of the Item a palette key names; a palette
+    /// Item key it does not serve at its palette `id` refuses the boot (§1.6), and so does a
+    /// start tile a solid item blocks.
+    pub fn boot(
+        self,
+        world_id: WorldId,
+        channel_id: ChannelId,
+        item: impl Fn(&str) -> Option<ItemDefinition>,
+    ) -> Result<BundleWorld, BootRefusal> {
+        let (facts, blocked) = scan(&self.data, &item)?;
+        let blocked = Arc::new(blocked);
+        if !enterable(&self.base, &blocked, self.start) {
+            return Err(BootRefusal::StartNotEnterable);
+        }
+        Ok(BundleWorld {
+            map: Arc::new(BundleMap {
+                overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
+                facts,
+            }),
+            base: self.base,
+            map_revision: self.map_revision,
+            start: self.start,
+            blocked,
+        })
+    }
+}
+
+/// The map facts of the bundle, and the walkable-or-not tiles one of whose top-level entries is
+/// a `wall` Terrain or an Item whose definition is solid.
+fn scan(
     data: &[u8],
-    solid: &impl Fn(&str) -> Option<bool>,
-) -> Result<BTreeSet<TilePos>, LoadError> {
+    item: &impl Fn(&str) -> Option<ItemDefinition>,
+) -> Result<(BundleFacts, BTreeSet<TilePos>), BootRefusal> {
+    let mut facts = None;
+    let mut refused = None;
     let mut blocked = BTreeSet::new();
-    bundle::visit(data, |manifest, sector| {
+    let visited = bundle::visit(data, |manifest, sector| {
+        if facts.is_none() {
+            match BundleFacts::palette(manifest, item) {
+                Ok(palette) => facts = Some(palette),
+                Err(refusal) => {
+                    refused = Some(refusal);
+                    return Err(oteryn_world_bundle::Error::Format(
+                        "palette does not match the item index".into(),
+                    ));
+                }
+            }
+        }
+        let Some(facts) = facts.as_mut() else {
+            return Ok(());
+        };
         for tile in &sector.tiles {
             let blocks = tile
                 .items
                 .iter()
                 .filter(|item| item.depth == 0)
-                .any(|item| {
-                    manifest
-                        .palette
-                        .get(item.palette as usize)
-                        .is_none_or(|entry| {
-                            entry
-                                .terrain
-                                .as_ref()
-                                .is_some_and(|terrain| terrain.kind == TerrainKind::Wall)
-                                || (entry.family == Family::Item
-                                    && solid(&entry.key) != Some(false))
-                        })
-                });
+                .any(|item| facts.blocks(item.palette));
             if blocks {
                 blocked.insert(TilePos {
                     x: tile.x,
@@ -155,9 +217,19 @@ fn blocked_tiles(
                 });
             }
         }
+        facts.push(manifest, &sector);
         Ok(())
-    })?;
-    Ok(blocked)
+    });
+    if let Some(refusal) = refused {
+        return Err(refusal.into());
+    }
+    let visited = visited.map_err(LoadError::from)?;
+    let mut facts = match facts {
+        Some(facts) => facts,
+        None => BundleFacts::palette(&visited.manifest, item)?,
+    };
+    facts.finish();
+    Ok((facts, blocked))
 }
 
 /// A tile a player can enter: its ground is walkable and no entry blocks it.
@@ -183,7 +255,12 @@ impl BundleWorld {
     }
 
     pub fn overlay(&self) -> &ChannelOverlay {
-        &self.overlay
+        &self.map.overlay
+    }
+
+    /// The production map facts of the bundle.
+    pub fn facts(&self) -> &BundleFacts {
+        &self.map.facts
     }
 
     pub fn map_revision(&self) -> &str {
@@ -210,7 +287,8 @@ impl BundleWorld {
     }
 
     /// The Channel's movement cells over this bundle: `entry`'s scope in the bundle's frame and
-    /// `map_revision`, with the bundle collision index. MAP-CUTOVER-1b serves them.
+    /// `map_revision`, with the bundle collision index, which also carries the Channel's map
+    /// view ([`BundleCollisionIndex::map`]).
     pub fn movement_cells(
         &self,
         entry: &NativeEntryMovementCells,
@@ -222,9 +300,18 @@ impl BundleWorld {
             scope: scope.clone(),
             base: Arc::clone(&self.base),
             blocked: Arc::clone(&self.blocked),
+            map: Arc::clone(&self.map),
         };
         Ok(NativeEntryMovementCells::from_bundle(entry, scope, index))
     }
+}
+
+/// What domain 17 of a bundle World's Channel is composed from: the Channel overlay, which stays
+/// empty until MAP-CUTOVER-1c (§1.2), and the bundle's map facts.
+#[derive(Debug)]
+pub(crate) struct BundleMap {
+    pub(crate) overlay: ChannelOverlay,
+    pub(crate) facts: BundleFacts,
 }
 
 /// The collision of a Channel's movement cells over a world bundle: a tile is Walkable when it
@@ -234,6 +321,7 @@ pub(crate) struct BundleCollisionIndex {
     scope: EngineeringStaticCellScope,
     base: Arc<WorldBase>,
     blocked: Arc<BTreeSet<TilePos>>,
+    map: Arc<BundleMap>,
 }
 
 impl PartialEq for BundleCollisionIndex {
@@ -247,6 +335,11 @@ impl PartialEq for BundleCollisionIndex {
 impl Eq for BundleCollisionIndex {}
 
 impl BundleCollisionIndex {
+    /// The Channel's map view over the same bundle.
+    pub(crate) fn map(&self) -> &BundleMap {
+        &self.map
+    }
+
     pub(crate) fn lookup(
         &self,
         scope: &EngineeringStaticCellScope,
@@ -329,11 +422,11 @@ pub(crate) mod tests {
                 floors: vec![-7],
             },
             palette: vec![
-                terrain("terrain:grass", 1, TerrainKind::Ground, Some(true)),
-                terrain("terrain:lava", 2, TerrainKind::Ground, Some(false)),
-                terrain("terrain:wall", 3, TerrainKind::Wall, None),
-                item("item:box", 1),
-                item("item:coin", 2),
+                terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
+                terrain("terrain:lava", 1, TerrainKind::Ground, Some(false)),
+                terrain("terrain:wall", 2, TerrainKind::Wall, None),
+                item("item:box", 0),
+                item("item:coin", 1),
             ],
             draft_areas: Vec::new(),
             skipped_provisional_keys: Vec::new(),
@@ -380,12 +473,20 @@ pub(crate) mod tests {
         (bytes, pins)
     }
 
-    fn solid(key: &str) -> Option<bool> {
-        match key {
-            "item:box" => Some(true),
-            "item:coin" => Some(false),
-            _ => None,
-        }
+    /// The served definitions of the test bundle's Items: the §1.6 index places `item:box` at
+    /// Item id 0 and `item:coin` at 1.
+    pub(crate) fn items(key: &str) -> Option<ItemDefinition> {
+        let (reference, solid, pickupable) = match key {
+            "item:box" => (1, Some(true), false),
+            "item:coin" => (2, Some(false), true),
+            _ => return None,
+        };
+        Some(ItemDefinition {
+            reference: std::num::NonZeroU32::new(reference)?,
+            solid,
+            blocks_projectile: solid == Some(true),
+            pickupable,
+        })
     }
 
     fn pins(bundle: BundlePins, x: u16) -> BootPins {
@@ -405,7 +506,7 @@ pub(crate) mod tests {
         let (bytes, load) = bundle();
         let world_id = WorldId::decode(&id(1))?;
         let channel_id = ChannelId::decode(&id(2))?;
-        let world = boot(&bytes, &pins(load, 2), world_id, channel_id, solid)?;
+        let world = boot(&bytes, &pins(load, 2), world_id, channel_id, items)?;
         assert_eq!(world.ground_speed(world.start()), 150);
         let room = crate::content::qualify_native_entry_room(world_id)?;
         let cells = world.movement_cells(room.movement_cells())?;
@@ -500,14 +601,19 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn map_cutover_an_unknown_item_definition_blocks() -> Result<(), Box<dyn Error>> {
+    fn map_cutover_an_unknown_item_solidity_blocks() -> Result<(), Box<dyn Error>> {
         let (bytes, load) = bundle();
         let world = boot(
             &bytes,
             &pins(load, 1),
             WorldId::decode(&id(1))?,
             ChannelId::decode(&id(2))?,
-            |_| None,
+            |key| {
+                items(key).map(|definition| ItemDefinition {
+                    solid: None,
+                    ..definition
+                })
+            },
         )?;
         assert!(world.enterable(TilePos {
             x: 1,
@@ -519,6 +625,85 @@ pub(crate) mod tests {
             y: 0,
             floor: -7
         }));
+        Ok(())
+    }
+
+    #[test]
+    fn map_cutover_a_palette_item_the_index_disagrees_with_refuses_boot()
+    -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = bundle();
+        let (world_id, channel_id) = (WorldId::decode(&id(1))?, ChannelId::decode(&id(2))?);
+        let shifted = |key: &str| {
+            items(key).map(|definition| ItemDefinition {
+                reference: definition.reference.saturating_add(1),
+                ..definition
+            })
+        };
+        let missing = |key: &str| items(key).filter(|_| key != "item:coin");
+        for refused in [
+            boot(
+                &bytes,
+                &pins(load.clone(), 1),
+                world_id,
+                channel_id,
+                shifted,
+            ),
+            boot(
+                &bytes,
+                &pins(load.clone(), 1),
+                world_id,
+                channel_id,
+                missing,
+            ),
+        ] {
+            assert_eq!(refused, Err(BootRefusal::ItemReference));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn map_cutover_facts_send_palette_id_zero_as_one() -> Result<(), Box<dyn Error>> {
+        use crate::map::view::{EntryFacts, MapFacts};
+        use oteryn_protocol_oteryn::world_map::MapDefinition;
+        let (bytes, load) = bundle();
+        let world = boot(
+            &bytes,
+            &pins(load, 1),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            items,
+        )?;
+        let facts = world.facts();
+        let at = |x| TilePos { x, y: 0, floor: -7 };
+        let one = std::num::NonZeroU32::MIN;
+        // Grass (Terrain id 0) and the box (Item id 0) share compact id 0.
+        let grass = facts.base_entry(at(6), 0, 0).ok_or("grass facts")?;
+        assert_eq!(grass.definition, MapDefinition::Terrain(one));
+        assert_eq!(
+            grass.terrain_kind,
+            Some(oteryn_world_bundle::bundle::TerrainKind::Ground)
+        );
+        let solid_box = facts.base_entry(at(6), 1, 0).ok_or("box facts")?;
+        assert_eq!(
+            solid_box,
+            EntryFacts {
+                definition: MapDefinition::Item(one),
+                terrain_kind: None,
+                appearance_id: 0,
+                blocks_projectile: true,
+                pickupable: false,
+                bound: false,
+                count: 1,
+                sub_type: 0,
+            }
+        );
+        let coin = facts.base_entry(at(7), 1, 1).ok_or("coin facts")?;
+        assert_eq!(coin.definition, MapDefinition::Item(one.saturating_add(1)));
+        assert!(coin.pickupable && !coin.bound);
+        // A compact id that is not the placement's is no fact.
+        assert_eq!(facts.base_entry(at(7), 1, 0), None);
+        assert!(!facts.house_tile(at(7)));
+        assert_eq!(facts.object_revision(0), 0);
         Ok(())
     }
 }

@@ -72,6 +72,27 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
 ];
 
+/// The offered set of a World booted from a bundle (MAP-CUTOVER-1b): the production set plus
+/// capability 18 `WORLD_MAP_VIEW_V1`, which requires 4 `ITEM_VIEW_MOVE_V1` and 6. Only a bundle
+/// World returns it; the registry entry stays `offered: false` and its `offer_gate` names this
+/// offer. 18 is above every production ID, so appending it keeps the set ascending.
+pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
+    const WORLD_MAP_VIEW: OfferedCapability = OfferedCapability {
+        id: CAPABILITY_WORLD_MAP_VIEW_V1,
+        requires: &[
+            CAPABILITY_ITEM_VIEW_MOVE_V1,
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        ],
+    };
+    let mut set = [WORLD_MAP_VIEW; PRODUCTION_OFFERED_CAPABILITIES.len() + 1];
+    let mut index = 0;
+    while index < PRODUCTION_OFFERED_CAPABILITIES.len() {
+        set[index] = PRODUCTION_OFFERED_CAPABILITIES[index];
+        index += 1;
+    }
+    set
+};
+
 /// The command types and state domains each registered capability owns
 /// (`PROTOCOL_OTERYN_V1_REGISTRY.json`; a test keeps them equal). Capability 6
 /// `WORLD_SPATIAL_ENTITIES` is not listed: it extends the core domain 1 with payload type 2, which

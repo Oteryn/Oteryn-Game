@@ -16,9 +16,10 @@ use super::super::world_spatial::{
 };
 use super::*;
 use crate::foundation::{
-    AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, GameSessionId, MessageType,
-    ServerAcceptedValue, ServerResumeAcceptedValue, WorldId, decode_wire_envelope,
-    encode_server_accepted, encode_server_resume_accepted,
+    AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, FoundationProtocolError,
+    GameSessionId, MessageType, ServerAcceptedValue, ServerResumeAcceptedValue, WorldId,
+    decode_wire_envelope, encode_protocol_error, encode_server_accepted,
+    encode_server_resume_accepted,
 };
 use crate::foundation::{DomainSnapshot, encode_single_chunk_snapshot};
 use oteryn_protocol_oteryn::achievement_notices::{
@@ -331,6 +332,8 @@ impl ConnectionIdentifiers for Identifiers {
 /// connection's own refusal is observable. `offered` is `None` for the production set.
 struct NegotiatingAuthority {
     offered: Option<&'static [OfferedCapability]>,
+    /// MAP-CUTOVER-1b: the capability a bundle World requires at fresh admission.
+    required: Option<u32>,
     lost: Cell<Option<AdmittedSession>>,
     steps: Cell<u32>,
     /// ITEM-USE-WIRE-1: what an item USE observes; the backpack it serves under capability 4.
@@ -341,6 +344,7 @@ impl NegotiatingAuthority {
     fn new(offered: Option<&'static [OfferedCapability]>) -> Self {
         Self {
             offered,
+            required: None,
             lost: Cell::new(None),
             steps: Cell::new(0),
             item_target: RefCell::new(None),
@@ -383,6 +387,10 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
 
     fn offered_capabilities(&self) -> &'static [OfferedCapability] {
         self.offered.unwrap_or(PRODUCTION_OFFERED_CAPABILITIES)
+    }
+
+    fn required_capability(&self) -> Option<u32> {
+        self.required
     }
 
     async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
@@ -613,6 +621,83 @@ fn production_admission_selects_capabilities_6_13_and_17_and_nothing_else()
             admitted.continuity.selected_capabilities,
             SelectedCapabilities::NONE
         );
+        Ok(())
+    })
+}
+
+#[test]
+fn the_bundle_world_offered_set_is_the_production_set_plus_18_requiring_4_and_6()
+-> Result<(), Box<dyn Error>> {
+    // MAP-CUTOVER-1b: the bundle set is the production set plus 18, whose crate and registry
+    // `requires` stay [4, 6]; the registry keeps 18 `offered: false`.
+    let (last, production) = BUNDLE_WORLD_OFFERED_CAPABILITIES
+        .split_last()
+        .ok_or("empty bundle set")?;
+    assert_eq!(production, PRODUCTION_OFFERED_CAPABILITIES);
+    assert_eq!(last.id, CAPABILITY_WORLD_MAP_VIEW_V1);
+    assert_eq!(last.requires, [4, 6]);
+    assert!(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES
+            .windows(2)
+            .all(|pair| pair[0].id < pair[1].id)
+    );
+    assert!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
+    let registry = registry_capabilities()?;
+    let entry = registry
+        .iter()
+        .find(|capability| capability["id"].as_u64() == Some(18))
+        .ok_or("capability 18")?;
+    assert_eq!(ids(&entry["requires"])?, [4, 6]);
+    assert_eq!(entry["offered"].as_bool(), Some(false));
+    Ok(())
+}
+
+#[test]
+fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn Error>> {
+    run(async {
+        let mut authority = NegotiatingAuthority::new(Some(BUNDLE_WORLD_OFFERED_CAPABILITIES));
+        authority.required = Some(CAPABILITY_WORLD_MAP_VIEW_V1);
+        let mismatch = encode_protocol_error(FoundationProtocolError::CapabilityMismatch, 0)?;
+        // 4, 6 and 18 select 18 with the rest of the production set the client supports.
+        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [4, 6, 13, 17, 18]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        assert!(
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_WORLD_MAP_VIEW_V1)
+        );
+        // A client without 18, and one selecting 18 without its required 4, are refused with
+        // exactly one CAPABILITY_MISMATCH before the owner admits anything.
+        for supported in [&[4, 6, 13, 17][..], &[6, 13, 17, 18], &[]] {
+            let (refused, frames) = admit(&authority, &bootstrap(supported)?).await?;
+            assert!(matches!(
+                refused,
+                Err(ConnectionEnd::AdmissionRefused(
+                    AdmissionRefusal::Classified(FoundationProtocolError::CapabilityMismatch)
+                ))
+            ));
+            assert_eq!(frames, [mismatch.clone()]);
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn a_fixture_world_offers_exactly_the_production_set_and_never_18() -> Result<(), Box<dyn Error>> {
+    run(async {
+        // MAP-CUTOVER-1b: a World without a bundle keeps the production set and domain 2.
+        let authority = NegotiatingAuthority::new(None);
+        assert_eq!(
+            authority.offered_capabilities(),
+            PRODUCTION_OFFERED_CAPABILITIES
+        );
+        assert_eq!(authority.required_capability(), None);
+        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
+        let selected = accepted_selection(&frames)?;
+        assert!(!selected.contains(&CAPABILITY_WORLD_MAP_VIEW_V1));
+        admitted.map_err(|end| format!("{end:?}"))?;
         Ok(())
     })
 }
