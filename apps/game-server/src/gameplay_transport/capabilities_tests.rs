@@ -678,7 +678,7 @@ fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn E
                     AdmissionRefusal::Classified(FoundationProtocolError::CapabilityMismatch)
                 ))
             ));
-            assert_eq!(frames, [mismatch.clone()]);
+            assert_eq!(frames, std::slice::from_ref(&mismatch));
         }
         Ok(())
     })
