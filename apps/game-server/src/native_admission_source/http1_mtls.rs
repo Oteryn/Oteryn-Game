@@ -215,7 +215,7 @@ pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
     let mut head = Vec::with_capacity(1024);
     let mut one = [0_u8; 1];
     let mut line_bytes = 0usize;
-    let mut first_line = true;
+    let mut code = None;
     while !head.ends_with(b"\r\n\r\n") {
         if head.len() == 8192 {
             return Err(SourceError::CapacityExceeded);
@@ -224,30 +224,36 @@ pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
             return Err(SourceError::InvalidInput);
         }
         line_bytes += 1;
-        if line_bytes > if first_line { 256 } else { 2048 } {
+        if line_bytes > if code.is_none() { 256 } else { 2048 } {
             return Err(SourceError::CapacityExceeded);
         }
         head.push(one[0]);
         if head.ends_with(b"\r\n") {
             line_bytes = 0;
-            first_line = false;
+            if code.is_none() {
+                // The status is classified before any field is buffered.
+                let status = std::str::from_utf8(&head[..head.len() - 2])
+                    .map_err(|_| SourceError::InvalidInput)?;
+                let status = if status == "HTTP/1.1 200 OK" {
+                    200
+                } else if require_ok {
+                    return Err(SourceError::Unavailable);
+                } else {
+                    final_status(status)?
+                };
+                // With a status list, an unlisted status is returned without
+                // its fields or body, so no head or body bound can mask it.
+                if !body_statuses.is_empty() && !body_statuses.contains(&status) {
+                    return Ok((status, Vec::new()));
+                }
+                code = Some(status);
+            }
         }
     }
+    let code = code.ok_or(SourceError::InvalidInput)?;
     let text = std::str::from_utf8(&head).map_err(|_| SourceError::InvalidInput)?;
     let mut lines = text.split("\r\n");
-    let status = lines.next().ok_or(SourceError::InvalidInput)?;
-    let code = if status == "HTTP/1.1 200 OK" {
-        200
-    } else if require_ok || status.len() > 256 {
-        return Err(SourceError::Unavailable);
-    } else {
-        final_status(status)?
-    };
-    // With a status list, an unlisted status is returned without its head
-    // fields or body, so no body bound can mask it.
-    if !body_statuses.is_empty() && !body_statuses.contains(&code) {
-        return Ok((code, Vec::new()));
-    }
+    lines.next();
     let mut fields = 0_usize;
     let mut length = None;
     let mut chunked = false;

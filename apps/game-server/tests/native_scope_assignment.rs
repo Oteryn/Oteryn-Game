@@ -1234,7 +1234,7 @@ fn revocation_response_over_the_bound_is_refused_in_transport_for_every_status()
 }
 
 #[test]
-fn unexpected_status_with_an_oversized_body_stops_without_retry() {
+fn unexpected_status_with_an_oversized_head_or_body_stops_without_retry() {
     block_on(async {
         let pki = pki();
         let oversized = " ".repeat(sa::RESPONSE_BYTES + 1);
@@ -1249,17 +1249,49 @@ fn unexpected_status_with_an_oversized_body_stops_without_retry() {
                 oversized.len()
             ),
         };
-        let script = vec![answer("404 Not Found", &oversized), unframed, chunked];
+        let long_field = Answer {
+            stall: Duration::ZERO,
+            response: format!(
+                "HTTP/1.1 404 Not Found\r\nX-Pad: {}\r\nContent-Length: 0\r\n\r\n",
+                "a".repeat(4096)
+            ),
+        };
+        let many_fields = Answer {
+            stall: Duration::ZERO,
+            response: format!(
+                "HTTP/1.1 404 Not Found\r\n{}Content-Length: 0\r\n\r\n",
+                (0..64)
+                    .map(|i| format!("X-Pad-{i}: a\r\n"))
+                    .collect::<String>()
+            ),
+        };
+        let large_head = Answer {
+            stall: Duration::ZERO,
+            response: format!(
+                "HTTP/1.1 502 Bad Gateway\r\n{}Content-Length: 0\r\n\r\n",
+                (0..8)
+                    .map(|i| format!("X-Pad-{i}: {}\r\n", "a".repeat(2000)))
+                    .collect::<String>()
+            ),
+        };
+        let script = vec![
+            answer("404 Not Found", &oversized),
+            unframed,
+            chunked,
+            long_field,
+            many_fields,
+            large_head,
+        ];
         let (port, seen) = platform(&pki, script).await;
         let d = descriptor(&pki, port, &pki.authority).unwrap();
-        for _ in 0..3 {
+        for _ in 0..6 {
             let report = sa::report_revocation(&d, &revocation(4), fast()).await;
             assert_eq!(
                 (report.result, report.attempts),
                 (Err(NotDelivered::UnexpectedStatus), 1)
             );
         }
-        assert_eq!(seen.lock().unwrap().len(), 3);
+        assert_eq!(seen.lock().unwrap().len(), 6);
     });
 }
 
