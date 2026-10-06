@@ -172,10 +172,42 @@ A further local-only completion-overlay qualification has been proven but is not
 - merge commit/result: pending
 - ownership release: pending
 
+## Typed-progress completion checkpoint
+
+**PROVEN on branch `ef5c9da5ec58db0383723ea291118ebff9e84e46`**
+
+- completion candidate: **303 canonical quests**
+- typed tracks: **2445**
+- typed transitions: **4378**
+- existing Source-lowered quests: **96**
+- authored chosen-stage quests: **68**
+- newly qualified chosen-source quests: **139**
+- chosen-source recipes still held: **7**
+- completion binding-plan owners: **207** (68 authored + 139 chosen-source)
+- completion-plan stages: **1115**
+- native event dispatch bindings: **0**
+- native NPC dialogue bindings: **0**
+- native reward delivery bindings: **0**
+- runtime activation: **false**
+
+The seven held chosen-source recipes are:
+
+- Bear Room Quest
+- Behemoth Quest
+- Demon Helmet Quest
+- Dragon Tower Quest
+- Edron Goblin Quest
+- Opticording Sphere Quest
+- Rift Warrior Outfits Quest
+
+All seven have a terminal `complete` stage with count greater than one. They remain fail-closed because QuestState completion requires a real request cause bound 1:1 to an owning occurrence. A generic automatic terminal reducer would violate the accepted QuestState request contract and is not introduced by this task.
+
+The next implementation lane is therefore native event dispatch for the **207** typed chosen quests, starting with event kinds that already have exact canonical target identities or an existing declared encounter outcome seam. Source fidelity holds remain tracked independently and do not erase chosen Oteryn recipe work.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: 303-owner candidate committed; source139 event/reward associations committed; binding plan expanded to 207 quests/1115 stages; 88-owner source completion overlay qualified locally
+last_progress: completion candidate expanded to 303 canonical quests; source139 binding plan retained fail-closed
 status: implementing
 branch: codex/quest-completion-all373-20261006
 head_sha: null
@@ -197,5 +229,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish the validated 88-owner source completion overlay, refresh the all-373 matrix, then continue native binding batches
+next_action: qualify native event-dispatch lanes for the 207 chosen typed-progress quests without runtime promotion
 ```
