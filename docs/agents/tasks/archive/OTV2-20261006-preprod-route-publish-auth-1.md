@@ -21,7 +21,7 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20261006-preprod-route-publish-auth-1.md
 public_contracts: []
 depends_on: []
-blocks: [PLATFORM-NATIVE-PREPROD-OPS-1, RUNBOOK-1]
+blocks: [PLATFORM-NATIVE-PREPROD-OPS-1]
 cross_repository_coordination_id: OTV2-20260929-N4P-NATIVE-GATEWAY-LOGIN
 external_repositories: []
 ```
@@ -36,13 +36,15 @@ external_repositories: []
   - neither `publishRouteForPreproduction` nor `publishTrustedKey` has an operator command;
   - issued WorldId and ChannelId are permanent.
 - Options:
-  - A (recommended): a disposable stack, plus one Platform PR adding two commands limited to
-    testing and preproduction.
+  - current route: the disposable stack of the merged RUNBOOK-1, which calls the Platform methods
+    through `php -r` with no Platform change.
+  - A (deferred after RUNBOOK-1 merged): the same stack, plus one Platform PR adding two commands
+    limited to testing and preproduction; reopened only by a decision §6 trigger.
   - B: persistent private preproduction, deferred until rollout step 7.
   - C: public staging, rejected.
 - Owner questions §7 items 1–4 are routed through the control plane. Recorded answers 1a
-  (D831, against the final §2 owned-path list; replaces D824 1a) and 2a (D824); items 3 and 4
-  are open.
+  (D831, against the final §2 owned-path list; replaces D824 1a) and 2a (D824) stay recorded,
+  but no Platform PR is allocated under them while Option A is deferred; items 3 and 4 are open.
 
 ## Architecture and source of truth
 
@@ -53,8 +55,15 @@ external_repositories: []
 - PROVEN: Platform native gateway login contract §14 steps 6 and 7; `ARCH-LOGIN-FIRST-PACKETS-V1`
   §2.7 (RUNBOOK-1 plan).
 - DERIVED: a persistent MariaDB in `preproduction` is refused by the unchanged guard.
+- PROVEN: Game `main` 36c586516: RUNBOOK-1 (`tools/qualification/login_local/run.sh:163-182`)
+  calls `issueForPreproduction`, `publishRouteForPreproduction` and `publishTrustedKey` through
+  `php -r` in its throwaway `APP_ENV=preproduction` Platform container; Platform 3896bcd has no
+  route or trust command.
+- DERIVED: that runbook's Platform store is MariaDB `oteryn_s3a` on host `db`
+  (`tools/qualification/wp5_s3a/compose.yml:37-40`), which `isolatedConnection()` refuses in
+  `preproduction` (`NativeTopologyRegistry.php:162-168`), so its topology step fails (F7).
 - UNKNOWN: Platform hosts outside the repository; the toolchain of the `oteryn-synology-game`
-  runner; RUNBOOK-1's final shape.
+  runner; whether the rest of the Platform stack runs on the per-run SQLite profile.
 
 ## High-risk authority/recovery qualification
 
@@ -82,6 +91,8 @@ its own independent review under the item 1 grant.
 - [x] The mandatory decision test is answered (decision §6).
 - [x] Owner answer 1a (D831, final §2 path list) and 2a (D824) are recorded; the Synology shape of Option B is noted as not
       decided (decision §3, §7).
+- [x] F6 and §6 reassessed against the merged RUNBOOK-1: Option A deferred with reopen triggers;
+      no new Platform command authorized now (P1 4196578216).
 - [ ] Owner answers to items 3 and 4.
 
 ## Excluded scope
@@ -152,6 +163,20 @@ guard relaxation. No decision on Option B or its Synology shape.
     command refuses both in `testing`; the happy path runs in `preproduction`.
   - The issue command in `testing` still admits those test stores; that is unchanged Platform
     behaviour that Option A does not use, and no route or trust state can follow it.
+- Codex P1 4196578216 (after the merge of `main` 3d297c9d, RUNBOOK-1 calls the three methods
+  from the shell and says nothing is pending PLATFORM-NATIVE-PREPROD-OPS-1, so F6 and §6 "Must
+  decide now? YES" were stale). Accepted; option (b).
+  - F6 rewritten from Game `main` 36c586516: the runbook reaches the methods through `php -r`
+    (`run.sh:163,166,170,182`), the same pattern as node_boot; the commands do not exist at
+    Platform 3896bcd; no protected preproduction environment exists where that path is
+    inadmissible.
+  - New F7: the runbook's Platform store is MariaDB, which the guard refuses in `preproduction`,
+    so its first run fails at `run.sh:166`. The Option A commands would not fix it. The fix is
+    RUNBOOK-1-FU work in Game paths.
+  - §6: Option A deferred; nothing is blocked on it. Reopen triggers listed (protected or
+    persistent preproduction, a CI gate needing stable flags, a security finding on the
+    unguarded trust write, Platform removing the methods). Status, §0, §2, §5, §7 and §8 follow;
+    answers 1a (control plane D831) and 2a (D824) stay recorded, with no Platform PR allocated.
 
 ## Validation
 
@@ -193,7 +218,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## PR and closeout
 
 - changed-file review: two owned paths
-- unresolved review threads: none after the round-7 reply to 4195923710
+- unresolved review threads: none after the reply to 4196578216
 - related/superseded PRs: none
 - protected auto-merge: control plane
 - merge commit/result: in PR #1871
@@ -202,7 +227,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## Context checkpoint
 
 ```yaml
-last_progress: round 7, Option A preproduction-only and retained-file check on both commands (4195923710)
+last_progress: P1 4196578216, Option A deferred after RUNBOOK-1 merged (F6 rewritten, F7 added, §6 reassessed)
 status: completed
 branch: cand/preprod-route-publish-auth-1
 pr: 1871
