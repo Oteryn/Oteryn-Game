@@ -4,6 +4,8 @@ import copy
 import gzip
 import hashlib
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,14 +16,19 @@ from verify_solo_item_source_recovery import (
     OLD_REGISTRY,
     REPO_PREFIX,
     ability_row_sizes,
+    attribute_value,
     lexeme_bytes,
     recovered_digest,
     require_repo_path_length,
     safe_path,
+    u32,
+    verify_ability_provenance,
     verify_charge_observation,
     verify_definition_successor,
 )
 
+
+VERIFIER = Path(__file__).with_name("verify_solo_item_source_recovery.py")
 SCHEMA = "OTERYN_SOURCE_DEFINITION_OBSERVATIONS_CLOSED/v1"
 KEY = "oteryn:item.tibia.i100"
 
@@ -107,9 +114,46 @@ class ChargeObservationShapeTests(unittest.TestCase):
             ]
         )
         explicit["parameter"] = explicit["parameter"] | {
-            "charges_origin": "EXPLICIT_ORDERED_XML"
+            "charges_origin": "EXPLICIT_ORDERED_XML",
+            "charges_default_u32": 5,
         }
         verify_charge_observation(explicit)
+
+    def test_charge_values_must_match_the_xml_assignments(self):
+        def explicit(key="charges", lexeme="5", **parameter):
+            value = charge_observation(
+                ordered_assignments=[
+                    {"attribute_ordinal": 1, "key": key, "value_lexeme": lexeme}
+                ]
+            )
+            value["parameter"] = value["parameter"] | {
+                "charges_origin": "EXPLICIT_ORDERED_XML",
+                "charges_default_u32": 5,
+            }
+            value["parameter"] |= parameter
+            return value
+
+        verify_charge_observation(explicit(lexeme="&amp;#53;", charges_default_u32=0))
+        verify_charge_observation(explicit(lexeme="&#53;"))
+        verify_charge_observation(explicit(lexeme="0x5", charges_default_u32=0))
+        initializer_with_value = charge_observation()
+        initializer_with_value["parameter"]["charges_default_u32"] = 7
+        for name, value in {
+            "value differs": explicit(charges_default_u32=99),
+            "wrong member": explicit(key="levelDoor"),
+            "non numeric lexeme": explicit(lexeme="5x"),
+            "initializer nonzero": initializer_with_value,
+            "unescaped lexeme hides the value": explicit(
+                lexeme="&#53;", charges_default_u32=0
+            ),
+            "bad entity": explicit(lexeme="&bogus;"),
+            "initializer with assignment for member": explicit(
+                charges_origin="OWN_CPP_INITIALIZER",
+                level_door_origin="EXPLICIT_ORDERED_XML",
+            ),
+        }.items():
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                verify_charge_observation(value)
 
     def test_malformed_observations_are_rejected(self):
         bad_parameter = charge_observation()["parameter"]
@@ -136,6 +180,44 @@ class ChargeObservationShapeTests(unittest.TestCase):
         }.items():
             with self.subTest(name=name), self.assertRaises(ValueError):
                 verify_charge_observation(value)
+
+
+def ability_row(**binding):
+    return {
+        "header": {"external_item_id": 102, "source_cut": "CANARY_47DF"},
+        "own_binding": {
+            "disposition": "EXACT",
+            "external_id": "102",
+            "identity_namespace": "ots/item_server_id",
+            "source_key": "oteryn:source.canary",
+            "source_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "target": {},
+        }
+        | binding,
+        "parameter": {"source_cut": "canary-47df"},
+        "target": {},
+    }
+
+
+class AbilityProvenanceTests(unittest.TestCase):
+    def test_full_provenance_is_accepted_and_each_field_is_checked(self):
+        verify_ability_provenance(ability_row())
+        for name, value in {
+            "revision": ability_row(source_revision="0" * 40),
+            "external id": ability_row(external_id="103"),
+            "namespace": ability_row(identity_namespace="other"),
+            "disposition": ability_row(disposition="AMBIGUOUS"),
+            "source key": ability_row(source_key="oteryn:source.crystalserver"),
+        }.items():
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                verify_ability_provenance(value)
+        mismatched = ability_row()
+        mismatched["parameter"]["source_cut"] = "crystal-ff7"
+        extra = ability_row()
+        extra["unexpected"] = 1
+        for name, value in {"cut mismatch": mismatched, "extra key": extra}.items():
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                verify_ability_provenance(value)
 
 
 class AbilityMaximaTests(unittest.TestCase):
@@ -185,6 +267,29 @@ class DefinitionSuccessorTests(unittest.TestCase):
         for changed in (old[1:], old[::-1], [observation("DURATION", 2), old[1]]):
             with self.subTest(changed=changed), self.assertRaises(ValueError):
                 self.check(old, changed + charge, charge)
+
+    def test_every_old_revision_must_survive(self):
+        old = [observation("DURATION")]
+        charge = [observation("CHARGES_AND_LEVEL_DOOR")]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            records = write_package(root, old, old + charge, charge)
+            registry = root / "recovery/old.json.gz"
+            raw = json.dumps(
+                {
+                    "schema": SCHEMA,
+                    "targets": {KEY: {"definition-r1": old, "definition-r2": old}},
+                }
+            ).encode()
+            registry.write_bytes(gzip.compress(raw))
+            manifest = json.loads((root / "recovery-manifest.json").read_text())
+            manifest["files"][0] |= {
+                "raw_bytes": len(raw),
+                "raw_sha256": hashlib.sha256(raw).hexdigest(),
+            }
+            (root / "recovery-manifest.json").write_text(json.dumps(manifest))
+            with self.assertRaises(ValueError):
+                verify_definition_successor(root, records)
 
     def test_suffix_must_equal_the_charge_batch(self):
         old = [observation("DURATION")]
@@ -251,8 +356,45 @@ class RecoveryBoundaryTests(unittest.TestCase):
             )
 
 
-if __name__ == "__main__":
-    unittest.main()
+class ProducerLawReplayTests(unittest.TestCase):
+    def test_replay_matches_the_producer_vectors(self):
+        self.assertEqual(attribute_value("&amp;#53;"), "&#53;")
+        self.assertEqual(attribute_value("&#53;"), "5")
+        self.assertEqual(attribute_value("a\tb\r\n"), "a b ")
+        for bad in ("&bogus;", "&amp", "&#0;", "&#xD800;"):
+            with self.assertRaises(ValueError):
+                attribute_value(bad)
+        self.assertEqual(u32("0004294967295"), 4294967295)
+        self.assertEqual(u32("4294967296"), 0)
+        self.assertEqual(u32("12345678901"), 0)
+        self.assertEqual(u32("+5"), 0)
+        self.assertEqual(u32(""), 0)
+
+    def test_a_tampered_producer_and_inventory_pair_is_never_executed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            marker = root / "executed"
+            inventory = []
+            for relative in (
+                "producer-evidence/charges/xml_attribute_law.py",
+                "producer-evidence/charges/produce.py",
+            ):
+                payload = f"open({str(marker)!r}, 'w').close()\n".encode()
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(payload)
+                inventory.append(
+                    {"path": relative, "sha256": hashlib.sha256(payload).hexdigest()}
+                )
+            (root / "package-inventory.json").write_text(json.dumps(inventory))
+            result = subprocess.run(
+                [sys.executable, "-I", str(VERIFIER), "--package", str(root)],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(marker.exists())
+            self.assertFalse((root / "producer-evidence/charges/__pycache__").exists())
 
 
 class RepoPathLengthTests(unittest.TestCase):
@@ -261,3 +403,7 @@ class RepoPathLengthTests(unittest.TestCase):
         require_repo_path_length(fits)
         with self.assertRaisesRegex(ValueError, "repository path too long"):
             require_repo_path_length(fits + "a")
+
+
+if __name__ == "__main__":
+    unittest.main()
