@@ -170,3 +170,79 @@ It must not be implemented as:
 - a direct QuestState write.
 
 Once accepted, SHARDS-E1 can represent Magnolia without any remaining schema-level workaround.
+
+
+## Exact implementation surface readback
+
+Fresh current-main readback narrows the authoring/ProjectV2 amendment to the existing Encounter owner surfaces.
+
+### Authoring schema
+
+Owned/generated surfaces:
+
+```text
+tools/content-schema/encounter-authoring/build_schema.py
+tools/content-schema/encounter-authoring/validate_encounter.py
+tools/content-schema/encounter-authoring/verify_encounter_schema.py
+tools/content-schema/encounter-authoring/encounter.schema.json   # generated output; do not hand-diverge
+```
+
+Current `build_schema.py` already defines adjacent actions:
+
+- `heal`;
+- `prevent_death`;
+- `damage_modifier`;
+- `set_phase`.
+
+The bounded addition belongs alongside those action kinds.
+
+Validator requirements are exactly:
+
+```text
+role exists in declared participants
+max_health >= 1
+current_health >= 0
+current_health <= max_health
+no unknown fields
+```
+
+No canonicalization ordering is required for two scalar values.
+
+### ProjectV2 typed model
+
+Exact file:
+
+```text
+apps/game-server/src/content/project/v2/encounter.rs
+```
+
+Current `ProjectV2EncounterAction` already contains `Heal`, `PreventDeath`, `ConvertDamageToHeal` and `SetPhase`, and the same file owns action validation.
+
+Add only:
+
+```rust
+SetHealth {
+    role: String,
+    max_health: u64,
+    current_health: u64,
+}
+```
+
+and the corresponding validation branch.
+
+Focused admission tests belong in:
+
+```text
+apps/game-server/tests/content_world_project_v2_encounter_admission.rs
+```
+
+No separate JSON->ProjectV2 converter was found: the typed ProjectV2 model is serde-backed directly, so there is no hidden lowering file that also needs a semantic amendment.
+
+### Runtime boundary
+
+Do not add runtime mutation before `ENC-RT-1` owns the Encounter interpreter.
+
+When that owner exists, its action interpreter must atomically update the live Encounter actor's effective max/current HP. The Creature definition remains 52,000 and is not rewritten.
+
+This code-surface readback makes the architecture decision independent from the later runtime allocation:
+authoring + ProjectV2 can accept the fact first; runtime execution stays separately fenced.
