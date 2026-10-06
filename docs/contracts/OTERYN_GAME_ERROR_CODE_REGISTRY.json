@@ -429,6 +429,26 @@
       "contract": null,
       "hint": "ops exit 7: the outcome is unknown; reconcile the retained request before retrying.",
       "status": "ACTIVE"
+    },
+    {
+      "code": 8001,
+      "name": "GOVERNANCE_CHECK_FAILED",
+      "category": "INVALID_INPUT",
+      "progression": "TERMINAL",
+      "owner": "tools/agents/validate_governance.py",
+      "contract": null,
+      "hint": "Governance validator exit 1: a governance check failed; the message names the file or rule.",
+      "status": "ACTIVE"
+    },
+    {
+      "code": 8002,
+      "name": "REPOSITORY_POLICY_CHECK_FAILED",
+      "category": "INVALID_INPUT",
+      "progression": "TERMINAL",
+      "owner": "tools/repository/validate_repository_policy.py",
+      "contract": null,
+      "hint": "Repository policy validator exit 1: a policy check failed; the message names the check.",
+      "status": "ACTIVE"
     }
   ]
 }
