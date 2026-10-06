@@ -1,0 +1,172 @@
+# Magnolia phase-2 max-health amendment — bounded Encounter-owner proposal
+
+Status: **PROPOSED ARCHITECTURE AMENDMENT / NO RUNTIME MUTATION**
+
+Quest: Shards of a Broken Moon  
+Encounter role: `The Moonsnow Magnolia`
+
+## Exact gap
+
+Current admitted Magnolia Creature max health is **52,000**.
+
+Current Reference behavior for phase 2 is exact:
+
+```text
+first lethal
+-> death prevented
+-> same Magnolia continues
+-> phase 2 begins immediately
+-> current HP = 60,000
+-> effective max HP = 60,000
+```
+
+Existing Encounter vocabulary already covers every other required primitive:
+
+- `lethal_damage`
+- `prevent_death`
+- `set_phase`
+- timers
+- item-used / stepped-on
+- spawn/remove
+- damage->heal conversion
+- encounter outcomes
+
+The only missing representation is increasing the same live role above its Creature-definition maximum.
+
+## Rejected workarounds
+
+### Do not heal to 60,000 through `heal`
+
+`heal full` is bounded by the Creature max of 52,000. Treating 60,000 as an over-heal would be an undocumented runtime exception and breaks max-health-relative rules.
+
+### Do not mint a fake phase-2 Creature identity
+
+Existing Transform examples such as Feroxa/Feroxa2 and Urmahlullu forms are backed by distinct source Creature forms.
+
+Magnolia phase 2 is not a separately sourced Creature identity. Minting `the_moonsnow_magnolia_phase_2` solely to obtain a larger max-health field would duplicate one canonical boss identity and put an Encounter-local state change into Creature ownership.
+
+## Smallest compatible amendment
+
+Add one Encounter-owned action with absolute values, for example:
+
+```json
+{
+  "kind": "set_health",
+  "role": "magnolia",
+  "max_health": 60000,
+  "current_health": 60000
+}
+```
+
+Equivalent naming is acceptable; semantics should remain narrow.
+
+### ProjectV2 shape
+
+Suggested Rust shape:
+
+```rust
+ProjectV2EncounterAction::SetHealth {
+    role: String,
+    max_health: u64,
+    current_health: u64,
+}
+```
+
+Do not add this to Creature attributes. It is Encounter-instance state.
+
+### Authoring-schema shape
+
+Suggested closed action:
+
+```text
+kind: set_health
+role: declared participant role
+max_health: integer >= 1
+current_health: integer >= 0
+current_health <= max_health
+```
+
+No percentages and no optional half-update are needed for the Magnolia source fact.
+
+## Execution semantics
+
+The action atomically replaces the live encounter actor's effective current/max health for the remainder of that live form/encounter instance.
+
+Required invariants:
+
+1. role must resolve to an existing live encounter participant;
+2. `max_health >= 1`;
+3. `0 <= current_health <= max_health`;
+4. update is atomic — no intermediate 52k/60k state is observable;
+5. percentage triggers after the action use the new 60k maximum;
+6. Creature definition remains unchanged at 52k;
+7. encounter reset/despawn naturally discards the override and a fresh Magnolia starts from Creature baseline;
+8. no QuestState, Item, or account persistence is written;
+9. the action cannot target players or arbitrary non-participant actors;
+10. replay/double-fire protection stays owned by the Encounter rule runtime.
+
+## Magnolia rule
+
+The source-faithful lethal transition then becomes:
+
+```text
+trigger: lethal_damage(magnolia)
+condition: phase == phase_1
+
+actions, in order:
+1. prevent_death(magnolia)
+2. set_health(magnolia, max=60000, current=60000)
+3. set_phase(phase_2)
+4. apply source-qualified phase-transition visual/effect if admitted
+```
+
+First lethal must not emit the completion outcome.
+
+Permanent phase-2 death emits the encounter completion outcome consumed later by ENC-OUTCOME-1 / Quest transition composition.
+
+## Why an absolute max is required
+
+Using only `current_health=60000` while keeping max=52000 is invalid:
+
+- percentage conditions become wrong;
+- full-heal behavior becomes wrong;
+- damage/heal UI/state can clamp or misreport;
+- a later reset/full heal returns to 52k unexpectedly.
+
+The Reference fact is therefore a max-health override, not merely an absolute heal.
+
+## Required tests
+
+Schema / ProjectV2:
+
+- accepts declared role, max=60000, current=60000;
+- rejects unknown role;
+- rejects max=0;
+- rejects current > max;
+- rejects unknown fields;
+- canonical serialization round-trips exactly.
+
+Runtime, once ENC-RT-1 exists:
+
+- first lethal prevents death;
+- role remains same canonical Magnolia actor;
+- max/current become exactly 60000;
+- health-percent trigger math uses 60000;
+- phase becomes phase_2;
+- no completion outcome on first lethal;
+- second lethal can kill normally and emit completion;
+- reset/new encounter restores Creature baseline 52000;
+- no durable Quest/Creature mutation is produced.
+
+## Ownership
+
+This belongs exclusively to Encounter authoring / ProjectV2 / ENC-RT ownership.
+
+It must not be implemented as:
+
+- a Shards quest special case;
+- a Creature-content duplicate;
+- a generic over-heal exception;
+- a direct QuestState write.
+
+Once accepted, SHARDS-E1 can represent Magnolia without any remaining schema-level workaround.
