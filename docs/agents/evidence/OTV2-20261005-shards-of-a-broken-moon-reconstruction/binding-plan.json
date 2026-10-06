@@ -1304,6 +1304,32 @@
       "source_pipeline": "CW2-B1 donor epoch-2 opaque registry allocation",
       "status": "EXACT_IDENTITY_PROMOTION_REQUIRED",
       "forbidden": "Do not mint or reference oteryn:item.tibia.i54638."
+    },
+    "achievement_identities": {
+      "oteryn:achievement/amati_s_echo@1": {
+        "status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+        "staticdata_source_id": 594,
+        "tibiawiki": {
+          "pageid": 110746,
+          "revid": 1200473
+        }
+      },
+      "oteryn:achievement/forbidden_fruit@1": {
+        "status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+        "staticdata_source_id": null,
+        "tibiawiki": {
+          "pageid": 79651,
+          "revid": 849801
+        }
+      },
+      "oteryn:achievement/six_steps_ahead@1": {
+        "status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+        "staticdata_source_id": 592,
+        "tibiawiki": {
+          "pageid": 110744,
+          "revid": 1200472
+        }
+      }
     }
   }
 }
