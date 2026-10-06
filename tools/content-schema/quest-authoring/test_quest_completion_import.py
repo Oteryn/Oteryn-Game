@@ -11,12 +11,12 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class CompletionImportTests(unittest.TestCase):
-    def test_all68_bindings_reference_actual_owned_transitions(self):
+    def test_all207_bindings_reference_actual_owned_transitions(self):
         outputs = tool.expected(ROOT)
         state = json.loads(outputs[tool.OUTPUT])
         plan = json.loads(outputs[tool.PLAN])
         transitions = {t['key']: t for q in state['quests'] for t in q['transitions']}
-        self.assertEqual(plan['counts'], {'quests': 68, 'stages': 416})
+        self.assertEqual(plan['counts'], {'quests': 207, 'stages': 1115})
         for quest in plan['records']:
             self.assertFalse(quest['runtime_enabled'])
             self.assertIsNone(quest['native_reward_delivery_binding'])
@@ -81,7 +81,7 @@ class CompletionImportTests(unittest.TestCase):
 
     def test_readonly_determinism_and_pinned_input_drift_rejection(self):
         before = {path: (ROOT / path).stat().st_mtime_ns
-                  for path in [tool.BASE, tool.EVENTS, tool.EVENT_CORRECTIONS, tool.NPC]}
+                  for path in [tool.BASE, tool.EVENTS, tool.EVENT_CORRECTIONS, tool.SOURCE_EVENTS, tool.NPC]}
         self.assertEqual(tool.expected(ROOT), tool.expected(ROOT))
         self.assertEqual(before, {path: (ROOT / path).stat().st_mtime_ns for path in before})
         with tempfile.TemporaryDirectory() as directory:
