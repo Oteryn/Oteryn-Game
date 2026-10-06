@@ -452,9 +452,25 @@ discarded stack keeps its database volume until the owner decides to delete it.
    the manifest epoch through `report.toml`. Recover an expired first start as that README
    describes.
 4. Confirm that the node reports `ready`.
-5. For each tester account, issue a Platform bootstrap intent. Run
-   `game-auth:character-bootstrap-intent:issue` with the four manifest `[interpretation]` tokens,
-   then `ops character bootstrap --socket BASE/run/control.sock --operation-id <operation>`.
+5. For each tester account, generate one fresh UUIDv7 `OPERATION_ID` and record it with the
+   account. On the Platform stack, run the full `login_local` invocation:
+
+   ```sh
+   php artisan game-auth:character-bootstrap-intent:issue \
+     --identity-id=<the tester account's Platform identity id> \
+     --operation-id="$OPERATION_ID" \
+     --target-world-id=<WorldId> \
+     --requested-name=<the tester's character name> \
+     --profile-revision=<[interpretation] profile> \
+     --ruleset-revision=<[interpretation] ruleset> \
+     --content-revision=<[interpretation] content> \
+     --starter-template-revision=<[interpretation] starter>
+   ```
+
+   Then, on the Game node, run
+   `ops character bootstrap --socket BASE/run/control.sock --operation-id "$OPERATION_ID"` with
+   the same value. The identity id is read from the Platform `identities` row of the registered
+   account (§8 Platform operator step 8); the operator never writes that row.
 6. Record the resulting `character_id` from `game_character_roots` as that tester's
    `OTERYN_CHARACTER_ID` (§4.1).
 7. Only then dispatch `synology-game-deploy.yml` with owner approval, for this deploy and every
@@ -528,9 +544,12 @@ discarded stack keeps its database volume until the owner decides to delete it.
 - **Owned paths:**
   - `deploy/synology-game/preprod-topology.toml` (new). It is non-secret and holds the IDs, the
     route descriptor, `route_version`/`route_revision`, the readiness tokens, the four
-    `[interpretation]` tokens, `source_authority` (`platform`, equal to the Platform
-    `GAME_AUTH_NATIVE_EVIDENCE_SOURCE_AUTHORITY`), the epoch and the certificate subjects, with
-    placeholders until §7 step 6.
+    `[interpretation]` tokens, both source authorities, the epoch and the certificate subjects,
+    with placeholders until §7 step 6. The two source authorities stay distinct, because
+    `NodeConfig::parse` rejects equal values (`apps/game-server/src/node/config.rs`):
+    - `[readiness].source_authority` is `oteryn:runtime:synology-preprod` (§1);
+    - `[platform].source_authority` is `platform`, equal to the Platform
+      `GAME_AUTH_NATIVE_EVIDENCE_SOURCE_AUTHORITY`.
   - `deploy/synology-game/README.md`: the Platform section, names and runbook of §8. Its NAS
     values table takes `<WORLD_ID>`/`<CHANNEL_ID>` from the Registry-pinned manifest (D855), not
     from an owner-chosen UUIDv7, and takes `NODE_IDENTITY`, the platform endpoint and peer name,

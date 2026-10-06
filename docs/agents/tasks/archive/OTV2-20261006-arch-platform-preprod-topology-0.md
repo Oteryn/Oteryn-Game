@@ -89,5 +89,11 @@ The same diff fixes the mTLS FastCGI parameters, the OAuth client command, the W
 command, the admission key placement, the Game root copies, tester registration, and the
 README NAS-values rows in §10.
 
+Codex round 4 on `987ebfd9` raised two P1 findings, both fixed in one push:
+- the §10 manifest keeps the readiness source authority `oteryn:runtime:synology-preprod`
+  separate from the Platform source authority `platform`;
+- §8 gives the complete bootstrap intent invocation of `login_local`, with a recorded
+  `OPERATION_ID`.
+
 Review is decided by the control plane on the frozen head. Merge result: squash merge of
 #1893, pending CI and Merge Queue at authoring.
