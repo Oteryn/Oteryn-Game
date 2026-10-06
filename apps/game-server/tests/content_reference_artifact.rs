@@ -129,6 +129,23 @@ fn typed_family_linked(
     Ok((linked, selected))
 }
 
+/// The target of the full family's Item at `position` in import order.
+fn full_family_item_target(
+    position: usize,
+) -> Result<ReferenceItemTarget, Box<dyn std::error::Error>> {
+    let imported = protected_cw2_b1_full_item_family_import(B1_EVIDENCE)?;
+    let identity = imported
+        .records
+        .iter()
+        .filter_map(|record| match record {
+            ProjectReferenceRecord::Item { identity, .. } => Some(identity),
+            _ => None,
+        })
+        .nth(position)
+        .ok_or("full family Item position")?;
+    Ok(ReferenceItemTarget::new(&identity.key, &identity.revision)?)
+}
+
 fn promoted_family_linked() -> Result<CanonicalReferencePlayableContent, Box<dyn std::error::Error>>
 {
     let promoted = protected_cw2_b1_item_semantic_promotion_lowering_v1_import(B1_EVIDENCE)?;
@@ -186,7 +203,7 @@ fn promoted_atom_count(semantics: &ReferenceItemSemantics) -> usize {
 }
 
 #[test]
-fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v6_server_and_client()
+fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v7_server_and_client()
 -> Result<(), Box<dyn std::error::Error>> {
     let linked = promoted_family_linked()?;
     assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
@@ -233,11 +250,11 @@ fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v
     )?;
     assert_eq!(
         server.artifact_profile_id(),
-        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v6"
+        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v7"
     );
     assert_eq!(
         client.artifact_profile_id(),
-        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v6"
+        "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v7"
     );
 
     let mut server_promoted = 0_usize;
@@ -281,7 +298,7 @@ fn presentation() -> ReferenceItemPresentation {
 }
 
 #[test]
-fn typed_item_v6_representative_families_round_trip_through_project_and_both_projections()
+fn typed_item_v7_representative_families_round_trip_through_project_and_both_projections()
 -> Result<(), Box<dyn std::error::Error>> {
     use ReferenceItemField::{Conflict, Known, NotApplicable, Unknown};
     let capabilities = std::array::from_fn(|index| match index % 4 {
@@ -542,7 +559,47 @@ fn typed_item_v6_representative_families_round_trip_through_project_and_both_pro
         },
     ));
 
-    assert_eq!(cases.len(), 14);
+    // ITEM-SEM-BED-1: the server-only bed group (artifact v7). Cases fill the family's Items in
+    // import order, so the Head's occupied look is the Item of the next case.
+    let occupied_head = full_family_item_target(cases.len() + 1)?;
+    let bed = |part, partner_direction, occupied: &ReferenceItemTarget| ReferenceItemSemantics {
+        presentation: Known(presentation()),
+        bed: Known(ReferenceItemBed {
+            part,
+            partner_direction,
+            occupied_male: occupied.clone(),
+            occupied_female: occupied.clone(),
+        }),
+        ..Default::default()
+    };
+    cases.push((
+        "bed_head",
+        bed(
+            ReferenceBedPart::Head,
+            ReferenceBedDirection::South,
+            &occupied_head,
+        ),
+    ));
+    // "No change": the occupied look is the Item itself.
+    cases.push((
+        "bed_head_occupied",
+        bed(
+            ReferenceBedPart::Head,
+            ReferenceBedDirection::South,
+            &occupied_head,
+        ),
+    ));
+    let own_foot = full_family_item_target(cases.len())?;
+    cases.push((
+        "bed_foot",
+        bed(
+            ReferenceBedPart::Foot,
+            ReferenceBedDirection::North,
+            &own_foot,
+        ),
+    ));
+
+    assert_eq!(cases.len(), 17);
     let (linked, cases) = typed_family_linked(cases)?;
     assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
     let compiled = compile_reference_playable(&linked)?;
@@ -566,7 +623,7 @@ fn typed_item_v6_representative_families_round_trip_through_project_and_both_pro
             .expect(name);
         assert_eq!(
             server.artifact_profile_id(),
-            "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v6",
+            "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v7",
             "{name}"
         );
         assert_eq!(
