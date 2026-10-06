@@ -69,6 +69,8 @@ ownership.
 - [x] The decision document carries the mandatory decision test (decision §5).
 - [x] Future-dated watermarks never make the feed live, and the epoch restore precondition,
       detection and recovery are stated (review round 2).
+- [x] A raise is strictly above every published epoch, enforced by a persisted external fence
+      (review round 3).
 - [x] Owner acceptance after independent review of the frozen head (D821 1a): accepted
       2026-10-06, owner acceptance relayed by CP, D828.
 
@@ -95,6 +97,12 @@ ruling for U-LC1, U-LC5 or U-LC6, no production restore runbook, no PKI. No chan
     fail-closed `superseded` detection and the recovery (raise again after a clock fix); the
     production runbook must keep an external epoch fence (§10 U-LC2, decision §3 command help
     and publisher test).
+
+- Review round 3 (Codex P2 4193813893 on 1984f965), accepted and fixed: a raise that only
+  equals the highest published epoch would make the feed live. Contract §5 now has a persisted
+  external epoch fence: a raise strictly above it or refused with nothing written, and no
+  publication below it. The decision §2 item 3 and its tests and the §3 packet (config, command,
+  tests) match; §9 and §10 U-LC2 are updated. No wire change.
 
 ## Validation
 
@@ -145,7 +153,7 @@ ruling for U-LC1, U-LC5 or U-LC6, no production restore runbook, no PKI. No chan
 ## Context checkpoint
 
 ```yaml
-last_progress: owner acceptance recorded (D828)
+last_progress: review round 3 fixed
 status: completed
 branch: cand/lcfa-projection-contract-1
 pr: 1870
