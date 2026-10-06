@@ -19,6 +19,7 @@ owned_paths:
   - tools/repository/validate_repository_policy.py
   - tools/repository/test_validate_coded_output.py
   - docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json
+  - tools/errors/tests/test_registry.py
   - docs/agents/tasks/archive/OTV2-20261005-err-tools-3.md
 depends_on:
   - "ERR-REGISTRY-0 merged (#1841)"
@@ -42,10 +43,14 @@ single source location.
 - `python tools/repository/validate_repository_policy.py`: pass.
 - `python -m unittest discover -s tools/agents/tests`: pass (54 tests).
 - `python tools/repository/test_validate_coded_output.py`: pass (2 tests, codes match registry).
-- `python tools/errors/tests/test_registry.py`: 14 of 15 pass; `test_every_protocol_code_resolves_with_derived_progression` (20 != 37) fails identically on unmodified `main` in this checkout.
-- `tools/repository/test_validate_merge_group_pg_sim.py` and `test_validate_pr_gate_pg_sim.py`: fail identically on unmodified `main` in this checkout; unrelated files.
+- `python3 -m unittest tools/errors/tests/test_registry.py`: OK (15 tests). Fixed on CP instruction: the protocol-code range assertion assumed 1001..1050 and predates N8-1 (#1824, codes 1100..1116); it now reads the protocol block range from the registry's `blocks`. Nothing else in the test changed.
+- `tools/repository/test_validate_merge_group_pg_sim.py` and `test_validate_pr_gate_pg_sim.py`: not run to completion; they need `pwsh`, which this container lacks (environment, same on unmodified `main`). Left alone.
 - `git diff --check`: pass.
 
 ## Review
 
 Control plane decides review on the frozen head.
+
+## Finding
+
+No workflow under `.github/workflows` runs `tools/errors/tests`, which is why the stale assertion reached `main` unnoticed. Workflows are outside this task's owned paths and were not edited.
