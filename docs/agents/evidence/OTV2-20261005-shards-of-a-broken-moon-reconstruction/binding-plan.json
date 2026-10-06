@@ -1161,7 +1161,7 @@
       "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
       "reward_evidence_ref": "terminal-reward-evidence.json",
       "follow_up_taming": {
-        "reward_item": "oteryn:item.registry.i00038475",
+        "reward_item": "oteryn:item.tibia.i54638",
         "target_creature": "oteryn:creature.jaracal",
         "target_mount": "PENDING_MOUNT_OWNER_ADMISSION",
         "on_success": [
@@ -1193,13 +1193,13 @@
       "id": "reward_skewered_fish",
       "visible_stage": "s16",
       "kind": "REWARD_ITEM",
-      "item_candidate": "oteryn:item.registry.i00038475",
+      "item_candidate": "oteryn:item.tibia.i54638",
       "count": 1,
       "evidence": "FACT_IDENTITY_PROFILED",
       "owner": "Reward/Item/Durability",
       "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY",
       "materializable": false,
-      "blocker": "Existing oteryn:item.registry.i00038475 requires Item admission/materialization + terminal reward delivery binding; do not mint a duplicate.",
+      "blocker": "Existing oteryn:item.tibia.i54638 requires Item admission/materialization + terminal reward delivery binding; do not mint a duplicate.",
       "reward_evidence_ref": "terminal-reward-evidence.json"
     },
     {
@@ -1236,7 +1236,7 @@
     "Escape geometry and Rope Spot are resolved end-to-end (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9; Rope Spot 31923,31377,9 -> generic moveUpstairs destination 31923,31378,8). Remaining prison blocker: separate canonical admission of donor Lit Torch 54610; do not alias to i34017.",
     "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
     "No full real-character start→reward→relog/restart E2E qualification",
-    "Jaracal Mount exact donor identity is resolved (mount_id 250, clientid 1962, speed +10, premium, quest); canonical Mount admission + oteryn:item.registry.i00038475-on-Jaracal tame/account-unlock runtime remain missing, and tame chance semantics remain UNKNOWN"
+    "Jaracal Mount exact donor identity is resolved (mount_id 250, clientid 1962, speed +10, premium, quest); canonical Mount admission + oteryn:item.tibia.i54638-on-Jaracal tame/account-unlock runtime remain missing, and tame chance semantics remain UNKNOWN"
   ],
   "readback": {
     "refreshed_main": "52712f633786721c0d255888a92c81165cd2d5c3",
@@ -1371,14 +1371,14 @@
         "type": "quest"
       },
       "creature_key": "oteryn:creature.jaracal",
-      "taming_item": "oteryn:item.registry.i00038475",
+      "taming_item": "oteryn:item.tibia.i54638",
       "canonical_achievement": "oteryn:achievement/six_steps_ahead@1",
       "current_mount_catalogue_present": false,
       "current_mount_record_count": 252,
       "chance_semantics": "UNKNOWN_DO_NOT_INVENT",
       "required_work": [
         "Admit Jaracal Mount from exact pinned donor into canonical Mount catalogue.",
-        "Bind use of oteryn:item.registry.i00038475 on canonical Jaracal creature through existing Mount/Item/Interaction owners.",
+        "Bind use of oteryn:item.tibia.i54638 on canonical Jaracal creature through existing Mount/Item/Interaction owners.",
         "On successful tame grant account-scoped mount unlock plus existing Six Steps Ahead achievement.",
         "Qualify item consumption, idempotence and relog/restart persistence.",
         "Do not grant the mount directly from Shards s16."
@@ -1441,12 +1441,12 @@
     },
     "skewered_fish_identity": {
       "donor_id": 54638,
-      "canonical_key": "oteryn:item.registry.i00038475",
+      "canonical_key": "oteryn:item.tibia.i54638",
       "revision": "definition-r1",
       "materializable": false,
       "source_pipeline": "CW2-B1 donor epoch-2 opaque registry allocation",
       "status": "EXACT_IDENTITY_PROMOTION_REQUIRED",
-      "forbidden": "Do not mint or reference oteryn:item.tibia.i54638."
+      "forbidden": "Use current canonical oteryn:item.tibia.i54638; retired alias i00038475 is not canonical."
     },
     "achievement_identities": {
       "oteryn:achievement/amati_s_echo@1": {
