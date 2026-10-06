@@ -1222,7 +1222,7 @@
     "QUEST-TRIGGER-1 remains serialized after QUEST-GATE-1",
     "NPC-QUEST-1 remains blocked by NPC-TALK-1; NPC-WIRE-1 #1866 is merged, remaining dependencies include NPC-PLACE-1 + MAP-CUTOVER-1",
     "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
-    "Magnolia Encounter record absent; existing DSL covers lethal_damage/prevent_death/item_used/timers/convert_damage_to_heal, but phase-2 exact 60000 HP is not representable by current health model (base max 52000), and docs mention set_phase while schema/ProjectV2 has no set_phase action. Requires Encounter-owner disposition before SHARDS-E1.",
+    "Magnolia Encounter content is source-qualified, and set_phase/prevent_death/lethal_damage already exist in authoring + ProjectV2. Exact remaining representation gap: phase-2 60000 max/current HP cannot be represented above the base Creature max 52000; needs one bounded Encounter-local max-health override disposition. Runtime still waits on ENC-RT-1 -> ENC-OUTCOME-1.",
     "Blue Lava night-only predicate source conflict",
     "Escape geometry and Rope Spot are resolved end-to-end (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9; Rope Spot 31923,31377,9 -> generic moveUpstairs destination 31923,31378,8). Remaining prison blocker: separate canonical admission of donor Lit Torch 54610; do not alias to i34017.",
     "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
@@ -1469,6 +1469,14 @@
       },
       "lit_torch_donor_id": 54610,
       "lit_torch_status": "PENDING_SEPARATE_CANONICAL_ITEM_ADMISSION"
+    },
+    "magnolia_representation": {
+      "set_phase": "AVAILABLE",
+      "prevent_death": "AVAILABLE",
+      "lethal_damage": "AVAILABLE",
+      "convert_damage_to_heal": "AVAILABLE",
+      "phase2_hp": "BLOCKED_ON_ENCOUNTER_LOCAL_MAX_HEALTH_OVERRIDE",
+      "runtime": "BLOCKED_ON_ENC_RT_1_AND_ENC_OUTCOME_1"
     }
   }
 }
