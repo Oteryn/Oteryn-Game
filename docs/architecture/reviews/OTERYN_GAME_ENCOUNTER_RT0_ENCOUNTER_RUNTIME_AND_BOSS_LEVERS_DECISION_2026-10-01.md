@@ -486,6 +486,13 @@ Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficu
   `keep_percent` and the client health percent use the maximum in force at the read. A
   `damage_accumulated` percent threshold is that percent of the maximum in force when each hit is
   counted; the count already taken is kept when the maximum changes.
+- **Charm reads (CHARM-4).** Every charm formula that reads the creature's maximum health uses the
+  maximum in force at the committed hit, never the base Creature definition. This covers the
+  attack-proc damage percent, the Overpower and Overflux damage cap, and the Carnage percent of the
+  killed creature (its maximum in force at its lethal hit). The charm hook takes the maximum from
+  the creature's runtime snapshot (`snapshot.maximum_health`, `gameplay_transport/attack.rs`), so
+  the override is what that snapshot reports. Health never exceeds the maximum in force, so the
+  hook's check that health before the hit is at most the maximum still holds after a lower `set`.
 - **Magnolia phase 2.** Two rules, because an inline `heal` is followed by the drain of the lethal
   hit (§4.2, format §7):
   1. Inline `lethal_damage(magnolia)`, with the condition `counter_compare(magnolia_phase, <, 2)`:
@@ -557,6 +564,10 @@ Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficu
    - content validation rejects 0, a negative value and 9,223,372,036,854,775,808, and accepts
      9,223,372,036,854,775,807; the runtime refuses the same out-of-range value;
    - the monster authoring schema and Creature admission reject a maximum health above `i64::MAX`;
+   - CHARM-4 reads the maximum in force. On a 52,000 base after `set 60000`, a 5% attack proc
+     computes from 60,000. The Overpower and Overflux cap and Carnage's percent also use 60,000.
+     After a lower `set`, the next committed hit passes the charm hook's event check and uses the
+     lower maximum;
    - an ENC-PARITY-1 fixture covers Magnolia: phase 2 at 60,000 out of 60,000 after the queued
      heal, no outcome on the first lethal hit, the phase-2 lethal hit kills, and one death and one
      Bosstiary kill for the public key.
