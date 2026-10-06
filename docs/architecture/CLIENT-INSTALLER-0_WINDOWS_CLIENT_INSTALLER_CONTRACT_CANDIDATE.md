@@ -29,7 +29,11 @@ One release is one installer, `oteryn-client-<release_id>-x86_64-setup.exe`, bui
 - `<route>` is `ci` for the unsigned `rust_windows` artifact (section 7) and `rel` for the release job (section 6, slice 4).
 - The suffix is the first 12 hex digits of the exact Game commit.
 
-The build compiles all four parts in, so each `<release_id>` names exactly one payload. The client reports `client_build` as `oteryn-client/<client_version>`, unchanged (ALPHA-CLIENT-01 §17.3). No ordering is defined on `<release_id>`; which release is newer is decided only by the channel `sequence` (section 5).
+The build compiles all four parts in, so each `<release_id>` names exactly one payload. The client reports the exact release as `client_build` = `oteryn-client/<release_id>`, for example `oteryn-client/0.1.0+dev.ci.g1a2b3c4d5e6f`. Platform and the Gateway, the compatibility authority (ALPHA-CLIENT-01 §17.3), can therefore admit or reject one build even when another build shares its `client_version`.
+
+- The value stays inside the existing bounds: visible ASCII and at most 64 bytes for the Platform login, and the 128-byte `client_build_id` of FND-02. To keep that guarantee, a `<release_id>` longer than 50 bytes fails the build.
+- The format of the existing field changes, but the field itself and its diagnostic, non-authoritative role do not, so no protocol change is involved.
+- `minimum_supported_client_version` remains a coarse client-side floor. Rejecting one bad build that shares a version with a good one is done by `client_build` at Platform/Gateway. No ordering is defined on `<release_id>`; which release is newer is decided only by the channel `sequence` (section 5).
 
 All releases and channels share one install: one fixed Inno Setup `AppId`, one install directory and one uninstall entry. Installing another channel's installer is an explicit operator or user action that switches the channel.
 
@@ -51,7 +55,13 @@ Per-user install, no elevation: `%LOCALAPPDATA%\Programs\Oteryn\`.
 
 A release directory is written complete and never modified afterwards. `current.txt` is the **only** activation pointer (ALPHA-CLIENT-01 §17.3):
 
-1. The installer writes the payload into `releases\.staging-<release_id>\` and, once it is complete, renames that directory to `releases\<release_id>\` (a same-volume directory rename). A `releases\<release_id>\` directory therefore always exists complete. If it already exists, which happens on a reinstall or a reactivation, the installer reuses it unchanged and skips the copy; this is safe because a `<release_id>` names exactly one payload. A failure here leaves `current.txt` untouched, so the previous release stays active and fully consistent. A leftover staging directory is inert and is deleted by the next install.
+1. The installer writes the payload into `releases\.staging-<release_id>\` and, once it is complete, renames that directory to `releases\<release_id>\` (a same-volume directory rename). A `releases\<release_id>\` directory therefore always exists complete. If it already exists, which happens on a reinstall or a reactivation, the installer verifies it before reuse against the file list and SHA-256 values embedded in the installer: every payload file must be present with the exact hash, and no other file may exist. A directory that passes is reused unchanged and the copy is skipped; this is safe because a `<release_id>` names exactly one payload. A directory that fails (corrupted, partly deleted or quarantined) is rebuilt:
+
+- the installer stages a fresh copy;
+- it renames the broken directory to `releases\.trash-<release_id>\`;
+- it renames the staged copy into place.
+
+A crash between those two renames can leave `current.txt` naming a missing directory only when that release was already broken. The launcher then reports it, and the next install repairs it. A failure here leaves `current.txt` untouched, so the previous release stays active and fully consistent. A leftover staging directory is inert and is deleted by the next install.
 2. Activation writes `current.txt.new`, flushes it, and replaces `current.txt` with one `MoveFileExW(MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)` rename on the same volume. That rename is the single commit point. No correctness depends on installer rollback after this point, because there is nothing left to roll back: before the rename the old release is active, after it the new one is.
 3. Only after the rename does the installer delete other `releases\*` directories. It keeps the release that `current.txt` now names and the one it named immediately before, which is kept for local rollback (section 5.3). A failure during this cleanup, for example on a locked executable, is harmless; the next install repeats it.
 
@@ -158,10 +168,14 @@ The client changes this state only while it holds a named mutex `OterynClientUpd
 
 A release is *active* when it is the running release and `current.txt` names it. A release started directly from a retained directory while `current.txt` names another one is running but not active. The rules are:
 
-1. **Eligibility.** A pointer is eligible when `accepted_sequence` is absent or the pointer's `sequence` is greater than it. Nothing is baselined before evaluation, so the first pointer a fresh install sees is evaluated like any other.
+1. **Eligibility.** The high-water mark is the larger of `accepted_sequence` and `pending.sequence`; an absent value does not count. A pointer is eligible when either of these holds:
+   - its `sequence` is greater than the high-water mark, or there is no high-water mark;
+   - it is an exact retry of `pending`: the same `sequence` and the same `release_id`.
+
+   A pointer with `pending.sequence` but a different `release_id` is ignored. Nothing is baselined before evaluation, so the first pointer a fresh install sees is evaluated like any other. A stale or replayed pointer below a failed pending update is therefore never installed.
 2. **Already active.** An eligible pointer that names the active release records its `sequence` as `accepted_sequence`, clears `pending`, and installs nothing.
 3. **Update or reactivation.** Any other eligible pointer is an update. This includes a lower `client_version` (an authorized downgrade, section 5.3) and a pointer to the running release when that release is not active. On acceptance the client:
-   1. records `pending`, replacing any `pending` with a lower `sequence`;
+   1. records `pending`; by rule 1 its `sequence` is never lower than an existing `pending`;
    2. downloads the installer to the per-user cache;
    3. verifies `installer_sha256` (and the Authenticode signature once section 6 is live);
    4. exits, and runs the installer silently with a relaunch flag.
@@ -172,7 +186,7 @@ A release is *active* when it is the running release and `current.txt` names it.
    - otherwise, if the running release is active and equals `pending.release_id`, `accepted_sequence` becomes `pending.sequence` and `pending` is cleared.
 
    `accepted_sequence` advances only here and in rule 2, never on acceptance alone and never from a release that is running but not active.
-5. **Retry.** A failed check, download, hash verification, install or relaunch leaves `accepted_sequence` unchanged, so the same pointer stays eligible and is retried at the next start.
+5. **Retry.** A failed check, download, hash verification, install or relaunch leaves `accepted_sequence` and `pending` unchanged, so the same pointer stays eligible as an exact retry at the next start.
 6. **Never blocks play.** None of these failures blocks play unless the running version is below `minimum_supported_client_version`. Platform and the Gateway remain the compatibility authority (`client_build`), per ALPHA-CLIENT-01 §17.3.
 
 Updates never happen inside an active gameplay session (§17.1).
@@ -208,11 +222,11 @@ Each slice is one PR, smallest first. Each runs the checks `CONTEXT_ROUTING.md` 
 
 | Slice | Delivers | Owned paths | Validation |
 | --- | --- | --- | --- |
-| CLIENT-INSTALLER-1 | Unsigned installer artifact from CI: exe, launcher, `dev` `client.env`, empty `packages.json`, `<release_id>` compiled in, staged-rename install, atomic `current.txt` activation, `SetupMutex`/`AppMutex`, uninstall | `apps/client/installer/**`; `apps/client/src/bin/oteryn-launcher.rs` and the `apps/client/Cargo.toml` bin entry; the `<release_id>` constant and the `OterynClient` mutex in `apps/client/src/main.rs`; `.github/workflows/merge-gate.yml` (`rust_windows` steps only) with the D854 `merge-authority-audit.yml` rotation; task record | `cargo fmt`/`clippy`/`test -p oteryn-client` with launcher tests for a missing, malformed and dangling `current.txt`; `rust_windows` green with the install/smoke/uninstall steps of section 7, including an interrupted-install case that leaves the previous release active, a same-`<release_id>` reinstall, a concurrent second installer blocked by `SetupMutex`, and an install refused while the client holds `AppMutex`; `python tools/repository/validate_repository_policy.py` and matching `tools/repository/test_*.py` |
+| CLIENT-INSTALLER-1 | Unsigned installer artifact from CI: exe, launcher, `dev` `client.env`, empty `packages.json`, `<release_id>` compiled in, staged-rename install, atomic `current.txt` activation, `SetupMutex`/`AppMutex`, uninstall | `apps/client/installer/**`; `apps/client/src/bin/oteryn-launcher.rs` and the `apps/client/Cargo.toml` bin entry; the `<release_id>` constant and `CLIENT_BUILD` in `apps/client/src/lib.rs` and the `OterynClient` mutex in `apps/client/src/main.rs`; `.github/workflows/merge-gate.yml` (`rust_windows` steps only) with the D854 `merge-authority-audit.yml` rotation; task record | `cargo fmt`/`clippy`/`test -p oteryn-client` with launcher tests for a missing, malformed and dangling `current.txt`; `rust_windows` green with the install/smoke/uninstall steps of section 7, including an interrupted-install case that leaves the previous release active, a same-`<release_id>` reinstall, a reinstall that repairs a corrupted release directory, a concurrent second installer blocked by `SetupMutex`, and an install refused while the client holds `AppMutex`; `python tools/repository/validate_repository_policy.py` and matching `tools/repository/test_*.py` |
 | CLIENT-INSTALLER-2 | Client reads `client.env` (section 2.3 precedence) and verifies `packages.json` (section 4 rule 1) | `apps/client/src/**` | `cargo fmt`, `cargo clippy -p oteryn-client`, `cargo test -p oteryn-client` with precedence, malformed-file, unknown-schema and hash-mismatch cases; `rust_windows` |
 | CLIENT-INSTALLER-3 | Package-manifest CI check: unlisted files and disallowed provenance fail the build | `apps/client/installer/**` | negative fixtures in the same job |
 | CLIENT-INSTALLER-4 | Before external alpha (D854): signing release job behind a protected environment; `sign.ps1` body for the chosen provider | new release workflow, `apps/client/installer/sign.ps1` | installer, uninstaller, `oteryn-client.exe` and `oteryn-launcher.exe` each verify with `Get-AuthenticodeSignature`, and an unsigned launcher fails the job; no secret in the repository or PR jobs; needs the provider choice |
-| CLIENT-INSTALLER-5 | Updater first slice (section 5.2) and pointer anti-replay | `apps/client/src/**` | unit tests for sequence eligibility (including an authorized downgrade, a same-`client_version` release, an absent `accepted_sequence` and a pointer for another channel), a failed install retried at the next start, `pending` confirmation on relaunch, a stale `pending` cleared, a directly started non-active release reactivated by a rollback pointer, `accepted_sequence` never decreasing, hash mismatch, sequence replay and minimum-version; needs the Platform channel-pointer contract |
+| CLIENT-INSTALLER-5 | Updater first slice (section 5.2) and pointer anti-replay | `apps/client/src/**` | unit tests for sequence eligibility (including an authorized downgrade, a same-`client_version` release, an absent `accepted_sequence` and a pointer for another channel), a failed install retried at the next start, `pending` confirmation on relaunch, a stale `pending` cleared, a pointer below a failed `pending` rejected while its exact retry is accepted, a directly started non-active release reactivated by a rollback pointer, `accepted_sequence` never decreasing, hash mismatch, sequence replay and minimum-version; needs the Platform channel-pointer contract |
 | later | Fetched packages from the asset pipeline | per section 4 rule 3 | when the asset pipeline exists |
 
 Slice 1 is the playable-first minimum: it turns the existing release build into an installable, uninstallable artifact; its only Rust addition is the launcher. Until slice 2, the installed client reads its settings from the process environment as today.
