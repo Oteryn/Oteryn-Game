@@ -97,14 +97,37 @@ def donor_mode(coverage):
     return "DONOR_STATUS_REVIEW"
 
 
+SOURCE_DATA_CODES = {
+    "reported_source_gap",
+    "requirement_unknown",
+    "claim_item_semantics_missing",
+    "claim_source_data_missing",
+    "source_kind_log_flag_conflict",
+}
+NATIVE_LOWERING_CODES = {
+    "quest_native_lowering_missing",
+    "claim_native_lowering_missing",
+}
+NATIVE_BINDING_CODES = {
+    "authored_trigger_and_delivery_bindings_missing",
+}
+
+
 def work_state(definitions, mapping_state):
     if mapping_state == "MULTIPLE":
         return "MAPPING_REVIEW"
-    readiness = {d.get("readiness", "UNKNOWN") for d in definitions}
-    if "waiting_data" in readiness:
+    codes = {
+        issue.get("code", "UNKNOWN")
+        for definition in definitions
+        for issue in definition.get("missing_data") or []
+    }
+    if codes & SOURCE_DATA_CODES:
         return "SOURCE_DATA_PENDING"
-    if "waiting_native_bindings" in readiness:
+    if codes & NATIVE_BINDING_CODES:
         return "NATIVE_BINDINGS_PENDING"
+    if codes & NATIVE_LOWERING_CODES:
+        return "NATIVE_LOWERING_PENDING"
+    readiness = {d.get("readiness", "UNKNOWN") for d in definitions}
     if readiness == {"definition_ready"}:
         return "DEFINITION_READY_RUNTIME_UNKNOWN"
     return "REVIEW_REQUIRED"
