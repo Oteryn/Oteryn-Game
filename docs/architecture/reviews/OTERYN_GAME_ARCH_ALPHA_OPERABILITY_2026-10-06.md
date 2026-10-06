@@ -55,11 +55,10 @@
     (§2 rulings 3–4). Durable time is a remaining duration or a database-time deadline.
 12. Hosts run chrony; skew raises an alarm with a 2xxx code and never refuses readiness;
     fencing never compares cross-host time (§2 ruling 7).
-13. The current build hosts one channel per node and at most 256 connections; capacity is
-    measured by the harness load mode on a 4 vCPU reference, at least 3 repeats, and recorded
-    as `PERF01-PLAYERS-PER-CHANNEL` = highest passing N / 1.3. The World limit is measured by its
-    own multi-Channel run, never multiplied, and equals the Channel value until then (§2 rulings
-    9–11). D128's 500 is a target.
+13. The current build hosts one channel per node and at most 256 connections; no capacity value or
+    admission limit is published until the separate ARCH-ALPHA-CAPACITY-0 decision merges, which
+    fixes its failure objectives before any sweep. The World limit is never multiplied from the
+    Channel value (§2 rulings 9–11). D128's 500 is a target.
 14. iai-callgrind benches run as a job selected by the `oteryn-game-server` dependency closure; it
     reports first and becomes required after PERF-CI-1 sets the threshold (§2 ruling 12, owner
     ruling §2 Q2 a). A measured capacity below 500 is accepted for alpha and the gap is logged.
@@ -493,41 +492,38 @@ Capacity and performance
    equals per Channel until multi-channel hosting is built: `max_players_per_game_node` equals
    `max_players_per_channel`. `max_players_per_world` is never derived by multiplying the
    per-Channel value: the Channels of one World share PostgreSQL, its I/O and the world services,
-   which a one-Channel run does not load (ADR-0009 §5–6). It is measured by its own world run
-   (PERF-WORLD-1, ruling 10). Until that run passes, the registered World limit equals the accepted
-   per-Channel value, so a second Channel in a World adds no claimed capacity.
+   which a one-Channel run does not load (ADR-0009 §5–6). It is measured by its own World run
+   (ARCH-ALPHA-CAPACITY-0, ruling 10), and a second Channel in a World adds no claimed capacity.
    ADR-0009 §2 and ADR-0015 still allow several Channels per GameNode (F21). When a
    build hosts more than one, the three ADR-0009 §6 limits are measured separately by PERF-01. This
    ruling does not amend either ADR. Until a value is measured, the alpha ceiling is the registered
    256 connections (F19). D128's 500 per Channel is the target that the measurement is checked
-   against (F18). No per-cycle microsecond budget is accepted here. The owner-cycle p99 and
-   queue-age objectives are CANDIDATE until PERF-ALPHA-1 measures them.
-10. **How the value is measured.** PERF-ALPHA-1 extends `tools/synthetic-client-harness` with a
-    load mode. It runs N headless `protocol-oteryn` clients that drive the ADR-0009 §6 workload
-    classes, with fixed seeds, against one real node and PostgreSQL. N rises in steps until the
-    first objective breaks. The run uses the 4 vCPU reference class (MAP-SPIKE-0, F22), at least
-    3 repeats, and a release build. The evidence file under `docs/agents/evidence/` records:
-    - command, commit, machine and seeds;
-    - p50/p95/p99 owner service time and queue age;
-    - CPU per core from `schedstat`;
-    - every step's N and result, the highest passing N (passing in every repeat), the first
-      violated objective and the first failing N.
-    The world run (PERF-WORLD-1) uses the same harness and rules with C Channels of one World,
-    each on its own node, sharing one PostgreSQL and the world services, with C at least 2 and at
-    least the Channel count planned per alpha World. The total N rises in steps, spread evenly
-    over the Channels. It records the same values per Channel, plus PostgreSQL transaction p99,
-    pool wait and I/O. A World passes a step only if every Channel and the shared database meet
-    their objectives.
-11. **How a measured value is accepted.** The accepted `max_players_per_channel` is the highest
-    passing N divided by 1.3, rounded down (ADR-0009 §6 headroom). The first failing N is never
-    the base: a value between the highest pass and the first failure was not demonstrated. If the
-    gap between them is wide, the run may add steps in between; only a step that passes counts.
-    `max_players_per_world` is accepted the same way from the world run's highest passing total.
-    Each becomes a RESOURCE_LIMITS_REGISTRY
-    row whose notes cite the evidence file. The row ships in a PR that passes the normal
-    independent review. Owner ruling 2026-10-06 (owner question 1, option a): a measured value
-    below D128's 500 is accepted for alpha, and the gap to 500 is logged in gap register §25. A
-    hardware change or a regression gate failure reopens the row.
+   against (F18). No per-cycle microsecond budget and no service objective is accepted here (ruling 10).
+10. **Capacity is decided by ARCH-ALPHA-CAPACITY-0.** The load method, the objectives and
+    their acceptance move to that separate architecture decision packet. Until it merges, no
+    `max_players_per_channel`, `max_players_per_game_node` or `max_players_per_world` value is
+    published or registered. The admission limit is unpublished, and alpha runs at the
+    registered 256 connection ceiling (F19), which is not an accepted capacity. That packet must:
+    - fix every pass and fail objective, and have it accepted in review, before any capacity
+      sweep: owner service time p99, queue age, memory growth, network, and Channel and World
+      persistence pressure. An objective that changes after a sweep reruns the sweep; no
+      threshold is set after a result;
+    - record every ADR-0009 §6 claim field in both the Channel run and the World run: hardware,
+      artifacts, behaviour model, p50/p95/p99 latency, queue age and rejections, CPU, memory,
+      network and persistence pressure (PostgreSQL transaction p99, pool wait, WAL and I/O),
+      and the first violated objective;
+    - include a soak of a fixed duration at the candidate value in both runs, with failure
+      objectives for memory growth and persistence backlog (ADR-0009 §6 test class 10);
+    - keep ruling 9: per node equals per Channel in this build, and the World limit comes from
+      its own run of at least two Channels on one PostgreSQL, never by multiplying;
+    - apply the 30% headroom to the highest N that passes in every repeat, never to the first
+      failing N;
+    - carry owner ruling 1a (§2 Q1): a value below D128's 500 is accepted for alpha and the gap is
+      logged in gap register §25.
+11. **How a value is accepted.** A capacity value becomes a RESOURCE_LIMITS_REGISTRY row only
+    from ARCH-ALPHA-CAPACITY-0's accepted evidence, in a PR that passes the normal independent
+    review, with notes citing the evidence file. A hardware change or a regression gate failure
+    reopens the row.
 12. **CI benchmark gate (PERF-01 CI part).**
     - *Benchmarks:* instruction counts with `iai-callgrind`, an upstream crate on valgrind. The
       first set has three benches: the viewport snapshot, the viewport delta, and one seeded
@@ -569,15 +565,14 @@ Capacity and performance
   decision names which."
 - A2. `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`. Add a row `WORLDINT0-RL-19`: unit
   `milliseconds`, `hard_maximum` 1000, failure category per the registry vocabulary, notes
-  "CANDIDATE with WORLD-INTERACTION-0; alarm only". Add `PERF01-PLAYERS-PER-CHANNEL` only from
-  PERF-ALPHA-1 evidence, and `PERF01-PLAYERS-PER-WORLD` equal to it until PERF-WORLD-1 evidence
-  replaces it (rulings 9 and 11).
+  "CANDIDATE with WORLD-INTERACTION-0; alarm only". No capacity row is added here;
+  ARCH-ALPHA-CAPACITY-0 owns the `PERF01-PLAYERS-PER-*` rows (rulings 10-11).
 - A3. Node deployment runbook (the OPS-NODE-BOOT-01 operator section). Add: "Run a host time
   daemon (chrony recommended) on every GameNode and database host. The node alarms above
   `WORLDINT0-RL-19`."
 - A4. ARCHITECTURE_ANALYSIS_GAP_REGISTER.md §25. Mark tick/scheduling as decided (ruling 1).
-  Mark capacity method and CI gate as decided, with values pending PERF-ALPHA-1, PERF-WORLD-1
-  and PERF-CI-1.
+  Mark the CI gate as decided, with its threshold pending PERF-CI-1, and the capacity method as
+  pending ARCH-ALPHA-CAPACITY-0.
 
 ### Packets
 
@@ -593,10 +588,9 @@ Capacity and performance
   `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`. Tests: a fixed `TrustedClock` with unsync,
   over-bound and in-bound cases, and a PostgreSQL offset case with an injected node clock.
   Depends on PREMIUM-ACTIVATION-0's `TrustedClock`.
-- **PERF-ALPHA-1.** The harness load mode and the first capacity evidence (rulings 10-11).
-  Owned: `tools/synthetic-client-harness/src/load/` (new), `tools/synthetic-client-harness/src/main.rs`,
-  `docs/agents/evidence/PERF-ALPHA-1-capacity.md` (new). Tests: a 2-client smoke test in CI; the
-  full ramp runs on the reference class only. Depends on TIME-CLOCK-1 for queue-age stamps.
+- **ARCH-ALPHA-CAPACITY-0.** The capacity decision of ruling 10, an architecture decision
+  packet routed by the control plane. It names the load, acceptance and World-run implementation
+  packets. Its load packet depends on TIME-CLOCK-1 for queue-age stamps.
 - **PERF-CI-1.** iai-callgrind benches and the path-selected job (ruling 12). Owned:
   `apps/game-server/benches/` (new), `apps/game-server/Cargo.toml`, `Cargo.toml` (dev-dependency),
   `.github/workflows/merge-gate.yml`, `tools/repository/classify_pr_test_lanes.py` and its test,
@@ -606,27 +600,13 @@ Capacity and performance
   `foundation/owner_timer.rs`, `ai_think.rs`, a file under each dependency crate, `Cargo.lock`
   and `vendor/`, and for an incomplete enumeration; it skips the job for a change confined to
   `docs/` or `apps/client/`. Dependency review covers the new dev-dependency. Depends on nothing.
-- **PERF-ACCEPT-1.** Writes `PERF01-PLAYERS-PER-CHANNEL` from the PERF-ALPHA-1 evidence as the
-  highest passing N divided by 1.3 (ruling 11), and `PERF01-PLAYERS-PER-WORLD` equal to it
-  (ruling 9), then applies A4 and, if the value is below 500, logs the gap in §25 (owner
-  ruling 1a). Owned: `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`, the gap register. Tests: the
-  registry validator; a check that the row equals floor(highest passing N / 1.3) of the evidence
-  file and never exceeds its highest passing N. Depends on PERF-ALPHA-1.
-- **PERF-WORLD-1.** The world run of ruling 10 and the measured `PERF01-PLAYERS-PER-WORLD` row
-  (floor of the highest passing total / 1.3, ruling 11), which replaces the PERF-ACCEPT-1 value.
-  Owned: `tools/synthetic-client-harness/src/load/world.rs` (new),
-  `docs/agents/evidence/PERF-WORLD-1-capacity.md` (new),
-  `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` (that row only). Tests: a 2-Channel, 2-client
-  smoke test in CI against two nodes and one PostgreSQL; a step fails when either Channel or the
-  shared database misses an objective; the full ramp runs on the reference class only. Depends
-  on PERF-ACCEPT-1.
 
 ### Owner questions
 
 1. Context: alpha's ceiling is 256 connections, and the D128 target is 500.
    a) Accept the measured value for alpha even below 500, and log the gap (recommended).
    b) Block the representative-load alpha claim until 500 is measured.
-   **Owner ruling 2026-10-06: a.** Ruling 11 and PERF-ACCEPT-1 follow it.
+   **Owner ruling 2026-10-06: a.** It carries into ARCH-ALPHA-CAPACITY-0 (ruling 10).
 2. Context: making a new check required changes repository protection.
    a) The job reports first and becomes required after PERF-CI-1 sets the threshold (recommended).
    b) Required from the start.
@@ -646,11 +626,15 @@ Capacity and performance
 - An external load tool (k6, Locust, goose). `protocol-oteryn` is a custom binary protocol over
   TLS, and the repository already has a Rust client stack in the synthetic harness.
 - Accepting D128's 500 or the 256 connection maximum as measured capacity. Neither has evidence.
+- Keeping the capacity method in this decision with candidate objectives. Objectives set after a
+  sweep fit the threshold to the result, and the ADR-0009 §6 memory, network, persistence and soak
+  evidence needs design this decision does not have.
 - Writing an NTP client or time daemon. The host daemon is the upstream solution.
 
 ### Open unknowns
 
-- U1. The PR objective values for owner service time and queue age. PERF-ALPHA-1 proposes them.
+- U1. The objective values for owner service time, queue age, memory growth, network and
+  persistence pressure, and the soak duration. ARCH-ALPHA-CAPACITY-0 fixes them before any sweep.
 - U2. Whether the GitHub `ubuntu-24.04` runner matches the 4 vCPU reference class for this
   repository's plan. If it does not, reference runs go to a named machine, which is a spend
   question for the control plane.
@@ -660,7 +644,7 @@ Capacity and performance
   header says PROPOSED and the register says ACCEPTED.
 - U5. Map views take 0.41-0.44 of a core against the 0.20 default (F22). This consumes the
   Channel's budget before any other workload. ARCH-MAP-VIEWPORT-BUDGET-V1 owns the fix, and the
-  PERF-ALPHA-1 run must include it.
+  ARCH-ALPHA-CAPACITY-0 load run must include it.
 
 ## 3. Data continuity
 
