@@ -15,6 +15,7 @@ release-role = "production"
 [dependencies]
 base64.workspace = true
 ed25519-dalek.workspace = true
+oteryn-error-codes = { version = "=0.1.0", path = "../../crates/error-codes" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-oteryn" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }
