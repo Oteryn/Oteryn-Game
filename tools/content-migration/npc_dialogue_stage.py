@@ -322,6 +322,8 @@ def _lua_single_class(char: str, cls: str) -> bool:
         hit = code < 32 or code == 127
     elif lower == 'g':
         hit = 32 < code < 127
+    elif lower == 'z':  # pinned Lua lib_string.c: %z is NUL, %Z any non-NUL byte
+        hit = code == 0
     else:
         return cls == char
     return (not hit) if cls.isupper() else hit

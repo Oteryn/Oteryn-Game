@@ -130,6 +130,14 @@ class SourceIncompleteTests(unittest.TestCase):
         self.assertIsNone(entries(say(['a'], 'See {citizens}.'), say(['^citi'], 'Yes.')))
         self.assertEqual(len(entries(say(['a'], 'See {citizens}.'), say(['^zen'], 'No.'))), 1)
 
+    def test_percent_z_is_nul_and_percent_capital_z_is_any_non_nul(self):
+        # %z matches only NUL, never the letter z; %Z matches every other character, including z
+        self.assertEqual(len(entries(say(['a'], 'See {zz}.'), say(['%z'], 'No.'))), 1)
+        self.assertIsNone(entries(say(['a'], 'See {zz}.'), say(['^%Z%Z$'], 'Yes.')))
+        self.assertEqual(len(entries(say(['a'], 'See {x}.'), say(['%Z%Z'], 'No.'))), 1)
+        self.assertEqual(len(entries(say(['a'], 'See {x}.'), say(['[%z]'], 'No.'))), 1)
+        self.assertIsNone(entries(say(['a'], 'See {x}.'), say(['[%Z]'], 'Yes.')))
+
     def test_a_keyword_the_stage_cannot_evaluate_stops_the_stage(self):
         for keyword in ('(captured)', '%bxy', '%f[a]', '[unclosed', '%'):
             with self.assertRaises(stage.StageError, msg=keyword):
