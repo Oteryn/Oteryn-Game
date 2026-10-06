@@ -16,9 +16,11 @@ fn server_ci_qualification_smoke_process_succeeds() -> Result<(), Box<dyn std::e
         .output()?;
 
     assert!(output.status.success(), "smoke process failed: {output:?}");
+    let diagnostic = String::from_utf8(output.stderr)?;
+    // Only the always-written `process_start` line (ERR-NODE-1) may appear.
     assert!(
-        output.stderr.is_empty(),
-        "unexpected diagnostic: {output:?}"
+        diagnostic.lines().count() == 1 && diagnostic.contains(" event=process_start"),
+        "unexpected diagnostic: {diagnostic}"
     );
     Ok(())
 }
@@ -34,8 +36,10 @@ fn server_ci_qualification_gameplay_process_stays_fail_closed()
         assert_eq!(output.status.code(), Some(2), "{arguments:?}: {output:?}");
         assert!(output.stdout.is_empty(), "{arguments:?}: {output:?}");
         let diagnostic = String::from_utf8(output.stderr)?;
+        let unavailable = diagnostic.lines().last().unwrap_or_default();
         assert!(
-            diagnostic.starts_with("Oteryn Game Server gameplay unavailable: "),
+            unavailable.contains(" event=gameplay_unavailable")
+                && unavailable.contains("detail=\""),
             "{arguments:?}: {diagnostic}"
         );
     }
