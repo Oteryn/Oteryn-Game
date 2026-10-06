@@ -187,11 +187,13 @@ Each run has one writer. The commands run against that run's Platform only.
     the floor file, the witness-store lock file and the provenance row through the separately
     configured `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY`. The configured path must be a
     canonical directory (its `realpath` equals the configured value), neither it nor its parent
-    a symlink, and directly beneath a per-run directory
-    `<sys_get_temp_dir>/oteryn-native-topology-<hex>/`. When the store is the retained SQLite
-    file, that per-run directory must be the database's own. Otherwise the command refuses with
-    nothing written. This check lives in `DisposableNativeStore` and only the trust command
-    calls it; the witness itself is not changed.
+    a symlink, and directly beneath the per-run directory that holds the current database
+    file. To bind that directory to the current run, the trust command accepts only the retained
+    per-run SQLite file, in `testing` as in `preproduction`. It refuses `:memory:` and the
+    loopback `oteryn_concurrency` database, which the shared guard otherwise allows, because
+    neither names a per-run directory. Otherwise the command refuses with nothing written. This
+    check lives in `DisposableNativeStore` and only the trust command calls it; the witness and
+    the registry's guard are not changed.
   - It reads 32 raw bytes from a regular file that is not a symlink, and never takes the key from
     an argument.
   - It prints the key ID and the profile version.
@@ -207,8 +209,12 @@ Each run has one writer. The commands run against that run's Platform only.
   - the trust command refuses, with a disposable store, when the high-water directory is outside
     the per-run directory, in another run's directory, a symlink or under a symlinked parent,
     with no row, floor file or lock file written;
+  - the trust command refuses in `testing` with a `:memory:` store or the loopback
+    `oteryn_concurrency` database, even with a high-water directory under some other run's
+    per-run directory, with no row, floor file or lock file written;
   - the registry's existing `isolatedConnection()` tests pass unchanged after the guard moves;
-  - the happy path in `testing` writes the rows and prints the receipt;
+  - the happy path in `testing` writes the rows and prints the receipt (the trust command with a
+    retained per-run SQLite file and a high-water directory beneath it);
   - an endpoint change advances `route_version`;
   - `--login-enabled=false` keeps the endpoint and clears login;
   - a malformed selector, port or key file is refused before any write.
