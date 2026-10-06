@@ -55,7 +55,7 @@ Audited positions:
 33901,32718,9
 ```
 
-The four ritual positions at `33868/33880 × 32664/32676, z=9` are separate physical tiles. Their current map appearance id is `54637`; current Oteryn appearance routing only classifies that id as `Terrain:ground_or_border`, which does not yet provide the quest ritual semantics.
+The four ritual positions at `33868/33880 × 32664/32676, z=9` are separate physical tiles. Their base appearance `54637` is confirmed as `Terrain:ground_or_border`; it must **not** be promoted to a quest WorldObject. The ritual binds `USE_ITEM_ON_POSITION` to the four exact placements.
 
 Do not use the older Otheryn migration map `3bd40d14...` for this quest. It predates the Summer world additions and produces false absences.
 
@@ -69,15 +69,15 @@ Do not use the older Otheryn migration map `3bd40d14...` for this quest. It pred
 | s4 | collect Bluish Tide Veil + Bluish Whisper Reed; use Refiner of Magic | quest items `i53692`, `i53693`; Refiner `i34338` routed WorldObject | item acquisition/count + Refiner interaction |
 | s5 | report clues to Saraki; ask Udu | Saraki/Udu NPC + Dialogue candidates | exact branches + ordered transition semantics |
 | s6 | Sharai gives cave access | Sharai NPC + Dialogue candidate | dialogue/progress + access/door predicate |
-| s7 | Javala grants lab/stone-door access | Javala NPC + Dialogue candidate | `Stone door key` is only a quest-level semantic label; no canonical source Item identity found |
-| s8 | inspect lab note, Crystal Plinth, Large Crystal Apparatus | Crystal Plinth `i54515`; Crystal Apparatus `i53514`, both WorldObject-routed | lab note identity + explicit inspect/use transitions |
+| s7 | Javala grants lab/stone-door access | Javala NPC + Dialogue candidate; Asura Citadel Key = `oteryn:item.tibia.i54262` (exact cross-source) | NPC progress + identity-based key-door binding; donor has no `keyNumber`; post-completion bypass needs Door/Key architecture disposition |
+| s8 | laboratory / Crystal Plinth / Large Crystal Apparatus | Note Pinned on the Wall = donor `6121` at exact `33881,32684,9` (optional lore); Crystal Plinth `i54515`; Apparatus `i53514` | Plinth directly yields `lab_access_sequence_learned`; no manual colour-code UI/input; sealed-room gate + apparatus interaction still need native trigger/gate adapters |
 | s9 | Niral explains Rakesh / sealing | Niral NPC + Dialogue candidate | exact branch + progress write |
 | s10 | kill Rakesh Moonfang | Creature `oteryn:creature.rakesh_moonfang` with abilities/Behavior | encounter admission + kill-credit → quest transition |
 | s11 | Moon Mirror + Empty Crystal Flask at blue lava | Moon Mirror `i25975`; Empty Flask `i53696`; Blue Lava Flask `i54564`; volcano position exists | materialization/use-transform; night guard unresolved by source conflict |
 | s12 | Niral consecrates blue lava | Niral dialogue content exists; Blessed Flask `i54566` identity exists | exact branch + item transform `54564 → 54566` |
-| s13 | draw four runes by four crystal constructs | 4 physical ritual tiles present; Blessed Flask identity; Crystal Apparatus WorldObject | four explicit use/world-object transitions; `54637` needs quest semantics |
+| s13 | draw four runes by four crystal constructs | 4 exact physical ritual tiles present; Blessed Flask identity; base `54637` is Terrain only | four placement-driven `USE_ITEM_ON_POSITION` transitions; do not create a WorldObject identity for `54637` |
 | s14 | The Moonsnow Magnolia encounter | Magnolia + Furious Jaracal Creature/Behavior/Ability records exist | complete special Encounter: Jaracal mechanics, Bone Fiddle, Moonsilver Drift, heal-on-Death, revive/phase 2, permanent kill credit |
-| s15 | post-boss ice-prison escape | Icicle Chisel `i39578` canonical identity; Lit Torch donor `54610` aliases canonical lit torch `i34017` | split into skeleton→torch, icicles→chisel, wall/fire/chisel transitions, passage/rope exit |
+| s15 | post-boss ice-prison escape | Icicle Chisel `i39578`; donor `54610` is distinct **Lit Torch (SU26)** and must not alias old `i34017`; unique high-confidence OTBM prison topology candidate identified | skeleton→torch, icicles→chisel, torch→north wall, chisel→opening are source/video-qualified; scripted Rope Spot/exit exact binding + canonical admission of `54610` remain |
 | s16 | return to Saraki / complete | stage graph exists | completion reducer + reward delivery + durable persistence |
 
 ## Creature/runtime readback
@@ -104,7 +104,8 @@ Video + current wiki evidence agree on the following encounter-level behaviors t
 - Death damage heals Magnolia;
 - first lethal threshold does not finish the fight: Magnolia performs a full second-life transition;
 - Bone Fiddle is no longer used in phase 2;
-- permanent death moves the player into the post-boss escape sequence.
+- permanent death moves the player into the post-boss escape sequence;
+- current Global post-release behavior must use the Aug 25 spawn-placement adjustments (Furious Jaracals near noxious catnip; south minions nearer the teleporter) and the Sep 15 phase-2 leave cleanup fix; do not reproduce release-day spawn leakage/placement from the July walkthrough.
 
 Exact cadence/damage values must remain source-qualified. Do not promote narration guesses into Reference facts.
 
@@ -120,16 +121,16 @@ Known canonical or qualified identities:
 - Crystal Flask with Blessed Blue Lava: `oteryn:item.tibia.i54566`
 - Moon Mirror: `oteryn:item.tibia.i25975`
 - Icicle Chisel: `oteryn:item.tibia.i39578`
-- Lit Torch Summer donor id: `54610`, held as probable alias of canonical `oteryn:item.tibia.i34017`
+- Lit Torch (SU26): donor id `54610`; independent Item-ID evidence distinguishes it from old `Lit Torch (Quest)` id `34017`, so the old probable-alias hold is incorrect for Shards and requires Item-owner admission as a distinct identity
 - Crystal Apparatus: `oteryn:item.tibia.i53514` → WorldObject
 - Crystal Plinth: `oteryn:item.tibia.i54515` → WorldObject
 - Moonsilver Drift: `oteryn:item.tibia.i54235` → WorldObject
 - Amati's Echo: `oteryn:achievement/amati_s_echo@1`, staticdata source id 594, 4 points, premium
-- Skewered Fish donor id `54638`; qualified profile is `tool`
+- Skewered Fish: `oteryn:item.tibia.i54638`; donor id `54638`; qualified as a taming tool
 
 The current authored completion candidate still reports several of these as unresolved because exact identity availability and executable materialization/use are separate concerns.
 
-Jaracal mount / `Six Steps Ahead` are downstream taming outcomes and must not be granted directly by quest completion.
+Jaracal mount / `Six Steps Ahead` are downstream taming outcomes and must not be granted directly by quest completion. Exact pinned donor mount identity is already known from Crystal Summer `data/XML/mounts.xml`: mount id `250`, clientid `1962`, name `Jaracal`, speed `10`, premium `yes`, type `quest`. The current 252-row canonical Mount catalogue lacks this 253rd SU26 record. `Six Steps Ahead` already exists canonically as `oteryn:achievement/six_steps_ahead@1` (source id 592, 2 points, premium). Tame chance/failure semantics remain UNKNOWN.
 
 The quest also unlocks the True Feverbloom hunting route. Current quest completion tooling explicitly rejects treating a free-text Area identity as an executable access capability. The final implementation therefore needs a real access predicate/capability binding.
 
@@ -153,7 +154,8 @@ SHARDS-Q1
 
 SHARDS-I1
   item admission/materialization + use/transform bindings
-  tide markers + Refiner + lab objects + ritual tiles + prison escape
+  distinct Lit Torch (SU26) 54610 admission
+  tide markers + Refiner + lab objects + placement-driven ritual tiles + prison escape
 
 SHARDS-E1
   Rakesh admission/kill-credit
@@ -163,7 +165,8 @@ SHARDS-R1
   completion reducer
   Skewered Fish delivery
   Amati's Echo grant
-  True Feverbloom access capability
+  Jaracal Mount admission (donor mount 250/clientid 1962) + later i54638-on-Jaracal tame flow + existing Six Steps Ahead grant
+  True Feverbloom / Forbidden Gardens access predicate (`Shards completed` AND account owns `forbidden_fruit`)
   relog/restart / duplicate-reward qualification
 ```
 
