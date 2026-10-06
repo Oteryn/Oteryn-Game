@@ -22,15 +22,15 @@
   "direct_rewards": [
     {
       "kind": "item",
-      "canonical_key": "oteryn:item.tibia.i54638",
+      "canonical_key": "oteryn:item.registry.i00038475",
       "donor_id": 54638,
       "source_name": "skewered fish",
       "count": 1,
-      "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+      "identity_status": "EXACT_FROZEN_EPOCH2_IDENTITY_NON_MATERIALIZABLE",
       "current_materializable": false,
       "current_completion_plan_status": "STALE_CANONICAL_EXACT_NAME_NOT_FOUND",
       "required_work": [
-        "admit/materialize existing canonical Item identity",
+        "promote/materialize the existing frozen epoch-2 Item identity without reminting or changing key",
         "bind one-item delivery to terminal s16 through accepted Reward/Item owner"
       ]
     },
@@ -78,7 +78,7 @@
       "jaracal_present": false
     },
     "creature_identity": "oteryn:creature.jaracal",
-    "taming_item": "oteryn:item.tibia.i54638",
+    "taming_item": "oteryn:item.registry.i00038475",
     "reference_mount": {
       "name": "Jaracal",
       "added": "15.30.a30dad",
@@ -89,7 +89,7 @@
     "status": "CONTENT_AND_TAME_RUNTIME_GAP",
     "required_work": [
       "admit the SU26 Jaracal Mount canonical identity from an accepted source/client witness",
-      "bind use of i54638 on canonical Jaracal creature to mount unlock through the accepted Mount/Item/Interaction owners",
+      "bind use of oteryn:item.registry.i00038475 on canonical Jaracal creature to mount unlock through the accepted Mount/Item/Interaction owners",
       "qualify item consumption, success/idempotence and relog persistence",
       "do not grant the mount directly from s16"
     ],
@@ -115,6 +115,17 @@
     "Current TibiaWiki terminal dialogue explicitly says the fish is used to gain a Jaracal's trust as a mount.",
     "Current TibiaWiki mount catalogue lists Jaracal as tameable with Skewered Fish.",
     "Current Oteryn Mount catalogue has 252 records and no Jaracal record.",
-    "Current Oteryn completion-binding plan already resolves Amati's Echo exactly but has a stale name-based miss for Skewered Fish despite existing i54638."
+    "Current Oteryn completion-binding plan already resolves Amati's Echo exactly but has a stale name-based miss for Skewered Fish despite frozen epoch-2 identity oteryn:item.registry.i00038475."
+  ],
+  "identity_corrections": [
+    {
+      "donor_id": 54638,
+      "wrong_previous_key": "oteryn:item.tibia.i54638",
+      "correct_key": "oteryn:item.registry.i00038475",
+      "revision": "definition-r1",
+      "source": "CW2-B1 donor epoch-2 opaque registry allocation",
+      "materializable": false,
+      "invariant": "Promote/materialize in place; do not remint or create a second Item identity."
+    }
   ]
 }
