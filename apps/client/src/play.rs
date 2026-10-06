@@ -14,7 +14,7 @@ use oteryn_session::{
 };
 use std::collections::BTreeMap;
 use std::future::Future;
-use std::sync::mpsc::{Receiver, TryRecvError};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 
@@ -27,9 +27,21 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 const KEY_BYTES: usize = 8;
 const DIGEST_AND_KEY_BYTES: usize = 32 + KEY_BYTES;
 
-/// The tile and floor a placement names: the last eight bytes as the big-endian key
-/// `x << 32 | y << 16 | (-floor) << 8 | ordinal`. Other shapes name no tile and draw no marker.
+/// Semantic placements the server emits today, with the cell each names. The native entry
+/// room's door cell (`native_entry.rs` `DOOR_CELL`); a placeholder until map loading carries
+/// cell coordinates to the client.
+const SEMANTIC_PLACEMENTS: [(&[u8], i32, i32, i16); 1] = [(b"oteryn:cell/entry-door", 1, -1, 0)];
+
+/// The tile and floor a placement names: a known semantic cell key, or the last eight bytes as
+/// the big-endian key `x << 32 | y << 16 | (-floor) << 8 | ordinal`. Other shapes name no tile
+/// and draw no marker.
 fn placement_tile(placement: &[u8]) -> Option<(TileCoord, i16)> {
+    if let Some(&(_, x, y, floor)) = SEMANTIC_PLACEMENTS
+        .iter()
+        .find(|(name, ..)| *name == placement)
+    {
+        return Some((TileCoord::new(x, y), floor));
+    }
     if placement.len() != KEY_BYTES && placement.len() != DIGEST_AND_KEY_BYTES {
         return None;
     }
@@ -171,18 +183,14 @@ impl PlayView {
         self.rebuild()
     }
 
-    /// Applies the deltas the server pushed outside any step: domain 1 moves the own actor,
-    /// domain 2 moves a marker. Every other domain is not drawn by this view.
-    pub fn apply_pushed(&mut self, events: &[SessionEvent]) -> Result<(), BatchError> {
-        for event in events {
-            match event {
-                SessionEvent::WorldSpatial(delta) => self.place(delta.value.actor_position),
-                SessionEvent::WorldSpatialEntities(delta) => {
-                    self.place(delta.value.actor_position);
-                }
-                SessionEvent::WorldObjectOverlay(delta) => self.set_marker(&delta.value),
-                _ => {}
-            }
+    /// Applies what the server pushed outside any step, coalesced: the latest own position and
+    /// the latest entry per placement. Other domains are not drawn by this view.
+    pub fn apply_pushed(&mut self, pushed: &Pushed) -> Result<(), BatchError> {
+        if let Some(position) = pushed.own {
+            self.place(position);
+        }
+        for entry in &pushed.markers {
+            self.set_marker(entry);
         }
         self.rebuild()
     }
@@ -218,8 +226,8 @@ impl PlayView {
                 PlayEvent::Stepped(outcome) => self
                     .apply(&outcome)
                     .map_err(|_error| PublicClass::SessionUnavailable)?,
-                PlayEvent::Pushed(events) => self
-                    .apply_pushed(&events)
+                PlayEvent::Pushed(pushed) => self
+                    .apply_pushed(&pushed)
                     .map_err(|_error| PublicClass::SessionUnavailable)?,
                 PlayEvent::Ended(class) => return Err(class),
             }
@@ -235,17 +243,101 @@ impl PlayView {
 #[derive(Debug)]
 pub enum PlayEvent {
     Stepped(Box<StepOutcome>),
-    /// Deltas pushed outside any step, in the order the session applied them.
-    Pushed(Vec<SessionEvent>),
+    /// Deltas pushed outside any step, coalesced since the last poll.
+    Pushed(Pushed),
     /// The session ended; return to login with this public class.
     Ended(PublicClass),
 }
 
-/// The shell's end of the session task: steps out, events in, neither ever blocking.
+/// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct Pushed {
+    /// The latest own-actor position pushed by domain 1.
+    pub own: Option<ActorPosition>,
+    /// The latest domain-2 entry per placement, in first-pushed order of placement.
+    pub markers: Vec<WorldObjectOverlayEntry>,
+}
+
+impl Pushed {
+    fn set_marker(&mut self, entry: WorldObjectOverlayEntry) {
+        if let Some(held) = self
+            .markers
+            .iter_mut()
+            .find(|held| held.placement == entry.placement)
+        {
+            *held = entry;
+        } else if self.markers.len() < MAX_PUSHED_MARKERS {
+            self.markers.push(entry);
+        }
+    }
+
+    /// Folds `newer` over `self`: its position and entries win.
+    fn absorb(&mut self, newer: Self) {
+        self.own = newer.own.or(self.own);
+        for entry in newer.markers {
+            self.set_marker(entry);
+        }
+    }
+}
+
+/// Most distinct placements held while the shell is not draining; a later new placement is
+/// dropped until the next poll, an update of a held one is still kept.
+const MAX_PUSHED_MARKERS: usize = 1024;
+
+#[derive(Debug, Default)]
+struct Mailbox {
+    /// Pushes that arrived before `stepped` was stored: older than its outcome.
+    before: Pushed,
+    stepped: Option<Box<StepOutcome>>,
+    pushed: Pushed,
+    ended: Option<PublicClass>,
+}
+
+type SharedMailbox = Arc<Mutex<Mailbox>>;
+
+fn lock(mailbox: &SharedMailbox) -> MutexGuard<'_, Mailbox> {
+    mailbox.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// The task's end of the mailbox.
+#[derive(Debug, Clone)]
+pub struct Outbox(SharedMailbox);
+
+impl Outbox {
+    fn stepped(&self, outcome: StepOutcome) {
+        let mut mailbox = lock(&self.0);
+        let older = std::mem::take(&mut mailbox.pushed);
+        mailbox.before.absorb(older);
+        mailbox.stepped = Some(Box::new(outcome));
+    }
+
+    fn push(&self, events: Vec<SessionEvent>) {
+        let mut mailbox = lock(&self.0);
+        for event in events {
+            match event {
+                SessionEvent::WorldSpatial(delta) => {
+                    mailbox.pushed.own = Some(delta.value.actor_position);
+                }
+                SessionEvent::WorldSpatialEntities(delta) => {
+                    mailbox.pushed.own = Some(delta.value.actor_position);
+                }
+                SessionEvent::WorldObjectOverlay(delta) => mailbox.pushed.set_marker(delta.value),
+                _ => {}
+            }
+        }
+    }
+
+    /// The first end wins.
+    fn end(&self, class: PublicClass) {
+        lock(&self.0).ended.get_or_insert(class);
+    }
+}
+
+/// The shell's end of the session task: steps out, a bounded mailbox in, neither ever blocking.
 #[derive(Debug)]
 pub struct PlayLink {
     commands: UnboundedSender<StepDir>,
-    events: Receiver<PlayEvent>,
+    mailbox: SharedMailbox,
 }
 
 impl PlayLink {
@@ -254,14 +346,19 @@ impl PlayLink {
         let _ = self.commands.send(direction);
     }
 
+    /// The next event: the pushes older than the step outcome, the step outcome, then the coalesced pushes, then the end.
     pub fn poll(&self) -> Option<PlayEvent> {
-        match self.events.try_recv() {
-            Ok(event) => Some(event),
-            Err(TryRecvError::Empty) => None,
-            Err(TryRecvError::Disconnected) => {
-                Some(PlayEvent::Ended(PublicClass::SessionUnavailable))
-            }
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.before != Pushed::default() {
+            return Some(PlayEvent::Pushed(std::mem::take(&mut mailbox.before)));
         }
+        if let Some(outcome) = mailbox.stepped.take() {
+            return Some(PlayEvent::Stepped(outcome));
+        }
+        if mailbox.pushed != Pushed::default() {
+            return Some(PlayEvent::Pushed(std::mem::take(&mut mailbox.pushed)));
+        }
+        mailbox.ended.take().map(PlayEvent::Ended)
     }
 }
 
@@ -301,23 +398,17 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
 }
 
 /// The channel pair between the shell and `run_session`.
-pub fn play_channel() -> (
-    PlayLink,
-    UnboundedReceiver<StepDir>,
-    std::sync::mpsc::Sender<PlayEvent>,
-) {
+pub fn play_channel() -> (PlayLink, UnboundedReceiver<StepDir>, Outbox) {
     let (commands, command_rx) = tokio::sync::mpsc::unbounded_channel();
-    let (event_tx, events) = std::sync::mpsc::channel();
-    (PlayLink { commands, events }, command_rx, event_tx)
-}
-
-/// Forwards what the server pushed since the last call; false when the shell has gone.
-fn forward_pushed<T: Stepper>(
-    session: &mut T,
-    events: &std::sync::mpsc::Sender<PlayEvent>,
-) -> bool {
-    let pushed = session.drain();
-    pushed.is_empty() || events.send(PlayEvent::Pushed(pushed)).is_ok()
+    let mailbox = SharedMailbox::default();
+    (
+        PlayLink {
+            commands,
+            mailbox: Arc::clone(&mailbox),
+        },
+        command_rx,
+        Outbox(mailbox),
+    )
 }
 
 /// The session task, run on the client runtime: sends requested steps and, while none is
@@ -326,18 +417,14 @@ fn forward_pushed<T: Stepper>(
 pub async fn run_session<T: Stepper>(
     mut session: T,
     mut commands: UnboundedReceiver<StepDir>,
-    events: std::sync::mpsc::Sender<PlayEvent>,
+    outbox: Outbox,
 ) {
     loop {
         let ended = match commands.try_recv() {
             Ok(direction) => match session.step(step_direction(direction)).await {
                 Ok(outcome) => {
-                    if events.send(PlayEvent::Stepped(Box::new(outcome))).is_err() {
-                        return;
-                    }
-                    if !forward_pushed(&mut session, &events) {
-                        return;
-                    }
+                    outbox.stepped(outcome);
+                    outbox.push(session.drain());
                     continue;
                 }
                 Err(error) => error,
@@ -345,9 +432,7 @@ pub async fn run_session<T: Stepper>(
             Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
                 match session.serve(IDLE_SLICE).await {
                     Ok(()) => {
-                        if !forward_pushed(&mut session, &events) {
-                            return;
-                        }
+                        outbox.push(session.drain());
                         continue;
                     }
                     Err(error) => error,
@@ -355,7 +440,7 @@ pub async fn run_session<T: Stepper>(
             }
             Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => return,
         };
-        let _ = events.send(PlayEvent::Ended(public_class(&ended)));
+        outbox.end(public_class(&ended));
         return;
     }
 }
@@ -702,7 +787,7 @@ mod tests {
             while let Some(event) = link.poll() {
                 match event {
                     PlayEvent::Pushed(batch) => {
-                        pushed += batch.len();
+                        pushed += 1;
                         view.apply_pushed(&batch)
                             .map_err(|error| format!("{error:?}"))?;
                     }
@@ -710,41 +795,102 @@ mod tests {
                     PlayEvent::Stepped(_) => {}
                 }
             }
-            if pushed > 2 * MAX_QUEUED_EVENTS {
+            if pushed > 4 {
                 break;
             }
             std::thread::sleep(Duration::from_millis(5));
         }
-        assert!(pushed > 2 * MAX_QUEUED_EVENTS);
+        assert!(pushed > 4);
         runtime.shutdown(Duration::from_millis(250));
         Ok(())
+    }
+
+    fn spatial_event(sequence: u64, x: i32) -> SessionEvent {
+        SessionEvent::WorldSpatial(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: sequence,
+            new_revision: sequence + 1,
+            value: WorldSpatialObservation {
+                content_generation: [0; 32],
+                actor_position: ActorPosition {
+                    x,
+                    y: 200,
+                    floor: 0,
+                },
+            },
+        })
+    }
+
+    fn overlay_event(sequence: u64, placement: Vec<u8>) -> SessionEvent {
+        SessionEvent::WorldObjectOverlay(AppliedDelta {
+            server_sequence: sequence,
+            base_revision: sequence,
+            new_revision: sequence + 1,
+            value: entry(placement),
+        })
     }
 
     #[test]
     fn pushed_domain_1_and_2_deltas_move_the_view() -> Result<(), BatchError> {
         let mut view = view()?;
-        let overlay = SessionEvent::WorldObjectOverlay(AppliedDelta {
-            server_sequence: 3,
-            base_revision: 1,
-            new_revision: 2,
-            value: entry(key(101, 200, 0, 0)),
+        let mut pushed = Pushed::default();
+        pushed.set_marker(entry(key(101, 200, 0, 0)));
+        pushed.own = Some(ActorPosition {
+            x: 101,
+            y: 200,
+            floor: 0,
         });
-        let spatial = SessionEvent::WorldSpatial(AppliedDelta {
-            server_sequence: 4,
-            base_revision: 2,
-            new_revision: 3,
-            value: WorldSpatialObservation {
-                content_generation: [0; 32],
-                actor_position: ActorPosition {
-                    x: 101,
-                    y: 200,
-                    floor: 0,
-                },
-            },
-        });
-        view.apply_pushed(&[overlay, spatial])?;
+        view.apply_pushed(&pushed)?;
         assert_eq!(view.own(), TileCoord::new(101, 200));
         assert_eq!(view.marker_count(), 2);
         Ok(())
+    }
+
+    #[test]
+    fn the_entry_door_semantic_placement_draws_a_marker() -> Result<(), BatchError> {
+        let door = entry(b"oteryn:cell/entry-door".to_vec());
+        let view = PlayView::new(TileCoord::new(1, 0), 0, &[door])?;
+        assert_eq!(view.marker_count(), 1);
+        assert_eq!(view.scene().sprites().len(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn an_undrained_mailbox_stays_bounded_and_keeps_the_latest_state() {
+        let (link, _commands, outbox) = play_channel();
+        for n in 0..5_000u64 {
+            let events = vec![
+                spatial_event(n, i32::try_from(n).unwrap_or(0)),
+                overlay_event(n, n.to_be_bytes().to_vec()),
+                overlay_event(n, b"same".to_vec()),
+            ];
+            outbox.push(events);
+        }
+        let event = link.poll();
+        assert!(matches!(event, Some(PlayEvent::Pushed(_))));
+        let Some(PlayEvent::Pushed(pushed)) = event else {
+            return;
+        };
+        assert_eq!(pushed.own.map(|position| position.x), Some(4_999));
+        assert!(pushed.markers.len() <= MAX_PUSHED_MARKERS);
+        assert!(link.poll().is_none());
+    }
+
+    #[test]
+    fn pushes_older_than_a_step_outcome_are_delivered_before_it() {
+        let (link, _commands, outbox) = play_channel();
+        outbox.push(vec![spatial_event(1, 50)]);
+        outbox.stepped(moved_to(100, 199, 0));
+        outbox.push(vec![spatial_event(3, 60)]);
+        assert!(matches!(
+            link.poll(),
+            Some(PlayEvent::Pushed(Pushed { own: Some(position), .. })) if position.x == 50
+        ));
+        assert!(matches!(link.poll(), Some(PlayEvent::Stepped(_))));
+        assert!(matches!(
+            link.poll(),
+            Some(PlayEvent::Pushed(Pushed { own: Some(position), .. })) if position.x == 60
+        ));
+        assert!(link.poll().is_none());
     }
 }
