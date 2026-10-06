@@ -10,9 +10,9 @@
 # Result lines: LOGIN_LOCAL_RESULT=BLOCKED|FAIL|READY|ADMITTED|WALKED.
 #   READY    every service is up and the client environment is written.
 #   ADMITTED the client binary printed "admitted to World ..." (non-Windows: stops there).
-#   WALKED   only with operator attestation of the server step result seen in the Windows client
-#            (LOGIN_LOCAL_WALKED_ATTEST=<text> after ADMITTED, or text written to the attestation file
-#            while LOGIN_LOCAL_HOLD=1; the walk has no machine-readable signal; see README).
+#   WALKED   only with operator attestation of the server step result seen in the Windows client:
+#            while LOGIN_LOCAL_HOLD=1 the operator writes text containing this run's id to the
+#            attestation file after the step (the walk has no machine-readable signal; see README).
 # A requested client run (LOGIN_LOCAL_RUN_CLIENT=1) that does not admit ends FAIL with exit 1.
 # PHP snippets are deliberately single-quoted for the container shell; the identities are JSON text.
 # shellcheck disable=SC2016,SC2089,SC2090
@@ -345,13 +345,29 @@ evidence "character=1 source=platform_intent character_id=$CHARACTER_ID"
 # Client environment (public values plus the per-run test password, in a 0600 file, never in the log).
 CLIENT_ENV="${LOGIN_LOCAL_CLIENT_ENV:-$WORK/client.env}"
 ATTEST_FILE="${LOGIN_LOCAL_WALKED_ATTEST_FILE:-$WORK/walked.attest}"
+RUN_ID="$(openssl rand -hex 8)"
+# A stale attestation from an earlier run must never count: clear it before READY.
+rm -f "$ATTEST_FILE"
+# A Windows client cannot resolve a POSIX path: emit the Windows-readable path of the dev root.
+DEV_ROOT="$WP5_PKI/gameplay.crt"
+if [[ "${LOGIN_LOCAL_RUN_CLIENT:-1}" != 1 ]]; then
+  chmod 644 "$DEV_ROOT"
+  if [[ -n "${LOGIN_LOCAL_DEV_ROOT_WINDOWS:-}" ]]; then
+    cp "$DEV_ROOT" "$LOGIN_LOCAL_DEV_ROOT_WINDOWS" 2>/dev/null || blocked dev_root_windows_path_unwritable
+    DEV_ROOT="${LOGIN_LOCAL_DEV_ROOT_WINDOWS_AS_SEEN:-$LOGIN_LOCAL_DEV_ROOT_WINDOWS}"
+  elif command -v wslpath >/dev/null 2>&1; then
+    DEV_ROOT="$(wslpath -w "$DEV_ROOT")"
+  else
+    blocked dev_root_windows_path_missing
+  fi
+fi
 {
   echo "OTERYN_PLATFORM_URL=http://127.0.0.1:$LL_PLATFORM_HTTP_PORT"
   echo "OTERYN_GATEWAY_URL=http://127.0.0.1:$LL_GATEWAY_PORT"
   echo "OTERYN_OAUTH_CLIENT_ID=$OAUTH_CLIENT_ID"
   echo "OTERYN_WORLD=$WORLD_ID"
   echo "OTERYN_CHARACTER_ID=$CHARACTER_ID"
-  echo "OTERYN_DEV_ROOT=$WP5_PKI/gameplay.crt"
+  echo "OTERYN_DEV_ROOT=$DEV_ROOT"
   echo "# browser sign-in at /login: $ACCOUNT_EMAIL / $ACCOUNT_PASSWORD"
 } > "$CLIENT_ENV"
 result=READY
@@ -373,16 +389,12 @@ if [[ "${LOGIN_LOCAL_RUN_CLIENT:-1}" == 1 ]]; then
     exit 1
   fi
   result=ADMITTED
-  if [[ -n "${LOGIN_LOCAL_WALKED_ATTEST:-}" ]]; then
-    result=WALKED
-    evidence "walked attested_by_operator=1"
-  fi
 fi
 if [[ "${LOGIN_LOCAL_HOLD:-0}" == 1 ]]; then
-  # Windows walk: after the step result is seen in the Windows client, the operator writes the attestation
-  # text into the file below; the run then ends with WALKED. Ctrl-C without it ends with the current result.
-  evidence "holding services for a Windows client; write the step-result attestation to $ATTEST_FILE (or press Ctrl-C to tear down)"
-  while [[ ! -s "$ATTEST_FILE" ]]; do sleep 2; done
+  # Windows walk: after the step result is seen in the Windows client, the operator writes text containing this
+  # run's id into the file below; the run then ends with WALKED. Ctrl-C without it ends with the current result.
+  evidence "holding services for a Windows client; after the step result is seen write text containing run id $RUN_ID to $ATTEST_FILE (or press Ctrl-C to tear down)"
+  until grep -qF "$RUN_ID" "$ATTEST_FILE" 2>/dev/null; do sleep 2; done
   result=WALKED
   evidence "walked attested_by_operator=1"
 fi

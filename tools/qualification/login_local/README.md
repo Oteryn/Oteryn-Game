@@ -53,13 +53,16 @@ then holds per-run secrets).
 `LOGIN_LOCAL_RESULT=` is `BLOCKED`, `FAIL`, `READY` (services up, environment written), `ADMITTED`
 (the client printed `Oteryn: admitted to World ...`) or `WALKED`.
 
-`WALKED` is only emitted after an admitted session **and** `LOGIN_LOCAL_WALKED_ATTEST=<text>` from the operator who saw
-the server step result. **Gap:** the walk happens in the Windows shell, which has no machine-readable step output,
-and the node logs no per-step event, so `WALKED` cannot be derived automatically. The non-Windows client binary stops at
-admission. For the walk, run with `LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0` and use `client.env` on Windows
-(the dev root and ports are loopback, so run the node and client on the same host). After seeing the server step
-result, write the attestation text to the file named in the `holding services` line
-(`LOGIN_LOCAL_WALKED_ATTEST_FILE`, default `<work dir>/walked.attest`); the run then ends with `WALKED`.
+`WALKED` is only emitted from a post-READY operator attestation tied to the current run. **Gap:** the walk happens in
+the Windows shell, which has no machine-readable step output, and the node logs no per-step event, so `WALKED`
+cannot be derived automatically. The non-Windows client binary stops at admission (`ADMITTED`). For the walk, run
+with `LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0` and use `client.env` on Windows (the dev root and ports are
+loopback, so run the node and client on the same host). `client.env` carries a Windows-readable
+`OTERYN_DEV_ROOT` (`wslpath -w` under WSL; otherwise set `LOGIN_LOCAL_DEV_ROOT_WINDOWS` to a writable path the
+certificate is copied to, plus `LOGIN_LOCAL_DEV_ROOT_WINDOWS_AS_SEEN` if Windows sees it under another name; without
+either the run is `BLOCKED`). After seeing the server step result, write text containing the run id printed in the
+`holding services` line to `LOGIN_LOCAL_WALKED_ATTEST_FILE` (default `<work dir>/walked.attest`); the file is cleared
+before READY, and only text containing this run's id ends the run `WALKED`.
 With `LOGIN_LOCAL_RUN_CLIENT=1` a client that does not print the admission line ends `FAIL` (exit 1).
 
 ## Platform commands used (Platform main, no Platform change)

@@ -8,9 +8,9 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/runbook-1-20261006
-pr: null
+pr: 1872
 base_sha: 5f58dcde
-head_sha: null
+head_sha: bf725d119ffbe9ee322695e2c01ed2d39806379d
 final_head_sha: null
 final_head_frozen_at: null
 owner: implementation writer (control plane session_013KJX6mv8LQveCKKXYgAX94)
