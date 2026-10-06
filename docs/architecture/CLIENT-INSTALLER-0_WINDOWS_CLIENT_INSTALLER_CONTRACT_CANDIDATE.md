@@ -20,7 +20,7 @@ The owner wants a real installer for the native Windows client that installs the
 
 ## 2. Distribution unit and layout
 
-One release is one installer, `oteryn-client-<version>-x86_64-setup.exe`, built from one exact Game commit. `<version>` is the `oteryn-client` crate version (today the workspace version); the client reports it as `client_build` (`oteryn-client/<version>`).
+One release is one installer, `oteryn-client-<release_id>-x86_64-setup.exe`, built from one exact Game commit. The crate version alone does not identify a release, because many commits share it (today every build is `0.1.0`). The release identity is therefore `<release_id>` = `<client_version>+g<game_commit[0..12]>`, for example `0.1.0+g1a2b3c4d5e6f`: `<client_version>` is the `oteryn-client` crate version (today the workspace version) and the suffix is the first 12 hex digits of the exact Game commit. The client compiles its `<release_id>` in and reports `client_build` as `oteryn-client/<client_version>` unchanged (ALPHA-CLIENT-01 §17.3). No ordering is defined on `<release_id>`; which release is newer is decided only by the channel `sequence` (section 5).
 
 ### 2.1 Install directory (release payload, replaced by updates)
 
@@ -29,8 +29,8 @@ Per-user install, no elevation: `%LOCALAPPDATA%\Programs\Oteryn\`.
 ```text
 %LOCALAPPDATA%\Programs\Oteryn\
   oteryn-launcher.exe            stable entry point; starts releases\<current.txt>\oteryn-client.exe
-  current.txt                    the activation pointer: the one active <version>
-  releases\<version>\
+  current.txt                    the activation pointer: the one active <release_id>
+  releases\<release_id>\
     oteryn-client.exe
     client.env                   release defaults (section 2.3)
     packages.json                package manifest (section 4)
@@ -40,11 +40,11 @@ Per-user install, no elevation: `%LOCALAPPDATA%\Programs\Oteryn\`.
 
 A release directory is written complete and never modified afterwards. `current.txt` is the **only** activation pointer (ALPHA-CLIENT-01 §17.3):
 
-1. The installer copies `releases\<version>\` completely. A failure here leaves `current.txt` untouched, so the previous release stays active and fully consistent. A partial release directory that `current.txt` does not name is inert and is deleted by the next install.
+1. The installer copies `releases\<release_id>\` completely. A failure here leaves `current.txt` untouched, so the previous release stays active and fully consistent. A partial release directory that `current.txt` does not name is inert and is deleted by the next install.
 2. Activation writes `current.txt.new`, flushes it, and replaces `current.txt` with one `MoveFileExW(MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)` rename on the same volume. That rename is the single commit point. No correctness depends on installer rollback after this point, because there is nothing left to roll back: before the rename the old release is active, after it the new one is.
 3. Only after the rename does the installer delete other `releases\*` directories, except the immediately previous one, which is kept for local rollback (section 5.3). A failure during this cleanup is harmless; the next install repeats it.
 
-The Start-menu shortcut targets the stable `oteryn-launcher.exe` and never changes between versions. The launcher is a small, GUI-subsystem binary of the `oteryn-client` package (no console window). It reads `current.txt`, requires a version-shaped value naming an existing `releases\<version>\oteryn-client.exe`, starts that executable with its own arguments and exits. Otherwise it shows an error that asks the user to reinstall; it never guesses another release. The client finds its release `client.env` and `packages.json` next to its own executable, never through `current.txt`, so an executable is always paired with its own configuration and manifest. This is the whole of the Oteryn-specific install logic.
+The Start-menu shortcut targets the stable `oteryn-launcher.exe` and never changes between versions. The launcher is a small, GUI-subsystem binary of the `oteryn-client` package (no console window). It reads `current.txt`, requires a `<release_id>`-shaped value naming an existing `releases\<release_id>\oteryn-client.exe`, starts that executable with its own arguments and exits. Otherwise it shows an error that asks the user to reinstall; it never guesses another release. The client finds its release `client.env` and `packages.json` next to its own executable, never through `current.txt`, so an executable is always paired with its own configuration and manifest. This is the whole of the Oteryn-specific install logic.
 
 ### 2.2 Per-user data directory (never touched by install, update or uninstall)
 
@@ -91,6 +91,7 @@ Source location: `apps/client/installer/` (the script and the release `client.en
 {
   "schema": "oteryn.client.packages.v1",
   "release": {
+    "release_id": "0.1.0+g<12-hex>",
     "client_version": "0.1.0",
     "channel": "dev",
     "game_commit": "<40-hex Oteryn-Game commit>",
@@ -106,7 +107,7 @@ Each `packages[]` entry, when one exists:
 | --- | --- |
 | `id` | lowercase `[a-z0-9-]+`, unique in the manifest |
 | `version` | the package's own semantic version, independent of `client_version` |
-| `path` | relative to `releases\<version>\`, under `packages\`; no `..`, no absolute path |
+| `path` | relative to `releases\<release_id>\`, under `packages\`; no `..`, no absolute path |
 | `size` | exact byte length |
 | `sha256` | lowercase hex SHA-256 of the file |
 | `provenance.source` | `oteryn-original`, `oteryn-generated` or `licensed-redistributable` |
@@ -115,7 +116,7 @@ Each `packages[]` entry, when one exists:
 Rules:
 
 1. The client verifies every listed package (path inside the release directory, exact size, SHA-256) before it loads any of them, and refuses to start on a mismatch, a missing file or an unknown `schema`. An empty `packages` list is valid; that is the first slice.
-2. Third-party reference material (`AGENTS.md`: reference use does not grant redistribution) has no `provenance.source` value and therefore cannot be listed or shipped. The CI build rejects any packaged file that is not listed in the manifest, and any provenance value outside the list above. Adding a source class needs an owner decision recorded in this contract.
+2. Third-party reference material (`AGENTS.md`: reference use does not grant redistribution) has no `provenance.source` value and therefore cannot be listed or shipped. The CI build rejects any file under `packages\` that is not listed in the manifest, any file in the release directory outside `packages\` other than the fixed release files `oteryn-client.exe`, `client.env` and `packages.json`, and any provenance value outside the list above. Adding a source class needs an owner decision recorded in this contract.
 3. Packages are bundled in the installer while the client scene is synthetic and built in. The future asset pipeline is the extension point: it produces package files plus manifest entries in the same schema, and a later fetched-package mode downloads content-addressed files (`sha256` as the key) from the release endpoint (section 5) and verifies them against this manifest before activation. A new manifest field is additive within `v1`; a changed meaning is a new `schema`.
 4. World and gameplay content stays server-authoritative (DUR-04, ADR-0021). Client packages are presentation assets only and never carry gameplay truth.
 
@@ -125,20 +126,34 @@ Rules:
 
 Channels: `dev` (CI artifacts, operator use), `preproduction`, later `stable`. A channel is bound at build time through the release `client.env` template; the client never switches channel by itself.
 
-Game owns what a release is: the installer, `packages.json`, `SHA256SUMS` and a release descriptor, all produced by Game CI from one exact commit. Platform owns distribution to players (web identity, commercial and control-plane responsibilities): hosting the files and serving the channel pointer. The channel pointer is a small document `{channel, sequence, client_version, installer_url, installer_sha256, minimum_supported_client_version}` with a strictly increasing `sequence`. Its endpoint and serving contract are a Platform-owned interface to agree under the cross-repository contract process; until it exists the updater is disabled and the client behaves exactly as today. No Game-hosted stand-in server is built.
+Game owns what a release is: the installer, `packages.json`, `SHA256SUMS` and a release descriptor, all produced by Game CI from one exact commit. Platform owns distribution to players (web identity, commercial and control-plane responsibilities): hosting the files and serving the channel pointer. The channel pointer is a small document `{channel, sequence, release_id, client_version, installer_url, installer_sha256, minimum_supported_client_version}` with a strictly increasing `sequence`. Its endpoint and serving contract are a Platform-owned interface to agree under the cross-repository contract process; until it exists the updater is disabled and the client behaves exactly as today. No Game-hosted stand-in server is built.
 
 ### 5.2 Minimum first updater slice
 
-At start-up, before login, if `OTERYN_UPDATE_URL` (release `client.env`) is set, the client fetches the channel pointer over HTTPS. Eligibility is decided by the authorized `sequence`, not by version order: the pointer is eligible when its `sequence` is greater than the highest sequence this user's client has accepted (stored in the per-user data directory; the first fetched pointer sets the baseline) **and** its `client_version` differs from the running one. A lower `client_version` under a higher `sequence` is an authorized downgrade (section 5.3) and is offered like any other update. The client stores the pointer's `sequence` once it has accepted it. On acceptance, download the installer to the per-user cache, verify `installer_sha256` (and the Authenticode signature once section 6 is live), exit the client, and run the installer silently with a relaunch flag. A failed check or download never blocks play unless the running version is below `minimum_supported_client_version`; Platform and the Gateway remain the compatibility authority (`client_build`), per ALPHA-CLIENT-01 §17.3. Updates never happen inside an active gameplay session (§17.1).
+At start-up, before login, if `OTERYN_UPDATE_URL` (release `client.env`) is set, the client fetches the channel pointer over HTTPS. Eligibility is decided only by the authorized `sequence`, never by version or `<release_id>` comparison. The per-user data directory holds two values:
+
+- `accepted_sequence`: the highest sequence whose release this client has activated and relaunched. It is absent on a fresh install.
+- `pending`: `{sequence, release_id}` of an update that was accepted but has not yet been confirmed by a relaunch.
+
+The rules are:
+
+1. A pointer is eligible when `accepted_sequence` is absent or the pointer's `sequence` is greater than it. Nothing is baselined before evaluation, so the first pointer a fresh install sees is evaluated like any other.
+2. An eligible pointer whose `release_id` equals the running release only records its `sequence` as `accepted_sequence` and installs nothing.
+3. Any other eligible pointer is an update, including a lower `client_version` (an authorized downgrade, section 5.3). On acceptance the client records `pending`, downloads the installer to the per-user cache, verifies `installer_sha256` (and the Authenticode signature once section 6 is live), exits, and runs the installer silently with a relaunch flag.
+4. At each start the client compares `pending.release_id` with its own `<release_id>`. On a match it sets `accepted_sequence` to `pending.sequence` and clears `pending`. `accepted_sequence` advances only here and in rule 2, never on acceptance alone.
+5. A failed check, download, hash verification, install or relaunch leaves `accepted_sequence` unchanged, so the same pointer stays eligible and is retried at the next start. A newer eligible pointer replaces `pending`.
+6. None of these failures blocks play unless the running version is below `minimum_supported_client_version`. Platform and the Gateway remain the compatibility authority (`client_build`), per ALPHA-CLIENT-01 §17.3.
+
+Updates never happen inside an active gameplay session (§17.1).
 
 ### 5.3 Rollback
 
 - Local: a failed install leaves the previous release active (section 2.1). The previous release directory is kept, so it can be started directly, or reactivated by reinstalling its installer.
-- Channel: rollback is a roll-forward. Platform republishes the previous payload under a new, higher `sequence`; clients on the bad version are then eligible under section 5.2 and install the older payload. A pointer whose `sequence` is not greater than the last accepted one is ignored, which blocks replay of an old pointer. The installer accepts installing an older version over a newer one; activation just repoints `current.txt`.
+- Channel: rollback is a roll-forward. Platform republishes the previous payload under a new, higher `sequence`; clients on the bad version are then eligible under section 5.2 and install the older payload. A pointer whose `sequence` is not greater than `accepted_sequence` is ignored, which blocks replay of an old pointer. The installer accepts installing an older version over a newer one; activation just repoints `current.txt`.
 
 ## 6. Code signing seam
 
-One hook: `apps/client/installer/sign.ps1 <file>`. Inno Setup calls it through `SignTool` for the installer and the uninstaller; the CI release job calls it for `oteryn-client.exe` before packaging. Without signing configuration it exits 0 and signs nothing, so builds are unsigned and the artifact is labelled unsigned.
+One hook: `apps/client/installer/sign.ps1 <file>`. Inno Setup calls it through `SignTool` for the installer and the uninstaller. The CI release job calls it explicitly for both shipped executables, `oteryn-client.exe` and `oteryn-launcher.exe`, before packaging. When signing is enabled (external alpha, D854), the release job verifies all four signatures (installer, uninstaller, client, launcher) and fails if any of them is missing or invalid. Without signing configuration it exits 0 and signs nothing, so builds are unsigned and the artifact is labelled unsigned.
 
 - Owner decision D854: builds stay unsigned until external alpha. Signing with a chosen provider is a required gate before external alpha (ALPHA-CLIENT-01 §17.2); the provider is chosen then, and the hook's body is the only provider-specific code.
 - Credentials never enter the repository or a pull-request job. Signing runs only in a separate release job bound to a protected GitHub environment, using that environment's secrets or OIDC federation, on `main` commits that already passed the Merge Queue. `merge-gate.yml` never signs.
@@ -151,7 +166,7 @@ Owner direction: extend the `rust_windows` job of `merge-gate.yml`. After the ex
 1. installs Inno Setup at a pinned version, verifying the downloaded installer's SHA-256 before running it;
 2. writes `packages.json` (empty `packages`, `game_commit` = the exact checked-out SHA) and the `dev` `client.env` template into the staging directory;
 3. compiles the installer with `ISCC` (unsigned; `sign.ps1` no-ops);
-4. silently installs into a temporary per-user directory, runs the installed `releases\<version>\oteryn-client.exe --smoke`, checks the layout of section 2.1, silently uninstalls, and checks that the install directory is gone and a pre-seeded per-user data directory is untouched;
+4. silently installs into a temporary per-user directory, runs the installed `releases\<release_id>\oteryn-client.exe --smoke`, checks the layout of section 2.1, silently uninstalls, and checks that the install directory is gone and a pre-seeded per-user data directory is untouched;
 5. writes `SHA256SUMS` (installer and `packages.json`) and uploads both with the installer as an Actions artifact (`actions/upload-artifact` pinned by commit SHA, short retention), with `permissions: contents: read` only.
 
 Any failure fails `rust_windows` and therefore `game-gate`. Nothing is made optional, skipped or `continue-on-error`. `merge-gate.yml` is a protected workflow whose blob is pinned by `merge-authority-audit.yml`. Owner decision D854 authorizes that audit rotation for this extension; there is no separate installer workflow.
@@ -165,8 +180,8 @@ Each slice is one PR, smallest first. Each runs the checks `CONTEXT_ROUTING.md` 
 | CLIENT-INSTALLER-1 | Unsigned installer artifact from CI: exe, launcher, `dev` `client.env`, empty `packages.json`, atomic `current.txt` activation, uninstall | `apps/client/installer/**`; `apps/client/src/bin/oteryn-launcher.rs` and the `apps/client/Cargo.toml` bin entry; `.github/workflows/merge-gate.yml` (`rust_windows` steps only) with the D854 `merge-authority-audit.yml` rotation; task record | `cargo fmt`/`clippy`/`test -p oteryn-client` with launcher tests for a missing, malformed and dangling `current.txt`; `rust_windows` green with the install/smoke/uninstall steps of section 7, including an interrupted-install case that leaves the previous release active; `python tools/repository/validate_repository_policy.py` and matching `tools/repository/test_*.py` |
 | CLIENT-INSTALLER-2 | Client reads `client.env` (section 2.3 precedence) and verifies `packages.json` (section 4 rule 1) | `apps/client/src/**` | `cargo fmt`, `cargo clippy -p oteryn-client`, `cargo test -p oteryn-client` with precedence, malformed-file, unknown-schema and hash-mismatch cases; `rust_windows` |
 | CLIENT-INSTALLER-3 | Package-manifest CI check: unlisted files and disallowed provenance fail the build | `apps/client/installer/**` | negative fixtures in the same job |
-| CLIENT-INSTALLER-4 | Before external alpha (D854): signing release job behind a protected environment; `sign.ps1` body for the chosen provider | new release workflow, `apps/client/installer/sign.ps1` | signed artifact verifies with `Get-AuthenticodeSignature`; no secret in the repository or PR jobs; needs the provider choice |
-| CLIENT-INSTALLER-5 | Updater first slice (section 5.2) and pointer anti-replay | `apps/client/src/**` | unit tests for sequence eligibility (including an authorized downgrade), hash mismatch, sequence replay and minimum-version; needs the Platform channel-pointer contract |
+| CLIENT-INSTALLER-4 | Before external alpha (D854): signing release job behind a protected environment; `sign.ps1` body for the chosen provider | new release workflow, `apps/client/installer/sign.ps1` | installer, uninstaller, `oteryn-client.exe` and `oteryn-launcher.exe` each verify with `Get-AuthenticodeSignature`, and an unsigned launcher fails the job; no secret in the repository or PR jobs; needs the provider choice |
+| CLIENT-INSTALLER-5 | Updater first slice (section 5.2) and pointer anti-replay | `apps/client/src/**` | unit tests for sequence eligibility (including an authorized downgrade, a same-`client_version` release and an absent `accepted_sequence`), a failed install retried at the next start, `pending` confirmation on relaunch, hash mismatch, sequence replay and minimum-version; needs the Platform channel-pointer contract |
 | later | Fetched packages from the asset pipeline | per section 4 rule 3 | when the asset pipeline exists |
 
 Slice 1 is the playable-first minimum: it turns the existing release build into an installable, uninstallable artifact; its only Rust addition is the launcher. Until slice 2, the installed client reads its settings from the process environment as today.
