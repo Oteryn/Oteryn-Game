@@ -112,7 +112,11 @@
    bearer with scope `game:ticket`, with the same client and generation checks as ticket
    issuance, and does not revoke the token.
    - It returns only the caller's entries: `{"protocol_version":2,"characters":[...]}`.
-   - An account with no snapshot gets an empty list. An `invalid` account gets `503`.
+   - An account with no snapshot gets an empty list.
+   - It answers `503` and returns no entry when the feed is `stale`, or when the account entry is
+     `invalid` or below the highest epoch seen. This is the projection contract §2 rule that stale
+     state fails toward less disclosure. It narrows Platform contract §5.3, which named only
+     `invalid`; the Platform PR updates §5.3 to match.
    - The response is `no-store` and rate limited per contract §10.
 5. **Issuance check** (§5.4, in `RegistryNativeAdmissionScopeResolver`). The check runs inside the
    existing shared epoch lock.
@@ -167,7 +171,9 @@ Out of scope:
   - Issuance: not listed, `UNAVAILABLE`, World mismatch, invalid account and old epoch all
     refused; mode 33a ignored while the feed switch is on.
   - Identity per purpose, in both directions.
-  - D2: own entries only, empty for no snapshot, `503` when invalid, token not revoked.
+  - D2: own entries only, empty for no snapshot, token not revoked; `503` with no entry when the
+    account is invalid, when it is below the highest epoch after an epoch raise, and when the feed
+    is stale.
   - No secret, `AccountId` or name in logs.
   - Ingestion races on MariaDB: concurrent equal pairs, and an epoch raise against a snapshot.
   - Wire fixtures byte-equal to the Game producer's encoder output at an exact Game commit.
@@ -226,7 +232,25 @@ Rollback: turn the Platform feed switch off, which falls back to mode 33a or to 
 Removing the Game configuration section stops the publisher. The read model is derived state and
 can be dropped and refilled with a resync.
 
-## 5. Non-authorization
+## 5. Mandatory decision test
+
+`docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`:
+
+1. **Must decide now?** YES, for `testing` and `preproduction` only.
+2. **Blocked downstream work.** The joint native-login E2E with the full §5.4 issuance check
+   (Platform contract §14 step 6), PLATFORM-LCFA-1, GAME-LCFA-ENABLE-1, and the removal of mode
+   33a as a dependency of that E2E.
+3. **What becomes harder later.** Platform builds a read model and ingestion routes on the push
+   shape and the `(epoch, revision)` order. Moving the release entry to pull would add a
+   Game-hosted endpoint and retire those routes.
+4. **Evidence to supersede.** A measured delivery lag that does not fit S = 30 s; a lost or
+   reordered update that the watermark does not catch; a security finding on the projection
+   identity or the read model; a product need for progression fields (U-LC4).
+5. **Deliberately not decided.** The release values of U-LC1, U-LC5 and U-LC6, the production
+   restore runbook (U-LC2), a Platform-requested resync (U-LC3), progression fields (U-LC4), the
+   per-account slot quota and production PKI.
+
+## 6. Non-authorization
 
 This decision authorizes no code, migration, configuration, deployment or Platform change until
 the owner accepts the contract revision. After acceptance it authorizes only the two packets

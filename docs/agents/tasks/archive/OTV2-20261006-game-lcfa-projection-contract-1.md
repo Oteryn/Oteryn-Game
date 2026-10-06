@@ -40,9 +40,104 @@ external_repositories: []
 - Not changed: `CROSS_REPOSITORY_CONTRACT_LOCK.json`. Its stale Game producer status is a control
   plane follow-up.
 
+## Architecture and source of truth
+
+- PROVEN: revision 1 wire, publisher and outbox exist in this repository (LCFA-1 #1330, LCFA-1b
+  #1389; migrations 0024 and 0028).
+- PROVEN: Oteryn/Oteryn-Platform at 3896bcd has no projection ingestion route and no read model;
+  native issuance uses mode 33a (D171).
+- PROVEN: owner decisions Q14–Q18 on #162 (comments 5899892092, 5899942821) and D821 answers 1a,
+  2a, 3b.
+- DERIVED: S = 30 s, clock uncertainty 1 s and push for `testing`/`preproduction` (§10 U-LC1,
+  U-LC5); the release values stay open.
+- UNKNOWN: the measured delivery lag of a real stack; it decides the release values.
+
+## High-risk authority/recovery qualification
+
+`NOT_APPLICABLE`: this task changes only a contract document, a decision document and this record.
+It performs no mutation, authorizes no PREPARE/COMMIT and interprets no persisted recovery
+evidence. The contract keeps the projection out of authority (§2.4): admission revalidates
+ownership.
+
+## Acceptance criteria
+
+- [x] Revision 2 changes no member, type, path, bound or response of revision 1 (contract header).
+- [x] Multichannel, fencing and authority rules are normative (§2.2–§2.4).
+- [x] §5, §5.1 and §10 state the same U-LC2 and U-LC5 rulings (review round 1).
+- [x] The D2 read answers `503` with no entry when the feed is stale or the account is `invalid`
+      or below the highest epoch (decision §2 item 4, contract §5.1).
+- [x] The decision document carries the mandatory decision test (decision §5).
+- [ ] Owner acceptance after independent review of the frozen head (D821 1a).
+
+## Excluded scope
+
+No code, migration, configuration or deployment. No Oteryn/Oteryn-Platform write. No release-entry
+ruling for U-LC1, U-LC5 or U-LC6, no production restore runbook, no PKI. No change to
+`CROSS_REPOSITORY_CONTRACT_LOCK.json`.
+
+## Implementation / findings
+
+- Revision 2 of the contract and the two packets, decision `ARCH-LCFA-PROJECTION-CONTRACT-V1`.
+- Review round 1 (Codex, review 5425479647 on 36b87e0f):
+  - P1 task record missing template sections: accepted and fixed (this record).
+  - P2 D2 reads not gated on freshness or epoch: fixed (decision §2 item 4 and its test, contract
+    §5.1).
+  - P2 §10 conflicts with §5/§5.1: fixed (§5 epoch bullet and §5.1 now cite U-LC2 and U-LC5).
+  - Also fixed: the stale registry follow-up line in contract §8 (the limits are registered).
+
 ## Validation
+
+### Focused
 
 - `python tools/agents/validate_governance.py`: pass
 - `python tools/repository/validate_repository_policy.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
 - `git diff --check`: pass
+
+### Component/integration
+
+- `NOT_APPLICABLE`: documentation only.
+
+### E2E
+
+- `NOT_APPLICABLE`: documentation only; the joint E2E belongs to the packets.
+
+### Exact-head CI
+
+- final head: the FREEZE_SHA report to the control plane
+- result: the PR #1870 checks on that head
+
+## Self-review
+
+- exact head: the frozen head
+- method/reviewer: Sol Supervising Architect
+- material findings: none open after round 1
+- verdict: ready for independent review
+
+## Independent review
+
+- required: YES, a public contract revision that the owner accepts (D821 1a)
+- exact head: the frozen head
+- method/auditor: the control plane's review route
+- material findings: round 1 above; later rounds in PR #1870
+- verdict: in PR #1870
+
+## PR and closeout
+
+- changed-file review: three owned paths
+- unresolved review threads: none after round 1 replies
+- related/superseded PRs: none
+- protected auto-merge: control plane
+- merge commit/result: in PR #1870
+- ownership release: on merge
+
+## Context checkpoint
+
+```yaml
+last_progress: review round 1 fixed
+status: completed
+branch: cand/lcfa-projection-contract-1
+pr: 1870
+blocker: null
+next_action: control plane freezes the head and requests review
+```
