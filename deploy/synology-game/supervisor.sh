@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # User-level supervisor for the single preproduction Game service.
 # No root, no sudo, no Docker: a pid file under BASE/run and a log under BASE/log.
-# usage: supervisor.sh start|stop|status|health
+# usage: supervisor.sh start|stop|status|health|registration-gap
 set -Eeuo pipefail
 umask 077
 
@@ -73,10 +73,26 @@ health() {
   return 1
 }
 
+# The node logs event=registering before it commits its registration and event=registered after.
+# A registering line without the matching registered line (a crash, kill or cancel in that gap) means
+# the registration may be durable although the log does not show it: print the candidate id, exit 1.
+# The log is the newest incarnation's (start moves the previous one aside), and it is final once the
+# process has exited. No registering line means the process never reached the commit.
+registration_gap() {
+  [[ -f "$LOG_FILE" ]] || return 0
+  local id
+  id="$({ grep 'event=registering' "$LOG_FILE" || true; } | tail -n 1 | sed -n 's/.*node_id=\([^ ]*\).*/\1/p')"
+  [[ -n "$id" ]] || return 0
+  if { grep 'event=registered' "$LOG_FILE" || true; } | grep -qF "node_id=$id "; then return 0; fi
+  echo "$id"
+  return 1
+}
+
 case "${1:-}" in
   start) start ;;
   stop) stop ;;
   status) running && echo running || { echo stopped; exit 3; } ;;
   health) health ;;
-  *) echo "usage: $0 start|stop|status|health" >&2; exit 2 ;;
+  registration-gap) registration_gap ;;
+  *) echo "usage: $0 start|stop|status|health|registration-gap" >&2; exit 2 ;;
 esac

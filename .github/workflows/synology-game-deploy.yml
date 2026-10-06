@@ -30,6 +30,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Test the supervisor registration-gap check
+        shell: bash
+        run: bash deploy/synology-game/test-supervisor-gap.sh
+
       - name: Build release binaries
         shell: bash
         run: |
@@ -205,15 +209,19 @@ jobs:
             done
             if "$BASE/bin/supervisor.sh" status > /dev/null &&
               ! { grep 'event=registered' "$BASE/log/node.log" || true; } | grep -q .; then
-              "$BASE/bin/supervisor.sh" stop
-              # The process has exited, so its log is final. A registration that the log does not
-              # show cannot be excluded: fail closed until the owner reconciles it.
-              if ! { grep 'event=registered' "$BASE/log/node.log" || true; } | grep -q .; then
-                date -u +%FT%TZ > "$BASE/run/unreconciled-node"
-                echo "::error::stopped a node that never logged registration; its registration cannot be ruled out. The owner writes the node id from the database into BASE/run/current-node-id, removes BASE/run/unreconciled-node, then re-run"
-                exit 1
-              fi
+              "$BASE/bin/supervisor.sh" stop # the process has exited, so its log is final
             fi
+          fi
+          # The log may not show a registration that is durable: the node logs event=registering before
+          # it commits and event=registered after, so a crash, kill or cancel in between (whether the
+          # process was running or had already exited) leaves the database ahead of the log and of
+          # current-node-id. Fail closed on that gap, never fall back to a stale id.
+          if gap_id="$("$BASE/bin/supervisor.sh" registration-gap)"; then :; else
+            date -u +%FT%TZ > "$BASE/run/unreconciled-node"
+            # Keep the evidence, and let the owner's reconciled current-node-id decide the rerun.
+            mv -f "$BASE/log/node.log" "$BASE/log/node.log.unreconciled"
+            echo "::error::an earlier node logged registering ${gap_id} but never registered; its registration cannot be ruled out. The owner writes the node id from the database into BASE/run/current-node-id, removes BASE/run/unreconciled-node, then re-run"
+            exit 1
           fi
           if [[ -e "$BASE/run/unreconciled-node" ]]; then
             echo "::error::BASE/run/unreconciled-node exists: a node of an earlier run was never reconciled; the owner reconciles and removes it, then re-run"
