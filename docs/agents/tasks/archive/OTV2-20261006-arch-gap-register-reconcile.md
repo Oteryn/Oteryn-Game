@@ -36,3 +36,12 @@ external_repositories: []
 - `python tools/repository/validate_repository_policy.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
 - `git diff --check`: pass
+
+## Review findings
+
+- Review round 1, P2 (comment 4195131614): the pointers to the ARCH-ALPHA-OPS-0, ARCH-LIVE-READINESS-0 and ARCH-I18N-A11Y-CREATIVE-0 decision documents read as documents on main. Fixed: every pointer in the register and the backlog is now marked pending in its open PR (Oteryn/Oteryn-Game#1878, #1879, #1880) and not yet on main; both intro paragraphs say so. Pointers to files on main are unchanged.
+- Review round 1, P2 (comment 4195131640): the VSL-01 status line carried only the delivery axis. Fixed: VSL-01 and the PERF-01, OPS-CHANNEL-01 and ANL-04 status lines now state DecisionStatus, DeliveryStatus and ImplementationStatus.
+
+```yaml
+last_progress: review round 1 fixes (pending-document pointers; three status axes) applied before refreeze
+```
