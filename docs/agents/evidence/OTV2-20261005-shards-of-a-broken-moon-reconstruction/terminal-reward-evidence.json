@@ -45,7 +45,22 @@
       "required_work": [
         "bind grant to terminal s16 through existing Achievement owner",
         "preserve account-owned durability/idempotence"
-      ]
+      ],
+      "canonical_provenance": {
+        "shard": "content/achievements/achievements-00000-00499.json",
+        "staticdata": {
+          "client_version": "15.30",
+          "source_id": 594
+        },
+        "tibiawiki": {
+          "pageid": 110746,
+          "revid": 1200473
+        },
+        "grade": 2,
+        "points": 4,
+        "premium": true,
+        "secret": false
+      }
     }
   ],
   "access_unlocks": [
@@ -64,7 +79,17 @@
         "canonical_key": "oteryn:achievement/forbidden_fruit",
         "revision": "1",
         "points": 1,
-        "secret": true
+        "grade": 1,
+        "premium": false,
+        "secret": true,
+        "provenance": {
+          "shard": "content/achievements/achievements-00000-00499.json",
+          "tibiawiki": {
+            "pageid": 79651,
+            "revid": 849801
+          }
+        },
+        "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY"
       },
       "status": "REFERENCE_FACT_TYPED_COMPOSITION_MISSING",
       "current_gap": "QuestPredicate has no Achievement predicate; Achievement-owned account fact already exists and must remain owner-read."
@@ -127,5 +152,27 @@
       "materializable": false,
       "invariant": "Promote/materialize in place; do not remint or create a second Item identity."
     }
-  ]
+  ],
+  "achievement_readback": {
+    "checked_against": "content/achievements/achievements-00000-00499.json",
+    "status": "ALL_REFERENCED_ACHIEVEMENTS_EXIST_CANONICALLY",
+    "records": [
+      {
+        "key": "oteryn:achievement/amati_s_echo",
+        "revision": "1",
+        "source_id": 594
+      },
+      {
+        "key": "oteryn:achievement/forbidden_fruit",
+        "revision": "1",
+        "source_id": null
+      },
+      {
+        "key": "oteryn:achievement/six_steps_ahead",
+        "revision": "1",
+        "source_id": 592
+      }
+    ],
+    "warning": "Do not remint these Achievement identities; only runtime grant/predicate composition is missing."
+  }
 }
