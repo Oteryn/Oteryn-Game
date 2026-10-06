@@ -110,7 +110,7 @@ class RolloutTests(unittest.TestCase):
         payload = json.loads(rollout.read_text())
         for entry in payload['input_provenance']:
             path = entry['path']
-            self.assertNotIn('\\\\', path)
+            self.assertNotIn('\\', path)
             self.assertFalse(Path(path).is_absolute())
             self.assertEqual(path, Path(path).as_posix())
 
