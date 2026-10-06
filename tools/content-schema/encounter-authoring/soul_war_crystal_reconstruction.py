@@ -192,6 +192,138 @@ def malice():
     m=manifest(e["identity"]["key"],sources,entries,{"Goshnar's-Malice":[cref("Goshnar's Malice")["key"]],"SoulCageHealthChange":[cref("Soul Cage")["key"]],"SoulCageDeath":[cref("Soul Cage")["key"]]})
     return e,catalog(e),m
 
+
+def spite():
+    participants=[("goshnars_spite",["Goshnar's Spite"]),("weeping_soul",["Weeping Soul"])]
+    anchors=[
+      area("arena",33734,33751,31624,31640,14),
+      point("fire_north",33743,31628,14), point("fire_east",33736,31632,14),
+      point("fire_west",33750,31632,14), point("fire_south",33742,31637,14),
+    ]
+    e=base("goshnars_spite_crystal","Soul War: Goshnar's Spite (Crystal reconstruction)",participants,anchors,
+           timers=[{"name":"searing_fire_cycle","duration_ms":14000,"repeat":True}],
+           outcomes=["boss_defeated"])
+    fire={"family":"Item","key":"canary:item/33877","revision":REV}
+    e["rules"]=[
+      {"key":"start_searing_fire_cycle","trigger":{"kind":"encounter_started"},"conditions":[],
+       "actions":[{"kind":"timer","timer":"searing_fire_cycle","operation":"start"}]},
+      {"key":"create_one_searing_fire","trigger":{"kind":"timer_elapsed","timer":"searing_fire_cycle"},"conditions":[],
+       "actions":[{"kind":"one_of","branches":[
+         {"weight":1,"actions":[{"kind":"map_item","operation":"create","item":fire,"anchor":"fire_north","revert_after_ms":5000}]},
+         {"weight":1,"actions":[{"kind":"map_item","operation":"create","item":fire,"anchor":"fire_east","revert_after_ms":5000}]},
+         {"weight":1,"actions":[{"kind":"map_item","operation":"create","item":fire,"anchor":"fire_west","revert_after_ms":5000}]},
+         {"weight":1,"actions":[{"kind":"map_item","operation":"create","item":fire,"anchor":"fire_south","revert_after_ms":5000}]},
+       ]}]},
+      {"key":"boss_death","trigger":{"kind":"creature_died","role":"goshnars_spite"},"conditions":[],
+       "actions":[{"kind":"emit_outcome","outcome":"boss_defeated","credited":"damage_contributors"}]},
+    ]
+    sources=[
+      src("data-global/lib/quests/soul_war.lua","4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703"),
+      src("data-global/scripts/quests/soul_war/soul_war_mechanics.lua","51d42e7e970a2f24fc8438a833aacac2c061dfc2"),
+      src("data-global/monster/quests/soul_war/goshnars_spite.lua","1daedf2a19178f90bc7f6ea6041f8f3fd1bacef6"),
+      src("data-global/monster/quests/soul_war/weeping_soul.lua","0c45ec43fff093054def38605a66bc2b90de727f"),
+    ]
+    entries=[
+      entry(0,list(range(619,639)),"mapped","The four fixed Searing Fire positions and 14/5/56 second constants are pinned; the representable core uses the 14 second cadence and 5 second item lifetime.","/encounter/anchors"),
+      entry(1,list(range(415,433)),"mapped","Every 14 seconds one of four Searing Fire tiles is chosen uniformly and the item is removed after 5 seconds.","/encounter/rules"),
+      entry(1,list(range(400,414)),"unresolved_semantics","If an unstomped Searing Fire survives until removal, Spite gains +10 defense. Encounter v1 has no item-still-present condition tied to a timed map-item revert."),
+      entry(1,list(range(434,481)),"unresolved_semantics","A player may stomp Searing Fire only once per 56 seconds; this per-player world-item step cooldown is outside Encounter v1 participant state."),
+      entry(1,list(range(364,399)),"unresolved_semantics","Stepping on a Weeping Soul corpse consumes it, applies a 14 second outfit condition and has a 10% chance to heal Spite for 10% max health; player corpse-step and percent-max heal are not representable."),
+      entry(1,list(range(93,119)),"mapped","SoulWarBossesDeath credits contributors; the encounter exposes boss_defeated while quest taint/progress remains in Quest state.","/encounter/rules/2"),
+    ]
+    m=manifest(e["identity"]["key"],sources,entries,{"SoulWarBossesDeath":[cref("Goshnar's Spite")["key"]],"WeepingSoulCorpse":[cref("Weeping Soul")["key"]]})
+    return e,catalog(e),m
+
+def cruelty():
+    participants=[("goshnars_cruelty",["Goshnar's Cruelty"]),("greedy_eye",["A Greedy Eye"])]
+    anchors=[
+      area("arena",33847,33864,31858,31874,7),
+      point("boss",33856,31866,7), point("greedy_eye",33856,31858,7),
+    ]
+    e=base("goshnars_cruelty_crystal","Soul War: Goshnar's Cruelty (Crystal reconstruction)",participants,anchors,
+           timers=[{"name":"defense_growth","duration_ms":15000,"repeat":True}],
+           outcomes=["boss_defeated"])
+    e["rules"]=[
+      {"key":"start_defense_growth","trigger":{"kind":"encounter_started"},"conditions":[],
+       "actions":[{"kind":"timer","timer":"defense_growth","operation":"start"}]},
+      {"key":"unchecked_cruelty_grows_harder","trigger":{"kind":"timer_elapsed","timer":"defense_growth"},"conditions":[],
+       "actions":[{"kind":"attribute","role":"goshnars_cruelty","attribute":"defense","operation":"add","value":2}]},
+      {"key":"boss_death_removes_eye","trigger":{"kind":"creature_died","role":"goshnars_cruelty"},"conditions":[],
+       "actions":[{"kind":"remove","role":"greedy_eye"},{"kind":"emit_outcome","outcome":"boss_defeated","credited":"damage_contributors"}]},
+    ]
+    sources=[
+      src("data-global/lib/quests/soul_war.lua","4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703"),
+      src("data-global/scripts/quests/soul_war/soul_war_mechanics.lua","51d42e7e970a2f24fc8438a833aacac2c061dfc2"),
+      src("data-global/monster/quests/soul_war/goshnars_cruelty.lua","468e6a312e446b328771641f2feb7878f101e8b8"),
+      src("data-global/monster/quests/soul_war/normal_monsters/furious_crater/a_greedy_eye.lua","8622ed190a2da9030ce1eb111029581d88a0d922"),
+      src("data-global/scripts/quests/soul_war/spell-eye_beam.lua","7a73979930a0cdc17950fab7075334322f4cb128"),
+    ]
+    entries=[
+      entry(0,list(range(32,36)),"mapped","Cruelty defense grows by 2 on a 15 second source cadence when Greedy Maw is not refreshed.","/encounter/state/timers"),
+      entry(2,list(range(138,154)),"mapped","After the initial 15 seconds the boss invokes the defense-growth helper; the Greedy Eye is removed when Cruelty disappears.","/encounter/rules"),
+      entry(1,list(range(860,912)),"unresolved_semantics","Using Some Mortal Essence on Greedy Maw has a per-player 30 second cooldown, pushes the shared defense deadline by 15 seconds, consumes the item and conditionally reduces current defense by 2; a player-targeted world-object action/cooldown is outside Encounter v1."),
+      entry(1,list(range(1089,1104)),"unresolved_semantics","GoshnarsCrueltyBuff scales incoming player damage from the shared defense-drain value. Encounter v1 has no damage multiplier sourced dynamically from a counter/KV value."),
+      entry(2,[107],"unresolved_semantics","The custom 'cruelty transform elemental' ability casts every 7 seconds at 50% chance; its native transformation behavior remains a dedicated Ability/engine gap."),
+      entry(3,[64],"mapped","A Greedy Eye owns the direction-bound 'greedy eye beam' creature ability; the beam stays in Creature/Ability authoring rather than being duplicated as an encounter rule.","/encounter/participants/1"),
+      entry(1,list(range(93,119)),"mapped","SoulWarBossesDeath credits contributors; the encounter exposes boss_defeated while quest taint/progress remains in Quest state.","/encounter/rules/2"),
+    ]
+    m=manifest(e["identity"]["key"],sources,entries,{"SoulWarBossesDeath":[cref("Goshnar's Cruelty")["key"]],"GoshnarsCrueltyBuff":[cref("Goshnar's Cruelty")["key"]]})
+    return e,catalog(e),m
+
+def megalomania():
+    participants=[
+      ("goshnars_megalomania",["Goshnar's Megalomania Purple","Goshnar's Megalomania Green","Goshnar's Megalomania Blue"]),
+      ("aspect_of_power",["Aspect of Power"]),
+    ]
+    anchors=[area("arena",33701,33719,31626,31642,14),point("boss",33710,31634,14),point("aspect_start",33710,31635,14)]
+    e=base("goshnars_megalomania_crystal","Soul War: Goshnar's Megalomania (Crystal reconstruction)",participants,anchors,
+           counters=[{"name":"aspect_deaths","initial":0}],
+           timers=[{"name":"green_to_blue","duration_ms":60000,"repeat":False},{"name":"blue_to_purple","duration_ms":7000,"repeat":False}],
+           outcomes=["boss_defeated"])
+    e["rules"]=[
+      {"key":"reset_aspect_count","trigger":{"kind":"encounter_started"},"conditions":[],
+       "actions":[{"kind":"counter","counter":"aspect_deaths","operation":"set","value":0}]},
+      {"key":"aspect_death_counts","trigger":{"kind":"creature_died","role":"aspect_of_power"},"conditions":[],
+       "actions":[{"kind":"counter","counter":"aspect_deaths","operation":"add","value":1}]},
+      {"key":"aspect_returns_after_five_seconds","trigger":{"kind":"creature_died","role":"aspect_of_power"},"delay_ms":5000,"conditions":[],
+       "actions":[{"kind":"spawn","creature":cref("Aspect of Power"),"role":"aspect_of_power","count":1,
+                   "at":{"role_position":"goshnars_megalomania","otherwise":"death_position"},"owner":"none","health":"full"}]},
+      {"key":"four_aspects_make_boss_green","trigger":{"kind":"counter_reached","counter":"aspect_deaths","value":4},"conditions":[],
+       "actions":[
+         {"kind":"counter","counter":"aspect_deaths","operation":"set","value":0},
+         {"kind":"transform","role":"goshnars_megalomania","into":cref("Goshnar's Megalomania Green"),"health":"keep_absolute"},
+         {"kind":"timer","timer":"green_to_blue","operation":"start"}]},
+      {"key":"green_phase_becomes_blue","trigger":{"kind":"timer_elapsed","timer":"green_to_blue"},"conditions":[],
+       "actions":[
+         {"kind":"transform","role":"goshnars_megalomania","into":cref("Goshnar's Megalomania Blue"),"health":"keep_absolute"},
+         {"kind":"timer","timer":"blue_to_purple","operation":"start"}]},
+      {"key":"blue_phase_returns_purple","trigger":{"kind":"timer_elapsed","timer":"blue_to_purple"},"conditions":[],
+       "actions":[{"kind":"transform","role":"goshnars_megalomania","into":cref("Goshnar's Megalomania Purple"),"health":"keep_absolute"}]},
+      {"key":"boss_death","trigger":{"kind":"creature_died","role":"goshnars_megalomania"},"conditions":[],
+       "actions":[{"kind":"emit_outcome","outcome":"boss_defeated","credited":"damage_contributors"}]},
+    ]
+    sources=[
+      src("data-global/lib/quests/soul_war.lua","4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703"),
+      src("data-global/scripts/quests/soul_war/soul_war_mechanics.lua","51d42e7e970a2f24fc8438a833aacac2c061dfc2"),
+      src("data-global/monster/quests/soul_war/goshnar's_megalomania_purple.lua","7781c66516d83abbe905496cff7c3caf44902bf9"),
+      src("data-global/monster/quests/soul_war/goshnar's_megalomania_green.lua","787ab94b6627f5785fc9a574e6192f679e933235"),
+      src("data-global/monster/quests/soul_war/goshnar's_megalomania_blue.lua","cf81168aa00b063ba9ce379e48b7254a4522e160"),
+      src("data-global/monster/quests/soul_war/aspect_of_power.lua","896cb5207226ff460039f2c96b1eee39b5cda3ee"),
+      src("src/lua/functions/creatures/monster/monster_functions.cpp","4e6c50984ee2e5881f9a55aa15d82cd42da9979c"),
+    ]
+    entries=[
+      entry(0,list(range(450,477)),"mapped","The lever starts Purple plus one Aspect of Power in the fixed final arena; retry/quest gates remain outside this encounter core.","/encounter/anchors"),
+      entry(1,list(range(913,941)),"mapped","Every Aspect death counts while the boss is Purple and schedules a replacement at the boss position after 5 seconds.","/encounter/rules"),
+      entry(0,list(range(588,601)),"mapped","The scheduled blue phase lasts 7 seconds before returning Purple.","/encounter/rules/4"),
+      entry(0,list(range(1454,1475)),"mapped","Four Aspect deaths transform Purple to Green and schedule Blue after 60 seconds. The 70 second Green-only fallback is source safety logic and is not duplicated because the 60+7 second path returns Purple first.","/encounter/rules"),
+      entry(6,list(range(144,175)),"mapped","Monster:setType(..., restoreHealth=false) preserves current absolute health/max-health fields; encounter transforms therefore use keep_absolute.","/encounter/rules"),
+      entry(1,list(range(942,1030)),"unresolved_semantics","Dead Aspect corpse interactions, Cleansed Sanity, Necromantic Remains and their player-local torment/defense cooldowns require player item-step/use state not present in Encounter v1."),
+      entry(2,list(range(138,170)),"unresolved_semantics","Purple/Green/Blue onThink loops also drive torment, procedural white tiles, defense growth and the custom elemental transformation; these remain separate hard holds."),
+      entry(1,list(range(1050,1062)),"mapped","Megalomania death records the quest kill flag for credited killers; the encounter exposes boss_defeated and leaves persistent quest state to Quest authoring.","/encounter/rules/6"),
+    ]
+    m=manifest(e["identity"]["key"],sources,entries,{"SoulWarAspectOfPowerDeath":[cref("Aspect of Power")["key"]],"SoulWarMegalomaniaDeath":[cref("Goshnar's Megalomania Purple")["key"]]})
+    return e,catalog(e),m
+
 def write_one(name,bundle):
     e,c,m=bundle
     d=OUT/name
@@ -202,11 +334,14 @@ def write_one(name,bundle):
 def main():
     write_one("goshnars_greed",greed())
     write_one("goshnars_malice",malice())
+    write_one("goshnars_spite",spite())
+    write_one("goshnars_cruelty",cruelty())
+    write_one("goshnars_megalomania",megalomania())
     index={
       "schema":"OTERYN_SOUL_WAR_CRYSTAL_ENCOUNTER_RECONSTRUCTION/v1",
       "source":{"repository":"zimbadev/crystalserver","revision":CRYSTAL,"branch":"summer-update"},
       "runtime_qualified":False,
-      "encounters":["goshnars_greed","goshnars_malice"],
+      "encounters":["goshnars_greed","goshnars_malice","goshnars_spite","goshnars_cruelty","goshnars_megalomania"],
       "note":"Source-backed representable cores only. unresolved_semantics rows are hard holds, not approximations."
     }
     OUT.mkdir(parents=True,exist_ok=True)
