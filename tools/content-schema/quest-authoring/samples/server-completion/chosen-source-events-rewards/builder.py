@@ -67,7 +67,8 @@ def build(repo_root,epoch_root,world_path):
  e=Epoch(epoch_root);root=Path(repo_root)
  cand=json.loads((root/CANDIDATE).read_text(encoding="utf-8"))
  chosen_states={"CHOSEN_SOURCE_TYPED_PROGRESS_ONLY","SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY"}
- chosen={q["quest"] for q in cand["quests"] if isinstance(q["completion"],dict) and q["completion"].get("state") in chosen_states};assert len(chosen)==227
+ candidate_by_owner={q["quest"]:q for q in cand["quests"]}
+ chosen={q["quest"] for q in cand["quests"] if isinstance(q["completion"],dict) and q["completion"].get("state") in chosen_states};assert len(chosen)==236
  table=collections.defaultdict(list);outcomes=collections.defaultdict(list)
  def add(family,name,identity,ev,record,basis="canonical_named_record"):
   if not name:return
@@ -110,7 +111,15 @@ def build(repo_root,epoch_root,world_path):
  records=[]
  for key in sorted(chosen):
   entry=defs[key];q=entry["definition"];recipe=entry["recipe"];stages=[]
-  for s in recipe["stages"]:
+  projected_stages=[
+   t["source"]["chosen_stage"]
+   for t in candidate_by_owner[key]["transitions"]
+   if isinstance(t.get("source"),dict)
+   and t["source"].get("basis")=="CHOSEN_OTERYN_APPROXIMATION"
+   and isinstance(t["source"].get("chosen_stage"),dict)
+  ]
+  assert projected_stages and projected_stages[-1]["kind"]=="complete" and projected_stages[-1]["count"]==1
+  for s in projected_stages:
    kind=s["kind"];families={"kill":["Creature"],"collect":["Item"],"use":["Item","NPC"],"explore":["Area"],"complete":[],"talk":["NPC"]}[kind];targets=[mapped(n,families) for n in s["targets"]] if families else [];seam=[];holds=[]
    if kind=="kill":
     for t in targets:
@@ -122,7 +131,7 @@ def build(repo_root,epoch_root,world_path):
    elif kind=="collect":holds.append("INVENTORY_COUNT_CONSUMER_AND_PER_TARGET_QUANTITY_BINDING_PENDING")
    elif kind=="use":holds+=["ITEM_NPC_IDENTITY_IS_NOT_USE_ACTION_OR_PLACEMENT_BINDING","NATIVE_USE_CONSUMER_BINDING_PENDING"]
    elif kind=="explore":holds+=["AREA_LABEL_OR_POSITION_IS_NOT_QUEST_TRIGGER_BOUNDARY","NATIVE_AREA_ENTRY_CONSUMER_BINDING_PENDING"]
-   elif kind=="complete":seam=[{"kind":"EXISTING_CHOSEN_STAGE_GRAPH","incoming_stage_keys":[x["key"] for x in recipe["stages"] if s["key"] in x["next"]],"next_stage_keys":s["next"],"status":"CHOSEN_SOURCE_GRAPH_INTENT_ONLY","execution_verified":False}];holds.append("NATIVE_COMPLETION_REDUCER_BINDING_PENDING")
+   elif kind=="complete":seam=[{"kind":"EXISTING_CHOSEN_STAGE_GRAPH","incoming_stage_keys":[x["key"] for x in projected_stages if s["key"] in x["next"]],"next_stage_keys":s["next"],"status":"CHOSEN_SOURCE_GRAPH_INTENT_ONLY","execution_verified":False}];holds.append("NATIVE_COMPLETION_REDUCER_BINDING_PENDING")
    else:holds.append("DIALOGUE_LANE_OWNS_TALK_BINDING")
    if any(t["status"]!="EXACT_CANONICAL_IDENTITY_ASSOCIATION" for t in targets):holds.append("ONE_OR_MORE_EXACT_TARGET_IDENTITIES_UNRESOLVED")
    stages.append({"stage_key":s["key"],"kind":kind,"count":s["count"],"basis":s["basis"],"targets":targets,"consumer_seams":seam,"unresolved":sorted(set(holds)),"runtime_admitted":False})
@@ -143,11 +152,11 @@ def build(repo_root,epoch_root,world_path):
    if fam=="Item" and hit.get("materializable") is not True:holds.append("CANONICAL_ITEM_NOT_MATERIALIZABLE")
    if fam=="Outfit":holds.append("BASE_OUTFIT_OR_ADDON_DELIVERY_REQUIRES_EXPLICIT_NATIVE_POLICY")
    rewards.append({"reward_index":i,"kind":r["kind"],"count":r["count"],"basis":r["basis"],"mapping":hit,"unresolved":holds,"runtime_admitted":False})
-  records.append({"quest_ref":{"family":"Quest",**q["identity"]},"wiki_title":recipe["wiki_title"],"recipe_sha256":semantic(recipe),"canonical_definition_evidence":entry["evidence"],"identity_binding_basis":"EXACT_CANONICAL_QUEST_KEY_AND_CHOSEN_RECIPE_PAYLOAD","stages":stages,"reward_intents":rewards,"native_readiness_unchanged":True})
+  records.append({"quest_ref":{"family":"Quest",**q["identity"]},"wiki_title":recipe["wiki_title"],"recipe_sha256":semantic(recipe),"projected_stages_sha256":semantic(projected_stages),"typed_progress_source":CANDIDATE,"canonical_definition_evidence":entry["evidence"],"identity_binding_basis":"EXACT_CANONICAL_QUEST_KEY_AND_TYPED_PROGRESS_PROJECTION","stages":stages,"reward_intents":rewards,"native_readiness_unchanged":True})
  counter=collections.Counter()
  for r in records:
   for s in r["stages"]:counter["stages"]+=1;counter["non_dialogue_stages"]+=s["kind"]!="talk";counter["exact_stage_target_refs"]+=sum(t["status"]=="EXACT_CANONICAL_IDENTITY_ASSOCIATION" for t in s["targets"]);counter["encounter_outcome_seams"]+=sum(x.get("status")=="EXISTING_DECLARED_ENCOUNTER_OUTCOME" for x in s["consumer_seams"])
   for reward in r["reward_intents"]:counter["reward_intents"]+=1;counter["exact_reward_refs"]+=reward["mapping"]["status"]=="EXACT_CANONICAL_IDENTITY_ASSOCIATION";counter["explicit_non_identity_reward_intents"]+=reward["mapping"]["status"] in ("EXPLICIT_NO_DELIVERY_INTENT","EXPLICIT_AUTHORED_EXPERIENCE_AMOUNT")
- return {"schema":"OTERYN_CHOSEN_SOURCE_EVENT_REWARD_ASSOCIATIONS/v2","epoch":e.pin,"runtime_admitted":False,"basis":"CHOSEN_OTERYN_APPROXIMATION","limits":["Exact canonical name-to-identity association does not prove Source quest ownership, placement or execution.","Chosen-source recipes remain approximations; original source holds are preserved.","Talk identity rows remain owned by the dialogue lane.","No fuzzy names, donor numeric IDs or implicit addon grants."],"input_refs":{"completion_candidate":CANDIDATE,"qualified_world_sha256":sha(wb)},"canonical_inputs":e.inputs,"counts":{"quests":len(records),**counter},"records":records}
+ return {"schema":"OTERYN_CHOSEN_SOURCE_EVENT_REWARD_ASSOCIATIONS/v3","epoch":e.pin,"runtime_admitted":False,"basis":"CHOSEN_OTERYN_APPROXIMATION","limits":["Exact canonical name-to-identity association does not prove Source quest ownership, placement or execution.","Chosen-source recipes remain approximations; original source holds are preserved.","Talk identity rows remain owned by the dialogue lane.","No fuzzy names, donor numeric IDs or implicit addon grants."],"input_refs":{"completion_candidate":CANDIDATE,"qualified_world_sha256":sha(wb)},"canonical_inputs":e.inputs,"counts":{"quests":len(records),**counter},"records":records}
 if __name__=="__main__":
  p=argparse.ArgumentParser();p.add_argument("--repo-root",required=True);p.add_argument("--epoch-root",required=True);p.add_argument("--qualified-world",required=True);p.add_argument("--out",required=True);a=p.parse_args();packet=build(a.repo_root,a.epoch_root,a.qualified_world);Path(a.out).write_bytes((json.dumps(packet,indent=2,ensure_ascii=False)+"\n").encode("utf-8"));print(json.dumps(packet["counts"],sort_keys=True))
