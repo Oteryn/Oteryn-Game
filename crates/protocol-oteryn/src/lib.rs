@@ -367,10 +367,11 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // offered before BAGS-1) and 15 ITEM_USE_V1 (ITEM-USE-WIRE-1, not offered before ITEM-USE-1) and
 // 16 QUEST_LOG_V1 (QUEST-LOG-WIRE-1, not offered before the quest log
 // content and the production session copy are composed) and 17 ATTACK_V1 (ATTACK-WIRE-1, not
-// offered before ATTACK-1b). Registered is not offered. 13
+// offered before ATTACK-1b) and 3 NPC_SERVICE_V1 (NPC-WIRE-1, not offered before NPC-TALK-1).
+// Registered is not offered. 13
 // PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 3, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -2532,6 +2533,7 @@ pub mod chat;
 pub mod container_tree;
 pub mod damage_element;
 pub mod item_view;
+pub mod npc_service;
 pub mod quest_log;
 pub mod spell_presentation_candidate;
 pub mod world_map;
