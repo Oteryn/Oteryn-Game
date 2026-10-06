@@ -97,7 +97,9 @@ out of scope, under separate authority.
 
 A preproduction Platform can therefore publish routes **only** when its whole default database is
 that retained temporary SQLite file. That is the RUNBOOK-1 profile. A persistent MariaDB is
-refused.
+refused. The predicate checks the database file only: a per-run directory that is itself a symlink
+to a persistent directory leaves a regular, non-symlinked file, which it accepts. §2 adds the
+missing directory check in the commands.
 
 **F4. The trust key has no operator path either.** PROVEN: `NativeSigningTrustRegistry` at
 3896bcd.
@@ -169,6 +171,18 @@ Each run has one writer. The commands run against that run's Platform only.
   --tls-server-name= --login-enabled=<true|false>`
   - It calls `publishRouteForPreproduction` unchanged.
   - Before any write it refuses unless `APP_ENV` is `testing` or `preproduction`.
+  - Before any write it also applies the **run-directory check**, which lives in
+    `DisposableNativeStore` and which both commands call. The shared predicate checks only the
+    database file, so a symlinked per-run directory would otherwise let this command publish into
+    the symlink's persistent target. When the default store is a SQLite file:
+    - the per-run directory `<sys_get_temp_dir>/oteryn-native-topology-<hex>` is not a symlink;
+    - its `realpath` sits directly beneath `realpath(sys_get_temp_dir())`;
+    - the database file's `realpath` is that directory plus `/oteryn-native-topology.sqlite`.
+
+    Otherwise the command refuses with nothing written. Comparing with the canonical temporary
+    root keeps hosts whose system temporary path is itself a symlink working. The run's single
+    writer owns the directory, so it does not change between the check and the write.
+    `isolatedConnection()` does not call this check, and the registry's behaviour is unchanged.
   - It prints a JSON readback receipt: `world_id`, `channel_id`, `route_version`,
     `route_revision`, `native_login_enabled`.
   - On failure it prints only a generic error, never the exception.
@@ -181,7 +195,8 @@ Each run has one writer. The commands run against that run's Platform only.
     outer transaction; a MySQL/MariaDB store only as the loopback `oteryn_concurrency` database in
     `testing`; a SQLite store only as `:memory:` in `testing` or the retained per-run file
     `<sys_get_temp_dir>/oteryn-native-topology-<hex>/oteryn-native-topology.sqlite` with no
-    symlink. An environment check alone is not enough, because `publishTrustedKey` writes to the
+    symlink. It then applies the run-directory check (route command above). An environment
+    check alone is not enough, because `publishTrustedKey` writes to the
     default connection, which in a deployed process is its persistent database.
   - The Platform PR moves that predicate out of `NativeTopologyRegistry` into one shared guard,
     `DisposableNativeStore`, that both the registry and this command call. It may not relax or
@@ -209,6 +224,9 @@ Each run has one writer. The commands run against that run's Platform only.
   - each command refuses in `preproduction` when the default store is not disposable (a MariaDB
     connection as in the staging deployment, a SQLite file outside the per-run directory, a
     symlinked file) with no row written and no high-water floor file created;
+  - each command refuses in `testing` and in `preproduction` when the per-run directory is a
+    symlink to a persistent directory and the database file inside it is regular and not a
+    symlink, with no row, floor file or lock file written;
   - the trust command refuses, with a disposable store, when the high-water directory is outside
     the per-run directory, in another run's directory, a symlink or under a symlinked parent,
     with no row, floor file or lock file written;
@@ -253,9 +271,10 @@ No GitHub, Synology, Cloudflare or database credential of any deployed environme
 
 - One disposable Platform process and its temporary files.
 - A wrong command in a deployed environment refuses before any write. Both commands check the
-  environment and then the shared disposable-store guard, so neither can write to a staging,
-  production or other persistent database, even when `APP_ENV` is set to `preproduction` by
-  mistake. The trust command also refuses a high-water directory outside the run's own
+  environment, then the shared disposable-store guard, then the run-directory check. Neither can
+  therefore write to a staging, production or other persistent database, even when `APP_ENV` is
+  set to `preproduction` by mistake or the per-run directory is a symlink to a persistent one.
+  The trust command also refuses a high-water directory outside the run's own
   temporary directory, so no trust state is written to a shared or persistent path.
 - Public staging, production, Canary and the Game repositories are not affected.
 
