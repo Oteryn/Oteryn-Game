@@ -24,13 +24,29 @@
       "title": "The Moonsnow Magnolia",
       "url": "https://www.tibiawiki.com.br/index.php?redirect=no&stable=0&title=The_Moonsnow_Magnolia",
       "retrieved_utc": "2026-10-06",
-      "stability": "CURRENT_WEB_REFERENCE_NOT_IMMUTABLE"
+      "stability": "CURRENT_WEB_REFERENCE_NOT_IMMUTABLE",
+      "verified_facts": [
+        "base HP 52000; XP 240000; timeout 10 minutes; cooldown 20 hours",
+        "summons 2-4 Furious Jaracal",
+        "Bone Fiddle approximately every 30 seconds during phase 1; about 70 seconds without it leads to four Furious Jaracal",
+        "Moonsilver Drift deals approximately 350-400 Death damage to player and strengthens/transforms an asura that crosses it",
+        "first defeat causes approximately 5000 Ice damage and immediate return with 60000 HP",
+        "Bone Fiddle no longer required in phase 2",
+        "Death attacks heal Magnolia"
+      ]
     },
     "reference_quest": {
       "title": "Shards of a Broken Moon Quest",
       "url": "https://tibiawiki.com.br/wiki/Shards_of_a_Broken_Moon",
       "retrieved_utc": "2026-10-06",
-      "stability": "CURRENT_WEB_REFERENCE_NOT_IMMUTABLE"
+      "stability": "CURRENT_WEB_REFERENCE_NOT_IMMUTABLE",
+      "verified_facts": [
+        "fight is solo",
+        "initial two Furious Jaracal",
+        "Frost Flower Asuras and Midnight Asuras appear during the fight",
+        "Bone Fiddle and Moonsilver Drift mechanics match the boss page",
+        "portal route is 33901,32718,9"
+      ]
     },
     "supplied_video": {
       "youtube_id": "Zz-7UyufXbU",
@@ -207,11 +223,13 @@
           "damage_type": "ICE",
           "amount_approx": 5000,
           "provenance": "REFERENCE_CURRENT",
-          "exact_amount": "UNKNOWN"
+          "exact_amount": "UNKNOWN",
+          "precision": "APPROXIMATE_AS_PUBLISHED_CURRENT_REFERENCE"
         },
         "boss_hp_after_return": {
           "value": 60000,
-          "provenance": "REFERENCE_CURRENT"
+          "provenance": "REFERENCE_CURRENT",
+          "precision": "EXACT_AS_PUBLISHED_CURRENT_REFERENCE"
         },
         "transition_ordering": {
           "source_semantic": "Ice hit then immediate return at 60000 HP.",
@@ -281,7 +299,8 @@
     "facts": [
       "Crystal Magnolia file contains a static Creature statblock and ordinary summon table only.",
       "Crystal Furious Jaracal file is a static Creature statblock only.",
-      "No dedicated Bone Fiddle, Moonsilver Drift, first-lethal revive or Magnolia phase encounter script was found at the pinned Summer revision."
+      "No dedicated Bone Fiddle, Moonsilver Drift, first-lethal revive or Magnolia phase encounter script was found at the pinned Summer revision.",
+      "Crystal's static Magnolia Creature file has an ordinary maxSummons=4 table for Frost Flower Asura/Midnight Asura, but it does not encode the Reference Furious-Jaracal pressure, Bone-Fiddle suppression, Moonsilver-Drift callbacks or two-phase lethal semantics."
     ],
     "consequence": "SHARDS-E1 must be an Oteryn Encounter implementation; copying Crystal Creature Lua is insufficient."
   },
@@ -310,6 +329,31 @@
       "Permanent-kill occurrence -> QuestTransitionRequest for magnolia_defeated.",
       "Post-kill prison relocation under World/Encounter ownership.",
       "Crash/restart/relog cleanup and idempotence qualification."
+    ]
+  },
+  "runtime_partition": {
+    "reusable_existing_creature_runtime": [
+      "Magnolia canonical Creature identity and ordinary actor lifecycle",
+      "ordinary attacks/targeting/resistances/immunities only where source-qualified by the Monster owner",
+      "Furious Jaracal canonical Creature identity and ordinary actor lifecycle",
+      "Frost Flower Asura and Midnight Asura canonical Creature identities and ordinary actor lifecycle"
+    ],
+    "encounter_owned": [
+      "solo admission, 10-minute arena timeout and 20-hour boss cooldown",
+      "initial two Furious Jaracal",
+      "phase-1 Furious Jaracal pressure timer",
+      "Bone Fiddle phase-1 interaction and suppression/reset behavior",
+      "Frost Flower/Midnight Asura encounter spawn scheduling",
+      "Moonsilver Drift spawn/lifetime/step callbacks",
+      "first-lethal prevention, approximately 5000 Ice burst and immediate 60000-HP phase-2 return",
+      "permanent second lethal and one-shot Magnolia encounter completion",
+      "post-kill relocation into the prison escape"
+    ],
+    "forbidden_shortcuts": [
+      "Do not copy Crystal's static ordinary summon table as the Magnolia encounter implementation.",
+      "Do not promote donor TODO(balance) damage/defense estimates to Reference parity.",
+      "Do not persist phase timers or drift cells as durable QuestState tracks.",
+      "Do not emit magnolia_defeated on the first lethal."
     ]
   }
 }
