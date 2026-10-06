@@ -1751,11 +1751,26 @@ state, **retired**, for a reservation whose trigger plan was lost before its MIN
   by the reservation's (game_session_id, command_id) and referencing it. The runtime role gets
   `SELECT, INSERT` only, and a no-truncate trigger is added as for the 0012 tables. The 0012
   reservation guard is unchanged.
+- **Eligibility.** The same migration adds the insert-only table
+  `game_reward_claim_mint_trigger_children`, keyed by the reservation's (game_session_id,
+  command_id) and referencing it. `RewardClaimMintRequest` gains a closed origin
+  (`TriggerPlanChild`, `Other`); `freeze_reward_claim_mint` inserts the row in the reservation's
+  own transaction for `TriggerPlanChild` only, and a guard trigger refuses the insert unless the
+  current transaction inserted that reservation. A later pass whose origin disagrees with the row's
+  presence refuses with `ConflictingCause`. The runtime role gets `SELECT, INSERT` only, with a
+  no-truncate trigger. A dialogue claim and a D39 chest `USE` claim have the `Other` origin.
 - **Retirement.** A new operation in `reward_claim_mint.rs` loads the reservation by its CommandRef
-  and refuses unless its `character_id` is the reconciled Character. In one transaction under the
-  current recovery fence it takes the commit pass's locks in their order and reads the receipt.
-  With a receipt it writes nothing; with none it inserts the retirement row. It spends no RL-08
-  work unit.
+  and refuses with `NotRetirable`, writing nothing, unless its `character_id` is the reconciled
+  Character and its trigger-child row exists. In one transaction under the current recovery fence
+  it takes the commit pass's locks in their order and reads the receipt, then the retirement row.
+  With a receipt it writes nothing and returns the committed result; with a retirement row it
+  writes nothing and returns `Retired`; with neither it inserts the retirement row and returns
+  `Retired`. It spends no RL-08 work unit.
+- **Reconcile.** `reconcile_reward_claim_mint` returns a closed `RewardClaimMintReconciliation`
+  (`Committed`, `Retired`, `Pending`) in place of its `Option`. It returns `Retired` for a
+  retirement row read before its work unit charge, without charging, or read under the cause lock
+  when there is no receipt. `Retired` is terminal and never retried; only `Pending` (neither row)
+  lets the same candidate be retried.
 - **Commit and freeze.** `commit_reward_claim_mint_noticed` and `freeze_reward_claim_mint` refuse
   with `CapacityExceeded`, under the cause lock and before any write, when a retirement row exists
   for their CommandRef, whatever the stored work unit count.

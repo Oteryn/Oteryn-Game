@@ -87,8 +87,10 @@ they apply to a player `USE` on a placed reward chest:
   lock. A receipt settles the occurrence `COMMITTED`. Otherwise a durable retirement row makes it
   terminal `REJECTED`, and no later pass under that `CommandRef` commits. Until a receipt or a
   retirement row exists, the MINT stays pending by the existing DUR-03 rule, and a new
-  `CommandRef` for the same claim is refused with `ClaimPending` while it is. A chest `USE` whose
-  trigger plan was not lost is unchanged.
+  `CommandRef` for the same claim is refused with `ClaimPending` while it is. Only a reservation
+  marked at reservation as a trigger plan's claim child is retirable; the reconciliation reports a
+  retired occurrence as terminal `Retired`, never as retryable. A chest `USE` whose trigger plan
+  was not lost, and every chest `USE` claim with no trigger-child mark, are unchanged.
 
 - **Identity dependencies of §5.1**, accepted only as §5.1 uses them for the chest:
   - §4.1 `RootSourceOccurrenceRef`: the root is the player's `USE` command occurrence.
