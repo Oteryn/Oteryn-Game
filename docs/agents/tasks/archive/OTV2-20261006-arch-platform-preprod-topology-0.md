@@ -110,5 +110,11 @@ Codex round 6 on `8b09d181` raised three P1 findings, all fixed in one push:
   `native_account_characters` section: identities, source authority, liveness, and `enabled`
   set last.
 
+Codex round 7 on `2e8467e2` raised two P1 findings, both fixed in one push:
+- a root-owned public copy of the projection certificate is listed in `report.toml`
+  `other_producer_certificate_files`, so the ops key-isolation check covers it;
+- the raw 32-byte admission public key goes to a temporary file, and is published with
+  `--public-key-file` before the PEM and the temporary file are deleted.
+
 Review is decided by the control plane on the frozen head. Merge result: squash merge of
 #1893, pending CI and Merge Queue at authoring.

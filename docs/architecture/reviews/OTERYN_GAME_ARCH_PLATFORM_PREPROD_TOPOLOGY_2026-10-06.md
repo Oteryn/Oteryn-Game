@@ -256,8 +256,13 @@ mirror step exists.
     and `gateway` together.
   - Admission signing key: `openssl genpkey -algorithm ed25519`. The 32-byte seed is written
     base64url without padding to `secrets/admission/signing.seed`, as `login_local` does. The
-    PEM is then deleted. The public half is published with `game-auth:native-trust:publish-key` under key
-    id `preprod-admission-key-1` and key purpose `fresh_admission` (§7 step 5).
+    raw 32-byte public key is extracted from the PEM into a temporary regular file the
+    `platform` container can read
+    (`openssl pkey -in <pem> -pubout -outform DER | tail -c 32 > <tmp>`, the last 32 bytes of the
+    Ed25519 SubjectPublicKeyInfo). `game-auth:native-trust:publish-key --public-key-file=<tmp>`
+    publishes it under key id `preprod-admission-key-1` and key purpose `fresh_admission` (§7
+    step 5). Only after that publish succeeds are the PEM and the temporary file deleted; the
+    seed file stays.
   - `APP_KEY`, the MariaDB passwords and the store id are generated on the NAS.
   - None of these is a GitHub secret, and none is printed into a workflow log.
 
@@ -333,14 +338,16 @@ repository or into GitHub. The CA issues:
 | `CN=oteryn-preprod-node-1-native-evidence` | node `[platform]` client | Game `<BASE>/node/secrets/platform-client.*` |
 | `CN=oteryn-preprod-node-1-runtime-status` | node runtime status | Game `<BASE>/node/secrets/runtime-status.*` |
 | `CN=oteryn-preprod-game-ops` | ownership authority (assignment) | Game `<ROOT_BASE>/ops/authority.*` |
-| `CN=oteryn-preprod-character-projection` | LCFA feed (U-LC6) | Game `<BASE>/node/secrets/account-characters.*`, issued before §7 step 8 |
+| `CN=oteryn-preprod-character-projection` | LCFA feed (U-LC6) | Game `<BASE>/node/secrets/account-characters.*`, issued before §7 step 8; a root copy of the public `account-characters.crt` in `<ROOT_BASE>/ops` is listed in `report.toml` `other_producer_certificate_files` |
 
 The node evidence certificate also authenticates the character bootstrap intent read, so there
 is no separate bootstrap certificate (§3). The runtime-status certificate's subject is the
 `NODE_IDENTITY` in `scope.env` and the `[node_certificate_files]` key in `report.toml`; root
 copies of `runtime-status.crt` and of the public CA as `platform-roots.pem` live in
 `<ROOT_BASE>/ops`, as the Game README requires. The authority key never shares a public key with
-a node certificate.
+a node certificate. `oteryn-game-ops` enforces that against the files in `report.toml`
+`other_producer_certificate_files`, so every node producer certificate has a root-owned public
+copy there, the LCFA projection certificate included (§7 step 8).
 
 The admission signing seed is generated in the Platform secrets directory (§3). Its public half
 is registered only in the Platform trust registry with `game-auth:native-trust:publish-key`
@@ -407,7 +414,9 @@ changes a WorldId or a ChannelId.
    1. pin the WorldId and the ChannelId in the manifest;
    2. run `native-route:publish` with login disabled, and pin `route_version` and
       `route_revision`;
-   3. run `native-trust:publish-key` for `preprod-admission-key-1`, purpose `fresh_admission`;
+   3. run `native-trust:publish-key --public-key-file=<tmp>` for `preprod-admission-key-1`,
+      purpose `fresh_admission`, with the raw public key file from §3, then delete the PEM and
+      the temporary file;
    4. set the identity variables (§3), then redeploy Platform with owner approval.
 6. A manifest PR in this repository fills in the pinned values. The Game operator then runs the
    one-time first-start sequence by hand (Game README "First start sequence", steps 1..10). It
@@ -428,7 +437,12 @@ changes a WorldId or a ChannelId.
       - the Character Authority source authority;
       - the epoch-fence file path, `<BASE>/node/lcfa/epoch.fence`.
 
-      The fence file lives outside the Character store and outside every Game backup.
+      The fence file lives outside the Character store and outside every Game backup. In the
+      same step, install a public copy of `account-characters.crt` at
+      `<ROOT_BASE>/ops/account-characters.crt` (root, `0644`; never the key) and add it to
+      `report.toml` `other_producer_certificate_files`, so every later `oteryn-game-ops`
+      assignment report, replace or revoke checks the ownership-authority key against the
+      projection key.
    3. Create the fence file once with value `0`, in the format `GAME-LCFA-ENABLE-1` defines. It
       shares the lifetime of the Platform read model: delete it only when Platform `state/` and
       the database volume are deleted, and never when the Game store is restored (LCFA contract
