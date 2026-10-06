@@ -65,7 +65,23 @@
     "chance_or_failure_semantics": "UNKNOWN_DO_NOT_INVENT",
     "item_consumption_semantics": "PENDING_REFERENCE_RUNTIME_QUALIFICATION",
     "idempotence_requirement": "Repeated/replayed successful tame must not duplicate account unlock or achievement.",
-    "persistence_requirement": "Mount unlock and achievement survive relog/server restart."
+    "persistence_requirement": "Mount unlock and achievement survive relog/server restart.",
+    "on_success_achievement_provenance": {
+      "canonical_shard": "content/achievements/achievements-00000-00499.json",
+      "staticdata": {
+        "client_version": "15.30",
+        "source_id": 592
+      },
+      "tibiawiki": {
+        "pageid": 110744,
+        "revid": 1200472
+      },
+      "points": 2,
+      "grade": 1,
+      "premium": true,
+      "secret": false,
+      "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY"
+    }
   },
   "current_architecture": {
     "mount_declaration_fields": [
