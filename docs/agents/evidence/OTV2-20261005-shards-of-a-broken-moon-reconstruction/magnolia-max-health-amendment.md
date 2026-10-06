@@ -246,3 +246,38 @@ When that owner exists, its action interpreter must atomically update the live E
 
 This code-surface readback makes the architecture decision independent from the later runtime allocation:
 authoring + ProjectV2 can accept the fact first; runtime execution stays separately fenced.
+
+
+## Why existing Transform cannot encode 60,000 HP
+
+Fresh current-main readback confirms there is no hidden existing representation that makes the amendment unnecessary.
+
+`ProjectV2EncounterParticipant` contains only:
+
+```text
+role
+creatures[]
+```
+
+There is no participant-local stat or max-health override.
+
+`ProjectV2EncounterHealth` is closed to:
+
+```text
+Full
+KeepPercent
+KeepAbsolute
+Remembered
+Percent { percent }
+```
+
+There is no absolute literal health value.
+
+`ProjectV2EncounterAction::Transform` therefore cannot express “same Magnolia identity, set effective max/current HP to 60,000”. It can only choose a target Creature form and one of the relative/remembered health policies above.
+
+That leaves exactly two possible approaches:
+
+1. invent a second Magnolia Creature with 60k max HP — rejected because no such source identity exists; or
+2. add the bounded Encounter-local health override described in this packet — preferred.
+
+This closes the last reuse question around `Transform`; the `set_health(max,current)` amendment is not duplicating an existing ProjectV2 capability.
