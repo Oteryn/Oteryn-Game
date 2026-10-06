@@ -2,11 +2,12 @@
 
 - Decision id: ARCH-I18N-A11Y-CREATIVE-0. Gaps: `UX-I18N-A11Y-01`, `CREATIVE-DIRECTION-01`.
 - Origin: owner ruling 2026-10-06: localization, accessibility and creative direction are decided now.
-- Status: the §1 rulings and the §3 packets are accepted on merge. Every contract amendment in §2
-  is exact text marked pending: it is applied by the named packet, because the owning file is a
-  candidate (`ALPHA-CLIENT-01`) or because the change lands with the packet that builds it. The
-  owner questions of §4 are pending; the recommended option is the working assumption until the
-  owner answers. Creative taste is the owner's (§1.14); this decision fixes only structure.
+- Status: proposed decision; it has no runtime authority. The owner rulings of 2026-10-06 on Q1,
+  Q2, Q3 and the field of view are recorded in §4 and the body follows them. The §1 rulings and
+  the §3 packets are accepted on merge. Every contract amendment in §2 is exact text marked
+  pending: it is applied by the named packet, because the owning file is a candidate
+  (`ALPHA-CLIENT-01`) or because the change lands with the packet that builds it. Creative taste
+  is the owner's (§1.14); this decision fixes only structure.
 - Owning texts amended: `ALPHA-CLIENT-01` §12; content tree contract §8; ARCH-ERROR-CODES-0 §1.9
   (localization item). Model: ARCH-ERROR-CODES-0.
 - Related: ARCH-LIVE-READINESS-0 §2 amendment A3 replaces the release-display item of the same
@@ -18,10 +19,11 @@
 1. Four kinds of player text, four rules. UI text: Fluent keys in client catalogs. Outcome text
    (errors, dispositions, fixed notices): a typed code or enum on the wire, the sentence in the
    client. Content text (item, creature, NPC, quest, achievement): the server keeps sending
-   English and later adds a stable text reference. Player text (chat, names, books): never
-   translated.
+   English and later adds a stable text reference, only to clients that select a new capability.
+   Player text (chat, names, books): never translated.
 2. The client uses Project Fluent (`fluent-bundle`, `fluent-langneg`, `unic-langid`). Catalogs:
    `apps/client/locales/<bcp47>/*.ftl`. `en` is complete and is the fallback for every message.
+   Alpha ships `en` and `pl` for UI and outcome text; content stays English (Q1 b).
 3. The locale is a client-only `OS_USER` setting, defaulting from the OS preferred languages. The
    server never receives a locale.
 4. Plurals use Fluent selectors (CLDR) and numbers `NUMBER()`. ICU4X is added only when a shipped
@@ -45,13 +47,20 @@
 13. Creative direction is owner-owned at `docs/architecture/OTERYN_CREATIVE_DIRECTION.md`
     (pillars, tone, art, audio, UI, naming, per profile). Architecture fixes only its structure.
 14. Every shipped asset and text corpus has a provenance record in `content/assets/catalog/`:
-    ORIGINAL, LICENSED, OWNER_CLEARED_THIRD_PARTY or REFERENCE_ONLY.
+    ORIGINAL, LICENSED, OWNER_CLEARED_THIRD_PARTY or REFERENCE_ONLY. Every AI-produced asset has
+    one too.
 15. A shipped-build manifest and a CI validator fail any input that is REFERENCE_ONLY or has no
-    record.
-16. Packets: I18N-CATALOG-0 (after ERR-CLIENT-2), then A11Y-BASELINE-1. ASSET-PROVENANCE-2 runs
-    in parallel. CREATIVE-DOC-3 needs the owner. I18N-TEXT-RENDER-4 follows P4-T.
-    I18N-CONTENT-KEYS-5 is deferred until a content locale is chosen.
-17. Owner questions (§4): Q1 first locales; Q2 shipping Tibia-sourced text; Q3 the alpha UI look.
+    record. Until packaging exists the check covers client inputs and the text the server serves.
+16. Two UI layouts in one client, switched in the client settings: A classic-faithful (built
+    first), B modern Oteryn. Both are data files over theme tokens; final art is AI-produced. The
+    switch is presentation only. Layout A has the fixed classic field of view; layout B carries
+    the field-of-view experiment on a non-production channel. The server sets the cap.
+17. Packets: I18N-CATALOG-0 (after ERR-CLIENT-2), then A11Y-BASELINE-1. ASSET-PROVENANCE-2 runs
+    in parallel. CREATIVE-DOC-3 needs the owner. I18N-TEXT-RENDER-4 follows P4-T. UI-LAYOUT-6
+    follows packet 0. I18N-CONTENT-KEYS-5 is deferred until a content locale is chosen.
+18. Owner rulings 2026-10-06 (§4): Q1 b; Q2 a (OWNER_CLEARED_THIRD_PARTY, the owner's risk;
+    distribution still waits for the provenance records and validator); Q3 both layouts, A
+    first; the final field-of-view policy waits for the experiment's evidence.
 
 ## 0. Facts
 
@@ -67,8 +76,8 @@
 - F4 PROVEN. The wire sends English, sometimes with a key (`docs/contracts/protocol-oteryn/v1/`):
   `account_achievements_v1.proto` `key` + `name` (64 B) + `description` (256 B);
   `achievement_notices_v1.proto` `key` + `name`; `quest_log_v1.proto` `name` (128 B) + rendered
-  journal `text` (1,024 B, from `apps/game-server/src/content/project_fs.rs` `read_journal`);
-  `chat_v1.proto` `ChatLineV1` `speaker_name` + player `text`.
+  journal `text` (1,024 B, from `QuestLogCatalogue`, F21); `chat_v1.proto` `ChatLineV1`
+  `speaker_name` + player `text`.
 - F5 PROVEN. `item_view_v1.proto`, `world_spatial_v1.proto` and `charm_bestiary_v1.proto` carry no
   name or description. How item and creature names reach the client is UNKNOWN (U1).
 - F6 PROVEN. Achievement rows are ordered by grade, then name by Unicode code point, then key
@@ -113,6 +122,28 @@
   No packaging or release workflow exists in `.github/workflows/`.
 - F19 PROVEN. FND-02 §7: additive protobuf fields; unknown fields never activate behaviour. §9:
   capabilities only for features an older peer can safely skip.
+- F20 PROVEN. The content-text decoders are strict and reject an unknown field as malformed:
+  `crates/protocol-oteryn/src/account_achievements.rs` line 316 (row) and
+  `crates/protocol-oteryn/src/quest_log.rs` line 276 (quest line; negative test
+  `quest_log_tests.rs` line 265). A field added to those messages breaks a deployed client.
+  Negotiation exists:
+  the client lists `supported_capability_id` in `ClientBootstrap` and `ClientResume`
+  (`docs/contracts/protocol-oteryn/v1/foundation.proto` lines 44 and 96), the server answers
+  `selected_capability_id` (lines 79 and 109), and `SelectedCapabilities::select`
+  (`apps/game-server/src/gameplay_transport/capabilities.rs` line 178) keeps only offered ids.
+- F21 PROVEN. The server serves content text from these inputs: achievement name and description
+  from `content/achievements/*.json`, embedded with `include_str!`
+  (`apps/game-server/src/achievement_catalogue.rs` lines 35–36); NPC dialogue from the
+  WorldProject families `content/npcs/` and `content/dialogues/`, loaded at run time by
+  `load_data_only_npc_catalogue` (`apps/game-server/src/content/npc_catalogue.rs` line 48);
+  quest names and journal text from `QuestLogCatalogue` (`apps/game-server/src/quest/log.rs`
+  line 138), which no production source feeds yet (`gameplay_transport/quest_log.rs` lines
+  19–20); item `display_name` inline in `content/items/` (F8).
+- F22 PROVEN. `OTERYN_NATIVE_CLIENT_VIEWPORT_AB_EXPERIMENT_PLAN_2026-09-10.md` §5 Variant A is a
+  responsive field of view, §6 Variant B a fixed one; §9 asks whether A gives an advantage, §11
+  runs both behind a non-production switch. ARCH-MAP-VIEWPORT-BUDGET-V1
+  (`reviews/OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md`) fixes an 18x14 viewport and
+  `MAP01-VIEWPORT-SNAPSHOT-US` at 2,000 us p99.
 
 ## 1. Rulings
 
@@ -132,6 +163,8 @@
    with `fluent-langneg` against the catalogs present. Fallback per message: selected locale, then
    `en`. A message missing everywhere shows its id in test builds and the generic `en` text in
    release builds. The server receives no locale; no wire, admission or Platform field is added.
+   Alpha ships `en` and `pl` catalogs for classes (a) and (b) (Q1 b). A `pl` id missing at a
+   release build fails that build; in development it falls back to `en` per message.
 
 1.4 **Formatting.** Plurals use Fluent selectors (CLDR); plurals built in Rust are rejected.
    Numbers use `NUMBER()`. ICU4X (`icu_decimal`, `icu_datetime`) is CANDIDATE, added when a
@@ -149,10 +182,17 @@
    content-format names (NPC schema §6); a translation must keep the same placeholder set. The
    English source stays where it is (F8) and is the `en` text.
 
-1.7 **Content on the wire.** Unchanged until the first content locale is accepted (Q1). That packet
-   adds an optional `TextRef {key, source_sha256}` beside each content text field it touches; the
-   English field stays filled. An older client ignores the unknown field (F19); a newer client on
-   an older server shows English. No capability is needed, since no meaning changes. The `key`
+1.7 **Content on the wire.** Unchanged until a content locale is accepted; Q1 b selects none for
+   alpha. Packet 5 then adds an optional `TextRef {key, source_sha256}` beside each content text
+   field it touches; the English field stays filled. The current decoders reject an unknown field
+   (F20), so `TextRef` is capability-gated (FND-02 §9). Packet 5 registers a new capability
+   (working name `CONTENT_TEXT_REF_V1`, no command type) in `PROTOCOL_OTERYN_V1_REGISTRY.json`.
+   A client that decodes `TextRef` lists it in `supported_capability_id` at bootstrap and resume;
+   the server selects it with `SelectedCapabilities::select` and keeps the selection for the
+   GameSession. The server writes `TextRef` only into payloads for a session whose selection
+   contains the capability; every other session gets the legacy encoding, byte for byte. A newer
+   client on an older server, or one not selected, shows English. The client never decides
+   whether it receives `TextRef` beyond advertising support. The tests are packet 5's. The `key`
    byte limit goes to `RESOURCE_LIMITS_REGISTRY.json` in that packet: CANDIDATE, set from the
    longest identity measured.
 
@@ -163,7 +203,8 @@
 1.9 **Corpus translation is off the alpha path.** Overlays are gettext PO at
    `content/translations/<bcp47>/<family>.po` (new): `msgctxt` = key, `msgid` = English, `#.` =
    hash. PO is chosen for mature translator tooling (Weblate, Poedit; `polib` in tools). The
-   content build compiles a client pack. Nothing is built before Q1 selects a content locale.
+   content build compiles a client pack. Nothing is built before a content locale is chosen; Q1 b
+   chose none for alpha.
 
 1.10 **NPC keywords** stay canonical English tokens matched on the server (F7). A client may show
    a reply's keywords as clickable items with localized labels that send the canonical token.
@@ -172,12 +213,12 @@
 1.11 **Ordering.** The server orders paged lists by canonical text or key (F6). The client may
    re-sort a fully loaded list with locale collation; paging never uses translated text.
 
-1.12 **Rendering** covers Latin Extended-A (Polish), has a fallback font and follows the UI baseline §7 scaling
-   (`OTERYN_NATIVE_CLIENT_UI_ARCHITECTURE_BASELINE_2026-09-10.md`).
-   The UI font is Noto Sans (SIL OFL 1.1), recorded as LICENSED, unless Q3 or the creative
-   document picks another OFL or owned font. The shaping library stays with P4-T, CANDIDATE
-   cosmic-text (upstream rustybuzz and swash). Evidence: a `pl` sample, a fallback glyph, and the
-   frame cost at 1080p and 4K. No fork.
+1.12 **Rendering** covers Latin Extended-A (Polish), has a fallback font and follows the UI
+   baseline §7 scaling (`OTERYN_NATIVE_CLIENT_UI_ARCHITECTURE_BASELINE_2026-09-10.md`). The UI
+   font is Noto Sans (SIL OFL 1.1), recorded as LICENSED, unless a layout's theme tokens (§1.20)
+   or the creative document pick another OFL or owned font. The shaping library stays with P4-T,
+   CANDIDATE cosmic-text (upstream rustybuzz and swash). Evidence: a `pl` sample, a fallback
+   glyph, and the frame cost at 1080p and 4K. No fork.
 
 1.13 **Alpha accessibility baseline.** All settings are `OS_USER`, client-only and
    presentation-only (F13).
@@ -206,7 +247,8 @@
 
 1.15 **Profiles.** Reference visuals are the owner-cleared 15.30 files (F15); the creative
    document does not restyle them. It governs Oteryn-original UI chrome, fonts, audio, Evolved
-   art and new text. Taste beyond Q1–Q3 stays open and does not block alpha.
+   art and new text, including the look of both layouts (§1.20). Taste beyond the §4 rulings
+   stays open and does not block alpha.
 
 1.16 **Provenance record.** Every shipped asset file and text corpus has one record in
    `content/assets/catalog/`: `asset_id` (typed, never a source id), `path`, `sha256`, `class`,
@@ -214,22 +256,62 @@
    required for OWNER_CLEARED_THIRD_PARTY). Classes: ORIGINAL, LICENSED,
    OWNER_CLEARED_THIRD_PARTY, REFERENCE_ONLY (may be stored, never shipped). The 15.30 set is one
    OWNER_CLEARED_THIRD_PARTY package with a per-file manifest citing D154 / Q12a. Text corpora get
-   one record each: item text, NPC dialogue (D9), quest journals, achievements.
+   one record each: item text, NPC dialogue (D9), quest journals, achievements; each is
+   OWNER_CLEARED_THIRD_PARTY citing the Q2 ruling (§4). An AI-produced asset (§1.20) is ORIGINAL;
+   its `source` names the producing task, the kind of AI tool and the reference inputs by
+   `asset_id`, and review confirms it does not reproduce a rights-reserved file.
 
 1.17 **Shipped-build manifest.** A generator lists the files and corpora a client or server build
    packages. A validator fails an entry that has no record, is REFERENCE_ONLY, differs from its
    record hash, or is LICENSED without attribution in the shipped notices file. Until packaging
-   exists (F18), it checks what the client embeds or loads, plus every record, in the content path
-   class of `game-gate`. This decision grants and narrows no rights; rights come only from owner
-   records (Q2).
+   exists (F18), an interim manifest enumerates the inputs, not the records, so an unrecorded
+   input fails:
+   - client: every file the client embeds (`include_str!`, `include_bytes!`) or loads at run time;
+   - server: every `include_str!` and `include_bytes!` target under `apps/game-server/src/` and
+     `crates/` (today the achievement shards, F21), and every content family a server path reads
+     at run time (`content/npcs/`, `content/dialogues/`, `content/quests/`, `content/items/` and
+     each family the WorldProject declares).
+   Each input maps to exactly one record or corpus record; a corpus record covers a family root
+   and the hash of its tree. The check runs in the content path class of `game-gate`. Tests: a
+   fixture `include_str!` of an unrecorded file fails; a new content family without a corpus
+   record fails; a REFERENCE_ONLY corpus read by a server path fails. This decision grants and
+   narrows no rights; rights come only from owner records (§4 Q2 ruling).
 
 1.18 **Stale text.** ASSET-PROVENANCE-2 adds one line under "Non-claims" in the asset-version
    decision, pointing to the 2026-09-29 supersession (F16).
 
 1.19 **Before freeze.** (1) The amendments below are exact text. (2) No concurrent transition is
    added. (3) Restart needs only the `OS_USER` settings file. (4) References are typed
-   (`<identity>#<field>`, `asset_id`). (5) Older clients get generic fallback text and ignore the
-   additive `TextRef`. (6) Content text and its `TextRef` leave in one message from one path.
+   (`<identity>#<field>`, `asset_id`). (5) Older clients get generic fallback text and never
+   receive `TextRef`, which is sent only under the capability of §1.7. (6) Content text and its
+   `TextRef` leave in one message from one path. (7) The layout setting changes presentation only
+   (§1.20); the field of view is a server-set cap, never a client setting (§1.21).
+
+1.20 **UI layouts (Q3 ruling).** One client carries two layouts, switched by an `OS_USER` setting
+   `ui_layout`: A classic-faithful and B modern Oteryn. A is built first and is the default; B
+   follows. Two structures make this one client, not a fork:
+   - Theme tokens. Colours, fonts (`UiFontKey`, UI baseline §18), spacing and sprite sets are
+     named tokens in `apps/client/themes/<theme_id>.json` (new); widgets reference tokens, never
+     literal values or sprite paths.
+   - Layout as data. Panel set, placement, docking, sizes and the theme in use are data in
+     `apps/client/layouts/<layout_id>.json` (new). The client code has no branch per layout; a
+     new layout is a new data file.
+   The switch never changes gameplay information (UI baseline §17, F13): both layout files expose
+   the same set of gameplay information, which a test checks, and the switch does not change the
+   field of view. Final art for both layouts is produced with AI tools, by agents or with an
+   external AI tool; every such asset gets a §1.16 record before it ships. The creative document
+   §5 records the owner's taste for each layout.
+
+1.21 **Field of view.** The server sets the field-of-view cap, the same for every player on a
+   channel; the client never decides how much of the map it receives. Layout A uses the fixed
+   classic field of view. Layout B runs the experiment of
+   `OTERYN_NATIVE_CLIENT_VIEWPORT_AB_EXPERIMENT_PLAN_2026-09-10.md` (F22), comparing the standard
+   game window with a larger one to judge whether the larger window gives too much advantage. To
+   avoid a clash with layouts A and B, this decision calls that plan's Variant B **FOV-fixed** and
+   its Variant A **FOV-responsive**. FOV-responsive runs only on a non-production test channel.
+   Its extra cost is measured against ARCH-MAP-VIEWPORT-BUDGET-V1 (18x14 viewport,
+   `MAP01-VIEWPORT-SNAPSHOT-US` 2,000 us p99). The final field-of-view policy stays undecided
+   until the plan's evidence (§12) exists.
 
 ## 2. Contract amendments
 
@@ -260,30 +342,46 @@
 
 ## 3. Packets
 
-- **I18N-CATALOG-0** (Fluent in the client; after ERR-CLIENT-2 merges). Owned: `apps/client/Cargo.toml`,
-  `apps/client/src/` (new `text` module; call sites in `spell.rs`, `cyclopedia.rs`, `error_text`),
-  `apps/client/locales/en/` (new), `Cargo.lock`. Builds §1.2–§1.5. Tests: missing, unused or
-  mismatched id fails; unknown enum shows generic text; `pl-PL` falls back per message; error
-  fallback tests unchanged.
+- **I18N-CATALOG-0** (Fluent in the client; after ERR-CLIENT-2 merges). Owned:
+  `apps/client/Cargo.toml`, `apps/client/src/` (new `text` module; call sites in `spell.rs`,
+  `cyclopedia.rs`, `error_text`), `apps/client/locales/en/` and `apps/client/locales/pl/` (new),
+  `Cargo.lock`. Builds §1.2–§1.5. Tests: missing, unused or mismatched id fails; a missing `pl` id
+  fails a release build; unknown enum shows generic text; `pl-PL` falls back per message in
+  development; error fallback tests unchanged.
 - **A11Y-BASELINE-1** (after packet 0). Owned: `apps/client/src/`, `crates/input-actions/src/`.
   Builds §1.13 (a)–(e) and the colour-only audit list. Tests: remap round-trips through the
   settings file; conflict and reserved key refused; the UI baseline §7 formula; flash rate ≤ 3/s; legibility
   check fixes the CANDIDATE range.
 - **ASSET-PROVENANCE-2** (parallel). Owned: `content/assets/catalog/`, `tools/asset-provenance/`
   (new), CI path routing, one line in `OTERYN_CLIENT_ASSET_VERSION_OWNER_DECISION_2026-09-27.md`.
-  Builds §1.16–§1.18. Tests: REFERENCE_ONLY fixture fails; missing record fails; hash drift fails;
-  LICENSED without attribution fails; the 15.30 package passes.
+  Builds §1.16–§1.18, including the four text corpus records of the Q2 ruling and the interim
+  client and server input scan. Tests: REFERENCE_ONLY fixture fails; missing record fails; hash
+  drift fails; LICENSED without attribution fails; an unrecorded server `include_str!` or content
+  family fails; an AI-produced asset without a record fails; the 15.30 package passes.
 - **CREATIVE-DOC-3** (owner). Owned: `docs/architecture/OTERYN_CREATIVE_DIRECTION.md` (new) with
-  the §1.14 sections; the owner fills or accepts it, and the Q3 answer goes in §5.
+  the §1.14 sections; the owner fills or accepts it, and the Q3 ruling and each layout's taste go
+  in §5.
 - **I18N-TEXT-RENDER-4** (after P4-T evidence and packet 2). Owned: `apps/client/`,
   `content/assets/` (font and record), `Cargo.lock`. Tests: `pl` golden render, fallback glyph,
   frame-cost measurement.
-- **I18N-CONTENT-KEYS-5** (deferred until Q1 picks a content locale; protocol review). Owned:
-  `content/translations/` (new), `tools/i18n/` (new: PO extract, validate, pack), touched `.proto`
-  files and registry limits. Builds §1.6–§1.9. Tests: older-client fixture ignores `TextRef`;
-  stale hash shows English; placeholder mismatch fails; ordering unchanged.
+- **I18N-CONTENT-KEYS-5** (deferred until a content locale is chosen; Q1 b chose none for alpha;
+  protocol review). Owned: `content/translations/` (new), `tools/i18n/` (new: PO extract,
+  validate, pack), touched `.proto` files, `PROTOCOL_OTERYN_V1_REGISTRY.json` (capability and
+  limits), the touched codecs in `crates/protocol-oteryn/src/`, their server encoders in
+  `apps/game-server/src/` and the client decoder. Builds §1.6–§1.9. Tests: a session without the
+  capability receives payloads byte-equal to the legacy encoding, which today's strict decoder
+  accepts; a selected session receives `TextRef` and the new decoder accepts it; a client
+  advertising the capability to a server that does not offer it is not selected and shows English;
+  selection survives resume; stale hash shows English; placeholder mismatch fails; ordering
+  unchanged.
+- **UI-LAYOUT-6** (after packet 0; layout A first, then B). Owned: `apps/client/src/`,
+  `apps/client/themes/` (new), `apps/client/layouts/` (new), AI-produced art and its records in
+  `content/assets/`. Builds §1.20 and the client side of §1.21. Tests: both layout files load and
+  validate; widgets reference only tokens; both layouts expose the same gameplay information set;
+  switching layout changes no request to the server and no field of view. The FOV-fixed versus
+  FOV-responsive comparison runs under the viewport plan, on a non-production test channel.
 
-Order: 0, then 1 and 4; 2 in parallel; 3 waits for the owner; 5 last.
+Order: 0, then 1, 4 and 6 (A, then B); 2 in parallel; 3 waits for the owner; 5 last.
 
 ## 4. Owner questions
 
@@ -291,15 +389,43 @@ Order: 0, then 1 and 4; 2 in parallel; 3 waits for the owner; 5 last.
    a) `en` only, `pl` pipeline ready; b) `en` + `pl` for UI and outcome text, content in English;
    c) `en` + `pl` including content. **Recommendation: b** (one `.ftl` set; Reference content
    stays English).
+   **Owner ruling 2026-10-06: b.** Alpha ships `en` and `pl` UI and outcome catalogs (§1.3);
+   content stays English and no content locale is selected, so §1.7 and packet 5 stay deferred.
 2. **Q2. May the builds you distribute serve Tibia-sourced text?** NPC (D9), quest, item and
    achievement text is admitted as reference data; shipping it is "assessed separately" (F14,
    F17). a) yes, extend the 2026-09-29 clearance to these corpora as OWNER_CLEARED_THIRD_PARTY;
    b) closed alpha only, re-ruled before any public release; c) no, REFERENCE_ONLY, and alpha
    needs Oteryn-authored text. **Recommendation: b.**
+   **Owner ruling 2026-10-06: a.** The 2026-09-29 clearance is extended to the NPC dialogue (D9),
+   quest, item and achievement text corpora as OWNER_CLEARED_THIRD_PARTY. This was not the
+   architect's recommendation (b); it is the owner's ruling and the owner's risk. It permits:
+   recording those four corpora as OWNER_CLEARED_THIRD_PARTY with this ruling as `owner_record`,
+   and then serving them from client and server builds the owner distributes, with no closed-alpha
+   limit. It does not by itself let anything ship. Distribution stays gated until
+   ASSET-PROVENANCE-2 lands: one record per corpus with its family root, tree hash and this
+   locator (the quest corpus also waits for U3), and the §1.17 validator passing on the build.
+   Until then the corpora count as unrecorded, and no build is distributed on the strength of
+   this ruling alone. The ruling covers only those four corpora as admitted today;
+   other third-party text (books, documents, any later import), fonts, audio and UI art need their
+   own owner record, and `TRADEMARKS.md` still governs names and branding.
 3. **Q3. What look does the Oteryn-drawn UI have at alpha?** Reference sprites are fixed; chrome,
    panels and font need theme tokens. a) classic-faithful layout, drawn originally; b) modern
    Oteryn style; c) neutral placeholder until the creative document exists.
    **Recommendation: a** for the Reference profile.
+   **Owner ruling 2026-10-06: both a and b, switchable in the client settings.** Layout A is
+   classic-faithful, layout B modern Oteryn; A is built first, then B. Final art for both is
+   produced with AI tools, by agents or with an external AI tool, and every AI-produced asset gets
+   an ASSET-PROVENANCE-2 record. New requirements: theme tokens (colours, fonts, spacing, sprite
+   sets referenced by token, not hard-coded) and layouts described as data (one client, a data
+   file per layout, no code fork). The switch is client presentation only and never changes
+   gameplay information. Body: §1.20, packet UI-LAYOUT-6.
+4. **Field of view (game window size).** **Owner direction 2026-10-06.** Layout A uses the fixed
+   classic field of view. Layout B runs the viewport plan's experiment, FOV-fixed against
+   FOV-responsive, to judge whether the larger window gives too much advantage. The server sets
+   the cap, the same for every player on a channel; the client never decides how much of the map
+   it receives; FOV-responsive is tried only on a non-production test channel; its extra cost is
+   measured against ARCH-MAP-VIEWPORT-BUDGET-V1. The final policy stays undecided until the
+   plan's evidence exists. Body: §1.21.
 
 ## 5. Rejected options
 
@@ -307,8 +433,11 @@ Order: 0, then 1 and 4; 2 in parallel; 3 waits for the owner; 5 last.
 - Server-side locale or server-rendered translations: a locale-aware server, more session state,
   text on the authority path (F13).
 - A separate content key registry: duplicates typed identity (§1.6).
-- Keys-only content text behind a capability: breaks older clients, forces translation before
-  alpha (§1.7).
+- Keys-only content text, even behind a capability: a client without a translation pack has no
+  text, and it forces translation before alpha (§1.7).
+- `TextRef` as an ungated additive field: deployed strict decoders reject it (F20, §1.7).
+- A code fork or build per UI layout: two clients to keep in step (§1.20).
+- A client-chosen field of view: the client would decide how much of the map it receives (§1.21).
 - Localized NPC keywords on the server: needs the locale on the server.
 - Translations without a source hash: stale text shows silently.
 - Own shaping or plural code, or a fluent-rs fork: upstream is sufficient (playable-first policy).
@@ -319,8 +448,10 @@ Order: 0, then 1 and 4; 2 in parallel; 3 waits for the owner; 5 last.
 
 - U1. How item and creature names reach the client (appearances data in `content/assets/files/`,
   or a later export). Fixed by the first client packet that shows a name; §1.6 applies either way.
-- U2. Whether any owner record clears shipping of Tibia-sourced text (feeds Q2).
+- U2. Resolved by the Q2 ruling of 2026-10-06 (§4); distribution still waits for the records.
 - U3. Whether quest journal text is admitted like NPC text (D9): the quest format rejects committed
-  text (F8), yet `read_journal` serves text. The quest content owner resolves it before packet 5.
+  text (F8), yet the quest log serves journal text (F21). The quest content owner resolves it
+  before the quest corpus record of ASSET-PROVENANCE-2 and before packet 5.
 - U4. UI scale range, default and panel text steps: CANDIDATE, measured in packet 1.
 - U5. The packaging layout of a shipped build: no workflow exists, so §1.17 scope is interim.
+- U6. The final field-of-view policy: open until the viewport plan's evidence exists (§1.21).
