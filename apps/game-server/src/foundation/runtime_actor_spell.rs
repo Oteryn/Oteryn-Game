@@ -1010,6 +1010,7 @@ impl ChannelRuntimeV1 {
                             false,
                             MAX_EFFECTS as u16,
                             deferred,
+                            Some(batch.now_ms),
                         )?);
                     }
                     OwnerCombatChange::DamageWithHealing {
@@ -1063,6 +1064,7 @@ impl ChannelRuntimeV1 {
                                 false,
                                 MAX_EFFECTS as u16,
                                 deferred,
+                                Some(batch.now_ms),
                             )?;
                         }
                         let Slot::CreatureOccupied { health, .. } = &next.slots[index] else {

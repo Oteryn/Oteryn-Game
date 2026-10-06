@@ -6,6 +6,11 @@ use super::{
     ProjectV2DefinitionRef, ProjectV2Family, ProjectV2Source, ProjectV2SourceIdentityBinding,
     WorldProject, capture_world_project,
 };
+mod replies;
+mod service;
+#[cfg(test)]
+mod service_tests;
+
 use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},

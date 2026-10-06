@@ -22,7 +22,8 @@ use oteryn_game_server::durability::runtime_scope_assignment::{
 };
 use oteryn_game_server::foundation::{ChannelId, NodeId, RuntimeScopeRefV1, WorldId};
 use oteryn_game_server::native_admission_source::scope_assignment::{
-    self, Assignment, ReportConfig, RetryPolicy, ScopeAssignmentDescriptor,
+    self, Assignment, Delivery, NotDelivered, ReportConfig, RetryPolicy, Revocation,
+    ScopeAssignmentDescriptor,
 };
 use oteryn_game_server::node::config::{NodeConfig, OpsConfig};
 use oteryn_game_server::node::descriptor_facts::{MAX_PEM_BYTES, certificates, descriptor_facts};
@@ -899,14 +900,7 @@ fn target_holder(file: &AssignmentRequestFile) -> Result<Option<NodeRegistration
     )))
 }
 
-/// Contract §5 has no holder-less `node_identity`: any configured identity in
-/// a revocation report could be matched by that host (§7), so a revocation is
-/// not reported until the contract defines one.
-const REVOKE_NOT_REPORTED: &str = "a revocation is not reported until REVOKE-REPORT-CONTRACT-1 \
-     (contract §5 has no holder-less node_identity); the Game revocation stands";
-
-/// Reports a committed assignment or replacement; a revocation is not
-/// reported (`REVOKE_NOT_REPORTED`).
+/// Reports a committed assignment, replacement or revocation.
 async fn report_committed(
     operator: &Operator,
     reporter: Option<&Reporter>,
@@ -914,9 +908,8 @@ async fn report_committed(
 ) -> Outcome {
     match reporter {
         None => Ok(()),
-        Some(_) if file.command == "revoke" => {
-            event("report=not_sent reason=revocation follow_up=REVOKE-REPORT-CONTRACT-1");
-            Ok(())
+        Some(reporter) if file.command == "revoke" => {
+            report(operator, reporter, &file.world_id, &file.channel_id, None).await
         }
         Some(reporter) => {
             if let Some(holder) = target_holder(file)? {
@@ -940,9 +933,10 @@ fn canonical_scope(
     ))
 }
 
-/// `ReportScopeAssignmentV1` of the current durable assignment. The body is
-/// derived only from the durable row, the bound node identity and the declared
-/// epoch, so a re-send is byte-identical. A failed report leaves the Game
+/// `ReportScopeAssignmentV1` of the current durable assignment, or
+/// `ReportScopeRevocationV1` of a revoked scope (§16.1). The body is derived
+/// only from the durable row, the bound node identity (an assignment only) and
+/// the declared epoch, so a re-send is byte-identical. A failed report leaves the Game
 /// assignment authoritative; the epoch is never raised here (§1.1, U16).
 async fn report(
     operator: &Operator,
@@ -972,7 +966,34 @@ async fn report(
             ))?
         }
         (AssignmentState::Revoked, None) => {
-            return Err(Failure::Rejected(REVOKE_NOT_REPORTED.into()));
+            if offered.is_some() {
+                return Err(Failure::Usage(
+                    "a revocation carries no node identity (contract §16.1)",
+                ));
+            }
+            let revocation = Revocation {
+                assignment_epoch: reporter.config.assignment_epoch,
+                world_id,
+                channel_id,
+                ownership_generation: row.ownership_generation,
+                revoked_at: row.decided_at,
+            };
+            let started = std::time::Instant::now();
+            let outcome = scope_assignment::report_revocation(
+                &reporter.descriptor,
+                &revocation,
+                RetryPolicy::default(),
+            )
+            .await;
+            event(&format!(
+                "report=ReportScopeRevocationV1 world_id={} channel_id={} result={} attempts={} elapsed_ms={}",
+                revocation.world_id,
+                revocation.channel_id,
+                result_class(outcome.result),
+                outcome.attempts,
+                started.elapsed().as_millis()
+            ));
+            return revocation_outcome(outcome.result, world, channel);
         }
         _ => return Err(Failure::Input("scope assignment row".into())),
     };
@@ -995,10 +1016,7 @@ async fn report(
     let started = std::time::Instant::now();
     let outcome =
         scope_assignment::report(&reporter.descriptor, &assignment, RetryPolicy::default()).await;
-    let class = match outcome.result {
-        Ok(delivery) => delivery.class(),
-        Err(not_delivered) => not_delivered.class(),
-    };
+    let class = result_class(outcome.result);
     event(&format!(
         "report=ReportScopeAssignmentV1 world_id={} channel_id={} result={class} attempts={} elapsed_ms={}",
         assignment.world_id,
@@ -1014,6 +1032,35 @@ async fn report(
         Err(_) => Err(Failure::Ambiguous(format!(
             "assignment report not delivered ({class}); the Game assignment stands; \
              run `assignment report --world {world} --channel {channel}`"
+        ))),
+    }
+}
+
+fn result_class(result: Result<Delivery, NotDelivered>) -> &'static str {
+    match result {
+        Ok(delivery) => delivery.class(),
+        Err(not_delivered) => not_delivered.class(),
+    }
+}
+
+/// Exit outcome of a revocation report. Every failure, definite or not, names
+/// the re-send command: the revocation stands and is reported again only by
+/// `assignment report` (§16.1).
+fn revocation_outcome(
+    result: Result<Delivery, NotDelivered>,
+    world: &str,
+    channel: &str,
+) -> Outcome {
+    let class = result_class(result);
+    let resend = format!("run `assignment report --world {world} --channel {channel}`");
+    match result {
+        Ok(_) => Ok(()),
+        Err(not_delivered) if not_delivered.definite() => Err(Failure::Rejected(format!(
+            "Platform refused the revocation report ({class}); the Game revocation stands; \
+             {resend} once Platform accepts it"
+        ))),
+        Err(_) => Err(Failure::Ambiguous(format!(
+            "revocation report not delivered ({class}); the Game revocation stands; {resend}"
         ))),
     }
 }
@@ -1111,8 +1158,8 @@ async fn assignment(operator: &Operator, mut arguments: Arguments) -> Outcome {
         Some(identity)
     } else if node_identity.is_some() && action == "revoke" {
         return Err(Failure::Usage(
-            "--node-identity is refused for revoke: a revocation is not reported \
-             until REVOKE-REPORT-CONTRACT-1",
+            "--node-identity is refused for revoke: a revocation carries no node identity \
+             (contract §16.1)",
         ));
     } else if node_identity.is_some() {
         return Err(Failure::Usage(
@@ -1400,5 +1447,32 @@ mod tests {
         promote_identity(&files, "cc", &holder()).unwrap();
         // Nothing staged (a revoke, or reporting disabled) binds nothing.
         promote_identity(&files, "dd", &holder()).unwrap();
+    }
+
+    #[test]
+    fn revocation_failures_exit_non_zero_naming_the_resend() {
+        let world = "01934f10-7c02-7001-805b-3b1122334401";
+        let channel = "01934f10-7c03-7001-805b-3b1122334401";
+        assert!(revocation_outcome(Ok(Delivery::Accepted), world, channel).is_ok());
+        assert!(revocation_outcome(Ok(Delivery::Superseded), world, channel).is_ok());
+        for not_delivered in [
+            NotDelivered::UnexpectedStatus,
+            NotDelivered::Conflict,
+            NotDelivered::Unauthenticated,
+            NotDelivered::Unavailable,
+            NotDelivered::RateLimited,
+            NotDelivered::InvalidResponse,
+        ] {
+            let failure = revocation_outcome(Err(not_delivered), world, channel).unwrap_err();
+            assert_ne!(failure.code(), 0);
+            let text = failure.to_string();
+            assert!(text.contains("`assignment report --world"), "{text}");
+            assert!(text.contains(not_delivered.class()), "{text}");
+        }
+        // A 404 from a Platform without the endpoint is a definite stop.
+        assert!(matches!(
+            revocation_outcome(Err(NotDelivered::UnexpectedStatus), world, channel),
+            Err(Failure::Rejected(_))
+        ));
     }
 }
