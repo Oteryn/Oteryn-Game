@@ -8,9 +8,9 @@ status: review_ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/soul-war-reconstruction-20261005
-pr: null
+pr: 1867
 base_sha: fc3db9abfb4ae05c13b0264752cfbbca13a276e6
-head_sha: f4a24cbd271883618abf89e52f901964c107b1b3
+head_sha: 25c566c4d23854e76e447d23387402ac73e474cf
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT GPT-5.6 Sol session
@@ -90,4 +90,3 @@ Verification on a clean detached worktree:
 - `python tools/content-schema/quest-authoring/soul_war_reconstruction.py --check` -> PASS.
 - `python tools/content-schema/quest-authoring/quest_tree_authoring.py --check` -> PASS.
 - `python -m unittest test_soul_war_crystal_reconstruction.py` -> 3 tests PASS across all generated encounter bundles.
-
