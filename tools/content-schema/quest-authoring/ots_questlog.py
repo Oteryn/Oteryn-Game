@@ -154,7 +154,8 @@ def comparable_mission(mission):
 
 
 def script_of(path):
-    """A script path without its datapack, so the same script in both servers compares equal."""
+    """A script path without its datapack, normalized across host path separators."""
+    path = str(path).replace('\\', '/')
     return re.sub(r'^(data-otservbr-global|data-global|data-crystal|data)/', '', path)
 
 
