@@ -1,0 +1,1018 @@
+{
+  "identity": {
+    "key": "crystal:encounter/claustrophobic_inferno_raid_3_crystal",
+    "revision": "crystal-00ce02a5"
+  },
+  "display_name": "Soul War: Claustrophobic Inferno Raid 3 (Crystal reconstruction)",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "brachiodemon",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/brachiodemon",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "infernal_demon",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/infernal_demon",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "infernal_phantom",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/infernal_phantom",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Crystal x 33987-34044, y 31043-31076, z 11.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33987,
+              34044
+            ],
+            "y": [
+              31043,
+              31076
+            ],
+            "floor": 11
+          }
+        ]
+      }
+    },
+    {
+      "key": "entry_gate",
+      "kind": "area",
+      "description": "Crystal Claustrophobic Inferno raid 3 sand-timer entry tiles.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              34009,
+              34009
+            ],
+            "y": [
+              31036,
+              31036
+            ],
+            "floor": 11
+          },
+          {
+            "x": [
+              34010,
+              34010
+            ],
+            "y": [
+              31036,
+              31036
+            ],
+            "floor": 11
+          },
+          {
+            "x": [
+              34011,
+              34011
+            ],
+            "y": [
+              31036,
+              31036
+            ],
+            "floor": 11
+          },
+          {
+            "x": [
+              34012,
+              34012
+            ],
+            "y": [
+              31036,
+              31036
+            ],
+            "floor": 11
+          },
+          {
+            "x": [
+              34013,
+              34013
+            ],
+            "y": [
+              31036,
+              31036
+            ],
+            "floor": 11
+          },
+          {
+            "x": [
+              34014,
+              34014
+            ],
+            "y": [
+              31036,
+              31036
+            ],
+            "floor": 11
+          }
+        ]
+      }
+    },
+    {
+      "key": "source_exit",
+      "kind": "point",
+      "description": "Crystal (34014, 31085, 11).",
+      "location": {
+        "x": 34014,
+        "y": 31085,
+        "floor": 11
+      }
+    },
+    {
+      "key": "brachiodemon_spawn_1",
+      "kind": "point",
+      "description": "Crystal (34016, 31047, 11).",
+      "location": {
+        "x": 34016,
+        "y": 31047,
+        "floor": 11
+      }
+    },
+    {
+      "key": "brachiodemon_spawn_2",
+      "kind": "point",
+      "description": "Crystal (34007, 31047, 11).",
+      "location": {
+        "x": 34007,
+        "y": 31047,
+        "floor": 11
+      }
+    },
+    {
+      "key": "brachiodemon_spawn_3",
+      "kind": "point",
+      "description": "Crystal (33998, 31051, 11).",
+      "location": {
+        "x": 33998,
+        "y": 31051,
+        "floor": 11
+      }
+    },
+    {
+      "key": "brachiodemon_spawn_4",
+      "kind": "point",
+      "description": "Crystal (33993, 31057, 11).",
+      "location": {
+        "x": 33993,
+        "y": 31057,
+        "floor": 11
+      }
+    },
+    {
+      "key": "brachiodemon_spawn_5",
+      "kind": "point",
+      "description": "Crystal (33995, 31065, 11).",
+      "location": {
+        "x": 33995,
+        "y": 31065,
+        "floor": 11
+      }
+    },
+    {
+      "key": "brachiodemon_spawn_6",
+      "kind": "point",
+      "description": "Crystal (34006, 31069, 11).",
+      "location": {
+        "x": 34006,
+        "y": 31069,
+        "floor": 11
+      }
+    },
+    {
+      "key": "brachiodemon_spawn_7",
+      "kind": "point",
+      "description": "Crystal (34007, 31060, 11).",
+      "location": {
+        "x": 34007,
+        "y": 31060,
+        "floor": 11
+      }
+    },
+    {
+      "key": "brachiodemon_spawn_8",
+      "kind": "point",
+      "description": "Crystal (34020, 31060, 11).",
+      "location": {
+        "x": 34020,
+        "y": 31060,
+        "floor": 11
+      }
+    },
+    {
+      "key": "brachiodemon_spawn_9",
+      "kind": "point",
+      "description": "Crystal (34032, 31058, 11).",
+      "location": {
+        "x": 34032,
+        "y": 31058,
+        "floor": 11
+      }
+    },
+    {
+      "key": "brachiodemon_spawn_10",
+      "kind": "point",
+      "description": "Crystal (34032, 31067, 11).",
+      "location": {
+        "x": 34032,
+        "y": 31067,
+        "floor": 11
+      }
+    },
+    {
+      "key": "brachiodemon_spawn_11",
+      "kind": "point",
+      "description": "Crystal (34039, 31067, 11).",
+      "location": {
+        "x": 34039,
+        "y": 31067,
+        "floor": 11
+      }
+    },
+    {
+      "key": "infernal_demon_spawn_1",
+      "kind": "point",
+      "description": "Crystal (33998, 31061, 11).",
+      "location": {
+        "x": 33998,
+        "y": 31061,
+        "floor": 11
+      }
+    },
+    {
+      "key": "infernal_demon_spawn_2",
+      "kind": "point",
+      "description": "Crystal (34012, 31060, 11).",
+      "location": {
+        "x": 34012,
+        "y": 31060,
+        "floor": 11
+      }
+    },
+    {
+      "key": "infernal_demon_spawn_3",
+      "kind": "point",
+      "description": "Crystal (34030, 31063, 11).",
+      "location": {
+        "x": 34030,
+        "y": 31063,
+        "floor": 11
+      }
+    },
+    {
+      "key": "infernal_phantom_spawn_1",
+      "kind": "point",
+      "description": "Crystal (34001, 31047, 11).",
+      "location": {
+        "x": 34001,
+        "y": 31047,
+        "floor": 11
+      }
+    },
+    {
+      "key": "infernal_phantom_spawn_2",
+      "kind": "point",
+      "description": "Crystal (34013, 31064, 11).",
+      "location": {
+        "x": 34013,
+        "y": 31064,
+        "floor": 11
+      }
+    },
+    {
+      "key": "infernal_phantom_spawn_3",
+      "kind": "point",
+      "description": "Crystal (34007, 31053, 11).",
+      "location": {
+        "x": 34007,
+        "y": 31053,
+        "floor": 11
+      }
+    },
+    {
+      "key": "infernal_phantom_spawn_4",
+      "kind": "point",
+      "description": "Crystal (34023, 31054, 11).",
+      "location": {
+        "x": 34023,
+        "y": 31054,
+        "floor": 11
+      }
+    },
+    {
+      "key": "infernal_phantom_spawn_5",
+      "kind": "point",
+      "description": "Crystal (34038, 31053, 11).",
+      "location": {
+        "x": 34038,
+        "y": 31053,
+        "floor": 11
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "wave_count",
+        "initial": 0
+      }
+    ],
+    "flags": [],
+    "timers": [
+      {
+        "name": "wave_tick",
+        "duration_ms": 20000,
+        "repeat": true
+      },
+      {
+        "name": "survival",
+        "duration_ms": 120000,
+        "repeat": false
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "start_raid_clock",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "wave_count",
+          "operation": "set",
+          "value": 1
+        },
+        {
+          "kind": "timer",
+          "timer": "wave_tick",
+          "operation": "start"
+        },
+        {
+          "kind": "timer",
+          "timer": "survival",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "first_wave_after_spawn_warning",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "delay_ms": 3000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_5"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_6"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_7"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_8"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_9"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_10"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_11"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_demon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_demon",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_demon_spawn_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_demon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_demon",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_demon_spawn_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_demon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_demon",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_demon_spawn_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_phantom",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_phantom",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_phantom_spawn_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_phantom",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_phantom",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_phantom_spawn_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_phantom",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_phantom",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_phantom_spawn_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_phantom",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_phantom",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_phantom_spawn_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_phantom",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_phantom",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_phantom_spawn_5"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "next_wave_every_twenty_seconds",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "wave_tick"
+      },
+      "delay_ms": 3000,
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "wave_count",
+          "op": "<",
+          "value": 6
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_5"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_6"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_7"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_8"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_9"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_10"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/brachiodemon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "brachiodemon",
+          "count": 1,
+          "at": {
+            "anchor": "brachiodemon_spawn_11"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_demon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_demon",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_demon_spawn_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_demon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_demon",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_demon_spawn_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_demon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_demon",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_demon_spawn_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_phantom",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_phantom",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_phantom_spawn_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_phantom",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_phantom",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_phantom_spawn_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_phantom",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_phantom",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_phantom_spawn_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_phantom",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_phantom",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_phantom_spawn_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/infernal_phantom",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "infernal_phantom",
+          "count": 1,
+          "at": {
+            "anchor": "infernal_phantom_spawn_5"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "wave_count",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "survive_two_minutes",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "survival"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "wave_tick",
+          "operation": "stop"
+        },
+        {
+          "kind": "remove",
+          "all_in": "arena"
+        },
+        {
+          "kind": "emit_outcome",
+          "outcome": "raid_survived",
+          "credited": "players_in_anchor",
+          "anchor": "arena"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "raid_survived"
+  ]
+}

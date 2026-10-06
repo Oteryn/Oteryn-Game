@@ -7,6 +7,9 @@
   },
   "runtime_qualified": false,
   "encounters": [
+    "claustrophobic_inferno_raid_1",
+    "claustrophobic_inferno_raid_2",
+    "claustrophobic_inferno_raid_3",
     "goshnars_greed",
     "goshnars_malice",
     "goshnars_spite",
