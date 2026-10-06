@@ -110,7 +110,8 @@
      (Platform's clock stepped back) never counts as fresh;
    - the watermark epoch equals the highest epoch seen.
 
-   Otherwise the feed is `stale`.
+   Otherwise the feed is `stale`. Equality is safe only because a Game raise is strictly above
+   every published epoch (contract §5 epoch fence); Platform does not need to detect a restore.
 4. **D2 read** (`GET /v1/game-auth/native-characters`, contract §5.3). It requires the OAuth
    bearer with scope `game:ticket`, with the same client and generation checks as ticket
    issuance, and does not revoke the token.
@@ -168,7 +169,8 @@ Out of scope:
     `source_observed_at`; equal with different content gives `409` and an invalid account; a
     higher pair clears it.
   - Epoch: a snapshot or watermark of an epoch below the highest seen is `superseded` and never
-    makes the feed live. A raise by snapshot or by watermark invalidates lower entries; Unix-millisecond epochs
+    makes the feed live; an equal-epoch watermark keeps the feed live (the Game fence makes a
+    restored equal epoch impossible). A raise by snapshot or by watermark invalidates lower entries; Unix-millisecond epochs
     are above 2^32 and must compare correctly.
   - Watermark: the feed is stale past S and stale on a lower watermark epoch; issuance refuses
     while stale. A watermark more than `clock_uncertainty` ahead of Platform's clock, or with
@@ -197,7 +199,8 @@ Out of scope:
 - **Worker:** `oteryn-hard-worker`, because it touches authority configuration.
 - **Owned paths:**
   - `apps/game-server/src/node/config.rs` and `apps/game-server/src/node/serve.rs`;
-  - `apps/game-server/src/native_admission_source/account_characters.rs`, for wiring only;
+  - `apps/game-server/src/native_admission_source/account_characters.rs`, for wiring and the
+    epoch fence;
   - `apps/game-server/src/bin/oteryn-game-ops.rs`;
   - their test files;
   - `tools/qualification/login_local/`, if RUNBOOK-1 has merged; otherwise RUNBOOK-1 takes the
@@ -207,23 +210,32 @@ Out of scope:
      - `client_certificate_file` and `client_key_file`, for a projection identity distinct from
        the runtime-status identity, checked as `ProjectionDescriptor::new` already requires;
      - the Platform base URL, reused;
-     - `source_authority`.
+     - `source_authority`;
+     - `epoch_fence_file`, the contract §5 epoch fence, outside the Character store's data and
+       backup paths.
      The section is absent by default, and with it absent the publisher does not run. When the
      section is present, the node starts `Publisher` only if it is a Character Authority host,
      that is, its database role can read Character ownership.
   2. `oteryn-game-ops projection resync --raise-epoch=<true|false>` calls
      `game_character_account_projection_resync`. The explicit choice is required, and the command
-     prints only the resulting epoch. Its help text states the contract §5 restore precondition:
-     raise only with a synchronized clock; if Platform answers `superseded` to the new epoch's
-     watermarks, fix the clock and raise again.
+     prints only the resulting epoch. With `true` it applies the contract §5 epoch fence: it reads
+     F, and in one transaction locks the epoch row, reads the transaction time and refuses with a
+     rollback unless the new epoch is strictly above F; it then calls the function in that
+     transaction, commits and persists F before the publisher sends. Its help text states the
+     restore procedure: stop the publisher, restore, raise, restart.
   3. The stack generates a projection certificate per run, configures the Platform identity list,
-     turns mode 33a off and the feed switch on, and runs a resync before the first login.
+     turns mode 33a off and the feed switch on, creates the fence file with value 0 together with
+     Platform's state, and runs a resync before the first login.
 - **Validation:**
   - `cargo test --locked -p oteryn-game-server account_characters`;
   - the node config tests;
   - the publisher against a fake Platform sink: accepted, superseded, 409 and 503 paths, the
-    watermark cadence, refusal while unreconciled, and a `superseded` watermark of the current
-    epoch logged by result class (the restore detection signal);
+    watermark cadence, refusal while unreconciled, and a `superseded` result logged by result
+    class;
+  - the epoch fence: a raise equal to or below F is refused with nothing written (the epoch row
+    and F unchanged); a successful raise returns a value above F and persists F before the first
+    publication; the publisher publishes nothing below F or with a missing, unreadable or
+    malformed fence; F survives a restore of the Character store;
   - `cargo clippy` with the repository flags;
   - the PostgreSQL-backed projection tests in CI.
 - **No** new migration, wire change or Platform change.
