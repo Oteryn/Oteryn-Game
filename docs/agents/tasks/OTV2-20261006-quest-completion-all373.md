@@ -10,7 +10,7 @@ base_branch: main
 branch: codex/quest-completion-all373-20261006
 pr: null
 base_sha: e953f1ef67ed5a9c66cf8ce6cac37da66f999dcb
-head_sha: null
+head_sha: cce9ac5a48d26677b50f01cbdc73b7d627ee8140
 final_head_sha: null
 final_head_frozen_at: null
 owner: chatgpt-quest-completion
@@ -109,20 +109,26 @@ The first implementation slice builds the machine-readable 373-title matrix and 
 
 The second slice separates source-fidelity holds from implementation state and expands the existing unactivated completion candidate. Of 146 chosen source-derived recipes absent from production Source QuestState lowering, 139 satisfy the accepted closed linear stage-counter shape. They are added as `CHOSEN_SOURCE_TYPED_PROGRESS_ONLY`; seven remain explicit holds because their terminal completion stage has count greater than one.
 
-Candidate result: **303 quest owners, 2445 tracks, 4378 transitions**. The added slice is **139 owners / 699 tracks / 699 transitions**. `runtime_activated=false`; native event, NPC and reward bindings remain zero. Production `content/quests/missions/quest-state.json` and the authored68 `completion-binding-plan.json` are unchanged.
+Candidate result before source-state completion overlay: **303 quest owners, 2445 tracks, 4378 transitions**. The added chosen-source slice is **139 owners / 699 tracks / 699 transitions**. `runtime_activated=false`; native event, NPC and reward bindings remain zero.
 
-The latest matrix derives implementation state directly from the typed-progress candidate. It reports **214 `NATIVE_BINDINGS_PENDING`**, **117 `NATIVE_LOWERING_PENDING`**, **41 `DEFINITION_READY_RUNTIME_UNKNOWN`**, and **1 `MAPPING_REVIEW`**. The 214 native-binding-ready titles are backed by 139 `CHOSEN_SOURCE_TYPED_PROGRESS_ONLY`, 68 `CHOSEN_TYPED_PROGRESS_ONLY`, and 7 `LOWERED` typed-progress states. Source fidelity remains an independent axis: 222 titles retain source holds and 151 are clear; those holds are not erased by chosen Oteryn progress.
+A third committed slice adds `chosen-source-events-rewards` for all 139 chosen-source owners using the same pinned resolver epoch and qualified-world snapshot as authored68. Result: **699 stages, 283 exact stage target refs, 300 reward intents, 232 exact reward refs, 8 existing encounter outcome seams**; runtime admission remains false. `completion-binding-plan.json` is expanded from authored68 to **207 quest records / 1115 stage records**. Source139 talk stages intentionally retain `NPC_dialogue_candidates=null`, and all native dispatch/reward bindings remain null.
+
+The current committed matrix derives implementation state directly from the typed-progress candidate. It reports **214 `NATIVE_BINDINGS_PENDING`**, **117 `NATIVE_LOWERING_PENDING`**, **41 `DEFINITION_READY_RUNTIME_UNKNOWN`**, and **1 `MAPPING_REVIEW`**. Source fidelity remains an independent axis: 222 titles retain source holds and 151 are clear.
+
+A further local-only completion-overlay qualification has been proven but is not yet committed: among the 90 source QuestState owners whose completion is `NOT_LOWERED_MULTI_TRACK` or `NOT_LOWERED_NO_MISSIONS`, **88** satisfy the same closed chosen-stage counter contract (**707 tracks / 707 transitions**). Only `Barbarian Arena Quest` and `The Ancient Tombs Quest` remain held because their terminal completion stage has count greater than one. Applying that overlay locally preserves all donor tracks and yields 96 source owners with completion states: 88 `SOURCE_PLUS_CHOSEN_TYPED_COMPLETION`, 6 `LOWERED`, 1 multi-track hold and 1 no-missions hold.
 
 ## Validation
 
 ### Focused
 
-- `python -m unittest test_quest_completion_matrix.py test_chosen_source_progress.py test_source_path_normalization.py`: **9 tests PASS**
+- committed slice: `test_quest_completion_matrix.py`, `test_chosen_source_progress.py`, `test_source_path_normalization.py`, and `test_chosen_source_binding_plan.py`: **14 focused tests PASS**
+- source139 association packet: **5 packet tests PASS**
 - `python quest_completion_matrix.py --check`: **PASS**
 - `python quest_completion_import.py --check`: **PASS**
-- candidate integrity: **303/303 unique quest owners, 2445/2445 unique tracks, 4378/4378 unique transitions**
-- production `quest-state.json`: unchanged in the working baseline
-- authored68 `completion-binding-plan.json`: unchanged in the working baseline
+- committed candidate integrity: **303/303 unique quest owners, 2445 tracks, 4378 transitions**
+- committed binding plan: **207 quests / 1115 stages**, runtime disabled, native dispatch bindings 0, native reward delivery bindings 0
+- local overlay candidate: **18 focused tests PASS** before final publication; candidate becomes **303 owners / 3152 tracks / 5085 transitions**, with 88 source-state completion overlays and 2 explicit overlay holds
+- production `quest-state.json`: unchanged
 
 ### Component/integration
 
@@ -169,7 +175,7 @@ The latest matrix derives implementation state directly from the typed-progress 
 ## Context checkpoint
 
 ```yaml
-last_progress: all-373 matrix live; completion candidate expanded safely from 164 to 303 owners; 9 focused tests and both generator drift checks pass
+last_progress: 303-owner candidate committed; source139 event/reward associations committed; binding plan expanded to 207 quests/1115 stages; 88-owner source completion overlay qualified locally
 status: implementing
 branch: codex/quest-completion-all373-20261006
 head_sha: null
@@ -191,5 +197,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: split the 214 native-binding-ready titles into bounded binding batches and continue lowering the remaining 117
+next_action: publish the validated 88-owner source completion overlay, refresh the all-373 matrix, then continue native binding batches
 ```
