@@ -26,9 +26,13 @@ pub fn npc_catalogue_preproduction_limits() -> ProjectFilesystemLimits {
             max_string_bytes: 43_000_000,
             max_locator_bytes: 160,
             max_locator_segments: 8,
-            max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + 21_069 + 2_564,
-            max_import_records: 25,
-            max_reimport_states: 104 + 296,
+            // #1807 monster source mechanics and reconciled catalogue add 1_011 reference records,
+            // measured: 62_801 on the merged repository source.
+            max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + 21_069 + 2_564 + 1_011,
+            // #1807 adds 4 monster-full-mechanics import batches: 29 v2 sources, measured.
+            max_import_records: 25 + 4,
+            // #1807 adds 4 reimport states to g4-creature-crystal-1530-r1: 404, measured.
+            max_reimport_states: 104 + 296 + 4,
         },
         max_entries_per_directory_scan: 32,
         // Same measured budget as the repository capture (content_world_project_repository.rs):
