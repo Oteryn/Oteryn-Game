@@ -1,14 +1,14 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "eb625ff0b201f47f83f9450efd4579b6ccc5351a010a7f028fd684b82e3a086d",
+  "digest": "68ce8be0beb594733d411b1df2ac28e1519f2fe1f0e6fac28a0b0f448269f188",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "monster-npc-reconciled-20261005-r1",
+  "content_revision": "d3-7-corpse-admitted-20261006-r1",
   "production": false,
   "entry_start": {
     "x": 10228,
     "y": 10032,
     "floor": 0
   },
-  "inputs_digest": "094c159c7f839ffbbe02e3ebcca8f1eadfc77d2468b65c8e3e54111ab382180d"
+  "inputs_digest": "77dbd0fd6fafb04164ea7d0b51b3b7d881a994962f4233b86c20454f400bc11d"
 }

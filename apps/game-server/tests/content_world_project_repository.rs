@@ -16,8 +16,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        418,
-        "82cd216b159c0a6dcd20957f9806fc33ad786c497c7214f5f776e7089205ccd4",
+        412,
+        "ddaecec0c3973fac2cf5e826c1dd6abbe34f362d73eb00107e8e50b671d3af40",
     ),
     (
         "definitions/declarations.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1957,
-        "040d5812b37247627c26eb08bbd980b1cf870e9ba3eb0c46df0b21e555591784",
+        1955,
+        "61edd6dbc42e5ffb8291ec826d297b20699c5dbae114f1162ea15e123f4881c6",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        408,
-        "6c58ee4dda23ce3e13aa8fb345b1d22f7b64720672a3d509f48eb2e6be4caa82",
+        406,
+        "d660f46a2d9c4e7d9ddc0a693cca6a05851469a567ef300c2217cca04e7b0e63",
     ),
     (
         "provenance/imports.json",
@@ -125,7 +125,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "7694e2507b6f13d4c911549ed206689fdde2bd5f448f5bac07b1a9fe63022a73";
+const TREE_SHA256: &str = "29c162c9108296fece952e46ca03b66a6d09b6863af9847b71eccd111c50ddb9";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -349,7 +349,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "monster-npc-reconciled-20261005-r1"
+        "d3-7-corpse-admitted-20261006-r1"
     );
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project

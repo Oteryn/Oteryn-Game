@@ -1,12 +1,12 @@
 {
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "monster-npc-reconciled-20261005-r1",
-  "content_lock_digest": "82cd216b159c0a6dcd20957f9806fc33ad786c497c7214f5f776e7089205ccd4",
+  "content_revision": "d3-7-corpse-admitted-20261006-r1",
+  "content_lock_digest": "ddaecec0c3973fac2cf5e826c1dd6abbe34f362d73eb00107e8e50b671d3af40",
   "min_runtime_version": "1",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:monster-npc-reconciled-20261005-r1/7d7403a5ced6677934bcc2dc75b9887cc501138b6fea7a1f3edfb714a560d2a5"
+  "provenance_summary": "lock:d3-7-corpse-admitted-20261006-r1/9cef15ce0a4c8f3f6c998f6564eb8ddcf29d6ac144e204abdfa5bf0ff42bf579"
 }

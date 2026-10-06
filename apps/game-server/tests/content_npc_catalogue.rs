@@ -26,11 +26,11 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     // Revision and source tree digest measured on the #1807 merged repository source.
     assert_eq!(
         catalogue.project_revision(),
-        "monster-npc-reconciled-20261005-r1"
+        "d3-7-corpse-admitted-20261006-r1"
     );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "7694e2507b6f13d4c911549ed206689fdde2bd5f448f5bac07b1a9fe63022a73"
+        "29c162c9108296fece952e46ca03b66a6d09b6863af9847b71eccd111c50ddb9"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);

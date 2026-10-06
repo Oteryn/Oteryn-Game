@@ -480,6 +480,8 @@ fn document_tree_digest(documents: &CanonicalProjectDocuments) -> String {
 // D3-7 corpse admission is applied to exactly that captured package.
 const MONSTER_NPC_RECONCILED_PREDECESSOR: &str =
     "045776ffda71f9199431bd0ca02615d2e94a8956fda1d3ff2fcc81ad54b2ccde";
+/// Revisions are immutable (DUR-04): the admitted package is a new project and package revision.
+const CORPSE_ADMITTED_PROJECT_REVISION: &str = "d3-7-corpse-admitted-20261006-r1";
 
 fn reconciled_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -510,6 +512,7 @@ fn admit_corpse_on_reconciled(
         return Ok(false);
     }
     let corpse_admitted = apply_item_admission_v2(&mut draft)?;
+    draft.core.project_revision = CORPSE_ADMITTED_PROJECT_REVISION.to_owned();
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
     let tree_sha256 = write_documents(output, &documents)?;
     println!(
