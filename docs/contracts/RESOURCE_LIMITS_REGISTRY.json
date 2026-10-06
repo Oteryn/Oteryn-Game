@@ -7294,7 +7294,7 @@
       "hard_maximum": 2000,
       "id": "MAP01-VIEWPORT-SNAPSHOT-US",
       "notes": "Owner answer 1a (2026-10-06); ARCH-MAP-VIEWPORT-BUDGET-V1. Testing and preproduction only. MAP-VIEWPORT-PERF-2 (#1859): p99 1.683 ms on the seeded harness, 4 vCPU; docs/agents/evidence/MAP-VIEWPORT-PERF-2-viewport.md. Production limits: MAP-VIEWPORT-MEASURE-1 and D128 (500 players per Channel).",
-      "owner_contract": "OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md",
       "resource": "Server cost of one 18x14 domain-17 snapshot over every floor in view: compose, assign handles and encode",
       "unit": "microseconds"
     },
