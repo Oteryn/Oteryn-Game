@@ -111,26 +111,34 @@ Observed timeline:
 
 - `22:10–22:17`: final Magnolia combat;
 - approximately `22:21`: relocation into the white/icy prison chamber;
-- `22:22–22:45`: object inspections/interactions inside the chamber;
-- approximately `22:48`: a clear flame/fire effect appears on the north wall;
-- immediately afterward: a second tool interaction occurs on the prepared wall;
-- approximately `22:52`: the character moves through the newly opened passage;
+- `22:22–22:39`: object inspections/interactions inside the chamber;
+- approximately `22:40`: the character breaks one of the massive icicles; the client reports `With all your strength, you manage to break off one of the massive icicles.`;
+- approximately `22:47.5`: the client reports `You have found a torch.`;
+- approximately `22:48.0`: the player first tries the icicle/chisel on the north-wall crack **before preparing it**; the server rejects the attempt and explains that the crack must be widened by another method;
+- approximately `22:48.5`: the player uses the torch on the crack; a clear fire effect appears on the wall;
+- approximately `22:50.5`: the player uses the icicle/chisel again; an ice/crumbling effect appears and the wall opens;
+- approximately `22:51–22:52`: the character moves through the newly opened passage;
 - `22:53–22:58`: the character follows the narrow escape corridor;
 - approximately `22:59`: relocation out of the prison route;
 - `23:05–23:10`: completion dialogue begins and the quest-completion UI appears.
 
-This visual order agrees with the current reference guide:
+This visual order agrees with the current reference guide, while also proving an observable failure branch:
 
-1. inspect skeleton -> obtain **Lit Torch**;
-2. inspect icicles -> obtain **Icicle Chisel**;
-3. use Lit Torch on the north wall;
-4. use Icicle Chisel on the prepared wall;
-5. cross the opening/collapsing passage;
-6. follow the corridor to the Rope Spot / exit.
+1. inspect icicles -> obtain **Icicle Chisel**;
+2. inspect the skeleton/torch source -> obtain **Lit Torch**;
+3. attempting the Icicle Chisel on the unprepared crack is rejected and does not open the wall;
+4. use Lit Torch on the north-wall crack -> wall becomes prepared;
+5. use Icicle Chisel on the prepared wall -> wall opens;
+6. cross the opening/collapsing passage;
+7. follow the corridor to the Rope Spot / exit.
 
-Known canonical Item:
+The walkthrough happens to collect the chisel before the torch. The required ordering constraint is on the **wall actions** (torch before successful chisel), not on the order in which the two tools are collected.
 
-- Icicle Chisel: `oteryn:item.tibia.i39578`.
+Known Item evidence:
+
+- Icicle Chisel: `oteryn:item.tibia.i39578`;
+- pinned Crystal Summer item id `54610` is named **lit torch** and is resolved as `light_source` in Oteryn's donor census;
+- the Oteryn donor key is currently `donor:crystalserver@00ce02a5:item/54610`; do not silently promote it to a canonical `oteryn:item.tibia.i54610` identity unless the Item owner admits that identity.
 
 The Lit Torch must use the existing Timed Item / Item owner semantics; do not create a quest-private torch implementation.
 
@@ -147,6 +155,11 @@ inspect exact icicle placement
 
 use Lit Torch on exact north-wall target
   -> wall_heated/prepared
+
+use Icicle Chisel on unprepared wall
+  -> reject
+  -> preserve quest/world state
+  -> hint that the crack must first be widened
 
 use Icicle Chisel on prepared wall
   -> wall opening state
@@ -171,7 +184,7 @@ Only these placement/identity details remain open:
 - exact icicle coordinate / placement key;
 - exact north-wall placement key / appearance id;
 - exact Rope Spot coordinate / placement key;
-- exact Lit Torch source appearance/alias used by the prison;
+- canonical Oteryn admission/identity for the pinned donor Lit Torch `54610` (donor identity is proven; canonical promotion is not);
 - whether the collapsing wall is represented by an existing LocalObject state, overlay transform or another accepted World Interaction representation.
 
 Do not invent these coordinates or IDs from the video viewport alone.
