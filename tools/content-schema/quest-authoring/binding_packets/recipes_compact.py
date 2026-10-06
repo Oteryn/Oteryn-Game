@@ -6,7 +6,7 @@ w=json.loads((ROOT/(S+'wiki-source-all373/source-specs-373.json')).read_text());
 a=json.loads((ROOT/'content/items/aliases.json').read_text());ai={r['key']:i for i,r in enumerate(a['entries'])}
 ni={}
 for f in (ROOT/'content/npcs/definitions').glob('npcs-*.json'):
- for i,r in enumerate(json.loads(f.read_text())['records']):ni[r['declaration']['identity']['key']]=(str(f.relative_to(ROOT)),i)
+ for i,r in enumerate(json.loads(f.read_text())['records']):ni[r['declaration']['identity']['key']]=(f.relative_to(ROOT).as_posix(),i)
 
 def target(t,key,title):
  refs=[]

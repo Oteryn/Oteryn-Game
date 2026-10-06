@@ -2,7 +2,7 @@ import os
 import json,pathlib,hashlib,collections
 R=pathlib.Path(os.environ.get('QUEST_BINDING_ROOT', pathlib.Path(__file__).resolve().parents[4]));O=pathlib.Path(os.environ.get('QUEST_BINDING_OUT', pathlib.Path(__file__).resolve().parents[1]/'samples/binding_packets'))/'rewards'
 def sha(p):return hashlib.sha256((R/p).read_bytes()).hexdigest()
-def witness(p,ptr):return {'path':str(p),'sha256':sha(p),'json_pointer':ptr,'access':'existing_repository_file'}
+def witness(p,ptr):return {'path':p.as_posix(),'sha256':sha(p),'json_pointer':ptr,'access':'existing_repository_file'}
 def records(folder):
  for p in sorted((R/folder).glob('*.json')):
   for n,row in enumerate(json.loads(p.read_text()).get('records',[])):
