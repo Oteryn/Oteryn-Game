@@ -37,8 +37,8 @@
    from its receipt. They are distinct values and they are permanent (F5).
 4. **Agreement.** A non-secret Game manifest, `deploy/synology-game/preprod-topology.toml`,
    records the pinned values. It holds the IDs, the route descriptor, the `route_revision` from the
-   publish receipt, the Game-chosen readiness tokens, the assignment epoch and the certificate
-   subjects. Both runbooks read the manifest, and the Game deploy refuses a node configuration that
+   publish receipt, the Game-chosen readiness tokens, the four character interpretation tokens,
+   the assignment epoch and the certificate subjects. Both runbooks read the manifest, and the Game deploy refuses a node configuration that
    disagrees with it.
 5. **Trust.** One preproduction development CA is held offline on the NAS. It issues per-purpose
    certificates with distinct subjects (Platform U15). A TLS 1.3-only nginx mTLS terminator in
@@ -72,7 +72,7 @@
 | Assignment epoch | declared by Game ops, starts at `1`, equal in `node.toml` and `report.toml`; Platform keeps the highest epoch seen; a raise is a Game ops act recorded in the manifest |
 | Endpoint names | private names under `preprod.oteryn.internal` (§4); the Game node connects by LAN address and verifies the name over TLS; the client resolves the names through the LAN DNS (§4.1) |
 | Client access | `https://platform.preprod.oteryn.internal` (no mTLS, `/internal/*` refused) and `https://gateway.preprod.oteryn.internal`; the tester OS trust store holds the preproduction CA |
-| Environment protection | `platform-preproduction` is provisioned with the owner as required reviewer and a `main`-only branch policy before any dispatch, and every run checks that rule first and fails closed |
+| Environment protection | `platform-preproduction` is provisioned with the owner as required reviewer, a `main`-only branch policy and no administrator bypass before any dispatch, and every run checks all three first and fails closed |
 | PKI | one offline preproduction development CA on the NAS; per-purpose subjects (§5); production PKI stays open (U15, U3) |
 | Fencing | unchanged; admission and Character writes stay session-generation fenced on the Game side; this topology adds no write path |
 | Mode 33a | allowed in this stack only until both LCFA packets are deployed here, then switched off (LCFA contract §4) |
@@ -150,15 +150,18 @@ mirror step exists.
   - a custom deployment branch policy that admits only `main`;
   - administrators not allowed to bypass.
 
-  The owner then reads the environment back (`GET` on the same path) and checks that both rules
-  are present.
+  The owner then reads the environment back (`GET` on the same path) and checks all three:
+  the reviewer rule, the branch policy, and `can_admins_bypass: false`.
 - **Deploy workflow.** Add `.github/workflows/deploy-synology-preprod.yml`. It is
   `workflow_dispatch` only and refuses any branch other than `main`.
   - Its first job, `protection-check`, runs on a GitHub-hosted runner with no environment and
     `permissions: actions: read`. It reads the `platform-preproduction` environment through the
-    REST API and fails, with nothing deployed, unless both rules are present: a
-    `required_reviewers` rule naming the owner, and a deployment branch policy that admits only
-    `main`. A missing environment fails the same way.
+    REST API and fails, with nothing deployed, unless all three hold:
+    - a `required_reviewers` rule names the owner;
+    - the deployment branch policy admits only `main`;
+    - `can_admins_bypass` is present and `false`.
+
+    A missing environment or a missing `can_admins_bypass` field fails the same way.
   - The deploy job `needs: protection-check` and only then names the environment. A run that
     fails the check therefore never creates the environment and never reaches the NAS. Every
     deploy that passes is approved by the owner at run time.
@@ -225,6 +228,10 @@ machine is provisioned once:
    - `OTERYN_PLATFORM_URL=https://platform.preprod.oteryn.internal/`
    - `OTERYN_GATEWAY_URL=https://gateway.preprod.oteryn.internal/`
    - `OTERYN_WORLD=<WorldId>`
+   - `OTERYN_CHARACTER_ID=<CharacterId>`: one per tester account. It is the UUID that the Game
+     Character Authority assigns when it bootstraps the character from a Platform intent (§8,
+     Game operator steps 5..6), read from `game_character_roots` for that bootstrap. It is not
+     invented on the client.
    - `OTERYN_DEV_ROOT=<path to the public CA file>`
    - `OTERYN_OAUTH_CLIENT_ID` is the value of `game-auth:native-oauth-client:ensure`, or of the
      existing `EnsureNativeOAuthClient` command, run on the preprod stack.
@@ -261,15 +268,36 @@ changes a WorldId or a ChannelId.
   Any descriptor change advances the version and requires a Game redeploy with the new value.
 - The remaining tokens are Game-chosen and bind to the deployed build, so a build change visibly
   moves them:
-  - `ruleset_revision` and `content_revision`: `game.<12-hex Game commit>`. These are the same
-    values that `ops character interpretation --ruleset/--content` binds into bootstrap intents.
+  - `ruleset_revision` and `content_revision`: `game.<12-hex Game commit>`.
+  - The character interpretation needs all four tokens. The manifest pins them in
+    `[interpretation]`:
+    - `profile_revision = "profile.1"`;
+    - `ruleset_revision` as above;
+    - `content_revision` as above;
+    - `starter_template_revision = "starter.1"`.
+
+    `ops character interpretation --profile --ruleset --content --starter` takes exactly these
+    four. Every Platform `game-auth:character-bootstrap-intent:issue` passes the same four as
+    `--profile-revision`, `--ruleset-revision`, `--content-revision` and
+    `--starter-template-revision`. Profile and starter advance by hand when their inputs change.
   - `map_revision`: `map.<first 16 hex of the map file SHA-256>`.
   - `runtime_observation_revision`, `world_policy_revision` and `offer_revision`: `obs.1`, `wp.1`
     and `offer.1`. These advance by hand when their inputs change.
 - `assignment_epoch`: `1` for the first node. `node.toml [platform.runtime_status]` and
-  `report.toml` must both equal the manifest value. A raise means three steps: edit the manifest,
-  redeploy, and `ops assignment assign`. Platform takes the highest value it has seen, so the epoch
-  never moves down.
+  `report.toml` must both equal the manifest value. Platform takes the highest value it has seen,
+  so the epoch never moves down. The assignment command depends on the scope's state:
+  - **No assignment yet** (first start only): `ops assignment assign`, README step 10.
+  - **Assigned** (every later case, epoch raises included): `assign` is refused with
+    `PredecessorMismatch`, so it is never used again. To raise the epoch, edit the manifest, then
+    `node.toml` and the root copy of `report.toml`, then run the owner-approved Game deploy. The
+    deploy restarts the node and runs `assignment replace` through the wrapper, which reports the
+    new epoch to Platform. No manual assignment step follows.
+  - **Unknown outcome:** the deploy reconciles it (`assignment reconcile`, as the README describes)
+    before it touches the service.
+  - **Committed, but the Platform report failed:** the root owner runs `ops assignment report
+    --report-config ROOT_BASE/ops/report.toml --node-config BASE/node/node.toml
+    --node-identity <NODE_IDENTITY> --world <WorldId> --channel <ChannelId>`. This re-reports the
+    current assignment without writing a new one.
 
 ## 7. Rollout, including the LCFA packets
 
@@ -338,12 +366,17 @@ discarded stack keeps its database volume until the owner decides to delete it.
    `platform-internal.preprod.oteryn.internal`.
 3. Run the existing one-time "First start sequence" of `deploy/synology-game/README.md`
    (steps 1..10) by hand, before any workflow dispatch, since the workflow cannot perform the
-   first start. The manifest supplies the step 6 `ops character interpretation` ruleset and
-   content tokens. Step 10 `ops assignment assign --world <WorldId> --channel <ChannelId>` uses
+   first start. The manifest `[interpretation]` table supplies all four step 6
+   `ops character interpretation` tokens (`--profile`, `--ruleset`, `--content`, `--starter`). Step 10 `ops assignment assign --world <WorldId> --channel <ChannelId>` uses
    the manifest epoch through `report.toml`. Recover an expired first start as that README
    describes.
 4. Confirm that the node reports `ready`.
-5. Only then dispatch `synology-game-deploy.yml` with owner approval, for this deploy and every
+5. For each tester account, issue a Platform bootstrap intent. Run
+   `game-auth:character-bootstrap-intent:issue` with the four manifest `[interpretation]` tokens,
+   then `ops character bootstrap --socket BASE/run/control.sock --operation-id <operation>`.
+6. Record the resulting `character_id` from `game_character_roots` as that tester's
+   `OTERYN_CHARACTER_ID` (§4.1).
+7. Only then dispatch `synology-game-deploy.yml` with owner approval, for this deploy and every
    later one. The deploy refuses if the rendered configuration disagrees with the manifest.
 
 ## 9. PLATFORM-PREPROD-TOPOLOGY-1 packet (Oteryn/Oteryn-Platform)
@@ -378,8 +411,11 @@ discarded stack keeps its database volume until the owner decides to delete it.
   8. The nginx config is TLS 1.3 only, with `ssl_verify_client on`.
   9. The workflow is main-only and `workflow_dispatch` only, and uses the environment
      `platform-preproduction` only in a job that `needs` a `protection-check` job.
-     `protection-check` fails closed on three cases: a missing environment, a missing owner
-     reviewer rule, and a branch policy that admits anything other than `main`.
+     `protection-check` fails closed on four cases:
+     - a missing environment;
+     - a missing owner reviewer rule;
+     - a branch policy that admits anything other than `main`;
+     - `can_admins_bypass` that is missing or `true`.
   10. `edge-https` is TLS 1.3, serves only the two client-facing names and refuses `/internal/`;
       the internal-build client logs in through it in the joint E2E (§7 step 7).
 - **Validation:**
@@ -390,7 +426,8 @@ discarded stack keeps its database volume until the owner decides to delete it.
   - `docker compose config` on the new compose file;
   - an `nginx -t` check of both nginx configs;
   - a test of the `protection-check` evaluation against fixture API responses (protected,
-    missing environment, no reviewer, any-branch policy).
+    missing environment, no reviewer, any-branch policy, admin bypass `true`, admin bypass
+    field missing).
 - **Review:** independent review, because this touches persistence, identity issuance and trust.
 
 ## 10. GAME-PREPROD-TOPOLOGY-1 packet (this repository)
@@ -398,8 +435,8 @@ discarded stack keeps its database volume until the owner decides to delete it.
 - **Authority:** one ordinary Game PR from a #1622/#162 allocation. It performs no deploy.
 - **Owned paths:**
   - `deploy/synology-game/preprod-topology.toml` (new). It is non-secret and holds the IDs, the
-    route descriptor, `route_version`/`route_revision`, the readiness tokens, `source_authority`,
-    the epoch and the certificate subjects, with placeholders until §7 step 6.
+    route descriptor, `route_version`/`route_revision`, the readiness tokens, the four
+    `[interpretation]` tokens, `source_authority`, the epoch and the certificate subjects, with placeholders until §7 step 6.
   - `deploy/synology-game/README.md`: the Platform section, names and runbook of §8.
   - `deploy/synology-game/deploy-ops.sh`: a fail-closed comparison of the rendered `[readiness]`
     tokens and `assignment_epoch` (in `node.toml` and `report.toml`) against the manifest.

@@ -69,5 +69,12 @@ Codex round 1 on `7f6f8cd3` raised four P1 findings, all fixed in one push:
 The same push records D855 (owner-confirmed Registry issuance), D856 (owner-confirmed new
 `platform-preproduction` environment, `synology-staging` not reused) and D607 (dedicated
 MariaDB).
+Codex round 2 on `f5424197` raised three P1 findings and one P2, all fixed in one push:
+- the client settings add `OTERYN_CHARACTER_ID` and its bootstrap source;
+- all four interpretation tokens are pinned and shared with the Platform bootstrap intents;
+- `protection-check` also reads back `can_admins_bypass`;
+- the epoch procedure depends on the scope's state: `replace` through the deploy, then
+  `reconcile` or `report`, never a second `assign`.
+
 Review is decided by the control plane on the frozen head. Merge result: squash merge of
 #1893, pending CI and Merge Queue at authoring.
