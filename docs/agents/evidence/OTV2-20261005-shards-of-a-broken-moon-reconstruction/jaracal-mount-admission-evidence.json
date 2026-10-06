@@ -47,11 +47,11 @@
     "acquisition_interactions": [],
     "acquisition_interaction_status": "PENDING_TYPED_INTERACTION_OWNER",
     "source_binding": {
-      "source_key": "oteryn:source.crystalserver",
-      "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
-      "external_id": "250",
-      "identity_namespace": "PENDING_MOUNT_OWNER_NAMESPACE",
-      "disposition": "EXACT_SOURCE_IDENTITY_PENDING_NAMESPACE"
+      "source_key": "oteryn:source.tibiawiki",
+      "source_revision": "tibiawiki:Jaracal_(Montaria)@440479",
+      "external_id": "67553",
+      "identity_namespace": "mediawiki/page_id",
+      "disposition": "EXACT"
     }
   },
   "taming_semantics": {
@@ -97,8 +97,8 @@
     "taming_producer": "NOT_IMPLEMENTED"
   },
   "required_owner_work": [
-    "Add a successor Mount admission input instead of modifying the immutable G4 252 selection.",
-    "Admit canonical Jaracal Mount as the 253rd active Mount record through the existing Mount writer.",
+    "Add a one-row successor Mount population using TibiaWiki page_id 67553/revision 440479; do not modify the immutable G4 252 selection.",
+    "Admit canonical Jaracal Mount as the 253rd active Mount record through a successor population composed after the historical 252.",
     "Resolve clientid 1962 through the Presentation owner; do not synthesize a Presentation identity in Mount code.",
     "Bind oteryn:item.tibia.i54638 use-on oteryn:creature.jaracal through the accepted Item/Interaction owner.",
     "On qualified success, call the account-scoped Mount unlock owner and Achievement grant owner.",
@@ -118,5 +118,14 @@
       "stackable": false
     },
     "required_change": "PROMOTE_CURRENT_CANONICAL_ITEM_IN_PLACE; DO_NOT REMINT"
+  },
+  "current_reference_source": {
+    "source_key": "oteryn:source.tibiawiki",
+    "identity_namespace": "mediawiki/page_id",
+    "page_id": 67553,
+    "revision_id": 440479,
+    "revision_timestamp": "2026-07-14T02:57:52Z",
+    "raw_utf8_sha256": "a3a5ce1a344c4848829e8551a40f72483086a27b5e5b4d931cac7f038bb96311",
+    "status": "EXACT_POST_RELEASE_REFERENCE_SOURCE"
   }
 }
