@@ -14,6 +14,9 @@ DEFAULT_PACKAGE = (
 CHUNK = 65536
 MAX_RAW_FILE = 192 * 1024**2
 MAX_RAW_TOTAL = 1024**3
+# Windows checkout keeps every repo path under MAX_PATH (260) with the runner prefix.
+REPO_PREFIX = "imports/ots-native-admission/solo-source-item-recovery-20261005/"
+MAX_REPO_PATH = 200
 
 
 def require(condition, reason):
@@ -429,11 +432,16 @@ def verify_batches(package):
     }
 
 
+def require_repo_path_length(relative):
+    require(len(REPO_PREFIX + relative) <= MAX_REPO_PATH, "repository path too long")
+
+
 def verify_inventory(package):
     inventory = json.loads((package / "package-inventory.json").read_bytes())
     seen = set()
     for row in inventory:
         require(row["path"] not in seen, "duplicate package member")
+        require_repo_path_length(row["path"])
         seen.add(row["path"])
         path = safe_path(package, row["path"])
         require(

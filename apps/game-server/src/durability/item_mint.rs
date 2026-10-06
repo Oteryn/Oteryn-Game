@@ -32,12 +32,14 @@ use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use super::item_mint_audit::{
     self as audit, AuditError, CreatureDeathOccurrenceRefV1, ITEM_LIFECYCLE_LIVE,
     LOOT_MINT_TYPED_CAUSE, MintEventIdentity, OneItemGroundV1, OneItemMintV1, OneItemProvenanceV1,
     OneItemStateV1, OneItemTypedDefinitionRevisionV1, RL08_RETRY_WORK_UNITS_MAX,
+    SelectedType2Tuple,
 };
 use super::item_transfer_audit::OneItemContainerEntryV1;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
@@ -50,7 +52,6 @@ use sqlx::Row;
 type Result<T> = std::result::Result<T, ItemMintError>;
 const INTENT_BINDING_VERSION: u8 = 1;
 const EVENT_TYPE_ID: i64 = audit::EVENT_TYPE_ID as i64;
-const EVENT_SCHEMA_REVISION: i64 = audit::EVENT_SCHEMA_REVISION as i64;
 
 /// DUR-03 §39.4 / D3 §4.1: the reserved sentinel `loot_purpose_key` naming a
 /// creature's own corpse MINT (always `draw_ordinal = 0`), never reused by an
@@ -478,7 +479,7 @@ impl DurabilityRoot {
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_cause(&mut tx, &request.cause).await?;
                     if let Some(row) = load_reservation(&mut tx, &request.cause).await? {
@@ -494,7 +495,7 @@ impl DurabilityRoot {
                         if !resumable {
                             return Ok(Err(ItemMintError::AuthorityRejected));
                         }
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                         return Ok(Ok((request, reservation)));
                     }
 
@@ -513,12 +514,13 @@ impl DurabilityRoot {
                                 floor(extract(epoch FROM statement_timestamp())*1000)::bigint \
                                   AS occurred_at",
                     )
-                    .fetch_one(&mut *tx)
+                    .fetch_one(&mut **tx)
                     .await?;
                     let transaction_id = uuid_text(row.try_get("transaction_id")?)?;
                     let event_id = uuid_text(row.try_get("event_id")?)?;
                     let item_instance_id = uuid_text(row.try_get("item_instance_id")?)?;
                     let occurred_at_unix_ms = row.try_get::<i64, _>("occurred_at")?;
+                    let tuple = tx.tuple();
                     let envelope = match audit::encode_mint_event(
                         MintEventIdentity {
                             event_id,
@@ -527,6 +529,7 @@ impl DurabilityRoot {
                             server_build_id: SERVER_BUILD_ID,
                         },
                         mint_message(&request, corpse_entry.as_ref(), item_instance_id),
+                        tuple.tuple(),
                     ) {
                         Ok(envelope) => envelope,
                         Err(error) => return Ok(Err(error.into())),
@@ -542,8 +545,9 @@ impl DurabilityRoot {
                         fence_registration_revision: fact.registration_revision(),
                         work_units_used: 0,
                     };
-                    insert_reservation(&mut tx, &request, &intent_binding, &reservation).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    insert_reservation(&mut tx, &request, &intent_binding, &reservation, tuple)
+                        .await?;
+                    tx.commit(deadline).await?;
                     Ok(Ok((request, reservation)))
                 })
             })
@@ -663,7 +667,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     lock_cause(&mut tx, &frozen.request.cause).await?;
@@ -674,7 +678,7 @@ impl DurabilityRoot {
                             return Ok(Err(ItemMintError::ConflictingCause));
                         }
                         let committed = decode_receipt(&row)?;
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                         return Ok(Ok(ItemMintOutcome::AlreadyCommitted(committed)));
                     }
 
@@ -706,7 +710,11 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::AuthorityRejected));
                     }
 
-                    insert_mint(&mut tx, &frozen).await?;
+                    let tuple = match tx.frozen_tuple(&frozen.envelope) {
+                        Ok(tuple) => tuple,
+                        Err(error) => return Ok(Err(error.into())),
+                    };
+                    insert_mint(&mut tx, &frozen, tuple).await?;
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
                         event_id: frozen.event_id,
@@ -714,7 +722,7 @@ impl DurabilityRoot {
                         occurred_at_unix_ms: frozen.occurred_at_unix_ms,
                         envelope_sha256: frozen.envelope_sha256,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    tx.commit(deadline).await?;
                     Ok(Ok(ItemMintOutcome::Committed(committed)))
                 })
             })
@@ -771,7 +779,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     lock_cause(&mut tx, &frozen.request.cause).await?;
@@ -795,7 +803,7 @@ impl DurabilityRoot {
                             return Ok(Err(ItemMintError::ConflictingCause));
                         }
                         let committed = decode_receipt(&row)?;
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                         return Ok(Ok(ItemMintOutcome::AlreadyCommitted(committed)));
                     }
 
@@ -836,7 +844,11 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::AuthorityRejected));
                     }
 
-                    insert_corpse_mint(&mut tx, &frozen, top_damage_character_id).await?;
+                    let tuple = match tx.frozen_tuple(&frozen.envelope) {
+                        Ok(tuple) => tuple,
+                        Err(error) => return Ok(Err(error.into())),
+                    };
+                    insert_corpse_mint(&mut tx, &frozen, tuple, top_damage_character_id).await?;
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
                         event_id: frozen.event_id,
@@ -844,7 +856,7 @@ impl DurabilityRoot {
                         occurred_at_unix_ms: frozen.occurred_at_unix_ms,
                         envelope_sha256: frozen.envelope_sha256,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    tx.commit(deadline).await?;
                     Ok(Ok(ItemMintOutcome::Committed(committed)))
                 })
             })
@@ -886,7 +898,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     lock_cause(&mut tx, &frozen.request.cause).await?;
@@ -897,7 +909,7 @@ impl DurabilityRoot {
                             return Ok(Err(ItemMintError::ConflictingCause));
                         }
                         let committed = decode_receipt(&row)?;
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                         return Ok(Ok(ItemMintOutcome::AlreadyCommitted(committed)));
                     }
 
@@ -931,7 +943,11 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::InvalidInput));
                     }
 
-                    insert_corpse_loot_mint(&mut tx, &frozen, &placement).await?;
+                    let tuple = match tx.frozen_tuple(&frozen.envelope) {
+                        Ok(tuple) => tuple,
+                        Err(error) => return Ok(Err(error.into())),
+                    };
+                    insert_corpse_loot_mint(&mut tx, &frozen, tuple, &placement).await?;
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
                         event_id: frozen.event_id,
@@ -939,7 +955,7 @@ impl DurabilityRoot {
                         occurred_at_unix_ms: frozen.occurred_at_unix_ms,
                         envelope_sha256: frozen.envelope_sha256,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    tx.commit(deadline).await?;
                     Ok(Ok(ItemMintOutcome::Committed(committed)))
                 })
             })
@@ -1286,6 +1302,7 @@ async fn insert_reservation(
     request: &ItemMintRequest,
     intent_binding: &[u8; 33],
     reservation: &Reservation,
+    tuple: SelectedType2Tuple,
 ) -> std::result::Result<(), DurabilityError> {
     // The fence generation ($3 again) is the death's own generation (D52).
     bind_cause!(
@@ -1296,13 +1313,14 @@ async fn insert_reservation(
                loot_table_revision_ref, loot_purpose_key, draw_ordinal, intent_binding, \
                transaction_id, event_id, item_instance_id, occurred_at, envelope, \
                fence_scope_ownership_generation, fence_holder_node_id, \
-               fence_holder_registration_revision, work_units_used, reserved_at) \
+               fence_holder_registration_revision, work_units_used, reserved_at, \
+               type2_schema_revision) \
              VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3::text::numeric(20,0), \
                $4, $5::text::numeric(20,0), $6, $7, $8, $9, $10, $11, \
                encode($12,'hex')::uuid, encode($13,'hex')::uuid, encode($14,'hex')::uuid, \
                $15, $16, $3::text::numeric(20,0), encode($17,'hex')::uuid, \
                $18::text::numeric(20,0), 0, \
-               floor(extract(epoch FROM statement_timestamp())*1000)::bigint)",
+               floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $19)",
         ),
         &request.cause
     )
@@ -1314,6 +1332,7 @@ async fn insert_reservation(
     .bind(reservation.envelope.as_slice())
     .bind(reservation.fence_node_id.as_slice())
     .bind(reservation.fence_registration_revision.to_string())
+    .bind(i16::try_from(tuple.schema_revision()).map_err(|_| DurabilityError::InvalidStoredState)?)
     .execute(&mut **tx)
     .await?;
     Ok(())
@@ -1390,8 +1409,9 @@ async fn corpse_cap_recount(
 async fn insert_mint(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     frozen: &FrozenMint,
+    tuple: SelectedType2Tuple,
 ) -> std::result::Result<(), DurabilityError> {
-    insert_mint_with_corpse_attribution(tx, frozen, None).await
+    insert_mint_with_corpse_attribution(tx, frozen, tuple, None).await
 }
 
 /// D3-1: the corpse's own MINT, identical to [`insert_mint`] except its
@@ -1402,14 +1422,16 @@ async fn insert_mint(
 async fn insert_corpse_mint(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     frozen: &FrozenMint,
+    tuple: SelectedType2Tuple,
     top_damage_character_id: [u8; 16],
 ) -> std::result::Result<(), DurabilityError> {
-    insert_mint_with_corpse_attribution(tx, frozen, Some(top_damage_character_id)).await
+    insert_mint_with_corpse_attribution(tx, frozen, tuple, Some(top_damage_character_id)).await
 }
 
 async fn insert_mint_with_corpse_attribution(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     frozen: &FrozenMint,
+    tuple: SelectedType2Tuple,
     top_damage_character_id: Option<[u8; 16]>,
 ) -> std::result::Result<(), DurabilityError> {
     let request = &frozen.request;
@@ -1434,7 +1456,7 @@ async fn insert_mint_with_corpse_attribution(
     .execute(&mut **tx)
     .await?;
     insert_receipt(tx, frozen, top_damage_character_id, None).await?;
-    insert_audit_outbox(tx, frozen).await
+    insert_audit_outbox(tx, frozen, tuple).await
 }
 
 /// D3-2: a loot entry's MINT, identical to [`insert_mint`] except that the
@@ -1444,6 +1466,7 @@ async fn insert_mint_with_corpse_attribution(
 async fn insert_corpse_loot_mint(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     frozen: &FrozenMint,
+    tuple: SelectedType2Tuple,
     placement: &CorpseContainerPlacement,
 ) -> std::result::Result<(), DurabilityError> {
     let death = &frozen.request.cause.death;
@@ -1462,7 +1485,7 @@ async fn insert_corpse_loot_mint(
     .execute(&mut **tx)
     .await?;
     insert_receipt(tx, frozen, None, Some(placement)).await?;
-    insert_audit_outbox(tx, frozen).await
+    insert_audit_outbox(tx, frozen, tuple).await
 }
 
 async fn insert_item_instance(
@@ -1538,6 +1561,7 @@ async fn insert_receipt(
 async fn insert_audit_outbox(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     frozen: &FrozenMint,
+    tuple: SelectedType2Tuple,
 ) -> std::result::Result<(), DurabilityError> {
     sqlx::query(
         "INSERT INTO game_item_audit_outbox(event_id, transaction_id, transaction_ordinal, \
@@ -1550,8 +1574,8 @@ async fn insert_audit_outbox(
     .bind(frozen.event_id.as_slice())
     .bind(frozen.transaction_id.as_slice())
     .bind(EVENT_TYPE_ID)
-    .bind(EVENT_SCHEMA_REVISION)
-    .bind(audit::RETENTION_PROFILE_ID)
+    .bind(i64::from(tuple.schema_revision()))
+    .bind(tuple.retention_profile_id())
     .bind(frozen.item_instance_id.as_slice())
     .bind(frozen.occurred_at_unix_ms)
     .bind(audit::AUDIT_RETENTION_P90D_MS)

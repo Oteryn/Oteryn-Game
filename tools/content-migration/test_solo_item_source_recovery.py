@@ -10,10 +10,13 @@ from pathlib import Path
 
 from verify_solo_item_source_recovery import (
     MAX_RAW_FILE,
+    MAX_REPO_PATH,
     OLD_REGISTRY,
+    REPO_PREFIX,
     ability_row_sizes,
     lexeme_bytes,
     recovered_digest,
+    require_repo_path_length,
     safe_path,
     verify_ability_provenance,
     verify_charge_observation,
@@ -342,3 +345,11 @@ class RecoveryBoundaryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RepoPathLengthTests(unittest.TestCase):
+    def test_paths_over_the_windows_bound_are_rejected(self):
+        fits = "a" * (MAX_REPO_PATH - len(REPO_PREFIX))
+        require_repo_path_length(fits)
+        with self.assertRaisesRegex(ValueError, "repository path too long"):
+            require_repo_path_length(fits + "a")

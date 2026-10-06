@@ -895,6 +895,10 @@ pub struct RewardClaimPlacement {
     /// ref is bound to that key at authoring (achievement contract §2.2), never at runtime. The
     /// runtime catalogue must have the key (contract §3.3, checked at Content activation).
     pub achievement: Option<String>,
+    /// The QuestState transition taking this chest requests (CHEST-QUEST-BIND-1), as its
+    /// catalogue key `oteryn:quest-transition/<marker>/chest`. Boot refuses a key the loaded
+    /// quest catalogue does not hold.
+    pub quest_transition: Option<String>,
 }
 
 /// A `once` RewardClaim (D39-D42): its identity is the definition's key and revision, and it
@@ -2171,6 +2175,9 @@ fn canonicalize_definition(definition: &mut ReferenceDefinition) {
 /// Namespace of an achievement catalogue key (achievement contract §2.1).
 const REWARD_CLAIM_ACHIEVEMENT_PREFIX: &str = "oteryn:achievement/";
 
+/// Namespace of a QuestState transition key.
+const REWARD_CLAIM_TRANSITION_PREFIX: &str = "oteryn:quest-transition/";
+
 /// Shape of a first-slice RewardClaim: server-only, at least one placement, no placement listed
 /// twice, and each placement rewards exactly one item with a positive count and names its
 /// achievement, if any, by an `oteryn:achievement/` key. The item references are resolved by
@@ -2213,6 +2220,14 @@ fn validate_reward_claim_definition(
         }) {
             return Err(ContentError::InvalidArtifact(
                 "reference-playable reward claim achievement must be an oteryn:achievement/ key",
+            ));
+        }
+        if entry.quest_transition.as_deref().is_some_and(|key| {
+            key.strip_prefix(REWARD_CLAIM_TRANSITION_PREFIX)
+                .is_none_or(str::is_empty)
+        }) {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable reward claim quest transition must be an oteryn:quest-transition/ key",
             ));
         }
     }

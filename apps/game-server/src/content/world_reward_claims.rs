@@ -181,6 +181,7 @@ struct CandidatePlacement {
     crystal_unique_id: Option<u64>,
     item: TypedDefinitionRef,
     count: u32,
+    quest_transition: Option<String>,
 }
 
 const DEFINITION_FIELDS: [&str; 6] = [
@@ -191,7 +192,12 @@ const DEFINITION_FIELDS: [&str; 6] = [
     "readiness",
     "placements",
 ];
-const PLACEMENT_FIELDS: [&str; 3] = ["appearance_tibia_id", "reward", "source_binding"];
+const PLACEMENT_FIELDS: [&str; 4] = [
+    "appearance_tibia_id",
+    "quest_transition",
+    "reward",
+    "source_binding",
+];
 
 fn only(value: &Value, allowed: &[&str]) -> bool {
     value
@@ -309,6 +315,10 @@ fn candidate_placement(placement: &Value) -> Result<Option<CandidatePlacement>, 
                 .ok_or(bad.clone())
         })
         .transpose()?;
+    let quest_transition = placement
+        .get("quest_transition")
+        .map(|key| key.as_str().map(str::to_owned).ok_or(bad.clone()))
+        .transpose()?;
     let position = binding.get("project_position").ok_or(bad)?;
     Ok(Some(CandidatePlacement {
         appearance,
@@ -316,6 +326,7 @@ fn candidate_placement(placement: &Value) -> Result<Option<CandidatePlacement>, 
         crystal_unique_id,
         item,
         count,
+        quest_transition,
     }))
 }
 
@@ -352,6 +363,7 @@ fn bind_candidate(
                         count: placement.count,
                     }],
                     achievement: None,
+                    quest_transition: placement.quest_transition.clone(),
                 },
                 cell,
                 bundle_placement_key,

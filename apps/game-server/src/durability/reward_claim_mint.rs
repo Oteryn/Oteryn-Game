@@ -83,11 +83,13 @@ use super::character_authority::{
 };
 use super::character_progression::valid_revision;
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use super::item_mint::{TypedDefinitionRef, uuid_text};
 use super::item_mint_audit::{
     self as mint_audit, AuditError, ITEM_LIFECYCLE_LIVE, OneItemStateV1, RL08_RETRY_WORK_UNITS_MAX,
+    SelectedType2Tuple,
 };
 use super::item_transfer::{
     BackpackEntry, ContainerEntryPosition, CurrentCharacterItemFence,
@@ -115,7 +117,6 @@ const INTENT_BINDING_VERSION: u8 = 2;
 /// Opens the intent binding's quest transition section.
 const QUEST_TRANSITION_TAG: u8 = 0x51;
 const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
-const EVENT_SCHEMA_REVISION: i64 = mint_audit::EVENT_SCHEMA_REVISION as i64;
 /// `source_kind` of the achievement grant requests a reward claim records.
 pub const ACHIEVEMENT_SOURCE_KIND: &str = "oteryn:reward-claim";
 
@@ -645,7 +646,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let command = frozen.request.command;
@@ -657,7 +658,7 @@ impl DurabilityRoot {
                             return Ok(Err(RewardClaimMintError::ConflictingCause));
                         }
                         let committed = decode_receipt(&row)?;
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                         return Ok(Ok((
                             RewardClaimMintOutcome::AlreadyCommitted(committed),
                             GrantNotice::None,
@@ -695,7 +696,7 @@ impl DurabilityRoot {
                     .bind(frozen.transaction_id.as_slice())
                     .bind(frozen.event_id.as_slice())
                     .bind(frozen.item_instance_id.as_slice())
-                    .fetch_one(&mut *tx)
+                    .fetch_one(&mut **tx)
                     .await?;
                     if identity_reused {
                         return Ok(Err(RewardClaimMintError::ConflictingCandidate));
@@ -707,6 +708,7 @@ impl DurabilityRoot {
                             Err(error) => return Ok(Err(error)),
                         };
                     let message = claim_message(&frozen, &reservation, &fence, destination);
+                    let tuple = tx.tuple();
                     let envelope = match audit::encode_reward_claim_mint_event(
                         RewardClaimMintEventIdentity {
                             event_id: frozen.event_id,
@@ -716,6 +718,7 @@ impl DurabilityRoot {
                             server_build_id: SERVER_BUILD_ID,
                         },
                         message,
+                        tuple.tuple(),
                     ) {
                         Ok(envelope) => envelope,
                         Err(error) => return Ok(Err(error.into())),
@@ -749,9 +752,16 @@ impl DurabilityRoot {
                             Err(error) => return Ok(Err(error.into())),
                         }
                     }
-                    let committed =
-                        apply_claim(&mut tx, &frozen, &reservation, destination, &envelope).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    let committed = apply_claim(
+                        &mut tx,
+                        &frozen,
+                        &reservation,
+                        destination,
+                        &envelope,
+                        tuple,
+                    )
+                    .await?;
+                    tx.commit(deadline).await?;
                     Ok(Ok((RewardClaimMintOutcome::Committed(committed), notice)))
                 })
             })
@@ -979,6 +989,7 @@ async fn apply_claim(
     reservation: &Reservation,
     destination: ContainerEntryPosition,
     envelope: &[u8],
+    tuple: SelectedType2Tuple,
 ) -> std::result::Result<CommittedRewardClaimMint, DurabilityError> {
     let request = &frozen.request;
     let tx_id = frozen.transaction_id.as_slice();
@@ -1024,8 +1035,8 @@ async fn apply_claim(
     .bind(frozen.event_id.as_slice())
     .bind(tx_id)
     .bind(EVENT_TYPE_ID)
-    .bind(EVENT_SCHEMA_REVISION)
-    .bind(mint_audit::RETENTION_PROFILE_ID)
+    .bind(i64::from(tuple.schema_revision()))
+    .bind(tuple.retention_profile_id())
     .bind(item_id)
     .bind(frozen.occurred_at_unix_ms)
     .bind(mint_audit::AUDIT_RETENTION_P90D_MS)

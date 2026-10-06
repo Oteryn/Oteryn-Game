@@ -369,6 +369,7 @@ pub struct TransferEventIdentity<'a> {
 pub fn encode_transfer_event(
     identity: TransferEventIdentity<'_>,
     transfer: OneItemTransferV1,
+    tuple: mint::Type2EventTuple,
 ) -> Result<Vec<u8>, AuditError> {
     check_uuid_v7(&identity.event_id)?;
     check_uuid_v7(&identity.transaction_id)?;
@@ -400,10 +401,10 @@ pub fn encode_transfer_event(
         envelope_revision: mint::ENVELOPE_REVISION,
         event_id: identity.event_id.to_vec(),
         event_type_id: mint::EVENT_TYPE_ID,
-        event_schema_revision: mint::EVENT_SCHEMA_REVISION,
+        event_schema_revision: tuple.schema_revision(),
         durability_class: mint::DURABLE_AUDIT,
         privacy_class: mint::RESTRICTED_PLAYER_LINKED,
-        retention_profile_id: mint::RETENTION_PROFILE_ID.into(),
+        retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(world_id),
         channel_id: Some(channel_id),
@@ -558,7 +559,9 @@ mod tests {
     #[test]
     fn every_shape_round_trips_and_mint_gates_reject_it() {
         for shape in SHAPES {
-            let wire = encode_transfer_event(identity(), transfer(shape)).unwrap();
+            let wire =
+                encode_transfer_event(identity(), transfer(shape), mint::Type2EventTuple::V1)
+                    .unwrap();
             let (envelope, decoded) = decode_transfer_envelope(&wire).unwrap();
             assert_eq!(decoded, transfer(shape), "{shape:?}");
             assert_eq!(check_transfer(&decoded), Ok(shape));
@@ -658,7 +661,7 @@ mod tests {
             mutate(&mut value);
             assert!(check_transfer(&value).is_err(), "case {index}");
             assert!(
-                encode_transfer_event(identity(), value).is_err(),
+                encode_transfer_event(identity(), value, mint::Type2EventTuple::V1).is_err(),
                 "case {index}"
             );
         }
@@ -687,7 +690,8 @@ mod tests {
         for shape in SHAPES {
             let value = corpse_sourced(shape);
             assert_eq!(check_transfer(&value), Ok(shape));
-            let wire = encode_transfer_event(identity(), value.clone()).unwrap();
+            let wire = encode_transfer_event(identity(), value.clone(), mint::Type2EventTuple::V1)
+                .unwrap();
             let (envelope, decoded) = decode_transfer_envelope(&wire).unwrap();
             assert_eq!(decoded, value);
             // The envelope scope is the corpse Ground's World and Channel.
@@ -710,7 +714,7 @@ mod tests {
             mutate(&mut value);
             assert!(check_transfer(&value).is_err(), "case {index}");
             assert!(
-                encode_transfer_event(identity(), value).is_err(),
+                encode_transfer_event(identity(), value, mint::Type2EventTuple::V1).is_err(),
                 "case {index}"
             );
         }
@@ -720,7 +724,12 @@ mod tests {
 
     #[test]
     fn envelope_scope_and_command_must_equal_the_payload() {
-        let wire = encode_transfer_event(identity(), transfer(TransferShape::NewEntry)).unwrap();
+        let wire = encode_transfer_event(
+            identity(),
+            transfer(TransferShape::NewEntry),
+            mint::Type2EventTuple::V1,
+        )
+        .unwrap();
         let tamper: [fn(&mut EventEnvelopeV1); 4] = [
             |e| e.command_id = Some(8),
             |e| e.game_session_id = None,
