@@ -126,7 +126,7 @@ Known canonical or qualified identities:
 - Crystal Plinth: `oteryn:item.tibia.i54515` → WorldObject
 - Moonsilver Drift: `oteryn:item.tibia.i54235` → WorldObject
 - Amati's Echo: `oteryn:achievement/amati_s_echo@1`, staticdata source id 594, 4 points, premium
-- Skewered Fish: `oteryn:item.registry.i00038475`; donor id `54638`; frozen epoch-2 identity, qualified as a taming tool, currently non-materializable
+- Skewered Fish: `oteryn:item.tibia.i54638`; donor id `54638`; current A12 canonical identity (retired alias `i00038475` resolves here), qualified as a taming tool, currently non-materializable
 
 The current authored completion candidate still reports several of these as unresolved because exact identity availability and executable materialization/use are separate concerns.
 
@@ -165,7 +165,7 @@ SHARDS-R1
   completion reducer
   Skewered Fish delivery
   Amati's Echo grant
-  Jaracal Mount admission (donor mount 250/clientid 1962) + later oteryn:item.registry.i00038475-on-Jaracal tame flow + existing Six Steps Ahead grant
+  Jaracal Mount admission (donor mount 250/clientid 1962) + later oteryn:item.tibia.i54638-on-Jaracal tame flow + existing Six Steps Ahead grant
   True Feverbloom / Forbidden Gardens access predicate (`Shards completed` AND account owns `forbidden_fruit`)
   relog/restart / duplicate-reward qualification
 ```
