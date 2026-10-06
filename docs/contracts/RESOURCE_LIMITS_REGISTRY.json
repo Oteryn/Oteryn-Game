@@ -7271,9 +7271,31 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 100,
       "id": "MAP01-VIEWPORT-US",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map p99 72-83 us for 18x14 over native floors -7..=0 (20,000 seeded viewports); docs/agents/evidence/MAP-LOAD-1-base-budgets.md. MAP-VIEWPORT-PERF-1 (2026-10-05): domain-17 snapshot with state handles measured p99 2.9 ms, gate not met; docs/agents/evidence/MAP-VIEWPORT-PERF-1-viewport.md.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map p99 72-83 us for 18x14 over native floors -7..=0 (20,000 seeded viewports); docs/agents/evidence/MAP-LOAD-1-base-budgets.md. MAP-VIEWPORT-PERF-1 (2026-10-05): domain-17 snapshot with state handles measured p99 2.9 ms, gate not met; docs/agents/evidence/MAP-VIEWPORT-PERF-1-viewport.md. ARCH-MAP-VIEWPORT-BUDGET-V1 (owner answer 1a, 2026-10-06): this row stays the assembly budget; the whole domain-17 snapshot (compose, handles, encode) is MAP01-VIEWPORT-SNAPSHOT-US.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Server cost of assembling one 18x14 viewport from base and overlay, over every floor the client sees",
+      "unit": "microseconds"
+    },
+    {
+      "allocation_impact": "Qualification budget at p99 for the capability 18 offer on a testing or preproduction bundle World; not a runtime cutoff. Temporary: a production offer needs the snapshot and delta limits derived from MAP-VIEWPORT-MEASURE-1 and D128.",
+      "boundary_tests": [
+        "release map_viewport_measure snapshot p99 at or under 2000 us passes",
+        "snapshot p99 over 2000 us fails qualification"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 2000,
+        "minimum": 2000
+      },
+      "consumers": [
+        "game server World runtime (capability 18 offer, MAP-CUTOVER-1b)"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 2000,
+      "id": "MAP01-VIEWPORT-SNAPSHOT-US",
+      "notes": "Owner answer 1a (2026-10-06); ARCH-MAP-VIEWPORT-BUDGET-V1. Testing and preproduction only. MAP-VIEWPORT-PERF-2 (#1859): p99 1.683 ms on the seeded harness, 4 vCPU; docs/agents/evidence/MAP-VIEWPORT-PERF-2-viewport.md. Production limits: MAP-VIEWPORT-MEASURE-1 and D128 (500 players per Channel).",
+      "owner_contract": "OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md",
+      "resource": "Server cost of one 18x14 domain-17 snapshot over every floor in view: compose, assign handles and encode",
       "unit": "microseconds"
     },
     {
