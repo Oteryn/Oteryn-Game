@@ -3,6 +3,7 @@
 
 pub mod cyclopedia;
 pub mod input;
+pub mod play;
 pub mod scene;
 pub mod spell;
 
@@ -114,6 +115,21 @@ impl ClientBootstrap {
         self.runtime
             .block_on(native_entry::enter(config, self.runtime.cancellation()))
             .map_err(|_error| GameplayEntryError::Rejected(PublicClass::TemporarilyUnavailable))?
+    }
+
+    /// Starts the admitted session's task on the client runtime, whose reactor its stream is
+    /// bound to, and returns the placeholder view with the shell's link to the task.
+    pub fn start_play(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<(play::PlayView, play::PlayLink), GameplayEntryError> {
+        let unavailable = || GameplayEntryError::Rejected(PublicClass::SessionUnavailable);
+        let view = admitted.play_view().map_err(|_error| unavailable())?;
+        let (link, commands, events) = play::play_channel();
+        self.runtime
+            .spawn(play::run_session(admitted.into_session(), commands, events))
+            .map_err(|_error| unavailable())?;
+        Ok((view, link))
     }
 
     pub fn shutdown(self) {
@@ -281,6 +297,11 @@ mod native_entry {
         #[must_use]
         pub fn channel_id(&self) -> &str {
             &self.channel_id
+        }
+
+        /// The placeholder view of the join snapshot.
+        pub fn play_view(&self) -> Result<crate::play::PlayView, oteryn_renderer::BatchError> {
+            crate::play::PlayView::from_join(self.session.join_snapshot())
         }
 
         #[must_use]
