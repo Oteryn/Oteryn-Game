@@ -22,7 +22,7 @@ depends_on: []
 blocks: [OPS-GM-AUDIT-1, OPS-GM-SANCTION-2, OPS-GM-REPORT-3, OPS-GM-ROSTER-4, OPS-GM-STAFF-5, OPS-GM-PREPORT-6, THREAT-MODEL-0, ERR-PUBLIC-REVIEW-1, LIVEOPS-CONFIG-AUDIT-1, LIVEOPS-MAINT-1, LIVEOPS-NOTICE-2, LIVEOPS-KILL-2, THREAT-DOS-1, SEC-ROTATION-1, SUPPLY-SIGN-1, ECON-FENCE-1, ECON-CASE-HOLD-1, ECON-TRACE-1, ECON-REMEDIATION-1, GUILD-ERASURE-0, PRIVACY-INVENTORY-1, PRIVACY-LOG-REDACT-1, PRIVACY-ERASURE-1, PRIVACY-DSR-EXPORT-1]
 cross_repository_coordination_id: null
 external_repositories: []
-last_progress: "2026-10-06 review round 4: Codex findings 4197087993 (staff value boundary), 4197088008 (ordered per-table erasure), 4197088013 (signed operator requests) and 4197088022 (one active erasure per account) fixed; round 3: Codex finding 4196701855 fixed (erasure journal PENDING before the first database transition, COMPLETE before the Platform ack); rounds 1 and 2 fixed earlier; owner rulings of 2026-10-06 on all eleven §4.2 items recorded and applied"
+last_progress: "2026-10-06 review round 6: Codex findings 4197873469 (erasure without a guard row), 4197873478 (signatures bound to environment and roster) and 4197873488 (grant account pairing) fixed, with the deferred P2 4196701864 (drain order) and 4196701873 (report evidence check); review round 4: Codex findings 4197087993 (staff value boundary), 4197088008 (ordered per-table erasure), 4197088013 (signed operator requests) and 4197088022 (one active erasure per account) fixed; round 3: Codex finding 4196701855 fixed (erasure journal PENDING before the first database transition, COMPLETE before the Platform ack); rounds 1 and 2 fixed earlier; owner rulings of 2026-10-06 on all eleven §4.2 items recorded and applied"
 ```
 
 ## Outcome
@@ -50,6 +50,10 @@ last_progress: "2026-10-06 review round 4: Codex findings 4197087993 (staff valu
 - The erasure journal holds AccountId and operation_id only and is an inventory row that the inventory check requires (§3 rulings 14, 18).
 - The erasure journal records a durable `PENDING` entry before the first database erasure transition and `COMPLETE` after the last and before the Platform acknowledgement; a restore re-applies every journaled AccountId idempotently and fails closed on a torn or unreadable journal; PRIVACY-ERASURE-1 tests a crash at each point (§3 ruling 18).
 - A reported chat line must have been spoken by the report target, enforced in the command and by a table check (§1 ruling 12).
+- An account with no 0005 guard row runs the full erasure path and completes only after the catalog scan; premium and spell premium writers refuse an open erasure under the admission relation fence (§3 ruling 17).
+- Staff, lift and remediation signatures cover the environment id and the roster SHA-256, and the verifier uses its own restart-only environment id (§1 ruling 2, §3 rulings 4 and 8).
+- A staff grant requires a live root of the grant's own account, enforced in the tool and by a composite foreign key (§1 ruling 4).
+- Maintenance close stops reading commands, lets in-flight passes finish and deliver their results, and only then sends 1200 (§2 ruling 9).
 - Every owner ruling of 2026-10-06 is recorded in its section and in §4.2, and the body is consistent with it.
 
 ## Review findings
@@ -67,6 +71,11 @@ last_progress: "2026-10-06 review round 4: Codex findings 4197087993 (staff valu
 - 4197088013 (P1, §1 ruling 2, §2 B5): host audit was the only human attribution. Fixed: every request is signed off-host with a personal OpenSSH key under a per-action namespace, verified by the committing process and stored in `STAFF_ACTION`; `oteryn-game-ops audit verify` re-checks; refusal `OPS_STAFF_SIGNATURE_INVALID`; the residual root-with-database-credential case is in THREAT-MODEL-0.
 - 4197088022 (P1, §3 ruling 17): two operation_ids could start on one account. Fixed: `game_account_erasures` allows one open row per account; the start takes the admission relation fence, refuses another operation with `ACCOUNT_ERASURE_IN_PROGRESS`, appends `PENDING` before commit, and resumes a same-operation crash; PRIVACY-ERASURE-1 tests.
 - 4195149446 (P2, §2 ruling 9): drain state lived only in process memory. Fixed: a durable `game_scope_maintenance` marker committed before the drain request, read at boot before readiness, fail closed when unreadable, and ended by compare-and-set in `maintenance end`.
+- 4197873469 (P1, §3 ruling 17): an account with no 0005 guard row was reported complete at once while premium rows (0029, 0040, 0057) still held its AccountId. Fixed: no shortcut; the start mints the marker and the substitution and catalog scan always run, guard steps only when the row exists; premium and spell premium writers take the admission relation fence and refuse `ACCOUNT_ERASURE_IN_PROGRESS`; amendment 2 binds Platform to emit no fact after the request; PRIVACY-ERASURE-1 tests.
+- 4197873478 (P1, §1 ruling 2, §3 rulings 4 and 8): lift and remediation signatures were not bound to a deployment. Fixed: every signed tuple starts with `environment_id` and `roster_sha256`; the verifier uses its own restart-only environment id and loaded roster digest; a roster change after approval needs both to re-sign by compare-and-set; ECON-FENCE-1 and ECON-REMEDIATION-1 tests, including a preproduction signature on a production record.
+- 4197873488 (P2, §1 ruling 4): a grant could pair Account A with a character of Account B. Fixed: the grant refuses with `OPS_STAFF_GRANT_TARGET_MISMATCH` unless the locked root is live and belongs to the grant's account, and a deferrable composite foreign key enforces it; OPS-GM-ROSTER-4 tests.
+- 4196701864 (P2, §2 ruling 9, deferred from round 3): 1200 could close a session with a pass in flight. Fixed: at `close_at` the node stops reading commands, waits for each in-flight pass and its result frame, then sends 1200; the close path is in LIVEOPS-MAINT-1 owned paths; test.
+- 4196701873 (P2, §1 ruling 12, deferred from round 3): the table check allowed evidence with a NULL speaker. Fixed: the evidence columns are all NULL or all present, present evidence names the target on a HARASSMENT reason, and erasure clears them together; OPS-GM-PREPORT-6 direct-insert tests.
 
 ## Owner rulings
 
