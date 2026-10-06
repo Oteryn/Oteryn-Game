@@ -18,5 +18,8 @@ rustls.workspace = true
 tokio.workspace = true
 tokio-rustls.workspace = true
 
+[dev-dependencies]
+rcgen.workspace = true
+
 [lints]
 workspace = true
