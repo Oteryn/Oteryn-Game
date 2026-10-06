@@ -112,13 +112,19 @@ jobs:
           ops="$ROOT_BASE/bin/oteryn-game-ops"
           test -f "$ops" && test ! -L "$ops"
           test "$(stat -c '%u' "$ops")" = 0
-          test -e "$ROOT_BASE/ops/ops.toml"
-          test -f "$ROOT_BASE/ops/report.toml" && test -f "$ROOT_BASE/ops/scope.env"
           wrapper="$ROOT_BASE/bin/oteryn-game-deploy-ops"
           test -f "$wrapper" && test ! -L "$wrapper" && test "$(stat -c '%u' "$wrapper")" = 0
           # The root-run binaries must not be replaceable by the runner user.
           test ! -w "$ops" && test ! -w "$wrapper" && test ! -w "$ROOT_BASE/bin"
-          sudo -n -l >/dev/null
+          # ROOT_BASE/ops is root-only (0700): the runner cannot stat anything in it, so the root-owned
+          # config files are checked by the wrapper, and every wrapper subcommand the deploy uses must be
+          # allowed by the sudoers rule (sudo -l with a command exits 0 only when it is permitted).
+          zero=00000000-0000-7000-8000-000000000000
+          for cmd in "check-setup" "issue 1 1" "issue 1 1 $zero" "assign replace 1 1 $zero 1" "reconcile 1 1" "reconcile-launch 1 1"; do
+            # shellcheck disable=SC2086
+            sudo -n -l "$wrapper" $cmd >/dev/null || { echo "::error::sudoers does not allow: oteryn-game-deploy-ops $cmd"; exit 1; }
+          done
+          sudo -n "$wrapper" check-setup
 
       - name: Require the root-installed ops binary and wrapper to match the bundle
         shell: bash

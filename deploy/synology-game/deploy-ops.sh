@@ -58,6 +58,19 @@ case "$command" in
     # reconcile does not accept --node-identity (the retained request carries it).
     args=(assignment reconcile --report-config "$REPORT_CONFIG" --node-config "$NODE_CONFIG" --request "assign-$1-$2.json")
     ;;
+  check-setup)
+    # check-setup: verify the root-only files the runner cannot stat (ROOT_BASE/ops is 0700).
+    [[ $# -eq 0 ]] || fail "usage: check-setup"
+    for f in "$CONFIG" "$REPORT_CONFIG" "$SCOPE_FILE"; do
+      [[ -f "$f" && ! -L "$f" && "$(stat -c %u "$f")" = 0 ]] || fail "missing or not root-owned: $f"
+    done
+    world="$(sed -n 's/^WORLD_ID=//p' "$SCOPE_FILE")"
+    channel="$(sed -n 's/^CHANNEL_ID=//p' "$SCOPE_FILE")"
+    identity="$(sed -n 's/^NODE_IDENTITY=//p' "$SCOPE_FILE")"
+    check "$uuid" "$world"; check "$uuid" "$channel"; node_identity_ok "$identity"
+    echo "deploy-ops: setup ok"
+    exit 0
+    ;;
   reconcile-launch)
     # reconcile-launch <run-id> <attempt>: the ops tool's own reconcile of an issued launch authorization.
     [[ $# -eq 2 ]] || fail "usage: reconcile-launch <run-id> <attempt>"
