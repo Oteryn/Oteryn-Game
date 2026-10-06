@@ -43,7 +43,8 @@ use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use super::item_decay_retire_audit::{
     self as audit, DecayRetireEventIdentity, OneItemCorpseDecayV1, OneItemDecayRetireV1,
@@ -51,7 +52,7 @@ use super::item_decay_retire_audit::{
 use super::item_mint::{CORPSE_MATERIALIZATION_PURPOSE_KEY, uuid_text};
 use super::item_mint_audit::{
     self as mint_audit, AuditError, ITEM_LIFECYCLE_LIVE, OneItemGroundV1, OneItemStateV1,
-    OneItemTypedDefinitionRevisionV1, RL08_RETRY_WORK_UNITS_MAX, check_uuid_v7,
+    OneItemTypedDefinitionRevisionV1, RL08_RETRY_WORK_UNITS_MAX, SelectedType2Tuple, check_uuid_v7,
 };
 use super::item_transfer_audit::{ITEM_LIFECYCLE_RETIRED, OneItemCorpseSourceV1};
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
@@ -64,7 +65,6 @@ use sqlx::Row;
 type Result<T> = std::result::Result<T, DecayRetireError>;
 type Pass<T> = std::result::Result<std::result::Result<T, DecayRetireError>, DurabilityError>;
 const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
-const EVENT_SCHEMA_REVISION: i64 = mint_audit::EVENT_SCHEMA_REVISION as i64;
 
 /// D135 (`decay_at = materialized_at + 60 s`) and `COMBAT01-CORPSES-PER-SCOPE`
 /// (the recovery query never returns more live corpses than one scope may
@@ -337,7 +337,7 @@ impl DurabilityRoot {
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_cause(&mut tx, step.item_instance_id).await?;
                     if let Some(receipt) = load_receipt(&mut tx, step.item_instance_id).await? {
@@ -353,7 +353,7 @@ impl DurabilityRoot {
                             return Err(DurabilityError::InvalidStoredState);
                         };
                         let reservation = decode_reservation(&row)?;
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                         return Ok(Ok(reservation));
                     }
                     let generation = fence.scope_ownership_generation.get().to_string();
@@ -372,7 +372,7 @@ impl DurabilityRoot {
                         if let Err(error) = admit(&mut tx, &fence, step).await? {
                             return Ok(Err(error));
                         }
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                         return Ok(Ok(reservation));
                     }
 
@@ -387,13 +387,14 @@ impl DurabilityRoot {
                         "SELECT game_character_uuid_v7()::text AS transaction_id, \
                                 game_character_uuid_v7()::text AS event_id",
                     )
-                    .fetch_one(&mut *tx)
+                    .fetch_one(&mut **tx)
                     .await?;
                     let transaction_id = uuid_text(row.try_get("transaction_id")?)?;
                     let event_id = uuid_text(row.try_get("event_id")?)?;
                     // The trusted timestamp is the admission's own database
                     // clock reading, already at or after the deadline.
                     let occurred_at_unix_ms = admitted.database_now_unix_ms;
+                    let tuple = tx.tuple();
                     let envelope = match audit::encode_decay_retire_event(
                         DecayRetireEventIdentity {
                             event_id,
@@ -402,6 +403,7 @@ impl DurabilityRoot {
                             server_build_id: SERVER_BUILD_ID,
                         },
                         decay_message(step, &fence, &admitted),
+                        tuple.tuple(),
                     ) {
                         Ok(envelope) => envelope,
                         Err(error) => return Ok(Err(error.into())),
@@ -421,8 +423,8 @@ impl DurabilityRoot {
                         fence_registration_revision: fact.registration_revision(),
                         work_units_used: 0,
                     };
-                    insert_reservation(&mut tx, step, &admitted, &reservation).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    insert_reservation(&mut tx, step, &admitted, &reservation, tuple).await?;
+                    tx.commit(deadline).await?;
                     Ok(Ok(reservation))
                 })
             })
@@ -537,7 +539,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     lock_cause(&mut tx, step.item_instance_id).await?;
@@ -547,7 +549,7 @@ impl DurabilityRoot {
                         if committed.corpse_item_instance_id != step.corpse_item_instance_id {
                             return Ok(Err(DecayRetireError::ConflictingCause));
                         }
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                         return Ok(Ok(DecayRetireOutcome::AlreadyCommitted(committed)));
                     }
 
@@ -588,8 +590,13 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(DecayRetireError::ConflictingCandidate));
                     }
-                    let committed = apply_retire(&mut tx, step, &admitted, &reservation).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    let tuple = match tx.frozen_tuple(&reservation.envelope) {
+                        Ok(tuple) => tuple,
+                        Err(error) => return Ok(Err(error.into())),
+                    };
+                    let committed =
+                        apply_retire(&mut tx, step, &admitted, &reservation, tuple).await?;
+                    tx.commit(deadline).await?;
                     Ok(Ok(DecayRetireOutcome::Committed(committed)))
                 })
             })
@@ -1000,6 +1007,7 @@ async fn apply_retire(
     step: DecayRetireStep,
     admitted: &Admitted,
     reservation: &Reservation,
+    tuple: SelectedType2Tuple,
 ) -> std::result::Result<CommittedDecayRetire, DurabilityError> {
     let item = step.item_instance_id.as_slice();
     let removed = match admitted.placement_ordinal {
@@ -1083,8 +1091,8 @@ async fn apply_retire(
     .bind(reservation.event_id.as_slice())
     .bind(reservation.transaction_id.as_slice())
     .bind(EVENT_TYPE_ID)
-    .bind(EVENT_SCHEMA_REVISION)
-    .bind(mint_audit::RETENTION_PROFILE_ID)
+    .bind(i64::from(tuple.schema_revision()))
+    .bind(tuple.retention_profile_id())
     .bind(item)
     .bind(reservation.occurred_at_unix_ms)
     .bind(mint_audit::AUDIT_RETENTION_P90D_MS)
@@ -1192,18 +1200,19 @@ async fn insert_reservation(
     step: DecayRetireStep,
     admitted: &Admitted,
     reservation: &Reservation,
+    tuple: SelectedType2Tuple,
 ) -> std::result::Result<(), DurabilityError> {
     sqlx::query(
         "INSERT INTO game_item_decay_retire_reservations(item_instance_id, \
            fence_scope_ownership_generation, corpse_item_instance_id, world_id, channel_id, \
            transaction_id, event_id, quantity_before, placement_ordinal, deadline, occurred_at, \
            envelope, fence_holder_node_id, fence_holder_registration_revision, \
-           work_units_used, reserved_at) \
+           work_units_used, reserved_at, type2_schema_revision) \
          VALUES (encode($1,'hex')::uuid, $2::text::numeric(20,0), encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, encode($5,'hex')::uuid, encode($6,'hex')::uuid, \
            encode($7,'hex')::uuid, $8, $9::text::numeric(20,0), $10, $11, $12, \
            encode($13,'hex')::uuid, $14::text::numeric(20,0), 0, \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint)",
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $15)",
     )
     .bind(step.item_instance_id.as_slice())
     .bind(reservation.fence_generation.to_string())
@@ -1223,6 +1232,7 @@ async fn insert_reservation(
     .bind(reservation.envelope.as_slice())
     .bind(reservation.fence_node_id.as_slice())
     .bind(reservation.fence_registration_revision.to_string())
+    .bind(i16::try_from(tuple.schema_revision()).map_err(|_| DurabilityError::InvalidStoredState)?)
     .execute(&mut **tx)
     .await?;
     Ok(())

@@ -297,6 +297,11 @@ item_enum!(ReferenceBaseVocation {
 item_enum!(ReferenceUseEnforcementMode { OnUse = 1 });
 // A potion restores health, mana or both; ITEM-USE-1 owns both restores (ITEM-SEM-USE-1).
 item_enum!(ReferenceRestoreResource { Health = 1, Mana = 2 });
+// A bed part and the direction of its other half (ITEM-SEM-BED-PACKET-1 §1.2).
+item_enum!(ReferenceBedPart { Head = 1, Foot = 2 });
+item_enum!(ReferenceBedDirection {
+    North = 1, East = 2, South = 3, West = 4,
+});
 item_enum!(ReferenceWeaponType {
     Ammunition = 1, Axe = 2, Club = 3, Distance = 4, Fist = 5,
     Shield = 6, Spellbook = 7, Sword = 8, Wand = 9,
@@ -735,6 +740,19 @@ pub struct ReferencePotionRestore {
     pub max: u16,
 }
 
+/// One part of a bed (ITEM-SEM-BED-PACKET-1 §1.2). The free look is the placed Item; the other
+/// half is the bed part on the tile in `partner_direction`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReferenceItemBed {
+    pub part: ReferenceBedPart,
+    pub partner_direction: ReferenceBedDirection,
+    /// This part's look while a male character sleeps; the record's own Item means no change.
+    pub occupied_male: ReferenceItemTarget,
+    /// This part's look while a female character sleeps; the record's own Item means no change.
+    pub occupied_female: ReferenceItemTarget,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReferenceItemFluid {
@@ -793,6 +811,10 @@ pub struct ReferenceItemSemantics {
     /// bytes.
     #[serde(default, skip_serializing_if = "ReferenceItemField::is_unknown")]
     pub consumption: ReferenceItemField<ReferenceItemConsumption>,
+    /// Server only. Omitted while Unknown, so records written before ITEM-SEM-BED-1 keep their
+    /// bytes.
+    #[serde(default, skip_serializing_if = "ReferenceItemField::is_unknown")]
+    pub bed: ReferenceItemField<ReferenceItemBed>,
 }
 
 impl ReferenceItemSemantics {
@@ -815,6 +837,7 @@ impl ReferenceItemSemantics {
             && matches!(self.readable_writeable, ReferenceItemField::Unknown)
             && matches!(self.use_requirements, ReferenceItemField::Unknown)
             && matches!(self.consumption, ReferenceItemField::Unknown)
+            && matches!(self.bed, ReferenceItemField::Unknown)
     }
 
     pub fn client_projection(&self) -> Self {
@@ -895,6 +918,10 @@ pub struct RewardClaimPlacement {
     /// ref is bound to that key at authoring (achievement contract §2.2), never at runtime. The
     /// runtime catalogue must have the key (contract §3.3, checked at Content activation).
     pub achievement: Option<String>,
+    /// The QuestState transition taking this chest requests (CHEST-QUEST-BIND-1), as its
+    /// catalogue key `oteryn:quest-transition/<marker>/chest`. Boot refuses a key the loaded
+    /// quest catalogue does not hold.
+    pub quest_transition: Option<String>,
 }
 
 /// A `once` RewardClaim (D39-D42): its identity is the definition's key and revision, and it
@@ -2041,6 +2068,69 @@ fn validate_item_semantics(item: &ReferenceItemDefinition) -> Result<(), Content
     if let Known(value) = &semantics.consumption {
         validate_consumption(value)?;
     }
+    if let Known(value) = &semantics.bed {
+        validate_item_target(&value.occupied_male)?;
+        validate_item_target(&value.occupied_female)?;
+    }
+    Ok(())
+}
+
+/// The bed set rule (ITEM-SEM-BED-PACKET-1 §1.2): an occupied look other than the record's own
+/// Item is a bed part with the same part and the same partner direction. `target` is the
+/// target Item's group 19.
+pub(crate) fn check_bed_occupied_target(
+    bed: &ReferenceItemBed,
+    target: &ReferenceItemField<ReferenceItemBed>,
+) -> Result<(), ContentError> {
+    let ReferenceItemField::Known(target) = target else {
+        return Err(ContentError::InvalidArtifact(
+            "Reference Item bed occupied target is not a bed part",
+        ));
+    };
+    if target.part != bed.part {
+        return Err(ContentError::InvalidArtifact(
+            "Reference Item bed occupied target has another part",
+        ));
+    }
+    if target.partner_direction != bed.partner_direction {
+        return Err(ContentError::InvalidArtifact(
+            "Reference Item bed occupied target has another partner direction",
+        ));
+    }
+    Ok(())
+}
+
+/// The bed set rule over canonical definitions, sorted by identity.
+pub(crate) fn validate_item_bed_set(
+    definitions: &[ReferenceDefinition],
+) -> Result<(), ContentError> {
+    for definition in definitions {
+        let ReferenceDefinitionKind::Item(item) = &definition.kind else {
+            continue;
+        };
+        let ReferenceItemField::Known(bed) = &item.semantics.bed else {
+            continue;
+        };
+        for occupied in [&bed.occupied_male, &bed.occupied_female] {
+            let occupied = occupied.typed_ref()?;
+            if occupied == definition.definition {
+                continue;
+            }
+            let target = definitions
+                .binary_search_by(|candidate| candidate.definition.cmp(&occupied))
+                .ok()
+                .map(|position| &definitions[position].kind)
+                .ok_or(ContentError::InvalidArtifact(
+                    "dangling Reference Item target",
+                ))?;
+            let unknown = ReferenceItemField::Unknown;
+            let target_bed = match target {
+                ReferenceDefinitionKind::Item(target) => &target.semantics.bed,
+                _ => &unknown,
+            };
+            check_bed_occupied_target(bed, target_bed)?;
+        }
+    }
     Ok(())
 }
 
@@ -2171,6 +2261,9 @@ fn canonicalize_definition(definition: &mut ReferenceDefinition) {
 /// Namespace of an achievement catalogue key (achievement contract §2.1).
 const REWARD_CLAIM_ACHIEVEMENT_PREFIX: &str = "oteryn:achievement/";
 
+/// Namespace of a QuestState transition key.
+const REWARD_CLAIM_TRANSITION_PREFIX: &str = "oteryn:quest-transition/";
+
 /// Shape of a first-slice RewardClaim: server-only, at least one placement, no placement listed
 /// twice, and each placement rewards exactly one item with a positive count and names its
 /// achievement, if any, by an `oteryn:achievement/` key. The item references are resolved by
@@ -2213,6 +2306,14 @@ fn validate_reward_claim_definition(
         }) {
             return Err(ContentError::InvalidArtifact(
                 "reference-playable reward claim achievement must be an oteryn:achievement/ key",
+            ));
+        }
+        if entry.quest_transition.as_deref().is_some_and(|key| {
+            key.strip_prefix(REWARD_CLAIM_TRANSITION_PREFIX)
+                .is_none_or(str::is_empty)
+        }) {
+            return Err(ContentError::InvalidArtifact(
+                "reference-playable reward claim quest transition must be an oteryn:quest-transition/ key",
             ));
         }
     }

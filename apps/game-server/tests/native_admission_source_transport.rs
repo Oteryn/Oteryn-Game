@@ -388,7 +388,9 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                     | Operation::ReadPremiumSnapshotV1
                     | Operation::ReportRuntimeStatusV1
                     | Operation::PublishAccountCharactersV1
-                    | Operation::PublishProjectionWatermarkV1 => {
+                    | Operation::PublishProjectionWatermarkV1
+                    | Operation::ReportScopeAssignmentV1
+                    | Operation::ReportScopeRevocationV1 => {
                         return Err(io::Error::new(io::ErrorKind::InvalidData, "operation"));
                     }
                 };
@@ -437,7 +439,9 @@ fn controlled_producer_proves_tls13_mtls_and_four_operations()
                 | Operation::ReadPremiumSnapshotV1
                 | Operation::ReportRuntimeStatusV1
                 | Operation::PublishAccountCharactersV1
-                | Operation::PublishProjectionWatermarkV1 => {
+                | Operation::PublishProjectionWatermarkV1
+                | Operation::ReportScopeAssignmentV1
+                | Operation::ReportScopeRevocationV1 => {
                     return Err("operation".into());
                 }
             };

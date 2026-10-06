@@ -49,12 +49,14 @@ use oteryn_protocol_oteryn::item_view::{
     encode_character_inventory, encode_open_container,
 };
 use oteryn_protocol_oteryn::world_map::MAX_MAP_VIEW_HANDLES;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
+use std::hash::{BuildHasherDefault, Hasher};
 use std::num::NonZeroU32;
 use tokio::time::Instant;
 
 /// The server-internal identity of one viewed item. Never on the wire.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum ItemKey {
     /// A domain-1 object (a corpse or a ground item) by its channel-wide `EntityIdentity`.
     Entity([u8; ENTITY_IDENTITY_BYTES]),
@@ -173,17 +175,77 @@ pub(crate) enum View {
     Map = 4,
 }
 
-/// The session's handle table (§4.1).
+/// A fixed, unkeyed multiply-rotate hasher (the FxHash step) for the handle table's
+/// server-internal keys: handles and keys are issued by the server, never chosen by a client, and
+/// the table is bounded by `ITEMV0-RL-03-*`, so a keyed hasher buys nothing here.
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct KeyHasher(u64);
+
+impl KeyHasher {
+    const fn add(&mut self, word: u64) {
+        self.0 = (self.0.rotate_left(5) ^ word).wrapping_mul(0x51_7c_c1_b7_27_22_0a_95);
+    }
+}
+
+impl Hasher for KeyHasher {
+    fn write(&mut self, bytes: &[u8]) {
+        for chunk in bytes.chunks(8) {
+            let mut word = [0; 8];
+            word[..chunk.len()].copy_from_slice(chunk);
+            self.add(u64::from_le_bytes(word));
+        }
+    }
+
+    fn write_u8(&mut self, value: u8) {
+        self.add(u64::from(value));
+    }
+
+    fn write_u32(&mut self, value: u32) {
+        self.add(u64::from(value));
+    }
+
+    fn write_u64(&mut self, value: u64) {
+        self.add(value);
+    }
+
+    fn write_usize(&mut self, value: usize) {
+        self.add(value as u64);
+    }
+
+    fn finish(&self) -> u64 {
+        // The multiply leaves the low bits weakest; the table indexes by them.
+        self.0.rotate_left(26)
+    }
+}
+
+type KeyMap<K, V> = HashMap<K, V, BuildHasherDefault<KeyHasher>>;
+
+/// One slot of the handle table: a live key, its handle and the views that hold it, one bit per
+/// [`View`]. A free slot holds no view.
+#[derive(Debug, Clone, Copy)]
+struct Slot {
+    key: ItemKey,
+    handle: ItemHandle,
+    views: u8,
+}
+
+/// Marks a key of the next content while [`ItemHandleTable::replace`] runs.
+const NEXT: u8 = 1 << 7;
+
+/// The session's handle table (§4.1): a slot per live key, found by key and by handle.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct ItemHandleTable {
     last: u64,
-    views: [BTreeSet<ItemKey>; 5],
+    /// The slots of each view, without repeats, in the order the keys were first given.
+    views: [Vec<u32>; 5],
     /// Capability 14 is selected: the bound is `ITEMV0-RL-03-CONTAINER-TREE`.
     container_tree: bool,
     /// Capability 18 is selected: the bound adds `MAPW-RL-04`.
     map_view: bool,
-    by_key: BTreeMap<ItemKey, ItemHandle>,
-    by_handle: BTreeMap<ItemHandle, ItemKey>,
+    slots: Vec<Slot>,
+    free: Vec<u32>,
+    by_key: KeyMap<ItemKey, u32>,
+    by_handle: KeyMap<ItemHandle, u32>,
 }
 
 impl ItemHandleTable {
@@ -231,57 +293,178 @@ impl ItemHandleTable {
 
     /// The item a handle names; `None` is `STALE`.
     pub(crate) fn resolve(&self, handle: ItemHandle) -> Option<ItemKey> {
-        self.by_handle.get(&handle).copied()
+        let slot = *self.by_handle.get(&handle)?;
+        Some(self.slots[slot as usize].key)
     }
 
     pub(crate) fn handle(&self, key: &ItemKey) -> Option<ItemHandle> {
-        self.by_key.get(key).copied()
+        let slot = *self.by_key.get(key)?;
+        Some(self.slots[slot as usize].handle)
+    }
+
+    /// The keys of `view` in key order.
+    fn keys_of(&self, view: View) -> Vec<ItemKey> {
+        let mut keys: Vec<ItemKey> = self.views[view as usize]
+            .iter()
+            .map(|slot| self.slots[*slot as usize].key)
+            .collect();
+        keys.sort_unstable();
+        keys
     }
 
     /// Makes `keys` the content of `view`: an item new to every view gets the next handle, in the
     /// given order, and one that left every view is dropped. Over the bound nothing changes.
     pub(crate) fn replace(&mut self, view: View, keys: &[ItemKey]) -> Result<(), ItemViewError> {
-        let next: BTreeSet<ItemKey> = keys.iter().copied().collect();
-        let others = |key: &ItemKey| {
-            self.views
-                .iter()
-                .enumerate()
-                .any(|(index, set)| index != view as usize && set.contains(key))
+        self.replace_undoable(view, keys).map(drop)
+    }
+
+    /// [`Self::replace`] that also returns what [`Self::rollback`] needs to take it back.
+    fn replace_undoable(
+        &mut self,
+        view: View,
+        keys: &[ItemKey],
+    ) -> Result<ReplaceUndo, ItemViewError> {
+        let index = view as usize;
+        let bit = 1 << index;
+        let mut undo = ReplaceUndo {
+            view: index,
+            last: self.last,
+            previous: Vec::new(),
+            removed: Vec::new(),
+            issued: Vec::new(),
         };
-        let staying = self.by_key.keys().filter(|key| others(key)).count();
-        let live = staying + next.iter().filter(|key| !others(key)).count();
-        if live > self.limit() {
-            return Err(ItemViewError::LimitExceeded);
-        }
-        let fresh = next
-            .iter()
-            .filter(|key| !self.by_key.contains_key(key))
-            .count();
-        self.last
-            .checked_add(fresh as u64)
-            .ok_or(ItemViewError::Exhausted)?;
-        let dropped: Vec<ItemKey> = self.views[view as usize]
-            .iter()
-            .filter(|key| !next.contains(key) && !others(key))
-            .copied()
-            .collect();
-        for key in dropped {
-            if let Some(handle) = self.by_key.remove(&key) {
-                self.by_handle.remove(&handle);
+        // Mark every key of the next content; a key new to every view gets the next handle.
+        let mut next = Vec::with_capacity(keys.len());
+        let mut exhausted = false;
+        for key in keys {
+            match self.by_key.entry(*key) {
+                Entry::Occupied(entry) => {
+                    let slot = *entry.get();
+                    let views = &mut self.slots[slot as usize].views;
+                    if *views & NEXT == 0 {
+                        *views |= NEXT;
+                        next.push(slot);
+                    }
+                }
+                Entry::Vacant(entry) => {
+                    let Some(handle) = self.last.checked_add(1).and_then(ItemHandle::new) else {
+                        exhausted = true;
+                        break;
+                    };
+                    self.last = handle.get();
+                    let fresh = Slot {
+                        key: *key,
+                        handle,
+                        views: NEXT,
+                    };
+                    let slot = match self.free.pop() {
+                        Some(slot) => {
+                            self.slots[slot as usize] = fresh;
+                            slot
+                        }
+                        None => {
+                            self.slots.push(fresh);
+                            (self.slots.len() - 1) as u32
+                        }
+                    };
+                    entry.insert(slot);
+                    self.by_handle.insert(handle, slot);
+                    undo.issued.push(slot);
+                    next.push(slot);
+                }
             }
         }
-        for key in keys {
-            if self.by_key.contains_key(key) {
+        if exhausted {
+            for slot in &next {
+                self.slots[*slot as usize].views &= !NEXT;
+            }
+            self.drop_issued(&undo.issued);
+            self.last = undo.last;
+            return Err(if self.live_after(index, keys) > self.limit() {
+                ItemViewError::LimitExceeded
+            } else {
+                ItemViewError::Exhausted
+            });
+        }
+        // A key that left this view and is in no other is dropped.
+        for slot in &self.views[index] {
+            let entry = &mut self.slots[*slot as usize];
+            if entry.views & NEXT != 0 {
                 continue;
             }
-            self.last += 1;
-            let handle = ItemHandle::new(self.last).ok_or(ItemViewError::Exhausted)?;
-            self.by_key.insert(*key, handle);
-            self.by_handle.insert(handle, *key);
+            entry.views &= !bit;
+            if entry.views == 0 {
+                self.by_key.remove(&entry.key);
+                self.by_handle.remove(&entry.handle);
+                self.free.push(*slot);
+                undo.removed.push(*slot);
+            }
         }
-        self.views[view as usize] = next;
-        Ok(())
+        for slot in &next {
+            let views = &mut self.slots[*slot as usize].views;
+            *views = *views & !NEXT | bit;
+        }
+        undo.previous = std::mem::replace(&mut self.views[index], next);
+        if self.by_key.len() > self.limit() {
+            self.rollback(undo);
+            return Err(ItemViewError::LimitExceeded);
+        }
+        Ok(undo)
     }
+
+    /// The live handles after `keys` became the content of view `index`.
+    fn live_after(&self, index: usize, keys: &[ItemKey]) -> usize {
+        let mut live: KeyMap<ItemKey, ()> = keys.iter().map(|key| (*key, ())).collect();
+        for (other, slots) in self.views.iter().enumerate() {
+            if other != index {
+                for slot in slots {
+                    live.insert(self.slots[*slot as usize].key, ());
+                }
+            }
+        }
+        live.len()
+    }
+
+    /// Frees the slots `issued` holds, newest last.
+    fn drop_issued(&mut self, issued: &[u32]) {
+        for slot in issued.iter().rev() {
+            let entry = &mut self.slots[*slot as usize];
+            entry.views = 0;
+            self.by_key.remove(&entry.key);
+            self.by_handle.remove(&entry.handle);
+            self.free.push(*slot);
+        }
+    }
+
+    /// Takes back the [`Self::replace_undoable`] that made `undo`, which must be the last change.
+    fn rollback(&mut self, undo: ReplaceUndo) {
+        let bit = 1 << undo.view;
+        for slot in &self.views[undo.view] {
+            self.slots[*slot as usize].views &= !bit;
+        }
+        // The dropped slots are the last freed and still hold their key and handle.
+        self.free.truncate(self.free.len() - undo.removed.len());
+        for slot in &undo.removed {
+            let entry = &self.slots[*slot as usize];
+            self.by_key.insert(entry.key, *slot);
+            self.by_handle.insert(entry.handle, *slot);
+        }
+        self.drop_issued(&undo.issued);
+        for slot in &undo.previous {
+            self.slots[*slot as usize].views |= bit;
+        }
+        self.views[undo.view] = undo.previous;
+        self.last = undo.last;
+    }
+}
+
+/// What taking back one `replace` needs.
+struct ReplaceUndo {
+    view: usize,
+    last: u64,
+    previous: Vec<u32>,
+    removed: Vec<u32>,
+    issued: Vec<u32>,
 }
 
 /// One domain of a snapshot: id, revision, snapshot type and payload.
@@ -376,11 +559,8 @@ impl SessionItemView {
         keys: &[ItemKey],
         encode: impl FnOnce(&ItemHandleTable) -> Result<T, ItemViewError>,
     ) -> Result<T, ItemViewError> {
-        let mut next = self.table.clone();
-        next.replace(View::Map, keys)?;
-        let encoded = encode(&next)?;
-        self.table = next;
-        Ok(encoded)
+        let undo = self.table.replace_undoable(View::Map, keys)?;
+        encode(&self.table).inspect_err(|_| self.table.rollback(undo))
     }
 
     /// The domain 14 snapshot of a new connection: no view open, above any revision the session
@@ -403,10 +583,7 @@ impl SessionItemView {
         keys: &[ItemKey],
         encode: impl FnOnce(&ItemHandleTable) -> Result<Vec<u8>, ItemViewError>,
     ) -> Result<ItemViewDelta, ItemViewError> {
-        let previous = self.table.views[View::Tree as usize]
-            .iter()
-            .copied()
-            .collect::<Vec<_>>();
+        let previous = self.table.keys_of(View::Tree);
         self.table.replace(View::Tree, keys)?;
         let payload = match encode(&self.table) {
             Ok(payload) => payload,
@@ -620,10 +797,7 @@ impl SessionItemView {
             .chain(&inventory.entries)
             .map(|item| item.key)
             .collect();
-        let previous = self.table.views[View::Inventory as usize]
-            .iter()
-            .copied()
-            .collect::<Vec<_>>();
+        let previous = self.table.keys_of(View::Inventory);
         self.table.replace(View::Inventory, &keys)?;
         let entry = |item: &ViewItem| self.entry(item);
         let view = CharacterInventory {
@@ -658,10 +832,7 @@ impl SessionItemView {
             .map(|open| open.key)
             .chain(entries.iter().map(|item| item.key))
             .collect();
-        let previous = self.table.views[View::Container as usize]
-            .iter()
-            .copied()
-            .collect::<Vec<_>>();
+        let previous = self.table.keys_of(View::Container);
         self.table.replace(View::Container, &keys)?;
         let view = OpenContainer {
             container_handle: open.and_then(|open| self.table.handle(&open.key)),

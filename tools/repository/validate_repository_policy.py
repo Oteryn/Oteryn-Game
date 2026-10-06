@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import hashlib
+import contextlib
 import importlib.util
+import io
 import json
+import os
 import re
 import secrets
 import subprocess
@@ -16,6 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = Path(__file__).with_name("validate_repository_policy_core.py")
 PR_GATE_CONTRACT_PATH = Path(__file__).with_name("validate_pr_gate_pg_sim.py")
+ERROR_REGISTRY_PATH = ROOT / "tools/errors/registry.py"
 MERGE_AUTHORITY_AUDIT = ROOT / ".github/workflows/merge-authority-audit.yml"
 PR_METADATA_WORKFLOWS = (
     (
@@ -38,6 +42,15 @@ PR_METADATA_SOURCE_SHA256 = {
         "4603ace39aaadbb979da4add881d01d5cc9cd962dd1db0005819af55e7e72206"
     ),
 }
+
+
+def report_failure(code: str, name: str, errors: list[str], stream) -> None:
+    """Print each failure as `E8xxx NAME: message` (+ a GitHub Actions annotation)."""
+    for error in errors:
+        print(f"{code} {name}: {error}", file=stream)
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            escaped = error.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+            print(f"::error title={code} {name}::{escaped}", file=stream)
 
 
 def load_module(path: Path, name: str):
@@ -831,16 +844,40 @@ def validate_pr_gate_contract() -> list[str]:
     return module.validate()
 
 
+def validate_error_code_registry() -> list[str]:
+    module = load_module(ERROR_REGISTRY_PATH, "error_code_registry")
+    return module.validate(ROOT)
+
+
 def main() -> int:
     errors = validate_protected_base_audit()
     errors.extend(validate_pr_metadata_advisory_contract())
     errors.extend(validate_pr_gate_contract())
+    errors.extend(validate_error_code_registry())
     if errors:
         print("Repository policy validation failed:")
-        for error in errors:
-            print(f"- {error}")
+        report_failure("E8002", "REPOSITORY_POLICY_CHECK_FAILED", errors, sys.stdout)
         return 1
-    return load_core().main()
+    return run_core(load_core().main)
+
+
+def run_core(core_main) -> int:
+    """Run the pinned core and recode its `- message` failure lines."""
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        status = core_main()
+    sys.stdout.write(out.getvalue())
+    if status == 0:
+        sys.stderr.write(err.getvalue())
+        return status
+    messages = []
+    for line in err.getvalue().splitlines():
+        if line.startswith("- "):
+            messages.append(line[2:])
+        else:
+            print(line, file=sys.stderr)
+    report_failure("E8002", "REPOSITORY_POLICY_CHECK_FAILED", messages, sys.stderr)
+    return status
 
 
 if __name__ == "__main__":

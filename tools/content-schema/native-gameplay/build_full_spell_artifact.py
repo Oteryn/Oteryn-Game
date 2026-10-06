@@ -26,7 +26,7 @@ LIMITS = {'catalog': 32 * 1024**2, 'source_selection': 256 * 1024,
           'item_profiles': 8 * 1024**2, 'spell_appearances': 8 * 1024**2,
           'build_training': 8 * 1024**2, 'familiar_config': 4096,
           'familiar_defenses': 32 * 1024, 'wheel_profile': 64 * 1024,
-          'source_world': 8 * 1024**2}
+          'source_world': 8 * 1024**2, 'progression': 256 * 1024}
 
 
 def digest(raw: bytes) -> str:
@@ -353,7 +353,8 @@ def build(args) -> dict:
     providers = {'item_profiles': args.items, 'spell_appearances': args.appearances,
                  'build_training': args.training, 'familiar_config': args.familiar_config,
                  'familiar_defenses': args.familiar_defenses, 'wheel_profile': args.wheel,
-                 'source_world': args.source_world}
+                 'source_world': args.source_world,
+                 'progression': getattr(args, 'progression', None)}
     for key, path in providers.items():
         if path:
             raw, _ = read(path)
@@ -455,6 +456,8 @@ def main():
     parser.add_argument('--familiar-defenses', type=Path, default=NATIVE / 'familiar-defenses.json')
     parser.add_argument('--wheel', type=Path, default=NATIVE / 'wheel-profile.json')
     parser.add_argument('--source-world', type=Path)
+    parser.add_argument('--progression', type=Path,
+                        help='canonical progression section (build_progression.py --section-out); selects OTNGP06')
     parser.add_argument('--native-map-profile', choices=('accepted-entry-r1', 'source-qualified-spell-entry-r2'), default='accepted-entry-r1')
     args = parser.parse_args()
     if args.source_world and args.native_map_profile != 'accepted-entry-r1':

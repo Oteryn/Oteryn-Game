@@ -281,7 +281,9 @@ validation:
     canonical key;
   - the fixture World still serves domain 2, accepts canonical bytes, and does not serve domain 17;
   - the composition plus encode of an 18x14 viewport over 8 floors is measured against
-    `MAP01-VIEWPORT-US`. The p99 is recorded, and a breach blocks the offer gate.
+    `MAP01-VIEWPORT-US`. The p99 is recorded, and a breach blocks the offer gate. (Amended by
+    `ARCH-MAP-VIEWPORT-BUDGET-V1`: the whole snapshot is gated by `MAP01-VIEWPORT-SNAPSHOT-US`;
+    `MAP01-VIEWPORT-US` stays the assembly budget.)
 - **Not in scope:** offering capability 18 on a live node (MAP-CUTOVER-1), the client
   (MAP-CLIENT-1), the base-entry pickup (MAP-PICKUP-1), the ground-speed switch, houses, light and
   minimap.
