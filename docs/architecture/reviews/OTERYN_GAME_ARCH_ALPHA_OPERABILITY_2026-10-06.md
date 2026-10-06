@@ -9,10 +9,10 @@
   (`CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md`) that needs control-plane and Platform review.
   It is a proposed architecture decision and grants no runtime authority; each packet carries
   its own review.
-  The owner ruled on every item of §5.2 on 2026-10-06 and the rulings are recorded there and
-  in each section's owner questions: every item **a**, except §3 Q2 **b** for the testing phase
-  only, which is decided again before external players are admitted (§3 ruling 8). The body
-  follows these rulings.
+  The owner ruled on every first-round item of §5.2 on 2026-10-06 and the rulings are recorded
+  there and in each section's owner questions: every item **a**, except §3 Q2 **b** for the
+  testing phase only, which is decided again before external players are admitted (§3 ruling 8).
+  The body follows these rulings. §3 Q4 (review round 2) is PROPOSED **a** until the owner rules.
 - Origin: owner request (2026-10-06): review what exists and decide what still has to be fixed
   architecturally, because the owner had to point out errors by hand.
 - Owning contracts: `docs/architecture/reviews/OTERYN_GAME_ARCH_ERROR_CODES_2026-10-05.md`
@@ -55,7 +55,9 @@
     fencing never compares cross-host time (§2 ruling 7).
 13. The current build hosts one channel per node and at most 256 connections; capacity is
     measured by the harness load mode on a 4 vCPU reference, at least 3 repeats, and recorded
-    as `PERF01-PLAYERS-PER-CHANNEL` (§2 rulings 9–11). D128's 500 is a target.
+    as `PERF01-PLAYERS-PER-CHANNEL` = highest passing N / 1.3. The World limit is measured by its
+    own multi-Channel run, never multiplied, and equals the Channel value until then (§2 rulings
+    9–11). D128's 500 is a target.
 14. iai-callgrind benches run as a job selected by the `oteryn-game-server` dependency closure; it
     reports first and becomes required after PERF-CI-1 sets the threshold (§2 ruling 12, owner
     ruling §2 Q2 a). A measured capacity below 500 is accepted for alpha and the gap is logged.
@@ -66,14 +68,18 @@
 17. Durable rows reference content only by `{family, key, revision}`; a referenced definition is
     never removed without a DUR-04 §12 policy (§3 ruling 5).
 18. pgBackRest with continuous WAL, weekly full, daily differential and a named pre-migration
-    backup; encrypted, off the DB host (§3 ruling 7).
+    backup; encrypted, off the DB host. A `pgbackrest check` probe every 120 s alerts when the
+    last proven archive is older than 300 s; the 5 min RPO holds only while it is clear (§3
+    ruling 7).
 19. The restore fence directory holds every value a restore must not roll back: Character
     recovery fence, LCFA F, `assignment_epoch` high-water and the erasure journal (§3 ruling 8).
     In the testing phase it is a separate NAS volume only (owner ruling §3 Q2 b); its location is
     decided again before external players are admitted. Recovery targets: RPO 5 min, RTO 4 h,
     14-day backup retention, a monthly drill (owner ruling §3 Q1 a).
 20. `oteryn-game-ops restore` runs the twelve steps of §3 ruling 9 in order, re-entrant, with a
-    35 s admission gate; clients log in fresh.
+    35 s admission gate; clients log in fresh. It runs the retained release whose migration set
+    matches the restored ledger, and bridges the Character fence across every recovery generation
+    the restore went back over, from retained fence records.
 21. After a Game restore Platform re-requests by operation identity; Game never writes back
     (§3 ruling 10). Progress after T is lost and never replayed (§3 ruling 11).
 22. The client build id is `oteryn-client/<semver>+<sha12>`; a node may set
@@ -467,8 +473,12 @@ Capacity and performance
 9. **Players per Channel is measured, not chosen.** In the current build a node holds one
    `world_id` and one `channel_id` and accepts at most 256 connections (F19, F20). So per node
    equals per Channel until multi-channel hosting is built: `max_players_per_game_node` equals
-   `max_players_per_channel`, and `max_players_per_world` is that value times the number of
-   Channels. ADR-0009 §2 and ADR-0015 still allow several Channels per GameNode (F21). When a
+   `max_players_per_channel`. `max_players_per_world` is never derived by multiplying the
+   per-Channel value: the Channels of one World share PostgreSQL, its I/O and the world services,
+   which a one-Channel run does not load (ADR-0009 §5–6). It is measured by its own world run
+   (PERF-WORLD-1, ruling 10). Until that run passes, the registered World limit equals the accepted
+   per-Channel value, so a second Channel in a World adds no claimed capacity.
+   ADR-0009 §2 and ADR-0015 still allow several Channels per GameNode (F21). When a
    build hosts more than one, the three ADR-0009 §6 limits are measured separately by PERF-01. This
    ruling does not amend either ADR. Until a value is measured, the alpha ceiling is the registered
    256 connections (F19). D128's 500 per Channel is the target that the measurement is checked
@@ -482,9 +492,20 @@ Capacity and performance
     - command, commit, machine and seeds;
     - p50/p95/p99 owner service time and queue age;
     - CPU per core from `schedstat`;
-    - the first violated objective and the breaking N.
-11. **How a measured value is accepted.** The accepted `max_players_per_channel` is the breaking
-    N divided by 1.3, rounded down (ADR-0009 §6 headroom). It becomes a RESOURCE_LIMITS_REGISTRY
+    - every step's N and result, the highest passing N (passing in every repeat), the first
+      violated objective and the first failing N.
+    The world run (PERF-WORLD-1) uses the same harness and rules with C Channels of one World,
+    each on its own node, sharing one PostgreSQL and the world services, with C at least 2 and at
+    least the Channel count planned per alpha World. The total N rises in steps, spread evenly
+    over the Channels. It records the same values per Channel, plus PostgreSQL transaction p99,
+    pool wait and I/O. A World passes a step only if every Channel and the shared database meet
+    their objectives.
+11. **How a measured value is accepted.** The accepted `max_players_per_channel` is the highest
+    passing N divided by 1.3, rounded down (ADR-0009 §6 headroom). The first failing N is never
+    the base: a value between the highest pass and the first failure was not demonstrated. If the
+    gap between them is wide, the run may add steps in between; only a step that passes counts.
+    `max_players_per_world` is accepted the same way from the world run's highest passing total.
+    Each becomes a RESOURCE_LIMITS_REGISTRY
     row whose notes cite the evidence file. The row ships in a PR that passes the normal
     independent review. Owner ruling 2026-10-06 (owner question 1, option a): a measured value
     below D128's 500 is accepted for alpha, and the gap to 500 is logged in gap register §25. A
@@ -531,12 +552,14 @@ Capacity and performance
 - A2. `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`. Add a row `WORLDINT0-RL-19`: unit
   `milliseconds`, `hard_maximum` 1000, failure category per the registry vocabulary, notes
   "CANDIDATE with WORLD-INTERACTION-0; alarm only". Add `PERF01-PLAYERS-PER-CHANNEL` only from
-  PERF-ALPHA-1 evidence (ruling 11).
+  PERF-ALPHA-1 evidence, and `PERF01-PLAYERS-PER-WORLD` equal to it until PERF-WORLD-1 evidence
+  replaces it (rulings 9 and 11).
 - A3. Node deployment runbook (the OPS-NODE-BOOT-01 operator section). Add: "Run a host time
   daemon (chrony recommended) on every GameNode and database host. The node alarms above
   `WORLDINT0-RL-19`."
 - A4. ARCHITECTURE_ANALYSIS_GAP_REGISTER.md §25. Mark tick/scheduling as decided (ruling 1).
-  Mark capacity method and CI gate as decided, with values pending PERF-ALPHA-1 and PERF-CI-1.
+  Mark capacity method and CI gate as decided, with values pending PERF-ALPHA-1, PERF-WORLD-1
+  and PERF-CI-1.
 
 ### Packets
 
@@ -565,9 +588,20 @@ Capacity and performance
   `foundation/owner_timer.rs`, `ai_think.rs`, a file under each dependency crate, `Cargo.lock`
   and `vendor/`, and for an incomplete enumeration; it skips the job for a change confined to
   `docs/` or `apps/client/`. Dependency review covers the new dev-dependency. Depends on nothing.
-- **PERF-ACCEPT-1.** Writes `PERF01-PLAYERS-PER-CHANNEL` from the PERF-ALPHA-1 evidence, then
-  applies A4 and, if the value is below 500, logs the gap in §25 (owner ruling 1a). Owned:
-  `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`, the gap register. Depends on PERF-ALPHA-1.
+- **PERF-ACCEPT-1.** Writes `PERF01-PLAYERS-PER-CHANNEL` from the PERF-ALPHA-1 evidence as the
+  highest passing N divided by 1.3 (ruling 11), and `PERF01-PLAYERS-PER-WORLD` equal to it
+  (ruling 9), then applies A4 and, if the value is below 500, logs the gap in §25 (owner
+  ruling 1a). Owned: `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`, the gap register. Tests: the
+  registry validator; a check that the row equals floor(highest passing N / 1.3) of the evidence
+  file and never exceeds its highest passing N. Depends on PERF-ALPHA-1.
+- **PERF-WORLD-1.** The world run of ruling 10 and the measured `PERF01-PLAYERS-PER-WORLD` row
+  (floor of the highest passing total / 1.3, ruling 11), which replaces the PERF-ACCEPT-1 value.
+  Owned: `tools/synthetic-client-harness/src/load/world.rs` (new),
+  `docs/agents/evidence/PERF-WORLD-1-capacity.md` (new),
+  `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` (that row only). Tests: a 2-Channel, 2-client
+  smoke test in CI against two nodes and one PostgreSQL; a step fails when either Channel or the
+  shared database misses an objective; the full ramp runs on the reference class only. Depends
+  on PERF-ACCEPT-1.
 
 ### Owner questions
 
@@ -669,12 +703,13 @@ Platform-held state
 5. **Persisted content references.** Durable rows refer to content only by `{family, key, revision}` (F10). A compiled or legacy numeric id is never persisted. A release may not remove, rename or reinterpret a definition that live rows reference, unless the change carries a DUR-04 §12 class and, for `EXPLICIT_DATA_MIGRATION` or `REMOVED_WITH_EXPLICIT_POLICY`, an audited domain migration. A referenced registry row is never deleted (F14 pattern). The release gate checks this against a restored copy of real data (packet DATA-CONTENT-REF-5).
 6. **Content artifacts and receipts.** World bundles and reference artifacts are immutable and content-addressed. A changed input gets a successor receipt that names what it supersedes, as #1869 did (F13). A node logs its bundle digest and its ledger head on its boot line. `oteryn-game-ops diagnose` reports both.
 7. **Backups.** Use pgBackRest (upstream, not forked). Archive WAL continuously. Take a full backup weekly, a differential daily, and a named backup before every schema release. The repository is encrypted (`repo-cipher-type=aes-256-cbc`). Its key and credential are separate from the database credentials and never in the repository. It lives off the database host. HA replicas are not backups. Owner ruling 2026-10-06 (owner question 1, option a): RPO ≤ 5 min (`archive_timeout` ≤ 300 s), RTO ≤ 4 h, backup retention 14 days (`repo1-retention-full-type=time`, `repo1-retention-full=14`) and a restore drill each month (ruling 12). The drill measurement confirms the RTO.
+   **Archive health.** `archive_timeout` only forces segment switches; it does not prove that a segment reached the repository, and a failing archive keeps WAL locally while the recoverable point ages. So a probe run by the deploy supervisor every 120 s runs `pgbackrest check`, which writes a restore point, switches the segment and waits until that segment is in the repository. A pass at time t proves every commit before t is archived, also on an idle database. The probe writes `oteryn_wal_archive_check_last_success_timestamp_seconds` and `oteryn_wal_archive_check_last_run_timestamp_seconds` to a textfile that upstream `node_exporter` (textfile collector) serves to the NAS Prometheus (§1 ruling 10). Two alerts join `deploy/observability/oteryn-alerts.yml`: `OterynWalArchiveBehind` when `time() - oteryn_wal_archive_check_last_success_timestamp_seconds > 300`, and `OterynWalArchiveProbeMissing` when the run timestamp is absent or older than 300 s. The 5 min RPO holds only while both are clear; while either fires, the recoverable point is the last success, the owner is emailed, and no release with a migration starts (the deploy checks the probe before its named backup). PROPOSED (owner question 4, recommended a): fresh admission stays open during an archive alert in the testing phase.
 8. **The restore fence directory.** One directory, outside the database volume and outside every database backup, holds every value a restore must not roll back: the Character recovery fence (F19), the LCFA high-water F (F22), the `assignment_epoch` high-water (F23) and the erasure journal (step 7 of ruling 9; ARCH-LIVE-READINESS-0 §3 ruling 18). Each keeps its own contract semantics. Writes use write, sync, atomic rename and directory sync, as the Character fence does today. A missing or unreadable value is a refusal, never 0. Owner ruling 2026-10-06 (owner question 2, option b, with the owner's refinement): **for the testing phase only**, the directory lives on its own volume of the alpha NAS (the node host), with no off-host copy. If the NAS is lost, the fences and the erasure journal are lost with it. A restore after that loss needs an explicit, logged operator reseed in `oteryn-game-ops restore`: each fence is set by hand strictly above every value in the restored database and the newest surviving backup, and the run records that erasures after T cannot be re-applied. The reseed is refused unless the stack is marked testing-phase. This is acceptable only because testing-phase data belongs to no external player. **Re-decision gate:** before any external player is admitted, the owner decides again where the directory survives host loss (options a and c of owner question 2 stay open), and external admission stays closed until that ruling is recorded, deployed and drilled (ruling 12).
 9. **Restore runbook (normative order).** A restore is one operator procedure, `oteryn-game-ops restore` (packet DATA-RESTORE-OPS-2):
    1. Close admission on every channel. Stop every node, the LCFA publisher and the status reporter. Verify that no pre-restore process is alive.
-   2. Restore with pgBackRest to a named backup and a target time T (`--type=time`). Record the backup label and T.
-   3. Start the database with admission and mutation closed. Run the schema gate (F3). A mismatch stops the restore (`SchemaIncompatible`).
-   4. Advance the Character recovery fence by CAS (`begin_recovery`). Then run `reconcile_character_recovery`. Restored rows are history, not authority.
+   2. Restore with pgBackRest to a named backup and a target time T (`--type=time`). Record the backup label, its annotations and T.
+   3. Start the database with admission and mutation closed. Select the release that matches the restored schema, then run the schema gate (F3) with it. The ledger digest is SHA-256 over the ordered `(version, checksum)` pairs. Every server release records the digest of its embedded `migrate!` set, and every pgBackRest backup carries the running build id and its digest as annotations (`--annotation=oteryn-build=<build id>`, `--annotation=oteryn-ledger=<digest>`). The restore reads the restored `_sqlx_migrations` rows (version, checksum, success), computes their digest, and selects the retained release whose digest is equal. Steps 4–12 run with that release's `oteryn-game-ops` and node binaries, and their exact gate must pass. No matching retained release, an unsuccessful ledger row, or a T inside a migration (a partial ledger matches no release) stops the restore with a 6xxx code, and no node starts. The current binary never runs against an older ledger, and the restore never migrates. Moving the restored database forward to the current release is afterwards an ordinary release under ruling 3, with its named backup. This is what makes a restore to the named pre-migration backup (ruling 3) a working rollback. Release artifacts (server and ops binaries and the release record) are kept at least as long as any retained backup whose annotation names them (ruling 7). A release older than DATA-RESTORE-OPS-2 has no `restore` command, so a ledger that only such a release matches fails closed.
+   4. Advance the Character recovery fence by CAS (`begin_recovery`) from the external generation G to G+1. Then run `reconcile_character_recovery`. Restored rows are history, not authority. If T predates an earlier recovery, the restored admitted generation H is below G. Today reconcile accepts only H = G or H = G+1 (`durability/character_authority.rs:411-417`), and admission rows are contiguous (`migrations/0005_character_authority.sql:40`, `recovery_generation = predecessor_generation + 1`), so such a restore would conflict for ever. Therefore the fence register retains every record it supersedes: before it replaces the current record, `begin_recovery` writes that record write-once as `character-recovery-fence-v1.<generation>.record` in the fence directory (write, sync, atomic rename, directory sync; an existing file with other bytes is a conflict). Reconcile bridges H < G: it reads the retained records H+1 to G, checks that each one's `predecessor_digest` is the digest of the one before, starting from the database's admission row H (the `assert_predecessor_admission` check), and inserts H+1 to G and then G+1 in one transaction. A missing, unreadable or mismatched record refuses (`Conflict`); a generation is never skipped. No admission row, or H above G+1, stays a contradiction as the fence decision requires.
    5. Revoke every node registration that is CURRENT in the restored snapshot. New nodes register under fresh NodeIds. All launch and scope authorizations are issued again.
    6. Run the DUR-03 §41 validation and the DUR-02 rule 5 list. Any failure keeps the affected mutation closed until an audited repair.
    7. Re-apply the erasure journal (ARCH-LIVE-READINESS-0 §3 ruling 18). Every erasure recorded after T is applied again before any authority opens. The journal lives in the restore fence directory (ruling 8); a missing or unreadable journal is a refusal.
@@ -693,7 +728,7 @@ Platform-held state
 11. **Lost player progress.** Gameplay after T is lost. It is never re-executed. Any make-good uses audited idempotent domain transactions (F17). Direct database edits are forbidden.
 12. **Restore drills.** A drill restores a named backup into a separate preproduction stack. It runs the full ruling 9 procedure and the content check of ruling 5, and records timings. These timings are the measurement that fixes RTO. One drill must pass before external alpha. Owner ruling 2026-10-06 (owner question 1, option a): a drill runs each month and must finish within the 4 h RTO; a miss blocks the next schema release until a drill passes. Entry condition for external players: the ruling 8 re-decision is recorded, its store is deployed, and one drill has restored with it.
 
-Before-freeze checklist. Concurrent transitions: the migrator's advisory lock, the fence CAS and the epoch row lock serialize them. Restart/resume: rulings 3 and 9 are re-entrant per step. Typed cross-record refs: ruling 5. Older client/peer gating: ruling 2 (exact gate) and ruling 9.11 (fresh login). Multi-component commit and recovery: ruling 8 (fences outside the snapshot) and ruling 10 (idempotent re-request by operation identity).
+Before-freeze checklist. Concurrent transitions: the migrator's advisory lock, the fence CAS and the epoch row lock serialize them. Restart/resume: rulings 3 and 9 are re-entrant per step. Typed cross-record refs: ruling 5. Older client/peer gating: ruling 2 (exact gate), ruling 9.3 (a restore runs the retained release whose migration set matches the restored ledger) and ruling 9.11 (fresh login). Multi-component commit and recovery: ruling 8 (fences outside the snapshot), ruling 9.4 (the fence chain is bridged from retained records, never skipped) and ruling 10 (idempotent re-request by operation identity).
 
 ### Contract amendments
 
@@ -713,9 +748,9 @@ A4. A proposal to Platform, routed by the control plane, not a Game file edit. W
 ### Packets
 
 - **DATA-MIGRATION-GUARD-1.** A CI check that a merged migration file is never changed or deleted, and that every new version is greater than the highest version on `origin/main`. Owned paths: new `tools/repository/check_migration_ledger.py` and its test; a wiring line in the governance/CI workflow that runs repository checks. Tests: changed file fails; deleted file fails; a new 0078 fails; a new 0080 passes. Dependencies: none. P0-adjacent because of F6.
-- **DATA-RESTORE-OPS-2.** `oteryn-game-ops restore`, steps 3–10 of ruling 9: the fence CAS and reconcile, the erasure journal re-apply, revocation of CURRENT registrations, the LCFA raise against F, the `assignment_epoch` raise, the 35 s admission gate, per-step resume, and registered codes. Owned paths: `apps/game-server/src/bin/oteryn-game-ops.rs`, `apps/game-server/src/character_recovery_fence.rs`, new `apps/game-server/src/restore_fence.rs`, `docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json` (new codes only). Tests: crash after each step and resume; second run advances nothing; F above the computed epoch refuses; a stale NodeId is refused after restore; early admission open is refused; the manual fence reseed (ruling 8) sets every fence above the restored and backup values and is refused on a stack not marked testing-phase. Dependencies: A1, A2; ERR-REGISTRY-0.
-- **DATA-BACKUP-PITR-3.** pgBackRest configuration for the test and preproduction stack per ruling 7 (`archive_timeout` 300 s, 14-day retention), an encrypted repository, WAL archiving and the restore fence directory on its own NAS volume (testing phase, ruling 8). It also reorders the deploy for a release with a migration to stop, named backup, migrate, start (ruling 3; F30). Owned paths: `deploy/synology-game/` and `.github/workflows/synology-game-deploy.yml` once PR #1874 merges; if it does not merge, the control plane names the path (`main` has no deploy directory; `git ls-files` shows only `tools/qualification/wp5_s3a/compose.yml`). Tests: a timed restore of a named backup to T in CI with Postgres; a check that the fence directory is absent from the backup; a check that the configured `archive_timeout` and retention match ruling 7. Dependencies: none (owner questions 1 and 2 are ruled).
-- **DATA-RESTORE-DRILL-4.** An automated drill that restores into a separate stack and runs `oteryn-game-ops restore`. It moves the database snapshot and the fence directory independently: DB older, fence newer, fence missing, fence equivocating. It records RTO timings. Owned paths: new drill script and test under `apps/game-server/tests/`; the runbook `docs/operations/` (new). Dependencies: 2, 3.
+- **DATA-RESTORE-OPS-2.** `oteryn-game-ops restore`, steps 3–10 of ruling 9: the ledger digest (also printed by `oteryn-game-ops schema-digest`) and the release selection, the fence CAS, the retained fence records and the multi-generation reconcile bridge, the erasure journal re-apply, revocation of CURRENT registrations, the LCFA raise against F, the `assignment_epoch` raise, the 35 s admission gate, per-step resume, and registered codes. Owned paths: `apps/game-server/src/bin/oteryn-game-ops.rs`, `apps/game-server/src/character_recovery_fence.rs`, `apps/game-server/src/durability/character_authority.rs` (reconcile only), `apps/game-server/src/durability/schema.rs` (digest only), new `apps/game-server/src/restore_fence.rs`, `docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json` (new codes only). Tests: crash after each step and resume; recoveries to generations 2 and 3, then PITR to a T before the first, so the database is at 1 and the fence at 3: the restore advances to 4 and bridges 2, 3 and 4; a missing, altered or reordered retained record refuses; a PITR to a T before a migration selects the previous release and passes its gate, a T after it selects the current release, and a ledger that no retained release matches (including a partial one) refuses and starts no node; second run advances nothing; F above the computed epoch refuses; a stale NodeId is refused after restore; early admission open is refused; the manual fence reseed (ruling 8) sets every fence above the restored and backup values and is refused on a stack not marked testing-phase. Dependencies: A1, A2; ERR-REGISTRY-0.
+- **DATA-BACKUP-PITR-3.** pgBackRest configuration for the test and preproduction stack per ruling 7 (`archive_timeout` 300 s, 14-day retention), an encrypted repository, WAL archiving and the restore fence directory on its own NAS volume (testing phase, ruling 8). It also reorders the deploy for a release with a migration to stop, named backup, migrate, start (ruling 3; F30). Owned paths: `deploy/synology-game/` and `.github/workflows/synology-game-deploy.yml` once PR #1874 merges; if it does not merge, the control plane names the path (`main` has no deploy directory; `git ls-files` shows only `tools/qualification/wp5_s3a/compose.yml`). It adds the backup annotations and the retained release index of ruling 9 step 3 (`releases/<build id>/` on the NAS with the binaries and a `release.json` holding the build id and ledger digest), and the archive probe, the `node_exporter` textfile collector and the two archive alerts of ruling 7 (written to `deploy/observability/oteryn-alerts.yml` after OBS-DEPLOY-4, one writer at a time). Tests: a timed restore of a named backup to T in CI with Postgres; a check that the fence directory is absent from the backup; a check that the configured `archive_timeout` and retention match ruling 7; every backup carries both annotations; a `promtool test rules` case where the repository becomes unreachable (bad credential, then no network) and `OterynWalArchiveBehind` fires within 300 s, one where the probe stops and `OterynWalArchiveProbeMissing` fires, and one where an idle healthy database fires neither; a release with a migration refuses to start while either alert fires. Dependencies: OBS-DEPLOY-4 for the alert file (owner questions 1 and 2 are ruled).
+- **DATA-RESTORE-DRILL-4.** An automated drill that restores into a separate stack and runs `oteryn-game-ops restore`. It moves the database snapshot and the fence directory independently: DB older, DB older by two recovery generations, fence newer, fence missing, fence equivocating, and a T before the latest migration. It records RTO timings. Owned paths: new drill script and test under `apps/game-server/tests/`; the runbook `docs/operations/` (new). Dependencies: 2, 3.
 - **DATA-CONTENT-REF-5.** A release-gate check run on the drill database. It lists every distinct `{family, key, revision}` that live rows reference and fails if the new bundle does not resolve one without an alias or a DUR-04 §12 policy entry. Owned paths: new check module under `apps/game-server/src/content/` and its test. Dependencies: 4.
 - **PLATFORM-RESTORE-RECONCILE-P1 (proposal).** The A3 and A4 texts, sent to Platform by the control plane. No Game work until Platform accepts.
 
@@ -733,6 +768,10 @@ A4. A proposal to Platform, routed by the control plane, not a Game file edit. W
    a) Stop-the-world only for releases with a migration; rolling per channel otherwise. b) Always stop-the-world. c) Build an N/N-1 schema gate now.
    Recommendation: a.
    **Owner ruling 2026-10-06: a.** Ruling 3 follows it.
+4. Admission while the WAL archive alert fires (ruling 7; added in review round 2, not yet ruled).
+   a) Alert the owner and block releases with a migration; fresh admission stays open in the testing phase, and the choice is decided again with ruling 8 before external players. b) Also close fresh admission on every channel until the probe passes again.
+   Recommendation: a. Testing-phase data belongs to no external player, and closing admission turns a backup fault into an outage.
+   **PROPOSED: a**, pending the owner's ruling. Ruling 7 follows the proposal until then.
 
 ### Rejected options
 
@@ -1113,9 +1152,10 @@ Classes: PROVEN (read in the file), DERIVED (follows from PROVEN facts), UNKNOWN
 
 ### 5.2 Owner items
 
-The owner ruled on every item on 2026-10-06. Every item is ruled **a**, except §3 Q2, which is
+The owner ruled on every item of the first round on 2026-10-06. Every item is ruled **a**, except §3 Q2, which is
 ruled **b** with an owner refinement: the fence directory on the NAS is used only for the testing
 phase, and the choice is decided again before external players are admitted (§3 ruling 8, U7).
+§3 Q4 was added in review round 2 and is PROPOSED **a** until the owner rules.
 
 | Item | Question | Options | Recommendation | Owner ruling 2026-10-06 |
 |---|---|---|---|---|
@@ -1126,6 +1166,7 @@ phase, and the choice is decided again before external players are admitted (§3
 | §3 Q1 | Recovery targets | a RPO 5 min, RTO 4 h, 14 days, monthly drill; b 1 min/1 h/30 days/weekly; c nightly dump | a | a |
 | §3 Q2 | Where the restore fence directory survives host loss | a separate volume plus write-once off-host copy; b host only; c CAS service | a | b, testing phase only; decided again before external players |
 | §3 Q3 | Alpha deploy model | a stop-the-world only with a migration; b always; c N/N-1 gate now | a | a |
+| §3 Q4 | Admission while the WAL archive alert fires (review round 2) | a alert and block migrations, admission open in testing; b also close admission | a | not yet ruled; PROPOSED a |
 | §4 Q1 | Client hosting | a GitHub Releases; b Platform page; c CDN (spend) | a | a |
 | §4 Q2 | Windows code signing | a none for closed alpha; b buy now (spend) | a | a |
 | §4 Q3 | Release key custody | a owner holds offline keys, signs locally; b CI secret | a | a |
