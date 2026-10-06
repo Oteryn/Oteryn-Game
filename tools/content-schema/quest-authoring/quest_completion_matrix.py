@@ -45,48 +45,60 @@ def load_definitions(root: Path):
 
 
 def definition_titles(definition):
-    titles = set()
+    """Return direct canonical titles and aggregate covered titles separately."""
+    direct = set()
+    covered = set()
     if definition.get("display_name"):
-        titles.add(definition["display_name"])
+        direct.add(definition["display_name"])
     wiki = definition.get("wiki")
     if isinstance(wiki, dict) and wiki.get("title"):
-        titles.add(wiki["title"])
+        direct.add(wiki["title"])
     supplement = definition.get("oteryn_recipe")
     if isinstance(supplement, dict):
         payload = supplement.get("payload") or {}
         recipe = payload.get("recipe") or {}
         if recipe.get("wiki_title"):
-            titles.add(recipe["wiki_title"])
-        titles.update(payload.get("covered_wiki_titles") or [])
-    return titles
+            direct.add(recipe["wiki_title"])
+        covered.update(payload.get("covered_wiki_titles") or [])
+    return direct, covered
 
 
 def map_titles(catalogue, definitions):
     by_key = {d["identity"]["key"]: d for d in definitions}
-    mapped = defaultdict(list)
+    direct = defaultdict(list)
+    covered = defaultdict(list)
 
-    def add(title, definition):
-        if definition not in mapped[title]:
-            mapped[title].append(definition)
+    def add(table, title, definition):
+        if definition not in table[title]:
+            table[title].append(definition)
 
     for definition in definitions:
-        for title in definition_titles(definition):
-            add(title, definition)
+        direct_titles, covered_titles = definition_titles(definition)
+        for title in direct_titles:
+            add(direct, title, definition)
+        for title in covered_titles:
+            add(covered, title, definition)
 
     for row in catalogue:
         title = row["wiki_title"]
         for candidate in row.get("authored_candidates") or []:
             key = source_to_canonical(candidate["identity"]["key"])
             if key in by_key:
-                add(title, by_key[key])
+                add(covered, title, by_key[key])
         family = row.get("family_representation")
         if family and family.get("target_key"):
             key = source_to_canonical(family["target_key"])
             if key in by_key:
-                add(title, by_key[key])
+                add(covered, title, by_key[key])
 
-    return mapped
-
+    return {
+        row["wiki_title"]: (
+            direct[row["wiki_title"]]
+            if direct[row["wiki_title"]]
+            else covered[row["wiki_title"]]
+        )
+        for row in catalogue
+    }
 
 def donor_mode(coverage):
     states = [coverage["canary"], coverage["crystalserver"]]
@@ -126,7 +138,7 @@ def states(definitions, mapping_state, candidate_states, held_keys):
     progress_states = {candidate_states.get(key, "NO_CANDIDATE") for key in keys}
     if mapping_state == "MULTIPLE":
         implementation = "MAPPING_REVIEW"
-    elif progress_states & {"CHOSEN_TYPED_PROGRESS_ONLY", "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY", "LOWERED"}:
+    elif progress_states & {"CHOSEN_TYPED_PROGRESS_ONLY", "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY", "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY", "LOWERED"}:
         implementation = "NATIVE_BINDINGS_PENDING"
     elif progress_states & {"NOT_LOWERED_MULTI_TRACK", "NOT_LOWERED_NO_MISSIONS"}:
         implementation = "NATIVE_LOWERING_PENDING"

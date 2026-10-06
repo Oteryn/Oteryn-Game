@@ -1,4 +1,4 @@
-"""Offline identity associations for 139 chosen-source Quest recipes. No runtime admission."""
+"""Offline identity associations for qualified chosen-source Quest recipes. No runtime admission."""
 import argparse,collections,hashlib,json,re,subprocess,unicodedata
 from pathlib import Path
 PIN="ad7a08f96caa4e7bd0e7fa90c67b39229d637277"
@@ -66,7 +66,8 @@ def current_defs(root):
 def build(repo_root,epoch_root,world_path):
  e=Epoch(epoch_root);root=Path(repo_root)
  cand=json.loads((root/CANDIDATE).read_text(encoding="utf-8"))
- chosen={q["quest"] for q in cand["quests"] if isinstance(q["completion"],dict) and q["completion"].get("state")=="CHOSEN_SOURCE_TYPED_PROGRESS_ONLY"};assert len(chosen)==139
+ chosen_states={"CHOSEN_SOURCE_TYPED_PROGRESS_ONLY","SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY"}
+ chosen={q["quest"] for q in cand["quests"] if isinstance(q["completion"],dict) and q["completion"].get("state") in chosen_states};assert len(chosen)==227
  table=collections.defaultdict(list);outcomes=collections.defaultdict(list)
  def add(family,name,identity,ev,record,basis="canonical_named_record"):
   if not name:return
@@ -147,6 +148,6 @@ def build(repo_root,epoch_root,world_path):
  for r in records:
   for s in r["stages"]:counter["stages"]+=1;counter["non_dialogue_stages"]+=s["kind"]!="talk";counter["exact_stage_target_refs"]+=sum(t["status"]=="EXACT_CANONICAL_IDENTITY_ASSOCIATION" for t in s["targets"]);counter["encounter_outcome_seams"]+=sum(x.get("status")=="EXISTING_DECLARED_ENCOUNTER_OUTCOME" for x in s["consumer_seams"])
   for reward in r["reward_intents"]:counter["reward_intents"]+=1;counter["exact_reward_refs"]+=reward["mapping"]["status"]=="EXACT_CANONICAL_IDENTITY_ASSOCIATION";counter["explicit_non_identity_reward_intents"]+=reward["mapping"]["status"] in ("EXPLICIT_NO_DELIVERY_INTENT","EXPLICIT_AUTHORED_EXPERIENCE_AMOUNT")
- return {"schema":"OTERYN_CHOSEN_SOURCE139_EVENT_REWARD_ASSOCIATIONS/v1","epoch":e.pin,"runtime_admitted":False,"basis":"CHOSEN_OTERYN_APPROXIMATION","limits":["Exact canonical name-to-identity association does not prove Source quest ownership, placement or execution.","Chosen-source recipes remain approximations; original source holds are preserved.","Talk identity rows remain owned by the dialogue lane.","No fuzzy names, donor numeric IDs or implicit addon grants."],"input_refs":{"completion_candidate":CANDIDATE,"qualified_world_sha256":sha(wb)},"canonical_inputs":e.inputs,"counts":{"quests":len(records),**counter},"records":records}
+ return {"schema":"OTERYN_CHOSEN_SOURCE_EVENT_REWARD_ASSOCIATIONS/v2","epoch":e.pin,"runtime_admitted":False,"basis":"CHOSEN_OTERYN_APPROXIMATION","limits":["Exact canonical name-to-identity association does not prove Source quest ownership, placement or execution.","Chosen-source recipes remain approximations; original source holds are preserved.","Talk identity rows remain owned by the dialogue lane.","No fuzzy names, donor numeric IDs or implicit addon grants."],"input_refs":{"completion_candidate":CANDIDATE,"qualified_world_sha256":sha(wb)},"canonical_inputs":e.inputs,"counts":{"quests":len(records),**counter},"records":records}
 if __name__=="__main__":
  p=argparse.ArgumentParser();p.add_argument("--repo-root",required=True);p.add_argument("--epoch-root",required=True);p.add_argument("--qualified-world",required=True);p.add_argument("--out",required=True);a=p.parse_args();packet=build(a.repo_root,a.epoch_root,a.qualified_world);Path(a.out).write_bytes((json.dumps(packet,indent=2,ensure_ascii=False)+"\n").encode("utf-8"));print(json.dumps(packet["counts"],sort_keys=True))
