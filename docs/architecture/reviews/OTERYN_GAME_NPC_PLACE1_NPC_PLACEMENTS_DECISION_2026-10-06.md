@@ -40,8 +40,11 @@
    only a map-owner record resolves it (§4.3).
 8. **Travel.** Destinations are already in the project frame. The compiler fails on one outside
    the World and holds one on a cell that cannot take a character or is a house tile; a
-   production build stops on any held destination. Routes are not bundle bytes; the record keys
-   of held routes are (manifest `npcs.routes_held`), and NPC-TRAVEL-1 refuses those (§6).
+   production build stops on any held destination, including one on a written NPC placement.
+   Routes are not bundle bytes; the (Service key, route key) pairs of held routes are (manifest
+   `npcs.routes_held`), and NPC-TRAVEL-1 refuses those (§6). The bundle binds the catalogue it
+   classified by `npcs.catalogue_sha256`, and the runtime compares that digest, not a project
+   revision (§3.1).
 9. **CI.** The compiler now reads `content/npcs/definitions/` and `content/services/travel/`:
    both are added to the compiler input paths and to the classifier's world-bundle prefixes (§7).
 
@@ -135,11 +138,23 @@ Ruling: **a separate NPC frame** with an NPC-keyed table.
   of the file, `compressed_length` u32 (non-zero), `raw_length` u32, SHA-256 of the frame.
 - The NPC frame is one canonical zstd frame (format §5), the last frame, and ends at the digest.
   A bundle without NPCs still has the row and a frame of the empty table.
-- The manifest gains the required member `npcs`: `{npcs, placements, held, routes_held}`. `npcs`
-  and `placements` are the counts of the NPC table and its placements; the frame must hold
-  exactly these. `held` is the record keys of the placements the compiler held (§5) and
-  `routes_held` the record keys of the travel routes whose destination it held (§6), each sorted
-  and unique, like `draft_areas`; both are empty in a production bundle.
+- The manifest gains the required member `npcs`:
+  `{npcs, placements, held, routes_held, catalogue_sha256}`. `npcs` and `placements` are the
+  counts of the NPC table and its placements; the frame must hold exactly these. `held` is the
+  record keys of the placements the compiler held (§5), sorted and unique, like `draft_areas`.
+  `routes_held` is the travel routes whose destination it held (§6), each a pair
+  `[service_key, route_key]`: a route key (`ProjectV2TravelRoute.key`) is unique only within its
+  Service record, so only the pair names one route. The pairs are sorted by Service key, then
+  route key, as bytes, and unique. Both lists are empty in a production bundle.
+- `catalogue_sha256` (lowercase hex) binds the bundle to the catalogue it classified. The
+  bundle's `identity.content_revision` is the World project's revision (`content/world/project.json`),
+  and the catalogues report the content tree's (`content/project.json`); the two are unrelated,
+  so neither is compared. The digest is SHA-256 over every file under `content/npcs/definitions/`
+  and `content/services/travel/`, in byte order of the path relative to `content/`, each as the
+  path length (u64 big-endian), the path, the byte length (u64 big-endian) and the bytes. One
+  function in `crates/world-bundle` computes it; the compiler uses it over its inputs and the game
+  server over the files of the NPC catalogue it loads at boot, so writer and runtime cannot
+  disagree on the encoding.
 - The reader accepts only v4. A v3 bundle is refused like any unknown version. No bundle has been
   published; the one testing pin is rebuilt in NPC-PLACE-1b.
 
@@ -293,27 +308,35 @@ The compiler reads the family, the NPC definitions (`content/npcs/definitions/`)
   held routes are (manifest `npcs.routes_held`, §3.1).
 - The compiler reads `content/services/travel/` and classifies each route destination:
   - outside the World extent or floors: compilation fails;
-  - otherwise the cell reasons of §5 item 2, `SpawnPoint`, and `HouseTile`: the tile carries a
-    nonzero house id (format §5), which TRAVEL-0's validator excludes and movement collision
-    does not.
+  - otherwise the cell reasons of §5 item 2, `SpawnPoint`, `NpcPlacement`, and `HouseTile`:
+    - `NpcPlacement`: a placement the compiler writes (§5) is on the cell. The NPC actor blocks it
+      on every channel, as a spawn point does, so every use of the route would fall back. A
+      held placement creates no actor and is not a reason.
+    - `HouseTile`: the tile carries a nonzero house id (format §5), which TRAVEL-0's validator
+      excludes and movement collision does not.
 - A production build stops on any held destination (NPC-0 §3.2).
-- A non-production build writes the record keys of held routes to the manifest
-  `npcs.routes_held` and reports each with its reason in the `parity` and `compile` output
+- A non-production build writes the (Service key, route key) pairs of held routes to the
+  manifest `npcs.routes_held` and reports each with its reason in the `parity` and `compile` output
   (`npcs.routes_held_by_reason`). The `compile` equivalence proof derives `routes_held` from the
   same inputs and compares it with the bundle.
 - **Runtime: the compiler is the only classifier.** The game server's collision index has no
   floor change, teleport, spawn point or house id, so NPC-TRAVEL-1 does not classify a destination
   again. In a non-production World it refuses:
-  - a route whose record key is in the loaded bundle's `npcs.routes_held`;
-  - every route, when the bundle's `identity.content_revision` differs from the content revision
-    of the travel catalogue loaded at boot, because the bundle's classification then does not
-    describe the loaded routes. It logs that once at boot.
-  In a production World `routes_held` is empty, and the same revision mismatch refuses the
-  bundle at boot, as NPC-ACTOR-1 does for the NPC catalogue (§7).
+  - a route whose (Service key, route key) pair is in the loaded bundle's `npcs.routes_held`;
+    the match is on the pair, so a held route never refuses a route of the same key in another
+    Service, nor another route of the same Service;
+  - every route, when the bundle's `npcs.catalogue_sha256` differs from the digest of the
+    catalogue loaded at boot (§3.1), because the bundle's classification then does not describe
+    the loaded routes. It logs that once at boot.
+  In a production World `routes_held` is empty, and the same digest mismatch refuses the bundle
+  at boot, as NPC-ACTOR-1 does for the NPC catalogue (§7).
   NPC-0's NPC-TRAVEL-1 brief row is amended to say so.
-- 1b tests a destination held for each reason, `HouseTile` included, and that its key is in
-  `routes_held`. NPC-TRAVEL-1 tests a refused held route and the refusal of every route under a
-  revision mismatch.
+- 1b tests a destination held for each reason, `NpcPlacement` and `HouseTile` included, and that
+  its pair is in `routes_held`; two Services with a route of the same key, one held, list only
+  that pair; and that `catalogue_sha256` of the checked-in tree is equal from the compiler and
+  from the game server's loaded catalogue, so the checked-in content admits its routes.
+  NPC-TRAVEL-1 tests a refused held route, an admitted route of the same key in another Service,
+  and the refusal of every route under a digest mismatch.
 
 ## 7. Runtime and CI boundary
 
@@ -321,8 +344,8 @@ The compiler reads the family, the NPC definitions (`content/npcs/definitions/`)
   constants. The game server's loader keeps working through the reader. It reads the NPC table
   and does nothing with it until NPC-ACTOR-1.
 - NPC-ACTOR-1 creates one actor per placement in frame order. It refuses, in a production World,
-  a bundle whose `identity.content_revision` differs from the content revision of the NPC
-  catalogue loaded at boot; in a non-production World it logs that and creates no NPC actor. A
+  a bundle whose `npcs.catalogue_sha256` differs from the digest of the NPC catalogue loaded at
+  boot (§3.1); in a non-production World it logs that and creates no NPC actor. A
   placement whose NPC the loaded catalogue holds gets no actor and is logged.
 - No wire change. NPCs use `EntityKind::Npc` (NPC-BEHAVIOUR-0 R1).
 - 1b adds `content/npcs/definitions/` and `content/services/travel/` to the compiler's
@@ -377,12 +400,14 @@ placements on one cell are held `SharedCell`.
 
 - **NPC-0 §3.2**, after its last bullet: "Amendment (2026-10-06; NPC-PLACE-1). Placements are the
   `Npc.Placement` family, compiled into the v4 NPC frame. A held position is one of NPC-PLACE-1
-  §5 (`UnboundNpc`, the cell reasons, `SpawnPoint`, `SharedCell`); a production build stops on any
+  §5 (`UnboundNpc`, the cell reasons, `SpawnPoint`, `SharedCell`), and a held destination one of
+  §6 (the cell reasons, `SpawnPoint`, `NpcPlacement`, `HouseTile`); a production build stops on any
   held position or destination. Source-level holds (NPC-PLACE-1 §4.3) are not compiler holds."
 - **NPC-0 brief, NPC-PLACE-1 row:** packeted by NPC-PLACE-1 as 1a and 1b.
 - **NPC-0 brief, NPC-TRAVEL-1 row:** adds "in a non-production World, refuses a route the loaded
-  bundle lists in `npcs.routes_held`, and every route when the bundle's content revision differs
-  from the loaded travel catalogue's; it does not classify destinations itself (NPC-PLACE-1 §6)".
+  bundle lists in `npcs.routes_held` by its (Service key, route key) pair, and every route when the
+  bundle's `npcs.catalogue_sha256` differs from the loaded catalogue's; it does not classify
+  destinations itself (NPC-PLACE-1 §6)".
 - **NPC-BEHAVIOUR-0 §3.1:** "canonical order of the placement key (NPC key, then position)"
   becomes "canonical actor order (NPC key, then native floor, `y`, `x`; NPC-PLACE-1 §3.2)", so it
   is not confused with the format §7 placement key.
@@ -399,7 +424,8 @@ placements on one cell are held `SharedCell`.
    and read by one validation; the order is fixed in §3.2.
 3. **Restart:** nothing durable. NPCs are recreated from the frame at a channel start or reset.
 4. **Typed references:** the NPC key (`oteryn:npc.*`), the placement record key, the cell in the
-   project frame and natively, the bundle digest and `content_revision`.
+   project frame and natively, the (Service key, route key) pair of a held route, the bundle
+   digest and `npcs.catalogue_sha256`.
 5. **Wire:** none.
 6. **Atomic commit:** none at runtime. The bundle digest covers the frame. 1a refreshes the pin
    for its input; 1b changes the format, the routing and the pin together.
