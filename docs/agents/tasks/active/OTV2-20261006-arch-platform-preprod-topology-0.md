@@ -4,7 +4,7 @@
 task_id: OTV2-20261006-arch-platform-preprod-topology-0
 title: Persistent Platform preproduction topology for the Synology Game node (design only)
 mode: CONTRACT
-status: validating
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/arch-platform-preprod-topology-0-20261006
