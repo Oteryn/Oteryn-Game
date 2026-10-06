@@ -1384,7 +1384,12 @@ impl<S: Clone> ConditionStore<S> {
                     if immediate {
                         instance.immediate_due = None;
                     }
-                    if facts.standing_on_field != Some(element) || facts.in_protection_zone {
+                    // As in the sequence path, the application tick is consumed even on the
+                    // condition's own field; only later field-standing ticks retain a segment.
+                    if immediate
+                        || facts.standing_on_field != Some(element)
+                        || facts.in_protection_zone
+                    {
                         cursor.consume();
                     }
                     instance.remaining_total = cursor.remaining;
