@@ -160,6 +160,9 @@ jobs:
           # Replace the contents of BASE/gameplay (the service reads them at boot only).
           find "$BASE/gameplay" -mindepth 1 -delete
           cp -R "$bundle/gameplay/." "$BASE/gameplay/"
+          # A cancelled earlier step must not leave a partial tree behind: verify what is installed.
+          got="$(cd "$BASE" && find gameplay -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)"
+          test "$got" = "$want"
           install -m 0755 "$bundle/supervisor.sh" "$BASE/bin/supervisor.sh.new"
           mv -f "$BASE/bin/supervisor.sh.new" "$BASE/bin/supervisor.sh"
 
@@ -189,7 +192,18 @@ jobs:
             if "$BASE/bin/supervisor.sh" status > /dev/null &&
               ! { grep 'event=registered' "$BASE/log/node.log" || true; } | grep -q .; then
               "$BASE/bin/supervisor.sh" stop
+              # The process has exited, so its log is final. A registration that the log does not
+              # show cannot be excluded: fail closed until the owner reconciles it.
+              if ! { grep 'event=registered' "$BASE/log/node.log" || true; } | grep -q .; then
+                date -u +%FT%TZ > "$BASE/run/unreconciled-node"
+                echo "::error::stopped a node that never logged registration; its registration cannot be ruled out. The owner reconciles it (supersede the node id from the database), removes BASE/run/unreconciled-node, then re-run"
+                exit 1
+              fi
             fi
+          fi
+          if [[ -e "$BASE/run/unreconciled-node" ]]; then
+            echo "::error::BASE/run/unreconciled-node exists: a node of an earlier run was never reconciled; the owner reconciles and removes it, then re-run"
+            exit 1
           fi
           previous=""
           if [[ -f "$BASE/log/node.log" ]]; then
