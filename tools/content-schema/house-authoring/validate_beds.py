@@ -116,6 +116,16 @@ def validate(houses, placed, facts, exceptions, held=frozenset()):
             {"code": code, "house": house, "tile": list(tile), "detail": detail}
         )
 
+    soft = defaultdict(list)  # exception house -> structural pair findings (BED-0 §3)
+
+    def pair_fail(code, house, tile, detail):
+        if house in exceptions:  # known-discrepancy house: report it, offer valid pairs only
+            soft[house].append(
+                {"code": code, "tile": list(tile), "detail": detail}
+            )
+        else:
+            fail(code, house, tile, detail)
+
     for tile, here in sorted(parts.items()):
         house = owner.get(tile)
         if house is None:
@@ -141,16 +151,20 @@ def validate(houses, placed, facts, exceptions, held=frozenset()):
                 if p[1] == OTHER[part] and STEP[p[2]] == (-dx, -dy)
             ]
             if not back:
-                fail("NO_MATCHING_PARTNER", house, tile, f"item {item_id} {part}")
+                pair_fail("NO_MATCHING_PARTNER", house, tile, f"item {item_id} {part}")
             elif len(back) > 1:
-                fail("AMBIGUOUS_PARTNER", house, tile, f"item {item_id} {part}")
+                pair_fail("AMBIGUOUS_PARTNER", house, tile, f"item {item_id} {part}")
             elif part == "head":
                 pairs[house] += 1
     by_house = {h["source_id"]: h for h in houses}
     excepted = []
     for house_id, house in sorted(by_house.items()):
         found = pairs.get(house_id, 0)
-        agrees = found == house["beds"] and house_id not in bad_houses
+        agrees = (
+            found == house["beds"]
+            and house_id not in bad_houses
+            and house_id not in soft
+        )
         if house_id in exceptions:
             if agrees:
                 errors.append(
@@ -163,7 +177,12 @@ def validate(houses, placed, facts, exceptions, held=frozenset()):
                 )
             else:
                 excepted.append(
-                    {"house": house_id, "beds": house["beds"], "valid_pairs": found}
+                    {
+                        "house": house_id,
+                        "beds": house["beds"],
+                        "valid_pairs": found,
+                        "pair_findings": soft.get(house_id, []),
+                    }
                 )
         elif found != house["beds"]:
             errors.append(

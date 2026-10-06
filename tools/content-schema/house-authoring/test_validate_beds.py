@@ -44,7 +44,45 @@ def test_count_mismatch_fails_unless_excepted():
     ]
     report = v.validate(houses, BED_A + BED_B, FACTS, {1})
     assert report["errors"] == []
-    assert report["excepted"] == [{"house": 1, "beds": 3, "valid_pairs": 2}]
+    assert report["excepted"] == [
+        {"house": 1, "beds": 3, "valid_pairs": 2, "pair_findings": []}
+    ]
+
+
+def test_exception_house_reports_an_unmatched_part_and_offers_only_valid_pairs():
+    # BED-0 §3: an odd 3 bed items (a lone head) in a listed house is reported, not fatal
+    placed = BED_A + BED_B + [(1, 12, 12, 7)]
+    houses = [house(1, 3, GRID)]
+    report = v.validate(houses, placed, FACTS, {1})
+    assert report["errors"] == [] and report["pairs"] == {1: 2}
+    (entry,) = report["excepted"]
+    assert entry["valid_pairs"] == 2
+    assert [f["code"] for f in entry["pair_findings"]] == ["NO_MATCHING_PARTNER"]
+    # the same part in a house that is not listed stays fatal
+    assert "NO_MATCHING_PARTNER" in codes(v.validate(houses, placed, FACTS, set()))
+
+
+def test_exception_house_reports_an_ambiguous_head_without_counting_it():
+    placed = BED_A + [(2, 10, 11, 7)]
+    report = v.validate([house(1, 2, GRID)], placed, FACTS, {1})
+    assert report["errors"] == [] and report["pairs"] == {}
+    assert [f["code"] for f in report["excepted"][0]["pair_findings"]] == [
+        "AMBIGUOUS_PARTNER"
+    ]
+    assert "AMBIGUOUS_PARTNER" in codes(
+        v.validate([house(1, 2, GRID)], placed, FACTS, set())
+    )
+
+
+def test_exception_house_keeps_collisions_and_unknown_items_fatal():
+    heads = [(1, 10, 10, 7), (3, 10, 10, 7), (2, 10, 11, 7), (4, 11, 10, 7)]
+    assert codes(v.validate([house(1, 3, GRID)], heads, FACTS, {1})) == [
+        "MULTIPLE_HEADS_ON_TILE"
+    ]
+    unknown = BED_A + [(99, 12, 12, 7)]
+    assert "UNKNOWN_BED_ITEM" in codes(
+        v.validate([house(1, 3, GRID)], unknown, FACTS, {1})
+    )
 
 
 def test_a_listed_house_that_agrees_must_leave_the_list():

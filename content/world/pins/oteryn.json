@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "ff812f26e5e002f61936ca6fc946e41c8bf056cf29a2dca1f17c6f9afc921278",
+  "digest": "7144467d54722dbeb421d9c8173e48aed94877b3d00b8450e5bed035e1bf9b37",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "item-bed-promotion-20261006-r1",
@@ -10,5 +10,5 @@
     "y": 10032,
     "floor": 0
   },
-  "inputs_digest": "6b62d5711f7e70cba4279a5e0bcaf05cc9dfc31b87c03e069958e2fd5c97a63f"
+  "inputs_digest": "333ff96885dc8cbe60ca90abfbd0d4c5d1d380a1f944578601f21a0e72fded0f"
 }
