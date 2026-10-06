@@ -3,7 +3,9 @@
 # agreement; secrets stay in the files named here and are never values in this file.
 endpoint = "<PLATFORM_ENDPOINT>"
 peer_name = "<PLATFORM_PEER_NAME>"
-trust_roots_file = "<BASE>/node/secrets/platform-roots.pem"
+# ops loads every file below as trusted input: each must be root-owned under a root-owned directory
+# (root copies in <ROOT_BASE>/ops, not the runner-owned <BASE>/node/secrets).
+trust_roots_file = "<ROOT_BASE>/ops/platform-roots.pem"
 client_certificate_file = "<ROOT_BASE>/ops/authority.crt"
 client_key_file = "<ROOT_BASE>/ops/authority.key"
 # Must equal [platform] endpoint/peer_name/trust roots and [platform.runtime_status] assignment_epoch of node.toml.
@@ -12,7 +14,7 @@ assignment_epoch = <ASSIGNMENT_EPOCH>
 [node_certificate_files]
 # One entry per node identity named in [[scope]]: the runtime-status certificate of that host,
 # whose subject (RFC 4514, e.g. CN=oteryn-preprod-node) equals the identity.
-"<NODE_IDENTITY>" = "<BASE>/node/secrets/runtime-status.crt"
+"<NODE_IDENTITY>" = "<ROOT_BASE>/ops/runtime-status.crt"
 
 [[scope]]
 world_id = "<WORLD_ID>"
