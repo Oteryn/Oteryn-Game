@@ -917,7 +917,7 @@
         "timestamp_approx": "00:22:48.5",
         "observation": "After an earlier failed chisel attempt, use of the torch produces a clear fire effect on the north-wall crack."
       },
-      "position_status": "HIGH_CONFIDENCE_DERIVED_WITHIN_UNIQUE_TOPOLOGY_CANDIDATE",
+      "position_status": "HIGH_CONFIDENCE_EXACT_TOPOLOGY_AND_VIDEO_AXIS",
       "position": {
         "x": 31920,
         "y": 31359,
@@ -935,7 +935,43 @@
         "video": "22:47–22:51 action/effect is centered exactly one tile north of the prison skeleton.",
         "topology": "Prison skeleton is at 31920,31360,9; direct north tile is 31920,31359,9.",
         "otbm": "Direct north tile contains central ice wall 6729 + debris 6374. Side candidates use different debris/orientation variants; 31921 uses corner/variant wall 6737.",
-        "qualification": "Coordinates are not published by the external quest guides. Treat as the unique OTBM topology candidate, not as independent exact-source coordinates."
+        "qualification": "Coordinates are not published by the external quest guides. Treat as the unique OTBM topology candidate, not as independent exact-source coordinates.",
+        "relation_to_skeleton": "exactly one tile north of skeleton at 31920,31360,9",
+        "competing_tiles": {
+          "west": {
+            "x": 31919,
+            "y": 31359,
+            "z": 9,
+            "debris_id": 6378,
+            "wall_id": 6729
+          },
+          "east": {
+            "x": 31921,
+            "y": 31359,
+            "z": 9,
+            "debris_id": 6379,
+            "wall_id": 6737
+          }
+        },
+        "walkthrough": "Torch/fire and subsequent chisel/crumble effects are centered in the same north-south axis as the player/skeleton room anchor."
+      },
+      "world_stack": {
+        "ground_or_base": [
+          6869,
+          4728
+        ],
+        "debris": {
+          "id": 6374,
+          "name": "debris"
+        },
+        "wall": {
+          "id": 6729,
+          "name": "ice wall"
+        },
+        "decoration": [
+          6926,
+          6928
+        ]
       }
     },
     {
@@ -961,7 +997,7 @@
         "video_timestamp_approx": "00:22:48.0",
         "observed_message": "You try to pry open the crack in the wall with the icicle. But it doesn't work. You'll have to find a way to widen the crack first using some other method."
       },
-      "position_status": "HIGH_CONFIDENCE_DERIVED_WITHIN_UNIQUE_TOPOLOGY_CANDIDATE",
+      "position_status": "HIGH_CONFIDENCE_EXACT_TOPOLOGY_AND_VIDEO_AXIS",
       "position": {
         "x": 31920,
         "y": 31359,
@@ -979,7 +1015,43 @@
         "video": "22:47–22:51 action/effect is centered exactly one tile north of the prison skeleton.",
         "topology": "Prison skeleton is at 31920,31360,9; direct north tile is 31920,31359,9.",
         "otbm": "Direct north tile contains central ice wall 6729 + debris 6374. Side candidates use different debris/orientation variants; 31921 uses corner/variant wall 6737.",
-        "qualification": "Coordinates are not published by the external quest guides. Treat as the unique OTBM topology candidate, not as independent exact-source coordinates."
+        "qualification": "Coordinates are not published by the external quest guides. Treat as the unique OTBM topology candidate, not as independent exact-source coordinates.",
+        "relation_to_skeleton": "exactly one tile north of skeleton at 31920,31360,9",
+        "competing_tiles": {
+          "west": {
+            "x": 31919,
+            "y": 31359,
+            "z": 9,
+            "debris_id": 6378,
+            "wall_id": 6729
+          },
+          "east": {
+            "x": 31921,
+            "y": 31359,
+            "z": 9,
+            "debris_id": 6379,
+            "wall_id": 6737
+          }
+        },
+        "walkthrough": "Torch/fire and subsequent chisel/crumble effects are centered in the same north-south axis as the player/skeleton room anchor."
+      },
+      "world_stack": {
+        "ground_or_base": [
+          6869,
+          4728
+        ],
+        "debris": {
+          "id": 6374,
+          "name": "debris"
+        },
+        "wall": {
+          "id": 6729,
+          "name": "ice wall"
+        },
+        "decoration": [
+          6926,
+          6928
+        ]
       }
     },
     {
