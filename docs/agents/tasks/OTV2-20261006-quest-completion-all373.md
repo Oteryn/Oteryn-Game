@@ -15,13 +15,20 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: chatgpt-quest-completion
 created_at: 2026-10-06T08:55:00+02:00
-updated_at: 2026-10-06T08:55:00+02:00
+updated_at: 2026-10-06T12:20:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/quest-authoring/quest_completion_matrix.py
   - tools/content-schema/quest-authoring/test_quest_completion_matrix.py
   - tools/content-schema/quest-authoring/run_checks.py
+  - tools/content-schema/quest-authoring/quest_completion_import.py
+  - tools/content-schema/quest-authoring/ots_questlog.py
   - tools/content-schema/quest-authoring/samples/completion-matrix/
+  - tools/content-schema/quest-authoring/samples/server-completion/chosen-source-progress/
+  - tools/content-schema/quest-authoring/test_chosen_source_progress.py
+  - tools/content-schema/quest-authoring/test_source_path_normalization.py
+  - content/quests/missions/quest-state-completion-candidate.json
+  - content/quests/missions/completion-candidate.json
   - docs/agents/tasks/OTV2-20261006-quest-completion-all373.md
 public_contracts: []
 depends_on:
@@ -77,12 +84,12 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] Every pinned wiki title is represented in the generated matrix.
-- [ ] Canonical mapping is derived from committed Oteryn definitions/catalogue evidence; no new identity is invented.
-- [ ] Donor coverage distinguishes implemented, partial and absent-in-both reference cases.
-- [ ] Work state distinguishes source/data work from native-binding work and runtime verification.
-- [ ] The matrix never claims playability without dedicated runtime evidence.
-- [ ] Drift checking is part of the existing offline quest authoring checks.
+- [x] Every pinned wiki title is represented in the generated matrix.
+- [x] Canonical mapping is derived from committed Oteryn definitions/catalogue evidence; no new identity is invented.
+- [x] Donor coverage distinguishes implemented, partial and absent-in-both reference cases.
+- [x] Work state distinguishes source fidelity, typed-progress/native work and runtime verification.
+- [x] The matrix never claims playability without dedicated runtime evidence.
+- [x] Drift checking is part of the existing offline quest authoring checks.
 - [ ] Focused tests and the applicable quest/governance checks pass on the candidate.
 
 ## Excluded scope
@@ -98,18 +105,28 @@ finding_dispositions:
 
 Initial read-only audit retained at `docs/agents/evidence/OTV2-20261006-crystal-summer-quest-audit.md`.
 
-The first implementation slice builds the machine-readable 373-title matrix and wires byte-for-byte drift checking into `run_checks.py`. Runtime/source repairs follow from this queue in reviewable batches.
+The first implementation slice builds the machine-readable 373-title matrix and wires byte-for-byte drift checking into `run_checks.py`.
+
+The second slice separates source-fidelity holds from implementation state and expands the existing unactivated completion candidate. Of 146 chosen source-derived recipes absent from production Source QuestState lowering, 139 satisfy the accepted closed linear stage-counter shape. They are added as `CHOSEN_SOURCE_TYPED_PROGRESS_ONLY`; seven remain explicit holds because their terminal completion stage has count greater than one.
+
+Candidate result: **303 quest owners, 2445 tracks, 4378 transitions**. The added slice is **139 owners / 699 tracks / 699 transitions**. `runtime_activated=false`; native event, NPC and reward bindings remain zero. Production `content/quests/missions/quest-state.json` and the authored68 `completion-binding-plan.json` are unchanged.
+
+The latest matrix derives implementation state directly from the typed-progress candidate. It reports **214 `NATIVE_BINDINGS_PENDING`**, **117 `NATIVE_LOWERING_PENDING`**, **41 `DEFINITION_READY_RUNTIME_UNKNOWN`**, and **1 `MAPPING_REVIEW`**. The 214 native-binding-ready titles are backed by 139 `CHOSEN_SOURCE_TYPED_PROGRESS_ONLY`, 68 `CHOSEN_TYPED_PROGRESS_ONLY`, and 7 `LOWERED` typed-progress states. Source fidelity remains an independent axis: 222 titles retain source holds and 151 are clear; those holds are not erased by chosen Oteryn progress.
 
 ## Validation
 
 ### Focused
 
-- `python -m unittest test_quest_completion_matrix.py`: pending publication readback
-- `python quest_completion_matrix.py --check`: pending publication readback
+- `python -m unittest test_quest_completion_matrix.py test_chosen_source_progress.py test_source_path_normalization.py`: **9 tests PASS**
+- `python quest_completion_matrix.py --check`: **PASS**
+- `python quest_completion_import.py --check`: **PASS**
+- candidate integrity: **303/303 unique quest owners, 2445/2445 unique tracks, 4378/4378 unique transitions**
+- production `quest-state.json`: unchanged in the working baseline
+- authored68 `completion-binding-plan.json`: unchanged in the working baseline
 
 ### Component/integration
 
-- `python tools/content-schema/quest-authoring/run_checks.py`: running locally; Windows default-codepage false failure is separated by rerun with `PYTHONUTF8=1`.
+- `python tools/content-schema/quest-authoring/run_checks.py`: quest-specific checks pass with `PYTHONUTF8=1`; the full local suite is environment-blocked later by an existing map test attempting to invoke missing `g++` (`WinError 2`). No quest regression was observed before that external-tool failure.
 
 ### E2E
 
@@ -152,7 +169,7 @@ The first implementation slice builds the machine-readable 373-title matrix and 
 ## Context checkpoint
 
 ```yaml
-last_progress: all-373 matrix generator prototyped locally; 4 focused tests pass
+last_progress: all-373 matrix live; completion candidate expanded safely from 164 to 303 owners; 9 focused tests and both generator drift checks pass
 status: implementing
 branch: codex/quest-completion-all373-20261006
 head_sha: null
@@ -174,5 +191,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish and validate the deterministic all-373 completion matrix
+next_action: split the 214 native-binding-ready titles into bounded binding batches and continue lowering the remaining 117
 ```
