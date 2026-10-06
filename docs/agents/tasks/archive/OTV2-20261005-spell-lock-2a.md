@@ -4,14 +4,14 @@
 task_id: OTV2-20261005-spell-lock-2a
 title: SPELL-LOCK-2a spell lane, commit window and complete reservation
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/spell-lock-2a-20261005
-pr: null
+pr: 1907
 base_sha: aecb02c5
-head_sha: null
-final_head_sha: null
+head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
+final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_frozen_at: null
 owner: oteryn-hard-worker session_01ARgwFxy96wwU3MEiSbVPCd
 created_at: 2026-10-06T00:00:00Z
@@ -22,6 +22,7 @@ owned_paths:
   - apps/game-server/src/durability/creature_source_items.rs  # CP amendment D848
   - apps/game-server/tests/support/type2_audit_activation_postgres_cases.rs  # CP amendment D848, lane permit before commit_item_mint only
   - apps/game-server/src/gameplay_transport/spell_access_facts.rs  # CP amendment D849 (owner-approved), pub(crate) async read / sync qualify split only
+  - docs/agents/tasks/archive/OTV2-20261005-spell-lock-2a.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -93,8 +94,14 @@ in-process concurrency invariant of the Channel owner (decision §1.7).
 
 ## Validation
 
-- cargo fmt --all -- --check: pending
-- cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings: pending
-- cargo test --locked -p oteryn-game-server: pending
-- python tools/agents/validate_governance.py: pending
-- git diff --check: pending
+- `cargo fmt --all -- --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server`: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+- `git diff --check`: pass
+
+## Closeout
+
+- PR: 1907, no auto-merge; review state: awaiting review on the frozen head.
+- merge commit/result: squash merge of #1907
