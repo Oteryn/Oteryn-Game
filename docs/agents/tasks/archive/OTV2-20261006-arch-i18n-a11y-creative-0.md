@@ -30,11 +30,55 @@ external_repositories: []
 - An accessibility baseline: remapping, UI scaling per the UI baseline §7, colour-only audit, flash rate limit and a legibility check.
 - Asset provenance records with CI checks; a creative direction document the owner fills.
 - Amendment 3 to ERR-CODES §1.9 replaces a different sentence than ARCH-LIVE-READINESS-0 §2 A3.
-- Three owner items are listed with recommendations.
+- Owner rulings of 2026-10-06 are recorded in §4: Q1 b; Q2 a; Q3 both layouts (A first); the
+  field-of-view direction (FOV-fixed versus FOV-responsive, final policy open).
+
+## Owner rulings
+
+- 2026-10-06, given directly to the architect: Q1 b (`en` + `pl` UI and outcome text, content
+  English); Q2 a (Tibia-sourced NPC, quest, item and achievement text extended as
+  OWNER_CLEARED_THIRD_PARTY; not the architect's recommendation, the owner's ruling and risk;
+  distribution still gated by ASSET-PROVENANCE-2 records and the §1.17 validator); Q3 both
+  layouts switchable in client settings, A classic-faithful first, then B modern, AI-produced
+  art with provenance records, theme tokens and layouts as data; field of view: A fixed classic,
+  B runs the viewport plan experiment on a non-production channel, server-set cap, measured
+  against ARCH-MAP-VIEWPORT-BUDGET-V1, final policy undecided.
+
+## Acceptance criteria
+
+- [x] Decision text with facts, rulings, amendments, packets, owner questions and unknowns.
+- [x] Owner rulings recorded and the body made consistent with them.
+- [x] Review round 1 findings answered (below).
+- [ ] Independent exact-head review on the frozen head.
+- [ ] Protected Merge Queue integration.
+
+## Review findings
+
+- Round 1 (external review, three P1):
+  - 4195134861: `TextRef` is capability-gated (§1.7, F20): strict decoders
+    `account_achievements.rs:316` and `quest_log.rs:276` reject unknown fields; the client
+    advertises a new capability, the server sends `TextRef` only to selected sessions and the
+    legacy encoding otherwise; packet 5 tests the byte-equal legacy path, selection and resume.
+  - 4195134871: Q2 ruled a by the owner; §4 records what it permits and that distribution stays
+    gated by the corpus records and the §1.17 validator.
+  - 4195134876: §1.17 interim manifest enumerates server inputs (achievement `include_str!`
+    shards, NPC, dialogue, quest and item families; F21) so an unrecorded input fails.
 
 ## Validation
 
 - `python tools/agents/validate_governance.py`: pass
-- `python tools/repository/validate_repository_policy.py`: pass
+- `python tools/repository/validate_repository_policy.py`: pass at round 0; at round 1 its only
+  failures are five E8002 error-registry entries (2014, 3010, 3011, 4001, 6007) that `origin/main`
+  added after this branch's base; no owned path touches the registry, and the merge ref has them.
 - `python -m unittest discover -s tools/agents/tests`: pass
 - `git diff --check`: pass
+
+## Context checkpoint
+
+```yaml
+last_progress: review round 1 answered and owner rulings of 2026-10-06 recorded; local checks run
+status: completed
+branch: cand/arch-i18n-creative
+pr: 1880
+next_action: lead freezes the head and requests re-review
+```
