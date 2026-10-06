@@ -1259,10 +1259,10 @@
     "NPC-QUEST-1 remains blocked by NPC-TALK-1; accepted NPC-TALK-1 dependencies are specifically NPC-WIRE-1 (merged), NPC-PLACE-1b (not yet implemented), and MAP-CUTOVER-1b (not yet implemented)",
     "Asura Citadel door needs ITEM-USE-1 USE-WITH execution + identity-based i54262 Door/Key binding + post-completion bypass; donor has no keyNumber",
     "Magnolia 60k phase-2 representation is architect-resolved by PR #1891 option B (current head b8f3d605) (`attribute max_health set 60000` -> queued `heal full`); execution still waits on #1891 merge + ENC-RT-1/ENC-COMBAT-1 -> ENC-OUTCOME-1",
-    "Escape geometry and Rope Spot are resolved end-to-end (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9; Rope Spot 31923,31377,9 -> generic moveUpstairs destination 31923,31378,8). Remaining prison blocker: separate canonical admission of donor Lit Torch 54610; do not alias to i34017.",
+    "Escape geometry/Rope Spot are resolved end-to-end; remaining prison content blocker is donor 54610: add exact Crystal 54610 -> oteryn:item.tibia.i54610 binding, admit canonical Item, then qualify materializable/light-source semantics. Do not alias to i34017.",
     "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
     "No full real-character start→reward→relog/restart E2E qualification",
-    "Jaracal Mount exact donor identity is resolved (mount_id 250, clientid 1962, speed +10, premium, quest); canonical Mount admission + oteryn:item.tibia.i54638-on-Jaracal tame/account-unlock runtime remain missing, and tame chance semantics remain UNKNOWN"
+    "Jaracal Mount exact donor identity is resolved; Skewered Fish i54638 already has an EXACT Crystal->A12 binding on main, but lacks active materializable Item admission. Mount successor + tame/account-unlock runtime remain; tame chance semantics UNKNOWN."
   ],
   "readback": {
     "refreshed_main": "52712f633786721c0d255888a92c81165cd2d5c3",
@@ -1612,6 +1612,32 @@
       "state": "SELECTED_SOURCE_REQUIREMENT",
       "reason": "Explicit post-release Fandom mechanic; lower-ranked sources only omit time-of-day and do not negate it. Source registry §10 requires same atomic-field disagreement for CONFLICT.",
       "target_observation": "NOT_CONTROLLED_GLOBAL_VERIFIED"
+    },
+    "item_binding_refresh": {
+      "lit_torch_54610": {
+        "binding_on_main": false,
+        "historical_state": "PROBABLE_MATCH hold against 34017",
+        "required": [
+          "EXACT donor binding to oteryn:item.tibia.i54610",
+          "canonical Item admission",
+          "materializable/light-source semantics"
+        ],
+        "forbidden": [
+          "alias to i34017",
+          "appearance-only admission helper"
+        ]
+      },
+      "skewered_fish_54638": {
+        "binding_on_main": true,
+        "disposition": "EXACT",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": "oteryn:item.tibia.i54638@definition-r1",
+        "family_profile": "tool",
+        "remaining": [
+          "active Item record/materialization",
+          "tame runtime"
+        ]
+      }
     }
   }
 }
