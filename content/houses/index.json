@@ -1,10 +1,10 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/houses/",
-  "kind": "static_content",
-  "owner": "House/Area",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "House static definitions: 995 records from the 15.30 client staticdata and staticmapdata (878 private houses, 66 guildhalls, 51 shops; 117,226 tiles, 5,372 doors; entrance from CrystalServer), built by tools/content-schema/house-authoring/build_catalogue.py under OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1 §3; ownership/ACL not here."
+  "kind": "static_content",
+  "notes": "House static definitions: 995 records from the 15.30 client staticdata and staticmapdata (878 private houses, 66 guildhalls, 51 shops; 117,226 tiles, 5,372 doors; entrance from CrystalServer), built by tools/content-schema/house-authoring/build_catalogue.py under OTERYN_HOUSE_CATALOGUE_OWNER_CONTRACT_V1 §3; ownership/ACL not here.",
+  "owner": "House/Area",
+  "path": "content/houses/",
+  "population_state": "POPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

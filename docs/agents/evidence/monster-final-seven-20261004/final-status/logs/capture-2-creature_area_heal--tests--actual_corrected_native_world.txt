@@ -1,0 +1,5 @@
+Original log SHA256: e844e06d65246a11a7e7a4cc7c6d96f8723301deb0074cb3967dcd58dbdf506c
+
+running 1 test
+test creature_area_heal::tests::actual_corrected_native_world_has_1863_hp_catalog_19_area_and_1_project_prophet_membership ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2372 filtered out; finished in 16.28s

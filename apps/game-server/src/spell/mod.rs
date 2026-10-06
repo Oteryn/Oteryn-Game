@@ -1453,3 +1453,5 @@ pub(crate) mod house_execution;
 pub(crate) mod source_map_initialization;
 
 pub(crate) mod periodic_execution;
+
+mod source_player_conditions;

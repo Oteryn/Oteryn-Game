@@ -1,0 +1,20 @@
+{
+  "input_sha256": "897cd67864ac1150513262af62da770d27c6a6248cbdad1ea957a94710c3d1fd",
+  "rows": 1156,
+  "actors": 743,
+  "classifications": {
+    "OWNER_ACCEPTED_NON_GLOBAL_ESTIMATE": 579,
+    "WIKI_FIELD_LINEAGE": 574,
+    "SOURCE_CANONICAL_FALLBACK": 3
+  },
+  "missing_manifests": 0,
+  "fields": {
+    "mitigation": 607,
+    "resistances": 393,
+    "health": 57,
+    "armor": 24,
+    "experience": 49,
+    "immunities": 9,
+    "speed": 17
+  }
+}

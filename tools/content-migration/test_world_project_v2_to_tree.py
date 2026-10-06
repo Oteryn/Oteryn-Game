@@ -129,15 +129,15 @@ if quest_families:
 reference = json.loads((ROOT / 'content/world/definitions/reference.json').read_text())
 creature_families = ['Creature', 'Presentation', 'Behavior', 'Loot', 'Ability', 'Effect', 'Formula']
 family_counts = {family: sum(row['identity']['family'] == family for row in reference['records']) for family in creature_families}
-assert family_counts['Creature'] == 1763
+assert family_counts['Creature'] == 1863
 assert lock["family_counts"] == {
-    "Item": 34033, "Mount": 252,
+    "Item": 34043, "Mount": 252,
     **family_counts, "Document": 1609,
-    "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 104, "Charm": 25,
+    "NPC": 1282, "Dialogue": 836, "Service.Trade": 324, "Service.Travel": 56, "Encounter": 108, "Charm": 25,
     "Proficiency": 443, "RewardClaim": source_claim_count, "StarterKit": 1,
     **{family: value["records"] for family, value in quest_families.items()},
 }
-assert lock["source_binding_counts"] == {"Item": 454, "Mount": 252, "Creature": 1763, "Encounter": 104, "NPC": 2747}
+assert lock["source_binding_counts"] == {"Item": 476, "Mount": 252, "Creature": 1863, "Encounter": 108, "NPC": 2747}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
@@ -179,6 +179,9 @@ assert "StarterKit" in project["migrated_families"]
 assert "content/starter/starter-kits-00000-00000.json" in paths and "content/starter/index.json" in paths
 assert "NPC" in project["migrated_families"] and "Dialogue" in project["migrated_families"] and "Service" in project["migrated_families"]
 assert "NPC" not in project["next_population_families"] and "Dialogue" not in project["next_population_families"] and "Service" not in project["next_population_families"]
+
+# The admitted native successor must reproduce exact bytes over immutable r25.
+subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_monster_seven_spell_overlay.py")], check=True)
 
 # Keep the standalone Quest preservation guards on the migration workflow's test path.
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_quest_registration_preservation.py")], check=True)

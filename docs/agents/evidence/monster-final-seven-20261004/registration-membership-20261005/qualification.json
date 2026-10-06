@@ -1,0 +1,213 @@
+{
+  "status": "REQUESTED_FROZEN_GROUPS_PASS",
+  "mode": "all",
+  "origin": {
+    "git_head": "05b01e485e6efb31689de5d758f998eb009275c9",
+    "binary_path": "/dev/shm/monster-comparison-build-target-cache/debug/deps/oteryn_game_server-9494e90a1877450b",
+    "binary_sha256": "15b4b8f213e6702ad600f41ef2282a16888c692823294cc976e651ce7f1e0765",
+    "manifest_sha256": "c336cd702458ab3933db85f0afd19ff4c324eeb3f349d85b53e835f9ad69d47b",
+    "capture_root": "/tmp/monster-final-native-capture-20261005/capture",
+    "execution": "direct frozen binary; library4threads, native/capture1thread; no Cargo or product writes",
+    "mode": "all"
+  },
+  "whole_library_passes": 2413,
+  "appearance_native_capture_passes": 19,
+  "appearance_passes": 6,
+  "native_qualification_passes": 1,
+  "capture_passes": 12,
+  "unexecuted_groups": [],
+  "rows": [
+    {
+      "filter": "",
+      "ignored": false,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/project-binding-qualified/full-lib-tests-final-frozen.log",
+      "log_sha256": "f29b44d929122575a7c10a5276cc843d2cfa3ebb72667157ac493b2665226311",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 2413,
+          "failed": 0,
+          "ignored": 26
+        }
+      ],
+      "expected_passes": 2413,
+      "status": "PASS"
+    },
+    {
+      "filter": "content::native_gameplay::tests::actual_full_manifest_qualifies_source_world_and_all_owner_profiles",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/project-binding-qualified/native-final-frozen/native-qualification.log",
+      "log_sha256": "44750439510f4e8b35b3e1ddbbc999dbbc6d87cd3249bf4df2679ed72192c4d4",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": 1,
+      "status": "PASS"
+    },
+    {
+      "filter": "creature_damage_spell::appearance_execution_tests::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/project-binding-qualified/native-final-frozen/appearance.log",
+      "log_sha256": "54718fb5b1f8dbe5f8db546ef4206492835888ad3239c6f4086f933df4417fe3",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 6,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": 6,
+      "status": "PASS"
+    },
+    {
+      "filter": "bone_phase_registry::shared_hp_actual_source_tests::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/project-binding-qualified/capture-final-frozen/1-bone_phase_registry--shared_hp_actual_source_tests--.log",
+      "log_sha256": "f419354fc89096c806a943568d86e5d2234419f04903f8c029c4313888350d31",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "creature_area_heal::tests::actual_corrected_native_world",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/project-binding-qualified/capture-final-frozen/2-creature_area_heal--tests--actual_corrected_native_world.log",
+      "log_sha256": "177a8ebfe378946e7c7d46d6aa34338e37a597c7d89c493e46be0d1d609f5208",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "crystal_death_composition::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/project-binding-qualified/capture-final-frozen/3-crystal_death_composition--.log",
+      "log_sha256": "3edf76ac0c1cb745cd1404d7811c4f5b28453e1904597bb3eb80b1a1b7cb96f4",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::bone_map_admission_actual_tests::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/project-binding-qualified/capture-final-frozen/4-monster_combat_lane--bone_map_admission_actual_tests--.log",
+      "log_sha256": "50130d04cfc05d0813bbb4c2e4a848dfd0f9e38ad3708e7148a206b783413c27",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::defense_composition_tests::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/project-binding-qualified/capture-final-frozen/5-monster_combat_lane--defense_composition_tests--.log",
+      "log_sha256": "657b2f6b8fe0a840d3453ddd376f2c9aa60d635a154c63c8aac42225b4d1d8a7",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::pending_summon_failure_regression::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/project-binding-qualified/capture-final-frozen/6-monster_combat_lane--pending_summon_failure_regression--.log",
+      "log_sha256": "39510d46898b08866ecf1029af832b5e6370a4360b88b708e48c330d8b77f4c5",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 1,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_combat_lane::source_summon_composition_tests::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/project-binding-qualified/capture-final-frozen/7-monster_combat_lane--source_summon_composition_tests--.log",
+      "log_sha256": "e413a0581172172476e6b4d6fa750422b9ded5c1c89c1d16257a486d8bf45ed6",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    },
+    {
+      "filter": "monster_summon::",
+      "ignored": true,
+      "exit": 0,
+      "log": "/tmp/monster-final-seven/repair-20261005/project-binding-qualified/capture-final-frozen/8-monster_summon--.log",
+      "log_sha256": "538d52506ec01ee601797ae4a8ffc1b86b4d8d4d07b4f550656ecc8fe7948626",
+      "counts": [
+        {
+          "status": "ok",
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "expected_passes": null,
+      "status": "PASS"
+    }
+  ],
+  "registration_membership_passes": 1,
+  "registration_negative_cases": 8,
+  "condition_input_negative_cases": 8,
+  "qualification_boundary": "Actual independently staged native artifact and committed runtime pin; eight definition/provenance substitutions rejected before actor/fence/catalog mutation at both registration and condition-input grants, then both actual positive grants pass",
+  "new_registration_log_sha256": "1faa669dd1921ebdd3fd62bf14eba761d7a99ca0737670d9c0aa1a2ed780dcc0"
+}

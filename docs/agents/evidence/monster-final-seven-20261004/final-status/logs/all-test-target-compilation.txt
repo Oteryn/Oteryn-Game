@@ -1,0 +1,20 @@
+Original log SHA256: 034b014c6dde43c74dd5c1f530f2ff6f4a768d9995cbbf97939ac679df63d657
+
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^                                          ^^^^^^^^^^^^^^^
+2993 |             ConditionSourceKind, ConditionValues, DotElement, NodeId,
+     |             ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ConditionTick`
+    --> apps/game-server/src/monster_combat_lane.rs:3417:29
+     |
+3417 |     use crate::foundation::{ConditionTick, ConditionValues, StatusKind};
+     |                             ^^^^^^^^^^^^^
+
+warning: unused import: `crate::foundation::ConditionTick`
+    --> apps/game-server/src/monster_combat_lane.rs:4391:9
+     |
+4391 |     use crate::foundation::ConditionTick;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `oteryn-game-server` (lib test) generated 8 warnings (run `cargo fix --lib -p oteryn-game-server --tests` to apply 8 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10m 23s

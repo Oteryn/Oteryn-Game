@@ -182,40 +182,15 @@ pub(crate) async fn schedule_field_chain_in_transaction(
     occurred_at: i64,
 ) -> Result<(), SpellItemError> {
     check_transaction(tx, authority).await?;
-    if definition.decay_chain.is_empty() {
-        return Ok(());
-    }
-    if definition.decay_chain.len() > 32
-        || definition.stack_maximum != 1
-        || definition.container_capacity.is_some()
-        || !definition.ground_destination
-    {
-        return Err(SpellItemError::Rejected("field source chain qualification"));
-    }
-    let mut deadline = occurred_at;
-    let mut expected = Some(&definition.definition);
-    for (index, stage) in definition.decay_chain.iter().enumerate() {
-        if expected != Some(&stage.definition) || stage.duration_millis == 0 {
-            return Err(SpellItemError::Rejected("field source chain continuity"));
-        }
-        deadline = deadline
-            .checked_add(i64::from(stage.duration_millis))
-            .ok_or(SpellItemError::Rejected(
-                "field source chain deadline overflow",
-            ))?;
-        sqlx::query("INSERT INTO game_spell_field_temporal_schedules(item_instance_id,source_stage,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,target_family,target_production_key,target_revision,content_digest,blocks_movement,blocks_projectile,immovable_block_solid) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)")
-            .bind(item.as_slice()).bind(i32::try_from(index+1).map_err(|_|SpellItemError::Rejected("field stage"))?)
-            .bind(request.transaction_id.as_slice()).bind(i32::try_from(ordinal).map_err(|_|SpellItemError::Rejected("field source ordinal"))?)
-            .bind(i64::from(stage.duration_millis)).bind(deadline).bind(&stage.definition.family)
-            .bind(&stage.definition.production_key).bind(&stage.definition.revision_ref)
-            .bind(stage.target.as_ref().map(|t|t.family.as_str())).bind(stage.target.as_ref().map(|t|t.production_key.as_str()))
-            .bind(stage.target.as_ref().map(|t|t.revision_ref.as_str())).bind(definition.content_generation_digest.as_slice())
-            .bind(stage.blocks_movement).bind(stage.blocks_projectile).bind(stage.immovable_block_solid).execute(&mut **tx).await?;
-        expected = stage.target.as_ref();
-    }
-    // A final permanent transformed definition is allowed only when its
-    // qualified source has no further decay; the authoring owner records it.
-    Ok(())
+    schedule_field_chain_rows_in_transaction(
+        tx,
+        request.transaction_id,
+        definition,
+        item,
+        ordinal,
+        occurred_at,
+    )
+    .await
 }
 pub(crate) async fn drain_due_field_chains_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
@@ -355,4 +330,68 @@ pub(crate) async fn drain_due_field_chains_in_transaction(
         }
     }
     Ok(changed)
+}
+
+pub(super) async fn schedule_source_scope_field_chain_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    transaction_id: [u8; 16],
+    definition: &QualifiedItemDefinition,
+    item: [u8; 16],
+    ordinal: u32,
+    occurred_at: i64,
+) -> Result<(), SpellItemError> {
+    check_scope_transaction(tx, authority).await?;
+    schedule_field_chain_rows_in_transaction(
+        tx,
+        transaction_id,
+        definition,
+        item,
+        ordinal,
+        occurred_at,
+    )
+    .await
+}
+async fn schedule_field_chain_rows_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    transaction_id: [u8; 16],
+    definition: &QualifiedItemDefinition,
+    item: [u8; 16],
+    ordinal: u32,
+    occurred_at: i64,
+) -> Result<(), SpellItemError> {
+    if definition.decay_chain.is_empty() {
+        return Ok(());
+    }
+    if definition.decay_chain.len() > 32
+        || definition.stack_maximum != 1
+        || definition.container_capacity.is_some()
+        || !definition.ground_destination
+    {
+        return Err(SpellItemError::Rejected("field source chain qualification"));
+    }
+    let mut deadline = occurred_at;
+    let mut expected = Some(&definition.definition);
+    for (index, stage) in definition.decay_chain.iter().enumerate() {
+        if expected != Some(&stage.definition) || stage.duration_millis == 0 {
+            return Err(SpellItemError::Rejected("field source chain continuity"));
+        }
+        deadline = deadline
+            .checked_add(i64::from(stage.duration_millis))
+            .ok_or(SpellItemError::Rejected(
+                "field source chain deadline overflow",
+            ))?;
+        sqlx::query("INSERT INTO game_spell_field_temporal_schedules(item_instance_id,source_stage,source_transaction_id,source_ordinal,duration_millis,expires_at_unix_ms,definition_family,definition_production_key,definition_revision,target_family,target_production_key,target_revision,content_digest,blocks_movement,blocks_projectile,immovable_block_solid) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)")
+            .bind(item.as_slice()).bind(i32::try_from(index+1).map_err(|_|SpellItemError::Rejected("field stage"))?)
+            .bind(transaction_id.as_slice()).bind(i32::try_from(ordinal).map_err(|_|SpellItemError::Rejected("field source ordinal"))?)
+            .bind(i64::from(stage.duration_millis)).bind(deadline).bind(&stage.definition.family)
+            .bind(&stage.definition.production_key).bind(&stage.definition.revision_ref)
+            .bind(stage.target.as_ref().map(|t|t.family.as_str())).bind(stage.target.as_ref().map(|t|t.production_key.as_str()))
+            .bind(stage.target.as_ref().map(|t|t.revision_ref.as_str())).bind(definition.content_generation_digest.as_slice())
+            .bind(stage.blocks_movement).bind(stage.blocks_projectile).bind(stage.immovable_block_solid).execute(&mut **tx).await?;
+        expected = stage.target.as_ref();
+    }
+    // A final permanent transformed definition is allowed only when its
+    // qualified source has no further decay; the authoring owner records it.
+    Ok(())
 }

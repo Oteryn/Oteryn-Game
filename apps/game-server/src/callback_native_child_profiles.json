@@ -1,0 +1,3707 @@
+{
+  "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
+  "records": [
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.damned_soul",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "armor": 25,
+            "details": {
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "corpse_item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i22698",
+                "revision": "definition-r1"
+              },
+              "critical_chance_ppm": 0,
+              "defense": 35,
+              "display_name": "Damned Soul",
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "a damned soul",
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": false
+              }
+            },
+            "experience": 0,
+            "health": 800,
+            "resistances": [
+              {
+                "damage_type": "death",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "drowning",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "earth",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "holy",
+                "percent": {
+                  "numerator": -10,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "life_drain",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "mana_drain",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              }
+            ],
+            "speed": 190,
+            "mitigation": {
+              "denominator": 20,
+              "numerator": 21
+            }
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.damned_soul",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.damned_soul",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 800,
+              "change_target": {
+                "interval_ms": 2000,
+                "chance_ppm": 40000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "voices": {
+              "interval_ms": 5000,
+              "chance_ppm": 100000,
+              "entries": [
+                {
+                  "text": "Forgive Meeeee!",
+                  "mode": "Say"
+                },
+                {
+                  "text": "Mouuuurn meeee!",
+                  "mode": "Say"
+                },
+                {
+                  "text": "Help meee!",
+                  "mode": "Say"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.demon",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.demon.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.demon.attack-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.demon.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.demon.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.demon.attack-5",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.demon.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.demon.attack-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.demon.defense-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.demon.defense-2",
+                "revision": "definition-r1"
+              }
+            ],
+            "armor": 44,
+            "bestiary": {
+              "charm_points": 50,
+              "difficulty": "hard",
+              "kill_thresholds": [
+                100,
+                1000,
+                2500
+              ],
+              "occurrence": "common"
+            },
+            "details": {
+              "article": "a",
+              "bestiary": {
+                "class": "Demon",
+                "locations": "Hero Cave, Ferumbras' Citadel, Goroma, Ghostlands Warlock area unreachable, Liberty Bay hidden underground passage unreachable, Razachai, deep in Pits of Inferno (found in every throneroom except Verminor's), deep Formorgar Mines, Demon Forge, Alchemist Quarter, Magician Quarter, Chyllfroest, Oramond Dungeon, Abandoned Sewers, Hell Hub and Halls of Ascension.",
+                "stars": 4,
+                "taxonomy": "demon"
+              },
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "corpse_item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i5995",
+                "revision": "definition-r1"
+              },
+              "critical_chance_ppm": 0,
+              "defense": 55,
+              "display_name": "Demon",
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "a demon",
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": false
+              }
+            },
+            "experience": 6000,
+            "health": 8200,
+            "mitigation": {
+              "denominator": 25,
+              "numerator": 69
+            },
+            "resistances": [
+              {
+                "damage_type": "death",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 20
+                }
+              },
+              {
+                "damage_type": "drowning",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "earth",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 40
+                }
+              },
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 50
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "holy",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": -12
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": -12
+                }
+              },
+              {
+                "damage_type": "life_drain",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "physical",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 25
+                }
+              }
+            ],
+            "speed": 128
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.demon",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.demon",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 700000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 4000,
+                "chance_ppm": 200000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.demon.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.demon.attack-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 100000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.demon.attack-3",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 200000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.demon.attack-4",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 100000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.demon.attack-5",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 100000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.demon.attack-6",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 100000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.demon.attack-7",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 150000
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.demon.defense-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 150000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.demon.defense-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 150000
+              }
+            ],
+            "voices": {
+              "interval_ms": 5000,
+              "chance_ppm": 100000,
+              "entries": [
+                {
+                  "text": "Your soul will be mine!",
+                  "mode": "Say"
+                },
+                {
+                  "text": "CHAMEK ATH UTHUL ARAK!",
+                  "mode": "Yell"
+                },
+                {
+                  "text": "I SMELL FEEEEAAAAAR!",
+                  "mode": "Yell"
+                },
+                {
+                  "text": "Your resistance is futile!",
+                  "mode": "Say"
+                },
+                {
+                  "text": "MUHAHAHAHA!",
+                  "mode": "Yell"
+                }
+              ]
+            },
+            "summons": {
+              "max_summons": 1,
+              "entries": [
+                {
+                  "creature": {
+                    "family": "Creature",
+                    "key": "oteryn:creature.fire_elemental",
+                    "revision": "definition-r1"
+                  },
+                  "interval_ms": 2000,
+                  "chance_ppm": 100000,
+                  "count": 1
+                }
+              ]
+            }
+          }
+        }
+      },
+      "monster_melee": {
+        "ability": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.demon.attack-1",
+          "revision": "definition-r1"
+        },
+        "interval_ms": 2000,
+        "chance_ppm": 1000000,
+        "minimum": 0,
+        "maximum": 500,
+        "source_repository": "opentibiabr/canary",
+        "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "source_path": "data-otservbr-global/monster/demons/demon.lua",
+        "source_sha256": "6d8ad632c877c1128142fc45d2e9a51a0578c847250b02bca0c403603b2e0cd6",
+        "execution_status": "approximate_nonlethal_physical_melee"
+      },
+      "source_item_abilities": [
+        {
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.demon.attack-4",
+            "revision": "definition-r1"
+          },
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "kind": "Spell",
+                "range_tiles": 7,
+                "needs_target": true,
+                "needs_direction": false,
+                "area": {
+                  "shape": "Circle",
+                  "radius_tiles": 1
+                },
+                "effects": [
+                  {
+                    "kind": "Inline",
+                    "effect": {
+                      "key": "oteryn:effect.creature.demon.attack-4",
+                      "operation": {
+                        "operation": "CreateItem",
+                        "item": {
+                          "family": "Item",
+                          "key": "oteryn:item.tibia.i2118",
+                          "revision": "definition-r1"
+                        }
+                      },
+                      "presentation": {
+                        "projectile_asset_binding": "canary.appearance:missile/fire"
+                      }
+                    }
+                  }
+                ],
+                "cast_cue": "canary.sound:effect/9",
+                "impact_cue": "canary.sound:effect/1025"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.disruption",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.disruption.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.disruption.attack-2",
+                "revision": "definition-r1"
+              }
+            ],
+            "armor": 100,
+            "details": {
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "critical_chance_ppm": 0,
+              "death_residue": {
+                "fluid_type": "slime",
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2886",
+                  "revision": "definition-r1"
+                }
+              },
+              "defense": 100,
+              "display_name": "Disruption",
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "a disruption",
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": false
+              }
+            },
+            "encounters": [
+              {
+                "family": "Encounter",
+                "key": "oteryn:encounter.world_devourer",
+                "revision": "definition-r1"
+              }
+            ],
+            "experience": 398,
+            "health": 12000,
+            "speed": 170,
+            "mitigation": {
+              "denominator": 25,
+              "numerator": 99
+            }
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.disruption",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.disruption",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": false,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 4000,
+                "chance_ppm": 150000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.disruption.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.disruption.attack-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 250000
+              }
+            ]
+          }
+        }
+      },
+      "monster_melee": {
+        "ability": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.disruption.attack-1",
+          "revision": "definition-r1"
+        },
+        "interval_ms": 2000,
+        "chance_ppm": 1000000,
+        "minimum": 0,
+        "maximum": 262,
+        "source_repository": "opentibiabr/canary",
+        "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "source_path": "data-otservbr-global/monster/quests/heart_of_destruction/disruption.lua",
+        "source_sha256": "f63835e13352a97d8de2a0c91ff272a202478980989aad5896696587c7d0551f",
+        "execution_status": "approximate_nonlethal_physical_melee"
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.frenzy",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.frenzy.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.frenzy.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.frenzy.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.frenzy.defense-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.big_energy_purple_wave2",
+                "revision": "definition-r1"
+              }
+            ],
+            "armor": 100,
+            "details": {
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "critical_chance_ppm": 0,
+              "death_residue": {
+                "fluid_type": "slime",
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2886",
+                  "revision": "definition-r1"
+                }
+              },
+              "defense": 100,
+              "display_name": "Frenzy",
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "Frenzy",
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": true
+              }
+            },
+            "encounters": [
+              {
+                "family": "Encounter",
+                "key": "oteryn:encounter.world_devourer",
+                "revision": "definition-r1"
+              }
+            ],
+            "experience": 1350,
+            "health": 8210,
+            "speed": 190,
+            "mitigation": {
+              "denominator": 20,
+              "numerator": 63
+            },
+            "resistances": [
+              {
+                "damage_type": "death",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "earth",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "holy",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "physical",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              }
+            ]
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.frenzy",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.frenzy",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": false,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 4000,
+                "chance_ppm": 250000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.frenzy.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.big_energy_purple_wave2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000,
+                "magnitude": {
+                  "minimum": 0,
+                  "maximum": 730
+                }
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.frenzy.attack-3",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 200000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.frenzy.attack-4",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 200000
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.frenzy.defense-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 200000
+              }
+            ]
+          }
+        }
+      },
+      "monster_melee": {
+        "ability": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.frenzy.attack-1",
+          "revision": "definition-r1"
+        },
+        "interval_ms": 2000,
+        "chance_ppm": 1000000,
+        "minimum": 0,
+        "maximum": 1047,
+        "source_repository": "opentibiabr/canary",
+        "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "source_path": "data-otservbr-global/monster/quests/heart_of_destruction/frenzy.lua",
+        "source_sha256": "69b095b1543d0d2bc9e0bafc7a5e50818e8929e12e621084f9f77275172f2bc7",
+        "execution_status": "approximate_nonlethal_physical_melee"
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.greed",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.greed.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.greed.attack-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.greed.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.greed.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.anomaly_break",
+                "revision": "definition-r1"
+              }
+            ],
+            "armor": 50,
+            "details": {
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "critical_chance_ppm": 0,
+              "death_residue": {
+                "fluid_type": "slime",
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2886",
+                  "revision": "definition-r1"
+                }
+              },
+              "defense": 50,
+              "display_name": "Greed",
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "Greed",
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": true
+              }
+            },
+            "experience": 0,
+            "health": 1000,
+            "resistances": [
+              {
+                "damage_type": "death",
+                "percent": {
+                  "numerator": 95,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "drowning",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "earth",
+                "percent": {
+                  "numerator": 95,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "holy",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "life_drain",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "mana_drain",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "physical",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              }
+            ],
+            "speed": 190,
+            "mitigation": {
+              "denominator": 5,
+              "numerator": 6
+            }
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.greed",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.greed",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": false,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 2000,
+                "chance_ppm": 250000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.greed.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.greed.attack-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 150000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.greed.attack-3",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 200000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.greed.attack-4",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 200000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.anomaly_break",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 400000
+              }
+            ]
+          }
+        }
+      },
+      "monster_melee": {
+        "ability": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.greed.attack-1",
+          "revision": "definition-r1"
+        },
+        "interval_ms": 2000,
+        "chance_ppm": 1000000,
+        "minimum": 0,
+        "maximum": 940,
+        "source_repository": "opentibiabr/canary",
+        "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "source_path": "data-otservbr-global/monster/quests/heart_of_destruction/greed.lua",
+        "source_sha256": "d3aa7055746b9a1e8af05261b753526d6aeb8150e34ba6eb22d1e1f1de35a387",
+        "execution_status": "approximate_nonlethal_physical_melee"
+      },
+      "source_item_abilities": [
+        {
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.anomaly_break",
+            "revision": "definition-r1"
+          },
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "kind": "Spell",
+                "range_tiles": 0,
+                "needs_target": false,
+                "needs_direction": false,
+                "area": {
+                  "shape": "Matrix",
+                  "north": [
+                    "xxx",
+                    "xCx",
+                    "xxx"
+                  ]
+                },
+                "effects": [
+                  {
+                    "kind": "Inline",
+                    "effect": {
+                      "key": "oteryn:effect.spell.anomaly_break.effect-remove",
+                      "operation": {
+                        "operation": "RemoveItems",
+                        "items": [
+                          {
+                            "family": "Item",
+                            "key": "oteryn:item.tibia.i2130",
+                            "revision": "definition-r1"
+                          },
+                          {
+                            "family": "Item",
+                            "key": "oteryn:item.tibia.i2129",
+                            "revision": "definition-r1"
+                          }
+                        ],
+                        "selection": "FirstListedPerTile"
+                      },
+                      "presentation": {
+                        "impact_asset_binding": "canary.appearance:effect/poff"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.lost_time",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.lost_time.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.white_shade_paralyze",
+                "revision": "definition-r1"
+              }
+            ],
+            "armor": 10,
+            "details": {
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "critical_chance_ppm": 0,
+              "defense": 10,
+              "display_name": "Lost Time",
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "lost time",
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": false
+              }
+            },
+            "experience": 0,
+            "health": 4000,
+            "mitigation": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "speed": 80
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.lost_time",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.lost_time",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 5000,
+                "chance_ppm": 80000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.lost_time.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.white_shade_paralyze",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 180000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.rage_of_mazoran",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.rage_of_mazoran.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.rage_of_mazoran.attack-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.rage_of_mazoran.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.rage_of_mazoran.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.hellfire_fighter_soulfire",
+                "revision": "definition-r1"
+              }
+            ],
+            "armor": 25,
+            "details": {
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "corpse_item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i6323",
+                "revision": "definition-r1"
+              },
+              "critical_chance_ppm": 0,
+              "defense": 25,
+              "display_name": "Rage of Mazoran",
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "a Rage of Mazoran",
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": false
+              }
+            },
+            "experience": 300,
+            "health": 4500,
+            "resistances": [
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 20
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": -25
+                }
+              }
+            ],
+            "speed": 165,
+            "mitigation": {
+              "denominator": 100,
+              "numerator": 121
+            }
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.rage_of_mazoran",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.rage_of_mazoran",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 2000,
+                "chance_ppm": 100000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.rage_of_mazoran.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.rage_of_mazoran.attack-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 110000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.rage_of_mazoran.attack-3",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 90000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.rage_of_mazoran.attack-4",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 120000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.hellfire_fighter_soulfire",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 100000,
+                "magnitude": {
+                  "minimum": 0,
+                  "maximum": 0
+                }
+              }
+            ]
+          }
+        }
+      },
+      "monster_melee": {
+        "ability": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.rage_of_mazoran.attack-1",
+          "revision": "definition-r1"
+        },
+        "interval_ms": 2000,
+        "chance_ppm": 1000000,
+        "minimum": 0,
+        "maximum": 520,
+        "source_repository": "opentibiabr/canary",
+        "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "source_path": "data-otservbr-global/monster/quests/ferumbras_ascension/rage_of_mazoran.lua",
+        "source_sha256": "8e204efce510d8bddfe17c56c1b41e8510f2bf00234890d7cac99500aadb1817",
+        "execution_status": "approximate_nonlethal_physical_melee"
+      },
+      "source_item_abilities": [
+        {
+          "target": {
+            "family": "Ability",
+            "key": "oteryn:ability.creature.rage_of_mazoran.attack-2",
+            "revision": "definition-r1"
+          },
+          "data": {
+            "kind": "Ability",
+            "profile": {
+              "details": {
+                "kind": "Spell",
+                "range_tiles": 7,
+                "needs_target": false,
+                "needs_direction": false,
+                "area": {
+                  "shape": "Circle",
+                  "radius_tiles": 3
+                },
+                "effects": [
+                  {
+                    "kind": "Inline",
+                    "effect": {
+                      "key": "oteryn:effect.creature.rage_of_mazoran.attack-2",
+                      "operation": {
+                        "operation": "CreateItem",
+                        "item": {
+                          "family": "Item",
+                          "key": "oteryn:item.tibia.i2118",
+                          "revision": "definition-r1"
+                        }
+                      },
+                      "presentation": {
+                        "impact_asset_binding": "canary.appearance:effect/hitbyfire"
+                      }
+                    }
+                  }
+                ],
+                "impact_cue": "canary.sound:effect/1025"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.shadow_fiend",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.shadow_fiend.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.shadow_fiend.attack-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.shadow_fiend.defense-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.nightstalker_paralyze",
+                "revision": "definition-r1"
+              }
+            ],
+            "armor": 30,
+            "details": {
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "corpse_item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i24256",
+                "revision": "definition-r1"
+              },
+              "critical_chance_ppm": 0,
+              "defense": 35,
+              "display_name": "Shadow Fiend",
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "a shadow fiend",
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": false
+              }
+            },
+            "experience": 0,
+            "health": 3200,
+            "mitigation": {
+              "denominator": 50,
+              "numerator": 59
+            },
+            "resistances": [
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": -10
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": -20
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 41
+                }
+              }
+            ],
+            "speed": 180
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.shadow_fiend",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.shadow_fiend",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 10,
+                "chance_ppm": 80000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.shadow_fiend.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.shadow_fiend.attack-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 200000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.nightstalker_paralyze",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 190000,
+                "range_tiles": 7
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.shadow_fiend.defense-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 130000
+              }
+            ]
+          }
+        }
+      },
+      "monster_melee": {
+        "ability": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.shadow_fiend.attack-1",
+          "revision": "definition-r1"
+        },
+        "interval_ms": 2000,
+        "chance_ppm": 1000000,
+        "minimum": 0,
+        "maximum": 320,
+        "source_repository": "opentibiabr/canary",
+        "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "source_path": "data-otservbr-global/monster/quests/forgotten_knowledge/shadow_fiend.lua",
+        "source_sha256": "b406cf2b8d55280b1c41539a3d42dfb08a5efcac94cb39caa9822a5d53db6235",
+        "execution_status": "primaryphysicalonly_omits_secondary_conditions"
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.sin_devourer",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.sin_devourer.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.sin_devourer.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.sin_devourer.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.sin_devourer.defense-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.sin_devourer.defense-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.nightstalker_paralyze",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.silencer_skill_reducer",
+                "revision": "definition-r1"
+              }
+            ],
+            "armor": 30,
+            "details": {
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "critical_chance_ppm": 0,
+              "defense": 35,
+              "display_name": "Sin Devourer",
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "a sin devourer",
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": false
+              }
+            },
+            "experience": 500,
+            "health": 2700,
+            "resistances": [
+              {
+                "damage_type": "death",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 0
+                }
+              },
+              {
+                "damage_type": "earth",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 0
+                }
+              },
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 0
+                }
+              },
+              {
+                "damage_type": "holy",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 0
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 0
+                }
+              },
+              {
+                "damage_type": "life_drain",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "mana_drain",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "physical",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 0
+                }
+              }
+            ],
+            "speed": 180,
+            "mitigation": {
+              "denominator": 100,
+              "numerator": 153
+            }
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.sin_devourer",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.sin_devourer",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 4,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 10,
+                "chance_ppm": 80000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.sin_devourer.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.nightstalker_paralyze",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 190000,
+                "range_tiles": 7
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.sin_devourer.attack-3",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 500000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.sin_devourer.attack-4",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 400000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.silencer_skill_reducer",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 300000,
+                "range_tiles": 4
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.sin_devourer.defense-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 130000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.sin_devourer.defense-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 100000
+              }
+            ]
+          }
+        }
+      },
+      "monster_melee": {
+        "ability": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.sin_devourer.attack-1",
+          "revision": "definition-r1"
+        },
+        "interval_ms": 2000,
+        "chance_ppm": 1000000,
+        "minimum": 0,
+        "maximum": 90,
+        "source_repository": "opentibiabr/canary",
+        "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "source_path": "data-otservbr-global/monster/quests/ferumbras_ascension/bosses/sin_devourer.lua",
+        "source_sha256": "300613556f0def06c5c2a31ad5a7cb0571164d47824da358c9db59aace09c365",
+        "execution_status": "primaryphysicalonly_omits_secondary_conditions"
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.thorn_minion",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.thorn_minion.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.thorn_minion.attack-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.thorn_minion.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.thorn_minion.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.thorn_minion.attack-5",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.thorn_minion.defense-1",
+                "revision": "definition-r1"
+              }
+            ],
+            "armor": 20,
+            "details": {
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "critical_chance_ppm": 0,
+              "death_residue": {
+                "fluid_type": "slime",
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2886",
+                  "revision": "definition-r1"
+                }
+              },
+              "defense": 20,
+              "display_name": "Thorn Minion",
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "a thorn minion",
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": false
+              }
+            },
+            "experience": 0,
+            "health": 3600,
+            "mitigation": {
+              "denominator": 100,
+              "numerator": 99
+            },
+            "speed": 75,
+            "resistances": [
+              {
+                "damage_type": "death",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 10
+                }
+              },
+              {
+                "damage_type": "earth",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 10
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": -10
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 10
+                }
+              }
+            ]
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.thorn_minion",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.thorn_minion",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 15,
+              "change_target": {
+                "interval_ms": 5000,
+                "chance_ppm": 0
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.thorn_minion.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.thorn_minion.attack-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 150000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.thorn_minion.attack-3",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 150000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.thorn_minion.attack-4",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 200000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.thorn_minion.attack-5",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 100000
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.thorn_minion.defense-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 300000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.time_waster",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.time_waster.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.time_waster.attack-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.white_shade_paralyze",
+                "revision": "definition-r1"
+              }
+            ],
+            "armor": 10,
+            "details": {
+              "article": "a",
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "critical_chance_ppm": 0,
+              "defense": 10,
+              "display_name": "Time Waster",
+              "flags": {
+                "attackable": true,
+                "health_hidden": false,
+                "illusionable": false
+              },
+              "inspection": "a time waster",
+              "spawn_eligibility": {
+                "blocked_by_nearby_players": false,
+                "ignore_period_underground": false,
+                "period": "All"
+              },
+              "summoning": {
+                "convinceable": false,
+                "is_familiar": false,
+                "summonable": false
+              },
+              "system_eligibility": {
+                "exclusive_prey": false,
+                "forge": true,
+                "prey": true,
+                "reward_boss": false
+              }
+            },
+            "experience": 0,
+            "health": 1000,
+            "resistances": [
+              {
+                "damage_type": "death",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "drowning",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "earth",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "holy",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "life_drain",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "mana_drain",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              },
+              {
+                "damage_type": "physical",
+                "percent": {
+                  "denominator": 1,
+                  "numerator": 100
+                }
+              }
+            ],
+            "speed": 50,
+            "mitigation": {
+              "denominator": 25,
+              "numerator": 8
+            }
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.time_waster",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.time_waster",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 5000,
+                "chance_ppm": 80000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.time_waster.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.time_waster.attack-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 170000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.white_shade_paralyze",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 180000
+              }
+            ]
+          }
+        }
+      },
+      "monster_melee": {
+        "ability": {
+          "family": "Ability",
+          "key": "oteryn:ability.creature.time_waster.attack-1",
+          "revision": "definition-r1"
+        },
+        "interval_ms": 2000,
+        "chance_ppm": 1000000,
+        "minimum": 0,
+        "maximum": 550,
+        "source_repository": "opentibiabr/canary",
+        "source_revision": "99902524e052f37574194466c2949c576e4ab269",
+        "source_path": "data-otservbr-global/monster/quests/forgotten_knowledge/time_waster.lua",
+        "source_sha256": "48f91bc5f96ae7223d8a8694176b6cd58169801d1df54174083f9c579ba50e54",
+        "execution_status": "approximate_nonlethal_physical_melee"
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.corrupted_soul",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "health": 1100,
+            "experience": 1300,
+            "speed": 105,
+            "armor": 25,
+            "mitigation": {
+              "numerator": 51,
+              "denominator": 100
+            },
+            "resistances": [
+              {
+                "damage_type": "death",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "earth",
+                "percent": {
+                  "numerator": 0,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "numerator": 60,
+                  "denominator": 1
+                }
+              }
+            ],
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.corrupted_soul.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.corrupted_soul.attack-3",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.corrupted_soul.attack-4",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.corrupted_soul.defense-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.corrupted_soul.defense-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.souleater_drown",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.souleater_wave",
+                "revision": "definition-r1"
+              }
+            ],
+            "details": {
+              "display_name": "Corrupted Soul",
+              "article": "a",
+              "inspection": "a corrupted soul",
+              "defense": 20,
+              "critical_chance_ppm": 0,
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "flags": {
+                "attackable": true,
+                "illusionable": false,
+                "health_hidden": false
+              },
+              "summoning": {
+                "summonable": false,
+                "convinceable": false,
+                "is_familiar": false
+              },
+              "system_eligibility": {
+                "prey": true,
+                "exclusive_prey": false,
+                "forge": true,
+                "reward_boss": false
+              },
+              "spawn_eligibility": {
+                "period": "All",
+                "ignore_period_underground": false,
+                "blocked_by_nearby_players": false
+              },
+              "encyclopedia_document": {
+                "family": "Document",
+                "key": "oteryn:document/monster-encyclopedia/corrupted_soul",
+                "revision": "definition-r1"
+              }
+            },
+            "encounters": [
+              {
+                "family": "Encounter",
+                "key": "oteryn:encounter.corrupted_soul",
+                "revision": "definition-r1"
+              }
+            ]
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.corrupted_soul",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.corrupted_soul",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 2000,
+                "chance_ppm": 50000
+              },
+              "strategy_weights": {
+                "nearest": 100,
+                "damage": 0,
+                "health": 0,
+                "random": 0
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.corrupted_soul.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.souleater_drown",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 90000,
+                "magnitude": {
+                  "minimum": 0,
+                  "maximum": 0
+                }
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.corrupted_soul.attack-3",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 80000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.corrupted_soul.attack-4",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 140000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.souleater_wave",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 120000,
+                "magnitude": {
+                  "minimum": 100,
+                  "maximum": 210
+                }
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.corrupted_soul.defense-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 120000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.corrupted_soul.defense-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 160000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.disgusting_ooze",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "health": 3650,
+            "experience": 3700,
+            "speed": 130,
+            "armor": 15,
+            "mitigation": {
+              "numerator": 69,
+              "denominator": 50
+            },
+            "resistances": [
+              {
+                "damage_type": "earth",
+                "percent": {
+                  "numerator": 100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "numerator": 30,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "numerator": 15,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "numerator": 0,
+                  "denominator": 1
+                }
+              }
+            ],
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.disgusting_ooze.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.disgusting_ooze.attack-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.disgusting_ooze.attack-6",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.disgusting_ooze.attack-7",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.disgusting_ooze.attack-8",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.disgusting_ooze.defense-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.defiler_paralyze_1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.defiler_paralyze_2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.defiler_paralyze_3",
+                "revision": "definition-r1"
+              }
+            ],
+            "details": {
+              "display_name": "Disgusting Ooze",
+              "article": "a",
+              "inspection": "a disgusting ooze",
+              "defense": 15,
+              "critical_chance_ppm": 0,
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "flags": {
+                "attackable": true,
+                "illusionable": false,
+                "health_hidden": false
+              },
+              "summoning": {
+                "summonable": false,
+                "convinceable": false,
+                "is_familiar": false
+              },
+              "system_eligibility": {
+                "prey": true,
+                "exclusive_prey": false,
+                "forge": true,
+                "reward_boss": false
+              },
+              "spawn_eligibility": {
+                "period": "All",
+                "ignore_period_underground": false,
+                "blocked_by_nearby_players": false
+              },
+              "corpse_item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i6532",
+                "revision": "definition-r1"
+              },
+              "death_residue": {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2886",
+                  "revision": "definition-r1"
+                },
+                "fluid_type": "slime"
+              },
+              "encyclopedia_document": {
+                "family": "Document",
+                "key": "oteryn:document/monster-encyclopedia/disgusting_ooze",
+                "revision": "definition-r1"
+              }
+            },
+            "encounters": [
+              {
+                "family": "Encounter",
+                "key": "oteryn:encounter.plagirath",
+                "revision": "definition-r1"
+              }
+            ]
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.disgusting_ooze",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.disgusting_ooze",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": true,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 85,
+              "change_target": {
+                "interval_ms": 5000,
+                "chance_ppm": 80000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.disgusting_ooze.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.disgusting_ooze.attack-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 130000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.defiler_paralyze_3",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 90000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.defiler_paralyze_1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 60000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.defiler_paralyze_2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 80000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.disgusting_ooze.attack-6",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 100000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.disgusting_ooze.attack-7",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 100000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.disgusting_ooze.attack-8",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 140000
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.disgusting_ooze.defense-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 150000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.energy_pulse",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "health": 5000,
+            "experience": 0,
+            "speed": 0,
+            "armor": 10,
+            "mitigation": {
+              "numerator": 1,
+              "denominator": 100
+            },
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.energy_pulse_explosion",
+                "revision": "definition-r1"
+              }
+            ],
+            "details": {
+              "display_name": "Energy Pulse",
+              "inspection": "an energy pulse",
+              "defense": 5,
+              "critical_chance_ppm": 0,
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "flags": {
+                "attackable": true,
+                "illusionable": false,
+                "health_hidden": false
+              },
+              "summoning": {
+                "summonable": false,
+                "convinceable": false,
+                "is_familiar": false
+              },
+              "system_eligibility": {
+                "prey": true,
+                "exclusive_prey": false,
+                "forge": true,
+                "reward_boss": false
+              },
+              "spawn_eligibility": {
+                "period": "All",
+                "ignore_period_underground": false,
+                "blocked_by_nearby_players": false
+              },
+              "corpse_item": {
+                "family": "Item",
+                "key": "oteryn:item.tibia.i9591",
+                "revision": "definition-r1"
+              },
+              "encyclopedia_document": {
+                "family": "Document",
+                "key": "oteryn:document/monster-encyclopedia/energy_pulse",
+                "revision": "definition-r1"
+              }
+            },
+            "encounters": [
+              {
+                "family": "Encounter",
+                "key": "oteryn:encounter.source_core_energy_pulse",
+                "revision": "definition-r1"
+              }
+            ]
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.energy_pulse",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.energy_pulse",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": true,
+              "push_creatures": false,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 60000,
+                "chance_ppm": 0
+              },
+              "strategy_weights": {
+                "nearest": 100,
+                "damage": 0,
+                "health": 0,
+                "random": 0
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.energy_pulse_explosion",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 1000,
+                "chance_ppm": 1000000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.glooth_generator",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "health": 12000,
+            "experience": 0,
+            "speed": 0,
+            "armor": 50,
+            "mitigation": {
+              "numerator": 129,
+              "denominator": 50
+            },
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.glooth_generator.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.glooth_generator_summon",
+                "revision": "definition-r1"
+              }
+            ],
+            "details": {
+              "display_name": "Glooth-Generator",
+              "article": "a",
+              "inspection": "a glooth-generator",
+              "defense": 50,
+              "critical_chance_ppm": 0,
+              "condition_immunities": [
+                "invisible",
+                "paralyze"
+              ],
+              "flags": {
+                "attackable": true,
+                "illusionable": false,
+                "health_hidden": false
+              },
+              "summoning": {
+                "summonable": false,
+                "convinceable": false,
+                "is_familiar": false
+              },
+              "system_eligibility": {
+                "prey": true,
+                "exclusive_prey": false,
+                "forge": true,
+                "reward_boss": false
+              },
+              "spawn_eligibility": {
+                "period": "All",
+                "ignore_period_underground": false,
+                "blocked_by_nearby_players": false
+              },
+              "death_residue": {
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i2886",
+                  "revision": "definition-r1"
+                },
+                "fluid_type": "slime"
+              },
+              "encyclopedia_document": {
+                "family": "Document",
+                "key": "oteryn:document/monster-encyclopedia/glooth_generator",
+                "revision": "definition-r1"
+              }
+            },
+            "encounters": [
+              {
+                "family": "Encounter",
+                "key": "oteryn:encounter.glooth_generator",
+                "revision": "definition-r1"
+              }
+            ]
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.glooth_generator",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.glooth_generator",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": false,
+              "push_creatures": false,
+              "walks_on_energy": true,
+              "walks_on_fire": true,
+              "walks_on_poison": true
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 2000,
+                "chance_ppm": 50000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.glooth_generator.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 180000
+              }
+            ],
+            "defenses": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.glooth_generator_summon",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 1000,
+                "chance_ppm": 1000000
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "profile": {
+        "target": {
+          "family": "Creature",
+          "key": "oteryn:creature.minion_of_gaz_haragoth",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Creature",
+          "profile": {
+            "health": 5500,
+            "experience": 0,
+            "speed": 165,
+            "armor": 55,
+            "mitigation": {
+              "numerator": 54,
+              "denominator": 25
+            },
+            "resistances": [
+              {
+                "damage_type": "energy",
+                "percent": {
+                  "numerator": 15,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "fire",
+                "percent": {
+                  "numerator": -100,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "holy",
+                "percent": {
+                  "numerator": 30,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "ice",
+                "percent": {
+                  "numerator": 0,
+                  "denominator": 1
+                }
+              },
+              {
+                "damage_type": "physical",
+                "percent": {
+                  "numerator": 1,
+                  "denominator": 1
+                }
+              }
+            ],
+            "abilities": [
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.minion_of_gaz_haragoth.attack-1",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.minion_of_gaz_haragoth.attack-2",
+                "revision": "definition-r1"
+              },
+              {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.minion_of_gaz_haragoth.attack-3",
+                "revision": "definition-r1"
+              }
+            ],
+            "details": {
+              "display_name": "Minion of Gaz'haragoth",
+              "article": "a",
+              "inspection": "a minion of Gaz'haragoth",
+              "defense": 55,
+              "critical_chance_ppm": 0,
+              "condition_immunities": [
+                "invisible"
+              ],
+              "flags": {
+                "attackable": true,
+                "illusionable": false,
+                "health_hidden": false
+              },
+              "summoning": {
+                "summonable": false,
+                "convinceable": false,
+                "is_familiar": false
+              },
+              "system_eligibility": {
+                "prey": true,
+                "exclusive_prey": false,
+                "forge": true,
+                "reward_boss": false
+              },
+              "spawn_eligibility": {
+                "period": "All",
+                "ignore_period_underground": false,
+                "blocked_by_nearby_players": false
+              },
+              "encyclopedia_document": {
+                "family": "Document",
+                "key": "oteryn:document/monster-encyclopedia/minion_of_gaz_haragoth",
+                "revision": "definition-r1"
+              }
+            },
+            "encounters": [
+              {
+                "family": "Encounter",
+                "key": "oteryn:encounter.gaz_haragoth",
+                "revision": "definition-r1"
+              }
+            ]
+          }
+        }
+      },
+      "presentation": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.creature.minion_of_gaz_haragoth",
+        "revision": "definition-r1"
+      },
+      "behavior": {
+        "target": {
+          "family": "Behavior",
+          "key": "oteryn:behavior.creature.minion_of_gaz_haragoth",
+          "revision": "definition-r1"
+        },
+        "data": {
+          "kind": "Behavior",
+          "profile": {
+            "movement": {
+              "can_walk": true,
+              "pass_through": false,
+              "pushable": false,
+              "push_items": false,
+              "push_creatures": true,
+              "walks_on_energy": false,
+              "walks_on_fire": false,
+              "walks_on_poison": false
+            },
+            "targeting": {
+              "hostile": true,
+              "can_target": true,
+              "sense_invisible": true,
+              "target_distance_tiles": 1,
+              "static_attack_chance_ppm": 900000,
+              "flee_health": 0,
+              "change_target": {
+                "interval_ms": 5000,
+                "chance_ppm": 80000
+              },
+              "strategy_weights": {
+                "nearest": 70,
+                "damage": 10,
+                "health": 10,
+                "random": 10
+              }
+            },
+            "attacks": [
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.minion_of_gaz_haragoth.attack-1",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 1000000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.minion_of_gaz_haragoth.attack-2",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 1800,
+                "chance_ppm": 100000
+              },
+              {
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.creature.minion_of_gaz_haragoth.attack-3",
+                  "revision": "definition-r1"
+                },
+                "interval_ms": 2000,
+                "chance_ppm": 90000
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
