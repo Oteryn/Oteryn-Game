@@ -117,9 +117,19 @@ impl ClientBootstrap {
             .map_err(|_error| GameplayEntryError::Rejected(PublicClass::TemporarilyUnavailable))?
     }
 
-    /// Runs `future` on the client runtime, which the admitted session's stream is bound to.
-    pub fn block_on<F: std::future::Future>(&self, future: F) -> Result<F::Output, RuntimeError> {
-        self.runtime.block_on(future)
+    /// Starts the admitted session's task on the client runtime, whose reactor its stream is
+    /// bound to, and returns the placeholder view with the shell's link to the task.
+    pub fn start_play(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<(play::PlayView, play::PlayLink), GameplayEntryError> {
+        let unavailable = || GameplayEntryError::Rejected(PublicClass::SessionUnavailable);
+        let view = admitted.play_view().map_err(|_error| unavailable())?;
+        let (link, commands, events) = play::play_channel();
+        self.runtime
+            .spawn(play::run_session(admitted.into_session(), commands, events))
+            .map_err(|_error| unavailable())?;
+        Ok((view, link))
     }
 
     pub fn shutdown(self) {
@@ -292,14 +302,6 @@ mod native_entry {
         /// The placeholder view of the join snapshot.
         pub fn play_view(&self) -> Result<crate::play::PlayView, oteryn_renderer::BatchError> {
             crate::play::PlayView::from_join(self.session.join_snapshot())
-        }
-
-        /// Sends the view's next step, if one is due; `true` when the view changed.
-        pub async fn pump(
-            &mut self,
-            view: &mut crate::play::PlayView,
-        ) -> Result<bool, GameplayEntryError> {
-            view.pump(&mut self.session).await
         }
 
         #[must_use]

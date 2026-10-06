@@ -1,10 +1,11 @@
 use oteryn_client::input::{MouseActions, arrow_step, click_tile};
-use oteryn_client::play::PlayView;
+use oteryn_client::play::{PlayLink, PlayView};
 use oteryn_client::pre_native_status;
 use oteryn_client::scene::PlaceholderScene;
-use oteryn_client::{AdmittedSession, ClientBootstrap};
+use oteryn_client::{AdmittedSession, ClientBootstrap, GameplayEntryError};
 use oteryn_foundation::ProcessGeneration;
 use oteryn_input_platform::InputPlatformAdapter;
+use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{SurfacePhase, WindowsRenderer};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
@@ -26,7 +27,6 @@ pub enum ShellError {
     RendererResize,
     RendererRender,
     RendererClose,
-    SessionEnded,
 }
 
 impl Display for ShellError {
@@ -42,7 +42,6 @@ impl Display for ShellError {
             Self::RendererResize => "client renderer resize failed",
             Self::RendererRender => "client renderer render failed",
             Self::RendererClose => "client renderer close failed",
-            Self::SessionEnded => "client session ended",
         })
     }
 }
@@ -54,6 +53,7 @@ struct Application {
     window: Option<Arc<Window>>,
     renderer: Option<WindowsRenderer<Arc<Window>>>,
     scene: Option<PlaceholderScene>,
+    client: Option<ClientBootstrap>,
     play: Option<Play>,
     generation: ProcessGeneration,
     input: InputPlatformAdapter,
@@ -61,24 +61,10 @@ struct Application {
     fatal_error: Option<ShellError>,
 }
 
-/// An admitted session, its view, and the client runtime the session's stream is bound to.
+/// The view of an admitted session and the link to its task on the client runtime.
 struct Play {
-    client: ClientBootstrap,
-    session: AdmittedSession,
     view: PlayView,
-}
-
-impl Play {
-    fn new(client: ClientBootstrap, session: AdmittedSession) -> Result<Self, ShellError> {
-        let view = session
-            .play_view()
-            .map_err(|_error| ShellError::RendererInitialization)?;
-        Ok(Self {
-            client,
-            session,
-            view,
-        })
-    }
+    link: PlayLink,
 }
 
 impl Application {
@@ -86,14 +72,21 @@ impl Application {
         smoke: bool,
         play: Option<(ClientBootstrap, AdmittedSession)>,
     ) -> Result<Self, ShellError> {
-        let play = play
-            .map(|(client, session)| Play::new(client, session))
-            .transpose()?;
+        let (client, play) = match play {
+            Some((client, admitted)) => {
+                let (view, link) = client
+                    .start_play(admitted)
+                    .map_err(|_error| ShellError::RendererInitialization)?;
+                (Some(client), Some(Play { view, link }))
+            }
+            None => (None, None),
+        };
         Ok(Self {
             smoke,
             window: None,
             renderer: None,
             scene: None,
+            client,
             play,
             generation: ProcessGeneration::new(1),
             input: InputPlatformAdapter::new(),
@@ -132,6 +125,24 @@ impl Application {
                 self.fail(event_loop, ShellError::RendererRender);
             }
         }
+    }
+
+    /// A session end returns to the pre-admission state: the placeholder scene, with the public
+    /// class in the title and on the console. The session task is gone with its link.
+    fn return_to_login(&mut self, class: PublicClass) {
+        self.play = None;
+        let message = GameplayEntryError::Rejected(class).to_string();
+        println!("Oteryn: {message}");
+        if let Some(window) = &self.window {
+            window.set_title(&format!("Oteryn — {message}"));
+        }
+        let Ok(scene) = PlaceholderScene::new() else {
+            return;
+        };
+        if let Some(renderer) = &mut self.renderer {
+            renderer.set_atlas(scene.atlas().clone());
+        }
+        self.scene = Some(scene);
     }
 
     fn fail(&mut self, event_loop: &ActiveEventLoop, error: ShellError) {
@@ -272,20 +283,10 @@ impl ApplicationHandler for Application {
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        if let Some(play) = &mut self.play {
-            match play.client.block_on(play.session.pump(&mut play.view)) {
-                Ok(Ok(_changed)) => {}
-                // Any session error returns to login with its public class.
-                Ok(Err(error)) => {
-                    println!("Oteryn: {error}");
-                    self.fail(event_loop, ShellError::SessionEnded);
-                    return;
-                }
-                Err(_error) => {
-                    self.fail(event_loop, ShellError::SessionEnded);
-                    return;
-                }
-            }
+        if let Some(play) = &mut self.play
+            && let Err(class) = play.view.tick(&play.link)
+        {
+            self.return_to_login(class);
         }
         if let Some(window) = &self.window
             && redraw_eligible(
@@ -306,8 +307,9 @@ pub fn run(play: Option<(ClientBootstrap, AdmittedSession)>) -> Result<(), Shell
     let run_result = event_loop
         .run_app(&mut application)
         .map_err(|_error| ShellError::EventLoopRun);
-    if let Some(play) = application.play.take() {
-        play.client.shutdown();
+    drop(application.play.take());
+    if let Some(client) = application.client.take() {
+        client.shutdown();
     }
     if let Some(error) = application.fatal_error {
         return Err(error);
