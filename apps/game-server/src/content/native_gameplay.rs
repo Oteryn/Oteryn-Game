@@ -167,6 +167,8 @@ pub(crate) struct CreatureProfileRecord {
     /// Explicit source-qualified approximation; absence disables wild melee.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) monster_melee: Option<NativeMonsterMeleeProfile>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) source_item_abilities: Vec<ProjectV2AuthoringProfile>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -235,6 +237,10 @@ impl NativeMonsterMeleeProfile {
 pub(crate) struct CreatureProfilesDocument {
     pub(crate) schema: String,
     pub(crate) records: Vec<CreatureProfileRecord>,
+    /// Exact canonical definition/provenance closure, independently pinned in this artifact.
+    /// This is not the caller-supplied outer artifact digest or an actor identity claim.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) source_definitions_sha256: Option<String>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -363,6 +369,53 @@ impl NativeGameplayState {
     pub(crate) fn catalog(&self) -> &executable_catalog::CompiledCatalog {
         &self.catalog
     }
+    /// Only loader-decoded profiles under the current outer artifact may authorize source actors.
+    /// A caller's detached WorldProject or digest cannot supply this membership.
+    pub(crate) fn qualifies_current_creature_profile(
+        &self,
+        server_digest: [u8; 32],
+        profile: &ProjectV2AuthoringProfile,
+    ) -> bool {
+        self.source_digest == server_digest
+            && self
+                .creatures
+                .records
+                .iter()
+                .filter(|r| r.profile.target == profile.target)
+                .count()
+                == 1
+            && self.creatures.records.iter().any(|r| &r.profile == profile)
+    }
+    /// The decoded artifact, not the caller, supplies the expected source-membership digest.
+    /// Bind the entire consumed closure, including children, heals, callbacks and provenance.
+    pub(crate) fn qualifies_current_project_definitions(
+        &self,
+        server_digest: [u8; 32],
+        draft: &super::ProjectV2Draft,
+    ) -> bool {
+        if self.source_digest != server_digest {
+            return false;
+        }
+        let Some(expected) = &self.creatures.source_definitions_sha256 else {
+            return false;
+        };
+        let value = serde_json::json!({
+            "schema": "OTERYN_NATIVE_MONSTER_DEFINITIONS/v1",
+            "records": draft.core.records,
+            "authoring_profiles": draft.state.authoring_profiles,
+            "declarations": draft.state.declarations,
+            "sources": draft.state.sources,
+            "source_identity_bindings": draft.state.source_identity_bindings,
+        });
+        let Ok(bytes) = serde_json::to_vec(&value) else {
+            return false;
+        };
+        let actual: String = sha256(&bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        &actual == expected
+    }
     pub(crate) fn creature_profiles(&self) -> &CreatureProfilesDocument {
         &self.creatures
     }
@@ -423,7 +476,7 @@ impl NativeGameplayState {
     }
     /// Stage invokes this only after the complete outer artifact matches independent issuance.
     /// Rebinds already validated immutable data; creates no active-generation authority.
-    pub(crate) fn bind_qualified_outer_artifact(
+    pub(super) fn bind_qualified_outer_artifact(
         &mut self,
         digest: [u8; 32],
     ) -> Result<(), ContentError> {
@@ -1026,6 +1079,7 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
         }
         for policy in &records {
             if policy.flags.illusionable
+                && policy.outfit_appearance().is_some()
                 && compiled
                     .for_creature(&policy.definition_key, &policy.definition_revision)
                     .is_none()
@@ -1161,6 +1215,20 @@ fn creature_policies(
     creatures: &CreatureProfilesDocument,
     presentations: &PresentationProfilesDocument,
 ) -> Result<Vec<CompiledCreaturePolicy>, ContentError> {
+    if creatures
+        .source_definitions_sha256
+        .as_ref()
+        .is_some_and(|value| {
+            value.len() != 64
+                || !value
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        })
+    {
+        return Err(invalid(
+            "native gameplay source definition membership digest",
+        ));
+    }
     let mut appearance = BTreeMap::new();
     for profile in &presentations.records {
         super::project::validate_native_gameplay_profile(profile)
@@ -1207,6 +1275,7 @@ fn creature_policies(
     let mut seen = BTreeSet::new();
     let mut records = Vec::new();
     for record in &creatures.records {
+        validate_source_item_abilities(record)?;
         super::project::validate_native_gameplay_profile(&record.profile)
             .map_err(|_| invalid("native gameplay invalid V2 creature authoring"))?;
         exact(&record.profile.target, ProjectV2Family::Creature)?;
@@ -1248,9 +1317,7 @@ fn creature_policies(
         let (outfit_look_type, object_look_type) = *appearance.get(&record.presentation).ok_or(
             invalid("native gameplay exact creature presentation missing"),
         )?;
-        if object_look_type.is_some()
-            && (details.flags.illusionable || details.summoning.is_familiar)
-        {
+        if object_look_type.is_some() && details.summoning.is_familiar {
             return Err(invalid(
                 "native gameplay object appearance incompatible creature flags",
             ));
@@ -1294,6 +1361,17 @@ fn creature_policies(
                 })
                 .collect(),
             damage_immunities: value.immunities.clone(),
+            healing_from_damage: details
+                .healing_from_damage
+                .iter()
+                .map(|v| crate::foundation::CreatureResistance {
+                    damage_type: v.damage_type.clone(),
+                    percent: crate::foundation::CreatureExactRatio {
+                        numerator: v.percent.numerator,
+                        denominator: v.percent.denominator,
+                    },
+                })
+                .collect(),
             flags: crate::foundation::CreatureFlags {
                 attackable: details.flags.attackable,
                 illusionable: details.flags.illusionable,
@@ -1333,7 +1411,7 @@ mod tests {
             sha256: hex(sha256(bytes)),
         }
     }
-    fn input() -> NativeGameplayInput {
+    pub(super) fn input() -> NativeGameplayInput {
         NativeGameplayInput {
             native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,
             catalog: pinned(include_bytes!(
@@ -1675,7 +1753,15 @@ mod tests {
             } else {
                 details.summoning.is_familiar = true;
             }
-            assert!(creature_policies(&creatures, &presentations).is_err());
+            if change == 0 {
+                let policies = creature_policies(&creatures, &presentations).unwrap();
+                assert!(policies[0].flags.illusionable);
+                assert_eq!(policies[0].object_look_type, Some(2122));
+                assert_eq!(policies[0].outfit_appearance(), None);
+                CompiledCreaturePolicies::from_active_artifact([1; 32], policies).unwrap();
+            } else {
+                assert!(creature_policies(&creatures, &presentations).is_err());
+            }
         }
     }
     #[test]
@@ -2321,5 +2407,225 @@ mod equipment_projection_tests {
             projected_equipment_claims(&semantics, 5).err(),
             Some("equipment ambiguous source pattern")
         );
+    }
+}
+
+/// Return only a compiler-qualified, immutable source Item effect body.
+/// This never accepts caller-supplied authoring bytes or a body digest.
+impl NativeGameplayState {
+    pub(crate) fn source_item_ability(
+        &self,
+        creature: &ProjectV2DefinitionRef,
+        ability: &ProjectV2DefinitionRef,
+    ) -> Option<&ProjectV2AuthoringProfile> {
+        self.creatures
+            .records
+            .iter()
+            .find(|r| &r.profile.target == creature)?
+            .source_item_abilities
+            .iter()
+            .find(|p| &p.target == ability)
+    }
+}
+fn validate_source_item_abilities(record: &CreatureProfileRecord) -> Result<(), ContentError> {
+    use super::project::{ProjectV2AbilityEffect, ProjectV2InlineEffectOperation};
+    let ProjectV2AuthoringProfileData::Creature(creature) = &record.profile.data else {
+        return Err(invalid("source Item creature kind"));
+    };
+    if record.source_item_abilities.is_empty() {
+        return Ok(());
+    }
+    let Some(profile) = &record.behavior else {
+        return Err(invalid("source Item Behavior absent"));
+    };
+    let ProjectV2AuthoringProfileData::Behavior(behavior) = &profile.data else {
+        return Err(invalid("source Item Behavior kind"));
+    };
+    let mut seen = BTreeSet::new();
+    for profile in &record.source_item_abilities {
+        super::project::validate_native_gameplay_profile(profile)
+            .map_err(|_| invalid("source Item Ability invalid"))?;
+        exact(&profile.target, ProjectV2Family::Ability)?;
+        if !seen.insert(profile.target.clone())
+            || !creature.abilities.contains(&profile.target)
+            || !behavior
+                .attacks
+                .iter()
+                .chain(&behavior.defenses)
+                .any(|s| s.ability == profile.target)
+        {
+            return Err(invalid("source Item exact Creature schedule membership"));
+        }
+        let ProjectV2AuthoringProfileData::Ability(ability) = &profile.data else {
+            return Err(invalid("source Item Ability kind"));
+        };
+        let Some(details) = &ability.details else {
+            return Err(invalid("source Item details absent"));
+        };
+        // Unsupported multi-owner or variant semantics remain explicitly refused.
+        if !details.variants.is_empty() || details.encounter.is_some() || details.chain.is_some()
+            || details.effects.is_empty() || !details.effects.iter().any(|e|matches!(e,
+                ProjectV2AbilityEffect::Inline(effect) if matches!(effect.operation,
+                    ProjectV2InlineEffectOperation::CreateItem{..}|ProjectV2InlineEffectOperation::RemoveItems{..}))) {
+            return Err(invalid("source Item supported body shape"));
+        }
+    }
+    Ok(())
+}
+#[cfg(test)]
+mod source_item_closure_tests {
+    use super::*;
+    fn actual() -> Result<CreatureProfilesDocument, serde_json::Error> {
+        serde_json::from_slice(include_bytes!(
+            "../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))
+    }
+    #[test]
+    fn source_item_closure_actual82_requires_exact_creature_schedule_membership()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let doc = actual()?;
+        let mut create = 0;
+        let mut remove = 0;
+        for row in &doc.records {
+            validate_source_item_abilities(row).map_err(|_| "source Item member qualification")?;
+            for profile in &row.source_item_abilities {
+                let ProjectV2AuthoringProfileData::Ability(ability) = &profile.data else {
+                    return Err("source Ability kind".into());
+                };
+                for effect in &ability.details.as_ref().ok_or("actual body")?.effects {
+                    if let super::super::project::ProjectV2AbilityEffect::Inline(effect) = effect {
+                        match effect.operation {
+                            super::super::project::ProjectV2InlineEffectOperation::CreateItem{..}=>create+=1,
+                            super::super::project::ProjectV2InlineEffectOperation::RemoveItems{..}=>remove+=1,
+                            _=>{}
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!((create, remove), (62, 20));
+        Ok(())
+    }
+    #[test]
+    fn source_item_closure_foreign_exact_ability_and_removed_schedule_refuse()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let doc = actual()?;
+        let source = doc
+            .records
+            .iter()
+            .find(|r| !r.source_item_abilities.is_empty())
+            .ok_or("real source member")?;
+        let mut changed = source.clone();
+        changed.source_item_abilities[0]
+            .target
+            .key
+            .push_str(".foreign");
+        assert!(validate_source_item_abilities(&changed).is_err());
+        let mut changed = source.clone();
+        let target = changed.source_item_abilities[0].target.clone();
+        let ProjectV2AuthoringProfileData::Behavior(behavior) =
+            &mut changed.behavior.as_mut().ok_or("actual Behavior")?.data
+        else {
+            return Err("Behavior kind".into());
+        };
+        behavior.attacks.retain(|s| s.ability != target);
+        behavior.defenses.retain(|s| s.ability != target);
+        assert!(validate_source_item_abilities(&changed).is_err());
+        Ok(())
+    }
+    #[test]
+    fn source_item_closure_presentation_only_cannot_become_ground_item_writer()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let doc = actual()?;
+        let mut row = doc
+            .records
+            .into_iter()
+            .find(|r| !r.source_item_abilities.is_empty())
+            .ok_or("real source member")?;
+        let ProjectV2AuthoringProfileData::Ability(ability) =
+            &mut row.source_item_abilities[0].data
+        else {
+            return Err("Ability kind".into());
+        };
+        let details = ability.details.as_mut().ok_or("actual body")?;
+        let super::super::project::ProjectV2AbilityEffect::Inline(effect) = &mut details.effects[0]
+        else {
+            return Err("inline body".into());
+        };
+        effect.operation = super::super::project::ProjectV2InlineEffectOperation::PresentationOnly;
+        assert!(validate_source_item_abilities(&row).is_err());
+        Ok(())
+    }
+}
+/// Test-only use of the actual active native policy decoder, not manually forged stats/appearance.
+#[cfg(test)]
+pub(crate) fn callback_source_native_test_policies(
+    creature_bytes: &[u8],
+    presentation_bytes: &[u8],
+    digest: [u8; 32],
+) -> Result<CompiledCreaturePolicies, ContentError> {
+    let creatures: CreatureProfilesDocument = serde_json::from_slice(creature_bytes)
+        .map_err(|_| invalid("callback source Creature fixture"))?;
+    let presentations: PresentationProfilesDocument = serde_json::from_slice(presentation_bytes)
+        .map_err(|_| invalid("callback source Presentation fixture"))?;
+    CompiledCreaturePolicies::from_active_artifact(
+        digest,
+        creature_policies(&creatures, &presentations)?,
+    )
+    .map_err(|_| invalid("callback native source fixture policy pin"))
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+pub(crate) fn retained_callback_native_fixture(
+    world: crate::foundation::WorldId,
+) -> NativeGameplayState {
+    let path = std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST")
+        .expect("explicit actual native manifest required for callback authority test");
+    let input = NativeGameplayInput::from_manifest(Path::new(&path))
+        .expect("qualified native callback test fixture");
+    let room = super::qualify_selected_native_gameplay_room(world, &input)
+        .expect("qualified native callback test fixture");
+    let staged = super::production::StagedGeneration::stage(
+        &room.compiled().server_artifact,
+        &room.compiled().client_artifact,
+        room.compiled().expectation(),
+    )
+    .expect("qualified native callback test fixture");
+    staged
+        .runtime_state()
+        .native_gameplay()
+        .expect("qualified native callback test fixture")
+        .clone()
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod callback_membership_tests {
+    use super::*;
+    #[test]
+    fn callback_membership_requires_current_digest_and_exact_loaded_profile() {
+        let input = super::tests::input();
+        let world = crate::foundation::WorldId::decode(&[
+            1, 144, 0, 0, 0, 8, 112, 0, 128, 0, 0, 0, 0, 0, 0, 8,
+        ])
+        .expect("qualified native callback test fixture");
+        let room = super::super::qualify_selected_native_gameplay_room(world, &input)
+            .expect("qualified native callback test fixture");
+        let native = decode(&room.compiled().server_artifact)
+            .expect("qualified native callback test fixture")
+            .state;
+        let profile = &native.creature_profiles().records[0].profile;
+        let digest = native.source_digest();
+        assert!(native.qualifies_current_creature_profile(digest, profile));
+        assert!(!native.qualifies_current_creature_profile([0; 32], profile));
+        let mut altered = profile.clone();
+        if let ProjectV2AuthoringProfileData::Creature(c) = &mut altered.data {
+            c.health = Some(999_999);
+        }
+        assert!(!native.qualifies_current_creature_profile(digest, &altered));
+        let mut missing = profile.clone();
+        missing.target.key = "oteryn:creature.absent_source_actor".into();
+        assert!(!native.qualifies_current_creature_profile(digest, &missing));
     }
 }

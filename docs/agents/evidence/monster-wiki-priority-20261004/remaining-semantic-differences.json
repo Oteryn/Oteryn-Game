@@ -1,0 +1,6648 @@
+{
+  "real": [
+    {
+      "key": "oteryn:creature.amenef_the_burning",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -20
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.egg",
+      "field": "immunities",
+      "native": null,
+      "canonical": [
+        "death"
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.eliz_the_unyielding",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.swarmer_hatchling",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -400
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -200
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.the_armored_voidborn",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1400
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 97
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -200
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.essence_of_malice",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": -30
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.fallen_mooh_tah_master_ghar",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 60
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.hacker",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.hairman_the_huge",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 25
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.hellgorak",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "numerator": -205,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 98,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": -200
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 98
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.irgix_the_flimsy",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 75
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.memory_of_a_banshee",
+      "field": "resistances",
+      "native": null,
+      "canonical": [
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -25
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.memory_of_a_dwarf",
+      "field": "resistances",
+      "native": null,
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.memory_of_a_faun",
+      "field": "resistances",
+      "native": null,
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 40
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 70
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.memory_of_a_frazzlemaw",
+      "field": "resistances",
+      "native": null,
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    },
+    {
+      "key": "oteryn:creature.memory_of_a_fungus",
+      "field": "resistances",
+      "native": null,
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 35
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        }
+      ],
+      "status": "UNKNOWN_FIELD_CONFIRMATION_PRESERVE_SERVING_VALUE"
+    }
+  ],
+  "equivalent_representations": [
+    {
+      "key": "oteryn:creature.achad",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.aftershock",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.alptramun",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 3
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.an_astral_glyph",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.an_observer_eye",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.annihilon",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 95,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 96,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 95
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 96
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.apocalypse",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.arachir_the_ancient_one",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.ascending_ferumbras",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.bazir",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.black_vixen",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.bloodback",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.bone_jaw",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.bonny_bunny",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.bovinus",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.bragrumol",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.brain_parasite",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.bretzecutioner",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.brokul",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.bullwark",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.captain_jones",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.chikhaton",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 30,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 30
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.condensed_sin",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.containment_crystal",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.containment_machine",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.control_tower",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 45,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 45,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 45,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 45
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 45
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 45
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.corrupt_naga",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.cosmic_energy_prism_a",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.cosmic_energy_prism_b",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.cosmic_energy_prism_c",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.cosmic_energy_prism_d",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.count_vlarkorth",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 3,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 3
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.custodian",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.damned_soul",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "mana_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "mana_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.darkfang",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.dawn_scorpion",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.dazed_leaf_golem",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.death_priest_shargon",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.deathbringer",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.demon_blood",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.desperate_soul",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "mana_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "mana_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.dharalion",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.dipthrah",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.diseased_bill",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 25,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 25,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 25,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 25,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 25
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 25
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 25
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 25
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.diseased_dan",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 85,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 85
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.diseased_fred",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 15,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 15
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.dragon_warden",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.dreadful_disruptor",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 80,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 80
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.dreadful_harvester",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.duke_krule",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 40,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": -15,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 65,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 40
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -15
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 65
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.earth_overlord",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.eclipse_knight",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.ekatrix",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.elvira_hammerthrust",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.enraged_soul",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.fatality",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.fazzrah",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.feeble_glooth_horror",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.ferumbras",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 90,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 90
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.foreman_kneebiter",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.frostfur",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.fungosaurus",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.furious_scorpion",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.furyosa",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 40,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 40,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 40,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 40
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 40
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 40
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.general_murius",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.generator",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.giant_beaver",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "mana_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "mana_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.glitterscale",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 80,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 80
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.glooth_battery",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.glooth_fairy",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.glooth_horror",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.golgordan",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.grand_canon_dominus",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.grand_commander_soeren",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.grandfather_tridian",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 35,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 35
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.gravelord_oshuran",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 80,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 80
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.grimgor_guteater",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.guard_captain_quaid",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.hardened_usurper_archer",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.hardened_usurper_knight",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.hardened_usurper_warlock",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.heoni",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.hirintror",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 30,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 30
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.horadron",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -20,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -20
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.horestis",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "life_drain",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.horrible_dream",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.infernatil",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.juvenile_cyclops",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.kalyassa",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.king_zelos",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.knowledge_raider",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.kroazur",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 70,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 70
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.last_planegazer",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.latrivan",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 5,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": -5,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 5
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -5
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.lava_lurker_attendant",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.lesser_fire_devil",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": -50,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": -50
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.leviathan",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 30,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": -15,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "drowning",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 30
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": -15
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.lion_knight",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.lloyd",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 30,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 30
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.lokathmor",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.lost_gnome",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.lucifuga_aranea",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.magma_crystal",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.magnor_mournbringer",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.mahrdis",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": 1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 100,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -1,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 100
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.malicious_minion",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.massacre",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "earth",
+          "percent": {
+            "numerator": 20,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "numerator": -8,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "numerator": 50,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "numerator": 10,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 20
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -8
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 50
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 10
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.mawhawk",
+      "field": "resistances",
+      "native": [
+        {
+          "damage_type": "holy",
+          "percent": {
+            "numerator": -10,
+            "denominator": 1
+          }
+        }
+      ],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "earth",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "holy",
+          "percent": {
+            "denominator": 1,
+            "numerator": -10
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.maxxenius",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "ice",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "physical",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.mazzinor",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    },
+    {
+      "key": "oteryn:creature.mean_minion",
+      "field": "resistances",
+      "native": [],
+      "canonical": [
+        {
+          "damage_type": "death",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "energy",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        },
+        {
+          "damage_type": "fire",
+          "percent": {
+            "denominator": 1,
+            "numerator": 0
+          }
+        }
+      ],
+      "status": "EQUIVALENT_NEUTRAL_REPRESENTATION"
+    }
+  ],
+  "real_actor_count": 16,
+  "equivalent_actor_count": 111,
+  "policy": "Wiki decisive; no invented confirmation; neutral omitted percent is zero."
+}

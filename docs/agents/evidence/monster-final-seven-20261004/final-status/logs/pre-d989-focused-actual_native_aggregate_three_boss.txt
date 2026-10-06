@@ -1,0 +1,5 @@
+Original log SHA256: dc5b1b2ec41b8f06bc72bc125ee3c66627e4f8d8314d8f0e809c8cd2e0ca41bf
+
+running 1 test
+test source_threshold_heal::tests::actual_native_aggregate_three_boss_schedule_threshold_delayed_hp_and_marker ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2366 filtered out; finished in 4.93s

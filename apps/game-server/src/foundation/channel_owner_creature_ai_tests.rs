@@ -30,7 +30,7 @@ struct Vitals {
 impl CreatureBiteVitals for Vitals {
     fn apply_creature_damage(
         &mut self,
-        _: &ChannelRuntimeV1,
+        _: &mut ChannelRuntimeV1,
         _: ExactActorRef,
         _: GameSessionId,
         magnitude: u32,
@@ -188,7 +188,7 @@ impl Channel {
 
     /// The profile's melee swing for `creature`, owned by the melee owner.
     fn swing(
-        &self,
+        &mut self,
         melee: &mut MonsterMeleeOwner,
         vitals: &mut Vitals,
         creature: ExactActorRef,
@@ -214,7 +214,7 @@ impl Channel {
     /// As `swing`, at the `perceived` players the production owner passes; with the player the
     /// swing resolved.
     fn swing_at(
-        &self,
+        &mut self,
         melee: &mut MonsterMeleeOwner,
         vitals: &mut Vitals,
         creature: ExactActorRef,
@@ -265,7 +265,7 @@ impl Channel {
         let resolved = std::cell::Cell::new(None);
         let dispatch = melee
             .think(
-                &self.runtime,
+                &mut self.runtime,
                 vitals,
                 creature,
                 sequence,
@@ -510,7 +510,7 @@ fn the_swing_goes_at_the_think_target_and_not_a_nearer_player() {
         .copied()
         .collect::<Vec<_>>();
     // Swung at every perceived player, the nearest-first swing would resolve the second.
-    let first_swing = |melee: &mut MonsterMeleeOwner, vitals: &mut Vitals, perceived: &[_]| {
+    let mut first_swing = |melee: &mut MonsterMeleeOwner, vitals: &mut Vitals, perceived: &[_]| {
         (1..=8).find_map(|sequence| {
             let (dispatch, resolved) = channel.swing_at(
                 melee,

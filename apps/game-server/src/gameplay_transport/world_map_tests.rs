@@ -599,11 +599,12 @@ fn appearance_ids_come_from_the_definition_key() {
         view::appearance_id("oteryn:item.donor.chest", Some(28827)),
         28827
     );
+    let overflow_key = format!("oteryn:item.tibia.i{}", u32::from(u16::MAX) + 1);
     for key in [
         "oteryn:item.tibia.i",
         "oteryn:item.tibia.i012",
         "oteryn:item.tibia.i12a",
-        &format!("oteryn:item.tibia.i{}", 65_535 + 1),
+        overflow_key.as_str(),
         "item:coin",
     ] {
         assert_eq!(view::appearance_id(key, None), 0, "{key}");

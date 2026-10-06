@@ -1,0 +1,71 @@
+{
+  "base": "d98968d1134eef7bac863d8b8a00611fc3e8f15d",
+  "monster_head": "b984e32962cf4186e99f3b618eae39f3669c3dd3",
+  "main": "7358a14d00cf884ad81f6b2472db5b6e965cc1d7",
+  "canonical_writer": "actual Rust CanonicalProjectDocuments; roundtrip and idempotence passed",
+  "sections": [
+    {
+      "path": "content/world/definitions/reference.json",
+      "section": "records",
+      "count": 62801,
+      "monster_changed_rows_preserved": 1276,
+      "main_changed_rows_preserved": 344
+    },
+    {
+      "path": "content/world/definitions/declarations.json",
+      "section": "records",
+      "count": 4600,
+      "monster_changed_rows_preserved": 4,
+      "main_changed_rows_preserved": 753
+    },
+    {
+      "path": "content/world/definitions/declarations.json",
+      "section": "item_authoring",
+      "count": 700,
+      "monster_changed_rows_preserved": 0,
+      "main_changed_rows_preserved": 0
+    },
+    {
+      "path": "content/world/definitions/declarations.json",
+      "section": "authoring_profiles",
+      "count": 27616,
+      "monster_changed_rows_preserved": 1257,
+      "main_changed_rows_preserved": 346
+    },
+    {
+      "path": "content/world/provenance/sources.json",
+      "section": "sources",
+      "count": 29,
+      "monster_changed_rows_preserved": 6,
+      "main_changed_rows_preserved": 13
+    },
+    {
+      "path": "content/world/provenance/sources.json",
+      "section": "source_identity_bindings",
+      "count": 5579,
+      "monster_changed_rows_preserved": 126,
+      "main_changed_rows_preserved": 371
+    },
+    {
+      "path": "content/world/provenance/imports.json",
+      "section": "batches",
+      "count": 31,
+      "monster_changed_rows_preserved": 6,
+      "main_changed_rows_preserved": 13
+    }
+  ],
+  "native_inputs_unchanged": [
+    {
+      "path": "content/creatures/definitions/spell-native-profiles.json",
+      "sha256": "d68fba83f657b8893432617691929a1495f0ed0314ef4a3f72d340defad2083d"
+    },
+    {
+      "path": "content/presentations/definitions/spell-native-profiles.json",
+      "sha256": "b94a936eeac887eeeb807bf81ba5ae1bbd482d665404c247319421464c5bcea8"
+    },
+    {
+      "path": "content/presentations/bindings/spell-appearances.json",
+      "sha256": "f423284c3a8e771c4c1888d8aa3985ade150855632300d19c7c77cf2915d56d4"
+    }
+  ]
+}

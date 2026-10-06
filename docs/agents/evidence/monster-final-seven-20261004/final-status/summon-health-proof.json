@@ -1,0 +1,1075 @@
+{
+  "native_sha256": "d68fba83f657b8893432617691929a1495f0ed0314ef4a3f72d340defad2083d",
+  "capture": "sealed11",
+  "rows": [
+    {
+      "target": "oteryn:creature.acid_blob",
+      "canonical_health": 250,
+      "serving_health": 250,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.ancient_scarab",
+      "canonical_health": 1000,
+      "serving_health": 1000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.banshee",
+      "canonical_health": 1000,
+      "serving_health": 1000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.barkless_fanatic",
+      "canonical_health": 3200,
+      "serving_health": 3200,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.bazir",
+      "canonical_health": 110000,
+      "serving_health": 110000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.black_cobra",
+      "canonical_health": 10000,
+      "serving_health": 10000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.blistering_fire_elemental",
+      "canonical_health": 1500,
+      "serving_health": 1500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.blue_djinn",
+      "canonical_health": 330,
+      "serving_health": 330,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.bone_bear",
+      "canonical_health": 600,
+      "serving_health": 600,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.bonebeast",
+      "canonical_health": 515,
+      "serving_health": 515,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.brain_parasite",
+      "canonical_health": 7500,
+      "serving_health": 7500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.canopic_jar",
+      "canonical_health": 1000,
+      "serving_health": 1000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.carnisylvan_sapling",
+      "canonical_health": 750,
+      "serving_health": 750,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.carrion_worm",
+      "canonical_health": 145,
+      "serving_health": 145,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.charger",
+      "canonical_health": 1600,
+      "serving_health": 1600,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.chicken",
+      "canonical_health": 15,
+      "serving_health": 15,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.cobra",
+      "canonical_health": 65,
+      "serving_health": 65,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.condensed_sins",
+      "canonical_health": 1500,
+      "serving_health": 1500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.corrupted_soul",
+      "canonical_health": 1100,
+      "serving_health": 1100,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.crusader_guardian",
+      "canonical_health": 3400,
+      "serving_health": 3400,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.crypt_shambler",
+      "canonical_health": 330,
+      "serving_health": 330,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.damned_soul",
+      "canonical_health": 800,
+      "serving_health": 800,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.dark_torturer",
+      "canonical_health": 7350,
+      "serving_health": 7350,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.death_blob",
+      "canonical_health": 320,
+      "serving_health": 320,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.deathslicer",
+      "canonical_health": 8200,
+      "serving_health": 8200,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.deathspawn",
+      "canonical_health": 225,
+      "serving_health": 225,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.defiler",
+      "canonical_health": 3650,
+      "serving_health": 3650,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.demon",
+      "canonical_health": 8200,
+      "serving_health": 8200,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.demon_blood",
+      "canonical_health": 3000,
+      "serving_health": 3000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.demon_skeleton",
+      "canonical_health": 400,
+      "serving_health": 400,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.diabolic_imp",
+      "canonical_health": 1950,
+      "serving_health": 1950,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.disgusting_ooze",
+      "canonical_health": 3650,
+      "serving_health": 3650,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.disruption",
+      "canonical_health": 12000,
+      "serving_health": 12000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.dragon",
+      "canonical_health": 1000,
+      "serving_health": 1000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.dragon_hatchling",
+      "canonical_health": 380,
+      "serving_health": 380,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.dragon_lord",
+      "canonical_health": 1900,
+      "serving_health": 1900,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.draken_warmaster",
+      "canonical_health": 4150,
+      "serving_health": 4150,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.dread_minion",
+      "canonical_health": 2500,
+      "serving_health": 2500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.dreadbeast",
+      "canonical_health": 795,
+      "serving_health": 795,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.dworc_fleshhunter",
+      "canonical_health": 85,
+      "serving_health": 85,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.elder_bloodjaw",
+      "canonical_health": 86000,
+      "serving_health": 86000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.elder_mummy",
+      "canonical_health": 850,
+      "serving_health": 850,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.elite_pirat",
+      "canonical_health": 20000,
+      "serving_health": 20000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.energy_elemental",
+      "canonical_health": 500,
+      "serving_health": 500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.energy_pulse",
+      "canonical_health": 5000,
+      "serving_health": 5000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.enthralled_demon",
+      "canonical_health": 8200,
+      "serving_health": 8200,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.eruption",
+      "canonical_health": 10000,
+      "serving_health": 10000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.eruption_of_destruction",
+      "canonical_health": 8500,
+      "serving_health": 8500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.evil_sheep",
+      "canonical_health": 350,
+      "serving_health": 350,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.fire_elemental",
+      "canonical_health": 280,
+      "serving_health": 280,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.flame_of_omrafir",
+      "canonical_health": 800,
+      "serving_health": 800,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.flame_totem",
+      "canonical_health": 15000,
+      "serving_health": 15000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.fox",
+      "canonical_health": 22,
+      "serving_health": 22,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.freed_soul",
+      "canonical_health": 50000,
+      "serving_health": 50000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.frenzy",
+      "canonical_health": 8210,
+      "serving_health": 8210,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.frost_flower_asura",
+      "canonical_health": 3500,
+      "serving_health": 3500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.frozen_soul",
+      "canonical_health": 2000,
+      "serving_health": 2000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.fury",
+      "canonical_health": 4100,
+      "serving_health": 4100,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.gazer",
+      "canonical_health": 120,
+      "serving_health": 120,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.ghost",
+      "canonical_health": 150,
+      "serving_health": 150,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.ghoul",
+      "canonical_health": 100,
+      "serving_health": 100,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.giant_spider",
+      "canonical_health": 1300,
+      "serving_health": 1300,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.gladiator",
+      "canonical_health": 185,
+      "serving_health": 185,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.gloom_wolf",
+      "canonical_health": 200,
+      "serving_health": 200,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.glooth_blob",
+      "canonical_health": 750,
+      "serving_health": 750,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.glooth_generator",
+      "canonical_health": 12000,
+      "serving_health": 12000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.glooth_slasher",
+      "canonical_health": 25000,
+      "serving_health": 25000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.glooth_trasher",
+      "canonical_health": 25000,
+      "serving_health": 25000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.golden_servant",
+      "canonical_health": 550,
+      "serving_health": 550,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.grand_chaplain_gaunder",
+      "canonical_health": 18000,
+      "serving_health": 18000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.grand_commander_soeren",
+      "canonical_health": 17000,
+      "serving_health": 17000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.greater_canopic_jar",
+      "canonical_health": 7000,
+      "serving_health": 7000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.greater_death_minion",
+      "canonical_health": 1500,
+      "serving_health": 1500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.greed",
+      "canonical_health": 1000,
+      "serving_health": 1000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.green_djinn",
+      "canonical_health": 330,
+      "serving_health": 330,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.hardened_usurper_archer",
+      "canonical_health": 7300,
+      "serving_health": 7300,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.hardened_usurper_knight",
+      "canonical_health": 8200,
+      "serving_health": 8200,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.hardened_usurper_warlock",
+      "canonical_health": 7500,
+      "serving_health": 7500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.hellfire_fighter",
+      "canonical_health": 3800,
+      "serving_health": 3800,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.hero",
+      "canonical_health": 1400,
+      "serving_health": 1400,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.humorless_fungus",
+      "canonical_health": 1600,
+      "serving_health": 1600,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.hyaena",
+      "canonical_health": 60,
+      "serving_health": 60,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.ice_blockade",
+      "canonical_health": 600,
+      "serving_health": 600,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.ice_crawler",
+      "canonical_health": 12000,
+      "serving_health": 12000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.ice_golem",
+      "canonical_health": 385,
+      "serving_health": 385,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.jagged_earth_elemental",
+      "canonical_health": 1500,
+      "serving_health": 1500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.killer_rabbit",
+      "canonical_health": 205,
+      "serving_health": 205,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.larva",
+      "canonical_health": 70,
+      "serving_health": 70,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.lava_lurker_attendant",
+      "canonical_health": 3000,
+      "serving_health": 3000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.lesser_death_minion",
+      "canonical_health": 550,
+      "serving_health": 550,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.lesser_swarmer",
+      "canonical_health": 230,
+      "serving_health": 230,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.lich",
+      "canonical_health": 880,
+      "serving_health": 880,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.lion_archer",
+      "canonical_health": 7300,
+      "serving_health": 7300,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.lion_knight",
+      "canonical_health": 8200,
+      "serving_health": 8200,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.lion_warlock",
+      "canonical_health": 7500,
+      "serving_health": 7500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.lizard_dragon_priest",
+      "canonical_health": 1450,
+      "serving_health": 1450,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.lost_time",
+      "canonical_health": 4000,
+      "serving_health": 4000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.massive_water_elemental",
+      "canonical_health": 1250,
+      "serving_health": 1250,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.mechanical_fighter",
+      "canonical_health": 420,
+      "serving_health": 420,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.mercury_blob",
+      "canonical_health": 150,
+      "serving_health": 150,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.midnight_asura",
+      "canonical_health": 3100,
+      "serving_health": 3100,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.minion_of_gaz_haragoth",
+      "canonical_health": 5500,
+      "serving_health": 5500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.minotaur_archer",
+      "canonical_health": 100,
+      "serving_health": 100,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.minotaur_guard",
+      "canonical_health": 185,
+      "serving_health": 185,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.minotaur_mage",
+      "canonical_health": 155,
+      "serving_health": 155,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.monk",
+      "canonical_health": 240,
+      "serving_health": 240,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.moohtant",
+      "canonical_health": 3200,
+      "serving_health": 3200,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.moonsilver_guardian",
+      "canonical_health": 10600,
+      "serving_health": 10600,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.mummy",
+      "canonical_health": 240,
+      "serving_health": 240,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.mushroom",
+      "canonical_health": 10000,
+      "serving_health": 10000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.mutated_bat",
+      "canonical_health": 900,
+      "serving_health": 900,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.neutral_deepling_warrior",
+      "canonical_health": 1600,
+      "serving_health": 1600,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.nightfiend",
+      "canonical_health": 2700,
+      "serving_health": 2700,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.orc_berserker",
+      "canonical_health": 210,
+      "serving_health": 210,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.overcharged_demon",
+      "canonical_health": 21500,
+      "serving_health": 21500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.overcharged_energy_elemental",
+      "canonical_health": 1200,
+      "serving_health": 1200,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.parasite",
+      "canonical_health": 550,
+      "serving_health": 550,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.phantasm",
+      "canonical_health": 3950,
+      "serving_health": 3950,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.phantasm_summon",
+      "canonical_health": 65,
+      "serving_health": 65,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.pirate_cutthroat",
+      "canonical_health": 325,
+      "serving_health": 325,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.pirate_marauder",
+      "canonical_health": 210,
+      "serving_health": 210,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.poison_spider",
+      "canonical_health": 26,
+      "serving_health": 26,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.preceptor_lazare",
+      "canonical_health": 15000,
+      "serving_health": 15000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.priestess",
+      "canonical_health": 390,
+      "serving_health": 390,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.rage_of_mazoran",
+      "canonical_health": 4500,
+      "serving_health": 4500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.rat",
+      "canonical_health": 20,
+      "serving_health": 20,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.retainer_of_baeloc",
+      "canonical_health": 5500,
+      "serving_health": 5500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.rift_brood",
+      "canonical_health": 2950,
+      "serving_health": 2950,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.rift_scythe",
+      "canonical_health": 3600,
+      "serving_health": 3600,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.rift_worm",
+      "canonical_health": 2800,
+      "serving_health": 2800,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.roaring_water_elemental",
+      "canonical_health": 1400,
+      "serving_health": 1400,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.sandstone_scorpion",
+      "canonical_health": 900,
+      "serving_health": 900,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.shadow_fiend",
+      "canonical_health": 3200,
+      "serving_health": 3200,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.shadow_of_boreth",
+      "canonical_health": 600,
+      "serving_health": 600,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.shadow_of_lersatio",
+      "canonical_health": 600,
+      "serving_health": 600,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.shadow_of_marziel",
+      "canonical_health": 600,
+      "serving_health": 600,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.sin_devourer",
+      "canonical_health": 2700,
+      "serving_health": 2700,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.skeleton",
+      "canonical_health": 50,
+      "serving_health": 50,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.skeleton_elite_warrior",
+      "canonical_health": 7800,
+      "serving_health": 7800,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.slime",
+      "canonical_health": 150,
+      "serving_health": 150,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.snake",
+      "canonical_health": 15,
+      "serving_health": 15,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.soul_scourge",
+      "canonical_health": 6900,
+      "serving_health": 6900,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.soulless_minion",
+      "canonical_health": 10000,
+      "serving_health": 10000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.spark_of_destruction",
+      "canonical_health": 3900,
+      "serving_health": 3900,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.spawn_of_the_welter",
+      "canonical_health": 1850,
+      "serving_health": 1850,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.spidris_elite_summon",
+      "canonical_health": 5000,
+      "serving_health": 5000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.squidgy_slime",
+      "canonical_health": 150,
+      "serving_health": 150,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.squire_of_nictros",
+      "canonical_health": 5500,
+      "serving_health": 5500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.stalker",
+      "canonical_health": 120,
+      "serving_health": 120,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.stone_golem",
+      "canonical_health": 270,
+      "serving_health": 270,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.superior_death_minion",
+      "canonical_health": 2500,
+      "serving_health": 2500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.sword_of_vengeance",
+      "canonical_health": 2000,
+      "serving_health": 2000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.terror_bird",
+      "canonical_health": 300,
+      "serving_health": 300,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.thorn_minion",
+      "canonical_health": 3600,
+      "serving_health": 3600,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.time_waster",
+      "canonical_health": 1000,
+      "serving_health": 1000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.troll_champion",
+      "canonical_health": 75,
+      "serving_health": 75,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.troll_trained_salamander",
+      "canonical_health": 70,
+      "serving_health": 70,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.undead_gladiator",
+      "canonical_health": 1000,
+      "serving_health": 1000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.undead_minion",
+      "canonical_health": 850,
+      "serving_health": 850,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.vampire",
+      "canonical_health": 475,
+      "serving_health": 475,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.vermin_swarm",
+      "canonical_health": 5000,
+      "serving_health": 5000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.vicious_ink_splash",
+      "canonical_health": 1950,
+      "serving_health": 1950,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.walker",
+      "canonical_health": 3000,
+      "serving_health": 3000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.war_golem",
+      "canonical_health": 4300,
+      "serving_health": 4300,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.war_wolf",
+      "canonical_health": 140,
+      "serving_health": 140,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.warlock",
+      "canonical_health": 3500,
+      "serving_health": 3500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.weakened_demon",
+      "canonical_health": 5,
+      "serving_health": 5,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.werebadger",
+      "canonical_health": 1700,
+      "serving_health": 1700,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.werebear",
+      "canonical_health": 2400,
+      "serving_health": 2400,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.wereboar",
+      "canonical_health": 2200,
+      "serving_health": 2200,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.werefox",
+      "canonical_health": 1500,
+      "serving_health": 1500,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.werehyaena",
+      "canonical_health": 2700,
+      "serving_health": 2700,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.werewolf",
+      "canonical_health": 1955,
+      "serving_health": 1955,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.wild_warrior",
+      "canonical_health": 135,
+      "serving_health": 135,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.wormling",
+      "canonical_health": 5000,
+      "serving_health": 5000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.young_goanna",
+      "canonical_health": 6950,
+      "serving_health": 6950,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.zamulosh2",
+      "canonical_health": 300000,
+      "serving_health": 300000,
+      "equal": true
+    },
+    {
+      "target": "oteryn:creature.zombie",
+      "canonical_health": 500,
+      "serving_health": 500,
+      "equal": true
+    }
+  ],
+  "mismatches": []
+}

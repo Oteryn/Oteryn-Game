@@ -12,6 +12,11 @@ mod item_move;
 mod item_view;
 mod monk_save;
 mod monster_ai_cycle;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod monster_quest_death;
 #[cfg(test)]
 mod qualification;
 #[cfg(test)]

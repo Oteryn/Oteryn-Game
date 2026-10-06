@@ -1,0 +1,16 @@
+
+running 1 test
+test monster_combat_lane::project_native_registration_membership_tests::current_native_registration_rejects_detached_project_before_mutation ...
+thread 'monster_combat_lane::project_native_registration_membership_tests::current_native_registration_rejects_detached_project_before_mutation' (312455) panicked at apps/game-server/src/monster_combat_lane.rs:6463:9:
+assertion failed: matches!(lane.register_project_with_native(&runtime, &mut fence, actor,
+    &creature, &detached, native.clone(), SemanticTimeMicros::from_micros(0)),
+    Err(CombatLaneError::Attack(AttackError::InvalidSource)))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    monster_combat_lane::project_native_registration_membership_tests::current_native_registration_rejects_detached_project_before_mutation
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2438 filtered out; finished in 39.72s

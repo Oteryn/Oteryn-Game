@@ -54,5 +54,9 @@ Canonical palette/catalogue changes, source-profile admission, runtime startup,
 cutover, map wire and client rendering are separate tasks.
 
 The packet links 25,982 palette appearances and verifies 5,084 sprite sheets;
-the two Source NULL appearances remain explicit. It contains 54,680 candidate
-groups / 87,815 points, with all 33 held groups / 446 points preserved.
+the two Source NULL appearances remain explicit. It contains 54,688 candidate
+groups / 87,844 points, with all 25 remaining held groups / 417 points preserved.
+The monster catalogue reconciliation resolves eight former held groups (29
+points) through existing canonical Creature identities; all previous candidate
+groups and all remaining raw source groups are retained. Runtime admission
+remains disabled.
