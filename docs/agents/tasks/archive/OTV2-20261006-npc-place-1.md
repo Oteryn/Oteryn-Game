@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: cand/npc-place-1
 issue: 162
-pr: null
+pr: 1890
 head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the #162 FREEZE_SHA entry"
 owner: claude-code-session_018KZRHnq8bTd3FMhoCoh37U (Sol Supervising Architect)
@@ -46,6 +46,18 @@ external_repositories: []
 - Packets NPC-PLACE-1a (content lane) and NPC-PLACE-1b (impl worker, format and CI-routing
   review). Amends NPC-0, NPC-BEHAVIOUR-0, ARCH-NPC-PACKETS-1 and NPC admission §5 as
   pending-on-acceptance notes.
+- Review round 1 (Codex, fixed under D742):
+  - 4199606586 (P1, §3.1, §3.4, §3.5): the reader order read as a second byte order. Fixed: §3.1
+    states the only byte order (header, manifest, sector table, spawn row, NPC row, sector frames,
+    spawn frame, NPC frame, digest); §3.4 is a check order only; the §3.5 rows for format §2 and
+    §9 say the same.
+  - 4199606562 (P1, §5): placement realization omitted Terrain walls and `block_solid` items.
+    Fixed: item 2 adds `Wall` and `BlockSolid`, the rest of the bundle enterability rule
+    (ARCH-MAP-TRACK-PACKETS-V1 §1.2, `map/boot.rs`); 1b tests each reason and that every
+    written placement is enterable by the game server's bundle collision index.
+  - 4199606575 (P1, §6): a travel destination on a walkable house tile passed. Fixed: reason
+    `HouseTile` (nonzero tile house id), at compile time and in NPC-TRAVEL-1 at runtime; the
+    NPC-0 NPC-TRAVEL-1 row amendment says so.
 - Owner questions: none.
 
 ## Validation

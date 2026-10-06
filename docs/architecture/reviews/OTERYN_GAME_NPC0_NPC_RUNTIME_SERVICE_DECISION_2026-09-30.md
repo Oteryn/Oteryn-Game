@@ -28,7 +28,7 @@
 | NPC-WIRE-1 | impl, protocol review | registry and proto rows of §4, codecs, limits, client views | NPC-CONTENT-1 |
 | NPC-TALK-1 | impl | conversation lifecycle and keyword matching in the channel runtime (§2.1), read-only trade window (boundary gate `NPC_DIALOGUE_TRADE_WIDGET_V1`) | NPC-WIRE-1; NPC-PLACE-1; MAP-CUTOVER-1 |
 | NPC-TRADE-1 | hard, persistence review | BUY and SELL (§5), migration, cause records (boundary gate `NPC_SINGLE_TRADE_COMMIT_V1`) | NPC-TALK-1; GOLD-FEE-1a (merged); GOLD-FEE-1b |
-| NPC-TRAVEL-1 | hard, persistence review | travel with fee and pending arrival (§6), the placement fallback (§6.1), migration, the `commit_character_death` change (`durability/character_death.rs`) that deletes a pending arrival, locking it after `character_root`, and the death receipt's new arrival-occurrence field. Amendment (pending on acceptance of NPC-PLACE-1 §6): it refuses a route whose destination the loaded World does not admit | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission consumption |
+| NPC-TRAVEL-1 | hard, persistence review | travel with fee and pending arrival (§6), the placement fallback (§6.1), migration, the `commit_character_death` change (`durability/character_death.rs`) that deletes a pending arrival, locking it after `character_root`, and the death receipt's new arrival-occurrence field. Amendment (pending on acceptance of NPC-PLACE-1 §6): it refuses a route whose destination the loaded World does not admit or that is a house tile | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission consumption |
 
 Every child keeps the boundary's rules: the client is not an authority, dialogue code never
 commits value, and AI owns no dialogue or trade state.

@@ -33,13 +33,14 @@
    held list with a closed reason: `NO_PLACEMENT_SOURCE`, `POSITION_CONFLICT`, `SCHEDULE_VARIANT`
    or `SHARED_CELL`. Exact duplicates collapse into one record (§4.3).
 6. **Realization.** A position outside the World fails compilation. Otherwise the compiler writes
-   the placement or holds it with a closed reason. A production build stops on any held placement;
-   a non-production build lists them in the manifest (§5).
+   the placement or holds it with a closed reason, by the movement owner's full enterability
+   rule (walkable ground, no `wall`, no `block_solid`). A production build stops on any held
+   placement; a non-production build lists them in the manifest (§5).
 7. **Doctor Marrow.** Held `POSITION_CONFLICT` once the content lane admits its NPC definition;
    only a map-owner record resolves it (§4.3).
 8. **Travel.** Destinations are already in the project frame. The compiler fails on one outside
-   the World and holds one on a cell that cannot take a character; a production build stops on
-   any held destination. Routes are not bundle bytes (§6).
+   the World and holds one on a cell that cannot take a character or is a house tile; a
+   production build stops on any held destination. Routes are not bundle bytes (§6).
 9. **CI.** The compiler now reads `content/npcs/definitions/` and `content/services/travel/`:
    both are added to the compiler input paths and to the classifier's world-bundle prefixes (§7).
 
@@ -126,10 +127,13 @@ Ruling: **a separate NPC frame** with an NPC-keyed table.
 
 - Header `format_version` 4, manifest `format` `"OTERYN_WORLD_BUNDLE/v4"`, `min_reader_version`
   4; the digest domain string names v4.
-- A 44-byte NPC row follows the spawn row, in the spawn row's shape: `offset`,
-  `compressed_length` (non-zero), `raw_length`, SHA-256 of the frame.
-- The NPC frame follows the spawn frame and ends at the digest. It is one canonical zstd frame
-  (format §5). A bundle without NPCs still has the row and a frame of the empty table.
+- **Byte order (the only one):** header, manifest, sector table, spawn row, NPC row, sector
+  frames, spawn frame, NPC frame, digest. Every table row comes before the first frame; no byte
+  lies between the NPC row and the first sector frame or between two frames.
+- The NPC row is 44 bytes in the spawn row's shape: `offset` u32 of the NPC frame from the start
+  of the file, `compressed_length` u32 (non-zero), `raw_length` u32, SHA-256 of the frame.
+- The NPC frame is one canonical zstd frame (format §5), the last frame, and ends at the digest.
+  A bundle without NPCs still has the row and a frame of the empty table.
 - The manifest gains the required member `npcs`: `{npcs, placements, held}`. `npcs` and
   `placements` are the counts of the NPC table and its placements; the frame must hold exactly
   these. `held` is the record keys of the placements the compiler held (§5), sorted and unique,
@@ -166,23 +170,25 @@ Varints are LEB128 and canonical (format §5).
 - If 1a measures more than 16 placements for one NPC or more than 2,048 in all, it returns
   `QUESTION`: a larger bound is a decision, not a worker's choice.
 
-### 3.4 Reader order
+### 3.4 Reader check order
 
-After the spawn row and frame: the NPC row, the raw and ratio limits, the running raw total, the
-frame checksum, the single canonical frame, decompression into exactly `raw_length` bytes, the
-payload grammar with the limits of §3.3, the manifest `npcs` counts, and `held` empty when
-`build_class` is `production`. Then `dropped_teleports`, as in v3.
+This is the order of the checks, not of the bytes (§3.1 fixes the bytes). After the last sector
+frame and the spawn row and frame are checked: the NPC row (its contiguity is that the NPC frame
+begins where the spawn frame ends and ends at the digest), the raw and ratio limits, the running
+raw total, the frame checksum, the single canonical frame, decompression into exactly
+`raw_length` bytes, the payload grammar with the limits of §3.3, the manifest `npcs` counts, and
+`held` empty when `build_class` is `production`. Then `dropped_teleports`, as in v3.
 
 ### 3.5 Format text that NPC-PLACE-1b amends
 
 | Place | Edit |
 |---|---|
 | Title, Format ID | v4; v3 joins the retired list |
-| §2 table | `format_version` `4`; an NPC row of 44 bytes after the spawn row; frames "then the spawn frame, then the NPC frame, the NPC frame last"; the contiguity sentence names the NPC row |
+| §2 table | `format_version` `4`; an NPC row of 44 bytes after the spawn row, before the first frame; frames "sector frames, then the spawn frame, then the NPC frame, the NPC frame last"; the contiguity sentence names the NPC row (the byte order of §3.1) |
 | §3 table | `format` v4, `min_reader_version` `4`; the `npcs` row of §3.1 |
 | §6 | the domain string v4; the digest covers the NPC frame |
 | §8 | production: `npcs.held` empty; the writer refuses and the reader rejects it otherwise |
-| §9 | the NPC row and frame after the spawn frame, before `dropped_teleports` (§3.4) |
+| §9 | the checks of the NPC row and frame after those of the spawn row and frame, before `dropped_teleports` (§3.4; a check order, the bytes stay as in §2) |
 | §13 | "ends at the digest" becomes "is followed by the NPC frame"; v3 is retired |
 | new §14 | Format v4: §3.1-§3.4 and §5 of this decision |
 | `content/world/pins/README.md` | the pinned digest is a v4 digest |
@@ -258,8 +264,12 @@ The compiler reads the family, the NPC definitions (`content/npcs/definitions/`)
   It holds it with the first reason in this order:
   1. `UnboundNpc`: no admitted NPC definition has the key.
   2. The cell, from the compile-time facts of spawn realization (format §13, item 4): `NoTile`,
-     `UnclassifiedTerrain`, `NoGround`, `NotWalkable`, `FloorChange`, `Teleport`.
-     `ProtectionZone` is not a reason: NPCs stand in protection zones.
+     `UnclassifiedTerrain`, `NoGround`, `NotWalkable`, `FloorChange`, `Teleport`; then the rest
+     of the bundle enterability rule (ARCH-MAP-TRACK-PACKETS-V1 §1.2, `map/boot.rs`
+     `blocked_tiles`) over the cell's top-level entries: `Wall`, a Terrain entry of kind `wall`;
+     `BlockSolid`, an Item entry whose definition (`content/items/definitions/`, already a
+     compiler input) has `block_solid` or does not exist. `ProtectionZone` is not a reason: NPCs
+     stand in protection zones.
   3. `SpawnPoint`: a realized creature spawn point is on the cell. NPCs block like creatures, so
      the spawn could never place there.
   4. `SharedCell`: two placements that pass items 1-3 on one cell. Every placement on that cell
@@ -270,6 +280,9 @@ The compiler reads the family, the NPC definitions (`content/npcs/definitions/`)
   (`npcs.held_by_reason`).
 - The `compile` command's equivalence proof derives the NPC table and `held` from the same inputs
   and compares them with the bundle.
+- 1b tests one placement per reason of item 2, `Wall` and `BlockSolid` included, and a test
+  that every written placement of the testing bundle is enterable by the game server's bundle
+  collision index (`map/boot.rs`), so compiler and movement owner apply one predicate.
 - The `parity` output also reports the family's held list by reason (`npcs.source_held`).
 
 ## 6. Travel destinations
@@ -277,11 +290,14 @@ The compiler reads the family, the NPC definitions (`content/npcs/definitions/`)
 - The frame map is the identity (§1). No route is written to the bundle.
 - The compiler reads `content/services/travel/` and classifies each route destination:
   - outside the World extent or floors: compilation fails;
-  - otherwise the cell reasons of §5 item 2 and `SpawnPoint`, reported as `npcs.routes_held`.
+  - otherwise the cell reasons of §5 item 2, `SpawnPoint`, and `HouseTile`: the tile carries a
+    nonzero house id (format §5), which TRAVEL-0's validator excludes and movement collision
+    does not; reported as `npcs.routes_held`.
 - A production build stops on any held destination (NPC-0 §3.2).
 - In a non-production World, NPC-TRAVEL-1 refuses a route whose destination the loaded World's
-  collision index does not admit, with the same reasons, so compiler and runtime agree on equal
-  inputs. NPC-0's NPC-TRAVEL-1 brief row is amended to say so.
+  collision index does not admit or whose tile carries a house id, with the same reasons, so
+  compiler and runtime agree on equal inputs. NPC-0's NPC-TRAVEL-1 brief row is amended to say
+  so. 1b tests a destination held for each reason, `HouseTile` included.
 
 ## 7. Runtime and CI boundary
 
@@ -349,7 +365,7 @@ placements on one cell are held `SharedCell`.
   held position or destination. Source-level holds (NPC-PLACE-1 §4.3) are not compiler holds."
 - **NPC-0 brief, NPC-PLACE-1 row:** packeted by NPC-PLACE-1 as 1a and 1b.
 - **NPC-0 brief, NPC-TRAVEL-1 row:** adds "refuses a route whose destination the loaded World does
-  not admit (NPC-PLACE-1 §6)".
+  not admit or that is a house tile (NPC-PLACE-1 §6)".
 - **NPC-BEHAVIOUR-0 §3.1:** "canonical order of the placement key (NPC key, then position)"
   becomes "canonical actor order (NPC key, then native floor, `y`, `x`; NPC-PLACE-1 §3.2)", so it
   is not confused with the format §7 placement key.
