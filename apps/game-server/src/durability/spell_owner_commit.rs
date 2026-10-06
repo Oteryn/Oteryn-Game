@@ -543,6 +543,7 @@ pub(crate) async fn commit_spell_owner_transaction<T: Send + 'static>(
 
 /// ARCH-SPELL-LOCK-2 §1.2 and §1.6: the lane, its permit and the commit window.
 #[cfg(test)]
+#[allow(clippy::panic)]
 mod lane_tests {
     use super::*;
 

@@ -44,6 +44,48 @@ Implements `ARCH-SPELL-LOCK-2-V1` §1.1-§1.4 and §1.6 (packet §2.1).
   minimal split of the owned-fact load into an async database read and a sync qualification, so
   the native post-commit transaction runs without Channel guards; 2b keeps the rest of the file.
 
+## Fresh-lane test wrappers (D870 not needed)
+
+The familiar and wild-spawn PostgreSQL cases outside owned_paths
+(`tests/support/character_familiar_writer_postgres_cases.rs`, `gameplay_transport/qualification.rs`)
+compile unchanged: `character_familiar.rs` and `qualification_wild_spawn.rs` keep their former
+signatures as `#[cfg(test)]` wrappers that acquire a fresh `SpellLane` permit and call the new
+`_in_window` / permit-taking production functions. CP widening D870 was therefore not adopted.
+
+## §1.3 mutator disposition
+
+Checks added (`assert_actor_spell_unreserved` / `assert_slot_spell_unreserved`, retryable
+`PlanConflict` before any write):
+- `commit_actor_condition`, `commit_actor_condition_with_life_result`,
+  `commit_player_vitals_with_death_clear`, `commit_actor_condition_batch_with_vitals` (per plan);
+- `rebind_player_session`, `commit_reserved_player`;
+- `drain_auto_attacks`: a reserved attacker defers its swing (target already checked in
+  `prepare_creature_damage_inner_bounded`).
+
+Proven unreachable or already covered: `bind_attacker_lease`, `fence_player_writes`,
+`lift_player_fence`, `bind_continuation` (attackers side table only); `mint_transition_fence`
+(counter only); `reserve_fresh_session` (free slot); `rollback_reserved_player` (through
+`remove()`, which checks); companion reserve/rollback/install, `bind_semantic_creation`,
+`install_companion_policies` (`runtime_actor_companion.rs` already asserts; VacantReusable /
+CreatureReserved slots or the policy table only); `realize_native_qualification_spawn`
+(cfg(test), free slot); heal-and-cure paths through `commit_source_creature_heal_batch` and the
+self-heal (already assert); `clear_respawn_player_conditions` (follows the checked position
+commit).
+
+## Tests
+
+- `spell_owner_commit.rs` `lane_tests`: drop parks and only the resolution yields a permit;
+  explicit park; install/release/uncommitted reclaim consume without parking; foreign-channel
+  permit refused; one holder per lane and reload drops the parked attempt.
+- `runtime_actor_spell_tests.rs`: a condition commit on a reserved slot refuses until the batch
+  ends.
+- `tests/spell_lane_key33_pin.rs`: pins the SQL key-33 lock functions and their triggers, every
+  production Rust key-33 locker/writer, that each holds a lane-derived proof, and that the
+  scope/item authorities are minted only behind a permit.
+
+Known gaps: no PostgreSQL concurrency test of two concurrent spell commits racing the native
+post-commit transaction; no end-to-end test of the attack deferral under a pending batch.
+
 ## High-risk authority/recovery qualification
 
 `NOT_APPLICABLE`: no durable value, wire format, identity or authority changes; the change is an

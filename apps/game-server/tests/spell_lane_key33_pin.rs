@@ -3,6 +3,8 @@
 //! each Rust writer holds a lane-derived proof. A new key-33 site fails this test until it
 //! is reviewed against the spell lane and added to the pinned inventory.
 
+#![allow(clippy::expect_used, clippy::panic)]
+
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -280,7 +282,11 @@ fn lane_proof_authorities_are_minted_only_behind_a_permit() {
         ),
     ] {
         for at in find_all(&text, literal) {
-            if text[..at].ends_with("struct ") || text[..at].ends_with("impl ") {
+            let before = &text[..at];
+            if ["struct ", "impl ", "-> ", "-> &"]
+                .iter()
+                .any(|prefix| before.ends_with(prefix))
+            {
                 continue;
             }
             let (name, signature) = enclosing_fn(&text, at);
