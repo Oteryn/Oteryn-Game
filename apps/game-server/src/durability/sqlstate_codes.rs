@@ -67,6 +67,12 @@ impl SqlstateKind {
             {
                 return Some(kind);
             }
+            if let Some(kind) = error
+                .downcast_ref::<super::DurabilityError>()
+                .and_then(super::DurabilityError::sqlstate)
+            {
+                return Some(kind);
+            }
             current = error.source();
         }
         None
@@ -134,6 +140,78 @@ pub(crate) mod tests {
         }
         assert_eq!(SqlstateKind::from_sqlstate("23503"), None);
         assert_eq!(SqlstateKind::ALL.len(), 9);
+    }
+
+    #[derive(Debug)]
+    struct Raised(&'static str);
+
+    impl std::fmt::Display for Raised {
+        fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("raised")
+        }
+    }
+
+    impl std::error::Error for Raised {}
+
+    impl sqlx::error::DatabaseError for Raised {
+        fn message(&self) -> &str {
+            "raised"
+        }
+
+        fn code(&self) -> Option<std::borrow::Cow<'_, str>> {
+            Some(self.0.into())
+        }
+
+        fn as_error(&self) -> &(dyn std::error::Error + Send + Sync + 'static) {
+            self
+        }
+
+        fn as_error_mut(&mut self) -> &mut (dyn std::error::Error + Send + Sync + 'static) {
+            self
+        }
+
+        fn into_error(self: Box<Self>) -> Box<dyn std::error::Error + Send + Sync + 'static> {
+            self
+        }
+
+        fn kind(&self) -> sqlx::error::ErrorKind {
+            sqlx::error::ErrorKind::Other
+        }
+    }
+
+    fn raised(state: &'static str) -> sqlx::Error {
+        sqlx::Error::Database(Box::new(Raised(state)))
+    }
+
+    #[test]
+    fn a_registered_sqlstate_survives_the_durability_error() {
+        let error = super::super::DurabilityError::from(raised("OTN01"));
+        assert_eq!(
+            SqlstateKind::of_error(&error),
+            Some(SqlstateKind::RegistrationRejected)
+        );
+        let boxed: Box<dyn std::error::Error> = Box::new(error);
+        assert_eq!(
+            SqlstateKind::of_error(boxed.as_ref()),
+            Some(SqlstateKind::RegistrationRejected)
+        );
+    }
+
+    #[test]
+    fn a_registered_sqlstate_survives_a_migration_error() {
+        let error = super::super::DurabilityError::from(sqlx::migrate::MigrateError::Execute(
+            raised("OTC01"),
+        ));
+        assert_eq!(
+            SqlstateKind::of_error(&error),
+            Some(SqlstateKind::ContentActivationSequenceConflict)
+        );
+    }
+
+    #[test]
+    fn an_unregistered_sqlstate_has_no_kind() {
+        let error = super::super::DurabilityError::from(raised("23503"));
+        assert_eq!(SqlstateKind::of_error(&error), None);
     }
 
     #[test]

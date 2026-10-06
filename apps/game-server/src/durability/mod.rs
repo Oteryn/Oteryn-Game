@@ -727,7 +727,9 @@ type V2ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SqlxFailureClass {
     Configuration,
-    Database,
+    /// A database-raised error, with its registered SQLSTATE kind when it has one; the payload
+    /// itself is never kept.
+    Database(Option<sqlstate_codes::SqlstateKind>),
     Transport,
     Tls,
     Protocol,
@@ -743,7 +745,12 @@ impl SqlxFailureClass {
     fn classify(error: &sqlx::Error) -> Self {
         match error {
             sqlx::Error::Configuration(_) | sqlx::Error::InvalidArgument(_) => Self::Configuration,
-            sqlx::Error::Database(_) => Self::Database,
+            sqlx::Error::Database(database) => Self::Database(
+                database
+                    .code()
+                    .as_deref()
+                    .and_then(sqlstate_codes::SqlstateKind::from_sqlstate),
+            ),
             sqlx::Error::Io(_) => Self::Transport,
             sqlx::Error::Tls(_) => Self::Tls,
             sqlx::Error::Protocol(_) => Self::Protocol,
@@ -862,10 +869,22 @@ impl Display for DurabilityError {
 impl std::error::Error for DurabilityError {}
 
 impl DurabilityError {
+    /// The registered SQLSTATE kind the database raised, kept when the error was converted.
+    #[must_use]
+    pub fn sqlstate(&self) -> Option<sqlstate_codes::SqlstateKind> {
+        match self {
+            Self::Database(SqlxFailureClass::Database(kind))
+            | Self::Migration(MigrationFailureClass::Execute(SqlxFailureClass::Database(kind))) => {
+                *kind
+            }
+            _ => None,
+        }
+    }
+
     pub(crate) fn from_commit_error(error: sqlx::Error) -> Self {
         let class = SqlxFailureClass::classify(&error);
         drop(error);
-        if class == SqlxFailureClass::Database {
+        if matches!(class, SqlxFailureClass::Database(_)) {
             Self::CommitRejected
         } else {
             Self::CommitOutcomeUnknown

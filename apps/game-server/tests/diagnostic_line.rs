@@ -86,6 +86,25 @@ fn a_malformed_log_spec_fails_the_start_with_its_code() {
     }
 }
 
+#[cfg(unix)]
+#[test]
+fn a_non_utf8_log_spec_is_malformed_not_unset() {
+    use std::os::unix::ffi::OsStrExt;
+    for (binary, code) in [(SERVER, 2014), (MIGRATE, 2014), (IMPORT, 2014), (OPS, 6007)] {
+        let output = Command::new(binary)
+            .env_remove("OTERYN_BUILD_SHA")
+            .env("OTERYN_LOG", std::ffi::OsStr::from_bytes(b"warn\xff"))
+            .output()
+            .expect("process runs");
+        assert_eq!(output.status.code(), Some(2), "{binary}");
+        let parsed = lines(&output);
+        assert_eq!(parsed[0].event, "process_start", "{binary}");
+        let coded: Vec<_> = parsed.iter().filter(|line| line.code.is_some()).collect();
+        assert_eq!(coded.len(), 1, "{binary}");
+        assert_eq!(coded[0].code, Some(code), "{binary}");
+    }
+}
+
 #[test]
 fn a_warn_filter_drops_info_lines_but_keeps_coded_lines() {
     let output = run(

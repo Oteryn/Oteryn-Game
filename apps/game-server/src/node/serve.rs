@@ -226,7 +226,8 @@ pub fn begin_process(
     if let Some(trace) = &trace {
         let _ = BOOT_TRACE.set(trace.clone());
     }
-    let spec = std::env::var("OTERYN_LOG").ok();
+    // A non-UTF-8 value is lossy-decoded: U+FFFD is in no spec, so it takes the malformed path.
+    let spec = std::env::var_os("OTERYN_LOG").map(|value| value.to_string_lossy().into_owned());
     let filtered = oteryn_error_codes::init_filter(spec.as_deref());
     let start = Line::new(Level::Info, "process", "process_start").build(&build);
     // The first line of every process carries the build whatever the filter says.
