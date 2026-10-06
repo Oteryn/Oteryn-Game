@@ -139,8 +139,10 @@ mirror step exists.
   - `internal-mtls` (nginx) listens on the NAS LAN address, port `8543`.
   - `edge-https` (nginx) listens on the NAS LAN address, port `443`. It serves
     `platform.preprod.oteryn.internal` and `gateway.preprod.oteryn.internal` over TLS 1.3 with no
-    client certificate, proxies to `platform:8000` and the gateway, and returns `404` for
+    client certificate, passes requests to Platform and the gateway, and returns `404` for
     `/internal/` so that internal routes stay behind `internal-mtls`.
+  - `platform-web` (nginx) listens on `8080` on the compose network only, with no published
+    port, for Gateway's service-token call (below).
   - There is no `canary` service, no Cloudflare Tunnel and no public endpoint.
 - **Environment provisioning, before any dispatch.** Naming an environment in workflow YAML
   creates it without protection, so the owner first creates `platform-preproduction` in the
@@ -170,28 +172,95 @@ mirror step exists.
   deploy-runner values the staging workflow already has, under new names (`OTERYN_PREPROD_*`).
   TLS material is not a GitHub secret: it is mounted read-only from the NAS path
   `/volume1/oteryn/platform-preprod/secrets/`.
-- **mTLS terminator.** The staging `internal.conf` neither verifies client certificates nor
-  restricts the TLS version. The preprod terminator does three things:
-  - it sets `ssl_protocols TLSv1.3`, `ssl_verify_client on` and
-    `ssl_client_certificate <preprod CA>`;
-  - it forwards `SSL_CLIENT_VERIFY`, `SSL_PROTOCOL` and `SSL_CLIENT_S_DN` to Platform, as
-    `GuardNativeRuntimeStatusPeer` requires;
-  - it serves `platform-internal.preprod.oteryn.internal`.
+- **mTLS terminator (`internal-mtls`).** The staging `internal.conf` neither verifies client
+  certificates nor restricts the TLS version. The preprod terminator copies the server block of
+  `tools/qualification/login_local/nginx.conf` (port `8443` there):
+  - `ssl_protocols TLSv1.3`, `ssl_verify_client on`, `ssl_verify_depth 2`,
+    `ssl_session_tickets off`, `ssl_client_certificate <preprod CA>`, and server name
+    `platform-internal.preprod.oteryn.internal`;
+  - exactly four `POST` routes, `/internal/v1/game-auth/` followed by `native-evidence`,
+    `character-bootstrap-intents/read`, `native-runtime-status` or `native-scope-assignments`,
+    and `404` for everything else;
+  - each route is passed to the Platform PHP-FPM upstream over FastCGI with
+    `fastcgi_param HTTPS on`, `SSL_CLIENT_VERIFY`, `SSL_PROTOCOL` and `SSL_CLIENT_S_DN` taken from
+    the TLS session, as `GuardNativeRuntimeStatusPeer` requires. The six request-header forms
+    (`HTTP_SSL_*`, `HTTP_X_SSL_*`) are set empty, so a client cannot inject a subject. An HTTP
+    `proxy_pass` would turn the subject into a request header, so it is not used for these routes.
+- **Gateway upstream (`platform-web`).** Gateway calls Platform's native admission route with its
+  service token, not with mTLS. A third nginx server block listens on `8080` on the compose
+  network only, with no published port. It copies the `login_local` port-`8080` block: it passes
+  `/` and exactly `/internal/v1/game-auth/native-admissions` to Platform, and returns `404` for
+  every other `/internal/` path. Gateway's `OTERYN_PLATFORM_BASE_URL` points at it.
+- **Mounts.** All host paths are under `/volume1/oteryn/platform-preprod/`:
 
-  The `tools/qualification/login_local/nginx.conf` shape is the reference.
-- **Platform environment variables** (on the NAS, not in the repository):
+  | Host path | Container path | Mode | Content |
+  |---|---|---|---|
+  | `db/` | MariaDB data directory | volume | the dedicated store (D607) |
+  | `state/` | Platform `/var/lib/oteryn-preprod` (the state root) | read-write, persistent | `witness/` (high-water directory, owned by the PHP-FPM user, chowned at container start as `wp5_s3a` does), the Laravel session files |
+  | `secrets/admission/` | Platform `/run/oteryn-admission` | read-only | `signing.seed` (base64url Ed25519 seed, `0600`, owned by the PHP-FPM user uid) |
+  | `secrets/tls/` | `internal-mtls`, `edge-https` | read-only | server certificates and keys, the public CA certificate |
+  | `.env` | compose environment file | `0600`, root | the variables below, including the Gateway service token |
 
-| Variable | Value |
-|---|---|
-| `GAME_AUTH_NATIVE_PERSISTENT_PREPROD_STORE` / `_DATABASE` / `_STORE_ID` / `_STATE_ROOT` | `true` / `oteryn_preprod` / provisioned UUIDv7 / `/var/lib/oteryn-preprod` |
-| `GAME_AUTH_NATIVE_ADMISSION_ENABLED` | `true`; signing key file under the secrets mount |
-| `GAME_AUTH_NATIVE_RUNTIME_STATUS_ENABLED` / `_IDENTITIES` | `true` / `{"CN=oteryn-preprod-node-1-runtime-status":["<WorldId>/<ChannelId>"]}` |
-| `GAME_AUTH_NATIVE_SCOPE_ASSIGNMENT_ENABLED` / `_IDENTITIES` | `true` / the subject `CN=oteryn-preprod-game-ops` |
-| `GAME_AUTH_NATIVE_EVIDENCE_MTLS_CLIENT_IDENTITY` | `CN=oteryn-preprod-node-1-native-evidence` |
-| `GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_MTLS_CLIENT_IDENTITY` | `CN=oteryn-preprod-character-bootstrap` |
-| `GAME_AUTH_NATIVE_ADMISSION_UNVERIFIED_CHARACTER_OWNERSHIP` / `_WORLD_ID` | `true` / `<WorldId>` until the LCFA feed is on here (§7), then `false` |
+  No path is a symlink, and the state root is never a temporary directory or tmpfs.
+- **Environment variables** (in the NAS `.env`, never in a repository). The Platform values below
+  are the `login_local` set (`wp5_s3a` + `wp5_s3b` + `node_boot` + `login_local` overlays), with
+  the preprod names, plus the persistent store.
 
-Platform already requires the identities to be distinct per purpose, and this table satisfies that.
+  | Platform variable | Value |
+  |---|---|
+  | `APP_ENV` / `APP_DEBUG` / `APP_URL` | `preproduction` / `false` / `https://platform.preprod.oteryn.internal` |
+  | `APP_KEY`, `DB_*` | generated on the NAS / the dedicated MariaDB service and database `oteryn_preprod` |
+  | `SESSION_DRIVER` | a persistent driver (`file` under the state root, as `login_local`, or the staging driver), never `array` |
+  | `GAME_AUTH_NATIVE_PERSISTENT_PREPROD_STORE` / `_DATABASE` / `_STORE_ID` / `_STATE_ROOT` | `true` / `oteryn_preprod` / provisioned UUIDv7 / `/var/lib/oteryn-preprod` |
+  | `GAME_AUTH_NATIVE_EVIDENCE_ACTIVATED` / `_SOURCE_AUTHORITY` | `true` / `platform` (equal to `node.toml [platform].source_authority`) |
+  | `GAME_AUTH_NATIVE_EVIDENCE_MTLS_CLIENT_IDENTITY` | `CN=oteryn-preprod-node-1-native-evidence` |
+  | `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY` | `/var/lib/oteryn-preprod/witness` (inside the state root, §2.3) |
+  | `GAME_AUTH_NATIVE_EVIDENCE_FRESH_ACCOUNT_PURPOSE` / `_FRESH_ACCOUNT_SCOPE` / `_FRESH_KEY_PURPOSE` | `platform_security` / `fresh_admission` / `fresh_admission` |
+  | `GAME_AUTH_NATIVE_EVIDENCE_CLOCK_UNCERTAINTY_SECONDS` / `_REQUESTS_PER_MINUTE` | `0` (Platform and node share the NAS clock) / `600` |
+  | `GAME_AUTH_CHARACTER_BOOTSTRAP_INTENT_MTLS_CLIENT_IDENTITY` / `_TTL_SECONDS` | `CN=oteryn-preprod-node-1-native-evidence` / `300` |
+  | `GAME_AUTH_NATIVE_ADMISSION_ENABLED` / `_SIGNING_KEY_FILE` / `_SIGNING_KEY_ID` | `true` / `/run/oteryn-admission/signing.seed` / `preprod-admission-key-1` |
+  | `GAME_AUTH_GATEWAY_SERVICE_TOKEN_SHA256` | lowercase hex SHA-256 of the Gateway service token |
+  | `GAME_AUTH_NATIVE_ADMISSION_UNVERIFIED_CHARACTER_OWNERSHIP` / `_WORLD_ID` | `true` / `<WorldId>` until the LCFA feed is on here (§7), then `false` |
+  | `GAME_AUTH_NATIVE_RUNTIME_STATUS_ENABLED` / `_IDENTITIES` | `true` / `{"CN=oteryn-preprod-node-1-runtime-status":["<WorldId>/<ChannelId>"]}` |
+  | `GAME_AUTH_NATIVE_SCOPE_ASSIGNMENT_ENABLED` / `_IDENTITIES` | `true` / `{"CN=oteryn-preprod-game-ops":["<WorldId>/<ChannelId>"]}` |
+
+  | Gateway variable | Value |
+  |---|---|
+  | `OTERYN_PLATFORM_BASE_URL` | `http://platform-web:8080` (compose network only) |
+  | `OTERYN_PLATFORM_SERVICE_TOKEN` | the Gateway service token |
+  | `GATEWAY_LISTEN_ADDR` / `GATEWAY_NATIVE_LOGIN_ENABLED` | `:8080` / `true` |
+
+  The character bootstrap identity is the native evidence identity on purpose. The Game node
+  sends its one `[platform]` certificate for both the evidence route and the bootstrap-intent read
+  (`apps/game-server/src/node/serve.rs`, OPS-NODE-BOOT-01 D1, as `node_boot` and `login_local`
+  configure). The evidence, runtime-status and scope-assignment identities stay distinct, each
+  with its own key.
+- **Secret provisioning, on the NAS only.**
+  - Gateway service token: `openssl rand -hex 32`. It is written once into the `.env` as
+    `OTERYN_PLATFORM_SERVICE_TOKEN`, and only its SHA-256
+    (`printf '%s' "$token" | openssl dgst -sha256 -r | cut -d ' ' -f 1`) goes into
+    `GAME_AUTH_GATEWAY_SERVICE_TOKEN_SHA256`. Rotation replaces both and recreates `platform`
+    and `gateway` together.
+  - Admission signing key: `openssl genpkey -algorithm ed25519`. The 32-byte seed is written
+    base64url without padding to `secrets/admission/signing.seed`, as `login_local` does. The
+    PEM is then deleted. The public half is published with `game-auth:native-trust:publish-key` under key
+    id `preprod-admission-key-1` and key purpose `fresh_admission` (§7 step 5).
+  - `APP_KEY`, the MariaDB passwords and the store id are generated on the NAS.
+  - None of these is a GitHub secret, and none is printed into a workflow log.
+
+### 3.1 Parity with `login_local`
+
+Each `login_local` setting is carried as above, except for these, which are replaced on purpose:
+
+| `login_local` | Preprod | Reason |
+|---|---|---|
+| retained SQLite topology fixture, plus a mirror into MariaDB | the persistent guard on the default connection (§2) | removes the split store |
+| admission seed copied into a tmpfs per run | persistent read-only secrets file | the key must survive restarts |
+| `LD_PRELOAD` / `WP5_FSYNC_FAULT` | not set | qualification fault injection only |
+| per-run CAs and a self-signed gameplay certificate | one preprod CA (§5) | persistent trust |
+| loopback ports | NAS LAN address only | testers on the LAN |
+| test account inserted into `identities` | tester accounts created through Platform account registration (§8) | no direct table writes in a persistent stack |
+| `game-auth:world:ensure --host 127.0.0.1` | `--host <NAS LAN address> --port <node gameplay port>` | LAN route |
 
 ## 4. Endpoints and TLS names
 
@@ -200,6 +269,7 @@ Platform already requires the identities to be distinct per purpose, and this ta
 | `platform-internal.preprod.oteryn.internal` | `internal-mtls`, LAN `:8543`, client certificate required | Game node `[platform]` and `[platform.runtime_status]`; Game ops `report.toml` |
 | `platform.preprod.oteryn.internal` | `edge-https`, LAN `:443`, no client certificate | internal-build client `OTERYN_PLATFORM_URL` (directory, OAuth token, ticket) and the system browser for the OAuth authorization page |
 | `gateway.preprod.oteryn.internal` | `edge-https`, LAN `:443`, no client certificate | internal-build client `OTERYN_GATEWAY_URL` |
+| `platform-web:8080` | `platform-web`, compose network only, never published | Gateway `OTERYN_PLATFORM_BASE_URL`, service token (§3) |
 | `node-1.preprod.oteryn.internal` | Game node gameplay listener | route record `tls_server_name`; client verifies it against the configured preprod root (§17 mode 34a) |
 
 `.internal` is reserved for private use, so these names never resolve publicly. Endpoints carry
@@ -233,8 +303,8 @@ machine is provisioned once:
      Game operator steps 5..6), read from `game_character_roots` for that bootstrap. It is not
      invented on the client.
    - `OTERYN_DEV_ROOT=<path to the public CA file>`
-   - `OTERYN_OAUTH_CLIENT_ID` is the value of `game-auth:native-oauth-client:ensure`, or of the
-     existing `EnsureNativeOAuthClient` command, run on the preprod stack.
+   - `OTERYN_OAUTH_CLIENT_ID` is the client id printed by `game-auth:oauth-client:ensure`, run
+     on the preprod stack, as `login_local` does.
 
 ## 5. Certificates and placement
 
@@ -250,14 +320,18 @@ repository or into GitHub. The CA issues:
 | `CN=oteryn-preprod-node-1-native-evidence` | node `[platform]` client | Game `<BASE>/node/secrets/platform-client.*` |
 | `CN=oteryn-preprod-node-1-runtime-status` | node runtime status | Game `<BASE>/node/secrets/runtime-status.*` |
 | `CN=oteryn-preprod-game-ops` | ownership authority (assignment) | Game `<ROOT_BASE>/ops/authority.*` |
-| `CN=oteryn-preprod-character-bootstrap` | character bootstrap intent | Game Character Authority secrets |
 | `CN=oteryn-preprod-character-projection` | LCFA feed, later (U-LC6) | issued when GAME-LCFA-ENABLE-1 is deployed here |
 
-The public CA certificate is copied to both sides as the trust root, for example to
-`platform-roots.pem` and the root copies in `<ROOT_BASE>/ops`. The admission signing key pair is
-generated in the Platform secrets directory. Its public half is registered with
-`game-auth:native-trust:publish-key` (§2.3) and handed to the Game node the same way as in
-`login_local`. Rotation reissues from the same CA and edits the identity variables; it never
+The node evidence certificate also authenticates the character bootstrap intent read, so there
+is no separate bootstrap certificate (§3). The runtime-status certificate's subject is the
+`NODE_IDENTITY` in `scope.env` and the `[node_certificate_files]` key in `report.toml`; root
+copies of `runtime-status.crt` and of the public CA as `platform-roots.pem` live in
+`<ROOT_BASE>/ops`, as the Game README requires. The authority key never shares a public key with
+a node certificate.
+
+The admission signing seed is generated in the Platform secrets directory (§3). Its public half
+is registered only in the Platform trust registry with `game-auth:native-trust:publish-key`
+(§2.3). It is not handed to the Game node, which never verifies admission signatures itself. Rotation reissues from the same CA and edits the identity variables; it never
 changes a WorldId or a ChannelId.
 
 ## 6. Revision tokens and the assignment epoch
@@ -311,13 +385,16 @@ changes a WorldId or a ChannelId.
    `protection-check` must pass first. Then, on the NAS:
    1. migrations;
    2. `native-preprod-store:provision`;
-   3. provisioning the local World row.
+   3. `game-auth:world:ensure --id 1 --slug <slug> --name <name> --region <region>
+      --host <NAS LAN address> --port <node gameplay port>`, which provisions the local World
+      row;
+   4. `game-auth:oauth-client:ensure` for the internal-build client.
 5. **Owner run-time approval, permanent:** `native-topology:issue --world-row-id=<row>
    --channel-key=ch1`. Then:
    1. pin the WorldId and the ChannelId in the manifest;
    2. run `native-route:publish` with login disabled, and pin `route_version` and
       `route_revision`;
-   3. run `native-trust:publish-key`;
+   3. run `native-trust:publish-key` for `preprod-admission-key-1`, purpose `fresh_admission`;
    4. set the identity variables (§3), then redeploy Platform with owner approval.
 6. A manifest PR in this repository fills in the pinned values. The Game operator then runs the
    one-time first-start sequence by hand (Game README "First start sequence", steps 1..10). It
@@ -346,8 +423,10 @@ discarded stack keeps its database volume until the owner decides to delete it.
 1. Create the CA, then issue the server and client certificates in §5.
 2. Have the owner provision `platform-preproduction` with its protection rule and read it back
    (§3). Do not dispatch until that is done.
-3. Create `/volume1/oteryn/platform-preprod/{secrets,state}` and write the `.env` with the §3
-   variables. Keep the runtime-status and assignment identities off until step 6.
+3. Create `/volume1/oteryn/platform-preprod/{db,secrets/admission,secrets/tls,state/witness}`
+   with the §3 owners and modes. Generate the admission seed and the Gateway service token as §3
+   says, then write the `.env` with every §3 Platform and Gateway variable. Keep the
+   runtime-status and assignment switches off until step 6.
 4. Dispatch `deploy-synology-preprod.yml`. Its `protection-check` job must pass.
 5. Run the provision, issue, route-publish and trust-publish steps of §7 steps 4..5, and save each
    JSON receipt to the manifest PR.
@@ -357,6 +436,8 @@ discarded stack keeps its database volume until the owner decides to delete it.
    - `edge-https` returns `404` for `/internal/`;
    - a provisioned tester machine (§4.1) opens `https://platform.preprod.oteryn.internal/`
      without a certificate warning.
+8. Create each tester account through Platform account registration on that page, never by a
+   direct table write.
 
 **Game operator:**
 
@@ -417,14 +498,25 @@ discarded stack keeps its database volume until the owner decides to delete it.
      - a branch policy that admits anything other than `main`;
      - `can_admins_bypass` that is missing or `true`.
   10. `edge-https` is TLS 1.3, serves only the two client-facing names and refuses `/internal/`;
-      the internal-build client logs in through it in the joint E2E (§7 step 7).
+      the internal-build client logs in through it in the joint E2E (§7 step 7) with an account
+      created through Platform registration.
+  11. The `.env` template sets every §3 variable, including
+      `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY` inside the state root on the persistent
+      `state/` mount, and no `LD_PRELOAD`. The bootstrap-intent identity equals the native
+      evidence identity.
+  12. Gateway has `GATEWAY_NATIVE_LOGIN_ENABLED=true` and `OTERYN_PLATFORM_SERVICE_TOKEN`;
+      Platform holds only `GAME_AUTH_GATEWAY_SERVICE_TOKEN_SHA256`. `platform-web` has no
+      published port and exposes only `native-admissions` under `/internal/`.
+  13. `internal-mtls` passes `SSL_CLIENT_VERIFY`, `SSL_PROTOCOL` and `SSL_CLIENT_S_DN` as FastCGI
+      parameters, clears the `HTTP_SSL_*` and `HTTP_X_SSL_*` forms, allows only `POST` on the
+      four internal routes, and has session tickets off.
 - **Validation:**
   - Platform CI;
   - unit and feature tests for each refusal;
   - a persistent-mode feature test that issues and publishes a topology, then admits a grant
     through `RegistryNativeAdmissionScopeResolver` on the same connection;
   - `docker compose config` on the new compose file;
-  - an `nginx -t` check of both nginx configs;
+  - an `nginx -t` check of the three nginx server configs;
   - a test of the `protection-check` evaluation against fixture API responses (protected,
     missing environment, no reviewer, any-branch policy, admin bypass `true`, admin bypass
     field missing).
@@ -436,8 +528,13 @@ discarded stack keeps its database volume until the owner decides to delete it.
 - **Owned paths:**
   - `deploy/synology-game/preprod-topology.toml` (new). It is non-secret and holds the IDs, the
     route descriptor, `route_version`/`route_revision`, the readiness tokens, the four
-    `[interpretation]` tokens, `source_authority`, the epoch and the certificate subjects, with placeholders until §7 step 6.
-  - `deploy/synology-game/README.md`: the Platform section, names and runbook of §8.
+    `[interpretation]` tokens, `source_authority` (`platform`, equal to the Platform
+    `GAME_AUTH_NATIVE_EVIDENCE_SOURCE_AUTHORITY`), the epoch and the certificate subjects, with
+    placeholders until §7 step 6.
+  - `deploy/synology-game/README.md`: the Platform section, names and runbook of §8. Its NAS
+    values table takes `<WORLD_ID>`/`<CHANNEL_ID>` from the Registry-pinned manifest (D855), not
+    from an owner-chosen UUIDv7, and takes `NODE_IDENTITY`, the platform endpoint and peer name,
+    the readiness tokens and the epoch from the manifest too.
   - `deploy/synology-game/deploy-ops.sh`: a fail-closed comparison of the rendered `[readiness]`
     tokens and `assignment_epoch` (in `node.toml` and `report.toml`) against the manifest.
   - the task record.

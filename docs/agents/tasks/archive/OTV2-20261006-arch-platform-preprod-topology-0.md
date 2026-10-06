@@ -76,5 +76,18 @@ Codex round 2 on `f5424197` raised three P1 findings and one P2, all fixed in on
 - the epoch procedure depends on the scope's state: `replace` through the deploy, then
   `reconcile` or `report`, never a second `assign`.
 
+Codex round 3 on `39929d2b` raised three P1 findings. The root cause was a §3 environment that
+had not been checked against `login_local` line by line. One push rewrites §3 from the
+`login_local` union (`wp5_s3a`, `wp5_s3b`, `node_boot` and `login_local` overlays) and adds a
+§3.1 parity table:
+- the native evidence high-water directory sits inside the state root on a persistent mount;
+- Gateway native login is enabled with the service-token pair, its provisioning, and a
+  compose-internal `platform-web` listener;
+- the bootstrap-intent identity is the node evidence subject (OPS-NODE-BOOT-01 D1), and the
+  separate bootstrap certificate is removed.
+The same diff fixes the mTLS FastCGI parameters, the OAuth client command, the World row
+command, the admission key placement, the Game root copies, tester registration, and the
+README NAS-values rows in §10.
+
 Review is decided by the control plane on the frozen head. Merge result: squash merge of
 #1893, pending CI and Merge Queue at authoring.
