@@ -1,6 +1,32 @@
 # Magnolia phase-2 max-health amendment — bounded Encounter-owner proposal
 
-Status: **PROPOSED ARCHITECTURE AMENDMENT / NO RUNTIME MUTATION**
+Status: **ARCHITECT DISPOSITION RECORDED IN #1891 / NO RUNTIME MUTATION**
+
+## Architect disposition — #1891 supersedes the proposed action shape
+
+PR #1891 (`ENCOUNTER-RT-0 §17`) selects **option B** and supersedes this packet's earlier proposed `set_health(max,current)` action.
+
+Accepted shape at #1891 head `5dfe40ee3886174d3f3f56023ed5aee29c40e41a`:
+
+```text
+attribute(max_health, set 60000)
+then queued heal(full)
+then set_phase(phase_2)
+```
+
+Semantics:
+
+- `attribute` gains `max_health`;
+- operation is absolute `set` or `reset`;
+- setting max health does **not** heal implicitly;
+- percent/max-health-relative reads use the override in force;
+- the override is Encounter-instance state, not a new Creature identity;
+- reset/despawn returns to the Creature baseline;
+- ENC-COMBAT-1 implements the authoring/ProjectV2/runtime support.
+
+Magnolia's first lethal is intentionally two-step: inline `prevent_death + max_health=60000 + phase counter`, then queued `heal(full)` so the lethal drain cannot overwrite the new health.
+
+The earlier `set_health(max,current)` proposal below is retained only as historical evidence of the gap and is **REJECTED/SUPERSEDED** by #1891.
 
 Quest: Shards of a Broken Moon  
 Encounter role: `The Moonsnow Magnolia`
