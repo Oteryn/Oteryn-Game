@@ -88,6 +88,14 @@ def test_two_feet_for_one_head_are_ambiguous():
     )
 
 
+def test_two_heads_on_one_tile_fail_even_with_distinct_feet():
+    # south and east heads at (10, 10) with feet at (10, 11) and (11, 10): each pairs, the key collides
+    placed = [(1, 10, 10, 7), (3, 10, 10, 7), (2, 10, 11, 7), (4, 11, 10, 7)]
+    report = v.validate([house(1, 2, GRID)], placed, FACTS, set())
+    assert codes(report) == ["MULTIPLE_HEADS_ON_TILE"]
+    assert report["errors"][0]["tile"] == [10, 10, 7]
+
+
 def test_beds_outside_any_house_and_other_floors_are_ignored():
     placed = BED_A + [(1, 50, 50, 7), (2, 50, 51, 7), (1, 10, 10, 6)]
     report = v.validate([house(1, 1, GRID)], placed, FACTS, set())

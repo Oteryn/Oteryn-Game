@@ -69,7 +69,7 @@ Open finding for the CP/architect: the packet doc expects 370 lowered, 7 held an
 
 Pending: the item-authoring and house-authoring workflow steps (`python test_lower_bed_packet.py`, `python lower_bed_packet.py --check`, `python test_validate_beds.py`) were not added; the edit of `.github/workflows/` was denied and is left for the CP.
 
-Touched: `tools/content-schema/item-authoring/{lower_bed_packet.py,test_lower_bed_packet.py,README.md}`, `tools/content-schema/house-authoring/{validate_beds.py,test_validate_beds.py,bed-exception-houses.json,README.md}`, `docs/agents/evidence/OTV2-20261005-bed-facts-v1.json`, `apps/game-server/src/content/{item_bed_promotion.rs,mod.rs}`, `apps/game-server/examples/materialize_content_world_project_v2.rs`, the regenerated `content/**` tree and `content/world/**`, `apps/game-server/tests/content_world_project_repository.rs` pins.
+Touched: `tools/content-schema/item-authoring/{lower_bed_packet.py,test_lower_bed_packet.py,README.md}`, `tools/content-schema/house-authoring/{validate_beds.py,test_validate_beds.py,bed-exception-houses.json,README.md}`, `docs/agents/evidence/OTV2-20261005-bed-facts-v1.json`, `apps/game-server/src/content/{item_bed_promotion.rs,mod.rs}`, `apps/game-server/examples/materialize_content_world_project_v2.rs`, the regenerated `content/**` tree and `content/world/**`, `apps/game-server/tests/content_world_project_repository.rs` pins. Repair 1: `MULTIPLE_HEADS_ON_TILE` finding plus test (two Heads on one tile collide on BedKey).
 
 ## Validation
 
@@ -143,7 +143,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null

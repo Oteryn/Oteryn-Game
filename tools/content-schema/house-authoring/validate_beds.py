@@ -107,6 +107,9 @@ def validate(houses, placed, facts, exceptions, held=frozenset()):
         house = owner.get(tile)
         if house is None:
             continue  # a bed outside every House is not a House bed
+        heads = [item_id for item_id, part, _ in here if part == "head"]
+        if len(heads) > 1:  # BedKey is keyed by the head tile: two heads would collide
+            fail("MULTIPLE_HEADS_ON_TILE", house, tile, f"items {sorted(heads)}")
         for item_id, part, direction in here:
             dx, dy = STEP[direction]
             other_tile = (tile[0] + dx, tile[1] + dy, tile[2])
