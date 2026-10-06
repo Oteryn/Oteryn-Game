@@ -1,0 +1,1054 @@
+{
+  "classification": "DERIVED_FAIL_CLOSED_AUDIT_NOT_RUNTIME_AUTHORITY",
+  "holds": [
+    "Cardinality equality is a bounded candidate signal, not proof that every claim is a terminal occurrence.",
+    "No automatic counted-terminal reducer or event selector is admitted.",
+    "Cardinality mismatches require exact source review before selecting any subset.",
+    "No-claim holds may be quantity/resource semantics or a non-claim event; chosen count is not reinterpreted here."
+  ],
+  "inputs": {
+    "definitions": {
+      "path": "content/quests/definitions/index.json",
+      "record_count": 352,
+      "sha256": "d9e92a1e5e956e17af3ac657ac317f10506098add1837c7d4b0c41f8250ed149"
+    },
+    "reward_bindings": {
+      "path": "tools/content-schema/quest-authoring/samples/binding_packets/rewards/perquest-352.json",
+      "sha256": "721a7cd91b2c919a0a664e74d0af9bcc0649b6b9de7f0b4d43aa71437f189fe2"
+    },
+    "source_chests": {
+      "path": "tools/content-schema/quest-authoring/samples/chests/claims.json",
+      "sha256": "49ca05748a893d8a3fdf6494402baf36a398cb9828b3986293c4fdb5e5bfcdf9"
+    }
+  },
+  "records": [
+    {
+      "claim_set": {
+        "all_source_claims_found": true,
+        "count": 9,
+        "refs": [
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
+            "revision": "reward-claim-r1"
+          }
+        ],
+        "source_claims": [
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 32231,
+                "y": 31068,
+                "z": 7
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U8_0.BarbarianArena.RewardGreenhornBP",
+              "marker": "quest/u8_0/barbarian_arena/reward_greenhorn_bp",
+              "source": {
+                "line": 143,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_bp",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 32231,
+                "y": 31065,
+                "z": 7
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U8_0.BarbarianArena.RewardGreenhornPresent",
+              "marker": "quest/u8_0/barbarian_arena/reward_greenhorn_present",
+              "source": {
+                "line": 143,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_present",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 3,
+            "positions": [
+              {
+                "x": 32235,
+                "y": 31064,
+                "z": 7
+              },
+              {
+                "x": 32235,
+                "y": 31066,
+                "z": 7
+              },
+              {
+                "x": 32235,
+                "y": 31068,
+                "z": 7
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U8_0.BarbarianArena.RewardGreenhornWeapons",
+              "marker": "quest/u8_0/barbarian_arena/reward_greenhorn_weapons",
+              "source": {
+                "line": 100,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_greenhorn_weapons",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 32231,
+                "y": 31061,
+                "z": 7
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U8_0.BarbarianArena.RewardScrapperBP",
+              "marker": "quest/u8_0/barbarian_arena/reward_scrapper_bp",
+              "source": {
+                "line": 143,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_bp",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 32231,
+                "y": 31058,
+                "z": 7
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U8_0.BarbarianArena.RewardScrapperPresent",
+              "marker": "quest/u8_0/barbarian_arena/reward_scrapper_present",
+              "source": {
+                "line": 143,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_present",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 3,
+            "positions": [
+              {
+                "x": 32235,
+                "y": 31057,
+                "z": 7
+              },
+              {
+                "x": 32235,
+                "y": 31059,
+                "z": 7
+              },
+              {
+                "x": 32235,
+                "y": 31061,
+                "z": 7
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U8_0.BarbarianArena.RewardScrapperWeapons",
+              "marker": "quest/u8_0/barbarian_arena/reward_scrapper_weapons",
+              "source": {
+                "line": 100,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_scrapper_weapons",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 32231,
+                "y": 31054,
+                "z": 7
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U8_0.BarbarianArena.RewardWarlordBP",
+              "marker": "quest/u8_0/barbarian_arena/reward_warlord_bp",
+              "source": {
+                "line": 143,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_bp",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 32231,
+                "y": 31051,
+                "z": 7
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U8_0.BarbarianArena.RewardWarlordPresent",
+              "marker": "quest/u8_0/barbarian_arena/reward_warlord_present",
+              "source": {
+                "line": 143,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_present",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 3,
+            "positions": [
+              {
+                "x": 32235,
+                "y": 31050,
+                "z": 7
+              },
+              {
+                "x": 32235,
+                "y": 31052,
+                "z": 7
+              },
+              {
+                "x": 32235,
+                "y": 31054,
+                "z": 7
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U8_0.BarbarianArena.RewardWarlordWeapons",
+              "marker": "quest/u8_0/barbarian_arena/reward_warlord_weapons",
+              "source": {
+                "line": 100,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u8_0.barbarian_arena.reward_warlord_weapons",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          }
+        ]
+      },
+      "classification": "CLAIM_SET_CARDINALITY_MISMATCH",
+      "native_dispatch_binding": null,
+      "quest": {
+        "display_name": "Barbarian Arena Quest",
+        "key": "oteryn:quest.barbarian_arena_quest",
+        "revision": "quest-r1"
+      },
+      "recommended_next": "SOURCE_REVIEW_CLAIM_SUBSET_OR_NONCLAIM_TERMINAL",
+      "runtime_admitted": false,
+      "source_equivalence": false,
+      "terminal_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "chosen_count": 3,
+        "key": "s5",
+        "kind": "complete",
+        "objective": "Collect the three difficulty trophies from Halvar's reward rooms.",
+        "targets": [
+          "Bronze Goblet",
+          "Silver Goblet",
+          "Golden Goblet"
+        ]
+      }
+    },
+    {
+      "claim_set": {
+        "all_source_claims_found": true,
+        "count": 4,
+        "refs": [
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.kv.bear_chest1",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.kv.bear_chest2",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.kv.bear_chest3",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.key.id4601",
+            "revision": "reward-claim-r1"
+          }
+        ],
+        "source_claims": [
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 32146,
+                "y": 32097,
+                "z": 11
+              }
+            ],
+            "progress_write": null,
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.kv.bear_chest1",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 32144,
+                "y": 32096,
+                "z": 11
+              }
+            ],
+            "progress_write": null,
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.kv.bear_chest2",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 32141,
+                "y": 32097,
+                "z": 11
+              }
+            ],
+            "progress_write": null,
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.kv.bear_chest3",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 32150,
+                "y": 32112,
+                "z": 12
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.Key.ID4601",
+              "marker": "quest/key/id4601",
+              "source": {
+                "line": 100,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.key.id4601",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          }
+        ]
+      },
+      "classification": "CLAIM_SET_CARDINALITY_MISMATCH",
+      "native_dispatch_binding": null,
+      "quest": {
+        "display_name": "Bear Room Quest",
+        "key": "oteryn:quest.bear_room_quest",
+        "revision": "quest-r1"
+      },
+      "recommended_next": "SOURCE_REVIEW_CLAIM_SUBSET_OR_NONCLAIM_TERMINAL",
+      "runtime_admitted": false,
+      "source_equivalence": false,
+      "terminal_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "chosen_count": 3,
+        "key": "s5",
+        "kind": "complete",
+        "objective": "Open the three bear-room boxes and return by the sewer grate.",
+        "targets": [
+          "bear-room reward boxes"
+        ]
+      }
+    },
+    {
+      "claim_set": {
+        "all_source_claims_found": true,
+        "count": 4,
+        "refs": [
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.kv.behemothquest1",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.kv.behemothquest2",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.kv.behemothquest3",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.kv.behemothquest4",
+            "revision": "reward-claim-r1"
+          }
+        ],
+        "source_claims": [
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 33294,
+                "y": 31658,
+                "z": 13
+              }
+            ],
+            "progress_write": null,
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.kv.behemothquest1",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 33295,
+                "y": 31658,
+                "z": 13
+              }
+            ],
+            "progress_write": null,
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.kv.behemothquest2",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 33297,
+                "y": 31658,
+                "z": 13
+              }
+            ],
+            "progress_write": null,
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.kv.behemothquest3",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 33298,
+                "y": 31658,
+                "z": 13
+              }
+            ],
+            "progress_write": null,
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.kv.behemothquest4",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          }
+        ]
+      },
+      "classification": "EXACT_CLAIM_SET_CARDINALITY_CANDIDATE",
+      "native_dispatch_binding": null,
+      "quest": {
+        "display_name": "Behemoth Quest",
+        "key": "oteryn:quest.behemoth_quest",
+        "revision": "quest-r1"
+      },
+      "recommended_next": "ARCH_REVIEW_COUNTED_TERMINAL_EVENT_SET",
+      "runtime_admitted": false,
+      "source_equivalence": false,
+      "terminal_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "chosen_count": 4,
+        "key": "s4",
+        "kind": "complete",
+        "objective": "Open the four Behemoth reward chests beyond the level gate.",
+        "targets": [
+          "Behemoth reward chests"
+        ]
+      }
+    },
+    {
+      "claim_set": {
+        "all_source_claims_found": true,
+        "count": 3,
+        "refs": [
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
+            "revision": "reward-claim-r1"
+          }
+        ],
+        "source_claims": [
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 33313,
+                "y": 31575,
+                "z": 15
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U6_4.DemonHelmet.Rewards.DemonHelmet",
+              "marker": "quest/u6_4/demon_helmet/rewards/demon_helmet",
+              "source": {
+                "line": 100,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_helmet",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 33313,
+                "y": 31576,
+                "z": 15
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U6_4.DemonHelmet.Rewards.DemonShield",
+              "marker": "quest/u6_4/demon_helmet/rewards/demon_shield",
+              "source": {
+                "line": 100,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.demon_shield",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 33313,
+                "y": 31574,
+                "z": 15
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U6_4.DemonHelmet.Rewards.SteelBoots",
+              "marker": "quest/u6_4/demon_helmet/rewards/steel_boots",
+              "source": {
+                "line": 100,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u6_4.demon_helmet.rewards.steel_boots",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          }
+        ]
+      },
+      "classification": "EXACT_CLAIM_SET_CARDINALITY_CANDIDATE",
+      "native_dispatch_binding": null,
+      "quest": {
+        "display_name": "Demon Helmet Quest",
+        "key": "oteryn:quest.demon_helmet_quest",
+        "revision": "quest-r1"
+      },
+      "recommended_next": "ARCH_REVIEW_COUNTED_TERMINAL_EVENT_SET",
+      "runtime_admitted": false,
+      "source_equivalence": false,
+      "terminal_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "chosen_count": 3,
+        "key": "s5",
+        "kind": "complete",
+        "objective": "Open the Demon Helmet, Demon Shield and Steel Boots chests.",
+        "targets": [
+          "Demon Helmet reward chests"
+        ]
+      }
+    },
+    {
+      "claim_set": {
+        "all_source_claims_found": true,
+        "count": 2,
+        "refs": [
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2",
+            "revision": "reward-claim-r1"
+          }
+        ],
+        "source_claims": [
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 33072,
+                "y": 32169,
+                "z": 2
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U7_1.DragonTower.Rewards.Backpack1",
+              "marker": "quest/u7_1/dragon_tower/rewards/backpack1",
+              "source": {
+                "line": 143,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack1",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 33078,
+                "y": 32169,
+                "z": 2
+              }
+            ],
+            "progress_write": {
+              "expression": "Storage.Quest.U7_1.DragonTower.Rewards.Backpack2",
+              "marker": "quest/u7_1/dragon_tower/rewards/backpack2",
+              "source": {
+                "line": 143,
+                "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua"
+              },
+              "value": 1
+            },
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.quest.u7_1.dragon_tower.rewards.backpack2",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          }
+        ]
+      },
+      "classification": "EXACT_CLAIM_SET_CARDINALITY_CANDIDATE",
+      "native_dispatch_binding": null,
+      "quest": {
+        "display_name": "Dragon Tower Quest",
+        "key": "oteryn:quest.dragon_tower_quest",
+        "revision": "quest-r1"
+      },
+      "recommended_next": "ARCH_REVIEW_COUNTED_TERMINAL_EVENT_SET",
+      "runtime_admitted": false,
+      "source_equivalence": false,
+      "terminal_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "chosen_count": 2,
+        "key": "s4",
+        "kind": "complete",
+        "objective": "Open the two supply boxes at the top of the tower.",
+        "targets": [
+          "Dragon Tower supply boxes"
+        ]
+      }
+    },
+    {
+      "claim_set": {
+        "all_source_claims_found": true,
+        "count": 2,
+        "refs": [
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.kv.edrongoblin1",
+            "revision": "reward-claim-r1"
+          },
+          {
+            "family": "RewardClaim",
+            "key": "oteryn:reward-claim.kv.edrongoblin2",
+            "revision": "reward-claim-r1"
+          }
+        ],
+        "source_claims": [
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 33095,
+                "y": 31800,
+                "z": 10
+              }
+            ],
+            "progress_write": null,
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.kv.edrongoblin1",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          },
+          {
+            "placement_count": 1,
+            "positions": [
+              {
+                "x": 33095,
+                "y": 31801,
+                "z": 10
+              }
+            ],
+            "progress_write": null,
+            "ref": {
+              "family": "RewardClaim",
+              "key": "oteryn:reward-claim.kv.edrongoblin2",
+              "revision": "reward-claim-r1"
+            },
+            "repeat": {
+              "kind": "once"
+            },
+            "source_claim_found": true
+          }
+        ]
+      },
+      "classification": "EXACT_CLAIM_SET_CARDINALITY_CANDIDATE",
+      "native_dispatch_binding": null,
+      "quest": {
+        "display_name": "Edron Goblin Quest",
+        "key": "oteryn:quest.edron_goblin_quest",
+        "revision": "quest-r1"
+      },
+      "recommended_next": "ARCH_REVIEW_COUNTED_TERMINAL_EVENT_SET",
+      "runtime_admitted": false,
+      "source_equivalence": false,
+      "terminal_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "chosen_count": 2,
+        "key": "s4",
+        "kind": "complete",
+        "objective": "Open the two goblin throne-room chests.",
+        "targets": [
+          "goblin reward chests"
+        ]
+      }
+    },
+    {
+      "claim_set": {
+        "all_source_claims_found": true,
+        "count": 0,
+        "refs": [],
+        "source_claims": []
+      },
+      "classification": "NO_EXACT_REWARD_CLAIM_SET",
+      "native_dispatch_binding": null,
+      "quest": {
+        "display_name": "Opticording Sphere Quest",
+        "key": "oteryn:quest.opticording_sphere_quest",
+        "revision": "quest-r1"
+      },
+      "recommended_next": "RECIPE_SEMANTICS_REVIEW_QUANTITY_OR_NONCLAIM_EVENT",
+      "runtime_admitted": false,
+      "source_equivalence": false,
+      "terminal_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "chosen_count": 2,
+        "key": "s15",
+        "kind": "complete",
+        "objective": "Otwórz finałowe Mysterious Ornate Chests.",
+        "targets": [
+          "Mysterious Ornate Chest"
+        ]
+      }
+    },
+    {
+      "claim_set": {
+        "all_source_claims_found": true,
+        "count": 0,
+        "refs": [],
+        "source_claims": []
+      },
+      "classification": "NO_EXACT_REWARD_CLAIM_SET",
+      "native_dispatch_binding": null,
+      "quest": {
+        "display_name": "Rift Warrior Outfits Quest",
+        "key": "oteryn:quest.rift_warrior_outfits_quest",
+        "revision": "quest-r1"
+      },
+      "recommended_next": "RECIPE_SEMANTICS_REVIEW_QUANTITY_OR_NONCLAIM_EVENT",
+      "runtime_admitted": false,
+      "source_equivalence": false,
+      "terminal_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "chosen_count": 100,
+        "key": "s5",
+        "kind": "complete",
+        "objective": "Oddaj Cledwynowi drugi komplet i zatwierdź oba dodatki.",
+        "targets": [
+          "Cledwyn",
+          "Silver Token"
+        ]
+      }
+    },
+    {
+      "claim_set": {
+        "all_source_claims_found": true,
+        "count": 0,
+        "refs": [],
+        "source_claims": []
+      },
+      "classification": "NO_EXACT_REWARD_CLAIM_SET",
+      "native_dispatch_binding": null,
+      "quest": {
+        "display_name": "The Ancient Tombs Quest",
+        "key": "oteryn:quest.the_ancient_tombs_quest",
+        "revision": "quest-r1"
+      },
+      "recommended_next": "RECIPE_SEMANTICS_REVIEW_QUANTITY_OR_NONCLAIM_EVENT",
+      "runtime_admitted": false,
+      "source_equivalence": false,
+      "terminal_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "chosen_count": 7,
+        "key": "s13",
+        "kind": "complete",
+        "objective": "Połącz siedem różnych części Helmet of the Ancients w komnacie tworzenia.",
+        "targets": [
+          "Helmet of the Ancients pieces"
+        ]
+      }
+    }
+  ],
+  "runtime_enabled": false,
+  "schema": "OTERYN_QUEST_TERMINAL_COUNT_SEMANTICS_AUDIT/v1",
+  "summary": {
+    "classifications": {
+      "CLAIM_SET_CARDINALITY_MISMATCH": 2,
+      "EXACT_CLAIM_SET_CARDINALITY_CANDIDATE": 4,
+      "NO_EXACT_REWARD_CLAIM_SET": 3
+    },
+    "held_quests": 9,
+    "runtime_admitted": 0
+  }
+}

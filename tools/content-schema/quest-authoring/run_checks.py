@@ -42,6 +42,7 @@ def main():
         ['refresh_quest_source_checks.py', '--check'],
         ['quest_catalogue_authoring.py', '--check'],
         ['quest_completion_matrix.py', '--check'],
+        ['samples/server-completion/terminal-count-semantics/builder.py', '--root', str(root), '--check'],
         ['source_text_authoring.py', '--check'],
         ['build_wiki_source_schema.py', '--check'],
         ['wiki_source_inventory.py', '--check'],
