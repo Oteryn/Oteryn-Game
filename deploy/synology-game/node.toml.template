@@ -1,0 +1,49 @@
+# Mode 0600, owned by the runner user. Replace every <PLACEHOLDER>; no secrets inline.
+# The deploy workflow rewrites authorization_file on every deploy.
+[listener]
+address = "<LISTEN_ADDRESS>:<GAME_PORT>"
+entry_deadline_ms = 20000
+max_connections = 256
+max_handshake_units = 64
+certificate_chain_file = "<BASE>/node/secrets/gameplay.crt"
+private_key_file = "<BASE>/node/secrets/gameplay.key"
+[scope]
+world_id = "<WORLD_ID>"
+channel_id = "<CHANNEL_ID>"
+assignment_wait_ms = 120000
+preproduction_actor_capacity = 131072
+[database]
+transport_ip = "<DB_IP>"
+port = <DB_PORT>
+tls_server_name = "<DB_TLS_SERVER_NAME>"
+database = "<DB_NAME>"
+username = "<RUNTIME_ROLE>"
+password_file = "<BASE>/node/secrets/pg-password"
+root_ca_file = "<BASE>/node/secrets/db-ca.pem"
+[character]
+fence_directory = "<BASE>/fence-parent/fence"
+authority_scope_id = "character-primary"
+issuer_identity = "game-ops"
+[control]
+socket_path = "<BASE>/run/control.sock"
+[readiness]
+source_authority = "<READINESS_SOURCE_AUTHORITY>"
+route_revision = "<ROUTE_REVISION>"
+runtime_observation_revision = "<RUNTIME_OBSERVATION_REVISION>"
+ruleset_revision = "<RULESET_REVISION>"
+content_revision = "<CONTENT_REVISION>"
+map_revision = "<MAP_REVISION>"
+world_policy_revision = "<WORLD_POLICY_REVISION>"
+offer_revision = "<OFFER_REVISION>"
+[platform]
+source_authority = "platform"
+endpoint = "<PLATFORM_ENDPOINT>"
+peer_name = "<PLATFORM_PEER_NAME>"
+trust_roots_file = "<BASE>/node/secrets/platform-roots.pem"
+client_certificate_file = "<BASE>/node/secrets/platform-client.crt"
+client_key_file = "<BASE>/node/secrets/platform-client.key"
+descriptor_revision = 1
+installed_at = <UNIX_SECONDS_AT_SETUP>
+[launch]
+authorization_file = "<BASE>/state/launch-initial.json"
+s2_authorization_file = "<BASE>/state/s2-fresh-store.json"

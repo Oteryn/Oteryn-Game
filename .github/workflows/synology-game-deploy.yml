@@ -1,0 +1,172 @@
+name: Synology Game Deploy
+
+# Deploys the native Game server to the internal Synology `preproduction`
+# environment, the only environment. Manual dispatch from `main` only; the
+# owner's approval of the GitHub environment `preproduction` is the human gate.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: synology-game-deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Linux x86_64 binaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Refuse any ref other than main
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main" || { echo "deploy runs from main only" >&2; exit 1; }
+
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Build release binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.94.0 --profile minimal
+          cargo +1.94.0 build --release --locked -p oteryn-game-server --bins
+
+      - name: Stage release bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle="$RUNNER_TEMP/bundle"
+          mkdir -p "$bundle/bin"
+          for name in oteryn-game-server oteryn-game-ops oteryn-game-migrate; do
+            install -m 0755 "target/release/$name" "$bundle/bin/$name"
+          done
+          python3 deploy/synology-game/stage_gameplay.py \
+            content/spells.manifest.json "$GITHUB_WORKSPACE" "$bundle/gameplay"
+          (cd "$bundle" && find bin gameplay supervisor.sh -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          install -m 0755 deploy/synology-game/supervisor.sh "$bundle/supervisor.sh"
+          echo "$GITHUB_SHA" > "$bundle/SOURCE_SHA"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: game-preprod-bundle
+          path: ${{ runner.temp }}/bundle
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy to preproduction
+    needs: build
+    environment: preproduction
+    runs-on:
+      group: game-runners
+      labels: oteryn-game
+    timeout-minutes: 30
+    env:
+      EXPECTED_RUNNER_NAME: oteryn-synology-game
+      BASE: /volume1/oteryn/game-preprod
+    steps:
+      - name: Verify ref and runner identity
+        env:
+          ACTUAL_RUNNER_NAME: ${{ runner.name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$ACTUAL_RUNNER_NAME" = "$EXPECTED_RUNNER_NAME"
+          test "$(id -u)" != 0
+          test ! -e /var/run/docker.sock
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: game-preprod-bundle
+          path: ${{ runner.temp }}/bundle
+
+      - name: Verify bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/bundle"
+          test "$(cat SOURCE_SHA)" = "$GITHUB_SHA"
+          sha256sum --check --strict SHA256SUMS
+          test "$(uname -m)" = x86_64
+
+      - name: Verify the one-time operator setup exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in "$BASE/ops/ops.toml" "$BASE/node/node.toml" "$BASE/ops/migration-url"; do
+            test -f "$path" && test ! -L "$path"
+            test "$(stat -c '%a %u' "$path")" = "600 $(id -u)"
+          done
+
+      - name: Install binaries, gameplay inputs and supervisor
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle="$RUNNER_TEMP/bundle"
+          install -d -m 0755 "$BASE/bin" "$BASE/gameplay"
+          for name in oteryn-game-server oteryn-game-ops oteryn-game-migrate; do
+            # Replace by rename: a running binary is never rewritten in place.
+            install -m 0755 "$bundle/bin/$name" "$BASE/bin/$name.new"
+            mv -f "$BASE/bin/$name.new" "$BASE/bin/$name"
+          done
+          rm -rf "$BASE/gameplay.new"
+          cp -R "$bundle/gameplay" "$BASE/gameplay.new"
+          rm -rf "$BASE/gameplay"
+          mv "$BASE/gameplay.new" "$BASE/gameplay"
+          install -m 0755 "$bundle/supervisor.sh" "$BASE/supervisor.sh.new"
+          mv -f "$BASE/supervisor.sh.new" "$BASE/supervisor.sh"
+
+      - name: Run database migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="$(tr -d '\n' < "$BASE/ops/migration-url")"
+          OTERYN_GAME_MIGRATION_DATABASE_URL="$url" "$BASE/bin/oteryn-game-migrate"
+
+      - name: Stop the service
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$BASE/supervisor.sh" stop
+
+      - name: Issue launch authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          binding="preprod-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          file="launch-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          args=(--config "$BASE/ops/ops.toml" authorization issue --file "$file" --binding "$binding")
+          if [[ -s "$BASE/state/current-node-id" ]]; then
+            args+=(--supersedes "$(tr -d '[:space:]' < "$BASE/state/current-node-id")")
+          fi
+          export OTERYN_NATIVE_GAMEPLAY_MANIFEST="$BASE/gameplay/content/spells.manifest.json"
+          "$BASE/bin/oteryn-game-ops" "${args[@]}"
+          # Point the node at the new authorization; the file is 0600 and runner-owned.
+          sed -i "s|^authorization_file = .*|authorization_file = \"$BASE/state/$file\"|" "$BASE/node/node.toml"
+          grep -q "^authorization_file = \"$BASE/state/$file\"" "$BASE/node/node.toml"
+
+      - name: Start the service
+        shell: bash
+        run: |
+          set -euo pipefail
+          export OTERYN_NATIVE_GAMEPLAY_MANIFEST="$BASE/gameplay/content/spells.manifest.json"
+          # Detach from the runner process tree so the service outlives the job.
+          env -u RUNNER_TRACKING_ID setsid "$BASE/supervisor.sh" start
+
+      - name: Health check
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$BASE/supervisor.sh" health
+          {
+            echo 'GAME_PREPRODUCTION_DEPLOY=PASS'
+            echo "SOURCE_SHA=$GITHUB_SHA"
+            echo "NODE_STATE=$(cat "$BASE/run/node-state")"
+          } >> "$GITHUB_STEP_SUMMARY"
