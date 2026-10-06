@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/synology-game-deploy-1
 issue: 1622
-pr: null
+pr: 1874
 head_sha: "exact frozen head in the control-plane FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the control-plane FREEZE_SHA entry"
 owner: claude-code implementation writer (control plane session_013KJX6mv8LQveCKKXYgAX94, decision D832)
@@ -49,4 +49,4 @@ git diff --check: pass
 
 ## Review and closeout
 
-Review is decided by the control plane on the frozen head. Merge result: squash merge of the PR, pending CI and Merge Queue at authoring.
+Review is decided by the control plane on the frozen head. Merge result: squash merge of #1874, pending CI and Merge Queue at authoring.
