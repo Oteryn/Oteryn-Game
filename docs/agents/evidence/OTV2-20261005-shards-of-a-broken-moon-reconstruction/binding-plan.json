@@ -761,7 +761,8 @@
       ],
       "outcome": "magnolia_admitted",
       "evidence": "FACT",
-      "owner": "Encounter + QUEST-TRIGGER-1"
+      "owner": "Encounter + QUEST-TRIGGER-1",
+      "encounter_evidence_ref": "magnolia-encounter-evidence.json"
     },
     {
       "id": "magnolia_phase1",
@@ -773,17 +774,20 @@
         "Moonsilver Drift",
         "Death-damage healing"
       ],
-      "evidence": "FACT_SEMANTICS_TIMERS_NOT_PROMOTED",
+      "evidence": "FACT_MECHANICS_PACKETED_EXACT_AND_APPROX_SEPARATED",
       "owner": "Encounter",
-      "blocker": "No dedicated Crystal/Canary quest encounter script exists."
+      "blocker": "Implementation absent; mechanics packeted in magnolia-encounter-evidence.json. PR #1807 currently owns broad Encounter/Monster paths.",
+      "encounter_evidence_ref": "magnolia-encounter-evidence.json"
     },
     {
       "id": "magnolia_revive",
       "visible_stage": "s14",
       "kind": "SPECIAL_ENCOUNTER_THRESHOLD",
       "outcome": "magnolia_phase_2",
-      "evidence": "FACT_SEMANTICS_NUMERIC_DETAILS_REQUIRE_QUALIFICATION",
-      "owner": "Encounter"
+      "evidence": "FACT_CURRENT_REFERENCE_PHASE2_60000_APPROX_ICE_BURST",
+      "owner": "Encounter",
+      "encounter_evidence_ref": "magnolia-encounter-evidence.json",
+      "note": "Current reference: first lethal is non-terminal, ~5000 Ice burst, immediate phase 2 at 60000 HP; exact damage amount/order if player dies remains held."
     },
     {
       "id": "magnolia_final_kill",
@@ -794,7 +798,8 @@
       ],
       "outcome": "magnolia_defeated",
       "evidence": "FACT",
-      "owner": "Encounter -> Quest transition adapter"
+      "owner": "Encounter -> Quest transition adapter",
+      "encounter_evidence_ref": "magnolia-encounter-evidence.json"
     },
     {
       "id": "prison_skeleton",
@@ -1159,6 +1164,13 @@
       "status": "PENDING_SEPARATE_ITEM_ADMISSION",
       "alias_i34017": "REJECTED",
       "reason": "Public Item IDs distinguish Lit Torch (Quest) 34017 from Lit Torch (SU26) 54610; pinned donor also carries separate Torch (SU26) 54609 -> lit 54610 identity surface."
+    },
+    "magnolia_evidence_packet": {
+      "path": "docs/agents/evidence/OTV2-20261005-shards-of-a-broken-moon-reconstruction/magnolia-encounter-evidence.json",
+      "status": "READY_FOR_ENCOUNTER_OWNER",
+      "bone_fiddle": "oteryn:item.tibia.i28493",
+      "moonsilver_drift": "oteryn:item.tibia.i54235",
+      "blocker": "RUNTIME_IMPLEMENTATION_NOT_ALLOCATED_WHILE_PR_1807_OWNS_ENCOUNTER_PATHS"
     }
   }
 }
