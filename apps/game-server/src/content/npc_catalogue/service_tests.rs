@@ -1,3 +1,4 @@
+#![allow(clippy::expect_used)]
 use super::service::build;
 use super::service::*;
 use crate::content::{

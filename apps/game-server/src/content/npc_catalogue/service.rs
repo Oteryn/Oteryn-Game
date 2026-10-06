@@ -293,6 +293,11 @@ fn pays_more(left: &ProjectV2ServiceOffer, right: (u64, u32)) -> bool {
         > u128::from(right.0) * u128::from(count_of(left))
 }
 
+type ClassifiedService<'a> = (
+    &'a ProjectV2DefinitionRef,
+    Vec<(&'a ProjectV2ServiceOffer, Option<NpcOfferHeldReason>)>,
+);
+
 pub(super) type Record<'a> = (&'a ProjectV2DefinitionRef, &'a ProjectV2Declaration);
 
 pub(super) fn build(
@@ -305,10 +310,7 @@ pub(super) fn build(
     let mut services: BTreeMap<ProjectV2DefinitionRef, NpcServiceEntry> = BTreeMap::new();
     let mut lowest_sell: BTreeMap<(&ProjectV2DefinitionRef, Option<u16>), (u64, u32)> =
         BTreeMap::new();
-    let mut classified: Vec<(
-        &ProjectV2DefinitionRef,
-        Vec<(&ProjectV2ServiceOffer, Option<NpcOfferHeldReason>)>,
-    )> = Vec::new();
+    let mut classified: Vec<ClassifiedService<'_>> = Vec::new();
     for &(reference, declaration) in records {
         let ProjectV2Declaration::Service { offers, routes, .. } = declaration else {
             continue;
