@@ -58,6 +58,7 @@ pub mod item_name15_promotion;
 pub mod item_name_promotion;
 pub mod item_numeric_modifier_promotion;
 pub mod item_physical_promotion;
+pub(crate) mod item_ref;
 pub mod item_stack_default_promotion;
 pub mod item_stack_default_successor8_promotion;
 pub mod item_stack_false_promotion;

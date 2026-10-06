@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -26,7 +27,11 @@ LIMITS = {'catalog': 32 * 1024**2, 'source_selection': 256 * 1024,
           'item_profiles': 8 * 1024**2, 'spell_appearances': 8 * 1024**2,
           'build_training': 8 * 1024**2, 'familiar_config': 4096,
           'familiar_defenses': 32 * 1024, 'wheel_profile': 64 * 1024,
-          'source_world': 8 * 1024**2, 'progression': 256 * 1024}
+          'source_world': 8 * 1024**2, 'progression': 256 * 1024,
+          'item_keys': 8 * 1024**2}
+ITEM_DEFINITIONS = ROOT / 'content/items/definitions'
+ITEM_KEYS = NATIVE / 'item-keys.json'
+SPELLS_MANIFEST = ROOT / 'content/spells.manifest.json'
 
 
 def digest(raw: bytes) -> str:
@@ -40,6 +45,37 @@ def encoded(document: dict) -> bytes:
 def read(path: Path) -> tuple[bytes, dict]:
     raw = path.read_bytes()
     return raw, json.loads(raw.decode('utf-8'))
+
+
+def item_keys(definitions: Path = ITEM_DEFINITIONS) -> bytes:
+    """The Item key set of the definition shards (MAP-ITEM-REF-1): one [key, revision] per Item,
+    ascending by the key's UTF-8 bytes, so a key's index is its Item compact id."""
+    revisions = {}
+    for path in sorted(definitions.glob('items-*.json')):
+        _, shard = read(path)
+        if shard['family'] != 'Item':
+            raise ValueError(f'{path.name} is not an Item shard')
+        for record in shard['records']:
+            ref = record['definition']['identity']
+            if ref['family'] != 'Item' or ref['key'] in revisions:
+                raise ValueError(f"Item record family, or an Item key given twice: {ref['key']}")
+            revisions[ref['key']] = ref['revision']
+    keys = sorted(revisions, key=lambda key: key.encode('utf-8'))
+    rows = ',\n'.join(json.dumps([key, revisions[key]], ensure_ascii=False) for key in keys)
+    return ('{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[\n' + rows + '\n]}\n').encode('utf-8')
+
+
+def refresh_item_keys(output: Path = ITEM_KEYS, manifest: Path = SPELLS_MANIFEST) -> str:
+    """Writes the Item key set and pins its digest in the production native gameplay manifest."""
+    raw = item_keys()
+    if len(raw) > LIMITS['item_keys']:
+        raise ValueError('Native input exceeds bounded provider size: item_keys')
+    output.write_bytes(raw)
+    _, pinned = read(manifest)
+    pinned['item_keys'] = {'path': Path('..', output.relative_to(ROOT)).as_posix(), 'sha256': digest(raw)}
+    manifest.write_bytes((json.dumps(pinned, ensure_ascii=False, sort_keys=True,
+                                     separators=(',', ':')) + '\n').encode('utf-8'))
+    return digest(raw)
 
 
 def identity(ref: dict) -> tuple[str, str, str]:
@@ -349,7 +385,8 @@ def build(args) -> dict:
         for name in (*missing_proof['outputs'], 'missing-companion-source-proof.json'):
             (output/name).write_bytes((missing_companions/name).read_bytes())
     payloads = {'catalog': catalog_raw, 'source_selection': selection_raw,
-                'creature_profiles': encoded(creatures), 'presentation_profiles': encoded(presentations)}
+                'creature_profiles': encoded(creatures), 'presentation_profiles': encoded(presentations),
+                'item_keys': item_keys()}
     providers = {'item_profiles': args.items, 'spell_appearances': args.appearances,
                  'build_training': args.training, 'familiar_config': args.familiar_config,
                  'familiar_defenses': args.familiar_defenses, 'wheel_profile': args.wheel,
@@ -436,7 +473,12 @@ def build(args) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    if sys.argv[1:] == ['--refresh-item-keys']:
+        print(json.dumps({'item_keys_sha256': refresh_item_keys()}))
+        return
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     epilog='--refresh-item-keys alone regenerates item-keys.json and its pin '
+                                            'in content/spells.manifest.json')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--catalog', type=Path, default=SAMPLES / 'executable-spell-catalog.json')
     parser.add_argument('--selection', type=Path, default=SAMPLES / 'executable-spell-source-selection.json')

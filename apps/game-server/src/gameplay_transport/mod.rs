@@ -9,6 +9,7 @@ mod connection;
 mod container_view;
 pub(crate) mod fresh_evidence;
 mod item_move;
+mod item_ref_admission;
 mod item_view;
 mod monk_save;
 mod monster_ai_cycle;
@@ -2030,6 +2031,21 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         Some(Self::observation(&runtime, snapshot.position()))
+    }
+
+    /// MAP-ITEM-REF-1: capability 4 only when the active generation pins a non-empty Item key set.
+    fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
+        item_ref_admission::offered_capabilities(self.active_generation)
+    }
+
+    /// MAP-ITEM-REF-1: domain 9 from the durable backpack, each definition through the Channel
+    /// content pin's Item definition index.
+    async fn observe_character_inventory(
+        &self,
+        _actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<item_view::InventoryItems> {
+        item_ref_admission::observe_character_inventory(self, game_session_id).await
     }
 
     /// VIS-3: the Channel's players and live creatures, read in one owner work item. Corpses are

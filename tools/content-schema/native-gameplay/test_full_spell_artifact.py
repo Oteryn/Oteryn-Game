@@ -123,5 +123,35 @@ class SourceCompositionTests(unittest.TestCase):
             self.assertEqual(6, proof['creature_count'])
 
 
+
+class ItemKeySetTests(unittest.TestCase):
+    """MAP-ITEM-REF-1: the pinned Item key set is generated from the Item definitions."""
+
+    def test_checked_in_key_set_is_generated_byte_ordered_unique_and_pinned(self):
+        raw = full.item_keys()
+        self.assertEqual(raw, full.ITEM_KEYS.read_bytes())
+        document = json.loads(raw)
+        self.assertEqual('OTERYN_NATIVE_ITEM_KEYS/v1', document['schema'])
+        keys = [key.encode('utf-8') for key, _ in document['records']]
+        self.assertTrue(keys)
+        self.assertTrue(all(a < b for a, b in zip(keys, keys[1:])))
+        self.assertLessEqual(len(raw), full.LIMITS['item_keys'])
+        pin = json.loads(full.SPELLS_MANIFEST.read_bytes())['item_keys']
+        self.assertEqual(full.digest(raw), pin['sha256'])
+        self.assertEqual(full.ITEM_KEYS.resolve(), (full.SPELLS_MANIFEST.parent / pin['path']).resolve())
+
+    def test_non_item_record_and_duplicate_key_are_refused(self):
+        def shard(records, family='Item'):
+            return {'family': family, 'records': [
+                {'definition': {'identity': {'family': f, 'key': k, 'revision': 'r1'}}} for f, k in records]}
+        for shards in ([shard([('Item', 'a:b'), ('Item', 'a:b')])],
+                       [shard([('Terrain', 'a:b')])],
+                       [shard([('Item', 'a:b')], family='Terrain')]):
+            with tempfile.TemporaryDirectory() as directory:
+                for at, value in enumerate(shards):
+                    (Path(directory) / f'items-{at}.json').write_text(json.dumps(value))
+                with self.assertRaises(ValueError):
+                    full.item_keys(Path(directory))
+
 if __name__ == '__main__':
     unittest.main()

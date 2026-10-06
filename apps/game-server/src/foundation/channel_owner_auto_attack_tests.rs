@@ -93,6 +93,7 @@ fn source_world() -> QualifiedNativeEntryRoom {
         wheel_profile: None,
         source_world: None,
         progression: None,
+        item_keys: None,
     };
     qualify_native_source_spell_world_with_gameplay(
         WorldId::decode(&uuid(1)).unwrap(),
