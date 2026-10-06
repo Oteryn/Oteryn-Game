@@ -32,7 +32,18 @@ fn main() {
     {
         watch(&path);
     }
-    let sha = std::env::var("OTERYN_BUILD_SHA").ok();
+    // A branch that exists only in `packed-refs` has no loose ref file to watch.
+    if let Some(packed) = git(&["rev-parse", "--git-path", "packed-refs"]) {
+        watch(&packed);
+    }
+    let sha = match std::env::var("OTERYN_BUILD_SHA") {
+        Ok(value) => Some(value),
+        Err(std::env::VarError::NotPresent) => None,
+        Err(std::env::VarError::NotUnicode(_)) => {
+            eprintln!("error: OTERYN_BUILD_SHA is not valid UTF-8");
+            std::process::exit(1);
+        }
+    };
     let head = git(&["rev-parse", "--short=12", "HEAD"]);
     match build_source::resolve(sha.as_deref(), head.as_deref()) {
         Ok(source) => println!("cargo:rustc-env=OTERYN_BUILD_SOURCE={source}"),
