@@ -630,22 +630,34 @@
       "required_equipped_item": "oteryn:item.tibia.i25975",
       "result_item": "oteryn:item.tibia.i54564",
       "requires": [
-        "niral_seal_instructions"
+        "niral_seal_instructions",
+        "empty_flask_obtained",
+        "holds Moon Mirror"
       ],
       "outcome": "blue_lava_obtained",
-      "evidence": "FACT_EXCEPT_NIGHT",
+      "evidence": "FACT_POST_RELEASE_ARBITRATION",
       "owner": "QUEST-TRIGGER-1 + Item/Durability",
-      "source_conflict": {
-        "status": "OPEN",
-        "fandom": "night-only",
-        "tibiawiki_br": "Moon Mirror + Empty Crystal Flask; no night predicate stated",
-        "itemlevel_postrelease": "Moon Mirror + Empty Crystal Flask; no night predicate stated",
+      "night_guard": false,
+      "source_arbitration": {
+        "disposition": "REJECT_NIGHT_ONLY_AS_SUPERSEDED_PRE_RELEASE_GUIDANCE",
+        "stale_fandom": {
+          "statement": "active volcano during the night time",
+          "warning": "page still carries Future Update Information / pre-release warning"
+        },
+        "post_release_tibiawiki": {
+          "statement": "with Moon Mirror equipped, use Empty Crystal Flask at 33098,32947,6 to obtain Crystal Flask with Blue Lava",
+          "night_requirement": false
+        },
+        "post_release_itemlevel": {
+          "statement": "with Moon Mirror in inventory the correct lava section turns blue; use Empty Crystal Flask on the blue lava",
+          "night_requirement": false
+        },
         "supplied_video": {
-          "timestamp_window": "00:15:51-00:16:47",
-          "observation": "Narrator explicitly says the wiki claims night-only, says he does not know whether it is true, supposes it happens to be night, then successfully fills the flask.",
-          "conclusion": "Video confirms successful fill but does not falsify the night requirement."
+          "statement": "narrator says wiki claims night-only but explicitly says he does not know whether it is true",
+          "disposition": "NOT_USED_TO_PROVE_NIGHT"
         }
-      }
+      },
+      "note": "Runtime should not enforce a night-only predicate. Preserve Moon Mirror + flask + exact placement requirements."
     },
     {
       "id": "niral_consecrate",
@@ -1221,7 +1233,6 @@
     "NPC-QUEST-1 remains blocked by NPC-TALK-1; NPC-WIRE-1 #1866 is merged, remaining dependencies include NPC-PLACE-1 + MAP-CUTOVER-1",
     "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
     "Magnolia Encounter content is source-qualified, and set_phase/prevent_death/lethal_damage already exist in authoring + ProjectV2. Exact remaining representation gap: phase-2 60000 max/current HP cannot be represented above the base Creature max 52000; needs one bounded Encounter-local max-health override disposition. Runtime still waits on ENC-RT-1 -> ENC-OUTCOME-1.",
-    "Blue Lava night-only predicate source conflict",
     "Escape geometry and Rope Spot are resolved end-to-end (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9; Rope Spot 31923,31377,9 -> generic moveUpstairs destination 31923,31378,8). Remaining prison blocker: separate canonical admission of donor Lit Torch 54610; do not alias to i34017.",
     "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
     "No full real-character start→reward→relog/restart E2E qualification",
