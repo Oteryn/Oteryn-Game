@@ -42,12 +42,15 @@ external_repositories: []
     commands limited to testing and preproduction. A backlog entry with no frozen design; the
     design and authority are reassessed in an amendment if the owner proceeds under 1a or a §6
     trigger occurs.
-  - B: persistent private preproduction, deferred until rollout step 7.
+  - B (deferred, undecided): persistent private preproduction. A backlog entry with subject,
+    safety constraints and a reopening trigger (step 7 scheduled and needing an environment that
+    outlives one run); no technology or topology is chosen, and no answer authorizes it now.
   - C: public staging, rejected.
 - Owner questions §7 items 1–4 are routed through the control plane. Recorded answers 1a
   (D831, against the owned-path list of its question; replaces D824 1a) and 2a (D824) stay
   recorded, but no Platform PR is allocated under them while Option A is deferred pending the
-  owner's ruling (deferral versus proceeding under 1a); items 3 and 4 are open.
+  owner's ruling (deferral versus proceeding under 1a); items 3 and 4 are open and only confirm
+  a backlog entry and a refusal, so no answer to them grants authority.
 
 ## Architecture and source of truth
 
@@ -86,16 +89,18 @@ registration and gets its own independent review.
 - [x] Whether RUNBOOK-1 has run is UNKNOWN, not PROVEN (P2 4197089687).
 - [x] The mandatory decision test is answered (decision §6).
 - [x] Owner answer 1a (D831, the path list of its question, kept in §7) and 2a (D824) are
-      recorded; the Synology shape of Option B is noted as not decided (decision §3, §7).
+      recorded (decision §7).
+- [x] Option B is a backlog entry with no chosen technology, topology, guard change or workflow,
+      and no §7 answer authorizes its scope now (P1 4197646953).
 - [x] F6 and §6 reassessed against the merged RUNBOOK-1: Option A deferred, pending the owner's
       ruling, with reopen triggers; no new Platform command authorized now (P1 4196578216).
 - [ ] The owner's ruling on Option A (deferral versus proceeding under 1a).
-- [ ] Owner answers to items 3 and 4.
+- [ ] Owner answers to items 3 and 4 (neither grants authority).
 
 ## Excluded scope
 
 No Platform write, code, migration, deployment, secret, runner, Cloudflare or database change. No
-guard relaxation. No decision on Option B or its Synology shape.
+guard relaxation. No decision on Option B's design, technology, topology or authority.
 
 ## Implementation / findings
 
@@ -191,6 +196,17 @@ guard relaxation. No decision on Option B or its Synology shape.
     states that the trust write creates its high-water lock file before its transaction; F7 notes
     that `game-auth:world:ensure` writes before issuance is refused; Option B no longer refers to
     removed Option A flags and credential lists; every factual claim carries a file:line.
+- Codex P1 4197646953 (Option B, also `Must decide now? NO`, still preselected Synology Compose,
+  MariaDB, Redis, networking, ports, a guard relaxation and a workflow, and §7 answer 3a would
+  have authorized that scope). Accepted.
+  - §3 is now a backlog entry: subject, status, safety constraints from F1, F3–F5, and a
+    reopening trigger (step 7 scheduled and needing an environment that outlives one run). The
+    owner's Synology preference and the control plane's proposal are history only.
+  - §7 item 3 now has only a non-authorizing option (keep the backlog entry); any answer recorded
+    to an earlier "authorize now" form is history only. Status, §0, §5, §6 and §8 follow.
+  - Sweep for other `NO` items that froze a design: §6 item 5 no longer names a Synology shape;
+    the §6 Option A trigger cites §3, not item 3; F7's SQLite store fix is marked as one example,
+    not a choice. Answers 1a and 2a and the D831 path list stay recorded as given.
 
 ## Validation
 
@@ -218,7 +234,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 
 - exact head: the frozen head
 - method/reviewer: Sol Supervising Architect
-- material findings: none open after the P1 4197089671 and P2 4197089687 fixes
+- material findings: none open after the P1 4197089671, P2 4197089687 and P1 4197646953 fixes
 - verdict: ready for independent review
 
 ## Independent review
@@ -232,7 +248,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## PR and closeout
 
 - changed-file review: two owned paths
-- unresolved review threads: none after the replies to 4197089671 and 4197089687
+- unresolved review threads: none after the replies to 4197089671, 4197089687 and 4197646953
 - related/superseded PRs: none
 - protected auto-merge: control plane
 - merge commit/result: in PR #1871
@@ -241,7 +257,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## Context checkpoint
 
 ```yaml
-last_progress: P1 4197089671 (§2 reduced to a backlog entry, no frozen design) and P2 4197089687 (run absence UNKNOWN); merged main 6560803cf; self-review fixes
+last_progress: P1 4197646953 (§3 Option B reduced to a backlog entry; §7 item 3 cannot authorize; sweep of other NO items)
 status: completed
 branch: cand/preprod-route-publish-auth-1
 pr: 1871
