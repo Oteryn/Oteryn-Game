@@ -1,9 +1,8 @@
 # GAME-LCFA-PROJECTION-CONTRACT-1 Character projection contract and the Platform LCFA-1 packet
 
 - Decision: `ARCH-LCFA-PROJECTION-CONTRACT-V1`
-- Status: **CANDIDATE**. The owner accepts the contract revision after the independent review of
-  the frozen head (owner answer **1a** to D821, 2026-10-06). The decision takes effect when this
-  PR merges after that acceptance.
+- Status: **ACCEPTED** 2026-10-06: owner acceptance of contract revision 2 relayed by CP, D828
+  (owner answer **1a** to D821). The decision takes effect when this PR merges.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the control plane, D821 (#162, 2026-10-06): a Game-owned projection contract that
   lets Platform LCFA-1 (Q17a, Platform contract §5) issue tickets without mode 33a (D171), and the
