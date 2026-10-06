@@ -20,6 +20,40 @@ class Epoch:
   raw=self.git("show",self.pin+":"+path);self.inputs.append({"path":path,"sha256":sha(raw),"epoch":self.pin});return json.loads(raw)
  def evidence(self,path,pointer,record):
   return {"path":path,"json_pointer":pointer,"record_sha256":semantic(record),"file_sha256":next(x["sha256"] for x in self.inputs if x["path"]==path),"epoch":self.pin}
+
+def kill_binding_candidates(packet):
+    """Exact declared encounter-outcome seams only; still not executable bindings."""
+    rows = []
+    for quest in packet["records"]:
+        for stage in quest["stages"]:
+            if stage["kind"] != "kill":
+                continue
+            for seam in stage["consumer_seams"]:
+                if seam.get("status") != "EXISTING_DECLARED_ENCOUNTER_OUTCOME":
+                    continue
+                rows.append({
+                    "quest_ref": quest["quest_ref"],
+                    "stage_key": stage["stage_key"],
+                    "target": seam["target"],
+                    "encounter_ref": seam["encounter_ref"],
+                    "outcome": seam["outcome"],
+                    "credit_policy": seam["credit_policy"],
+                    "rule_key": seam["rule_key"],
+                    "execution_verified": seam["execution_verified"],
+                    "native_dispatch_binding": None,
+                    "runtime_admitted": False,
+                })
+    return sorted(
+        rows,
+        key=lambda row: (
+            row["quest_ref"]["key"],
+            row["stage_key"],
+            row["target"],
+            row["encounter_ref"]["key"],
+            row["outcome"],
+        ),
+    )
+
 def current_defs(root):
  out=[]
  for p in sorted((Path(root)/"content/quests/definitions").glob("quests-*.json")):
