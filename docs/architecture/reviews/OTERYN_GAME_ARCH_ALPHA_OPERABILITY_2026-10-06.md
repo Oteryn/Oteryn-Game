@@ -7,8 +7,12 @@
   packet, because the owning file is a candidate, because the control plane leases registry
   numbers, or because the target is an accepted cross-repository contract
   (`CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md`) that needs control-plane and Platform review.
-  The owner items of §5.2 are pending; each ruling that depends on one names it, and the
-  recommended option is the working assumption until the owner answers.
+  It is a proposed architecture decision and grants no runtime authority; each packet carries
+  its own review.
+  The owner ruled on every item of §5.2 on 2026-10-06 and the rulings are recorded there and
+  in each section's owner questions: every item **a**, except §3 Q2 **b** for the testing phase
+  only, which is decided again before external players are admitted (§3 ruling 8). The body
+  follows these rulings.
 - Origin: owner request (2026-10-06): review what exists and decide what still has to be fixed
   architecturally, because the owner had to point out errors by hand.
 - Owning contracts: `docs/architecture/reviews/OTERYN_GAME_ARCH_ERROR_CODES_2026-10-05.md`
@@ -31,12 +35,16 @@
 3. Node→Platform calls send W3C `traceparent` built from the trace (§1 ruling 4).
 4. Durability failures carry a 3xxx code and the caller's trace; the DB `application_name` is
    `oteryn-game-server/<version>+<sha12>` (§1 ruling 5).
-5. The supervisor writes `log/node-<utc-start>.log` with a `node.log` pointer and prunes by age
-   at start, so two restarts no longer erase the panic line (§1 ruling 6, F18).
-6. Retention CANDIDATE: logs 14 days, metrics 30 days, bundles until the issue closes (owner 1).
+5. The supervisor pipes stderr into `oteryn-game-server log-sink`, which writes per-incarnation
+   segments, rotates them while running at 64 MiB or 24 h, and prunes hourly by age and by a
+   1 GiB directory cap, so two restarts no longer erase the panic line and a long-running node
+   cannot fill the volume (§1 ruling 6, F18).
+6. Retention (owner ruling §1 Q2 a): logs 14 days, metrics 30 days, bundles until the issue
+   closes (§1 ruling 7).
 7. Metrics: `metrics` + `metrics-exporter-prometheus` on a loopback listener; the §1 ruling 9
    set only; no player, session or item labels.
-8. Alerts live in `deploy/observability/oteryn-alerts.yml`; SLOs have no numbers until measured.
+8. Prometheus and Grafana run on the alpha NAS and alert by email (owner ruling §1 Q1 a). Alerts
+   live in `deploy/observability/oteryn-alerts.yml`; SLOs have no numbers until measured.
 9. `oteryn-game-ops diagnose --bundle` writes an all-or-nothing evidence directory, never
    reading the DB or Platform (§1 ruling 12).
 10. There is no global tick. Owners run a work queue and a timer lane; every periodic timer is
@@ -48,7 +56,9 @@
 13. The current build hosts one channel per node and at most 256 connections; capacity is
     measured by the harness load mode on a 4 vCPU reference, at least 3 repeats, and recorded
     as `PERF01-PLAYERS-PER-CHANNEL` (§2 rulings 9–11). D128's 500 is a target.
-14. iai-callgrind benches run as a path-selected job that reports before it gates (§2 ruling 12).
+14. iai-callgrind benches run as a job selected by the `oteryn-game-server` dependency closure; it
+    reports first and becomes required after PERF-CI-1 sets the threshold (§2 ruling 12, owner
+    ruling §2 Q2 a). A measured capacity below 500 is accepted for alpha and the gap is logged.
 15. sqlx `migrate!` is the only migration tool; merged files never change; new versions exceed
     the highest on `main`; the gaps below 0079 stay gaps forever (§3 ruling 1).
 16. One release is one schema version. A release with a migration is stop-the-world: close,
@@ -59,6 +69,9 @@
     backup; encrypted, off the DB host (§3 ruling 7).
 19. The restore fence directory holds every value a restore must not roll back: Character
     recovery fence, LCFA F, `assignment_epoch` high-water and the erasure journal (§3 ruling 8).
+    In the testing phase it is a separate NAS volume only (owner ruling §3 Q2 b); its location is
+    decided again before external players are admitted. Recovery targets: RPO 5 min, RTO 4 h,
+    14-day backup retention, a monthly drill (owner ruling §3 Q1 a).
 20. `oteryn-game-ops restore` runs the twelve steps of §3 ruling 9 in order, re-entrant, with a
     35 s admission gate; clients log in fresh.
 21. After a Game restore Platform re-requests by operation identity; Game never writes back
@@ -67,8 +80,10 @@
     `client_build_floor`; below it fresh admission returns 1117
     `ADMISSION_CLIENT_BUILD_UNSUPPORTED` at FND-04A §7 step 11 (§4 rulings 1–3).
 23. "Update required" is a latest-only signed feed read before login; assets ship inside the
-    build; Velopack installs; an Ed25519 release manifest with offline keys anchors the update
-    (§4 rulings 5–9). No browser in alpha.
+    build; Velopack installs from GitHub Releases; an Ed25519 release manifest with offline keys
+    held by the owner anchors the update, and the client persists a trust-record rollback floor
+    so a revoked key cannot return (§4 rulings 5–9). No Authenticode in the closed alpha. No
+    browser in alpha.
 24. Packet order: DATA-MIGRATION-GUARD-1 first (P0-adjacent, §3 F6); OBS-LOG-1 after ERR-NODE-1;
     TIME-CLOCK-1 and PERF-CI-1 are independent; VERSION-FLOOR-1 before any floor is set.
 25. `deploy/synology-game/` is written by OBS-DEPLOY-4 and DATA-BACKUP-PITR-3 only after PR
@@ -126,13 +141,18 @@ In this part, ERR-CODES means ARCH-ERROR-CODES-0, and Rn means ruling n of this 
    - Each durability failure line carries the 3xxx code of its SQLSTATE and the `trace` of the work that issued it. Root-maintenance work uses the boot trace.
    - The node sets `application_name` to `oteryn-game-server/<version>+<sha12>` through the vendored `PgConnectOptions::application_name` (F14). Postgres server logs (`%a`) and `pg_stat_activity` then name the binary and build, never a player.
    - A DB write is attributed by the line that issued it. No trace, CharacterId or session id is sent to Postgres.
-6. **Log storage.** Logs stay on the alpha host's persistent volume as stderr captured by the supervisor (F16), and nothing is shipped off the host in the alpha.
-   - The supervisor writes each incarnation to `log/node-<utc-start>.log` and points `log/node.log` at it, so the F16 health greps keep working.
-   - At start it deletes logs older than the retention value (R7).
+6. **Log storage and rotation.** Logs stay on the alpha host's persistent volume as stderr captured by the supervisor (F16), and nothing is shipped off the host in the alpha. Pruning only at start is not enough: a node that runs longer than the retention would keep old lines and grow one file until the volume fills. So the active log rotates while the node runs.
+   - The supervisor pipes the node's stderr into `oteryn-game-server log-sink --dir BASE/log` (a subcommand of the same binary, so nothing is installed on the host, which has no root package install and no Docker, F16). It records both pids and checks both command lines before signalling.
+   - The sink reads whole lines and writes segments `log/node-<utc-start>-<seq>.log`, with `log/node.log` pointing at the active one. A line is never split across segments; a line longer than 64 KiB is cut with a `truncated=1` marker.
+   - **Rotation while running:** a new segment starts when the active one reaches 64 MiB or is 24 h old, whichever comes first.
+   - **Pruning:** at sink start and every hour on the sink's own timer, it deletes every closed segment whose newest line is older than 14 days (R7). Then, if the directory holds more than 1 GiB, it deletes the oldest closed segments until it is below that, and writes one `warn` line with a registered 2xxx code into the active segment. The active segment is never deleted.
+   - **Bounds:** the log directory holds at most 1 GiB plus one segment (64 MiB). Every line is kept at least 14 days, unless the size cap removes it earlier with a coded line, and is deleted within 15 days and 1 hour (a segment spans at most 24 h, and the prune runs hourly).
+   - **Lifecycle file:** the sink also copies the incarnation's `process_start`, `registered`, `awaiting_assignment`, `readiness`, `shutdown` and `panic` lines into `log/node-<utc-start>.lifecycle` (capped at 1 MiB). These lines carry no player-linked field (R1). The F16 health greps, the deploy's `awaiting_assignment` revision read and the bundle's boot-trace lines read this file, so rotation cannot hide them. It is deleted with the incarnation's last segment.
+   - If the sink dies, a node write fails with `EPIPE`; the line is dropped and counted in `log_lines_dropped_total`, and gameplay never changes (F10). The supervisor's `health` fails while the sink is gone.
    - The node writes each line with one locked write, so lines do not interleave.
 
-   This resolves F18.
-7. **Retention.** The alpha retention of host logs, metrics and debug bundles is **CANDIDATE**: logs 14 days, metrics 30 days, bundles deleted when their issue is closed. Owner question 2 fixes these values within DATA-PRIVACY-01 and ANL-01 §16. A legal or incident hold is explicit and per bundle. No log is kept without a bound.
+   The 64 MiB, 24 h and 1 GiB values are CANDIDATE until U1 is measured. This resolves F18.
+7. **Retention.** Owner ruling 2026-10-06 (owner question 2, option a): the alpha retention is logs 14 days, metrics 30 days (Prometheus `--storage.tsdb.retention.time=30d`), and debug bundles deleted when their issue is closed, within DATA-PRIVACY-01 and ANL-01 §16. A legal or incident hold is explicit and per bundle. No log is kept without a bound (R6).
 8. **Metrics stack.**
    - The node uses the upstream `metrics` facade with `metrics-exporter-prometheus` (MIT, F15). The exporter serves Prometheus text on a loopback-only listener set by `[metrics] listen = "127.0.0.1:<port>"` in `node.toml`. The port is CANDIDATE, set in the deploy template.
    - Without the key there is no listener. A configured listener that fails to bind fails the boot with a 2xxx code.
@@ -146,7 +166,7 @@ In this part, ERR-CODES means ARCH-ERROR-CODES-0, and Rn means ruling n of this 
    - `owner_service_duration_seconds` (histogram: the time an owner spends serving one command or timer batch; there is no tick, §2 ruling 1) and `command_queue_oldest_age_seconds` (ADR-0009 §6).
    - `db_transaction_duration_seconds` (histogram), `db_errors_total{code}` and `db_root_ready` (0/1). The pool holds at most one connection (F14), so there is no pool gauge.
    - `platform_request_duration_seconds{call}` and `platform_errors_total{call,code}`, where `call` is a fixed enum: `register`, `runtime_status` or `s2_evidence`.
-   - `log_lines_total{level,code}`, which lets alerts see coded failures without log shipping.
+   - `log_lines_total{level,code}`, which lets alerts see coded failures without log shipping, and `log_lines_dropped_total`, the lines lost while the R6 log sink was gone.
 
    Histogram buckets use upstream defaults until PERF-01 measures them. DB-side metrics (`postgres_exporter`) and Gateway metrics are out of the Game set.
 10. **SLOs and alerts.** The SLO candidates have **no numbers** until PERF-01 or an alpha baseline sets them:
@@ -161,9 +181,10 @@ In this part, ERR-CODES means ARCH-ERROR-CODES-0, and Rn means ruling n of this 
     - `OterynDbRootNotReady`.
     - `OterynNodeRestarted`: `changes(oteryn_node_start_time_seconds)`, which catches panics.
     - `OterynErrorLines`: `increase(oteryn_log_lines_total{level="error"})>0`.
+    - `OterynLogLinesDropped`: `increase(oteryn_log_lines_dropped_total)>0`, which catches a dead log sink (R6).
     - `OterynAdmissionRefusals` and `OterynPlatformErrors`, as ratios.
 
-    Every `for:` duration and every ratio threshold is CANDIDATE, set from the first alpha week. There is one dashboard JSON in `deploy/observability/`. Both run only under owner question 1 (a).
+    Every `for:` duration and every ratio threshold is CANDIDATE, set from the first alpha week. There is one dashboard JSON in `deploy/observability/`. Owner ruling 2026-10-06 (owner question 1, option a): Prometheus and Grafana run as host-network containers on the alpha NAS, Prometheus scrapes the loopback listener, and alerts go to the owner's email.
 11. **Platform proposal** (routed by the control plane, not written by Game).
     - The Gateway logs `attempt_ref` and the typed outcome on its `POST /v1/login` line.
     - Platform services log the trace-id of an incoming `traceparent`.
@@ -223,14 +244,17 @@ In this part, ERR-CODES means ARCH-ERROR-CODES-0, and Rn means ruling n of this 
     - the label values are registered codes or enum names;
     - a recorder failure does not change an admission outcome.
   - Checks: `cargo deny check` (licences and sources) and `game-gate`.
-- **OBS-DEPLOY-4** (supervisor logs, alerts, dashboard). Depends on #1874 merged and OBS-METRICS-3.
-  - Builds R6, R7 and R10. Owned paths: `deploy/synology-game/supervisor.sh`, `deploy/synology-game/node.toml.template`, `deploy/synology-game/README.md`, and a new `deploy/observability/`.
+- **OBS-DEPLOY-4** (log sink, supervisor logs, alerts, dashboard). Depends on #1874 merged and OBS-METRICS-3.
+  - Builds R6, R7 and R10. Owned paths: a new `apps/game-server/src/node/log_sink.rs`, the `log-sink` dispatch in `apps/game-server/src/main.rs`, `deploy/synology-game/supervisor.sh`, `deploy/synology-game/node.toml.template`, `deploy/synology-game/README.md`, and a new `deploy/observability/` (Prometheus, Grafana and email alerting on the NAS, owner ruling 1a).
   - Tests:
-    - a shell test that two restarts keep both earlier logs and that the age prune removes only older files;
+    - with a 4 KiB segment size, the sink rotates at the size bound and never splits a line; with an injected clock it rotates at 24 h with no new input size;
+    - with an injected clock, the hourly prune removes only closed segments whose newest line is older than 14 days, never the active segment, and the lifecycle file of the running incarnation survives;
+    - over the 1 GiB cap (scaled down in the test), the oldest closed segments go first and one coded `warn` line is written;
+    - a node that runs past the retention with a steady line rate keeps the directory within its bound and keeps no line older than 15 days and 1 hour;
+    - a shell test that two restarts keep both earlier incarnations' logs, and that `health` and the `awaiting_assignment` revision read still work after several rotations;
+    - a killed sink makes `health` fail and does not change an admission outcome;
     - `promtool check rules` and `promtool test rules` on fixture series;
     - the dashboard JSON parses.
-
-  The alerts and dashboard are built only on owner 1(a).
 - **OBS-BUNDLE-5** (`diagnose --bundle`). Depends on ERR-DIAG-4 and OBS-LOG-1.
   - Builds R12. Owned paths: `apps/game-server/src/ops_diagnose.rs` and `apps/game-server/src/bin/oteryn-game-ops.rs`.
   - Tests:
@@ -250,12 +274,16 @@ In this part, ERR-CODES means ARCH-ERROR-CODES-0, and Rn means ruling n of this 
    - (c) A hosted metrics service, which is spend.
 
    Recommend (a): a node crash otherwise goes unseen until a tester complains.
+
+   **Owner ruling 2026-10-06: a.** R10 and OBS-DEPLOY-4 follow it.
 2. Alpha retention; this is privacy scope. Logs hold the trace, `attempt_ref` and scope, and Platform can link `attempt_ref` to an account.
    - (a) CANDIDATE: logs 14 days, metrics 30 days, bundles until the issue closes.
    - (b) Logs 30 days, metrics 90 days.
    - (c) Delete everything at the end of each alpha phase.
 
    Recommend (a).
+
+   **Owner ruling 2026-10-06: a.** R6 and R7 follow it.
 
 ### Rejected options
 
@@ -265,21 +293,24 @@ In this part, ERR-CODES means ARCH-ERROR-CODES-0, and Rn means ruling n of this 
 - `/metrics` on the control socket: Prometheus cannot scrape a Unix socket.
 - `/metrics` on a public interface or with auth: loopback needs neither.
 - Per-transaction `SET application_name` with the trace: it adds a statement on the durability path and puts correlation data in DB logs.
-- `postgres_exporter` in the alpha: node-side DB latency and errors cover the failure modes. It can be added under 1(a) without a decision.
+- `postgres_exporter` in the alpha: node-side DB latency and errors cover the failure modes. It can be added to the owner ruling 1a NAS stack without a decision.
 - A new `oteryn-debug-bundle` tool: ERR-DIAG-4 already owns log reading.
 - A `trace` or `attempt` metric label: it has unbounded cardinality (ANL-01 §18).
 - Off-host collection of node crash evidence now: a persistent NAS volume meets the DISCONNECT §5 non-ephemeral rule for the alpha.
+- Pruning only at start, or `logrotate` with `copytruncate`: the first leaves a long-running incarnation unbounded; the second loses the lines written between copy and truncate.
+- An upstream pipe logger (`svlogd`, `s6-log`, `rotatelogs`) on the host: none is guaranteed on the NAS, and installing one needs root. The sink is a subcommand of the binary already deployed; if the host later ships one of them, OBS-DEPLOY-4 may use it instead under the same bounds and tests.
 
 ### Open unknowns
 
-- U1: alpha log volume per tester-hour at `info`. It is measured in the first alpha week and sizes the R7 prune. The node has no size cap within one incarnation.
+- U1: alpha log volume per tester-hour at `info`. It is measured in the first alpha week and fixes the R6 segment size and directory cap.
 - U2: whether #1868 keeps the exact `registered`, `node_id=` and `readiness ready=true` tokens that the #1874 health check greps (F22). OBS-LOG-1 locks them with a test.
-- U3: whether Synology Container Manager host networking can reach a loopback listener (owner 1a). Fallback: bind to the host's LAN address behind its firewall. That needs an amendment to R8.
+- U3: whether Synology Container Manager host networking can reach a loopback listener (owner ruling 1a). Fallback: bind to the host's LAN address behind its firewall. That needs an amendment to R8.
 - U4: whether Platform accepts the R11 proposal. The Game side works without it, and Gateway↔node joins stay node-side through `attempt`.
 - U5: the R10 thresholds and the PERF-01 latency budgets. No value is accepted here.
 - Before freeze:
   - Serialization: there is one locked line write, and metrics are atomic counters that are not on the authority path.
-  - Restart: metrics reset (ADR-0006), each incarnation has its own log, and `parent` is in memory only.
+  - Restart: metrics reset (ADR-0006), each incarnation has its own segments and lifecycle file, and `parent` is in memory only.
+  - Long-running node: the sink rotates and prunes while it runs, so the R6 bounds hold without a restart.
   - Typed refs: `trace`, `parent` and `attempt` are UUIDv7.
   - Peer gating: there is no wire change, and `traceparent` is ignorable. Ops and server ship in one bundle, so the parser and writer match.
   - Multi-component commit: none, because the bundle is published by an atomic rename.
@@ -455,23 +486,41 @@ Capacity and performance
 11. **How a measured value is accepted.** The accepted `max_players_per_channel` is the breaking
     N divided by 1.3, rounded down (ADR-0009 §6 headroom). It becomes a RESOURCE_LIMITS_REGISTRY
     row whose notes cite the evidence file. The row ships in a PR that passes the normal
-    independent review. If the value is below D128's 500, the owner decides (owner question 1). A
+    independent review. Owner ruling 2026-10-06 (owner question 1, option a): a measured value
+    below D128's 500 is accepted for alpha, and the gap to 500 is logged in gap register §25. A
     hardware change or a regression gate failure reopens the row.
 12. **CI benchmark gate (PERF-01 CI part).**
     - *Benchmarks:* instruction counts with `iai-callgrind`, an upstream crate on valgrind. The
       first set has three benches: the viewport snapshot, the viewport delta, and one seeded
       owner cycle of creature think plus a step with visibility.
-    - *Where it runs:* a path-selected merge-gate job on `ubuntu-24.04`. It runs when
-      `apps/game-server/src/gameplay_transport/**`, `apps/game-server/src/ai_think.rs`,
-      `crates/protocol-oteryn/**` or `crates/simulation-determinism/**` changes. It builds the
-      merge base and the head in the same job and compares the two counts.
+    - *Where it runs:* a path-selected merge-gate job on `ubuntu-24.04`. It builds the merge
+      base and the head in the same job and compares the two counts.
+    - *What selects it:* the set is derived from the code, not listed by hand. The measured
+      paths cross most of the crate: the viewport plan calls `crate::map::view`
+      (`gameplay_transport/world_map.rs:36`, `:291-339`); creature think uses
+      `crate::movement::step_cardinal` and `crate::foundation::owner_timer`
+      (`ai_think.rs:47`, `:54`); the owner cycle reads `owner_timer::SemanticTimeMicros`
+      (`gameplay_transport/monster_ai_cycle.rs:15`); movement and the transport use
+      `crate::world_runtime` (`movement/speed.rs:13`, `gameplay_transport/mod.rs:363`). A file
+      list would miss the next such edge. So the job runs when a changed path is owned by
+      `oteryn-game-server` (including `apps/game-server/benches/`) or by any workspace package in
+      its local dependency closure (today `crates/error-codes`, `crates/foundation`,
+      `crates/protocol-oteryn`, `crates/simulation-determinism`, `crates/world-bundle`;
+      `apps/game-server/Cargo.toml`), or is a Cargo build input, `vendor/**` (the patched
+      `tokio` and `sqlx` crates) or the workflow itself. The closure is computed by
+      `tools/repository/classify_pr_test_lanes.py` from `cargo metadata`, which already builds the
+      local reverse-dependency graph (`graph`, lines 231-268) and the build-input set (lines
+      30-33). An incomplete path enumeration or a classifier error runs the job. The benches read
+      only fixtures under `apps/game-server/benches/`, so no `content/` change can move a count
+      unseen.
     - *Noisy runners:* instruction counts do not depend on runner speed, which is why they gate.
       Wall-clock benches never gate a PR. They run as `#[ignore]` release tests and in the
       harness, on the reference class, nightly or on demand (ADR-0007 line 285).
     - *Threshold:* CANDIDATE. PERF-CI-1 runs the benches 20 times on `main`, records the spread,
       and proposes the threshold.
-    - *Gate status:* the job reports for its first 20 merges. Making it a required check changes
-      repository protection, so the control plane routes that change (owner question 2).
+    - *Gate status:* owner ruling 2026-10-06 (owner question 2, option a): the job reports for its
+      first 20 merges and becomes required after PERF-CI-1 sets the threshold. Making it a
+      required check changes repository protection, so the control plane routes that change.
 
 ### Contract amendments
 
@@ -509,22 +558,28 @@ Capacity and performance
   full ramp runs on the reference class only. Depends on TIME-CLOCK-1 for queue-age stamps.
 - **PERF-CI-1.** iai-callgrind benches and the path-selected job (ruling 12). Owned:
   `apps/game-server/benches/` (new), `apps/game-server/Cargo.toml`, `Cargo.toml` (dev-dependency),
-  `.github/workflows/merge-gate.yml`, `docs/agents/evidence/PERF-CI-1-noise.md` (new). Tests:
-  the job fails on a deliberate synthetic regression in a test branch. Dependency review covers
-  the new dev-dependency. Depends on nothing.
+  `.github/workflows/merge-gate.yml`, `tools/repository/classify_pr_test_lanes.py` and its test,
+  `docs/agents/evidence/PERF-CI-1-noise.md` (new). Tests: the job fails on a deliberate
+  synthetic regression in a test branch; the classifier selects the job for a change confined to
+  each of `apps/game-server/src/map/view.rs`, `movement.rs`, `world_runtime.rs`,
+  `foundation/owner_timer.rs`, `ai_think.rs`, a file under each dependency crate, `Cargo.lock`
+  and `vendor/`, and for an incomplete enumeration; it skips the job for a change confined to
+  `docs/` or `apps/client/`. Dependency review covers the new dev-dependency. Depends on nothing.
 - **PERF-ACCEPT-1.** Writes `PERF01-PLAYERS-PER-CHANNEL` from the PERF-ALPHA-1 evidence, then
-  applies A4. Owned: `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`, the gap register.
-  Depends on PERF-ALPHA-1 and owner question 1.
+  applies A4 and, if the value is below 500, logs the gap in §25 (owner ruling 1a). Owned:
+  `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`, the gap register. Depends on PERF-ALPHA-1.
 
 ### Owner questions
 
 1. Context: alpha's ceiling is 256 connections, and the D128 target is 500.
    a) Accept the measured value for alpha even below 500, and log the gap (recommended).
    b) Block the representative-load alpha claim until 500 is measured.
+   **Owner ruling 2026-10-06: a.** Ruling 11 and PERF-ACCEPT-1 follow it.
 2. Context: making a new check required changes repository protection.
    a) The job reports first and becomes required after PERF-CI-1 sets the threshold (recommended).
    b) Required from the start.
    c) Nightly only, never a PR check.
+   **Owner ruling 2026-10-06: a.** Ruling 12 follows it.
 
 ### Rejected options
 
@@ -613,8 +668,8 @@ Platform-held state
 4. **Expand/contract still applies.** Every migration is written as expand/contract, so that a roll-forward fix is always possible. A CONTRACT step ships in a later release than the cutover that stopped using the old shape.
 5. **Persisted content references.** Durable rows refer to content only by `{family, key, revision}` (F10). A compiled or legacy numeric id is never persisted. A release may not remove, rename or reinterpret a definition that live rows reference, unless the change carries a DUR-04 §12 class and, for `EXPLICIT_DATA_MIGRATION` or `REMOVED_WITH_EXPLICIT_POLICY`, an audited domain migration. A referenced registry row is never deleted (F14 pattern). The release gate checks this against a restored copy of real data (packet DATA-CONTENT-REF-5).
 6. **Content artifacts and receipts.** World bundles and reference artifacts are immutable and content-addressed. A changed input gets a successor receipt that names what it supersedes, as #1869 did (F13). A node logs its bundle digest and its ledger head on its boot line. `oteryn-game-ops diagnose` reports both.
-7. **Backups.** Use pgBackRest (upstream, not forked). Archive WAL continuously. Take a full backup weekly, a differential daily, and a named backup before every schema release. The repository is encrypted (`repo-cipher-type=aes-256-cbc`). Its key and credential are separate from the database credentials and never in the repository. It lives off the database host. HA replicas are not backups. All numbers here are CANDIDATES (Owner question 1).
-8. **The restore fence directory.** One directory, outside the database volume and outside every database backup, holds every value a restore must not roll back: the Character recovery fence (F19), the LCFA high-water F (F22), the `assignment_epoch` high-water (F23) and the erasure journal (step 7 of ruling 9; ARCH-LIVE-READINESS-0 §3 ruling 18). Each keeps its own contract semantics. Writes use write, sync, atomic rename and directory sync, as the Character fence does today. Each advance is also copied to an off-host write-once store (Owner question 2). A missing or unreadable value is a refusal, never 0.
+7. **Backups.** Use pgBackRest (upstream, not forked). Archive WAL continuously. Take a full backup weekly, a differential daily, and a named backup before every schema release. The repository is encrypted (`repo-cipher-type=aes-256-cbc`). Its key and credential are separate from the database credentials and never in the repository. It lives off the database host. HA replicas are not backups. Owner ruling 2026-10-06 (owner question 1, option a): RPO ≤ 5 min (`archive_timeout` ≤ 300 s), RTO ≤ 4 h, backup retention 14 days (`repo1-retention-full-type=time`, `repo1-retention-full=14`) and a restore drill each month (ruling 12). The drill measurement confirms the RTO.
+8. **The restore fence directory.** One directory, outside the database volume and outside every database backup, holds every value a restore must not roll back: the Character recovery fence (F19), the LCFA high-water F (F22), the `assignment_epoch` high-water (F23) and the erasure journal (step 7 of ruling 9; ARCH-LIVE-READINESS-0 §3 ruling 18). Each keeps its own contract semantics. Writes use write, sync, atomic rename and directory sync, as the Character fence does today. A missing or unreadable value is a refusal, never 0. Owner ruling 2026-10-06 (owner question 2, option b, with the owner's refinement): **for the testing phase only**, the directory lives on its own volume of the alpha NAS (the node host), with no off-host copy. If the NAS is lost, the fences and the erasure journal are lost with it. A restore after that loss needs an explicit, logged operator reseed in `oteryn-game-ops restore`: each fence is set by hand strictly above every value in the restored database and the newest surviving backup, and the run records that erasures after T cannot be re-applied. The reseed is refused unless the stack is marked testing-phase. This is acceptable only because testing-phase data belongs to no external player. **Re-decision gate:** before any external player is admitted, the owner decides again where the directory survives host loss (options a and c of owner question 2 stay open), and external admission stays closed until that ruling is recorded, deployed and drilled (ruling 12).
 9. **Restore runbook (normative order).** A restore is one operator procedure, `oteryn-game-ops restore` (packet DATA-RESTORE-OPS-2):
    1. Close admission on every channel. Stop every node, the LCFA publisher and the status reporter. Verify that no pre-restore process is alive.
    2. Restore with pgBackRest to a named backup and a target time T (`--type=time`). Record the backup label and T.
@@ -636,19 +691,19 @@ Platform-held state
     - Ownership and lifecycle operations (deletion, transfer, Bazaar): Platform re-requests each operation whose Game outcome it received after T, with the same operation identity. Game answers from restored state. If the operation is no longer eligible, Game returns a bounded rejection and Platform compensates on its own side. A Platform workflow row never proves the Game outcome (F27).
     - Game sends Platform one restore notice: restore event id, new recovery generation, T and the backup label. It carries no player data.
 11. **Lost player progress.** Gameplay after T is lost. It is never re-executed. Any make-good uses audited idempotent domain transactions (F17). Direct database edits are forbidden.
-12. **Restore drills.** A drill restores a named backup into a separate preproduction stack. It runs the full ruling 9 procedure and the content check of ruling 5, and records timings. These timings are the measurement that fixes RTO. One drill must pass before external alpha. Its cadence is a CANDIDATE.
+12. **Restore drills.** A drill restores a named backup into a separate preproduction stack. It runs the full ruling 9 procedure and the content check of ruling 5, and records timings. These timings are the measurement that fixes RTO. One drill must pass before external alpha. Owner ruling 2026-10-06 (owner question 1, option a): a drill runs each month and must finish within the 4 h RTO; a miss blocks the next schema release until a drill passes. Entry condition for external players: the ruling 8 re-decision is recorded, its store is deployed, and one drill has restored with it.
 
 Before-freeze checklist. Concurrent transitions: the migrator's advisory lock, the fence CAS and the epoch row lock serialize them. Restart/resume: rulings 3 and 9 are re-entrant per step. Typed cross-record refs: ruling 5. Older client/peer gating: ruling 2 (exact gate) and ruling 9.11 (fresh login). Multi-component commit and recovery: ruling 8 (fences outside the snapshot) and ruling 10 (idempotent re-request by operation identity).
 
 ### Contract amendments
 
 A1. `docs/contracts/OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md` §6, replace the last sentence ("Where the epoch is stored … (U-RS5).") with:
-> The epoch is stored as an external high-water in the Game restore fence directory, outside the Game database and its backups, and copied off-host on each raise. The operator raises it only through `oteryn-game-ops restore`, strictly above the stored high-water, after the Character recovery fence advances and before any node reports. A missing or unreadable high-water is a refusal, never 0.
+> The epoch is stored as an external high-water in the Game restore fence directory, outside the Game database and its backups. In the testing phase that directory is on its own NAS volume only; where it survives host loss is decided again before external players are admitted (ARCH-ALPHA-OPS-0 §3 ruling 8). The operator raises it only through `oteryn-game-ops restore`, strictly above the stored high-water, after the Character recovery fence advances and before any node reports. A missing or unreadable high-water is a refusal, never 0.
 Also mark U-RS5 resolved by this text.
 
 A2. `docs/contracts/OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md` §5, replace "The production fence location, durable across host loss, stays open (U-LC2)." with:
-> In every profile, F lives in the Game restore fence directory with the Character recovery fence, outside the Character store and its backups, and each new value is copied off-host before the publisher sends. The production restore runbook is `oteryn-game-ops restore` (ARCH-ALPHA-OPS-0 §3 ruling 9).
-In §10, set U-LC2 to resolved, pointing at that text.
+> F lives in the Game restore fence directory with the Character recovery fence, outside the Character store and its backups. In the testing phase that directory is on its own NAS volume only and host loss needs a manual reseed; where it survives host loss is decided again before external players are admitted (ARCH-ALPHA-OPS-0 §3 ruling 8). The production restore runbook is `oteryn-game-ops restore` (ARCH-ALPHA-OPS-0 §3 ruling 9).
+In §10, set U-LC2 to resolved for the testing phase, pointing at that text; it reopens at the external-player re-decision.
 
 A3. `docs/contracts/CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md`, new §13.1 "Game restore" (the contract is Accepted, so this needs the control plane and Platform review):
 > After a Game restore to target time T, Game publishes one restore notice (restore event id, recovery generation, T, backup label). Platform then re-requests, with the same operation identity, every operation whose Game outcome it received after T. Game answers from restored state: the existing receipt, a fresh execution if still eligible, or a bounded rejection. On a rejection Platform compensates its own state. Platform never infers a Game outcome from its own workflow row.
@@ -658,8 +713,8 @@ A4. A proposal to Platform, routed by the control plane, not a Game file edit. W
 ### Packets
 
 - **DATA-MIGRATION-GUARD-1.** A CI check that a merged migration file is never changed or deleted, and that every new version is greater than the highest version on `origin/main`. Owned paths: new `tools/repository/check_migration_ledger.py` and its test; a wiring line in the governance/CI workflow that runs repository checks. Tests: changed file fails; deleted file fails; a new 0078 fails; a new 0080 passes. Dependencies: none. P0-adjacent because of F6.
-- **DATA-RESTORE-OPS-2.** `oteryn-game-ops restore`, steps 3–10 of ruling 9: the fence CAS and reconcile, the erasure journal re-apply, revocation of CURRENT registrations, the LCFA raise against F, the `assignment_epoch` raise, the 35 s admission gate, per-step resume, and registered codes. Owned paths: `apps/game-server/src/bin/oteryn-game-ops.rs`, `apps/game-server/src/character_recovery_fence.rs`, new `apps/game-server/src/restore_fence.rs`, `docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json` (new codes only). Tests: crash after each step and resume; second run advances nothing; F above the computed epoch refuses; a stale NodeId is refused after restore; early admission open is refused. Dependencies: A1, A2; ERR-REGISTRY-0.
-- **DATA-BACKUP-PITR-3.** pgBackRest configuration for the test and preproduction stack, an encrypted repository, WAL archiving and the restore fence directory on its own volume. It also reorders the deploy for a release with a migration to stop, named backup, migrate, start (ruling 3; F30). Owned paths: `deploy/synology-game/` and `.github/workflows/synology-game-deploy.yml` once PR #1874 merges; if it does not merge, the control plane names the path (`main` has no deploy directory; `git ls-files` shows only `tools/qualification/wp5_s3a/compose.yml`). Tests: a timed restore of a named backup to T in CI with Postgres; a check that the fence directory is absent from the backup. Dependencies: Owner questions 1 and 2.
+- **DATA-RESTORE-OPS-2.** `oteryn-game-ops restore`, steps 3–10 of ruling 9: the fence CAS and reconcile, the erasure journal re-apply, revocation of CURRENT registrations, the LCFA raise against F, the `assignment_epoch` raise, the 35 s admission gate, per-step resume, and registered codes. Owned paths: `apps/game-server/src/bin/oteryn-game-ops.rs`, `apps/game-server/src/character_recovery_fence.rs`, new `apps/game-server/src/restore_fence.rs`, `docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json` (new codes only). Tests: crash after each step and resume; second run advances nothing; F above the computed epoch refuses; a stale NodeId is refused after restore; early admission open is refused; the manual fence reseed (ruling 8) sets every fence above the restored and backup values and is refused on a stack not marked testing-phase. Dependencies: A1, A2; ERR-REGISTRY-0.
+- **DATA-BACKUP-PITR-3.** pgBackRest configuration for the test and preproduction stack per ruling 7 (`archive_timeout` 300 s, 14-day retention), an encrypted repository, WAL archiving and the restore fence directory on its own NAS volume (testing phase, ruling 8). It also reorders the deploy for a release with a migration to stop, named backup, migrate, start (ruling 3; F30). Owned paths: `deploy/synology-game/` and `.github/workflows/synology-game-deploy.yml` once PR #1874 merges; if it does not merge, the control plane names the path (`main` has no deploy directory; `git ls-files` shows only `tools/qualification/wp5_s3a/compose.yml`). Tests: a timed restore of a named backup to T in CI with Postgres; a check that the fence directory is absent from the backup; a check that the configured `archive_timeout` and retention match ruling 7. Dependencies: none (owner questions 1 and 2 are ruled).
 - **DATA-RESTORE-DRILL-4.** An automated drill that restores into a separate stack and runs `oteryn-game-ops restore`. It moves the database snapshot and the fence directory independently: DB older, fence newer, fence missing, fence equivocating. It records RTO timings. Owned paths: new drill script and test under `apps/game-server/tests/`; the runbook `docs/operations/` (new). Dependencies: 2, 3.
 - **DATA-CONTENT-REF-5.** A release-gate check run on the drill database. It lists every distinct `{family, key, revision}` that live rows reference and fails if the new bundle does not resolve one without an alias or a DUR-04 §12 policy entry. Owned paths: new check module under `apps/game-server/src/content/` and its test. Dependencies: 4.
 - **PLATFORM-RESTORE-RECONCILE-P1 (proposal).** The A3 and A4 texts, sent to Platform by the control plane. No Game work until Platform accepts.
@@ -669,12 +724,15 @@ A4. A proposal to Platform, routed by the control plane, not a Game file edit. W
 1. Recovery targets for external alpha (all CANDIDATES; RTO is then fixed by the drill measurement).
    a) RPO ≤ 5 min, RTO ≤ 4 h, backup retention 14 days, a drill each month. b) RPO ≤ 1 min, RTO ≤ 1 h, 30 days, a drill each week. c) A nightly dump only (RPO 24 h).
    Recommendation: a. It is cheap with pgBackRest and enough for an alpha.
+   **Owner ruling 2026-10-06: a.** Rulings 7 and 12 and DATA-BACKUP-PITR-3 follow it.
 2. Where the restore fence directory survives host loss.
    a) A separate volume on the node host plus a write-once off-host copy (object storage with object lock) after each advance. b) The node host only; host loss needs a manual reseed. c) A networked compare-and-set service.
    Recommendation: a. It reuses the file register that exists and adds one copy step.
+   **Owner ruling 2026-10-06: b, with a refinement.** The fence directory on the NAS is used only for the testing phase, and the choice is decided again before external players are admitted. Ruling 8, A1, A2, ruling 12 and U7 follow it.
 3. Deploy model for alpha.
    a) Stop-the-world only for releases with a migration; rolling per channel otherwise. b) Always stop-the-world. c) Build an N/N-1 schema gate now.
    Recommendation: a.
+   **Owner ruling 2026-10-06: a.** Ruling 3 follows it.
 
 ### Rejected options
 
@@ -696,6 +754,7 @@ A4. A proposal to Platform, routed by the control plane, not a Game file edit. W
 - U4 CONFLICT (F12). DUR-04 is marked PROPOSED in its file but accepted in the reconciliation record. Ruling 5 depends only on rules that the code already follows (F10).
 - U5 UNKNOWN. How long a full restore of an alpha-sized database takes. DATA-RESTORE-DRILL-4 measures it and fixes RTO.
 - U6 UNKNOWN. Whether Platform keeps a Game-acknowledgement time per delivery and per operation, which A3/A4 need in order to select "after T".
+- U7 OPEN (owner re-decision). Where the restore fence directory survives host loss once external players are admitted. Owner ruling 2b covers the testing phase only; external admission waits for the new ruling (rulings 8 and 12).
 
 ## 4. Client version and update
 
@@ -828,29 +887,75 @@ Classes: PROVEN (read in the file), DERIVED (follows from PROVEN facts), UNKNOWN
    - Native Windows `x86_64-pc-windows-msvc` only. Every release is a full package; no deltas.
    - The updater is Velopack (`velopack` crate): it installs, downloads and stages, and activates
      only at client restart (ALPHA-CLIENT-01 §17.1, §17.3, §17.4).
-   - Feed and packages on GitHub Releases of `Oteryn/Oteryn-Game` (owner Q1). One channel,
-     `alpha`; no staged rollout. Rollback is a new, higher version built from the earlier source.
+   - Feed and packages on GitHub Releases of `Oteryn/Oteryn-Game` (owner ruling 2026-10-06,
+     Q1 a). Each release also carries the trust log and a root-signed checkpoint (ruling 9),
+     issued with every trust record and every release. One channel, `alpha`; no staged rollout. Rollback is a new, higher version built from the earlier source.
      During a rollout the floor stays at the previous build until the operator raises it.
 9. **Update integrity.**
    - Every release carries the SEC-CLIENT-01 §3 signed release manifest, extended with: the
      SHA-256 and size of the full package, the asset manifest SHA-256, the channel, and the
      version.
-   - Detached Ed25519 over canonical bytes, with the workspace `ed25519-dalek`. The client
-     compiles in the trust root public key. Before activation the updater verifies the trust
-     record, the manifest, then the package hash, and refuses a version not above its own.
-     Velopack's checks add to this; they are not the anchor.
-   - Offline keys never enter CI: the workflow publishes a draft, the key holder signs it locally,
-     then it is published (owner Q3). OS code signing (Authenticode) is owner Q2.
+   - Detached Ed25519 over canonical bytes, with the workspace `ed25519-dalek`. Before
+     activation the updater verifies the trust records and checkpoint (below), the manifest,
+     then the package hash, and refuses a version not above its own. Velopack's checks add to
+     this; they are not the anchor.
+   - **Client trust records and their rollback floor.** Release keys change only through
+     SEC-CLIENT-01 §3 trust records `{revision, previous_revision, active_keys, revoked_keys}`
+     and checkpoints `{revision, issued_at}`, both signed by the offline trust root. That
+     section defines the rollback floor for the node only. Without a client floor, a feed that
+     re-presents an older signed record, which still lists a now-revoked key as active, would
+     let the client accept a manifest signed by that key. `main` has no client updater or trust
+     store yet (`git ls-tree origin/main apps/client/src`), so the client floor is defined here:
+     - *Build floor:* each client build compiles in the trust root public key and the trust
+       snapshot current at build time: the head record's revision, its active and revoked key
+       sets, and the checkpoint that names that head.
+     - *Persisted floor:* `trust-floor.v1` in the per-user client state directory
+       (`%LOCALAPPDATA%\Oteryn\state\`), outside the Velopack install root, so no update or
+       rollback package replaces it (ALPHA-CLIENT-01 §17.4). It holds the highest applied record
+       revision with its active and revoked key sets, the highest accepted checkpoint
+       `{revision, issued_at}`, and a SHA-256 over those bytes. The effective floor is the
+       higher of the persisted and the build floor, field by field; the revoked set is the union
+       of both and never shrinks.
+     - *Verification:* the updater fetches the trust log and the latest checkpoint published
+       with the release (ruling 8). It accepts the checkpoint only if the root signature
+       verifies, its revision is not below the floor's checkpoint revision, and its `issued_at`
+       is not earlier than the floor's. It applies records in order only: each needs
+       `revision = current + 1`, `previous_revision = current`, a valid root signature, and no
+       key in `active_keys` that is in the revoked set. A record at or below the floor revision
+       is rejected. A log prefix without a checkpoint is never the head. A manifest verifies only
+       under a key that is active at the head and has never been revoked.
+     - *Durability and monotonicity:* after applying records and before verifying any manifest,
+       the updater writes the new floor with write, fsync, atomic rename and directory fsync. It
+       never writes a value below the one it replaces. A crash before the rename keeps the old
+       file, which only delays the raise.
+     - *Failure:* a missing file uses the build floor (a fresh install). A file that fails its
+       digest refuses every update until a reinstall; login continues (ruling 5), and the server
+       floor (ruling 2) stays the backstop.
+     - *Residual risk (accepted, bounded):* the root is offline (owner ruling Q3 a), so the
+       client has no online freshness bound like SEC-CLIENT-01's 24 hours. A client that has not
+       seen the revocation, facing a feed controlled by the holder of the revoked key, can be
+       held at the older head. That ends at the first later checkpoint it sees, and every new
+       build carries the revocation in its build floor. The emergency path is an out-of-train
+       client release with a raised build floor plus a raised server floor (ruling 2).
+   - Offline keys never enter CI: the workflow publishes a draft, the key holder signs the
+     manifest, any new trust record and the checkpoint locally, then it is published. Owner
+     ruling 2026-10-06 (owner Q3, option a): the owner holds the offline trust root and the
+     release key and signs with `oteryn-release-sign`. Owner ruling 2026-10-06 (owner Q2,
+     option a): no OS code signing (Authenticode) in the closed alpha; the manifest is the only
+     signature, users see a SmartScreen warning at first install, and a purchase is decided
+     before open beta.
 10. **Browser.** Outside alpha. When a browser profile is registered, its id is
     `oteryn-web/<semver>` with its own floor (ruling 2), and its deployed page and ADR-0018 §9
     manifest replace the updater.
 11. **Platform.** Alpha needs no Platform action. The Gateway's `client_build` stays diagnostic,
-    and Platform does not gate builds. Platform acts only if the owner picks Q1b.
+    and Platform does not gate builds. Owner ruling Q1 a hosts the client on GitHub Releases,
+    so Platform has no hosting task.
 12. **Before-freeze coverage.** Concurrency: the floor is fixed per ownership generation.
     Resume: a staged release activates only at restart, so an interrupted download keeps the
-    prior one. Typed references: the manifest names build id, package digest and asset manifest
-    digest. Older-client gating: rulings 3 and 4. Multi-component commit: publish package, then
-    signed manifest, then feed entry, then raise the floor.
+    prior one; a crash while applying trust records never lowers the persisted trust floor
+    (ruling 9). Typed references: the manifest names build id, package digest and asset manifest
+    digest. Older-client gating: rulings 3 and 4. Multi-component commit: publish the trust log
+    and checkpoint, then package, then signed manifest, then feed entry, then raise the floor.
 
 ### Contract amendments
 
@@ -881,7 +986,11 @@ Classes: PROVEN (read in the file), DERIVED (follows from PROVEN facts), UNKNOWN
    activation (ARCH-ALPHA-OPS-0 §4 rulings 8 and 9)."
 7. **SEC-CLIENT-01 §3, Release manifest.** Append: "The manifest also binds the full update
    package SHA-256 and size, the client asset manifest SHA-256, the release channel and the
-   SemVer version. The client updater verifies it before activation (ARCH-ALPHA-OPS-0 §4 ruling 9)."
+   SemVer version. The client updater verifies it before activation (ARCH-ALPHA-OPS-0 §4 ruling 9).
+   The client keeps its own trust-record rollback floor: each build embeds the trust snapshot of
+   its build time, and the updater persists the highest applied revision, the revoked key set
+   and the highest checkpoint outside the install root and rejects any record or checkpoint
+   below that floor (ARCH-ALPHA-OPS-0 §4 ruling 9)."
 
 ### Packets
 
@@ -902,13 +1011,24 @@ Classes: PROVEN (read in the file), DERIVED (follows from PROVEN facts), UNKNOWN
 - **RELEASE-MANIFEST-3** (security; security review). New crate `crates/release-manifest`: the
   ruling 9 format, canonical bytes, Ed25519 and trust record verification, and the local signing
   tool `oteryn-release-sign`. With SEC-REL-1 accepted, this is its manifest half, one owner.
-  Tests: tamper with each field, a revoked key, a version not above the current one, a wrong
-  root. Order: with or after SEC-CLIENT-01 acceptance.
+  It also holds the trust-floor logic of ruling 9 as a pure library, and the signing tool
+  issues the checkpoint. Tests: tamper with each field, a revoked key, a version not above the
+  current one, a wrong root; after revocation record n+1, re-presenting record n is rejected and
+  a manifest signed by the revoked key fails; a revision gap or a wrong `previous_revision` is
+  rejected; a checkpoint with a lower revision or an earlier `issued_at` than the floor is
+  rejected; a log prefix without a checkpoint is not the head; a record that reactivates a
+  revoked key is rejected. Order: with or after SEC-CLIENT-01 acceptance.
 - **CLIENT-UPDATE-4** (client; impl, hard). A spike gate first closes the F19 UNKNOWNs; then the
-  Velopack integration, the pre-login feed check and verification before activation. Paths:
-  `apps/client/src/main.rs`, `apps/client/src/update.rs` (new), `apps/client/Cargo.toml`.
-  Tests: a tampered package is not activated; an interrupted download keeps the prior release;
-  an unreachable feed lets login continue; user settings survive. Spike failure fallback: a full
+  Velopack integration, the pre-login feed check, the persisted trust floor and verification
+  before activation. Paths: `apps/client/src/main.rs`, `apps/client/src/update.rs` (new),
+  `apps/client/src/trust_floor.rs` (new), `apps/client/Cargo.toml`. Tests: a tampered package
+  is not activated; an interrupted download keeps the prior release; an unreachable feed lets
+  login continue; user settings survive; after the revocation record is applied and the client
+  restarts, a re-presented older record is rejected and a higher-version package signed by the
+  revoked key is not activated; a missing floor file uses the build floor; a file below the
+  build floor is raised to it; a corrupt file refuses updates while login continues; a kill
+  between apply and rename never lowers the floor; an update or rollback package leaves the
+  floor file unchanged. Spike failure fallback: a full
   zip, the same verification, and a side-by-side directory switch at restart. Order: after 3.
 - **CLIENT-RELEASE-5** (CI; owner workflow authorization). New
   `.github/workflows/client-release.yml`: manual dispatch only, `OTERYN_BUILD_SHA` from an exact
@@ -921,14 +1041,17 @@ Classes: PROVEN (read in the file), DERIVED (follows from PROVEN facts), UNKNOWN
    a) GitHub Releases of the public `Oteryn/Oteryn-Game` repository, free. b) A Platform
    download page and storage, a cross-repo Platform task. c) Game-owned object storage or a CDN,
    which costs money. **Recommend a.**
+   **Owner ruling 2026-10-06: a.** Rulings 8 and 11 follow it.
 2. Windows code signing (spending).
    a) None for the closed alpha: the Oteryn signed manifest only, with a SmartScreen warning at
    first install, and a purchase decided before open beta. b) Buy a code-signing certificate or
    service now; the cost is UNKNOWN until quoted. **Recommend a.**
+   **Owner ruling 2026-10-06: a.** Ruling 9 follows it.
 3. Custody of the release key (production authority).
    a) The owner holds the offline trust root and the release key, and signs each release locally
    with `oteryn-release-sign`. b) The release key is a secret in a protected GitHub environment
    with owner approval. This conflicts with SEC-CLIENT-01's offline key. **Recommend a.**
+   **Owner ruling 2026-10-06: a.** Ruling 9 follows it.
 
 ### Rejected options
 
@@ -942,7 +1065,9 @@ Classes: PROVEN (read in the file), DERIVED (follows from PROVEN facts), UNKNOWN
 - **A maximum client version.** Newer clients are compatible under the additive rules.
 - **The server serving assets** to the native client: a new wire domain for no alpha gain.
 - **TUF (`tough`).** One channel and one key holder do not need its roles; the SEC-CLIENT-01 key
-  hierarchy already gives a root, revocation and a floor.
+  hierarchy already gives a root and revocation, and ruling 9 adds the client rollback floor.
+- **Trusting the newest presented trust record without a persisted floor.** An older signed
+  record re-presented after a revocation would trust the revoked key again (ruling 9).
 - **The `self_update` crate.** It replaces the running executable, which ALPHA-CLIENT-01 §17.1
   forbids (DERIVED from the crate's stated purpose; not verified here).
 - **A Platform Gateway build gate.** A second authority over the same rule.
@@ -954,6 +1079,8 @@ Classes: PROVEN (read in the file), DERIVED (follows from PROVEN facts), UNKNOWN
 - Package size about 140 MiB (CANDIDATE: 138 MiB of assets plus the binary); measure the first
   package. Updater package bound 512 MiB (CANDIDATE), fixed after that measurement.
 - Feed check timeout 5 s (CANDIDATE); measure against GitHub Releases latency.
+- Whether Velopack's uninstall or repair touches `%LOCALAPPDATA%\Oteryn\state\`. The
+  CLIENT-UPDATE-4 spike checks it; if it does, the trust floor moves to a path it never touches.
 - How often the floor must rise depends on how often compiled-in data (F16) and assets change.
   Unmeasured.
 - Wire numbers of the FND-04B build rows: open until FND-04B's wire registration.
@@ -967,33 +1094,38 @@ Classes: PROVEN (read in the file), DERIVED (follows from PROVEN facts), UNKNOWN
 - Concurrent transitions: the migrator's advisory lock, the fence CAS and the epoch row lock
   (§3); the client build floor is fixed per ownership generation (§4 ruling 12); metrics and
   log writers never change an outcome (§1 ruling 8).
-- Restart and resume: per-incarnation log files (§1 ruling 6); timer reload by remaining
-  duration or database-time deadline (§2 ruling 6); re-entrant deploy and restore steps
-  (§3 rulings 3 and 9); a staged client update activates only at restart (§4).
+- Restart and resume: rotating log segments and a lifecycle file per incarnation (§1 ruling 6);
+  timer reload by remaining duration or database-time deadline (§2 ruling 6); re-entrant deploy
+  and restore steps (§3 rulings 3 and 9); a staged client update activates only at restart, and
+  the client trust floor never moves down (§4 ruling 9).
 - Typed cross-record references: `parent`, `attempt` and `traceparent` are diagnostic only
   (§1); content references are `{family, key, revision}` (§3 ruling 5); the release manifest
   names build id, package digest and asset manifest digest (§4).
 - Older client and peer gating: no wire change except 1117 (§4 rulings 3–4); a restore forces
   a fresh login (§3 ruling 9 step 11).
-- Multi-component commit and recovery: fences live outside the snapshot (§3 ruling 8); Platform
-  re-requests by operation identity (§3 ruling 10); a release publishes package, then signed
-  manifest, then feed entry, then raises the floor (§4 ruling 12).
+- Multi-component commit and recovery: fences live outside the snapshot (§3 ruling 8), on a
+  NAS volume only for the testing phase with a re-decision before external players; Platform
+  re-requests by operation identity (§3 ruling 10); a release publishes the trust log and
+  checkpoint, then package, then signed manifest, then feed entry, then raises the floor
+  (§4 ruling 12).
 - No new authority: every identifier added here is diagnostic, and the only new refusal is the
   build floor.
 
 ### 5.2 Owner items
 
-The recommended option is the working assumption until the owner answers.
+The owner ruled on every item on 2026-10-06. Every item is ruled **a**, except §3 Q2, which is
+ruled **b** with an owner refinement: the fence directory on the NAS is used only for the testing
+phase, and the choice is decided again before external players are admitted (§3 ruling 8, U7).
 
-| Item | Question | Options | Recommendation |
-|---|---|---|---|
-| §1 Q1 | Where metrics are scraped and alerts sent | a NAS Prometheus/Grafana, email; b no scraper; c hosted (spend) | a |
-| §1 Q2 | Alpha log and metric retention | a 14/30 days; b 30/90 days; c delete per phase | a |
-| §2 Q1 | Measured capacity below D128's 500 | a accept and log the gap; b block the claim | a |
-| §2 Q2 | Making the bench job a required check | a report first, then required; b required now; c nightly | a |
-| §3 Q1 | Recovery targets | a RPO 5 min, RTO 4 h, 14 days, monthly drill; b 1 min/1 h/30 days/weekly; c nightly dump | a |
-| §3 Q2 | Where the restore fence directory survives host loss | a separate volume plus write-once off-host copy; b host only; c CAS service | a |
-| §3 Q3 | Alpha deploy model | a stop-the-world only with a migration; b always; c N/N-1 gate now | a |
-| §4 Q1 | Client hosting | a GitHub Releases; b Platform page; c CDN (spend) | a |
-| §4 Q2 | Windows code signing | a none for closed alpha; b buy now (spend) | a |
-| §4 Q3 | Release key custody | a owner holds offline keys, signs locally; b CI secret | a |
+| Item | Question | Options | Recommendation | Owner ruling 2026-10-06 |
+|---|---|---|---|---|
+| §1 Q1 | Where metrics are scraped and alerts sent | a NAS Prometheus/Grafana, email; b no scraper; c hosted (spend) | a | a |
+| §1 Q2 | Alpha log and metric retention | a 14/30 days; b 30/90 days; c delete per phase | a | a |
+| §2 Q1 | Measured capacity below D128's 500 | a accept and log the gap; b block the claim | a | a |
+| §2 Q2 | Making the bench job a required check | a report first, then required; b required now; c nightly | a | a |
+| §3 Q1 | Recovery targets | a RPO 5 min, RTO 4 h, 14 days, monthly drill; b 1 min/1 h/30 days/weekly; c nightly dump | a | a |
+| §3 Q2 | Where the restore fence directory survives host loss | a separate volume plus write-once off-host copy; b host only; c CAS service | a | b, testing phase only; decided again before external players |
+| §3 Q3 | Alpha deploy model | a stop-the-world only with a migration; b always; c N/N-1 gate now | a | a |
+| §4 Q1 | Client hosting | a GitHub Releases; b Platform page; c CDN (spend) | a | a |
+| §4 Q2 | Windows code signing | a none for closed alpha; b buy now (spend) | a | a |
+| §4 Q3 | Release key custody | a owner holds offline keys, signs locally; b CI secret | a | a |
