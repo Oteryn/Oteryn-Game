@@ -583,9 +583,9 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
      fail-closed branch, an explicit reconciliation of the root. It applies to a root that is
      discoverable through a durable child record keyed by its CommandRef (a quest receipt, a
      claim's MINT outcome or pending reservation, or a claim's obligation row). A root with no
-     such record left no durable child effect: nothing reconciles or records it, and none of its
-     children runs, so it ends as if every child were `REJECTED`. Recovery never needs to find
-     it, and the ruling still adds no root durability. For a discoverable root:
+     such record left no durable quest or claim effect: nothing reconciles or records it, and
+     none of its children runs again. Recovery never needs to find it, and the ruling still adds
+     no root durability. For a discoverable root:
      - a child with a durable record keyed by the root CommandRef is settled by that record and
        never rejected:
        - a quest child by its receipt (character, root CommandRef, transition_key), read with
@@ -598,13 +598,22 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
        child: it is requested again at admission and commits once under its `ClaimObligation`
        cause (§16.2.2 keeps its transition key distinct); the reconciliation never rejects or
        retires it;
-     - every child with no durable record is `REJECTED` and none runs; nothing is
-       re-enumerated, added or renumbered;
+     - every other child is `REJECTED` and none runs; nothing is re-enumerated, added or
+       renumbered;
+     - a relocation child that committed before the loss has no cause-keyed record: its
+       position is a Character runtime-state projection (D37 "Timeout, cancellation and
+       recovery"; CHAR-POSITION-0), which the periodic or final position write may already have
+       persisted. Recovery never infers, re-runs or reverts it; the Character resumes at its
+       last persisted position, as after any crash, with or without the relocation. This holds
+       for a discoverable root and for one that is not. Its `REJECTED` marks only that the
+       child never runs again, not that nothing moved;
      - the reconciliation is recorded once per discoverable root (character, root CommandRef,
        the committed transition keys and claim) as an operational diagnostic.
    - What a plan loss leaves behind is bounded: the overlay children's effects are channel
      overlay state, cleared at a channel restart (WORLD-INTERACTION-0 §9.1); a relocation or
-     `after_quest` child that did not run moved nothing; a quest child that committed stays
+     `after_quest` child that did not run moved nothing; a relocation that ran is kept only as
+     far as CHAR-POSITION-0 persisted the position (up to 5 minutes of movement is lost by any
+     crash); a quest child that committed stays
      committed; a committed claim keeps its items, and its obligation commits at a later
      admission. A fresh `USE` or step is a new CommandRef and a new root (successor §9.3). This
      partial outcome after process loss is a declared v1 behaviour, and the ruling adds no root
@@ -665,9 +674,10 @@ encoding and a new receipt key migration. It is decided with the first accepted 
    - Trigger plans are not durable; recovery follows §16.2.5.
    - A process loss between the root and a quest child loses the plan. A root discoverable
      through a durable child record is reconciled explicitly; a root with none left no durable
-     child effect. Children with a durable record (a quest receipt, a claim's MINT) keep it, a
-     committed claim's obligation is requested again at admission, and every other child is
-     `REJECTED`.
+     quest or claim effect. Children with a durable record (a quest receipt, a claim's MINT) keep
+     it, a committed claim's obligation is requested again at admission, and every other child is
+     `REJECTED` and never runs again. A relocation that ran is not re-run or reverted; the
+     Character resumes at its last persisted position (CHAR-POSITION-0).
 4. **Typed references:** the root CommandRef (GameSessionId, CommandId), `transition_key`, the
    binding's definition and `placement_key`, and the content revision.
 5. **Wire:** none new. A root refused by the plan check uses the existing `USE_INTENT` and step
