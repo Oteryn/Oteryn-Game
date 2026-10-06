@@ -357,7 +357,7 @@ use i53696 at exact blue-lava source
   -> blue_lava_obtained
 ```
 
-Night-only use remains `SOURCE_CONFLICT` and must not be promoted as Reference fact.
+Night-time use is selected as a `STRUCTURED_REFERENCE_CANDIDATE`: pinned post-release Fandom explicitly requires night; BR/guides omit time-of-day but do not demonstrate daytime success. Keep the predicate explicit and source-qualified; controlled Global day-vs-night verification remains absent.
 
 ### Visible s12 — Niral consecration
 
@@ -492,6 +492,6 @@ In both cases the current serial semantics `s2 -> s3 -> s4` must not be treated 
 4. Laboratory Note placement identity is unresolved;
 5. ritual appearance `54637` lacks quest semantics;
 6. Magnolia special Encounter is absent;
-7. Blue Lava night predicate remains a source conflict;
+7. Blue Lava night predicate is source-qualified but still lacks controlled Global day-vs-night verification;
 8. Forbidden Gardens needs Achievement-owned predicate composition;
 9. final real-character start -> reward -> relog/restart E2E remains unqualified.
