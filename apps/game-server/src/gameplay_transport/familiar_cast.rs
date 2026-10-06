@@ -1056,7 +1056,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut window = permit.open_commit_window(prepared, UnresolvedSpellCommit::park_familiar);
         let commit_result = if allow_new_mutation {
             self.root
-                .commit_familiar_spell(
+                .commit_familiar_spell_in_window(
                     &mut window,
                     self.character,
                     self.holder,
@@ -1068,7 +1068,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
         } else {
             self.root
-                .reconcile_familiar_spell(
+                .reconcile_familiar_spell_in_window(
                     &mut window,
                     self.character,
                     self.holder,
