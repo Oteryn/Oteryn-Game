@@ -4251,7 +4251,7 @@
     },
     {
       "wiki_title": "Make Believe Quest",
-      "summary": "Infiltrate the moon cult, find Doctor Marrow and stop the ascension of Phosphorus.",
+      "summary": "Infiltrate the moon cult, free Doctor Marrow's route and stop Phosphorus through the post-release Thalassara boss sequence.",
       "requirements": {
         "min_level": 300,
         "premium": true,
@@ -4275,9 +4275,11 @@
         },
         {
           "kind": "use",
-          "objective": "Disguise as a cargo crate and cross the storehouse to the Thalassara ship portal.",
+          "objective": "Use the cargo-crate disguise to cross the guarded Venore storehouse, exploiting noise distractions and restarting the infiltration if a guard catches you.",
           "targets": [
             "cargo crate",
+            "storehouse guards",
+            "noise distractions",
             "Venore supply storehouse portal"
           ],
           "count": 1,
@@ -4355,14 +4357,13 @@
         },
         {
           "kind": "use",
-          "objective": "Read the gong pattern and activate its three devices in the authored order red, blue, yellow.",
+          "objective": "Strike the gong, observe the five-colour light sequence and activate the matching colour mechanisms in exactly the displayed order.",
           "targets": [
             "Gong",
-            "red device",
-            "blue device",
-            "yellow device"
+            "five light beams",
+            "matching colour mechanisms"
           ],
-          "count": 3,
+          "count": 5,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
           "key": "s8",
           "next": [
@@ -4371,8 +4372,9 @@
         },
         {
           "kind": "collect",
-          "objective": "Gather twenty Moonsilver Crystals from the Moonstone Miners.",
+          "objective": "Gather twenty short-lived Moonsilver Crystals from Moonstone Miners for each Mimar Haffar shield cycle.",
           "targets": [
+            "Moonstone Miner",
             "Moonsilver Crystals"
           ],
           "count": 20,
@@ -4384,10 +4386,11 @@
         },
         {
           "kind": "use",
-          "objective": "Charge both Energy Cannons with ten crystals each to break Mimar's barrier.",
+          "objective": "Load ten Moonsilver Crystals into each Energy Cannon to reach one hundred charges per cannon and open Mimar Haffar's damage window.",
           "targets": [
             "western Energy Cannon",
-            "eastern Energy Cannon"
+            "eastern Energy Cannon",
+            "Moonsilver Crystals"
           ],
           "count": 20,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -4398,9 +4401,11 @@
         },
         {
           "kind": "kill",
-          "objective": "Defeat Mimar Haffar after the cannons break his barrier.",
+          "objective": "Defeat Mimar Haffar within the encounter limit, controlling Trapped Souls and repeating the crystal-and-cannon shield cycle whenever his barrier returns.",
           "targets": [
-            "Mimar Haffar"
+            "Mimar Haffar",
+            "Trapped Soul",
+            "Big Moon Essence Tank"
           ],
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -4424,9 +4429,11 @@
         },
         {
           "kind": "kill",
-          "objective": "Defeat Maior Domus in the Radiant Skyhold.",
+          "objective": "Defeat Maior Domus by building twenty Knight-or-Monk charges and thirty other-vocation charges, then using all three energized-platform damage windows and repeating the cycle as required.",
           "targets": [
-            "Maior Domus"
+            "Maior Domus",
+            "vocation charge carriers",
+            "energized platforms"
           ],
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -4437,12 +4444,13 @@
         },
         {
           "kind": "use",
-          "objective": "Move all six Petrified Fanatics onto their lit ornamented floors.",
+          "objective": "Reduce and position all eight Elite Fanatics so they are simultaneously Petrified on their richly ornamented floors before any recovers.",
           "targets": [
+            "Elite Fanatic",
             "Petrified Fanatic",
-            "Medium Richly Ornamented Floor (Lit)"
+            "Richly Ornamented Floor"
           ],
-          "count": 6,
+          "count": 8,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
           "key": "s14",
           "next": [
@@ -4451,8 +4459,13 @@
         },
         {
           "kind": "kill",
-          "objective": "Defeat the first manifestation of Phosphorus.",
+          "objective": "Complete Phosphorus' first phase by defeating the five vocation Rivals in Knight, Paladin, Sorcerer, Druid and Monk order on their matching pedestals, then use each resulting vulnerability window until he retreats.",
           "targets": [
+            "Knight Rival",
+            "Paladin Rival",
+            "Sorcerer Rival",
+            "Druid Rival",
+            "Monk Rival",
             "Phosphorus"
           ],
           "count": 1,
@@ -4464,9 +4477,10 @@
         },
         {
           "kind": "kill",
-          "objective": "Overcome Maior Domus' final form before confronting Mimar's final form.",
+          "objective": "Defeat Maior Domus in the guardian rematch while avoiding the persistent Phosphorus hazards and rooting clouds.",
           "targets": [
-            "Maior Domus (Final)"
+            "Maior Domus",
+            "rooting clouds"
           ],
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -4477,9 +4491,10 @@
         },
         {
           "kind": "kill",
-          "objective": "Defeat Mimar Haffar's final form.",
+          "objective": "Proceed through the opened portal and defeat Mimar Haffar in the guardian rematch while the persistent arena hazards remain active.",
           "targets": [
-            "Mimar Haffar (Final)"
+            "Mimar Haffar",
+            "rooting clouds"
           ],
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -4490,9 +4505,12 @@
         },
         {
           "kind": "kill",
-          "objective": "Defeat Phosphorus' final form to open the exit route.",
+          "objective": "Defeat the final vulnerable Phosphorus while clearing the permanent curse with Shimmering Fields and managing Sanctified Draining Rifts and Disruptive Energy.",
           "targets": [
-            "Phosphorus (Final)"
+            "Phosphorus (Final)",
+            "Shimmering Field",
+            "Sanctified Draining Rift",
+            "Disruptive Energy"
           ],
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -4503,10 +4521,11 @@
         },
         {
           "kind": "talk",
-          "objective": "Return to Wayland Smythers through the newly opened southwest portal.",
+          "objective": "Return to Wayland Smythers and unlock the Fate Forge together with the permanent shortcuts to Mimar Haffar, Maior Domus and Phosphorus.",
           "targets": [
             "Wayland Smythers",
-            "southwest reward portal"
+            "Fate Forge",
+            "Thalassara boss shortcut portals"
           ],
           "count": 1,
           "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -4546,7 +4565,10 @@
         "basis": "CHOSEN_OTERYN_APPROXIMATION"
       },
       "adaptations": [
-        "The supply-ship stealth is a deterministic crate-and-route objective without noise timers. The gong uses the authored red-blue-yellow sequence instead of a random displayed sequence. Twenty crystals perform one barrier break and Mimar cannot re-shield; crystals do not expire. Vocation-specific plate charges, repeated immunity cycles, difficulty scaling, random curses and optional titles are simplified to named boss victories and the six-floor puzzle. The two final guardian bosses become sequential fights in the chosen order. Reward access does not automatically grant all Moonsilver equipment, a Cloud In a Bottle, a mount or the Illuminated outfit."
+        "The old three-device red-blue-yellow gong approximation is removed. The chosen journey now retains the post-release five-colour observed sequence without inventing a fixed colour order.",
+        "The old six-floor guardian approximation is removed. The chosen journey now requires all eight Elite Fanatics to be simultaneously Petrified on their designated floors.",
+        "Mimar Haffar, Maior Domus and Phosphorus now retain their repeated shield or vulnerability cycles and key encounter mechanics in the authored journey. These repeats remain encounter-owned behavior rather than a cyclic quest-state graph, and scalable difficulty remains an encounter-system concern instead of an invented Quest progress field.",
+        "The video-observed supply-store stealth behavior is retained as reference detail, but exact guard paths, tile positions and timing constants remain Native binding work. Quest completion unlocks access; it does not directly grant Moonsilver boss loot, Cloud in a Bottle or the Illuminated Warrior outfit."
       ],
       "source_refs": [
         {
@@ -4575,8 +4597,10 @@
         }
       ],
       "source_notes": [
-        "The full spoiler places Doctor Marrow after Mimar and before Maior, then six Fanatics, Phosphorus and final forms. It specifies ten crystals per cannon, six Fanatics and the southwest reward portal. Crystal summer supplies registered boss names and Wayland dialogue as separate comparison evidence at 00ce02; canonical donors remain on their original pins.",
-        "All behavior and reward delivery are authored Oteryn choices; named entities are unresolved references, not canonical IDs. Native bindings, locations and runtime execution remain to be implemented."
+        "The pinned historical spoiler recorded the pre-release six-Fanatic state. A post-release 2026-10-05 TibiaWiki cross-check for Make Believe reports five gong colours, eight simultaneous Elite Fanatics, the ordered vocation-Rival phase, sequential Maior Domus then Mimar Haffar rematches, permanent Phosphorus hazards, Fate Forge access and three boss shortcuts. The chosen Oteryn journey follows the post-release state while preserving the original pinned source_refs unchanged.",
+        "Video reference https://www.youtube.com/watch?v=LJ5k5TZGiCQ, title 'Make Believe Quest [Summer Update 2026]', uploaded 2026-07-12 before production release. It supplies test-server observations for the Venore stealth route and encounter flow; where it conflicts with post-release evidence, the post-release state wins.",
+        "Crystal summer supplies registered boss names and Wayland dialogue as separate comparison evidence; canonical donors remain on their original pins.",
+        "All behavior and reward delivery remain authored Oteryn choices. Named entities are reference identities until canonical bindings exist; Native placement, triggers, encounter wiring, persistence and gameplay execution remain WAITING_IMPLEMENTATION."
       ]
     },
     {
