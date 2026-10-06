@@ -39,7 +39,7 @@
 | KEY-1 | hard, persistence review | the key capability on ItemInstance (`key_number`), its MINT through a RewardClaim, a key on a key door (§4.4) | DOOR-1; CHEST-1 (merged) |
 | LEVER-1 | hard | levers, switches and pressure plates as `USE`, `ON_ENTER` and `ON_LEAVE` triggers with the closed child set (§5) | QUEST-TRIGGER-1; WORLDINT-USE-1 |
 | FLOOR-1 | impl, movement review | walk-on floor changes, ladders and grates, rope, shovel, pick and machete targets, climbing, teleports, the landing rule (§6) | MAP-LOAD-1; WORLDINT-USE-1 |
-| PUSH-1 | impl, movement and combat review | pushing creatures and players (§7.1) | WORLDINT-WIRE-1; the VSL-MOVE-01 movement owner; ATTACK-1 |
+| PUSH-1 | impl, movement and combat review | pushing creatures and players (§7.1); a push root requests no quest child (QUEST-GATE-0 §16.3) | WORLDINT-WIRE-1; the VSL-MOVE-01 movement owner; ATTACK-1 |
 | GROUND-MOVE-1 | hard, persistence review | Ground to Ground moves of durable items and overlay moves of movable base items (§7.2) | ITEM-MOVE-2b; BAGS-GROUND-1 for trees |
 | WORLDINT-ADMIT-1 | hard, protocol and security review with the FND-04 owner | the FND-04 admission rule that `RUNEUSE0-C7` asks for (§8.6) | FIELD-WIRE-1 |
 | FIELD-2 | hard (combat), combat review | fields that affect players (map-authored, player-made by world type, creature-made), Magic Wall and Wild Growth in movement, pathing and the projectile query, their destruction (§8) | FIELD-1; WORLDINT-ADMIT-1; PVP-RT-1 |
@@ -422,6 +422,10 @@ quest doors, quest format §3.1) stays sealed.
   open hole or a teleport on `to` applies (pushing down a hole is Tibia), and its `ON_ENTER` and
   `ON_LEAVE` triggers fire with the push command as root (QUEST-GATE-0 §4). Gated tiles push back
   an unqualified target.
+  **Amendment (2026-10-06; QUEST-GATE-0 §16.3).** In v1 a push root requests no quest transition
+  child and its `after_quest` children do not run; its other children run as declared. This is a
+  declared v1 difference until the push command's own decision admits a cross-character quest
+  cause.
 - A push by a character in combat delays its next auto-attack by one attack interval (the manual;
   ATTACK-1 applies it).
 - Monsters that push creatures or items (content flags) stay with GAME-AI-01.

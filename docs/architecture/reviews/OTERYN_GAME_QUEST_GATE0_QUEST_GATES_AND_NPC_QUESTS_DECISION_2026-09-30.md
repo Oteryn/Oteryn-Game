@@ -7,8 +7,10 @@
   Tibia text 1:1 (§7).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Amended (2026-10-03): §15, reconciled with `main` for acceptance (control plane D352).
-- Amended (2026-10-06): §16, the durable cause of a trigger's quest child and push roots
-  (architect ruling on #1622 6021612356); §4 "Roots" and "Quest child" amended in place.
+- Amended (2026-10-06): §16, the durable cause of a trigger's quest child, plan loss and push
+  roots (architect ruling on #1622 6021612356); §4 "Accepted successor sections", "Roots" and
+  "Quest child" amended in place; WORLD-INTERACTION-0 §7.1 and its PUSH-1 brief row amended in
+  place (§16.3).
 - Answers: the callers QUEST-STATE-0 names (NPC-QUEST-0 dialogue, QUEST-GATE-0 doors) and its
   deferred quest log wire (A8); NPC-0 §11 (quest-conditioned dialogue, answer 4b) and §3.4
   (quest-gated routes); the owner's direction of 2026-09-30: build now, full Tibia Global parity
@@ -172,9 +174,11 @@ declared initial value (QUEST-STATE-0 §3), and the predicate is then evaluated 
   presentation children only, this decision accepts successor §4.1, §4.3, §5.1, §5.3-§5.7,
   §6.1 (canonical order), §6.2 (partial-progress recovery), §7 (child lifecycle and exactly-once
   rule), §17, §18 and §19.1 (D39's chest set plus §6.1, §6.2, §7 and §18). Each child of a
-  firing, `after_quest` children included, is part of the root's plan: after a crash, recovery
-  reproduces the same child set and order and runs each `UNSTARTED` child once if its fences
-  still authorize it (§7), else it is `REJECTED`. Nested cascades and every other child kind stay
+  firing, `after_quest` children included, is part of the root's plan: while the plan is
+  retained, recovery reproduces the same child set and order and runs each `UNSTARTED` child once
+  if its fences still authorize it (§7), else it is `REJECTED`. In v1 the plan is retained in
+  the server process only; when it is lost, recovery takes successor §6.2's fail-closed branch
+  (explicit reconciliation, §16.2.5). Nested cascades and every other child kind stay
   `PROPOSED / NONCANONICAL`.
 - **Roots.** `USE`: the `USE_INTENT` CommandRef. `ON_ENTER` and `ON_LEAVE`: the occurrence that
   moved the character, which is its own move command (in v1 `WORLD_ACTOR_STEP_INTENT`, §16.2)
@@ -572,10 +576,23 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
      In a replaced GameSession, a pending child with no receipt is `REJECTED`.
    - A child that is `UNSTARTED` in a retained plan runs once if its fences authorize it (§4),
      else it is `REJECTED`.
-   - A child with no retained plan and no receipt fails closed as `REJECTED` (successor §6.2).
-     This covers a crash between the root's commit and the child's commit. A fresh `USE` or step
-     is a new CommandRef and a new root (successor §9.3). This is a declared v1 behaviour, and the
-     ruling adds no root durability.
+   - **Plan loss.** The plan lives in the server process (§16.4: durable plans are not decided).
+     If the process is lost after the root commits, the plan cannot be reconstructed safely:
+     its conditions read quest state that its own committed children may have changed, so
+     re-evaluating them is the re-enumeration successor §6.2 forbids. Recovery takes §6.2's
+     fail-closed branch, an explicit reconciliation of the root:
+     - the root's committed quest children are found by their receipts (character, root
+       CommandRef), with `reconcile_character_quest_transition`; they stay `COMMITTED`;
+     - every other child of the root is `REJECTED` and none runs; nothing is re-enumerated,
+       added or renumbered;
+     - the reconciliation is recorded once per root (character, root CommandRef, the committed
+       transition keys) as an operational diagnostic.
+   - What a plan loss leaves behind is bounded: the overlay children's effects are channel
+     overlay state, cleared at a channel restart (WORLD-INTERACTION-0 §9.1); a relocation or
+     `after_quest` child that did not run moved nothing; a quest child that committed stays
+     committed. A fresh `USE` or step is a new CommandRef and a new root (successor §9.3). This
+     partial outcome after process loss is a declared v1 behaviour, and the ruling adds no root
+     durability.
 
 ### 16.3 Push roots
 
@@ -583,6 +600,9 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
   a cause from another GameSession.
 - In v1, therefore, a push root requests no quest child, and its children declared `after_quest`
   do not run. Its other relocation, overlay and presentation children run as declared.
+- WORLD-INTERACTION-0 §7.1 (the pushed step's `ON_ENTER` and `ON_LEAVE` fire with the push command
+  as root) and its PUSH-1 brief row are amended in place to carry this exception, so PUSH-1 and
+  QUEST-TRIGGER-1 build to one rule.
 - No push command is registered today, so this case is latent.
 - This is a declared v1 difference: in Tibia, a pushed player's step-in fires.
 - The push command's own decision may admit a cross-character quest cause.
@@ -620,13 +640,15 @@ encoding and a new receipt key migration. It is decided with the first accepted 
 
 ### 16.7 Before-freeze checklist
 
-1. **Amendments:** §4 "Roots" and "Quest child", the header and the brief row, in place;
-   QUEST-STATE-0 §4 "Request" carries a pointer.
+1. **Amendments:** §4 "Accepted successor sections", "Roots" and "Quest child", the header and
+   the brief row, in place; QUEST-STATE-0 §4 "Request" carries a pointer; WORLD-INTERACTION-0
+   §7.1 and its PUSH-1 brief row, in place.
 2. **Serialization:** unchanged. Quest children run in canonical order in one sequencer slot.
 3. **Restart:**
    - Receipts and obligations are durable.
    - Trigger plans are not durable; recovery follows §16.2.5.
-   - A crash between the root and a quest child loses that child, which fails closed.
+   - A process loss between the root and a quest child loses the plan: the root is reconciled
+     explicitly, committed children stay, every other child is `REJECTED`.
 4. **Typed references:** the root CommandRef (GameSessionId, CommandId), `transition_key`, the
    binding's definition and `placement_key`, and the content revision.
 5. **Wire:** none new. A root refused by the plan check uses the existing `USE_INTENT` and step
