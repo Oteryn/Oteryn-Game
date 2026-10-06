@@ -129,10 +129,18 @@
     },
     {
       "role": "bone_fiddle",
-      "identity_status": "EXISTING_ITEM_REQUIRED",
-      "exact_inventory_identity_binding": "QUALIFY_WITH_ITEM_OWNER_BEFORE_RUNTIME",
+      "identity_status": "EXACT_EXISTING_ITEM",
+      "exact_inventory_identity_binding": "RESOLVED",
       "phase_1_interaction": "REFERENCE_CURRENT",
-      "phase_2_interaction": "NOT_REQUIRED_BY_REFERENCE"
+      "phase_2_interaction": "NOT_REQUIRED_BY_REFERENCE",
+      "canonical_key": "oteryn:item.tibia.i28493",
+      "identity_evidence": {
+        "oteryn_evidence": "docs/agents/evidence/OTV2-20261001-quest-item-category-continuation.md",
+        "fandom_page_id": 85463,
+        "fandom_revision": 1148282,
+        "category": "equipment_offhand",
+        "slot": "Extra Slot"
+      }
     }
   ],
   "phases": [
