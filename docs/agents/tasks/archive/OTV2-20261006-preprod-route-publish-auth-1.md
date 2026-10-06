@@ -66,6 +66,8 @@ its own independent review under the item 1 grant.
 - [x] Findings F1–F6 carry evidence classes (decision §1).
 - [x] The trust-key command applies the same disposable-store guard as `isolatedConnection()`
       before any write, with a refusal test for a non-disposable store (decision §2).
+- [x] The trust command fences the high-water directory to the run's own per-run directory, and
+      the shared-guard paths are in the write grant (review round 2).
 - [x] The mandatory decision test is answered (decision §6).
 - [x] Owner answers 1a and 2a are recorded; the Synology shape of Option B is noted as not
       decided (decision §3, §7).
@@ -84,6 +86,12 @@ guard relaxation. No decision on Option B or its Synology shape.
     non-disposable `preproduction` store;
   - mandatory decision test missing: added as decision §6;
   - findings not classified: F1–F6 now PROVEN/DERIVED/UNKNOWN.
+- Review round 2 (Codex, review 5425633904 on 06ff7a77), both P1 accepted and fixed:
+  - the shared guard was outside the write grant: the owned paths now list the new
+    `DisposableNativeStore.php` and `NativeTopologyRegistry.php` (call-site change only);
+  - the high-water directory was unfenced: the trust command now requires it to be a canonical,
+    non-symlink directory directly beneath the run's own per-run directory before any write, with
+    refusal tests.
 - Also: D824 answers recorded; the control plane's Synology proposal is noted as the likely
   Option B shape with its guard tension, not as a decision.
 
@@ -113,7 +121,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 
 - exact head: the frozen head
 - method/reviewer: Sol Supervising Architect
-- material findings: none open after round 1
+- material findings: none open after round 2
 - verdict: ready for independent review
 
 ## Independent review
@@ -127,7 +135,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## PR and closeout
 
 - changed-file review: two owned paths
-- unresolved review threads: none after round 1 replies
+- unresolved review threads: none after round 2 replies
 - related/superseded PRs: none
 - protected auto-merge: control plane
 - merge commit/result: in PR #1871
@@ -136,7 +144,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## Context checkpoint
 
 ```yaml
-last_progress: review round 1 fixed
+last_progress: review round 2 fixed
 status: completed
 branch: cand/preprod-route-publish-auth-1
 pr: 1871
