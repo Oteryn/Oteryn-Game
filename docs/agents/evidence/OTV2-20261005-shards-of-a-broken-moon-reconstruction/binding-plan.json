@@ -774,12 +774,21 @@
       "kind": "INSPECT_PLACEMENT_ITEM_GRANT",
       "result_item_semantic": "Lit Torch",
       "outcome": "prison_torch_obtained",
-      "evidence": "FACT_VIDEO_AND_REFERENCE_POSITION_UNKNOWN",
+      "evidence": "FACT_VIDEO_AND_DONOR_IDENTITY_POSITION_UNKNOWN",
       "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
-        "timestamp_window": "00:22:22-00:22:45",
-        "observation": "Prison-chamber inspection phase; reference identifies skeleton as Lit Torch source."
+        "timestamp_approx": "00:22:47.5",
+        "observation": "Client reports: You have found a torch."
+      },
+      "result_item_donor": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "donor_item_id": 54610,
+        "donor_key": "donor:crystalserver@00ce02a5:item/54610",
+        "name": "lit torch",
+        "family_profile": "light_source",
+        "canonical_oteryn_identity": "UNRESOLVED_OWNER_ADMISSION"
       }
     },
     {
@@ -788,12 +797,12 @@
       "kind": "INSPECT_PLACEMENT_ITEM_GRANT",
       "result_item": "oteryn:item.tibia.i39578",
       "outcome": "prison_chisel_obtained",
-      "evidence": "FACT_VIDEO_AND_REFERENCE_POSITION_UNKNOWN",
+      "evidence": "FACT_VIDEO_VERIFIED_POSITION_UNKNOWN",
       "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
-        "timestamp_window": "00:22:22-00:22:45",
-        "observation": "Prison-chamber inspection phase; reference identifies icicles as Icicle Chisel source."
+        "timestamp_approx": "00:22:40",
+        "observation": "Client reports: With all your strength, you manage to break off one of the massive icicles."
       }
     },
     {
@@ -807,8 +816,8 @@
       "owner": "World Interaction + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
-        "timestamp_approx": "00:22:48",
-        "observation": "Clear flame/fire effect appears on the north wall."
+        "timestamp_approx": "00:22:48.5",
+        "observation": "After an earlier failed chisel attempt, use of the torch produces a clear fire effect on the north-wall crack."
       }
     },
     {
@@ -825,8 +834,14 @@
       "owner": "World Interaction + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
-        "timestamp_window": "00:22:49-00:22:51",
-        "observation": "Second tool interaction follows the torch action on the prepared north wall."
+        "timestamp_approx": "00:22:50.5",
+        "observation": "After the torch action, the second chisel use produces an ice/crumbling effect and the route opens."
+      },
+      "failure_path": {
+        "when": "prison_wall_prepared is false",
+        "result": "REJECT_WITHOUT_STATE_CHANGE",
+        "video_timestamp_approx": "00:22:48.0",
+        "observed_message": "You try to pry open the crack in the wall with the icicle. But it doesn't work. You'll have to find a way to widen the crack first using some other method."
       }
     },
     {
@@ -841,8 +856,8 @@
       "owner": "World Interaction + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
-        "timestamp_approx": "00:22:52",
-        "observation": "Character crosses the newly opened passage and follows the narrow corridor."
+        "timestamp_window": "00:22:51-00:22:52",
+        "observation": "Character crosses the newly opened north-wall passage."
       }
     },
     {
@@ -932,7 +947,7 @@
     "Ritual appearance 54637 lacks typed quest semantics",
     "Magnolia special Encounter absent",
     "Blue Lava night-only predicate source conflict",
-    "Escape order video-verified; exact skeleton/icicle/north-wall/Rope Spot placement keys and Lit Torch source identity unresolved",
+    "Escape order and donor Lit Torch 54610 video/source-verified; exact skeleton/icicle/north-wall/Rope Spot placement keys plus canonical Lit Torch admission unresolved",
     "Forbidden Gardens Achievement predicate composition missing",
     "No full real-character start→reward→relog/restart E2E qualification"
   ]
