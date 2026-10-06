@@ -242,6 +242,9 @@ pub enum ProjectV2Declaration {
         /// Ambient lines, in authored order, with the source cadence.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         voices: Option<ProjectV2Voices>,
+        /// Reply links no source keyword handler answers (D17), one entry per unanswered link.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        source_incomplete: Vec<ProjectV2DialogueSourceIncomplete>,
         fields: Vec<ProjectV2CandidateField>,
     },
     Service {
@@ -1195,6 +1198,9 @@ pub struct ProjectV2DialogueKeyword {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub fallback: bool,
     pub reply: Vec<String>,
+    /// Lowercase `{link}` labels the reply text points to, sorted and unique.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub links: Vec<String>,
     /// Answers only while the player is in conversation with the NPC.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub only_focus: bool,
@@ -1213,6 +1219,22 @@ pub struct ProjectV2DialogueKeyword {
     pub move_up: Option<u8>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<ProjectV2DialogueKeyword>,
+}
+
+/// A reply link that no source keyword handler answers: the dialogue chain is source-incomplete.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2DialogueSourceIncomplete {
+    /// The emitted node's key path, keys joined by `/`.
+    pub node: String,
+    pub link: String,
+    pub reason: ProjectV2DialogueIncompleteReason,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ProjectV2DialogueIncompleteReason {
+    #[serde(rename = "NO_HANDLER")]
+    NoHandler,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -1963,6 +1985,27 @@ fn validate_v2_dialogue_keywords(
             ));
         }
         validate_v2_dialogue_message("v2 Dialogue keyword reply", &keyword.reply, limits)?;
+        limits.check(
+            "v2 Dialogue keyword links",
+            keyword.links.len(),
+            limits.max_reference_records,
+        )?;
+        if keyword.links.windows(2).any(|pair| pair[0] >= pair[1]) {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword links are not sorted and unique",
+            ));
+        }
+        if keyword.links.iter().any(|link| {
+            link.is_empty()
+                || link.len() > 64
+                || link.trim() != link.as_str()
+                || link.chars().any(|character| character.is_control())
+                || link.to_lowercase() != *link
+        }) {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword link is not a trimmed lowercase label",
+            ));
+        }
         if keyword.only_focus && keyword.only_unfocus {
             return Err(ProjectError::InvalidProject(
                 "v2 Dialogue keyword is both focus-only and unfocus-only",
@@ -1977,6 +2020,51 @@ fn validate_v2_dialogue_keywords(
             ));
         }
         validate_v2_dialogue_keywords(&keyword.children, depth + 1, node_count, limits)?;
+    }
+    Ok(())
+}
+
+fn v2_dialogue_node_links<'a>(
+    keywords: &'a [ProjectV2DialogueKeyword],
+    prefix: &str,
+    paths: &mut BTreeMap<String, &'a [String]>,
+) {
+    for keyword in keywords {
+        let path = format!("{prefix}{}", keyword.key);
+        v2_dialogue_node_links(&keyword.children, &format!("{path}/"), paths);
+        paths.insert(path, keyword.links.as_slice());
+    }
+}
+
+/// Every entry names an emitted node and one of its links, sorted by node then link and unique.
+fn validate_v2_dialogue_source_incomplete(
+    keywords: &[ProjectV2DialogueKeyword],
+    entries: &[ProjectV2DialogueSourceIncomplete],
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(
+        "v2 Dialogue source_incomplete",
+        entries.len(),
+        limits.max_reference_records,
+    )?;
+    if entries
+        .windows(2)
+        .any(|pair| (&pair[0].node, &pair[0].link) >= (&pair[1].node, &pair[1].link))
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 Dialogue source_incomplete entries are not sorted and unique",
+        ));
+    }
+    let mut paths = BTreeMap::new();
+    v2_dialogue_node_links(keywords, "", &mut paths);
+    if entries.iter().any(|entry| {
+        !paths
+            .get(&entry.node)
+            .is_some_and(|links| links.contains(&entry.link))
+    }) {
+        return Err(ProjectError::InvalidProject(
+            "v2 Dialogue source_incomplete entry names no emitted node link",
+        ));
     }
     Ok(())
 }
@@ -2136,6 +2224,7 @@ fn validate_v2_declaration(
             send_trade,
             keywords,
             voices,
+            source_incomplete,
             ..
         } => {
             validate_v2_dialogue_message("v2 Dialogue greet", greet, limits)?;
@@ -2147,6 +2236,7 @@ fn validate_v2_declaration(
             }
             let mut node_count = 0_usize;
             validate_v2_dialogue_keywords(keywords, 1, &mut node_count, limits)?;
+            validate_v2_dialogue_source_incomplete(keywords, source_incomplete, limits)?;
         }
         _ => {}
     }
