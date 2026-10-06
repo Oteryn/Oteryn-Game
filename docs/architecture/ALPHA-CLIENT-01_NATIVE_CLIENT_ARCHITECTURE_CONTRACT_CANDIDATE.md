@@ -617,7 +617,7 @@ Implementation claiming conformance to this candidate should prove at minimum:
 
 **YES** for composition/authority/projection/scene-presentation/content/filesystem/settings-scope/Studio-sharing/update/test/audio-ownership boundaries. Client implementation would otherwise hard-code cross-domain ownership, create ambiguous account/device persistence or allow product-specific types to become an accidental Studio API before the missing gameplay runtime exists.
 
-**NO** for the concrete GUI/scene/render/network/updater/installer/content-packaging/audio libraries, exact shared crate names or account-profile synchronization mechanism. Those choices remain safely reversible and require implementation evidence.
+**NO** for the concrete GUI/scene/render/network/audio libraries, exact shared crate names or account-profile synchronization mechanism. Those choices remain safely reversible and require implementation evidence. The installer technology, install layout, client package manifest and updater model are decided by `CLIENT-INSTALLER-0`, which is authoritative for them.
 
 ### Downstream work blocked without this contract
 
@@ -678,9 +678,9 @@ This candidate intentionally does not select:
 - QUIC library/profile/fallback timing/default;
 - Game Gateway/admission/reconnect credential/API representation;
 - protocol/TLS/protobuf implementation libraries;
-- client bundle/patch/CDN format;
-- installer/updater framework or code-signing provider;
-- Windows directory/registry/install-scope details;
+- client patch/CDN format (the installer bundle and package manifest are specified by `CLIENT-INSTALLER-0`);
+- code-signing provider (installer framework and updater model: `CLIENT-INSTALLER-0`);
+- Windows registry details beyond `CLIENT-INSTALLER-0` (which specifies install scope and directories);
 - credential vault technology;
 - crash backend/retention/legal text;
 - audio library, codec/mixer stack, device backend/vendor or exact category taxonomy;
