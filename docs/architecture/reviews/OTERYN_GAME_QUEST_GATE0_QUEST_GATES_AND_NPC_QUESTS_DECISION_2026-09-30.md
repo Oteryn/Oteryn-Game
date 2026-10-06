@@ -686,8 +686,8 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
 - In v1, therefore, a push root requests no quest child and no `RewardClaim` child, so it creates
   no claim obligation and no claim reservation, and its children declared `after_quest` do not
   run. Its other relocation, overlay and presentation children run as declared. Content may bind
-  a claim on an `ON_ENTER` or `ON_LEAVE` cell; it fires on the character's own step and stays
-  silent on a push.
+  a claim only on an `ON_ENTER` cell (§16.2.3(f) rejects one on `ON_LEAVE`); it fires on the
+  character's own step into the cell and stays silent on a push.
 - QUEST-TRIGGER-1 tests: a push onto a cell whose binding declares a quest child and a
   `RewardClaim` writes no quest receipt, no claim reservation, no MINT and no obligation, and runs
   the cell's other declared children.
