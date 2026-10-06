@@ -1339,6 +1339,50 @@ async fn content(operator: &Operator, mut arguments: Arguments) -> Outcome {
     }
 }
 
+const PROJECTION_USAGE: &str = "projection resync --raise-epoch true|false: re-enqueue every \
+account for ListCharactersForAccount and print the projection epoch. `true` raises the epoch \
+above the epoch fence and then persists the fence; it uses the [projection] operator \
+credential of the ops config. After a Character store restore: stop the node (its publisher), \
+restore, run `projection resync --raise-epoch true`, then start the node.";
+
+/// `projection resync` (contract §5): prints only the epoch.
+async fn projection(operator: &Operator, mut arguments: Arguments) -> Outcome {
+    use oteryn_game_server::native_admission_source::account_characters::EpochFenceFile;
+    use oteryn_game_server::node::serve::{ResyncError, resync};
+    if arguments.words.get(1).map(String::as_str) != Some("resync") || arguments.words.len() != 2 {
+        return Err(Failure::Usage(PROJECTION_USAGE));
+    }
+    let raise = match arguments.take("raise-epoch")?.as_str() {
+        "true" => true,
+        "false" => false,
+        _ => return Err(Failure::Usage(PROJECTION_USAGE)),
+    };
+    arguments.finish()?;
+    let config = operator.config.projection.as_ref().ok_or(Failure::Usage(
+        "projection resync requires the [projection] section",
+    ))?;
+    let root = connect_root(&config.database, secure_file::effective_uid()).await?;
+    let mut fence = EpochFenceFile(config.epoch_fence_file.clone());
+    match resync(&root, raise, &mut fence).await {
+        Ok(epoch) => {
+            println!("{epoch}");
+            Ok(())
+        }
+        Err(error @ ResyncError::FenceInvalid) => Err(Failure::Input(error.to_string())),
+        Err(
+            error @ ResyncError::Durability(
+                oteryn_game_server::durability::DurabilityError::CommitOutcomeUnknown,
+            ),
+        ) => Err(Failure::Ambiguous(error.to_string())),
+        Err(error @ ResyncError::Durability(_)) => Err(Failure::Unavailable(error.to_string())),
+        Err(
+            error @ (ResyncError::NotAboveFence { .. }
+            | ResyncError::Unexpected
+            | ResyncError::FenceUnwritten { .. }),
+        ) => Err(Failure::Rejected(error.to_string())),
+    }
+}
+
 async fn run(raw: Vec<String>) -> Outcome {
     let mut arguments = Arguments::parse(raw)?;
     let config_path = PathBuf::from(arguments.take("config")?);
@@ -1375,8 +1419,9 @@ async fn run(raw: Vec<String>) -> Outcome {
         Some("character") => character(&operator, arguments).await,
         Some("assignment") => assignment(&operator, arguments).await,
         Some("content") => content(&operator, arguments).await,
+        Some("projection") => projection(&operator, arguments).await,
         _ => Err(Failure::Usage(
-            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content ...",
+            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content|projection ...",
         )),
     }
 }

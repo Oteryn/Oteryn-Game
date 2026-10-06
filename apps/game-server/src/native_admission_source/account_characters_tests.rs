@@ -215,11 +215,19 @@ impl ReportClock for Clock {
 struct Store {
     queued: Vec<AccountSnapshot>,
     cleared: Vec<(String, u64, u64)>,
+    /// An unreconciled or unreachable store: every read fails.
+    failing: bool,
+    /// The watermark epoch when not 1 (a restored store reads a lower one).
+    epoch: Option<u64>,
 }
 
 impl ProjectionStore for Arc<Mutex<Store>> {
     async fn next_snapshot(&mut self) -> Result<Option<AccountSnapshot>, ()> {
-        Ok(self.lock().unwrap().queued.first().cloned())
+        let store = self.lock().unwrap();
+        if store.failing {
+            return Err(());
+        }
+        Ok(store.queued.first().cloned())
     }
     async fn clear(&mut self, account: &str, epoch: u64, revision: u64) -> Result<(), ()> {
         let mut store = self.lock().unwrap();
@@ -232,15 +240,25 @@ impl ProjectionStore for Arc<Mutex<Store>> {
         Ok(())
     }
     async fn watermark_facts(&mut self) -> Result<WatermarkFacts, ()> {
-        Ok(facts(None, 1_790_000_003_000))
+        let store = self.lock().unwrap();
+        if store.failing {
+            return Err(());
+        }
+        let mut facts = facts(None, 1_790_000_003_000);
+        facts.projection_epoch = store.epoch.unwrap_or(1);
+        Ok(facts)
     }
 }
 
-struct Sink(Vec<Result<Delivery, NotDelivered>>, Vec<Operation>);
+/// Every fence and sink event in order, shared by the fake fence and sink.
+type Events = Arc<Mutex<Vec<String>>>;
+
+struct Sink(Vec<Result<Delivery, NotDelivered>>, Vec<Operation>, Events);
 
 impl ProjectionSink for Sink {
     async fn send(&mut self, operation: Operation, _body: &str) -> Result<Delivery, NotDelivered> {
         self.1.push(operation);
+        self.2.lock().unwrap().push(format!("send {operation:?}"));
         if self.0.is_empty() {
             Err(NotDelivered::Unavailable)
         } else {
@@ -249,17 +267,57 @@ impl ProjectionSink for Sink {
     }
 }
 
-fn publisher_with(
+/// F in memory: `None` is a missing or malformed fence; `writable` false
+/// refuses every persist.
+struct Fence {
+    value: Option<u64>,
+    writable: bool,
+    events: Events,
+}
+
+impl EpochFence for Fence {
+    fn read(&mut self) -> Result<u64, FenceUnusable> {
+        self.value.ok_or(FenceUnusable)
+    }
+    fn persist(&mut self, epoch: u64) -> Result<(), FenceUnusable> {
+        if !self.writable {
+            return Err(FenceUnusable);
+        }
+        self.events.lock().unwrap().push(format!("persist {epoch}"));
+        self.value = Some(epoch);
+        Ok(())
+    }
+}
+
+fn fence(value: Option<u64>, events: &Events) -> Fence {
+    Fence {
+        value,
+        writable: true,
+        events: events.clone(),
+    }
+}
+
+fn fenced_publisher(
     store: &Arc<Mutex<Store>>,
     replies: Vec<Result<Delivery, NotDelivered>>,
-) -> Publisher<Clock, Arc<Mutex<Store>>, Sink> {
+    fence: Fence,
+) -> Publisher<Clock, Arc<Mutex<Store>>, Sink, Fence> {
+    let events = fence.events.clone();
     Publisher::new(
         Clock::default(),
         store.clone(),
-        Sink(replies, vec![]),
+        Sink(replies, vec![], events),
+        fence,
         AUTHORITY.into(),
         MAX_TX,
     )
+}
+
+fn publisher_with(
+    store: &Arc<Mutex<Store>>,
+    replies: Vec<Result<Delivery, NotDelivered>>,
+) -> Publisher<Clock, Arc<Mutex<Store>>, Sink, Fence> {
+    fenced_publisher(store, replies, fence(Some(1), &Events::default()))
 }
 
 fn block_on<F: Future>(future: F) -> F::Output {
@@ -417,6 +475,7 @@ fn watermarks_stay_within_the_gap_bound_in_the_worst_case() {
                 watermarks: vec![],
                 snapshots: vec![],
             },
+            fence(Some(1), &Events::default()),
             AUTHORITY.into(),
             MAX_TX,
         );
@@ -446,4 +505,177 @@ fn watermarks_stay_within_the_gap_bound_in_the_worst_case() {
         }
         assert!(sink.snapshots.windows(2).all(|pair| pair[0] == pair[1]));
     }
+}
+
+fn queued_store(epoch: u64) -> Arc<Mutex<Store>> {
+    let store = Arc::new(Mutex::new(Store::default()));
+    let mut queued = snapshot(vec![character(1, "Aldric")]);
+    queued.projection_epoch = epoch;
+    store.lock().unwrap().queued.push(queued);
+    store.lock().unwrap().epoch = Some(epoch);
+    store
+}
+
+#[test]
+fn accepted_superseded_conflict_and_unavailable_paths() {
+    for (reply, cleared) in [
+        (Ok(Delivery::Accepted), true),
+        (Ok(Delivery::Superseded), true),
+        (Err(NotDelivered::Conflict), false),
+        (Err(NotDelivered::Unavailable), false),
+    ] {
+        let store = queued_store(1);
+        let mut publisher = publisher_with(&store, vec![Ok(Delivery::Accepted), reply]);
+        assert_eq!(block_on(publisher.step()), cleared);
+        assert_eq!(store.lock().unwrap().queued.is_empty(), cleared);
+        assert_eq!(
+            publisher.sink.1,
+            vec![
+                Operation::PublishProjectionWatermarkV1,
+                Operation::PublishAccountCharactersV1
+            ]
+        );
+    }
+    assert_eq!(class(&Ok(Delivery::Superseded)), "superseded");
+}
+
+#[test]
+fn an_unreconciled_store_publishes_nothing() {
+    let store = queued_store(1);
+    store.lock().unwrap().failing = true;
+    let mut publisher = publisher_with(&store, vec![Ok(Delivery::Accepted); 4]);
+    for _ in 0..3 {
+        assert!(!block_on(publisher.step()));
+        *publisher.clock.0.lock().unwrap() += WATERMARK_PERIOD;
+    }
+    assert!(publisher.sink.1.is_empty());
+    assert!(store.lock().unwrap().cleared.is_empty());
+}
+
+#[test]
+fn an_unusable_or_higher_fence_refuses_every_publication() {
+    // Missing or malformed F, an unwritable F for a higher epoch, and a
+    // restored store whose epoch is below F.
+    let events = Events::default();
+    let unwritable = Fence {
+        value: Some(1),
+        writable: false,
+        events: events.clone(),
+    };
+    for (epoch, fence) in [
+        (1, fence(None, &events)),
+        (2, unwritable),
+        (4, fence(Some(5), &events)),
+    ] {
+        let store = queued_store(epoch);
+        let mut publisher = fenced_publisher(&store, vec![Ok(Delivery::Accepted); 4], fence);
+        for _ in 0..3 {
+            assert!(!block_on(publisher.step()));
+            *publisher.clock.0.lock().unwrap() += WATERMARK_PERIOD;
+        }
+        assert!(publisher.sink.1.is_empty(), "{epoch}");
+        assert_eq!(store.lock().unwrap().queued.len(), 1);
+        assert!(store.lock().unwrap().cleared.is_empty());
+    }
+    assert!(events.lock().unwrap().is_empty());
+}
+
+#[test]
+fn a_higher_epoch_persists_the_fence_before_it_is_sent() {
+    let events = Events::default();
+    let store = queued_store(7);
+    let mut publisher = fenced_publisher(
+        &store,
+        vec![Ok(Delivery::Accepted), Ok(Delivery::Accepted)],
+        fence(Some(5), &events),
+    );
+    assert!(block_on(publisher.step()));
+    assert_eq!(publisher.fence.value, Some(7));
+    assert_eq!(
+        *events.lock().unwrap(),
+        vec![
+            "persist 7".to_owned(),
+            "send PublishProjectionWatermarkV1".into(),
+            "send PublishAccountCharactersV1".into(),
+        ]
+    );
+}
+
+#[test]
+fn the_fence_file_round_trips_and_refuses_anything_else() {
+    use std::os::unix::fs::PermissionsExt;
+    let directory = std::env::temp_dir().join(format!(
+        "oteryn-epoch-fence-{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    let _ = std::fs::remove_dir_all(&directory);
+    std::fs::create_dir(&directory).unwrap();
+    let path = directory.join("epoch.fence");
+    // Missing: refused, and never created by a write.
+    assert!(read_fence(&path).is_err());
+    assert!(write_fence(&path, 3).is_err());
+    std::fs::write(&path, b"0\n").unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+    assert_eq!(read_fence(&path), Ok(0));
+    write_fence(&path, 1_790_000_000).unwrap();
+    assert_eq!(std::fs::read(&path).unwrap(), b"1790000000\n");
+    assert_eq!(EpochFenceFile(path.clone()).read(), Ok(1_790_000_000));
+    let mode = std::fs::metadata(&path).unwrap().permissions().mode();
+    assert_eq!(mode & 0o777, 0o600);
+    // No temporary file is left behind.
+    assert_eq!(std::fs::read_dir(&directory).unwrap().count(), 1);
+    // Group- or world-writable, a symlink, or garbage: refused.
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o620)).unwrap();
+    assert!(read_fence(&path).is_err());
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+    let link = directory.join("link.fence");
+    std::os::unix::fs::symlink(&path, &link).unwrap();
+    assert!(read_fence(&link).is_err());
+    std::fs::write(&path, b"12x").unwrap();
+    assert!(read_fence(&path).is_err());
+    std::fs::write(&path, vec![b'1'; FENCE_BYTES + 1]).unwrap();
+    assert!(read_fence(&path).is_err());
+    std::fs::remove_dir_all(&directory).unwrap();
+}
+
+#[test]
+fn the_fence_grammar_is_exact() {
+    assert_eq!(parse_fence(b"0"), Some(0));
+    assert_eq!(parse_fence(b"0\n"), Some(0));
+    assert_eq!(parse_fence(b"42\n"), Some(42));
+    assert_eq!(parse_fence(b"18446744073709551615"), Some(u64::MAX));
+    for raw in [
+        &b""[..],
+        b"\n",
+        b"01",
+        b"1\n\n",
+        b" 1",
+        b"1 ",
+        b"-1",
+        b"+1",
+        b"1\r\n",
+        b"18446744073709551616",
+    ] {
+        assert_eq!(parse_fence(raw), None, "{raw:?}");
+    }
+}
+
+#[test]
+fn a_raise_is_the_migration_expression_and_strictly_above_the_fence() {
+    // greatest(epoch + 1, transaction seconds), as migration 0024 computes it.
+    assert_eq!(raised_epoch(1, 1_790_000_000_999, 0), Some(1_790_000_000));
+    assert_eq!(
+        raised_epoch(1_790_000_005, 1_790_000_000_000, 0),
+        Some(1_790_000_006)
+    );
+    // Equal to or below F: refused.
+    assert_eq!(raised_epoch(1, 1_790_000_000_000, 1_790_000_000), None);
+    assert_eq!(raised_epoch(1, 1_790_000_000_000, 1_790_000_001), None);
+    assert_eq!(
+        raised_epoch(1, 1_790_000_000_000, 1_789_999_999),
+        Some(1_790_000_000)
+    );
+    assert_eq!(raised_epoch(i64::MAX, 0, 0), None);
+    assert_eq!(raised_epoch(-5, -1_000_000, 0), None);
 }

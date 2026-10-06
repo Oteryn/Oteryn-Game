@@ -38,6 +38,8 @@ readonly SERVICE_USER=oteryn-login-local
 readonly BASE=/srv/oteryn-login-local
 readonly RUNTIME_IDENTITY=oteryn-game-node-runtime-status
 readonly OPS_IDENTITY=oteryn-game-ops
+readonly PROJECTION_IDENTITY=oteryn-game-character-projection
+readonly PROJECTION_AUTHORITY=oteryn:character-authority:login-local
 
 blocked() { echo "LOGIN_LOCAL_RESULT=BLOCKED reason=$1"; exit 2; }
 command -v docker >/dev/null 2>&1 || blocked docker_missing
@@ -84,13 +86,15 @@ LL_SERVICE_TOKEN="$(openssl rand -hex 32)"
 LL_SERVICE_TOKEN_SHA256="$(printf '%s' "$LL_SERVICE_TOKEN" | openssl dgst -sha256 -r | cut -d ' ' -f 1)"
 LL_ADMISSION_KEY_ID="$ADMISSION_KEY_ID"
 # Placeholders until the Registry issues the topology; the Platform is recreated with the real scope.
-LL_WORLD_ID=00000000-0000-7000-8000-000000000000
 LL_RUNTIME_STATUS_IDENTITIES='{}'
 LL_SCOPE_ASSIGNMENT_IDENTITIES='{}'
+LL_ACCOUNT_CHARACTERS_IDENTITIES="[\"CN=$PROJECTION_IDENTITY\"]"
+LL_ACCOUNT_CHARACTERS_SOURCE_AUTHORITY="$PROJECTION_AUTHORITY"
 export GAME_SOURCE PLATFORM_SOURCE WP5_PKI WP5_SCRATCH WP5_PORT WP5_PROJECT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
 export LL_TOPOLOGY_HEX LL_TOPOLOGY_DIR
 export WP5_APP_KEY WP5_TOPOLOGY_REVISION WP5_FSYNC_FAULT LL_PLATFORM_HTTP_PORT LL_GATEWAY_PORT
-export LL_SERVICE_TOKEN LL_SERVICE_TOKEN_SHA256 LL_ADMISSION_KEY_ID LL_WORLD_ID LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
+export LL_SERVICE_TOKEN LL_SERVICE_TOKEN_SHA256 LL_ADMISSION_KEY_ID LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
+export LL_ACCOUNT_CHARACTERS_IDENTITIES LL_ACCOUNT_CHARACTERS_SOURCE_AUTHORITY
 NODE_PID=""
 result=FAIL
 
@@ -132,12 +136,14 @@ make_ca db-ca login-local-db-ca
 make_leaf server source.test server-ca serverAuth DNS:source.test
 make_leaf db db.login-local.test db-ca serverAuth DNS:db.login-local.test
 # Four distinct mTLS identities with distinct keys: evidence (also the Character intent),
-# node-host runtime status, ownership authority (ops) -- never shared (runtime-status contract §3).
+# node-host runtime status, ownership authority (ops), Character projection -- never shared
+# (runtime-status contract §3, projection contract §3).
 make_leaf client oteryn-game-native-evidence client-ca clientAuth
 cp "$WP5_PKI/client.crt" "$WP5_PKI/intent-client.crt"
 cp "$WP5_PKI/client.key" "$WP5_PKI/intent-client.key"
 make_leaf runtime-status "$RUNTIME_IDENTITY" client-ca clientAuth
 make_leaf ops-authority "$OPS_IDENTITY" client-ca clientAuth
+make_leaf projection "$PROJECTION_IDENTITY" client-ca clientAuth
 # Gameplay listener leaf: the dev root the client trusts is this self-signed end-entity certificate.
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 -subj "/CN=localhost" \
   -addext "subjectAltName=DNS:localhost" -addext "basicConstraints=critical,CA:FALSE" \
@@ -195,11 +201,11 @@ unset TOPOLOGY_MIRROR
 [[ "$ROUTE_REVISION" =~ ^rt\.[0-9]+\.[0-9a-f]+$ ]] || { echo "route publication failed"; exit 1; }
 evidence "registry world_id=$WORLD_ID channel_id=$CHANNEL_ID route_revision=$ROUTE_REVISION native_login_enabled=true"
 
-# Real scope identities and mode 33a; recreate Platform with them, then install the issuer seed (0600, www-data).
-LL_WORLD_ID="$WORLD_ID"
+# Real scope identities and the Character projection feed (mode 33a off); recreate Platform with them,
+# then install the issuer seed (0600, www-data).
 LL_RUNTIME_STATUS_IDENTITIES="{\"CN=$RUNTIME_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]}"
 LL_SCOPE_ASSIGNMENT_IDENTITIES="{\"CN=$OPS_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]}"
-export LL_WORLD_ID LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
+export LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
 compose up --detach --wait --force-recreate platform
 compose up --detach --wait nginx gateway
 compose exec --no-TTY --user root platform install -o www-data -g www-data -m 0600 /run/wp5/signing.seed /run/oteryn-admission/signing.seed
@@ -207,7 +213,7 @@ php_exec 'app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->pu
 php_exec 'Illuminate\Support\Facades\DB::table("identities")->insert(["email"=>"'"$ACCOUNT_EMAIL"'","password"=>password_hash("'"$ACCOUNT_PASSWORD"'",PASSWORD_BCRYPT),"account_id"=>"'"$ACCOUNT_ID"'","native_security_generation"=>1,"created_at"=>now(),"updated_at"=>now()]);'
 OAUTH_CLIENT_ID="$(php_exec 'Illuminate\Support\Facades\Artisan::call("game-auth:oauth-client:ensure"); echo Illuminate\Support\Facades\Artisan::output();' | sed -n 's/.*client id: \([^ ]*\).*/\1/p')"
 [[ -n "$OAUTH_CLIENT_ID" ]] || { echo "oauth client id not found"; exit 1; }
-evidence "platform_seed=account=1 admission_trust=published_public_key_only oauth_client=ensured mode=33a"
+evidence "platform_seed=account=1 admission_trust=published_public_key_only oauth_client=ensured mode=account_characters_feed"
 
 # Shipped binaries, service user, roles, migration (as node_boot).
 cargo +1.94.0 build --locked -p oteryn-game-server -p oteryn-client --bins
@@ -218,6 +224,11 @@ sudo install -d -o root -g root -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE
 sudo install -d -o root -g root -m 0700 "$BASE/ops"
 sudo install -d -o "$SERVICE_UID" -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
 sudo install -d -o "$SERVICE_UID" -m 0755 "$BASE/node/secrets"
+# Projection epoch fence F (contract §5): outside the Character fence directory and the database, created
+# with value 0 together with Platform's state, owned by the node service user (ops keeps the owner).
+sudo install -d -o "$SERVICE_UID" -m 0700 "$BASE/projection"
+printf '0\n' > "$WORK/epoch-fence"
+sudo install -o "$SERVICE_UID" -m 0600 "$WORK/epoch-fence" "$BASE/projection/epoch-fence"
 sudo install -o root -m 0755 "$TARGET/oteryn-game-server" "$TARGET/oteryn-game-ops" "$TARGET/oteryn-game-migrate" "$BASE/bin/"
 OTERYN_GAME_MIGRATION_DATABASE_URL="$ADMIN_URL" "$BASE/bin/oteryn-game-migrate"
 psql_admin oteryn_login_local <<SQL
@@ -230,6 +241,10 @@ printf '%s\n' "$CONTROL_PASSWORD" > "$WORK/control-password"
 printf '%s\n' "$RUNTIME_PASSWORD" > "$WORK/runtime-password"
 secret_to() { sudo install -o "$1" -m 0600 "$2" "$3"; }
 secret_to root "$WORK/control-password" "$BASE/ops/pg-password"
+# The resync raise runs under an operator-only credential: migration 0024 grants EXECUTE on
+# game_character_account_projection_resync to no runtime or control role.
+printf '%s\n' "$PG_ADMIN_PASSWORD" > "$WORK/admin-password"
+secret_to root "$WORK/admin-password" "$BASE/ops/pg-admin-password"
 secret_to root "$WP5_PKI/db-ca.crt" "$BASE/ops/db-ca.pem"
 secret_to root "$WP5_PKI/server-ca.crt" "$BASE/ops/platform-roots.pem"
 secret_to root "$WP5_PKI/ops-authority.crt" "$BASE/ops/authority.crt"
@@ -242,6 +257,8 @@ secret_to "$SERVICE_UID" "$WP5_PKI/client.crt" "$BASE/node/secrets/platform-clie
 secret_to "$SERVICE_UID" "$WP5_PKI/client.key" "$BASE/node/secrets/platform-client.key"
 secret_to "$SERVICE_UID" "$WP5_PKI/runtime-status.crt" "$BASE/node/secrets/runtime-status.crt"
 secret_to "$SERVICE_UID" "$WP5_PKI/runtime-status.key" "$BASE/node/secrets/runtime-status.key"
+secret_to "$SERVICE_UID" "$WP5_PKI/projection.crt" "$BASE/node/secrets/projection.crt"
+secret_to "$SERVICE_UID" "$WP5_PKI/projection.key" "$BASE/node/secrets/projection.key"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.crt" "$BASE/node/secrets/gameplay.crt"
 secret_to "$SERVICE_UID" "$WP5_PKI/gameplay.key" "$BASE/node/secrets/gameplay.key"
 
@@ -261,6 +278,16 @@ root_ca_file = "$BASE/ops/db-ca.pem"
 fence_directory = "$BASE/fence-parent/fence"
 authority_scope_id = "character-primary"
 issuer_identity = "game-ops"
+[projection]
+epoch_fence_file = "$BASE/projection/epoch-fence"
+[projection.database]
+transport_ip = "127.0.0.1"
+port = $PG_PORT
+tls_server_name = "db.login-local.test"
+database = "oteryn_login_local"
+username = "oteryn_login_local_admin"
+password_file = "$BASE/ops/pg-admin-password"
+root_ca_file = "$BASE/ops/db-ca.pem"
 TOML
 sudo install -o root -m 0600 "$WORK/ops.toml" "$BASE/ops/ops.toml"
 # assignment_epoch is declared (positive) and never raised by ops; node and report config must agree.
@@ -330,6 +357,11 @@ installed_at = $DESCRIPTOR_INSTALLED_AT
 client_certificate_file = "$BASE/node/secrets/runtime-status.crt"
 client_key_file = "$BASE/node/secrets/runtime-status.key"
 assignment_epoch = 1
+[platform.account_characters]
+client_certificate_file = "$BASE/node/secrets/projection.crt"
+client_key_file = "$BASE/node/secrets/projection.key"
+source_authority = "$PROJECTION_AUTHORITY"
+epoch_fence_file = "$BASE/projection/epoch-fence"
 [launch]
 authorization_file = "$BASE/state/launch-a.json"
 s2_authorization_file = "$BASE/state/s2-fresh-store.json"
@@ -345,6 +377,11 @@ write_node_config
 ops s2 issue --node-config "$BASE/node/node.toml" --file s2-fresh-store.json --namespace login-local --authorization disposable-qualification
 ops character fresh-store --request fresh-store.json
 ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
+# Raise the projection epoch above F and persist F before the publisher (in the node) first sends.
+PROJECTION_EPOCH="$(ops projection resync --raise-epoch true)"
+[[ "$PROJECTION_EPOCH" =~ ^[1-9][0-9]*$ ]] || { echo "projection resync failed"; exit 1; }
+[[ "$(sudo cat "$BASE/projection/epoch-fence")" == "$PROJECTION_EPOCH" ]] || { echo "projection epoch fence not persisted"; exit 1; }
+evidence "projection resync=raised epoch=$PROJECTION_EPOCH fence=persisted"
 
 sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" < /dev/null > /dev/null 2> "$node_log" &
 NODE_PID=$!
@@ -359,12 +396,16 @@ grep -q 'report=ReportScopeAssignmentV1' "$WORK/assign.out" || { echo "assignmen
 await_log "readiness ready=true" 60
 evidence "node assigned=operator report=ReportScopeAssignmentV1 assignment_epoch=1 readiness=true runtime_status=configured"
 
-# Character from a real Platform intent (the account owns it; mode 33a does not verify ownership).
+# Character from a real Platform intent; Platform verifies ownership from the projection feed (mode 33a off).
 php_exec '$id=Illuminate\Support\Facades\DB::table("identities")->where("account_id","'"$ACCOUNT_ID"'")->value("id"); $code=Illuminate\Support\Facades\Artisan::call("game-auth:character-bootstrap-intent:issue",["--identity-id"=>(string)$id,"--operation-id"=>"'"$INTENT_OPERATION"'","--target-world-id"=>"'"$WORLD_ID"'","--requested-name"=>"'"$INTENT_NAME"'","--profile-revision"=>"'"${INTERPRETATION[0]}"'","--ruleset-revision"=>"'"${INTERPRETATION[1]}"'","--content-revision"=>"'"${INTERPRETATION[2]}"'","--starter-template-revision"=>"'"${INTERPRETATION[3]}"'"]); fwrite(STDERR, Illuminate\Support\Facades\Artisan::output()); exit($code);'
 ops character bootstrap --socket "$BASE/run/control.sock" --operation-id "$INTENT_OPERATION"
 CHARACTER_ID="$(echo 'SELECT character_id FROM game_character_roots LIMIT 1' | psql_admin oteryn_login_local)"
 [[ "$CHARACTER_ID" =~ ^[0-9a-f-]{36}$ ]] || { echo "character not created"; exit 1; }
 evidence "character=1 source=platform_intent character_id=$CHARACTER_ID"
+# The node publishes the account's snapshot and a watermark before the client asks Platform for a ticket.
+await_log "operation=PublishAccountCharactersV1 result=accepted" 60
+await_log "operation=PublishProjectionWatermarkV1 result=accepted" 60
+evidence "projection snapshot=accepted watermark=accepted"
 
 # Client environment (public values plus the per-run test password, in a 0600 file, never in the log).
 CLIENT_ENV="${LOGIN_LOCAL_CLIENT_ENV:-$WORK/client.env}"

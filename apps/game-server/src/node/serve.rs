@@ -41,8 +41,11 @@ use crate::foundation::{
     ChannelId, ChannelRuntimeV1, NodeId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
 use crate::gameplay_transport::FreshEvidenceSource;
+use crate::native_admission_source::account_characters::{
+    self, EpochFence, EpochFenceFile, MtlsSink, ProjectionDescriptor, Publisher,
+};
 use crate::native_admission_source::descriptor::ProducerDescriptor;
-use crate::native_admission_source::runtime_status::RuntimeStatusDescriptor;
+use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, SystemClock};
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
 use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
 use oteryn_foundation::CancellationToken;
@@ -386,6 +389,10 @@ struct Material {
     intents: ProducerDescriptor,
     /// Runtime-status identity and declared epoch; `None` disables reporting.
     runtime_status: Option<(std::sync::Arc<RuntimeStatusDescriptor>, u64)>,
+    /// `ListCharactersForAccount` publisher: its identity, source authority
+    /// and epoch fence; `None` disables it. Taken once by the serving loop.
+    account_characters:
+        std::sync::Mutex<Option<(ProjectionDescriptor, String, std::path::PathBuf)>>,
     descriptor: DescriptorRegistration,
     launch: LaunchAuthorizationFile,
     s2: Option<S2AuthorizationFile>,
@@ -492,6 +499,49 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
             Some((std::sync::Arc::new(descriptor), status.assignment_epoch))
         }
     };
+    let account_characters = match &platform.account_characters {
+        None => None,
+        Some(projection) => {
+            let chain = certificates(&secret(
+                "platform.account_characters.client_certificate_file",
+                &projection.client_certificate_file,
+                MAX_PEM_BYTES,
+            )?)
+            .map_err(|_| invalid("platform.account_characters.client_certificate_file"))?;
+            let key = private_key(
+                "platform.account_characters.client_key_file",
+                &secret(
+                    "platform.account_characters.client_key_file",
+                    &projection.client_key_file,
+                    MAX_GAMEPLAY_KEY_BYTES,
+                )?,
+            )?;
+            let status_chain = match &platform.runtime_status {
+                None => Vec::new(),
+                Some(status) => certificates(&secret(
+                    "platform.runtime_status.client_certificate_file",
+                    &status.client_certificate_file,
+                    MAX_PEM_BYTES,
+                )?)
+                .map_err(|_| invalid("platform.runtime_status.client_certificate_file"))?,
+            };
+            // Its own identity, never the evidence or status one (§3).
+            let descriptor = ProjectionDescriptor::new(
+                endpoint.clone(),
+                platform.peer_name.clone(),
+                roots.clone(),
+                chain,
+                key,
+                &[&client, &status_chain],
+            )
+            .map_err(|_| invalid("platform.account_characters"))?;
+            Some((
+                descriptor,
+                projection.source_authority.clone(),
+                projection.epoch_fence_file.clone(),
+            ))
+        }
+    };
     let intents = ProducerDescriptor::new(
         CHARACTER_BOOTSTRAP_INTENT_ISSUER.into(),
         endpoint,
@@ -545,12 +595,195 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
         evidence: FreshEvidenceSource::new(evidence),
         intents,
         runtime_status,
+        account_characters: std::sync::Mutex::new(account_characters),
         descriptor,
         launch,
         s2,
         world,
         channel,
     })
+}
+
+/// Why an operator resync did not complete.
+#[derive(Debug)]
+pub enum ResyncError {
+    /// F is missing, malformed or unreadable; nothing was changed.
+    FenceInvalid,
+    /// The raised epoch would not be above F; rolled back.
+    NotAboveFence {
+        epoch: u64,
+        fence: u64,
+    },
+    /// The function's epoch differs from the one predicted under the lock;
+    /// rolled back.
+    Unexpected,
+    /// The raise committed but F could not be persisted; the publisher
+    /// persists F itself before sending anything of the new epoch.
+    FenceUnwritten {
+        epoch: u64,
+    },
+    Durability(crate::durability::DurabilityError),
+}
+
+impl std::fmt::Display for ResyncError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::FenceInvalid => formatter.write_str("epoch fence missing or malformed"),
+            Self::NotAboveFence { epoch, fence } => {
+                write!(formatter, "raised epoch {epoch} is not above fence {fence}")
+            }
+            Self::Unexpected => formatter.write_str("resync returned an unexpected epoch"),
+            Self::FenceUnwritten { epoch } => {
+                write!(
+                    formatter,
+                    "epoch {epoch} committed; epoch fence not written"
+                )
+            }
+            Self::Durability(error) => write!(formatter, "{error}"),
+        }
+    }
+}
+
+const RESYNC_TIMEOUTS: &str = "SELECT set_config('transaction_timeout', $1, true), \
+     set_config('statement_timeout', $1, true), set_config('lock_timeout', $1, true)";
+const RESYNC_LOCK: &str = "SELECT projection_epoch, \
+     floor(extract(epoch FROM transaction_timestamp()) * 1000)::bigint AS now_ms \
+     FROM game_character_account_projection_epoch FOR UPDATE";
+
+/// `oteryn-game-ops projection resync`: re-enqueue every account in one
+/// transaction (migration 0024). With `raise_epoch` the epoch row is locked
+/// first and the raise is refused unless the new epoch is above F; F is
+/// persisted after the commit. Returns the epoch.
+pub async fn resync(
+    root: &DurabilityRoot,
+    raise_epoch: bool,
+    fence: &mut impl EpochFence,
+) -> Result<u64, ResyncError> {
+    use crate::durability::DurabilityError;
+    use sqlx::Row;
+    let floor = if raise_epoch {
+        Some(
+            fence
+                .read()
+                .map_err(|account_characters::FenceUnusable| ResyncError::FenceInvalid)?,
+        )
+    } else {
+        None
+    };
+    let outcome = root
+        .try_issue_semantic_pass()
+        .map_err(ResyncError::Durability)?
+        .run(move |holder, deadline| {
+            Box::pin(async move {
+                let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+                let millis = u64::try_from(remaining.as_millis().max(1))
+                    .map_err(|_| DurabilityError::RootPassDeadlineExceeded)?;
+                let mut tx = sqlx::Connection::begin(&mut **holder).await?;
+                sqlx::query(RESYNC_TIMEOUTS)
+                    .bind(format!("{millis}ms"))
+                    .execute(&mut *tx)
+                    .await?;
+                let mut expected = None;
+                if let Some(fence) = floor {
+                    let row = sqlx::query(RESYNC_LOCK).fetch_one(&mut *tx).await?;
+                    let current: i64 = row.try_get("projection_epoch")?;
+                    let now_ms: i64 = row.try_get("now_ms")?;
+                    match account_characters::raised_epoch(current, now_ms, fence) {
+                        Some(epoch) => expected = Some(epoch),
+                        None => {
+                            tx.rollback().await?;
+                            let epoch = current
+                                .saturating_add(1)
+                                .max(now_ms.div_euclid(1000))
+                                .try_into()
+                                .unwrap_or(0);
+                            return Ok(Err(ResyncError::NotAboveFence { epoch, fence }));
+                        }
+                    }
+                }
+                let epoch: i64 =
+                    sqlx::query_scalar("SELECT game_character_account_projection_resync($1)")
+                        .bind(floor.is_some())
+                        .fetch_one(&mut *tx)
+                        .await?;
+                let epoch = u64::try_from(epoch).ok();
+                if epoch.is_none() || expected.is_some_and(|e| Some(e) != epoch) {
+                    tx.rollback().await?;
+                    return Ok(Err(ResyncError::Unexpected));
+                }
+                tx.commit()
+                    .await
+                    .map_err(DurabilityError::from_commit_error)?;
+                Ok(epoch.ok_or(ResyncError::Unexpected))
+            })
+        })
+        .await
+        .map_err(ResyncError::Durability)?;
+    let epoch = outcome?;
+    if floor.is_some() {
+        fence
+            .persist(epoch)
+            .map_err(|account_characters::FenceUnusable| ResyncError::FenceUnwritten { epoch })?;
+    }
+    Ok(epoch)
+}
+
+const PRIVILEGES: &str = "SELECT has_table_privilege('game_character_roots', 'SELECT') \
+     AND has_table_privilege('game_character_account_projections', 'SELECT') \
+     AND has_table_privilege('game_character_account_projection_epoch', 'SELECT') \
+     AND has_table_privilege('game_character_account_projection_outbox', 'SELECT') \
+     AND has_table_privilege('game_character_account_projection_outbox', 'DELETE')";
+
+/// Whether the node's database role can read Character ownership and
+/// acknowledge the outbox; the publisher starts only then.
+pub async fn store_readable(root: &DurabilityRoot) -> bool {
+    let Ok(pass) = root.try_issue_semantic_pass() else {
+        return false;
+    };
+    pass.run(|holder, _| {
+        Box::pin(async move {
+            Ok(sqlx::query_scalar::<_, bool>(PRIVILEGES)
+                .fetch_one(&mut **holder)
+                .await?)
+        })
+    })
+    .await
+    .unwrap_or(false)
+}
+
+/// The `ListCharactersForAccount` publisher until `stop`, under the
+/// reconciled Character authority. It starts only when the node's database
+/// role can read Character ownership; otherwise the refusal is logged and
+/// Platform keeps refusing issuance for lack of a fresh watermark.
+async fn account_characters_loop(
+    root: &DurabilityRoot,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    projection: Option<(ProjectionDescriptor, String, std::path::PathBuf)>,
+    stop: &CancellationToken,
+) {
+    let Some((descriptor, source_authority, fence)) = projection else {
+        return;
+    };
+    if !first(store_readable(root), stop.cancelled())
+        .await
+        .unwrap_or(false)
+    {
+        event("event=account_characters_projection state=refused reason=privileges");
+        return;
+    }
+    event("event=account_characters_projection state=started");
+    let publisher = Publisher::new(
+        SystemClock::default(),
+        crate::durability::account_characters_projection::AccountCharactersStore {
+            root,
+            authority,
+        },
+        MtlsSink::new(descriptor),
+        EpochFenceFile(fence),
+        source_authority,
+        crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
+    );
+    first(publisher.run(), stop.cancelled()).await;
 }
 
 /// Output of `primary`, or `None` once `stop` completes first.
@@ -1695,6 +1928,18 @@ async fn boot_and_serve(
         &shutdown,
     ));
     let mut expiry = pin!(audit_expiry_loop(root, &authority, &loops_stop));
+    // Never gates serving; its end is not a shutdown reason.
+    let mut projection = pin!(account_characters_loop(
+        root,
+        &authority,
+        material
+            .account_characters
+            .lock()
+            .ok()
+            .and_then(|mut projection| projection.take()),
+        &loops_stop
+    ));
+    let mut projection_done = false;
     let mut signal = pin!(signalled.cancelled());
     let mut serve_error = None;
     // A loop that ended is never polled again.
@@ -1715,6 +1960,9 @@ async fn boot_and_serve(
         if expiry.as_mut().poll(context).is_ready() {
             expiry_done = true;
             return Poll::Ready("audit expiry loop ended");
+        }
+        if !projection_done && projection.as_mut().poll(context).is_ready() {
+            projection_done = true;
         }
         Poll::Pending
     })
@@ -1742,6 +1990,9 @@ async fn boot_and_serve(
         if !expiry_done && expiry.as_mut().poll(context).is_ready() {
             expiry_done = true;
         }
+        if !projection_done && projection.as_mut().poll(context).is_ready() {
+            projection_done = true;
+        }
         Poll::Pending
     })
     .await;
@@ -1767,6 +2018,9 @@ async fn boot_and_serve(
     }
     if !expiry_done {
         expiry.as_mut().await;
+    }
+    if !projection_done {
+        projection.as_mut().await;
     }
     if let Some(reporter) = reporter {
         reporter
