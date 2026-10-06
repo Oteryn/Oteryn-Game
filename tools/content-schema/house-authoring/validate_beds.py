@@ -32,14 +32,26 @@ def load_exceptions(path=EXCEPTIONS):
     return set(json.loads(path.read_text(encoding="utf-8"))["source_ids"])
 
 
+def _item_id(key):
+    return int(key.rsplit(".i", 1)[1])
+
+
 def load_facts(path=FACTS):
-    """item id -> (part, partner_direction); an Item with a null fact is a hold, not a bed."""
-    rows = json.loads(path.read_text(encoding="utf-8"))["rows"]
+    """item id -> (part, partner_direction), lowercase, for every Item carrying group 19."""
+    promotions = json.loads(path.read_text(encoding="utf-8"))["promotions"]
     return {
-        int(row["item_key"].rsplit(".i", 1)[1]): (row["part"], row["partner_direction"])
-        for row in rows
-        if row["part"] and row["partner_direction"]
+        _item_id(row["item_key"]): (
+            row["typed_value"]["value"]["part"].lower(),
+            row["typed_value"]["value"]["partner_direction"].lower(),
+        )
+        for row in promotions
     }
+
+
+def load_held(path=FACTS):
+    """Canary bed Item ids the packet holds: they carry no group 19."""
+    holds = json.loads(path.read_text(encoding="utf-8"))["holds"]
+    return {_item_id(row["item_key"]) for row in holds}
 
 
 def load_houses(shards=None):
@@ -56,21 +68,34 @@ def load_houses(shards=None):
     return houses
 
 
-def validate(houses, placed, facts, exceptions):
+def validate(houses, placed, facts, exceptions, held=frozenset()):
     """Return `{"errors": [...], "excepted": [...], "pairs": {source_id: n}}`.
 
     `houses`: dicts with `source_id`, `beds`, `tiles` (x, y, z). `placed`: (item_id, x, y, z).
     `facts`: item id -> (part, partner_direction). `exceptions`: excepted house source ids.
+    `held`: bed Item ids without group 19; a placed one is a PART_WITHOUT_GROUP_19 finding.
     """
     owner = {}
     for house in houses:
         for tile in house["tiles"]:
             owner.setdefault(tuple(tile), house["source_id"])
     parts = defaultdict(list)  # tile -> [(item_id, part, direction)]
-    for item_id, x, y, z in placed:
-        if item_id in facts:
-            parts[(x, y, z)].append((item_id, *facts[item_id]))
     errors, pairs, bad_houses = [], defaultdict(int), set()
+    for item_id, x, y, z in placed:
+        if item_id in held:
+            house = owner.get((x, y, z))
+            if house is not None:
+                bad_houses.add(house)
+                errors.append(
+                    {
+                        "code": "PART_WITHOUT_GROUP_19",
+                        "house": house,
+                        "tile": [x, y, z],
+                        "detail": f"item {item_id} is a bed part without group 19",
+                    }
+                )
+        elif item_id in facts:
+            parts[(x, y, z)].append((item_id, *facts[item_id]))
 
     def fail(code, house, tile, detail=""):
         bad_houses.add(house)
@@ -157,7 +182,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
     census = json.loads(args.census.read_text(encoding="utf-8"))["beds"]
     placed = [(b["item_id"], b["x"], b["y"], b["z"]) for b in census]
-    report = validate(load_houses(), placed, load_facts(), load_exceptions())
+    report = validate(
+        load_houses(), placed, load_facts(), load_exceptions(), load_held()
+    )
     print(json.dumps(report, indent=2, sort_keys=True))
     return 1 if report["errors"] else 0
 

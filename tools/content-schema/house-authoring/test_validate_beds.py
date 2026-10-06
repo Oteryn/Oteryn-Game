@@ -106,6 +106,14 @@ def test_exception_list_is_the_84_known_discrepancy_houses():
     assert listed <= {h["source_id"] for h in v.load_houses()}
 
 
+def test_a_placed_part_without_group_19_is_a_finding():
+    houses = [house(1, 2, GRID)]
+    report = v.validate(houses, BED_A + BED_B + [(9, 11, 12, 7)], FACTS, set(), {9})
+    assert codes(report) == ["PART_WITHOUT_GROUP_19"]
+    assert report["errors"][0]["tile"] == [11, 12, 7]
+    assert v.validate(houses, BED_A + BED_B, FACTS, set(), {9})["errors"] == []
+
+
 def test_committed_facts_load_and_cover_both_parts():
     facts = v.load_facts()
     assert {part for part, _ in facts.values()} == {"head", "foot"}

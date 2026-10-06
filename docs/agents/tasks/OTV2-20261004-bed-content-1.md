@@ -4,7 +4,7 @@
 task_id: OTV2-20261004-bed-content-1
 title: BED-CONTENT-1 bed facts, validator and exception list
 mode: IMPLEMENT
-status: implementing
+status: ready_for_review
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/bed-content-1-20261005
@@ -38,23 +38,31 @@ BED-0 §3 content half: bed facts lowered from the pinned Canary `items.xml`, a 
 
 ## Architecture and source of truth
 
+- ITEM-SEM-BED-PACKET-1 §1.5 (`docs/architecture/reviews/OTERYN_GAME_ITEM_SEM_BED_GROUP_PACKET_2026-10-05.md`): group 19 lowered through a pinned facts packet, a materializer step and a regenerated content tree.
 - BED-0 §3 (`docs/architecture/reviews/OTERYN_GAME_BED0_HOUSE_BEDS_DECISION_2026-10-01.md`), packet §2.2. DERIVED.
 - Canary `items.xml` pin D384 is `OTS_HYPOTHESIS_ONLY`. Its transform links are mutual, so free/occupied types are not derivable from it. UNKNOWN until an architect rule or the placed map.
-- CP D784 split the `bed` semantics group off as ITEM-SEM-BED-1 (architect). This task does not touch Rust or the item schema and does not freeze until it merges.
+- ITEM-SEM-BED-1 (#1857) merged group 19 into artifact v7; this task lowers it. Free look is the placed Item, pairing is by direction, `bedpartof` is not read.
 
 ## Acceptance criteria
 
-- [x] `lower_bed_packet.py` plus tests; `--check` reproduces the packet (377 rows, 39 holds).
+- [x] `lower_bed_packet.py` plus tests; `--check` reproduces the packet (377 bed types: 359 lowered, 18 held, 8 no-change targets).
 - [x] `validate_beds.py` plus fixture-house tests; the exception list equals the 84 ids of `samples/otbm-tile-check.json`.
-- [ ] After ITEM-SEM-BED-1: `bed` facts in the bed definitions; freeze once.
+- [x] `item_bed_promotion.rs` applies the pinned packet (digest and counts pinned) in the materializer; the content tree is regenerated, with no hand-edited shard and no new Item definition.
+- [x] A placed bed part without group 19 is a validator finding (`PART_WITHOUT_GROUP_19`); the 84-house exception list and the fixture house are unchanged.
 
 ## Excluded scope
 
-Rust, `item.schema.json`, `content/world/**`, runtime reads, BED-1.
+`item.schema.json`, runtime reads, BED-1, new Item definitions, the BED-0 §3 validator rules, the exception list and the fixture house.
 
 ## Implementation / findings
 
-Packet rows carry part, partner direction, partner key and raw transform targets; unresolved facts are `null` and listed under `holds`.
+Packet rows are `bed` promotion rows (part, partner direction, both occupied targets); holds and no-change targets are listed. The materializer applies the packet after the NPC chain: those stages pin the complete `reference.json` digest of their predecessor, so an earlier application would drift every pin.
+
+Open finding for the CP/architect: the packet doc expects 370 lowered, 7 held and 7 non-bed targets. The tool gives 359 lowered, 18 held and 8 no-change (item, field) pairs over 6 Items. 7 held Items are the first-order part/direction mismatches (26091, 32795, 32800, 37197, 39436, 39781, 39787); the other 11 are held because their target is one of them, which the set rule (every other occupied target carries group 19 with the same part and direction) requires and which the compile would reject otherwise. The packet doc says the tool's figures are authoritative.
+
+Pending: the item-authoring and house-authoring workflow steps (`python test_lower_bed_packet.py`, `python lower_bed_packet.py --check`, `python test_validate_beds.py`) were not added; the edit of `.github/workflows/` was denied and is left for the CP.
+
+Touched: `tools/content-schema/item-authoring/{lower_bed_packet.py,test_lower_bed_packet.py,README.md}`, `tools/content-schema/house-authoring/{validate_beds.py,test_validate_beds.py,bed-exception-houses.json,README.md}`, `docs/agents/evidence/OTV2-20261005-bed-facts-v1.json`, `apps/game-server/src/content/{item_bed_promotion.rs,mod.rs}`, `apps/game-server/examples/materialize_content_world_project_v2.rs`, the regenerated `content/**` tree and `content/world/**`, `apps/game-server/tests/content_world_project_repository.rs` pins.
 
 ## Validation
 

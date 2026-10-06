@@ -1,16 +1,17 @@
-"""Lower the BED-CONTENT-1 bed facts (BED-0 §3, group 19 per #1847) from Canary `items.xml`.
+"""Lower the BED-CONTENT-1 bed facts (BED-0 §3, group 19) from Canary `items.xml` into one packet.
 
-Canary (D384 pin, OTS_HYPOTHESIS_ONLY) is the only source. Per `type="bed"` Item the packet
-carries `part` (`bedpart`: `pillow` = head, `blanket` = foot), `partner_direction`
-(`partnerdirection`), `occupied_male` and `occupied_female`. The placed Item is the free look;
-halves pair by direction and `bedpartof` is not read. `occupied_<sex>` is the `<sex>transformto`
-target, falling back to the other sex's key; a missing, 0 or non-bed target means no change
-(`null`). Item names stay in the definitions; this tool adds no name.
+Rule: ITEM-SEM-BED-PACKET-1 §1.5. Canary (D384 pin, OTS_HYPOTHESIS_ONLY) is the only source. Per
+`type="bed"` Item: `part` (`bedpart`: `pillow` = Head, `blanket` = Foot), `partner_direction`
+(`partnerdirection`) and `occupied_male` / `occupied_female` (`<sex>transformto`, falling back to
+the other sex's key only when this one is absent). The engine shows a target only when it is a
+`type="bed"` Item, so a target that is `0` or not a bed lowers to the record's own Item ("no
+change") and is listed under `no_change_targets` with its source id and source type. The free look
+is the placed Item and `bedpartof` is not read.
 
-A part or direction the source does not state is `null`, and the Item is listed under `holds`.
-The packet is a candidate: no definition carries the `bed` group until ITEM-SEM-BED-1 admits it,
-and no runtime reads these facts before BED-1. `--check` rebuilds the packet in memory and fails
-on any byte difference.
+An Item is held, gets no group 19 and is listed under `holds` by reason when its part or direction
+is missing or unknown, when it has no content definition, or when a target has another part,
+another direction or no group 19 (the set rule, to a fixed point). The packet is applied by
+`item_bed_promotion.rs`; `--check` rebuilds it in memory and fails on any byte difference.
 """
 
 from __future__ import annotations
@@ -25,67 +26,127 @@ from lower_equip_abilities_packet import canary_pin, load_canary_top_level
 from lower_wiki_stats_packet import ROOT, content_item_ids
 
 OUTPUT = ROOT / "docs" / "agents" / "evidence" / "OTV2-20261005-bed-facts-v1.json"
-SCHEMA = "OTERYN_ITEM_BED_FACTS/v1"
-PARTS = {"pillow": "head", "blanket": "foot"}
-DIRECTIONS = {"north", "east", "south", "west"}
-OCCUPIED = (
-    ("occupied_male", "maletransformto"),
-    ("occupied_female", "femaletransformto"),
-)
+SCHEMA = "OTERYN_ITEM_BED_PROMOTION/v1"
+PARTS = {"pillow": "HEAD", "blanket": "FOOT"}
+DIRECTIONS = {"north": "NORTH", "east": "EAST", "south": "SOUTH", "west": "WEST"}
+SEXES = (("occupied_male", "maletransformto"), ("occupied_female", "femaletransformto"))
 
 
 def _key(item_id):
     return f"oteryn:item.tibia.i{item_id}"
 
 
-def _item_id(raw):
+def _number(raw):
     return int(raw) if raw is not None and raw.isdigit() else None
 
 
 def build(canary, content_ids):
-    """(rows, holds, counts) for every `type="bed"` Canary Item that has a content definition."""
+    """(promotions, holds, no_change_targets, counts) for the Canary `type="bed"` Items."""
     beds = {i: a for i, a in canary.items() if a.get("type") == "bed"}
-    rows, holds, counts = [], [], Counter()
+    held, no_change = {}, []
+    facts = {}
     for item_id in sorted(beds):
         attrs = beds[item_id]
-        if item_id not in content_ids:
-            counts["not_in_content"] += 1
-            continue
         part = PARTS.get(attrs.get("bedpart"))
-        direction = attrs.get("partnerdirection")
+        direction = DIRECTIONS.get(attrs.get("partnerdirection"))
         reasons = []
         if part is None:
             reasons.append("bedpart_unknown")
-        if direction not in DIRECTIONS:
-            direction = None
+        if direction is None:
             reasons.append("partnerdirection_unknown")
-        targets = {}
-        for field, attr in OCCUPIED:
-            target = _item_id(attrs.get(attr))
-            targets[field] = target if target in beds else None
-        row = {"item_key": _key(item_id), "part": part, "partner_direction": direction}
-        for field, other in zip(targets, reversed(list(targets))):
-            chosen = targets[field] if targets[field] is not None else targets[other]
-            row[field] = _key(chosen) if chosen is not None else None
-        rows.append(row)
-        counts[f"part_{part}"] += 1
+        if item_id not in content_ids:
+            reasons.append("no_content_definition")
         if reasons:
-            holds.append({"item_key": row["item_key"], "reasons": sorted(reasons)})
-    counts["rows"] = len(rows)
-    counts["holds"] = len(holds)
-    return rows, holds, dict(sorted(counts.items()))
+            held[item_id] = reasons
+            continue
+        targets = {}
+        for field, attr in SEXES:
+            other = dict(SEXES)[
+                ("occupied_female" if field == "occupied_male" else "occupied_male")
+            ]
+            raw = attrs.get(attr)
+            if raw is None:
+                raw = attrs.get(other)
+            target = _number(raw)
+            if target is not None and beds.get(target) is not None:
+                targets[field] = target
+            else:
+                targets[field] = item_id
+                if raw is not None:
+                    no_change.append(
+                        {
+                            "item_key": _key(item_id),
+                            "field": field,
+                            "source_target": raw,
+                            "source_type": canary.get(target, {}).get("type")
+                            if target
+                            else None,
+                        }
+                    )
+        facts[item_id] = (part, direction, targets)
+    changed = True
+    while changed:  # the set rule, to a fixed point: a held target holds its sources
+        changed = False
+        for item_id, (part, direction, targets) in sorted(facts.items()):
+            for target in targets.values():
+                if target == item_id:
+                    continue
+                if (
+                    target in held
+                    or target in facts
+                    and facts[target][:2] != (part, direction)
+                ):
+                    held[item_id] = ["target_part_or_direction_differs"]
+                    changed = True
+                elif target not in facts:
+                    held[item_id] = ["target_not_lowered"]
+                    changed = True
+                if item_id in held:
+                    break
+            if item_id in held:
+                del facts[item_id]
+                break
+    promotions = [
+        {
+            "item_key": _key(item_id),
+            "field_path": "bed",
+            "typed_value": {
+                "kind": "BED",
+                "value": {
+                    "part": part,
+                    "partner_direction": direction,
+                    "occupied_male": _key(targets["occupied_male"]),
+                    "occupied_female": _key(targets["occupied_female"]),
+                },
+            },
+        }
+        for item_id, (part, direction, targets) in sorted(facts.items())
+    ]
+    holds = [{"item_key": _key(i), "reasons": r} for i, r in sorted(held.items())]
+    no_change = [r for r in no_change if int(r["item_key"].rsplit(".i", 1)[1]) in facts]
+    counts = Counter(
+        {
+            "bed_types": len(beds),
+            "items": len(promotions),
+            "fields": len(promotions),
+            "holds": len(holds),
+            "no_change_targets": len(no_change),
+        }
+    )
+    return promotions, holds, no_change, dict(sorted(counts.items()))
 
 
 def packet_bytes(canary, content_ids, pin):
-    rows, holds, counts = build(canary, content_ids)
+    promotions, holds, no_change, counts = build(canary, content_ids)
     packet = {
         "schema": SCHEMA,
-        "decision": "BED-0 §3",
+        "decision": "ITEM-SEM-BED-PACKET-1 §1.5",
         "task_id": "OTV2-20261004-bed-content-1",
         "source": pin,
         "counts": counts,
-        "rows": rows,
+        "promotions": promotions,
         "holds": holds,
+        "no_change_targets": no_change,
     }
     return (json.dumps(packet, indent=2, sort_keys=True) + "\n").encode("utf-8")
 

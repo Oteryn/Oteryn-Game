@@ -25,6 +25,7 @@ use oteryn_game_server::content::{
     capture_world_project,
     item_abilities::apply_equip_abilities_v1,
     item_admission::apply_item_admission_v1,
+    item_bed_promotion::apply_item_bed_promotion_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
     item_description_promotion::apply_item_description_promotion_v1,
     item_description_wiki_promotion::apply_item_description_wiki_promotion_v1,
@@ -2679,7 +2680,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         NPC_BULK_MORE_PREDECESSOR,
         NPC_BULK_MORE_COUNT,
     )?;
-    let draft = enrich_provisional(draft)?;
+    let mut draft = enrich_provisional(draft)?;
+    // BED-CONTENT-1: after the NPC chain, whose stages pin the complete reference.json digest of
+    // their predecessor; a bed group added earlier would drift every one of those pins.
+    apply_item_bed_promotion_v1(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
