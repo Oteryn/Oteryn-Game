@@ -1118,7 +1118,7 @@
     "QUEST-TRIGGER-1 remains serialized after QUEST-GATE-1",
     "NPC-QUEST-1 remains blocked by NPC-TALK-1; NPC-WIRE-1 #1866 is merged, remaining dependencies include NPC-PLACE-1 + MAP-CUTOVER-1",
     "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
-    "Magnolia special Encounter absent",
+    "Magnolia Encounter record absent; existing DSL covers lethal_damage/prevent_death/item_used/timers/convert_damage_to_heal, but phase-2 exact 60000 HP is not representable by current health model (base max 52000), and docs mention set_phase while schema/ProjectV2 has no set_phase action. Requires Encounter-owner disposition before SHARDS-E1.",
     "Blue Lava night-only predicate source conflict",
     "Escape room/skeleton/icicles/north-wall are resolved (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9); Rope Spot/scripted exit remains unresolved, and donor Lit Torch 54610 requires separate Item admission (do not alias to i34017)",
     "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
@@ -1256,6 +1256,45 @@
         "copy Achievement fact into QuestState",
         "treat Area identity as executable capability"
       ]
+    },
+    "magnolia_schema_fit": {
+      "encounter_record_present": false,
+      "encounter_runtime_general_interpreter_present": false,
+      "supported_primitives": [
+        "lethal_damage",
+        "prevent_death",
+        "item_used",
+        "timer_elapsed",
+        "spawn",
+        "heal",
+        "convert_damage_to_heal",
+        "stepped_on",
+        "emit_outcome"
+      ],
+      "phase_model": {
+        "docs": "phases[] ordered named phases; multi-form bosses move by set_phase",
+        "project_v2_field": "phases: Vec<String>",
+        "set_phase_action_present": false,
+        "status": "DOC_SCHEMA_DRIFT"
+      },
+      "phase2_health": {
+        "source_exact_hp": 60000,
+        "base_creature_hp": 52000,
+        "health_model": [
+          "full",
+          "keep_percent",
+          "keep_absolute",
+          "remembered",
+          "percent"
+        ],
+        "absolute_or_max_hp_setter": false,
+        "status": "NOT_REPRESENTABLE_WITH_CURRENT_SINGLE_FORM_HEALTH_MODEL"
+      },
+      "acceptable_architecture_options": [
+        "Encounter-owner internal phase-2 Creature form with max_hp=60000 and lethal transform, if canonical/content policy permits internal stage identities",
+        "bounded Encounter schema/runtime amendment for phase transition and explicit phase/max-health semantics"
+      ],
+      "forbidden_shortcut": "Do not silently heal above max, alias phase 2 to ordinary full health, or emit magnolia_defeated on first lethal."
     }
   }
 }
