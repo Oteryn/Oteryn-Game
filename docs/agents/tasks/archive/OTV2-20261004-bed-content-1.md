@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/bed-content-1-20261005
-pr: null
+pr: 1861
 base_sha: null
 head_sha: null
 final_head_sha: null
@@ -82,6 +82,8 @@ Touched: `tools/content-schema/item-authoring/{lower_bed_packet.py,test_lower_be
 
 - command/run: `cargo test -p oteryn-game-server --lib item_bed_promotion` (6 tests); `regenerate_content.py` (materializer, content tree and every check, run in parts after one unrelated-test fixture key fix); `cargo test --test content_world_project_repository`; `item_key_references.py`; house-authoring `verify_formal_schema.py`, `validate_houses.py`; `validate_repository_policy.py`, `validate_governance.py`, `tools/agents/tests`
 - result: pass
+- command/run: `python tools/agents/validate_governance.py`: pass
+- command/run: `python -m unittest discover -s tools/agents/tests`: pass
 
 ### E2E
 
@@ -128,7 +130,7 @@ last_progress: group 19 lowered, content tree regenerated, record archived
 status: completed
 branch: claude/bed-content-1-20261005
 head_sha: null
-pr: null
+pr: 1861
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
