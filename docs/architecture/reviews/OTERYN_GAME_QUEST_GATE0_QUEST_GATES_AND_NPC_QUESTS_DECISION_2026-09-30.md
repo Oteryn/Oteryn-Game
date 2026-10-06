@@ -569,6 +569,9 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
      receipt by (character, root CommandRef, transition_key) with
      `reconcile_character_quest_transition`. Only with no receipt, and in the same GameSession,
      is the same request sent again; it replays or commits once.
+     In a replaced GameSession, a pending child with no receipt is `REJECTED`.
+   - A child that is `UNSTARTED` in a retained plan runs once if its fences authorize it (§4),
+     else it is `REJECTED`.
    - A child with no retained plan and no receipt fails closed as `REJECTED` (successor §6.2).
      This covers a crash between the root's commit and the child's commit. A fresh `USE` or step
      is a new CommandRef and a new root (successor §9.3). This is a declared v1 behaviour, and the
