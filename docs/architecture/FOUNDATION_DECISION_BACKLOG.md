@@ -5,8 +5,11 @@
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Canonical programme task: `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`
 - Global decision register: `docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md`
-- Current execution status: `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`
+- Current execution status: `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (reconciled 2026-10-06: that file is a historical 2026-08-24 snapshot despite its name; live lifecycle state is issue #162)
 - Coordinator prompt: `docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md`
+- Reconciled: 2026-10-06 (owner ruling of 2026-10-06)
+
+**Reconciled 2026-10-06.** Gate statuses below were reconciled against accepted or merged decisions only; a `CANDIDATE` decision does not count. Status lines use the compact form of `ARCHITECTURE_STATUS_MODEL.md`. Each changed gate carries a "reconciled 2026-10-06" status line with its locator; no historical text was removed, and superseded "current"/"next" wording is annotated in place. Pointers to `ARCH-ALPHA-OPS-0`, `ARCH-LIVE-READINESS-0` and `ARCH-I18N-A11Y-CREATIVE-0` name owner decisions authored on 2026-10-06 under `docs/architecture/reviews/`; a pointer is not acceptance, and each decision's contract amendments to this file apply only through its own packets. Live programme order is issue #162.
 
 ## Purpose
 
@@ -165,6 +168,8 @@ The migration/cutover and foundation identifier gate are complete. The current o
 
 No `FND-02` protocol/runtime implementation is authorized by this backlog reconciliation.
 
+Reconciled 2026-10-06: this transition is historical. Issue #86 is past, and `FND-02`, `FND-03` and `FND-04` are accepted and lifecycle-closed (`docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)), with bounded runtime primitives merged in PR #59. Implementation authority is still governed by each gate and by issue #162.
+
 ### Gate 3 — layer-specific implementation
 
 - `FND-ID-01` is complete and its semantic identities are mandatory inputs to later layers.
@@ -283,6 +288,8 @@ Explicit downstream ownership:
 
 ### `FND-02` — `protocol-oteryn` v1 Contract
 
+Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME IMPLEMENTED (bounded, PR #59)** (reconciled 2026-10-06; locator `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97); `FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md` header still reads candidate/canonical-when-merged).
+
 Decide:
 
 - whether the exact latest merged Platform native contract is adopted, revised or explicitly superseded for the Rust server target; mutable PR heads are evidence only and cannot be canonical;
@@ -305,6 +312,8 @@ The merged Platform native contract is reconciliation input only according to `F
 
 ### `FND-03` — Runtime Execution Contract
 
+Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME IMPLEMENTED (bounded, PR #59)** (reconciled 2026-10-06; locator `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97); `FND-03_RUNTIME_EXECUTION_CONTRACT.md` header still reads candidate/canonical-when-merged).
+
 Decide:
 
 - `NodeRuntime`, `WorldServices`, `ChannelRuntime` and `InstanceRuntime` responsibilities;
@@ -324,6 +333,8 @@ Decide:
 - required outcomes for the named foundation failure scenarios covering overload, stale generations, dependency loss, split ownership and recovery.
 
 ### `FND-04` — Identity, Game Session, Admission and Character Lease Contract
+
+Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME IMPLEMENTED (bounded, PR #59)** (reconciled 2026-10-06; locator `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97); the FND-04 contract header still reads candidate/canonical-when-merged).
 
 The ownership boundary is accepted; the exact mechanism is not. This contract consumes the accepted `FND-ID-01` meanings and may not redefine them.
 
@@ -352,6 +363,8 @@ ADR-0009 accepts the execution, capacity-measurement, deployment-boundary and re
 
 ### `PERF-01` — Capacity, Performance and Scalability Contract
 
+Status: **PLANNED / not accepted** (reconciled 2026-10-06; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)) — owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md`), which takes time/tick and the performance budget. Bounded adjacent input only: `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md` (PR #1864).
+
 Decide and prove:
 
 - named reference hardware, operating system and process/container resource cells;
@@ -365,6 +378,8 @@ Decide and prove:
 Player count alone is not a scaling signal. Accepted limits must also account for latency, queue age, CPU, memory, network, persistence health and the first violated service objective.
 
 ### `OPS-CHANNEL-01` — GameNode Deployment and Dynamic Channel Orchestration Contract
+
+Status: **PLANNED / not accepted** (reconciled 2026-10-06; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)) — owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md`), which takes observability, logging, metrics and SLOs, schema migration, and backup and DR. Owner-accepted partial inputs: `docs/architecture/reviews/OTERYN_GAME_NODE_BOOT_COMPOSITION_DECISION_2026-09-24.md` (PR #830) and `docs/architecture/reviews/OTERYN_GAME_NODE_PROCESS_REGISTRATION_BOOTSTRAP_AUTH_DECISION_2026-09-22.md`.
 
 Decide:
 
@@ -383,6 +398,8 @@ Decide:
 
 ### `DUR-01` — Durable Identifier Representation Contract
 
+Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED** (reconciled 2026-10-06; locator `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97); the contract header still reads candidate/canonical-when-merged).
+
 Consume the semantic identities already frozen by `FND-ID-01` and define physical durable/database representation where persistence requires it. Additionally freeze the durable-domain identifiers owned by persistence/gameplay domains, including item/entity identities and other later durable records.
 
 Requirements:
@@ -394,6 +411,8 @@ Requirements:
 - decide database encoding, indexing, retention/tombstone behavior and entity-ID reuse rules without changing cross-boundary semantics.
 
 ### `DUR-02` — Persistence v1 Contract
+
+Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED** (reconciled 2026-10-06; locator `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md` OWNER_ACCEPTED; `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)). Backup/restore and live-state migration: owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md`).
 
 PostgreSQL is selected. Still decide:
 
@@ -416,6 +435,8 @@ The default direction remains current-state tables plus revisions, idempotent co
 
 ### `DUR-03` — Item Transaction and Anti-Duplication Contract
 
+Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED** (reconciled 2026-10-06; locator `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97); the contract file on its delivery branch still reads CANDIDATE / NONBINDING). Adjacent: `docs/architecture/reviews/OTERYN_DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_DECISION_2026-09-27.md` is owner-selected with canonical acceptance pending (issue #513).
+
 Decide, either in Persistence v1 or a separate contract:
 
 - canonical item-instance identity and ownership;
@@ -429,6 +450,8 @@ Decide, either in Persistence v1 or a separate contract:
 - deterministic conservation, provenance and single-authoritative-location invariants that can be independently reconciled by Game Intelligence.
 
 ### `DUR-04` — Content, World Detail and Scripting Contract
+
+Status: **CONFLICT — not counted as accepted** (reconciled 2026-10-06). historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97) records ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED, but `DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md` reads `PROPOSED / IN_REVIEW / NOT_STARTED`, and `docs/architecture/OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md` (PR #311) leaves the World Bundle encoding to the DUR-04 format spike. Owner resolution required. ADR-0021 world-map runtime loading is accepted separately by `docs/architecture/reviews/OTERYN_GAME_ACCEPT_SOCIAL_MAP0_ACCEPTANCE_DECISION_2026-10-04.md` (PR #1771).
 
 ADR-0005 accepts the native world format, Oteryn Studio, stable content identity, chunk/semantic geography separation, encounter-placement hierarchy and legacy-conversion boundary. Still decide:
 
@@ -456,6 +479,8 @@ ADR-0006 accepts the subsystem direction. The following contracts freeze its imp
 
 ### `ANL-01` — Game Event and Audit Foundation Contract
 
+Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED** (reconciled 2026-10-06; locator `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97); the contract header still reads candidate/canonical-when-merged).
+
 Decide:
 
 - canonical `EventId`, `OperationId`, `TransactionId`, `CorrelationId`, `CausationId` and pseudonymous `AnalyticsActorId` semantics/representation/scope where required by the event/audit foundation;
@@ -475,6 +500,8 @@ This contract must be accepted before `DUR-02` and `DUR-03` finalize the outbox/
 
 ### `ANL-02` — Gameplay, Balance and World Analytics Contract
 
+Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED** (reconciled 2026-10-06; locator `docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)).
+
 Decide:
 
 - hunt/session and aggregate semantics derived from explicit events;
@@ -487,6 +514,8 @@ Decide:
 Analytics remains observational and may not change balance automatically.
 
 ### `ANL-03` — Economy Integrity and Security Analytics Contract
+
+Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED** (reconciled 2026-10-06; locator `docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)). Retention ceilings and the enforcement/GM contract remain open; retention and pseudonymization lifecycle: owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md`).
 
 Decide:
 
@@ -501,6 +530,8 @@ This contract supplements but never replaces the prevention guarantees of `DUR-0
 
 ### `ANL-04` — Read-Only Investigation and AI Contract
 
+Status: **PLANNED / not accepted** (reconciled 2026-10-06; later read-only investigation gate).
+
 Decide:
 
 - read-only views, replicas and evidence-package APIs;
@@ -512,6 +543,8 @@ Decide:
 This is an expansion gate and is not required for the foundation vertical slice.
 
 ## `QA-E2E-01` — Native End-to-End Test Platform Contract
+
+Status: **ACCEPTED / LIFECYCLE_CLOSED / evidence shell IMPLEMENTED** (reconciled 2026-10-06; locator historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)).
 
 ADR-0007 accepts the architecture. Implementation must provide:
 
@@ -528,6 +561,8 @@ ADR-0007 accepts the architecture. Implementation must provide:
 The canonical client migration and FND-ID gate are complete. Protocol, admission, durable mutation and content scenarios consume their respective accepted contracts. `QA-E2E-01` blocks completion of `VSL-01`, not architecture discovery.
 
 ## `VSL-01` — Foundation Vertical-Slice Programme
+
+Status: **PLANNED** (reconciled 2026-10-06; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)). The bounded Stage C VSL gates are accepted separately by `docs/architecture/OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md` (PR #311).
 
 Approve ownership, implementation order and evidence for this minimum scenario using the accepted `QA-E2E-01` platform and evidence contract:
 
@@ -583,6 +618,8 @@ The complete open-decision scope is canonical in `GAMEPLAY_AND_PRODUCT_ARCHITECT
 
 Registering a gate does not accept its implementation choice.
 
+Reconciled 2026-10-06: `GAME-CHAR-01` and `GAME-ITEM-01` are accepted (`docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303)); `GAME-ABILITY-01` is accepted (`docs/architecture/GAME-ABILITY-01_WHOLE_GATE_OWNER_ACCEPTANCE_BASELINE.md`, PR #306); `GAME-AI-01` and `GAME-INTERACTION-01` are accepted with named open items (`docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309)). Of the operational-completeness gates, `PROD-LIVEOPS-01`, `OPS-GM-01` and `DATA-PRIVACY-01` are owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md`); `PROD-COMPAT-01` (client version and update) and `PERF-01` are owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md`); `UX-I18N-A11Y-01` is owner decision in progress: `ARCH-I18N-A11Y-CREATIVE-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_I18N_A11Y_CREATIVE_DIRECTION_2026-10-06.md`); `SEC-CLIENT-01` stays CANDIDATE (`docs/architecture/reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md`) with its threat model in `ARCH-LIVE-READINESS-0`. `PROD-ENTITLEMENTS-01` is no longer deferred on the game side: its consumer contract is accepted (PR #20, closeout PR #27; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97) §8); payment and delivery activation remain separately governed. `EXP-HOUSES-01` is accepted (`docs/architecture/EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md`, issue #220).
+
 ## Explicitly deferred
 
 These do not block the completed migration/FND-ID gates or the foundation vertical slice when extension points remain safe:
@@ -623,8 +660,8 @@ No package may edit another active package's owned contract without explicit coo
 3. COMPLETED — Freeze/reconcile migration source and deliver canonical Oteryn-v2 workspace
 4. COMPLETED — Close source-only otclient historical/non-canonical marker
 5. COMPLETED — Accept and merge FND-ID-01 Foundation Identifier Contract
-6. CURRENT CLEANUP — Reconcile issue #86 coordination views to the accepted FND-ID scope
-7. NEXT — Accept FND-02 protocol-oteryn v1 Contract
+6. CURRENT CLEANUP — Reconcile issue #86 coordination views to the accepted FND-ID scope   [reconciled 2026-10-06: historical]
+7. NEXT — Accept FND-02 protocol-oteryn v1 Contract   [reconciled 2026-10-06: accepted, PR #303]
 8. THEN — Accept FND-03 Runtime Execution Contract, including clock/event-emission/runtime-handle semantics
 9. THEN — Accept FND-04 Identity, Game Session, Admission and Character Lease Contract
 10. Accept DUR-01 durable/database identifier representation contract
@@ -646,6 +683,8 @@ No package may edit another active package's owned contract without explicit coo
 26. Activate expansion/deferred gameplay-product gates only when their milestone or explicit owner decision requires them
 ```
 
+Reconciled 2026-10-06: the ordered list above is historical; the items are not renumbered. Items 1-5 are complete. Items 6-16 are complete as accepted architecture (`docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); `docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)) except: item 17 `DUR-04` is a CONFLICT (see the `DUR-04` status line); item 18 `QA-E2E-01` has an evidence shell implemented; items 19-20 `VSL-01` are PLANNED, and the bounded Stage C gates are accepted by PR #311. Items 21-22 (`PERF-01`, `OPS-CHANNEL-01`) are PLANNED and owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md`). Item 23 is accepted (PR #306, PR #309). Item 24 is open; see the pointers under "Registered gameplay and product decision horizon". Item 25: `ANL-02`/`ANL-03` are accepted (PR #309) and `ANL-04` stays deferred. The live order is issue #162.
+
 Contracts may be developed in parallel only when ownership and dependencies do not overlap. Cross-repository changes require separate authorized tasks, branches and PRs with one coordination ID and explicit rollout order.
 
 ## Start gates
@@ -654,6 +693,7 @@ Contracts may be developed in parallel only when ownership and dependencies do n
 - `FND-ID-01` is accepted and merged; its semantics are mandatory input to `FND-02`, `FND-03` and `FND-04` and may not be redefined there.
 - issue #86 is coordination cleanup only; it does not reopen FND-ID semantics.
 - after #86 is merged and verified, `FND-02` is the clean next ordered architecture gate.
+- Reconciled 2026-10-06: the two items above are historical. `FND-02`, `FND-03` and `FND-04` are accepted (`docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303)); the remaining start gates still apply as conditions, with each gate's current status given in its status line above.
 - `FND-02`, `FND-03` and `FND-04` gate canonical protocol, authoritative runtime and production admission/lease implementation respectively.
 - `DUR-01`, `DUR-02` and `DUR-03` must be accepted before authoritative durable character, item or currency mutation.
 - `GAME-CHAR-01` must be accepted before `DUR-02` finalizes the character schema; `GAME-ITEM-01` must be accepted before `DUR-03` finalizes item semantics.
@@ -668,6 +708,8 @@ Contracts may be developed in parallel only when ownership and dependencies do n
 - `OPS-CHANNEL-01` must be accepted before automatic production channel scaling or production GameNode/channel recovery behavior is claimed.
 
 ## Current next action
+
+Reconciled 2026-10-06: the section below is historical and superseded. Issue #86 and `FND-02` acceptance are complete (`docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303)). The current next action is derived from issue #162 and its `STATE` comment, not from this backlog. The owner decisions authored on 2026-10-06 are `ARCH-ALPHA-OPS-0`, `ARCH-LIVE-READINESS-0` and `ARCH-I18N-A11Y-CREATIVE-0`.
 
 Complete and merge issue #86 coordination reconciliation on the two long-lived architecture registers. After exact-head validation, audit and closeout, begin a separate bounded **architecture-only `FND-02` contract task** consuming:
 
