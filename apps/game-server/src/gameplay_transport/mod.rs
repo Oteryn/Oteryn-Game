@@ -2033,7 +2033,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         Some(Self::observation(&runtime, snapshot.position()))
     }
 
-    /// MAP-ITEM-REF-1: capability 4 only when the active generation pins a non-empty Item key set.
+    /// MAP-ITEM-REF-1: capability 4 (once Part B sets its gate) only when the active generation
+    /// pins a non-empty Item key set.
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
         item_ref_admission::offered_capabilities(self.active_generation)
     }

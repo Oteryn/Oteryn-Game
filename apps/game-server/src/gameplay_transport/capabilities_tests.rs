@@ -245,7 +245,7 @@ fn selection_keeps_a_capability_only_with_all_its_requires() {
 }
 
 #[test]
-fn the_production_sets_select_only_capabilities_4_6_13_and_17_whatever_the_client_supports()
+fn the_production_set_selects_only_capabilities_6_13_and_17_whatever_the_client_supports()
 -> Result<(), Box<dyn Error>> {
     let mut everything: Vec<u32> = Vec::new();
     for capability in registry_capabilities()? {
@@ -258,21 +258,17 @@ fn the_production_sets_select_only_capabilities_4_6_13_and_17_whatever_the_clien
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[4, 6, 13, 17][..])
-    );
-    // MAP-ITEM-REF-1: a generation without an Item key set offers everything but 4.
-    assert_eq!(
-        SelectedCapabilities::select(
-            PRODUCTION_OFFERED_CAPABILITIES_WITHOUT_ITEM_VIEW,
-            &everything
-        )
-        .as_ref()
-        .map(SelectedCapabilities::as_slice),
         Some(&[6, 13, 17][..])
     );
-    // 4 requires 6: without 6 it is not selected.
+    // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
     assert_eq!(
-        SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &[4, 13])
+        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
+            .as_ref()
+            .map(SelectedCapabilities::as_slice),
+        Some(&[4, 6, 13, 17][..])
+    );
+    assert_eq!(
+        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
             .as_ref()
             .map(SelectedCapabilities::as_slice),
         Some(&[13][..])
@@ -637,13 +633,13 @@ fn production_admission_selects_capabilities_6_13_and_17_and_nothing_else()
 }
 
 #[test]
-fn production_admission_selecting_4_sends_domain_9_and_without_4_none() -> Result<(), Box<dyn Error>>
+fn item_view_admission_selecting_4_sends_domain_9_and_without_4_none() -> Result<(), Box<dyn Error>>
 {
     run(async {
-        // MAP-ITEM-REF-1: the production offered set selects 4 with its required 6, and the
+        // MAP-ITEM-REF-1: the Item view offered set selects 4 with its required 6, and the
         // admitted session is sent domain 9; a session admitted without 4 is sent none. The
         // fixture serves no combat state, so the client here does not support 17.
-        let authority = NegotiatingAuthority::new(None);
+        let authority = NegotiatingAuthority::new(Some(ITEM_VIEW_OFFERED_CAPABILITIES));
         let inventory = authority
             .observe_character_inventory(
                 ExactActorRef::transport_fixture(

@@ -1,6 +1,6 @@
 //! MAP-ITEM-REF-1 (ARCH-MAP-TRACK-PACKETS-V1 §1.6): the production fresh admission's capability 4
-//! offer and its domain 9 read. Capability 4 is offered only when the active generation pins a
-//! non-empty Item key set. Domain 9 names each durable backpack definition by that generation's
+//! offer and its domain 9 read. Capability 4 is offered only once [`ITEM_VIEW_OFFERED`] is set and
+//! only when the active generation pins a non-empty Item key set. Domain 9 names each durable backpack definition by that generation's
 //! Item definition index, read only while the Channel content pin is the same generation; any
 //! definition the index does not name fails closed.
 //!
@@ -9,8 +9,7 @@
 
 use super::ComposedFreshAdmission;
 use super::capabilities::{
-    OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES,
-    PRODUCTION_OFFERED_CAPABILITIES_WITHOUT_ITEM_VIEW,
+    ITEM_VIEW_OFFERED_CAPABILITIES, OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES,
 };
 use super::item_view::{InventoryItems, inventory_from_backpack};
 use super::{FreshAdmissionStore, GameSessionId, GameSessionState};
@@ -26,13 +25,25 @@ fn item_index(generation: Option<&ActiveGeneration>) -> Option<&ItemDefinitionIn
         .filter(|index| !index.is_empty())
 }
 
+/// MAP-ITEM-REF-1 Part B sets this, atomically with the composed corpse observation,
+/// `observe_item_target` and `take_corpse_entry` (CP ruling on Codex 4201178872). Until then
+/// production does not offer capability 4.
+const ITEM_VIEW_OFFERED: bool = false;
+
 pub(super) fn offered_capabilities(
     active_generation: Option<&ActiveGeneration>,
 ) -> &'static [OfferedCapability] {
-    if item_index(active_generation).is_some() {
-        PRODUCTION_OFFERED_CAPABILITIES
+    offered_capabilities_when(ITEM_VIEW_OFFERED, active_generation)
+}
+
+fn offered_capabilities_when(
+    item_view_offered: bool,
+    active_generation: Option<&ActiveGeneration>,
+) -> &'static [OfferedCapability] {
+    if item_view_offered && item_index(active_generation).is_some() {
+        ITEM_VIEW_OFFERED_CAPABILITIES
     } else {
-        PRODUCTION_OFFERED_CAPABILITIES_WITHOUT_ITEM_VIEW
+        PRODUCTION_OFFERED_CAPABILITIES
     }
 }
 

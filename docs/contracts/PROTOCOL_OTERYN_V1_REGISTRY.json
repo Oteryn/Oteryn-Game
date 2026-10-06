@@ -70,8 +70,8 @@
       "requires": [6],
       "command_types": [9],
       "state_domains": [9, 11],
-      "offered": true,
-      "offer_gate": "MAP-ITEM-REF-1 (ARCH-MAP-TRACK-PACKETS-V1 §2.7, ruling §1.6; CP D862): offered when the active generation's native gameplay artifact pins a non-empty Item key set, from which production reads domain 9 (item_definition_ref = 1 + the Item compact id, ascending by key bytes); a generation without one does not offer it. A production-path admission test selects it. Without it selected, domains 9 and 11 are never sent, command type 9 is refused as unsupported, a USE intent with the item target (field 2) fails closed and the D85 entry carries no item handle (field 10)."
+      "offered": false,
+      "offer_gate": "MAP-ITEM-REF-1 (ARCH-MAP-TRACK-PACKETS-V1 §2.7, ruling §1.6; CP D862): production reads domain 9 through the active generation's pinned Item key set (item_definition_ref = 1 + the Item compact id, ascending by key bytes). The server does not offer this capability before MAP-ITEM-REF-1 Part B composes corpse observation, the item target and the corpse take; then only a generation pinning a non-empty Item key set offers it. Without it selected, domains 9 and 11 are never sent, command type 9 is refused as unsupported, a USE intent with the item target (field 2) fails closed and the D85 entry carries no item handle (field 10)."
     },
     {
       "id": 6,

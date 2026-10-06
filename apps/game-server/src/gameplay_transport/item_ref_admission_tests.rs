@@ -14,21 +14,34 @@ fn offered_ids(offered: &[OfferedCapability]) -> Vec<u32> {
     offered.iter().map(|capability| capability.id).collect()
 }
 
-/// Capability 4 is offered exactly when the activated generation pins a non-empty Item key set;
-/// a generation without one, an empty one or no generation offers everything else.
+/// Until Part B sets the gate, production does not offer capability 4, even for a generation
+/// with a non-empty Item key set.
+#[test]
+fn production_does_not_offer_capability_4_yet() {
+    let with = activated_with_item_keys(Some(PRODUCTION_KEYS));
+    for generation in [None, with.active()] {
+        let offered = offered_capabilities(generation);
+        assert_eq!(offered, PRODUCTION_OFFERED_CAPABILITIES);
+        assert!(!offered_ids(offered).contains(&CAPABILITY_ITEM_VIEW_MOVE_V1));
+    }
+}
+
+/// With the gate set, capability 4 is offered exactly when the activated generation pins a
+/// non-empty Item key set; a generation without one, an empty one or no generation offers
+/// everything else.
 #[test]
 fn capability_4_is_offered_only_by_a_generation_with_a_non_empty_item_key_set() {
     assert_eq!(
-        offered_capabilities(None),
-        PRODUCTION_OFFERED_CAPABILITIES_WITHOUT_ITEM_VIEW
+        offered_capabilities_when(true, None),
+        PRODUCTION_OFFERED_CAPABILITIES
     );
     let with = activated_with_item_keys(Some(PRODUCTION_KEYS));
     assert_eq!(
-        offered_capabilities(with.active()),
-        PRODUCTION_OFFERED_CAPABILITIES
+        offered_capabilities_when(true, with.active()),
+        ITEM_VIEW_OFFERED_CAPABILITIES
     );
     assert_eq!(
-        SelectedCapabilities::select(offered_capabilities(with.active()), &[4, 6])
+        SelectedCapabilities::select(offered_capabilities_when(true, with.active()), &[4, 6])
             .unwrap()
             .as_slice(),
         [CAPABILITY_ITEM_VIEW_MOVE_V1, 6]
@@ -38,7 +51,7 @@ fn capability_4_is_offered_only_by_a_generation_with_a_non_empty_item_key_set() 
         Some(&br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[]}"#[..]),
     ] {
         let without = activated_with_item_keys(keys);
-        let offered = offered_capabilities(without.active());
+        let offered = offered_capabilities_when(true, without.active());
         assert!(!offered_ids(offered).contains(&CAPABILITY_ITEM_VIEW_MOVE_V1));
         assert_eq!(
             SelectedCapabilities::select(offered, &[4, 6])
