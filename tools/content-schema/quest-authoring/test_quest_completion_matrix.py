@@ -39,13 +39,20 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         )
         self.assertEqual(
             {
+                "BLOCKED_ON_SOURCE_FIDELITY": 14,
                 "DEFINITION_READY_RUNTIME_UNKNOWN": 41,
                 "MAPPING_REVIEW": 1,
                 "NATIVE_BINDINGS_PENDING": 68,
-                "NATIVE_LOWERING_PENDING": 42,
-                "SOURCE_DATA_PENDING": 221,
+                "NATIVE_LOWERING_PENDING": 249,
             },
-            self.result["summary"]["work_state"],
+            self.result["summary"]["implementation_state"],
+        )
+        self.assertEqual(
+            {
+                "SOURCE_HOLDS_CLEAR": 151,
+                "SOURCE_HOLDS_PRESENT": 222,
+            },
+            self.result["summary"]["source_fidelity_state"],
         )
 
     def test_canonical_inventory_is_not_assumed_one_to_one(self):
