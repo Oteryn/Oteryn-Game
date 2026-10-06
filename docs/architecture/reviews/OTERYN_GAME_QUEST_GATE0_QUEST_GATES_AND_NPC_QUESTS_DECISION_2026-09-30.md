@@ -538,7 +538,8 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
      an NPC travel.
    - The receipt key (character, root CommandRef, transition_key) is the child's durable index.
    - The full child reference stays Interaction-owned. Quest does not persist it.
-   - There is no new cause kind and no migration. A child reference is never hashed into a UUID,
+   - There is no new cause kind and no cause or receipt key migration (the §16.2.5 retirement
+     table is a separate claim record). A child reference is never hashed into a UUID,
      and `CommandId` or `cause_ordinal` are never overloaded.
 2. **Invariant.** The quest children and claim obligations under one root CommandRef have
    pairwise distinct transition keys. A quest child names only the root's acting character
@@ -596,26 +597,35 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
          process-local, the reservation keeps only the intent binding hash and the frozen
          identities, FND-02 never re-enqueues the reserved CommandRef, and a replacement
          GameSession fails `character_item_fence_is_current`. The reconciliation therefore
-         retires it through a new DUR-03 operation in `reward_claim_mint.rs`. That operation
-         loads the reservation by the root CommandRef, refuses unless its `character_id` is the
-         reconciled Character, and, in one transaction under the current recovery fence, takes
-         the commit pass's locks in its order (`lock_admission_relations`, then `lock_cause`,
-         which waits for a pass already in flight), charges the
-         remaining DUR03-RL-08 work units one at a time and reads the receipt. That charge is
-         the only mutation the 0012 reservation guard permits, so no schema or migration
-         changes. A commit pass charges its work unit in its own transaction before it takes
-         the cause lock, so spending the budget alone does not stop a pass that charged
-         earlier. QUEST-TRIGGER-1 therefore also makes `commit_reward_claim_mint_noticed`
-         refuse, under the cause lock and before any write, unless the reservation's stored
-         `work_units_used` equals the count its own charge returned. In every other flow the
-         candidate's passes are sequential, so the two counts are equal. A pass that charged
-         before the retirement and locks after it finds the budget spent and refuses with
-         `CapacityExceeded`, and a pass that locked first commits before the retirement reads.
-         With the budget spent, no commit pass can start or finish for that CommandRef, and
-         §17.2 no longer counts the reservation as pending. A receipt means `COMMITTED`, and the claim's
-         obligation row exists. No receipt means `REJECTED`: no item, no RewardClaim and no
-         obligation, so the claim stays unclaimed and a fresh `USE` (a new CommandRef) can claim
-         it. A rerun of the reconciliation finds the budget spent and reads the same result;
+         retires it through a new DUR-03 operation in `reward_claim_mint.rs`, with a durable
+         terminal record:
+         - **Retirement record.** QUEST-TRIGGER-1 adds one migration (its version above the
+           highest on `main` at authoring) with an insert-only table
+           `game_reward_claim_mint_retirements`, keyed by the reservation's (game_session_id,
+           command_id) and referencing it. The runtime role gets `SELECT, INSERT` only; a
+           no-truncate trigger is added as for the 0012 tables. The 0012 reservation guard is
+           unchanged.
+         - **Retirement.** The operation loads the reservation by the root CommandRef and
+           refuses unless its `character_id` is the reconciled Character. Then, in one
+           transaction under the current recovery fence, it takes the commit pass's locks in
+           their order (`lock_admission_relations`, then `lock_cause`, which waits for a pass
+           already in flight) and reads the receipt. With a receipt it writes nothing. With no
+           receipt it inserts the retirement row in that transaction. It spends no RL-08 work
+           unit, so a pass that already charged the final unit changes nothing.
+         - **Every commit pass checks it.** `commit_reward_claim_mint_noticed` refuses with
+           `CapacityExceeded`, under the cause lock and before any write, when a retirement row
+           exists for its CommandRef. `freeze_reward_claim_mint` refuses the same way. The cause
+           lock orders each pass against the retirement. A pass that locked first commits
+           before the retirement reads, so the receipt settles the child. A pass that locks
+           after the retirement sees the row and writes nothing, whatever its own or the stored
+           work unit count. This holds when its charge reached the RL-08 maximum.
+         - **Pending.** §17.2 counts a reservation with a retirement row as not pending, so a
+           fresh `USE` is not refused with `ClaimPending`.
+         - **Settlement.** A receipt means `COMMITTED`, and the claim's obligation row exists. A
+           retirement row means `REJECTED`: no item, no RewardClaim and no obligation, so the
+           claim stays unclaimed and a fresh `USE` (a new CommandRef) can claim it. A rerun of
+           the reconciliation finds the receipt or the retirement row and reads the same result.
+           The `REJECTED` settlement is written only after the retirement row commits.
      - a committed claim's quest obligation is a durable QUEST-STATE-0 §5.4 row, not a plan
        child: it is requested again at admission and commits once under its `ClaimObligation`
        cause (§16.2.2 keeps its transition key distinct); the reconciliation never rejects or
@@ -700,8 +710,8 @@ encoding and a new receipt key migration. It is decided with the first accepted 
      through a durable child record is reconciled explicitly; a root with none left no durable
      quest or claim effect. Children with a durable record (a quest receipt, a claim's MINT) keep
      it, a committed claim's obligation is requested again at admission, a claim reservation with
-     no receipt is retired by spending its RL-08 budget under the cause lock and then settled by
-     its receipt or `REJECTED`, and a commit pass whose charge the retirement overtook refuses, and every other child is `REJECTED` and never runs again. A relocation that ran is not re-run or reverted; the
+     no receipt is retired under the cause lock by a durable retirement row and then settled by
+     its receipt or `REJECTED`, and every later commit pass refuses on that row, and every other child is `REJECTED` and never runs again. A relocation that ran is not re-run or reverted; the
      Character resumes at its last persisted position (CHAR-POSITION-0).
 4. **Typed references:** the root CommandRef (GameSessionId, CommandId), `transition_key`, the
    binding's definition and `placement_key`, and the content revision.
@@ -710,8 +720,8 @@ encoding and a new receipt key migration. It is decided with the first accepted 
 6. **Atomic commit:** one transaction per quest child (QUEST-STATE-0 §5). The plan check runs
    before the root commits.
 7. **QUEST-TRIGGER-1 tests for plan loss after a claim reservation:**
-   - a process loss after the reservation and before the MINT: the reconciliation spends the
-     budget, finds no receipt and rejects the child; nothing is minted; a fresh `USE` claims the
+   - a process loss after the reservation and before the MINT: the reconciliation finds no
+     receipt, inserts the retirement row and rejects the child; nothing is minted; a fresh `USE` claims the
      chest once and is not refused with `ClaimPending`;
    - a pass in flight that commits during the retirement: the receipt read under the cause lock
      settles the child `COMMITTED`, its obligation commits at a later admission, and no second
@@ -719,7 +729,10 @@ encoding and a new receipt key migration. It is decided with the first accepted 
    - a pass that charged its work unit before the retirement and reaches the cause lock after
      it: the retirement reads no receipt and settles `REJECTED`, the pass refuses with
      `CapacityExceeded` and writes nothing, so no item, RewardClaim or obligation exists, and a
-     fresh `USE` claims the chest once;
+     fresh `USE` claims the chest once. The test runs once with that charge as the first RL-08
+     unit and once as the third and final unit, where the stored count equals the pass's own;
    - a reservation of another Character under the same CommandRef is refused and left unchanged;
    - a rerun of the reconciliation changes nothing and reads the same result;
+   - a freeze under a retired CommandRef refuses; the runtime role cannot update, delete or
+     truncate a retirement row;
    - a replacement GameSession never resumes the old reservation.
