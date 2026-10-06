@@ -1,0 +1,103 @@
+{
+  "schema": "OTERYN_SHARDS_TERMINAL_REWARD_EVIDENCE/v1",
+  "scope": "EVIDENCE_ONLY_NOT_ADMITTED",
+  "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+  "terminal": {
+    "transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+    "trigger_routes": [
+      {
+        "npc": "oteryn:npc.saraki",
+        "keyword": "moon",
+        "status": "REFERENCE_ROUTE"
+      },
+      {
+        "npc": "oteryn:npc.nilavarna",
+        "keyword": "moon",
+        "status": "REFERENCE_ALTERNATE_ROUTE"
+      }
+    ],
+    "prerequisite": "prison_escaped",
+    "current_hold": "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
+  },
+  "direct_rewards": [
+    {
+      "kind": "item",
+      "canonical_key": "oteryn:item.tibia.i54638",
+      "donor_id": 54638,
+      "source_name": "skewered fish",
+      "count": 1,
+      "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+      "current_materializable": false,
+      "current_completion_plan_status": "STALE_CANONICAL_EXACT_NAME_NOT_FOUND",
+      "required_work": [
+        "admit/materialize existing canonical Item identity",
+        "bind one-item delivery to terminal s16 through accepted Reward/Item owner"
+      ]
+    },
+    {
+      "kind": "achievement",
+      "canonical_key": "oteryn:achievement/amati_s_echo",
+      "revision": "1",
+      "source_id": 594,
+      "points": 4,
+      "premium": true,
+      "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+      "required_work": [
+        "bind grant to terminal s16 through existing Achievement owner",
+        "preserve account-owned durability/idempotence"
+      ]
+    }
+  ],
+  "access_unlocks": [
+    {
+      "target": "Asura Citadel / True Asura hunting access unlocked by Shards completion",
+      "status": "REFERENCE_FACT_RUNTIME_BINDING_MISSING",
+      "warning": "Do not model Area identity as executable capability authority."
+    },
+    {
+      "target": "Forbidden Gardens",
+      "predicates": [
+        "Shards of a Broken Moon completed",
+        "account owns oteryn:achievement/forbidden_fruit@1"
+      ],
+      "forbidden_fruit": {
+        "canonical_key": "oteryn:achievement/forbidden_fruit",
+        "revision": "1",
+        "points": 1,
+        "secret": true
+      },
+      "status": "REFERENCE_FACT_TYPED_COMPOSITION_MISSING",
+      "current_gap": "QuestPredicate has no Achievement predicate; Achievement-owned account fact already exists and must remain owner-read."
+    }
+  ],
+  "jaracal_mount_followup": {
+    "direct_terminal_reward": false,
+    "source_semantic": "Skewered Fish is the taming item. After completion, use it on a Jaracal to permanently unlock the Jaracal mount.",
+    "canonical_mount_catalogue": {
+      "current_records": 252,
+      "jaracal_present": false
+    },
+    "creature_identity": "oteryn:creature.jaracal",
+    "taming_item": "oteryn:item.tibia.i54638",
+    "reference_mount": {
+      "name": "Jaracal",
+      "added": "15.30.a30dad",
+      "premium": true,
+      "speed_bonus": 10,
+      "method": "Use Skewered Fish on a Jaracal."
+    },
+    "status": "CONTENT_AND_TAME_RUNTIME_GAP",
+    "required_work": [
+      "admit the SU26 Jaracal Mount canonical identity from an accepted source/client witness",
+      "bind use of i54638 on canonical Jaracal creature to mount unlock through the accepted Mount/Item/Interaction owners",
+      "qualify item consumption, success/idempotence and relog persistence",
+      "do not grant the mount directly from s16"
+    ]
+  },
+  "evidence_notes": [
+    "Current TibiaWiki terminal dialogue explicitly says the fish is used to gain a Jaracal's trust as a mount.",
+    "Current TibiaWiki mount catalogue lists Jaracal as tameable with Skewered Fish.",
+    "Current Oteryn Mount catalogue has 252 records and no Jaracal record.",
+    "Current Oteryn completion-binding plan already resolves Amati's Echo exactly but has a stale name-based miss for Skewered Fish despite existing i54638."
+  ]
+}
