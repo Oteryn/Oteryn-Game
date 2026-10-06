@@ -251,7 +251,10 @@
         "boss_hp_after_return": {
           "value": 60000,
           "provenance": "REFERENCE_CURRENT",
-          "precision": "EXACT_AS_PUBLISHED_CURRENT_REFERENCE"
+          "precision": "EXACT_AS_PUBLISHED_CURRENT_REFERENCE",
+          "representation_status": "BLOCKED_ONLY_ON_ENCOUNTER_LOCAL_MAX_HEALTH_OVERRIDE",
+          "set_phase_available": true,
+          "prevent_death_available": true
         },
         "transition_ordering": {
           "source_semantic": "Ice hit then immediate return at 60000 HP.",
@@ -299,7 +302,7 @@
     "quest_transition_outcome": "magnolia_defeated",
     "post_boss_world_effect": "Relocate/admit player into the ice-prison escape sequence.",
     "prison_room_candidate": {
-      "status": "HIGH_CONFIDENCE_DERIVED_UNIQUE_TOPOLOGY",
+      "status": "RESOLVED_END_TO_END",
       "skeleton": {
         "x": 31920,
         "y": 31360,
@@ -312,8 +315,25 @@
         "z": 9,
         "item_id": 6966
       },
-      "exact_north_wall_tile": "HELD_BOUNDED_THREE_TILE_CANDIDATE",
-      "exact_rope_or_scripted_exit": "UNKNOWN"
+      "north_wall": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9,
+        "wall_id": 6729,
+        "debris_id": 6374
+      },
+      "rope_spot": {
+        "x": 31923,
+        "y": 31377,
+        "z": 9,
+        "ground_id": 386
+      },
+      "generic_rope_destination": {
+        "x": 31923,
+        "y": 31378,
+        "z": 8
+      },
+      "note": "Quest-specific prison geometry is resolved. Final movement remains owned by generic rope/multitool semantics; Shards only observes successful escape."
     }
   },
   "crystal_gap": {
@@ -335,13 +355,11 @@
     "Whether the ~30 s recommendation is merely safe player cadence or a server cooldown.",
     "Exact ~70 s pressure timer value if the reference is rounded.",
     "Exact phase-transition ordering if the ~5000 Ice burst kills the player.",
-    "Exact encounter admission/cooldown owner representation until current Encounter owner releases/allocates the slice.",
-    "Exact prison relocation position/event binding.",
     "Exact cleanup implementation details remain owner-defined, but current Global behavior must not continue Magnolia phase-owned spawn schedules after room leave; Sep 15 fix is authoritative on that outcome."
   ],
   "implementation_fence": {
     "owner": "Encounter",
-    "current_collision": "PR #1807 owns broad Monster/Encounter paths.",
+    "current_collision": null,
     "no_runtime_or_content_mutation": true,
     "required_output_after_allocation": [
       "Dedicated two-phase Encounter state.",
@@ -351,7 +369,8 @@
       "Permanent-kill occurrence -> QuestTransitionRequest for magnolia_defeated.",
       "Post-kill prison relocation under World/Encounter ownership.",
       "Crash/restart/relog cleanup and idempotence qualification."
-    ]
+    ],
+    "runtime_blocker": "ENC-RT-1 -> ENC-OUTCOME-1 are not yet allocated/integrated; ProjectV2 Encounter remains candidate-only and no runtime path interprets these rules."
   },
   "runtime_partition": {
     "reusable_existing_creature_runtime": [
@@ -380,5 +399,32 @@
       "Do not emit magnolia_defeated on the first lethal.",
       "Do not reproduce July release-day spawn positions where later official balancing moved the spawns."
     ]
+  },
+  "representation_readback": {
+    "main_sha": "3632deb4b0a972bd09722c7498d6d7e1d7f059a6",
+    "authoring_schema": {
+      "lethal_damage": true,
+      "prevent_death": true,
+      "set_phase": true,
+      "heal_full": true,
+      "convert_damage_to_heal": true,
+      "item_used": true,
+      "timers": true
+    },
+    "project_v2": {
+      "lethal_damage": true,
+      "prevent_death": true,
+      "set_phase": true,
+      "heal_full": true,
+      "convert_damage_to_heal": true,
+      "phase_names": true,
+      "runtime_status": "CANDIDATE_ONLY_NOT_INTERPRETED"
+    },
+    "exact_remaining_representation_gap": {
+      "key": "phase_2_max_health_override",
+      "source_fact": "Phase 1 base/max HP is 52000; first lethal is prevented and Magnolia returns immediately in phase 2 with 60000 HP.",
+      "problem": "Current ProjectV2 Encounter can heal to full, transform with full/percent/absolute-preserving health, and set phase, but has no action that raises a live role's maximum health above the Creature definition. Healing 60000 into a 52000-max Creature cannot represent the published phase-2 state.",
+      "required_disposition": "Encounter owner/architect should add the smallest encounter-local health-capability needed for an exact current/max health override, or provide another accepted existing representation. Do not mint a fake second Magnolia Creature identity solely to obtain 60000 max HP."
+    }
   }
 }
