@@ -10,7 +10,7 @@ issue: 1622
 lane_id: map
 base_branch: main
 branch: claude/map-viewport-measure-1
-pr: PRNUM
+pr: 1873
 base_sha: 22539da5
 owner: claude-code-session-019Zv18wHYVNSkBGu82dMt3f (oteryn-impl-worker)
 control_plane: claude-code-session-013KJX6mv8LQveCKKXYgAX94
