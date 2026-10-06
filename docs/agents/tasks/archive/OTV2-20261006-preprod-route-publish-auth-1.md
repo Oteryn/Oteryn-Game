@@ -40,8 +40,9 @@ external_repositories: []
     testing and preproduction.
   - B: persistent private preproduction, deferred until rollout step 7.
   - C: public staging, rejected.
-- Owner questions §7 items 1–4 are routed through the control plane. Recorded answers 1a and
-  2a (D824); items 3 and 4 are open.
+- Owner questions §7 items 1–4 are routed through the control plane. Recorded answers 1a
+  (D831, against the final §2 owned-path list; replaces D824 1a) and 2a (D824); items 3 and 4
+  are open.
 
 ## Architecture and source of truth
 
@@ -70,7 +71,7 @@ its own independent review under the item 1 grant.
       the shared-guard paths are in the write grant (review round 2); it accepts only the
       retained per-run SQLite file so the directory is bound to the current run (round 3).
 - [x] The mandatory decision test is answered (decision §6).
-- [x] Owner answers 1a and 2a are recorded; the Synology shape of Option B is noted as not
+- [x] Owner answer 1a (D831, final §2 path list) and 2a (D824) are recorded; the Synology shape of Option B is noted as not
       decided (decision §3, §7).
 - [ ] Owner answers to items 3 and 4.
 
@@ -99,6 +100,11 @@ guard relaxation. No decision on Option B or its Synology shape.
   directory beneath that file's own per-run directory, with refusal tests.
 - Also: D824 answers recorded; the control plane's Synology proposal is noted as the likely
   Option B shape with its guard tension, not as a decision.
+- Codex P1 4193785205 (answer 1a predated `DisposableNativeStore.php` and the
+  `NativeTopologyRegistry.php` guard call): the control plane asked the owner again with the
+  final §2 path list; the owner answered 1a (D831) and confirmed it directly to this architect
+  session. Decision status, §2, §7 and §8 now rest answer 1a on D831 and bound the Platform write
+  to exactly that list.
 
 ## Validation
 
@@ -126,7 +132,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 
 - exact head: the frozen head
 - method/reviewer: Sol Supervising Architect
-- material findings: none open after round 3
+- material findings: none open after the D831 record
 - verdict: ready for independent review
 
 ## Independent review
@@ -140,7 +146,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## PR and closeout
 
 - changed-file review: two owned paths
-- unresolved review threads: none after round 3 replies
+- unresolved review threads: none after the D831 reply
 - related/superseded PRs: none
 - protected auto-merge: control plane
 - merge commit/result: in PR #1871
@@ -149,7 +155,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## Context checkpoint
 
 ```yaml
-last_progress: review round 3 fixed
+last_progress: D831 recorded for P1 4193785205
 status: completed
 branch: cand/preprod-route-publish-auth-1
 pr: 1871
