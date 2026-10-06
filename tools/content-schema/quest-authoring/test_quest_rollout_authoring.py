@@ -1,4 +1,6 @@
 import copy
+import json
+from pathlib import Path
 import unittest
 
 from quest_rollout_authoring import build
@@ -102,6 +104,15 @@ class RolloutTests(unittest.TestCase):
     def test_duplicate_title_rejected(self):
         with self.assertRaisesRegex(ValueError, 'duplicate wiki'):
             build({'quests': [self.row, self.row]}, self.bundle, [], self.specs)
+
+    def test_committed_input_provenance_paths_are_portable(self):
+        rollout = Path(__file__).resolve().parent / 'samples/rollout/quest-rollout.json'
+        payload = json.loads(rollout.read_text())
+        for entry in payload['input_provenance']:
+            path = entry['path']
+            self.assertNotIn('\\\\', path)
+            self.assertFalse(Path(path).is_absolute())
+            self.assertEqual(path, Path(path).as_posix())
 
 
 if __name__ == '__main__':
