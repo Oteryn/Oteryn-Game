@@ -241,7 +241,10 @@ def candidate_errors(candidate, index):
     wiki_confirmed = any(row.get('rule') in ('WIKI_CONFIRMED', 'FAN_WIKI_CONFIRMED') for row in arbitration_rows)
 
     placements = candidate.get('placements') or []
-    if not placements and not wiki_confirmed:
+    held_rows = [row for row in arbitration_rows if row.get('rule') == 'PLACEMENT_HELD']
+    held_keys = sorted(entry.get('key') for entry in (candidate.get('provenance') or {}).values()
+                       if isinstance(entry, dict) and entry.get('key') in promotion_candidates.PLACEMENT_HELD)
+    if not placements and not wiki_confirmed and not held_rows:
         errs.append(f'{label}: no placements')
     wiki_placements = [p for p in placements if isinstance(p, dict) and p.get('origin') == 'wiki']
     for i, placement in enumerate(placements):
@@ -403,6 +406,19 @@ def candidate_errors(candidate, index):
                              f"placement, found {len(wiki_placements)}")
             if candidate.get('wiki') is None:
                 errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
+        elif rule == 'PLACEMENT_HELD':
+            # D17: only a listed NPC, with no placements, and exactly the table's reason and positions
+            if len(held_keys) != 1:
+                errs.append(f"{alabel}: rule 'PLACEMENT_HELD' for an NPC outside PLACEMENT_HELD")
+            else:
+                expected = {'fact': 'placements', 'rule': 'PLACEMENT_HELD',
+                            'reason': promotion_candidates.PLACEMENT_HELD[held_keys[0]],
+                            'positions': promotion_candidates.PLACEMENT_HELD_POSITIONS[held_keys[0]]}
+                if row != expected:
+                    errs.append(f"{alabel}: PLACEMENT_HELD row {row!r} != {expected!r}")
+            if placements:
+                errs.append(f"{alabel}: rule 'PLACEMENT_HELD' requires an empty placements list, "
+                             f"found {len(placements)}")
         elif rule == 'WIKI_CONFIRMED':
             if chosen != 'wiki':
                 errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")
@@ -532,8 +548,10 @@ def candidate_errors(candidate, index):
             errs.append(f"{alabel}: rule {rule!r} not in "
                          f"['WIKI_ARBITER', 'WIKI_BASE_NAME', 'WIKI_CONFIRMED', 'WIKI_MAJORITY_PRICE', "
                          f"'WIKI_POSITION', 'WIKI_PRICE', 'WIKI_SPELLING', 'FAN_WIKI_CONFIRMED', 'WIKI_MAJORITY_ARBITER', "
-                         f"'WIKI_IMAGE', 'OWNER_REVIEW', 'WIKI_IMAGE_FIT']")
+                         f"'WIKI_IMAGE', 'OWNER_REVIEW', 'WIKI_IMAGE_FIT', 'PLACEMENT_HELD']")
 
+    if held_keys and len(held_rows) != 1:
+        errs.append(f'{label}: NPC listed in PLACEMENT_HELD needs exactly one PLACEMENT_HELD row, found {len(held_rows)}')
     # D13 offers: a wiki-origin offer and its WIKI_OFFER row come together, one row per offer
     wiki_offer_facts = sorted(f"trade.{offer.get('source_item_id')}.{offer.get('direction')}"
                               for offer in (candidate.get('trade_service') or {}).get('offers') or []

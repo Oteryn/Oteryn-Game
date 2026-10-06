@@ -80,6 +80,18 @@ def leaf_texts(textref: Any) -> list[str]:
     return [text]
 
 
+def text_links(textref: Any) -> list[str]:
+    """The sorted, unique `{link}` labels of a text reference (every part of a multi-part reference)."""
+    if not isinstance(textref, dict):
+        return []
+    if 'parts' in textref:
+        return sorted({link for part in textref['parts'] for link in text_links(part)})
+    links = textref.get('links') or []
+    if not isinstance(links, list) or not all(isinstance(link, str) and link for link in links):
+        raise StageError('text reference carries malformed links')
+    return sorted(set(links))
+
+
 def text_parts_cleaned(textref: Any) -> list[str]:
     """Ordered, cleaned, trimmed, non-empty message/reply parts (control chars other than \\n stripped)."""
     parts = [clean_text(t) for t in leaf_texts(textref)]
@@ -138,7 +150,8 @@ def shadowed_by_omitted_sibling(node: dict, omitted: list) -> bool:
     return False
 
 
-def build_keyword_nodes(nodes: list, depth: int, stats: dict) -> list[dict]:
+def build_keyword_nodes(nodes: list, depth: int, stats: dict, trace: list | None = None,
+                        enclosing: tuple = ()) -> list[dict]:
     if depth > MAX_DEPTH or not nodes:
         return []
     prepared = []  # source order, one entry per node that survives per-node validation
@@ -192,12 +205,15 @@ def build_keyword_nodes(nodes: list, depth: int, stats: dict) -> list[dict]:
             omitted.append(node)
             continue
 
-        children = build_keyword_nodes(node.get('children') or [], depth + 1, stats)
+        children_trace: list | None = [] if trace is not None else None
+        children = build_keyword_nodes(node.get('children') or [], depth + 1, stats, children_trace,
+                                       (nodes, *enclosing))
         base_key = 'fallback' if fallback else slug_of_trigger(triggers[0])
         prepared.append({
             'base_key': base_key, 'fallback': fallback, 'triggers': triggers, 'reply': reply,
             'only_focus': only_focus, 'only_unfocus': only_unfocus, 'reset': reset, 'ungreet': ungreet,
-            'move_up': move_up, 'children': children,
+            'move_up': move_up, 'children': children, 'links': text_links(node.get('text')),
+            'source': node, 'trace': children_trace,
         })
 
     seen_fallback = False
@@ -219,6 +235,8 @@ def build_keyword_nodes(nodes: list, depth: int, stats: dict) -> list[dict]:
         else:
             entry['triggers'] = item['triggers']
         entry['reply'] = item['reply']
+        if item['links']:
+            entry['links'] = item['links']
         if item['only_focus']:
             entry['only_focus'] = True
         if item['only_unfocus']:
@@ -232,8 +250,234 @@ def build_keyword_nodes(nodes: list, depth: int, stats: dict) -> list[dict]:
         if item['children']:
             entry['children'] = item['children']
         result.append(entry)
+        if trace is not None:
+            trace.append((entry, item['source'].get('children') or [], nodes, enclosing))
+            trace.extend(item['trace'])
         stats['keyword_nodes'] += 1
     return result
+
+
+# ---------------------------------------------------------------------------
+# D17: source-incomplete reply chains. A reply's `{link}` is answered when a source keyword handler matches
+# the link label as a player message, under KeywordNode:checkMessage: every keyword of the node is found in
+# the (lowercased) message by Lua `string.find`, so a keyword is a substring or Lua pattern match, not an
+# equality against the normalized trigger.
+# ---------------------------------------------------------------------------
+
+LUA_MAX_CAPTURES = 32
+LUA_MAX_RECURSION = 200
+LUA_ESCAPE = '%'
+
+
+class LuaPatternError(Exception):
+    pass
+
+
+def _lua_class_end(pattern: str, p: int) -> int:
+    if p >= len(pattern):
+        raise LuaPatternError('malformed pattern (ends with a bare start)')
+    char = pattern[p]
+    p += 1
+    if char == LUA_ESCAPE:
+        if p >= len(pattern):
+            raise LuaPatternError("malformed pattern (ends with '%')")
+        return p + 1
+    if char == '[':
+        if p < len(pattern) and pattern[p] == '^':
+            p += 1
+        while True:
+            if p >= len(pattern):
+                raise LuaPatternError("malformed pattern (missing ']')")
+            char = pattern[p]
+            p += 1
+            if char == LUA_ESCAPE:
+                p += 1
+            if p < len(pattern) and pattern[p] == ']':
+                return p + 1
+            if p >= len(pattern):
+                raise LuaPatternError("malformed pattern (missing ']')")
+    return p
+
+
+def _lua_single_class(char: str, cls: str) -> bool:
+    lower = cls.lower()
+    code = ord(char)
+    if lower == 'a':
+        hit = char.isascii() and char.isalpha()
+    elif lower == 'd':
+        hit = char.isascii() and char.isdigit()
+    elif lower == 'l':
+        hit = 'a' <= char <= 'z'
+    elif lower == 'u':
+        hit = 'A' <= char <= 'Z'
+    elif lower == 's':
+        hit = char in ' \t\n\r\f\v'
+    elif lower == 'w':
+        hit = char.isascii() and char.isalnum()
+    elif lower == 'x':
+        hit = char in '0123456789abcdefABCDEF'
+    elif lower == 'p':
+        hit = char.isascii() and 32 < code < 127 and not char.isalnum()
+    elif lower == 'c':
+        hit = code < 32 or code == 127
+    elif lower == 'g':
+        hit = 32 < code < 127
+    else:
+        return cls == char
+    return (not hit) if cls.isupper() else hit
+
+
+def _lua_match_set(char: str, pattern: str, p: int, end: int) -> bool:
+    negate = False
+    p += 1
+    if pattern[p] == '^':
+        negate = True
+        p += 1
+    while p < end:
+        if pattern[p] == LUA_ESCAPE:
+            p += 1
+            if _lua_single_class(char, pattern[p]):
+                return not negate
+            p += 1
+        elif p + 2 < end and pattern[p + 1] == '-':
+            if pattern[p] <= char <= pattern[p + 2]:
+                return not negate
+            p += 3
+        else:
+            if pattern[p] == char:
+                return not negate
+            p += 1
+    return negate
+
+
+def _lua_single_match(text: str, s: int, pattern: str, p: int, ep: int) -> bool:
+    if s >= len(text):
+        return False
+    char = text[s]
+    head = pattern[p]
+    if head == '.':
+        return True
+    if head == LUA_ESCAPE:
+        return _lua_single_class(char, pattern[p + 1])
+    if head == '[':
+        return _lua_match_set(char, pattern, p, ep - 1)
+    return head == char
+
+
+def _lua_match(text: str, s: int, pattern: str, p: int, depth: int = 0) -> int | None:
+    """Port of lstrlib.c `match`, without captures: returns the end of the match or None."""
+    if depth > LUA_MAX_RECURSION:
+        raise LuaPatternError('pattern too complex')
+    while True:
+        if p >= len(pattern):
+            return s
+        head = pattern[p]
+        if head == '(' or head == ')':
+            raise LuaPatternError('captures are not evaluated')
+        if head == '$' and p + 1 == len(pattern):
+            return s if s == len(text) else None
+        if head == LUA_ESCAPE and p + 1 < len(pattern) and pattern[p + 1] in 'bf123456789':
+            raise LuaPatternError('%b, %f and back references are not evaluated')
+        ep = _lua_class_end(pattern, p)
+        marker = pattern[ep] if ep < len(pattern) else ''
+        if marker == '?':
+            if _lua_single_match(text, s, pattern, p, ep):
+                result = _lua_match(text, s + 1, pattern, ep + 1, depth + 1)
+                if result is not None:
+                    return result
+            p = ep + 1
+            continue
+        if marker == '+' or marker == '*':
+            count = 0
+            while _lua_single_match(text, s + count, pattern, p, ep):
+                count += 1
+            if marker == '+' and count == 0:
+                return None
+            while count >= (1 if marker == '+' else 0):
+                result = _lua_match(text, s + count, pattern, ep + 1, depth + 1)
+                if result is not None:
+                    return result
+                count -= 1
+            return None
+        if marker == '-':
+            while True:
+                result = _lua_match(text, s, pattern, ep + 1, depth + 1)
+                if result is not None:
+                    return result
+                if _lua_single_match(text, s, pattern, p, ep):
+                    s += 1
+                else:
+                    return None
+        if not _lua_single_match(text, s, pattern, p, ep):
+            return None
+        s += 1
+        p = ep
+
+
+def lua_find(text: str, pattern: str) -> bool:
+    """`string.find(text, pattern) ~= nil`, for a pattern without captures. Raises LuaPatternError for a
+    pattern this port does not evaluate (captures, %b, %f, back references) or that is malformed."""
+    if not text.isascii() or not pattern.isascii():
+        raise LuaPatternError('non-ASCII text is not evaluated')
+    anchored = pattern.startswith('^')
+    p = 1 if anchored else 0
+    s = 0
+    while True:
+        if _lua_match(text, s, pattern, p) is not None:
+            return True
+        s += 1
+        if anchored or s > len(text):
+            return False
+
+
+def lowercase_pattern(keyword: str) -> str:
+    """The keyword with letters lowercased, except a class letter after `%` (`%A` is not `%a`)."""
+    out, escaped = [], False
+    for char in keyword:
+        out.append(char if escaped else char.lower())
+        escaped = (char == LUA_ESCAPE) and not escaped
+    return ''.join(out)
+
+
+def handler_matches(keywords: Any, label: str) -> bool:
+    """KeywordNode:checkMessage: the lowercased label contains every keyword of the node (empty keyword
+    included, which any label contains). A node with no keyword list is not a handler."""
+    if not isinstance(keywords, list) or not keywords or not all(isinstance(k, str) for k in keywords):
+        return False
+    message = label.lower()
+    for keyword in keywords:
+        try:
+            if not lua_find(message, lowercase_pattern(keyword)):
+                return False
+        except LuaPatternError as error:
+            raise StageError(f'cannot evaluate source keyword {keyword!r} against link {label!r}: {error}')
+    return True
+
+
+def link_answered(label: str, levels: list[list]) -> bool:
+    """A link is answered when a source node at any of `levels` (the node's children, its own level and every
+    enclosing level, emitted or not) matches the label as a player message."""
+    return any(handler_matches(node.get('keywords'), label) for level in levels for node in level)
+
+
+def source_incomplete_entries(emitted: list[dict], trace: list) -> list[dict]:
+    """One NO_HANDLER entry per emitted-node link that no source keyword handler answers. `trace` holds one
+    `(entry, node's children, node's own level, enclosing levels)` row per emitted node, as build_keyword_nodes
+    records it from the source tree (every node, emitted or not)."""
+    paths: dict[int, str] = {}
+
+    def name(level: list[dict], prefix: str) -> None:
+        for entry in level:
+            paths[id(entry)] = prefix + entry['key']
+            name(entry.get('children') or [], paths[id(entry)] + '/')
+
+    name(emitted, '')
+    entries: list[dict] = []
+    for entry, children, level, enclosing in sorted(trace, key=lambda row: paths[id(row[0])]):
+        for link in entry.get('links') or []:
+            if not link_answered(link, [children, level, *enclosing]):
+                entries.append({'node': paths[id(entry)], 'link': link, 'reason': 'NO_HANDLER'})
+    return entries
 
 
 def build_voice_entries(profile: dict, stats: dict) -> list[dict]:
@@ -279,9 +523,13 @@ def build_dialogue(bundle: dict, stats: dict) -> dict | None:
         parts = text_parts_cleaned(messages.get(key))
         if parts:
             result[key] = parts
-    keywords = build_keyword_nodes(dialogue.get('keywords') or [], 1, stats)
+    trace: list = []
+    keywords = build_keyword_nodes(dialogue.get('keywords') or [], 1, stats, trace)
     if keywords:
         result['keywords'] = keywords
+        incomplete = source_incomplete_entries(keywords, trace)
+        if incomplete:
+            result['source_incomplete'] = incomplete
     voices = build_voices(bundle, stats)
     if voices:
         result['voices'] = voices
@@ -465,6 +713,8 @@ def build_declaration(slug: str, dialogue: dict) -> dict:
         declaration['keywords'] = dialogue['keywords']
     if 'voices' in dialogue:
         declaration['voices'] = dialogue['voices']
+    if 'source_incomplete' in dialogue:  # D17: a reply link no source keyword handler answers
+        declaration['source_incomplete'] = dialogue['source_incomplete']
     declaration['fields'] = []
     return declaration
 
