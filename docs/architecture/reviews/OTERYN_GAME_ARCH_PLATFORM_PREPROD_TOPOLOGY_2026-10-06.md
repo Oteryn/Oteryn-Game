@@ -159,7 +159,9 @@ mirror step exists.
   - Its first job, `protection-check`, runs on a GitHub-hosted runner with no environment and
     `permissions: actions: read`. It reads the `platform-preproduction` environment through the
     REST API and fails, with nothing deployed, unless all three hold:
-    - a `required_reviewers` rule names the owner;
+    - the `required_reviewers` rule names exactly one reviewer, the owner. A rule that also
+      names any other user or team fails, because one approval from any listed reviewer is
+      enough;
     - the deployment branch policy admits only `main`;
     - `can_admins_bypass` is present and `false`.
 
@@ -178,12 +180,14 @@ mirror step exists.
   - `ssl_protocols TLSv1.3`, `ssl_verify_client on`, `ssl_verify_depth 2`,
     `ssl_session_tickets off`, `ssl_client_certificate <preprod CA>`, and server name
     `platform-internal.preprod.oteryn.internal`;
-  - exactly six `POST` routes, and `404` for everything else. All six are
+  - exactly seven `POST` routes, and `404` for everything else. All seven are
     `/internal/v1/game-auth/` followed by:
     - `native-evidence`;
     - `character-bootstrap-intents/read`;
     - `native-runtime-status`;
     - `native-scope-assignments`;
+    - `native-scope-revocations` (the assignment reporter's revocation report, over the same
+      ownership-authority identity, `apps/game-server/src/native_admission_source/scope_assignment.rs`);
     - `native-account-characters`;
     - `native-account-characters/watermark`.
 
@@ -429,16 +433,27 @@ changes a WorldId or a ChannelId.
       shares the lifetime of the Platform read model: delete it only when Platform `state/` and
       the database volume are deleted, and never when the Game store is restored (LCFA contract
       §5 epoch fence).
-   4. Start the publisher, then run the initial resync,
+   4. On Platform, configure the complete `native_account_characters` section (LCFA contract §4,
+      Platform packet item 6) and redeploy with owner approval:
+      - `identities` set to the projection certificate subject from step 1;
+      - `source_authority` set to the same Character Authority value rendered in step 2;
+      - `liveness_seconds` 30, `clock_uncertainty_seconds` 1, and `requests_per_minute`;
+      - `enabled` set to `true` last. `APP_ENV=preproduction` is one of the two environments
+        where the switch is honoured.
+
+      With the switch on and no feed yet, issuance fails closed on the stale feed, because the
+      feed takes precedence over mode 33a. Do this step and steps 5 and 6 in one maintenance
+      window, with no tester logins expected until the step 6 gate passes.
+   5. Start the publisher, then run the initial resync,
       `game_character_account_projection_resync(false)`.
-   5. Gate on freshness:
+   6. Gate on freshness:
       - the latest watermark is at the highest epoch, and Platform does not report it stale
         under S = 30 s (LCFA contract §5.1, U-LC5);
       - the account Character list read returns each tester's Character.
 
       The precondition for turning mode 33a off is a feed that is fresh and non-empty. Anything
       else blocks this step, and mode 33a stays on.
-   6. Turn mode 33a off, set
+   7. Turn mode 33a off, set
       `GAME_AUTH_NATIVE_ADMISSION_UNVERIFIED_CHARACTER_OWNERSHIP=false`, and redeploy Platform
       with owner approval. Then rerun the joint E2E with the full §5.4 check.
 
@@ -544,9 +559,10 @@ discarded stack keeps its database volume until the owner decides to delete it.
   8. The nginx config is TLS 1.3 only, with `ssl_verify_client on`.
   9. The workflow is main-only and `workflow_dispatch` only, and uses the environment
      `platform-preproduction` only in a job that `needs` a `protection-check` job.
-     `protection-check` fails closed on four cases:
+     `protection-check` fails closed on five cases:
      - a missing environment;
      - a missing owner reviewer rule;
+     - a reviewer rule that names any user or team besides the owner;
      - a branch policy that admits anything other than `main`;
      - `can_admins_bypass` that is missing or `true`.
   10. `edge-https` is TLS 1.3, serves only the two client-facing names and refuses `/internal/`;
@@ -561,9 +577,10 @@ discarded stack keeps its database volume until the owner decides to delete it.
       published port and exposes only `native-admissions` under `/internal/`.
   13. `internal-mtls` passes `SSL_CLIENT_VERIFY`, `SSL_PROTOCOL` and `SSL_CLIENT_S_DN` as FastCGI
       parameters, clears the `HTTP_SSL_*` and `HTTP_X_SSL_*` forms, and has session tickets
-      off. It allows `POST` on exactly six internal routes: `native-evidence`,
+      off. It allows `POST` on exactly seven internal routes: `native-evidence`,
       `character-bootstrap-intents/read`, `native-runtime-status`, `native-scope-assignments`,
-      `native-account-characters` and `native-account-characters/watermark`.
+      `native-scope-revocations`, `native-account-characters` and
+      `native-account-characters/watermark`.
 - **Validation:**
   - Platform CI;
   - unit and feature tests for each refusal;
@@ -572,7 +589,7 @@ discarded stack keeps its database volume until the owner decides to delete it.
   - `docker compose config` on the new compose file;
   - an `nginx -t` check of the three nginx server configs;
   - a test of the `protection-check` evaluation against fixture API responses (protected,
-    missing environment, no reviewer, any-branch policy, admin bypass `true`, admin bypass
+    missing environment, no reviewer, owner plus another reviewer or team, any-branch policy, admin bypass `true`, admin bypass
     field missing).
 - **Review:** independent review, because this touches persistence, identity issuance and trust.
 
