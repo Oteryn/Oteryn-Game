@@ -18,10 +18,9 @@
   "rules": {
     "do_not_invent": [
       "Asura Citadel key key_number",
-      "laboratory colour-sequence input semantics",
       "Blue Lava night-only predicate",
       "Magnolia timers/damage without qualified evidence",
-      "post-Magnolia placement ids/coordinates not yet observed",
+      "post-Magnolia exact skeleton/icicle/north-wall/Rope Spot placement ids/coordinates",
       "direct QuestState writes from NPC or WorldObject handlers"
     ],
     "target_writer": "existing QUEST-STATE-1 QuestTransitionRequest writer",
@@ -473,22 +472,15 @@
         "routed_owner": "WorldObject",
         "name": "crystal plinth"
       },
-      "outcome": "plinth_sequence_observed",
-      "evidence": "FACT",
-      "owner": "WorldObject + QUEST-TRIGGER-1"
-    },
-    {
-      "id": "laboratory_colour_sequence",
-      "visible_stage": "s8",
-      "kind": "PUZZLE",
-      "requires": [
-        "lab_note_read",
-        "plinth_sequence_observed"
-      ],
-      "outcome": "lab_sequence_solved",
-      "evidence": "UNKNOWN_INPUT_SEMANTICS",
-      "owner": "TBD_AFTER_OBSERVATION",
-      "blocker": "Reference states a changing crystal-colour sequence and Plinth reveals current order, but exact input/storage/reset/failure semantics are not documented and no Crystal/Canary script exists."
+      "outcome": "lab_access_sequence_learned",
+      "evidence": "FACT_VIDEO_VERIFIED",
+      "owner": "WorldObject + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_approx": "00:11:25",
+        "observation": "Using the Crystal Plinth reports that the character learns the shard-room access sequence."
+      },
+      "note": "Dense visual inspection through 00:11:32–00:11:42 shows no separate code UI, manual colour entry or panel-click sequence before the door is crossed."
     },
     {
       "id": "laboratory_sealed_door",
@@ -500,10 +492,15 @@
         "z": 9
       },
       "requires": [
-        "lab_sequence_solved"
+        "lab_access_sequence_learned"
       ],
-      "evidence": "FACT_GATE_UNKNOWN_MECHANISM",
-      "owner": "QUEST-GATE-1 + Door"
+      "evidence": "FACT_VIDEO_VERIFIED_GATE",
+      "owner": "QUEST-GATE-1 + Door",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_window": "00:11:40-00:11:41",
+        "observation": "Character crosses the shard-room door after learning the access sequence from the Plinth; no separate player input is observed."
+      }
     },
     {
       "id": "crystal_apparatus",
@@ -777,8 +774,13 @@
       "kind": "INSPECT_PLACEMENT_ITEM_GRANT",
       "result_item_semantic": "Lit Torch",
       "outcome": "prison_torch_obtained",
-      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
-      "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1"
+      "evidence": "FACT_VIDEO_AND_REFERENCE_POSITION_UNKNOWN",
+      "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_window": "00:22:22-00:22:45",
+        "observation": "Prison-chamber inspection phase; reference identifies skeleton as Lit Torch source."
+      }
     },
     {
       "id": "prison_icicles",
@@ -786,8 +788,13 @@
       "kind": "INSPECT_PLACEMENT_ITEM_GRANT",
       "result_item": "oteryn:item.tibia.i39578",
       "outcome": "prison_chisel_obtained",
-      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
-      "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1"
+      "evidence": "FACT_VIDEO_AND_REFERENCE_POSITION_UNKNOWN",
+      "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_window": "00:22:22-00:22:45",
+        "observation": "Prison-chamber inspection phase; reference identifies icicles as Icicle Chisel source."
+      }
     },
     {
       "id": "prison_wall_torch",
@@ -796,8 +803,13 @@
       "required_semantic_item": "Lit Torch",
       "target_semantic": "north crumbling wall",
       "outcome": "prison_wall_prepared",
-      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
-      "owner": "World Interaction + QUEST-TRIGGER-1"
+      "evidence": "FACT_VIDEO_VERIFIED_POSITION_UNKNOWN",
+      "owner": "World Interaction + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_approx": "00:22:48",
+        "observation": "Clear flame/fire effect appears on the north wall."
+      }
     },
     {
       "id": "prison_wall_chisel",
@@ -809,8 +821,13 @@
         "prison_wall_prepared"
       ],
       "outcome": "prison_wall_open",
-      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
-      "owner": "World Interaction + QUEST-TRIGGER-1"
+      "evidence": "FACT_VIDEO_VERIFIED_POSITION_UNKNOWN",
+      "owner": "World Interaction + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_window": "00:22:49-00:22:51",
+        "observation": "Second tool interaction follows the torch action on the prepared north wall."
+      }
     },
     {
       "id": "prison_passage",
@@ -820,8 +837,13 @@
         "prison_wall_open"
       ],
       "outcome": "prison_escaped_from_chamber",
-      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
-      "owner": "World Interaction + QUEST-TRIGGER-1"
+      "evidence": "FACT_VIDEO_VERIFIED_POSITION_UNKNOWN",
+      "owner": "World Interaction + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_approx": "00:22:52",
+        "observation": "Character crosses the newly opened passage and follows the narrow corridor."
+      }
     },
     {
       "id": "prison_rope_exit",
@@ -832,8 +854,13 @@
         "prison_escaped_from_chamber"
       ],
       "outcome": "prison_escaped",
-      "evidence": "FACT_SEMANTIC_POSITION_UNKNOWN",
-      "owner": "World Interaction + QUEST-TRIGGER-1"
+      "evidence": "FACT_VIDEO_VERIFIED_POSITION_UNKNOWN",
+      "owner": "World Interaction + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_window": "00:22:53-00:22:59",
+        "observation": "Character follows escape corridor and relocates out of the prison route at about 00:22:59; exact Rope Spot placement remains unresolved."
+      }
     },
     {
       "id": "complete_saraki",
@@ -901,12 +928,11 @@
     "NPC-QUEST-1 executable consumer not found on current main",
     "Asura Citadel Key exact identity/key_number unresolved",
     "Key-door post-completion bypass lacks accepted composition",
-    "Laboratory colour-sequence input/storage/reset semantics UNKNOWN",
     "Laboratory Note exact canonical placement/document binding unresolved",
     "Ritual appearance 54637 lacks typed quest semantics",
     "Magnolia special Encounter absent",
     "Blue Lava night-only predicate source conflict",
-    "Escape exact placements/item ids not yet re-observed",
+    "Escape order video-verified; exact skeleton/icicle/north-wall/Rope Spot placement keys and Lit Torch source identity unresolved",
     "Forbidden Gardens Achievement predicate composition missing",
     "No full real-character start→reward→relog/restart E2E qualification"
   ]
