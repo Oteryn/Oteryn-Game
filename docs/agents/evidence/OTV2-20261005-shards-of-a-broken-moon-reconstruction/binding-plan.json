@@ -632,10 +632,12 @@
       "requires": [
         "niral_seal_instructions",
         "empty_flask_obtained",
-        "holds Moon Mirror"
+        "holds Moon Mirror",
+        "holds oteryn:item.tibia.i25975",
+        "holds oteryn:item.tibia.i53696"
       ],
       "outcome": "blue_lava_obtained",
-      "evidence": "FACT_POST_RELEASE_ARBITRATION",
+      "evidence": "CURRENT_POST_RELEASE_REFERENCE_CONSENSUS",
       "owner": "QUEST-TRIGGER-1 + Item/Durability",
       "night_guard": false,
       "source_arbitration": {
@@ -657,7 +659,22 @@
           "disposition": "NOT_USED_TO_PROVE_NIGHT"
         }
       },
-      "note": "Runtime should not enforce a night-only predicate. Preserve Moon Mirror + flask + exact placement requirements."
+      "note": "Runtime should not enforce a night-only predicate. Preserve Moon Mirror + flask + exact placement requirements.",
+      "time_predicate": null,
+      "source_conflict": {
+        "status": "RESOLVED_FOR_RUNTIME",
+        "disposition": "NO_NIGHT_PREDICATE",
+        "current_reference": [
+          "TibiaWiki BR: with Moon Mirror equipped, use Empty Crystal Flask at 33098,32947,6 to obtain Crystal Flask with Blue Lava; no time gate stated.",
+          "ItemLevel post-release guide: carrying Moon Mirror makes the correct lava section turn blue; troubleshooting checks Mirror/inventory, not world time.",
+          "TibiaLife post-release guide: use the Crystal Flask at the lava source; no night condition."
+        ],
+        "historical_hold": [
+          "Older/Fandom future-update text said night-only.",
+          "Supplied video narrator explicitly says the wiki claims night-only but he does not know whether it is true."
+        ],
+        "policy": "Current post-release Global-facing reference evidence supersedes the stale/future-update-only night claim for executable parity. Preserve historical conflict as provenance only."
+      }
     },
     {
       "id": "niral_consecrate",
@@ -1522,6 +1539,13 @@
         "wall_id": 6729
       },
       "status": "EXACT_CROSS_VIDEO_OTBM"
+    },
+    "blue_lava_runtime_disposition": {
+      "moon_mirror_required": true,
+      "empty_crystal_flask_required": true,
+      "night_required": false,
+      "status": "RESOLVED_CURRENT_REFERENCE",
+      "note": "Historical/Fandom night-only claim retained as provenance, not executable predicate."
     }
   }
 }
