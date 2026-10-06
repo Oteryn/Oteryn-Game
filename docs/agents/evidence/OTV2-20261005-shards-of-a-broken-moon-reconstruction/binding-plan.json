@@ -1088,19 +1088,51 @@
     {
       "id": "prison_rope_exit",
       "visible_stage": "s15",
-      "kind": "USE_OR_FLOOR_CHANGE",
+      "kind": "USE_GENERIC_ROPE_SPOT",
       "target_semantic": "Rope Spot",
       "requires": [
         "prison_escaped_from_chamber"
       ],
       "outcome": "prison_escaped",
-      "evidence": "FACT_VIDEO_VERIFIED_POSITION_UNKNOWN",
+      "evidence": "FACT_PINNED_WORLD + FACT_GENERIC_ROPE_RUNTIME + UNIQUE_TOPOLOGY",
       "owner": "World Interaction + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
         "timestamp_window": "00:22:53-00:22:59",
         "observation": "Character follows escape corridor and relocates out of the prison route at about 00:22:59; exact Rope Spot placement remains unresolved."
-      }
+      },
+      "position": {
+        "x": 31923,
+        "y": 31377,
+        "z": 9
+      },
+      "ground": {
+        "id": 386,
+        "name": "rope spot ground"
+      },
+      "position_status": "EXACT_DERIVED_CROSS_SOURCE",
+      "runtime_semantics": {
+        "owner": "Generic Rope/Tool runtime",
+        "quest_observer": "QUEST-TRIGGER-1 after successful use",
+        "donor_pin": "zimbadev/crystalserver@00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "donor_global_rope_spots_includes_386": true,
+        "donor_on_use": "onUseRope -> toPosition:moveUpstairs() -> player:teleportTo(toPosition,false)",
+        "destination": {
+          "x": 31923,
+          "y": 31378,
+          "z": 8
+        },
+        "destination_evidence": "Position:moveUpstairs first decrements z, then prefers one tile south when walkable; pinned OTBM destination tile 31923,31378,8 is a normal ice tile.",
+        "tile_above_rope": {
+          "x": 31923,
+          "y": 31377,
+          "z": 8,
+          "item_id": 610,
+          "name": "hole",
+          "floorchange": "down"
+        }
+      },
+      "note": "No Shards-specific teleport callback is required. Completion/progress observes successful generic Rope Spot use; movement remains owned by the generic rope/multitool path."
     },
     {
       "id": "complete_saraki",
@@ -1192,7 +1224,7 @@
     "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
     "Magnolia Encounter record absent; existing DSL covers lethal_damage/prevent_death/item_used/timers/convert_damage_to_heal, but phase-2 exact 60000 HP is not representable by current health model (base max 52000), and docs mention set_phase while schema/ProjectV2 has no set_phase action. Requires Encounter-owner disposition before SHARDS-E1.",
     "Blue Lava night-only predicate source conflict",
-    "Escape room/skeleton/icicles/north-wall are resolved (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9); Rope Spot/scripted exit remains unresolved, and donor Lit Torch 54610 requires separate Item admission (do not alias to i34017)",
+    "Escape geometry and Rope Spot are resolved end-to-end (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9; Rope Spot 31923,31377,9 -> generic moveUpstairs destination 31923,31378,8). Remaining prison blocker: separate canonical admission of donor Lit Torch 54610; do not alias to i34017.",
     "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
     "No full real-character start→reward→relog/restart E2E qualification",
     "Jaracal Mount exact donor identity is resolved (mount_id 250, clientid 1962, speed +10, premium, quest); canonical Mount admission + oteryn:item.registry.i00038475-on-Jaracal tame/account-unlock runtime remain missing, and tame chance semantics remain UNKNOWN"
@@ -1402,6 +1434,41 @@
           "revid": 1200472
         }
       }
+    },
+    "prison_escape": {
+      "status": "GEOMETRY_AND_GENERIC_EXIT_RESOLVED",
+      "skeleton": {
+        "x": 31920,
+        "y": 31360,
+        "z": 9,
+        "item_id": 8606
+      },
+      "icicles": {
+        "x": 31914,
+        "y": 31364,
+        "z": 9,
+        "item_id": 6966
+      },
+      "north_wall": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9,
+        "wall_id": 6729,
+        "debris_id": 6374
+      },
+      "rope_spot": {
+        "x": 31923,
+        "y": 31377,
+        "z": 9,
+        "ground_id": 386
+      },
+      "rope_destination": {
+        "x": 31923,
+        "y": 31378,
+        "z": 8
+      },
+      "lit_torch_donor_id": 54610,
+      "lit_torch_status": "PENDING_SEPARATE_CANONICAL_ITEM_ADMISSION"
     }
   }
 }
