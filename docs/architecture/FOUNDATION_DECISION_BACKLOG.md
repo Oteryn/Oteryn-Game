@@ -9,7 +9,7 @@
 - Coordinator prompt: `docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md`
 - Reconciled: 2026-10-06 (owner ruling of 2026-10-06)
 
-**Reconciled 2026-10-06.** Gate statuses below were reconciled against accepted or merged decisions only; a `CANDIDATE` decision does not count. Status lines use the compact form of `ARCHITECTURE_STATUS_MODEL.md`. Each changed gate carries a "reconciled 2026-10-06" status line with its locator; no historical text was removed, and superseded "current"/"next" wording is annotated in place. Pointers to `ARCH-ALPHA-OPS-0`, `ARCH-LIVE-READINESS-0` and `ARCH-I18N-A11Y-CREATIVE-0` name owner decisions authored on 2026-10-06 under `docs/architecture/reviews/`; a pointer is not acceptance, and each decision's contract amendments to this file apply only through its own packets. Live programme order is issue #162.
+**Reconciled 2026-10-06.** Gate statuses below were reconciled against accepted or merged decisions only; a `CANDIDATE` decision does not count. Status lines use the compact form of `ARCHITECTURE_STATUS_MODEL.md`. Each changed gate carries a "reconciled 2026-10-06" status line with its locator; no historical text was removed, and superseded "current"/"next" wording is annotated in place. Pointers to `ARCH-ALPHA-OPS-0`, `ARCH-LIVE-READINESS-0` and `ARCH-I18N-A11Y-CREATIVE-0` name owner decisions that are not yet on `main` (open PRs Oteryn/Oteryn-Game#1878, #1879 and #1880; each pointer below is marked pending); a pointer is not acceptance, and each decision's contract amendments to this file apply only through its own packets. Live programme order is issue #162.
 
 ## Purpose
 
@@ -363,7 +363,7 @@ ADR-0009 accepts the execution, capacity-measurement, deployment-boundary and re
 
 ### `PERF-01` — Capacity, Performance and Scalability Contract
 
-Status: **PLANNED / not accepted** (reconciled 2026-10-06; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)) — owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md`), which takes time/tick and the performance budget. Bounded adjacent input only: `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md` (PR #1864).
+Status: **PLANNED / not accepted** (`DecisionStatus: PROPOSED; DeliveryStatus: PLANNED; ImplementationStatus: NOT_STARTED`) (reconciled 2026-10-06; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)) — owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main)), which takes time/tick and the performance budget. Bounded adjacent input only: `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md` (PR #1864).
 
 Decide and prove:
 
@@ -379,7 +379,7 @@ Player count alone is not a scaling signal. Accepted limits must also account fo
 
 ### `OPS-CHANNEL-01` — GameNode Deployment and Dynamic Channel Orchestration Contract
 
-Status: **PLANNED / not accepted** (reconciled 2026-10-06; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)) — owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md`), which takes observability, logging, metrics and SLOs, schema migration, and backup and DR. Owner-accepted partial inputs: `docs/architecture/reviews/OTERYN_GAME_NODE_BOOT_COMPOSITION_DECISION_2026-09-24.md` (PR #830) and `docs/architecture/reviews/OTERYN_GAME_NODE_PROCESS_REGISTRATION_BOOTSTRAP_AUTH_DECISION_2026-09-22.md`.
+Status: **PLANNED / not accepted** (`DecisionStatus: PROPOSED; DeliveryStatus: PLANNED; ImplementationStatus: NOT_STARTED`) (reconciled 2026-10-06; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)) — owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main)), which takes observability, logging, metrics and SLOs, schema migration, and backup and DR. Owner-accepted partial inputs: `docs/architecture/reviews/OTERYN_GAME_NODE_BOOT_COMPOSITION_DECISION_2026-09-24.md` (PR #830) and `docs/architecture/reviews/OTERYN_GAME_NODE_PROCESS_REGISTRATION_BOOTSTRAP_AUTH_DECISION_2026-09-22.md`.
 
 Decide:
 
@@ -412,7 +412,7 @@ Requirements:
 
 ### `DUR-02` — Persistence v1 Contract
 
-Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED** (reconciled 2026-10-06; locator `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md` OWNER_ACCEPTED; `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)). Backup/restore and live-state migration: owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md`).
+Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED** (reconciled 2026-10-06; locator `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md` OWNER_ACCEPTED; `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)). Backup/restore and live-state migration: owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main)).
 
 PostgreSQL is selected. Still decide:
 
@@ -515,7 +515,7 @@ Analytics remains observational and may not change balance automatically.
 
 ### `ANL-03` — Economy Integrity and Security Analytics Contract
 
-Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED** (reconciled 2026-10-06; locator `docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)). Retention ceilings and the enforcement/GM contract remain open; retention and pseudonymization lifecycle: owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md`).
+Status: **ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED** (reconciled 2026-10-06; locator `docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)). Retention ceilings and the enforcement/GM contract remain open; retention and pseudonymization lifecycle: owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1879, not yet on main)).
 
 Decide:
 
@@ -530,7 +530,7 @@ This contract supplements but never replaces the prevention guarantees of `DUR-0
 
 ### `ANL-04` — Read-Only Investigation and AI Contract
 
-Status: **PLANNED / not accepted** (reconciled 2026-10-06; later read-only investigation gate).
+Status: **PLANNED / not accepted** (`DecisionStatus: PROPOSED; DeliveryStatus: PLANNED; ImplementationStatus: NOT_STARTED`) (reconciled 2026-10-06; later read-only investigation gate).
 
 Decide:
 
@@ -562,7 +562,7 @@ The canonical client migration and FND-ID gate are complete. Protocol, admission
 
 ## `VSL-01` — Foundation Vertical-Slice Programme
 
-Status: **PLANNED** (reconciled 2026-10-06; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)). The bounded Stage C VSL gates are accepted separately by `docs/architecture/OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md` (PR #311).
+Status: **PLANNED** (`DecisionStatus: PROPOSED; DeliveryStatus: PLANNED; ImplementationStatus: NOT_STARTED` for the programme as a whole; the bounded Stage C gates carry their own axes) (reconciled 2026-10-06; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)). The bounded Stage C VSL gates are accepted separately by `docs/architecture/OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md` (PR #311).
 
 Approve ownership, implementation order and evidence for this minimum scenario using the accepted `QA-E2E-01` platform and evidence contract:
 
@@ -618,7 +618,7 @@ The complete open-decision scope is canonical in `GAMEPLAY_AND_PRODUCT_ARCHITECT
 
 Registering a gate does not accept its implementation choice.
 
-Reconciled 2026-10-06: `GAME-CHAR-01` and `GAME-ITEM-01` are accepted (`docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303)); `GAME-ABILITY-01` is accepted (`docs/architecture/GAME-ABILITY-01_WHOLE_GATE_OWNER_ACCEPTANCE_BASELINE.md`, PR #306); `GAME-AI-01` and `GAME-INTERACTION-01` are accepted with named open items (`docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309)). Of the operational-completeness gates, `PROD-LIVEOPS-01`, `OPS-GM-01` and `DATA-PRIVACY-01` are owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md`); `PROD-COMPAT-01` (client version and update) and `PERF-01` are owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md`); `UX-I18N-A11Y-01` is owner decision in progress: `ARCH-I18N-A11Y-CREATIVE-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_I18N_A11Y_CREATIVE_DIRECTION_2026-10-06.md`); `SEC-CLIENT-01` stays CANDIDATE (`docs/architecture/reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md`) with its threat model in `ARCH-LIVE-READINESS-0`. `PROD-ENTITLEMENTS-01` is no longer deferred on the game side: its consumer contract is accepted (PR #20, closeout PR #27; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97) §8); payment and delivery activation remain separately governed. `EXP-HOUSES-01` is accepted (`docs/architecture/EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md`, issue #220).
+Reconciled 2026-10-06: `GAME-CHAR-01` and `GAME-ITEM-01` are accepted (`docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303)); `GAME-ABILITY-01` is accepted (`docs/architecture/GAME-ABILITY-01_WHOLE_GATE_OWNER_ACCEPTANCE_BASELINE.md`, PR #306); `GAME-AI-01` and `GAME-INTERACTION-01` are accepted with named open items (`docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309)). Of the operational-completeness gates, `PROD-LIVEOPS-01`, `OPS-GM-01` and `DATA-PRIVACY-01` are owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1879, not yet on main)); `PROD-COMPAT-01` (client version and update) and `PERF-01` are owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main)); `UX-I18N-A11Y-01` is owner decision in progress: `ARCH-I18N-A11Y-CREATIVE-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_I18N_A11Y_CREATIVE_DIRECTION_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1880, not yet on main)); `SEC-CLIENT-01` stays CANDIDATE (`docs/architecture/reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md`) with its threat model in `ARCH-LIVE-READINESS-0`. `PROD-ENTITLEMENTS-01` is no longer deferred on the game side: its consumer contract is accepted (PR #20, closeout PR #27; historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97) §8); payment and delivery activation remain separately governed. `EXP-HOUSES-01` is accepted (`docs/architecture/EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md`, issue #220).
 
 ## Explicitly deferred
 
@@ -683,7 +683,7 @@ No package may edit another active package's owned contract without explicit coo
 26. Activate expansion/deferred gameplay-product gates only when their milestone or explicit owner decision requires them
 ```
 
-Reconciled 2026-10-06: the ordered list above is historical; the items are not renumbered. Items 1-5 are complete. Items 6-16 are complete as accepted architecture (`docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); `docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)) except: item 17 `DUR-04` is a CONFLICT (see the `DUR-04` status line); item 18 `QA-E2E-01` has an evidence shell implemented; items 19-20 `VSL-01` are PLANNED, and the bounded Stage C gates are accepted by PR #311. Items 21-22 (`PERF-01`, `OPS-CHANNEL-01`) are PLANNED and owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md`). Item 23 is accepted (PR #306, PR #309). Item 24 is open; see the pointers under "Registered gameplay and product decision horizon". Item 25: `ANL-02`/`ANL-03` are accepted (PR #309) and `ANL-04` stays deferred. The live order is issue #162.
+Reconciled 2026-10-06: the ordered list above is historical; the items are not renumbered. Items 1-5 are complete. Items 6-16 are complete as accepted architecture (`docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); `docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309); historical snapshot `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)) except: item 17 `DUR-04` is a CONFLICT (see the `DUR-04` status line); item 18 `QA-E2E-01` has an evidence shell implemented; items 19-20 `VSL-01` are PLANNED, and the bounded Stage C gates are accepted by PR #311. Items 21-22 (`PERF-01`, `OPS-CHANNEL-01`) are PLANNED and owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main)). Item 23 is accepted (PR #306, PR #309). Item 24 is open; see the pointers under "Registered gameplay and product decision horizon". Item 25: `ANL-02`/`ANL-03` are accepted (PR #309) and `ANL-04` stays deferred. The live order is issue #162.
 
 Contracts may be developed in parallel only when ownership and dependencies do not overlap. Cross-repository changes require separate authorized tasks, branches and PRs with one coordination ID and explicit rollout order.
 
