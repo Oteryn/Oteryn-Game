@@ -4,7 +4,7 @@
 task_id: OTV2-20261006-runbook-1-login-local
 title: RUNBOOK-1 local native login runbook
 mode: IMPLEMENT
-status: completed
+status: blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/runbook-1-20261006
@@ -28,9 +28,11 @@ external_repositories: [Oteryn/Oteryn-Platform (read-only, pinned 3896bcdf)]
 
 ## Outcome
 
-`tools/qualification/login_local/{README.md,run.sh,compose.override.yml,nginx.conf}`: one documented local run of the native
-login path per packet §2.7 (CP D825, owner decision D824 2a), extending `node_boot`. PROVEN: `bash -n` and `shellcheck -x` clean.
-UNKNOWN until first run: Docker was unreachable here, so the run is "not executed in this environment".
+NOT COMPLETE: the §2.7 full-stack local run has not been executed, so no run evidence exists.
+`tools/qualification/login_local/{README.md,run.sh,compose.override.yml,nginx.conf}`: authored runbook per packet §2.7
+(CP D825, owner decision D824 2a), extending `node_boot`. PROVEN: `bash -n` and `shellcheck -x` clean.
+UNKNOWN until first run: the Docker daemon was unreachable in the authoring environment ("not executed in this environment").
+Remaining: an operator with Docker runs `tools/qualification/login_local/run.sh` and records the `LOGIN_LOCAL_RESULT` evidence here.
 Documented gap: `WALKED` needs operator attestation (no machine-readable step signal). No Platform write; no step pending
 PLATFORM-NATIVE-PREPROD-OPS-1.
 

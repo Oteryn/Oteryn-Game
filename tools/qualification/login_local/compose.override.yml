@@ -5,6 +5,8 @@ services:
   platform:
     environment:
       APP_ENV: preproduction
+      # wp5_s3a sets SESSION_DRIVER=array; the login flow needs sessions to persist across requests.
+      SESSION_DRIVER: file
       GAME_AUTH_NATIVE_ADMISSION_ENABLED: "true"
       GAME_AUTH_NATIVE_ADMISSION_SIGNING_KEY_FILE: /run/oteryn-admission/signing.seed
       GAME_AUTH_NATIVE_ADMISSION_SIGNING_KEY_ID: ${LL_ADMISSION_KEY_ID:?set LL_ADMISSION_KEY_ID}
