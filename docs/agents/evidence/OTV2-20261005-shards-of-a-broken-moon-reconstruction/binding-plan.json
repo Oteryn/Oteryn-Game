@@ -640,10 +640,13 @@
         "empty_flask_obtained",
         "holds Moon Mirror",
         "holds oteryn:item.tibia.i25975",
-        "holds oteryn:item.tibia.i53696"
+        "holds oteryn:item.tibia.i53696",
+        "night_time",
+        "holds:oteryn:item.tibia.i25975",
+        "holds:oteryn:item.tibia.i53696"
       ],
       "outcome": "blue_lava_obtained",
-      "evidence": "CURRENT_POST_RELEASE_REFERENCE_CONSENSUS",
+      "evidence": "STRUCTURED_REFERENCE_EXPLICIT_WITH_CONTINUITY_SUPPORT",
       "owner": "QUEST-TRIGGER-1 + Item/Durability",
       "night_guard": false,
       "source_arbitration": {
@@ -666,20 +669,36 @@
         }
       },
       "note": "Runtime should not enforce a night-only predicate. Preserve Moon Mirror + flask + exact placement requirements.",
-      "time_predicate": null,
-      "source_conflict": {
-        "status": "RESOLVED_FOR_RUNTIME",
-        "disposition": "NO_NIGHT_PREDICATE",
-        "current_reference": [
-          "TibiaWiki BR: with Moon Mirror equipped, use Empty Crystal Flask at 33098,32947,6 to obtain Crystal Flask with Blue Lava; no time gate stated.",
-          "ItemLevel post-release guide: carrying Moon Mirror makes the correct lava section turn blue; troubleshooting checks Mirror/inventory, not world time.",
-          "TibiaLife post-release guide: use the Crystal Flask at the lava source; no night condition."
+      "time_predicate": {
+        "kind": "night_time",
+        "required": true,
+        "selected_source": {
+          "provider": "tibia_fandom",
+          "pageid": 110936,
+          "revid": 1202455,
+          "revision_timestamp": "2026-08-20T20:11:41Z",
+          "wording": "active volcano ... during the night time"
+        },
+        "continuity_support": "Current Fandom page/search snapshot still contains the same explicit night-time instruction after the pinned post-release revision.",
+        "crosschecks": [
+          {
+            "provider": "tibiawiki_br",
+            "disposition": "OMISSION_NOT_CONTRADICTION",
+            "note": "Describes Moon Mirror + Empty Crystal Flask use but does not state that daytime succeeds."
+          },
+          {
+            "provider": "post_release_guides",
+            "disposition": "OMISSION_NOT_CONTRADICTION",
+            "note": "Guides omit time-of-day but do not provide a successful daytime witness."
+          },
+          {
+            "provider": "walkthrough_Zz-7UyufXbU",
+            "disposition": "SUPPORTING_NOT_DISCRIMINATING",
+            "note": "Narrator cites wiki night-only requirement, is unsure whether it is necessary, believes it is night, then successfully fills the flask."
+          }
         ],
-        "historical_hold": [
-          "Older/Fandom future-update text said night-only.",
-          "Supplied video narrator explicitly says the wiki claims night-only but he does not know whether it is true."
-        ],
-        "policy": "Current post-release Global-facing reference evidence supersedes the stale/future-update-only night claim for executable parity. Preserve historical conflict as provenance only."
+        "confidence": "STRUCTURED_REFERENCE_CANDIDATE",
+        "controlled_global_observation": false
       }
     },
     {
@@ -1587,6 +1606,11 @@
         "ENC-COMBAT-1",
         "ENC-OUTCOME-1"
       ]
+    },
+    "blue_lava_night_disposition": {
+      "state": "SELECTED_SOURCE_REQUIREMENT",
+      "reason": "Explicit post-release Fandom mechanic; lower-ranked sources only omit time-of-day and do not negate it. Source registry §10 requires same atomic-field disagreement for CONFLICT.",
+      "target_observation": "NOT_CONTROLLED_GLOBAL_VERIFIED"
     }
   }
 }
