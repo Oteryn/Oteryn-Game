@@ -1121,7 +1121,7 @@
     "Magnolia special Encounter absent",
     "Blue Lava night-only predicate source conflict",
     "Escape room/skeleton/icicles/north-wall are resolved (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9); Rope Spot/scripted exit remains unresolved, and donor Lit Torch 54610 requires separate Item admission (do not alias to i34017)",
-    "Forbidden Gardens Achievement predicate composition missing",
+    "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
     "No full real-character start→reward→relog/restart E2E qualification",
     "Jaracal Mount exact donor identity is resolved (mount_id 250, clientid 1962, speed +10, premium, quest); canonical Mount admission + i54638-on-Jaracal tame/account-unlock runtime remain missing, and tame chance semantics remain UNKNOWN"
   ],
@@ -1239,6 +1239,22 @@
         "On successful tame grant account-scoped mount unlock plus existing Six Steps Ahead achievement.",
         "Qualify item consumption, idempotence and relog/restart persistence.",
         "Do not grant the mount directly from Shards s16."
+      ]
+    },
+    "forbidden_gardens_predicate": {
+      "required": [
+        "quest_completed(Shards of a Broken Moon)",
+        "account_has_achievement(oteryn:achievement/forbidden_fruit@1)"
+      ],
+      "current_quest_predicate_support": {
+        "quest_completed": true,
+        "achievement": false
+      },
+      "achievement_owner_read": "DurabilityRoot::read_account_achievements",
+      "proposed_minimal_shape": "AccountHasAchievement(String) + QuestPredicateFacts::account_has_achievement; read-only owner fact, fail closed",
+      "forbidden": [
+        "copy Achievement fact into QuestState",
+        "treat Area identity as executable capability"
       ]
     }
   }
