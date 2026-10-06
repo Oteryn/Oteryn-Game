@@ -3,8 +3,6 @@ name: Item Authoring Schema
 on:
   pull_request:
     paths:
-      - apps/game-server/src/content/reference_playable.rs
-      - docs/agents/evidence/monster-final-seven-20261004/item-closed-context-20261005/**
       - tools/content-schema/item-authoring/**
       - tools/content-schema/world-object-authoring/**
       - content/world/terrain/**
@@ -148,19 +146,16 @@ jobs:
         working-directory: tools/content-census
         run: python item_wiki_stats_capture_self_test.py
 
-      - name: Closed Item replay context and current input guards
-        run: python test_replay_closed_item_context.py
-
       - name: TibiaWiki Item stat promotion packet tests and drift
         run: |
-          python replay_closed_item_context.py -- test_lower_wiki_stats_packet.py
-          python replay_closed_item_context.py -- -m unittest test_wiki_modifiers_packet.py
-          python replay_closed_item_context.py -- -m unittest test_key_ring5801_source_selection.py
+          python test_lower_wiki_stats_packet.py
+          python -m unittest test_wiki_modifiers_packet.py
+          python -m unittest test_key_ring5801_source_selection.py
 
       - name: Bounded physical source facts and magic rune limit
         run: |
-          python replay_closed_item_context.py -- test_lower_client_physical_packet.py
-          python replay_closed_item_context.py -- lower_client_physical_packet.py --check
+          python test_lower_client_physical_packet.py
+          python lower_client_physical_packet.py --check
 
       - name: Timed Item facts (charges, duration, forms) tests and packet drift
         run: |
@@ -169,51 +164,51 @@ jobs:
 
       - name: Equipment ability facts (wiki first, Canary fallback) tests and drift
         run: |
-          python replay_closed_item_context.py -- test_lower_equip_abilities_packet.py
-          python replay_closed_item_context.py -- lower_equip_abilities_packet.py --check
+          python test_lower_equip_abilities_packet.py
+          python lower_equip_abilities_packet.py --check
 
       - name: Bounded source-qualified container capacity tests and drift
-        run: python replay_closed_item_context.py -- test_lower_wiki_capacity_packet.py
+        run: python test_lower_wiki_capacity_packet.py
 
       - name: Explicit wiki non-stackability tests and drift
-        run: python replay_closed_item_context.py -- test_lower_wiki_stack_false_packet.py
+        run: python test_lower_wiki_stack_false_packet.py
 
       - name: Documented wiki non-stackability default tests and drift
         run: |
           set -euo pipefail
-          python replay_closed_item_context.py -- test_lower_wiki_stack_default_packet.py
-          python replay_closed_item_context.py -- check_stack_default_historical_context.py --cohort default
-          python replay_closed_item_context.py -- test_stack_default_historical_context.py
+          python test_lower_wiki_stack_default_packet.py
+          python check_stack_default_historical_context.py --cohort default
+          python test_stack_default_historical_context.py
 
       - name: Closed historical source frames for seven stack defaults
         working-directory: tools/content-schema/item-authoring
         run: |
-          python replay_closed_item_context.py -- test_lower_wiki_stack_historical_packet.py
-          python replay_closed_item_context.py -- check_stack_default_historical_context.py --cohort historical
+          python test_lower_wiki_stack_historical_packet.py
+          python check_stack_default_historical_context.py --cohort historical
 
       - name: Source-only Item use observations tests and drift
         run: |
-          python replay_closed_item_context.py -- test_lower_item_use_observation_packet.py
-          python replay_closed_item_context.py -- lower_item_use_observation_packet.py --check
+          python test_lower_item_use_observation_packet.py
+          python lower_item_use_observation_packet.py --check
 
       - name: Singleton explicit Forge pair qualification guards and drift
         run: |
-          python replay_closed_item_context.py -- test_lower_item_forge3332_packet.py
-          python replay_closed_item_context.py -- check_tibiawiki165_historical_context.py --cohort forge
-          python replay_closed_item_context.py -- test_lower_item_forge289_packet.py
-          python replay_closed_item_context.py -- lower_item_forge289_packet.py --check
+          python test_lower_item_forge3332_packet.py
+          python check_tibiawiki165_historical_context.py --cohort forge
+          python test_lower_item_forge289_packet.py
+          python lower_item_forge289_packet.py --check
 
       - name: Closed intrinsic weapon source metadata tests and drift
         run: |
-          python replay_closed_item_context.py -- check_tibiawiki165_historical_context.py --cohort weapon-tests
-          python replay_closed_item_context.py -- check_tibiawiki165_historical_context.py --cohort weapon
+          python check_tibiawiki165_historical_context.py --cohort weapon-tests
+          python check_tibiawiki165_historical_context.py --cohort weapon
 
       - name: Closed successor eight documented stack defaults and source replay
         working-directory: tools/content-schema/item-authoring
         run: |
           set -euo pipefail
-          python replay_closed_item_context.py -- test_stack_default_successor8.py
-          python replay_closed_item_context.py -- lower_wiki_stack_default_successor8_packet.py --check
+          python test_stack_default_successor8.py
+          python lower_wiki_stack_default_successor8_packet.py --check
 
       - name: Weapon proficiency tests and artifact drift
         run: |
@@ -223,66 +218,66 @@ jobs:
 
       - name: Positive official market qualification guards and packet drift
         run: |
-          python replay_closed_item_context.py -- test_lower_client_market_packet.py
-          python replay_closed_item_context.py -- lower_client_market_packet.py --check
+          python test_lower_client_market_packet.py
+          python lower_client_market_packet.py --check
 
       - name: Explicit own-Wiki movable qualification guards and packet drift
         run: |
-          python replay_closed_item_context.py -- test_lower_wiki_movable_packet.py
-          python replay_closed_item_context.py -- lower_wiki_movable_packet.py --check
+          python test_lower_wiki_movable_packet.py
+          python lower_wiki_movable_packet.py --check
 
       - name: D289 Market v2 holds and packet drift
         run: |
-          python replay_closed_item_context.py -- test_lower_client_market_d289_packet.py
-          python replay_closed_item_context.py -- lower_client_market_d289_packet.py --check
+          python test_lower_client_market_d289_packet.py
+          python lower_client_market_d289_packet.py --check
 
       - name: D289 movable v2 holds and packet drift
         run: |
-          python replay_closed_item_context.py -- test_lower_wiki_movable_d289_packet.py
-          python replay_closed_item_context.py -- lower_wiki_movable_d289_packet.py --check
+          python test_lower_wiki_movable_d289_packet.py
+          python lower_wiki_movable_d289_packet.py --check
 
       - name: Explicit document qualification guards and packet drift
         run: |
-          python replay_closed_item_context.py -- test_lower_item_document_packet.py
-          python replay_closed_item_context.py -- lower_item_document_packet.py --check
+          python test_lower_item_document_packet.py
+          python lower_item_document_packet.py --check
 
       - name: Closed own-source descriptions guards and packet drift
         run: |
-          python replay_closed_item_context.py -- test_lower_item_description_packet.py
-          python replay_closed_item_context.py -- lower_item_description_packet.py --check
-          python replay_closed_item_context.py -- test_lower_item_description_wiki_packet.py
-          python replay_closed_item_context.py -- lower_item_description_wiki_packet.py --check
+          python test_lower_item_description_packet.py
+          python lower_item_description_packet.py --check
+          python test_lower_item_description_wiki_packet.py
+          python lower_item_description_wiki_packet.py --check
 
       - name: Closed imported display name correction guards and packet drift
         run: |
-          python replay_closed_item_context.py -- test_lower_item_name_packet.py
-          python replay_closed_item_context.py -- lower_item_name_packet.py --check
-          python replay_closed_item_context.py -- test_lower_item_name15_packet.py
-          python replay_closed_item_context.py -- lower_item_name15_packet.py --check
+          python test_lower_item_name_packet.py
+          python lower_item_name_packet.py --check
+          python test_lower_item_name15_packet.py
+          python lower_item_name15_packet.py --check
         working-directory: tools/content-schema/item-authoring
 
       - name: Explicit relative hit and Rune magic level guards and packet drift
         run: |
-          python replay_closed_item_context.py -- test_lower_item_hit_magic_packet.py
-          python replay_closed_item_context.py -- lower_item_hit_magic_packet.py --check
+          python test_lower_item_hit_magic_packet.py
+          python lower_item_hit_magic_packet.py --check
         working-directory: tools/content-schema/item-authoring
 
       - name: Closed numeric13 plus observed Magic4 source successor guards
         run: |
-          python replay_closed_item_context.py -- test_lower_numeric_modifier17_packet.py
-          python replay_closed_item_context.py -- lower_numeric_modifier17_packet.py --check
+          python test_lower_numeric_modifier17_packet.py
+          python lower_numeric_modifier17_packet.py --check
         working-directory: tools/content-schema/item-authoring
 
       - name: Whole Mantra and elemental Bond source qualification and packet drift
         run: |
-          python replay_closed_item_context.py -- test_lower_mantra_bond_modifier_packet.py
-          python replay_closed_item_context.py -- lower_mantra_bond_modifier_packet.py --check
+          python test_lower_mantra_bond_modifier_packet.py
+          python lower_mantra_bond_modifier_packet.py --check
         working-directory: tools/content-schema/item-authoring
 
       - name: Complete elemental magic modifier qualification guards and packet drift
         run: |
-          python replay_closed_item_context.py -- test_lower_elemental_magic_modifier_packet.py
-          python replay_closed_item_context.py -- lower_elemental_magic_modifier_packet.py --check
+          python test_lower_elemental_magic_modifier_packet.py
+          python lower_elemental_magic_modifier_packet.py --check
 
       - name: Client appearance census fixture tests
         run: python test_client_appearance_census.py

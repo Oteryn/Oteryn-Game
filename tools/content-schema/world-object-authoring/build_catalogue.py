@@ -278,7 +278,7 @@ def outputs(
             )
         index = marker(directory, family, len(rows), result["source"])
         files[f"{directory}/index.json"] = (
-            json.dumps(index, sort_keys=True, indent=2, ensure_ascii=False) + "\n"
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode("utf-8")
     if donor_source is not None:
         existing_keys = {
@@ -303,7 +303,7 @@ def outputs(
                 f"total {len(records[family]) + len(donor_records[family])}."
             )
             files[index_path] = (
-                json.dumps(index, sort_keys=True, indent=2, ensure_ascii=False) + "\n"
+                json.dumps(index, indent=2, ensure_ascii=False) + "\n"
             ).encode("utf-8")
     if include_official:
         import official_corpses
@@ -324,7 +324,7 @@ def outputs(
             f"total {count + 40} WorldObject records."
         )
         files[index_path] = (
-            json.dumps(index, sort_keys=True, indent=2, ensure_ascii=False) + "\n"
+            json.dumps(index, indent=2, ensure_ascii=False) + "\n"
         ).encode()
     if include_qualified:
         import qualified_world
@@ -350,7 +350,7 @@ def outputs(
                 f"total {starts[family] + count} {family} records."
             )
             files[index_path] = (
-                json.dumps(index, sort_keys=True, indent=2, ensure_ascii=False) + "\n"
+                json.dumps(index, indent=2, ensure_ascii=False) + "\n"
             ).encode()
     return files, world_objects.census_document_bytes(result)
 
