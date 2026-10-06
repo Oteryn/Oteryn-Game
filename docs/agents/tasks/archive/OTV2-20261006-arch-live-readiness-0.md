@@ -22,7 +22,7 @@ depends_on: []
 blocks: [OPS-GM-AUDIT-1, OPS-GM-SANCTION-2, OPS-GM-REPORT-3, OPS-GM-ROSTER-4, OPS-GM-STAFF-5, OPS-GM-PREPORT-6, THREAT-MODEL-0, ERR-PUBLIC-REVIEW-1, LIVEOPS-CONFIG-AUDIT-1, LIVEOPS-MAINT-1, LIVEOPS-NOTICE-2, LIVEOPS-KILL-2, THREAT-DOS-1, SEC-ROTATION-1, SUPPLY-SIGN-1, ECON-FENCE-1, ECON-CASE-HOLD-1, ECON-TRACE-1, ECON-REMEDIATION-1, GUILD-ERASURE-0, PRIVACY-INVENTORY-1, PRIVACY-LOG-REDACT-1, PRIVACY-ERASURE-1, PRIVACY-DSR-EXPORT-1]
 cross_repository_coordination_id: null
 external_repositories: []
-last_progress: "2026-10-06 review round 2: Codex findings 4195977709, 4195977719, 4195977731 and 4195977740 fixed after round 1 (4195149410, 4195149418, 4195149435, 4195149446); owner rulings of 2026-10-06 on all eleven §4.2 items recorded and applied"
+last_progress: "2026-10-06 review round 3: Codex finding 4196701855 fixed (erasure journal PENDING before the first database transition, COMPLETE before the Platform ack); rounds 1 and 2 fixed earlier; owner rulings of 2026-10-06 on all eleven §4.2 items recorded and applied"
 ```
 
 ## Outcome
@@ -43,6 +43,7 @@ last_progress: "2026-10-06 review round 2: Codex findings 4195977709, 4195977719
 - Lifting a fence needs the same two personal signatures as a remediation approval, under its own namespace, and fails closed with fewer than two principals (§3 ruling 4).
 - Erasure leaves no AccountId in any Game table except audit envelopes until expiry: bank balances are retired to 0 and `account_id` in root and bank rows is replaced by a random marker inside one guarded function, with a before/after value digest (§3 ruling 17, amendment 4).
 - The erasure journal holds AccountId and operation_id only and is an inventory row that the inventory check requires (§3 rulings 14, 18).
+- The erasure journal records a durable `PENDING` entry before the first database erasure transition and `COMPLETE` after the last and before the Platform acknowledgement; a restore re-applies every journaled AccountId idempotently and fails closed on a torn or unreadable journal; PRIVACY-ERASURE-1 tests a crash at each point (§3 ruling 18).
 - A reported chat line must have been spoken by the report target, enforced in the command and by a table check (§1 ruling 12).
 - Every owner ruling of 2026-10-06 is recorded in its section and in §4.2, and the body is consistent with it.
 
@@ -55,6 +56,7 @@ last_progress: "2026-10-06 review round 2: Codex findings 4195977709, 4195977719
 - 4195977719 (P1, §3 ruling 17): bank rows keyed by AccountId had no erasure rule. Fixed: `ERASURE_RETIRE` under a new `AccountErasureCause`, then one SECURITY DEFINER substitution of a random marker for `account_id` in root and bank rows with no value or chain change and an equal value digest; BANK-0 amendment 4; inventory rows for every AccountId-keyed table; PRIVACY-ERASURE-1 tests.
 - 4195977731 (P2, §3 rulings 14, 18): the erasure journal was not inventoried. Fixed: journal reduced to AccountId and operation_id, inventory row with classification, access and backup-bound retention, and the check requires it; `game_account_erasures` row added.
 - 4195977740 (P2, §1 ruling 12): a report could attach a line by another speaker. Fixed: the buffer records the speaker, `CHAT_LINE_TARGET_MISMATCH` refuses a line not spoken by the target or a non-HARASSMENT revision, and a table check binds the stored speaker to the target; OPS-GM-PREPORT-6 tests.
+- 4196701855 (P1, §3 ruling 18): the journal was ordered only before the Platform acknowledgement, so a crash after substitution and before the append left a restorable backup with no journaled AccountId. Fixed: a `PENDING` record is appended and fsynced with its directory before the first database transition and `COMPLETE` after the last; retry resumes from the journal; restore re-applies every journaled AccountId per idempotent phase and refuses a torn or unreadable journal; PRIVACY-ERASURE-1 crash-injection tests at each point; inventory row and brief updated.
 - 4195149446 (P2, §2 ruling 9): drain state lived only in process memory. Fixed: a durable `game_scope_maintenance` marker committed before the drain request, read at boot before readiness, fail closed when unreadable, and ended by compare-and-set in `maintenance end`.
 
 ## Owner rulings
