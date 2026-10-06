@@ -119,10 +119,10 @@ def validate(houses, placed, facts, exceptions, held=frozenset()):
     soft = defaultdict(list)  # exception house -> structural pair findings (BED-0 §3)
 
     def pair_fail(code, house, tile, detail):
-        if house in exceptions:  # known-discrepancy house: report it, offer valid pairs only
-            soft[house].append(
-                {"code": code, "tile": list(tile), "detail": detail}
-            )
+        if (
+            house in exceptions
+        ):  # known-discrepancy house: report it, offer valid pairs only
+            soft[house].append({"code": code, "tile": list(tile), "detail": detail})
         else:
             fail(code, house, tile, detail)
 
