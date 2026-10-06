@@ -9,9 +9,9 @@
 //! walk never sends a step the server would hold or refuse.
 
 use oteryn_input_actions::{
-    ActionId, ActionPhase, Binding, BindingMap, ContextDefinition, ContextId, ContextKind,
-    InputAtom, InputChord, InputError, InputRouter, Modifiers, MouseButton, NormalizedInputEvent,
-    RepeatPolicy,
+    ActionId, ActionPhase, Binding, BindingMap, ButtonState, ContextDefinition, ContextId,
+    ContextKind, InputAtom, InputChord, InputError, InputRouter, KeyCode, Modifiers, MouseButton,
+    NormalizedInputEvent, RepeatPolicy,
 };
 use oteryn_renderer::{TileCoord, TileView};
 use std::sync::OnceLock;
@@ -223,6 +223,25 @@ pub fn pick_target(tile: TileCoord, visible: &[Targetable]) -> Option<Targetable
         .find(|t| t.kind == TargetKind::Entity)
         .or_else(|| on_tile().find(|t| t.kind == TargetKind::Object))
         .copied()
+}
+
+/// The step an arrow-key press asks for. Held keys repeat, so a held arrow keeps walking.
+#[must_use]
+pub fn arrow_step(events: &[NormalizedInputEvent]) -> Option<StepDir> {
+    events.iter().find_map(|event| match event {
+        NormalizedInputEvent::Key {
+            code,
+            state: ButtonState::Pressed,
+            ..
+        } => match *code {
+            KeyCode::ARROW_UP => Some(StepDir::North),
+            KeyCode::ARROW_RIGHT => Some(StepDir::East),
+            KeyCode::ARROW_DOWN => Some(StepDir::South),
+            KeyCode::ARROW_LEFT => Some(StepDir::West),
+            _ => None,
+        },
+        _ => None,
+    })
 }
 
 /// Action id of the primary-button click in the gameplay context.
@@ -577,5 +596,31 @@ mod tests {
         actions.set_text_active(true)?;
         assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
         Ok(())
+    }
+
+    #[test]
+    fn arrow_keys_map_to_steps_and_other_keys_to_none() {
+        let key = |code, state| NormalizedInputEvent::Key {
+            code,
+            state,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        assert_eq!(
+            arrow_step(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)]),
+            Some(StepDir::West)
+        );
+        assert_eq!(
+            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)]),
+            Some(StepDir::North)
+        );
+        assert_eq!(
+            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Released)]),
+            None
+        );
+        assert_eq!(
+            arrow_step(&[key(KeyCode::KEY_W, ButtonState::Pressed)]),
+            None
+        );
     }
 }
