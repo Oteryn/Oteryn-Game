@@ -67,6 +67,8 @@ ownership.
 - [x] The D2 read answers `503` with no entry when the feed is stale or the account is `invalid`
       or below the highest epoch (decision §2 item 4, contract §5.1).
 - [x] The decision document carries the mandatory decision test (decision §5).
+- [x] Future-dated watermarks never make the feed live, and the epoch restore precondition,
+      detection and recovery are stated (review round 2).
 - [ ] Owner acceptance after independent review of the frozen head (D821 1a).
 
 ## Excluded scope
@@ -84,6 +86,14 @@ ruling for U-LC1, U-LC5 or U-LC6, no production restore runbook, no PKI. No chan
     §5.1).
   - P2 §10 conflicts with §5/§5.1: fixed (§5 epoch bullet and §5.1 now cite U-LC2 and U-LC5).
   - Also fixed: the stale registry follow-up line in contract §8 (the limits are registered).
+- Review round 2 (Codex, review 5425652116 on 8184c915), both P2 fixed:
+  - future-dated watermarks: Platform refuses a watermark ahead of its clock by more than
+    `clock_uncertainty` (or with `complete_through` after `observed_at`) with `400`, and a stored
+    future `complete_through` reads as stale (decision §2 items 3 and its tests, contract §5.1, §9);
+  - restored epochs: contract §5 states the restore precondition (synchronized clock), the
+    fail-closed `superseded` detection and the recovery (raise again after a clock fix); the
+    production runbook must keep an external epoch fence (§10 U-LC2, decision §3 command help
+    and publisher test).
 
 ## Validation
 
@@ -111,7 +121,7 @@ ruling for U-LC1, U-LC5 or U-LC6, no production restore runbook, no PKI. No chan
 
 - exact head: the frozen head
 - method/reviewer: Sol Supervising Architect
-- material findings: none open after round 1
+- material findings: none open after round 2
 - verdict: ready for independent review
 
 ## Independent review
@@ -125,7 +135,7 @@ ruling for U-LC1, U-LC5 or U-LC6, no production restore runbook, no PKI. No chan
 ## PR and closeout
 
 - changed-file review: three owned paths
-- unresolved review threads: none after round 1 replies
+- unresolved review threads: none after round 2 replies
 - related/superseded PRs: none
 - protected auto-merge: control plane
 - merge commit/result: in PR #1870
@@ -134,7 +144,7 @@ ruling for U-LC1, U-LC5 or U-LC6, no production restore runbook, no PKI. No chan
 ## Context checkpoint
 
 ```yaml
-last_progress: review round 1 fixed
+last_progress: review round 2 fixed
 status: completed
 branch: cand/lcfa-projection-contract-1
 pr: 1870
