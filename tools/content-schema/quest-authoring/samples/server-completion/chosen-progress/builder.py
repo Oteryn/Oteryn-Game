@@ -56,7 +56,7 @@ def validate_record(r):
 def build(root):
  quests=[];refs=[]
  for p in sorted((pathlib.Path(root)/'content/quests/definitions').glob('quests-*.json')):
-  raw=p.read_bytes();packetsha=hashlib.sha256(raw).hexdigest();path=str(p.relative_to(root));refs.append({'path':path,'sha256':packetsha})
+  raw=p.read_bytes();packetsha=hashlib.sha256(raw).hexdigest();path=p.relative_to(root).as_posix();refs.append({'path':path,'sha256':packetsha})
   for i,row in enumerate(json.loads(raw)['records']):
    q=row['definition']
    if q.get('readiness')=='waiting_native_bindings':quests.append(project(q,{'path':path,'packet_sha256':packetsha,'json_pointer':f'/records/{i}/definition'}))
