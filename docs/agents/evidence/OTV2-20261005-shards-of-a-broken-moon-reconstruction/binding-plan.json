@@ -1049,7 +1049,9 @@
       ],
       "outcome": "completed",
       "evidence": "FACT",
-      "owner": "NPC-QUEST-1 + QuestState"
+      "owner": "NPC-QUEST-1 + QuestState",
+      "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+      "reward_evidence_ref": "terminal-reward-evidence.json"
     },
     {
       "id": "complete_nilavarna_alt",
@@ -1064,7 +1066,9 @@
       ],
       "outcome": "completed",
       "evidence": "FACT_REFERENCE_ONLY",
-      "owner": "NPC-QUEST-1 + QuestState"
+      "owner": "NPC-QUEST-1 + QuestState",
+      "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+      "reward_evidence_ref": "terminal-reward-evidence.json"
     },
     {
       "id": "reward_skewered_fish",
@@ -1073,7 +1077,11 @@
       "item_candidate": "oteryn:item.tibia.i54638",
       "count": 1,
       "evidence": "FACT_IDENTITY_PROFILED",
-      "owner": "Reward/Item/Durability"
+      "owner": "Reward/Item/Durability",
+      "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+      "materializable": false,
+      "blocker": "Existing i54638 requires Item admission/materialization + terminal reward delivery binding; do not mint a duplicate.",
+      "reward_evidence_ref": "terminal-reward-evidence.json"
     },
     {
       "id": "reward_amatis_echo",
@@ -1081,19 +1089,23 @@
       "kind": "REWARD_ACHIEVEMENT",
       "achievement": "oteryn:achievement/amati_s_echo@1",
       "evidence": "FACT_IDENTITY",
-      "owner": "Achievement"
+      "owner": "Achievement",
+      "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+      "blocker": "Terminal s16 -> Achievement-owned grant binding missing.",
+      "reward_evidence_ref": "terminal-reward-evidence.json"
     },
     {
       "id": "forbidden_gardens_gate",
       "visible_stage": "post_completion_access",
       "kind": "ACCESS_GATE",
       "predicates": [
-        "Shards quest completed",
-        "account owns oteryn:achievement/forbidden_fruit@1"
+        "quest_completed(oteryn:quest.authored.shards_of_a_broken_moon_quest)",
+        "account_achievement(oteryn:achievement/forbidden_fruit@1)"
       ],
       "evidence": "FACT_SEMANTICS_RUNTIME_COMPOSITION_MISSING",
       "owner": "QuestGate + Achievement",
-      "blocker": "QuestPredicate currently has no Achievement predicate and no production facts adapter."
+      "blocker": "QuestPredicate currently has no Achievement predicate and no production facts adapter.",
+      "reward_evidence_ref": "terminal-reward-evidence.json"
     }
   ],
   "blockers": [
@@ -1105,7 +1117,8 @@
     "Blue Lava night-only predicate source conflict",
     "Escape room topology resolved with unique high-confidence OTBM match (skeleton 31920,31360,9; SW icicles 31914,31364,9); exact north-wall tile remains a bounded 3-tile hold (31919..31921,31359,9), Rope Spot/scripted exit remains unresolved, and donor Lit Torch 54610 requires separate Item admission (do not alias to i34017)",
     "Forbidden Gardens Achievement predicate composition missing",
-    "No full real-character start→reward→relog/restart E2E qualification"
+    "No full real-character start→reward→relog/restart E2E qualification",
+    "Jaracal mount/tame follow-up missing: Mount catalogue has no Jaracal; i54638 must tame canonical Jaracal through Mount/Item/Interaction owners, not direct s16 grant"
   ],
   "readback": {
     "refreshed_main": "52712f633786721c0d255888a92c81165cd2d5c3",
@@ -1182,6 +1195,8 @@
       "quest_gate_1": "DEPENDENCY_READY_NOT_YET_INTEGRATED",
       "quest_trigger_1": "SERIALIZE_AFTER_QUEST_GATE_1",
       "encounter_owner_pr_1807": "OPEN_NO_MAGNOLIA_ENCOUNTER"
-    }
+    },
+    "terminal_reward_evidence": "terminal-reward-evidence.json",
+    "jaracal_mount_catalogue_status": "ABSENT_FROM_252_CANONICAL_MOUNTS"
   }
 }
