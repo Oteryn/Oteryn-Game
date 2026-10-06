@@ -286,7 +286,40 @@ pub enum NotDelivered {
     Unavailable,
 }
 
+oteryn_error_codes::error_kinds! {
+    /// The registered code of each [`NotDelivered`] class.
+    pub enum NotDeliveredKind {
+        ReportInvalid = (5001, "PLATFORM_REPORT_INVALID", InvalidInput, Terminal),
+        RequestMalformed = (5002, "PLATFORM_REQUEST_MALFORMED", InvalidInput, Terminal),
+        Unauthenticated = (5003, "PLATFORM_UNAUTHENTICATED", AuthenticationFailed, SecurityTerminal),
+        Conflict = (5004, "PLATFORM_CONFLICT", Conflict, Terminal),
+        RateLimited = (5005, "PLATFORM_RATE_LIMITED", CapacityExceeded, Retryable),
+        ResponseInvalid = (5006, "PLATFORM_RESPONSE_INVALID", InternalUnavailable, Terminal),
+        Unavailable = (5007, "PLATFORM_UNAVAILABLE", DependencyUnavailable, Retryable),
+    }
+}
+
 impl NotDelivered {
+    /// The registered kind of this class; the match has no wildcard arm.
+    #[must_use]
+    pub const fn kind(self) -> NotDeliveredKind {
+        match self {
+            Self::InvalidReport => NotDeliveredKind::ReportInvalid,
+            Self::Malformed => NotDeliveredKind::RequestMalformed,
+            Self::Unauthenticated => NotDeliveredKind::Unauthenticated,
+            Self::Conflict => NotDeliveredKind::Conflict,
+            Self::RateLimited => NotDeliveredKind::RateLimited,
+            Self::InvalidResponse => NotDeliveredKind::ResponseInvalid,
+            Self::Unavailable => NotDeliveredKind::Unavailable,
+        }
+    }
+
+    /// The registered code of this class.
+    #[must_use]
+    pub const fn code(self) -> oteryn_error_codes::ErrorCode {
+        self.kind().code()
+    }
+
     #[must_use]
     pub const fn class(self) -> &'static str {
         match self {
@@ -455,15 +488,34 @@ where
     .await
 }
 
-fn log(publication: &Publication, what: &str, elapsed: Duration) {
+fn log(publication: &Publication, what: &str, elapsed: Duration, failure: Option<NotDelivered>) {
     // §10: operation, scope, `ready`, result class and timing only.
-    eprintln!(
-        "oteryn-game-server event=runtime_status operation=ReportRuntimeStatusV1 world_id={} channel_id={} ready={} {what} elapsed_ms={}",
-        publication.world_id,
-        publication.channel_id,
+    let detail = format!(
+        "operation=ReportRuntimeStatusV1 ready={} {what} elapsed_ms={}",
         publication.ready,
         elapsed.as_millis()
     );
+    let mut line = oteryn_error_codes::Line::new(
+        if failure.is_some() {
+            oteryn_error_codes::Level::Warn
+        } else {
+            oteryn_error_codes::Level::Info
+        },
+        "runtime_status",
+        "runtime_status",
+    )
+    .scope(&publication.world_id, &publication.channel_id)
+    .detail(&detail);
+    if let Some(not_delivered) = failure {
+        line = line.code(not_delivered.code());
+    }
+    // This file is also compiled into integration tests, so it writes the line itself.
+    if oteryn_error_codes::filter().allows(line.level, line.module, line.code.is_some()) {
+        eprintln!(
+            "{}",
+            line.render("oteryn-game-server", oteryn_error_codes::unix_ms())
+        );
+    }
 }
 
 /// Report loop (§8). Each new committed publication (including the one
@@ -527,6 +579,7 @@ pub async fn run<C, G, S>(
                         &publication,
                         &format!("heartbeat=stopped reason={reason}"),
                         Duration::ZERO,
+                        None,
                     );
                 }
                 skipped = Some(state);
@@ -546,6 +599,7 @@ pub async fn run<C, G, S>(
             &publication,
             &format!("result={class}"),
             clock.elapsed().saturating_sub(started),
+            result.err(),
         );
     }
 }
