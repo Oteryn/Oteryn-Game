@@ -53,6 +53,16 @@
       "offer_gate": "D170: the server does not offer this capability before CHARM-6 (unassign and reset) ships. Without it selected, domains 4 and 5 are never sent and command types 4 and 5 are refused as unsupported."
     },
     {
+      "id": 3,
+      "name": "NPC_SERVICE_V1",
+      "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
+      "owner": "current ChannelRuntime (the NPC conversations and trade windows of the channel)",
+      "command_types": [7, 8],
+      "state_domains": [7, 8],
+      "offered": false,
+      "offer_gate": "NPC-TALK-1: the server does not offer this capability before the NPC conversation owner, the domain 7 and 8 send path and the revision stream are composed. Without it selected, domains 7 and 8 are never sent and command types 7 and 8 are refused as unsupported."
+    },
+    {
       "id": 4,
       "name": "ITEM_VIEW_MOVE_V1",
       "owner_decision": "ITEM-MOVE-WIRE-0 ITEM-MOVE-WIRE0-ITEM-VIEW-AND-MOVE-V1 §4 and §5 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md, owner D212); numbers assigned by D212 and registered by ITEM-VIEW-1a (#1622 control plane)",
@@ -228,6 +238,26 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmAssignResultV1",
       "max_payload_bytes": 8,
       "max_result_payload_bytes": 4
+    },
+    {
+      "id": 7,
+      "name": "NPC_TALK_INTENT",
+      "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
+      "capability": 3,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcTalkIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcIntentResultV1",
+      "max_payload_bytes": 289,
+      "max_result_payload_bytes": 2
+    },
+    {
+      "id": 8,
+      "name": "NPC_TRADE_INTENT",
+      "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
+      "capability": 3,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcTradeIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcIntentResultV1",
+      "max_payload_bytes": 62,
+      "max_result_payload_bytes": 2
     },
     {
       "id": 9,
@@ -425,6 +455,54 @@
           "name": "CHARACTER_CHARMS_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmViewV1",
           "max_payload_bytes": 554
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "NPC_CONVERSATION",
+      "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
+      "owner": "current ChannelRuntime",
+      "capability": 3,
+      "revision": "per GameSessionId, monotonic and never reused (FND-02 §15) across reconnect, resume and channel transfer; every admission, reconnect and channel transfer sends a snapshot above any revision the session has seen, and reconnect or transfer closes the conversation so that snapshot is empty (NPC-0 §4); a delta carries the whole domain after each change",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "NPC_CONVERSATION_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcConversationV1",
+          "max_payload_bytes": 65665
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "NPC_CONVERSATION_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcConversationV1",
+          "max_payload_bytes": 65665
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "NPC_TRADE_WINDOW",
+      "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
+      "owner": "current ChannelRuntime",
+      "capability": 3,
+      "revision": "per GameSessionId, monotonic and never reused (FND-02 §15) across reconnect, resume and channel transfer; every admission, reconnect and channel transfer sends a snapshot above any revision the session has seen, and reconnect or transfer closes the conversation so that snapshot is empty (NPC-0 §4); a delta carries the whole domain after each change",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "NPC_TRADE_WINDOW_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcTradeWindowV1",
+          "max_payload_bytes": 22570
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "NPC_TRADE_WINDOW_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcTradeWindowV1",
+          "max_payload_bytes": 22570
         }
       ]
     },

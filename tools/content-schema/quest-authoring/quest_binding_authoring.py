@@ -166,8 +166,8 @@ def assemble(root, scratch):
     for relative in OUTPUTS:
         path = scratch / relative
         # Keep one deterministic compact packet, not repeated pretty-printed copies.
-        path.write_text(json.dumps(read(path), ensure_ascii=False, sort_keys=True,
-                                   separators=(',', ':')) + '\n', encoding='utf-8')
+        path.write_bytes((json.dumps(read(path), ensure_ascii=False, sort_keys=True,
+                                    separators=(',', ':')) + '\n').encode('utf-8'))
         outputs.append({'path': DIRECTORY + relative, 'sha256': digest(path)})
     manifest = {'schema': 'OTERYN_QUEST_BINDING_EVIDENCE_INDEX/v1',
                 'scope': 'DATA_SUPPLEMENT_ONLY_NOT_QUEST_COMPLETENESS_OR_NATIVE_ADMISSION',
@@ -181,8 +181,8 @@ def assemble(root, scratch):
                             'closed_original_source_holds': 0, 'runtime_readiness': 'NOT_ASSESSED'},
                 'outputs': outputs, 'records': records}
     validate_index(root, scratch, manifest)
-    (scratch / 'index.json').write_text(json.dumps(manifest, ensure_ascii=False, sort_keys=True,
-                                                   separators=(',', ':')) + '\n', encoding='utf-8')
+    (scratch / 'index.json').write_bytes((json.dumps(manifest, ensure_ascii=False, sort_keys=True,
+                                                    separators=(',', ':')) + '\n').encode('utf-8'))
     return manifest
 
 
