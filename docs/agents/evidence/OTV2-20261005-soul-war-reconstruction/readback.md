@@ -13,7 +13,7 @@
 | Start / Flickering Soul | level 250, premium, `hi -> task -> yes`, teleport access | Crystal source | Quest DATA authored; Native lowering still held |
 | Five branches | Claustrophobic Inferno, Mirrored Nightmare, Ebb and Flow, Rotten Wasteland, Furious Crater | Crystal + video | progression recorded |
 | Taints | five ordered taints; first boss starts 14-day window; bosses may be done in any order | Crystal; accepted Oteryn taint decisions preserved | Quest/encounter runtime held |
-| Claustrophobic Inferno | 3 raids; Crystal has 120 s survival, 20 s spawn cadence, 3 monster groups | Crystal + video; Canary conflict retained | source packet only; one bad donor spawn token remains unresolved |
+| Claustrophobic Inferno | 3 raids; Crystal has 120 s survival, 20 s spawn cadence, 3 monster groups | Crystal + video; Canary conflict retained | three source-backed raid cores authored; 5 s player removal, entry-direction/10 s cooldown and one bad donor spawn token remain explicit hard holds |
 | Malice | Soul Cage 23 s / 40 s timeout chain and white/safe-tile behavior recorded | Crystal + visual video window `ZJKtfyRCPjQ 04:30-06:50` | representable core authored; procedural white tiles / additive reflect stay explicit hard holds |
 | Greed | Greedbeast/Soul chain, 5-kill vulnerability, Soul Sphere and 45 s window | Crystal + visual video `X_eftME4qkY 06:15-08:05` | representable core authored; moving Soul Sphere, Soulsnatcher area damage and max-health/reflect stack remain hard holds |
 | Spite | Hazardous Phantom access, Searing Fire cycle, Weeping Soul corpse behavior, Fear evidence | Crystal + visual video `AR0TxuTv0rc 07:25-09:35` | representable fire core authored; per-player stomp cooldown/corpse step remain hard holds |
