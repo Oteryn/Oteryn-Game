@@ -2,7 +2,11 @@
 
 - Decision: `ARCH-PLATFORM-PREPROD-TOPOLOGY-V1`
 - Status: **PROPOSED** 2026-10-06. It needs owner acceptance through the control plane. It takes
-  effect when the PR that carries it merges.
+  effect when the PR that carries it merges. Two rulings are already settled:
+  - Registry issuance of the WorldId and ChannelId (§1) is owner-confirmed (D855).
+  - The dedicated MariaDB store (§2) was decided by the control plane (D607).
+
+  The `platform-preproduction` environment ruling is still open with the owner.
 - Role: Supervising Architect (architect worker for the control plane, #1622 D852)
 - Answers: the control plane, D852 (#1622, owner answer **1a**, 2026-10-06). The question is the
   smallest path to a persistent Platform preproduction topology in which the Synology Game node
@@ -44,7 +48,12 @@
    `GAME-PREPROD-TOPOLOGY-1` (Game: manifest, README runbook, deploy check).
 7. **Deploys.** Every deploy to a protected environment needs a separate owner approval at run
    time. That covers `platform-preproduction`, the Game environment `preproduction` and the
-   one-time topology issuance. This decision performs no deploy.
+   one-time topology issuance. Before the first dispatch, the `platform-preproduction`
+   environment must be provisioned with its protection rule. The workflow reads that rule back
+   and refuses to run if the rule is missing (§3). This decision performs no deploy.
+8. **Client access.** The internal-build client reaches Platform over a client-facing HTTPS
+   endpoint without mTLS, and reaches the Gateway the same way. The tester machine trusts the
+   preproduction CA and resolves the private names (§4.1).
 
 ## 1. Rulings
 
@@ -52,16 +61,18 @@
 |---|---|
 | Platform environment | new private stack `oteryn-preprod` on the Synology host, GitHub environment `platform-preproduction` (main-only, owner as required reviewer), the same `platform-runners`/`oteryn-platform` runner and the same image build as staging; `APP_ENV=preproduction` |
 | Not reused | `synology-staging` (`APP_ENV=staging`, public via Cloudflare Tunnel, MariaDB shared with Canary: F1, Option C) |
-| Store | dedicated MariaDB service in `oteryn-preprod` with its own volume, reachable only on the compose network; never the staging/Canary database |
+| Store | decided by the control plane (D607): dedicated MariaDB service in `oteryn-preprod` with its own volume, reachable only on the compose network; never the staging/Canary database |
 | Guard | new `PersistentPreprodNativeStore`; `DisposableNativeStore` unchanged ("may not be relaxed or forked"); a `TMPDIR` or retained-file trick to make the disposable guard admit a persistent file is a configuration bypass and is refused |
 | Trust-key write (F4) | `game-auth:native-trust:publish-key` runs only behind one of the two guards; in persistent mode its high-water directory must lie inside a configured persistent root |
-| WorldId / ChannelId | issued once by the Registry (UUIDv7, Platform owns identity), distinct; the owner approves the issuance run; values are pinned from the receipt and never reissued |
+| WorldId / ChannelId | owner-confirmed (D855): issued once by the Registry (UUIDv7, Platform owns identity), distinct; the owner approves the issuance run; values are pinned from the receipt and never reissued |
 | Multichannel | one World, one Channel (`channel_key` `ch1`) for the first node; more Channels are later issuances under the same World |
 | `route_revision` | Platform-computed (`rt.<version>.<digest>`) and read only from the `native-route:publish` receipt; the node reports it verbatim (`hash_equals`) |
 | Other readiness tokens | Game-chosen, grammar `^[A-Za-z0-9._:-]{1,64}$`, recorded in the manifest; Platform does not pin them and copies them into grants |
 | `source_authority` (readiness) | `oteryn:runtime:synology-preprod` |
 | Assignment epoch | declared by Game ops, starts at `1`, equal in `node.toml` and `report.toml`; Platform keeps the highest epoch seen; a raise is a Game ops act recorded in the manifest |
-| Endpoint names | private names under `preprod.oteryn.internal` (§4); connections use LAN addresses, and TLS verifies the names |
+| Endpoint names | private names under `preprod.oteryn.internal` (§4); the Game node connects by LAN address and verifies the name over TLS; the client resolves the names through the LAN DNS (§4.1) |
+| Client access | `https://platform.preprod.oteryn.internal` (no mTLS, `/internal/*` refused) and `https://gateway.preprod.oteryn.internal`; the tester OS trust store holds the preproduction CA |
+| Environment protection | `platform-preproduction` is provisioned with the owner as required reviewer and a `main`-only branch policy before any dispatch, and every run checks that rule first and fails closed |
 | PKI | one offline preproduction development CA on the NAS; per-purpose subjects (§5); production PKI stays open (U15, U3) |
 | Fencing | unchanged; admission and Character writes stay session-generation fenced on the Game side; this topology adds no write path |
 | Mode 33a | allowed in this stack only until both LCFA packets are deployed here, then switched off (LCFA contract §4) |
@@ -126,11 +137,32 @@ mirror step exists.
   - `platform` has `APP_ENV=preproduction` and binds to the NAS LAN address only.
   - `gateway` binds to the NAS LAN address only.
   - `internal-mtls` (nginx) listens on the NAS LAN address, port `8543`.
+  - `edge-https` (nginx) listens on the NAS LAN address, port `443`. It serves
+    `platform.preprod.oteryn.internal` and `gateway.preprod.oteryn.internal` over TLS 1.3 with no
+    client certificate, proxies to `platform:8000` and the gateway, and returns `404` for
+    `/internal/` so that internal routes stay behind `internal-mtls`.
   - There is no `canary` service, no Cloudflare Tunnel and no public endpoint.
+- **Environment provisioning, before any dispatch.** Naming an environment in workflow YAML
+  creates it without protection, so the owner first creates `platform-preproduction` in the
+  Platform repository settings or through the REST API (`PUT /repos/{owner}/{repo}/environments/
+  platform-preproduction`) with:
+  - the owner as the only required reviewer;
+  - a custom deployment branch policy that admits only `main`;
+  - administrators not allowed to bypass.
+
+  The owner then reads the environment back (`GET` on the same path) and checks that both rules
+  are present.
 - **Deploy workflow.** Add `.github/workflows/deploy-synology-preprod.yml`. It is
-  `workflow_dispatch` only, refuses any branch other than `main`, and runs in the GitHub
-  environment `platform-preproduction`. That environment has the owner as required reviewer, so
-  every deploy is approved by the owner at run time. It sets
+  `workflow_dispatch` only and refuses any branch other than `main`.
+  - Its first job, `protection-check`, runs on a GitHub-hosted runner with no environment and
+    `permissions: actions: read`. It reads the `platform-preproduction` environment through the
+    REST API and fails, with nothing deployed, unless both rules are present: a
+    `required_reviewers` rule naming the owner, and a deployment branch policy that admits only
+    `main`. A missing environment fails the same way.
+  - The deploy job `needs: protection-check` and only then names the environment. A run that
+    fails the check therefore never creates the environment and never reaches the NAS. Every
+    deploy that passes is approved by the owner at run time.
+  - The deploy job sets
   `COMPOSE_PROJECT_NAME=oteryn-preprod`. The secrets in the environment are only the
   deploy-runner values the staging workflow already has, under new names (`OTERYN_PREPROD_*`).
   TLS material is not a GitHub secret: it is mounted read-only from the NAS path
@@ -141,7 +173,7 @@ mirror step exists.
     `ssl_client_certificate <preprod CA>`;
   - it forwards `SSL_CLIENT_VERIFY`, `SSL_PROTOCOL` and `SSL_CLIENT_S_DN` to Platform, as
     `GuardNativeRuntimeStatusPeer` requires;
-  - it serves `platform.preprod.oteryn.internal`.
+  - it serves `platform-internal.preprod.oteryn.internal`.
 
   The `tools/qualification/login_local/nginx.conf` shape is the reference.
 - **Platform environment variables** (on the NAS, not in the repository):
@@ -162,14 +194,40 @@ Platform already requires the identities to be distinct per purpose, and this ta
 
 | Name (TLS identity) | Served by | Used by |
 |---|---|---|
-| `platform.preprod.oteryn.internal` | `internal-mtls`, LAN `:8543` | Game node `[platform]` and `[platform.runtime_status]`; Game ops `report.toml` |
-| `gateway.preprod.oteryn.internal` | preprod `gateway`, LAN | internal-build Rust client login |
+| `platform-internal.preprod.oteryn.internal` | `internal-mtls`, LAN `:8543`, client certificate required | Game node `[platform]` and `[platform.runtime_status]`; Game ops `report.toml` |
+| `platform.preprod.oteryn.internal` | `edge-https`, LAN `:443`, no client certificate | internal-build client `OTERYN_PLATFORM_URL` (directory, OAuth token, ticket) and the system browser for the OAuth authorization page |
+| `gateway.preprod.oteryn.internal` | `edge-https`, LAN `:443`, no client certificate | internal-build client `OTERYN_GATEWAY_URL` |
 | `node-1.preprod.oteryn.internal` | Game node gameplay listener | route record `tls_server_name`; client verifies it against the configured preprod root (§17 mode 34a) |
 
 `.internal` is reserved for private use, so these names never resolve publicly. Endpoints carry
 the NAS LAN address and port. `peer_name` and `tls_server_name` carry the name above, which is
 verified against the preproduction CA. The route record is `host=<NAS LAN address>`,
 `port=<node gameplay port>` and `tls_server_name=node-1.preprod.oteryn.internal`.
+
+### 4.1 Client trust and name resolution
+
+`PlatformClientConfig` accepts `https` and loopback `http` only, so the client cannot reach
+Platform through a plain LAN binding. Its HTTPS client verifies servers against the operating
+system trust store, and the OAuth authorization page opens in the system browser. Each tester
+machine is provisioned once:
+
+1. **Trust.** Install the public preproduction CA certificate, never its key, into the operating
+   system trust store. On Windows that is the Local Machine "Trusted Root Certification
+   Authorities" store; on Linux it is `/usr/local/share/ca-certificates/` followed by
+   `update-ca-certificates`. Browsers that use the system store then trust the OAuth page too.
+   For gameplay TLS, `OTERYN_DEV_ROOT` points at the same public CA file (§17 mode 34a).
+   Removing the CA from the store reverses this.
+2. **Names.** Add the three client-facing names (`platform`, `gateway`, `node-1` under
+   `preprod.oteryn.internal`) as A records for the NAS LAN address in the LAN DNS, for example the
+   Synology DNS Server. Where there is no LAN DNS, add the same lines to the tester's hosts file.
+   The names never appear in public DNS.
+3. **Client settings.**
+   - `OTERYN_PLATFORM_URL=https://platform.preprod.oteryn.internal/`
+   - `OTERYN_GATEWAY_URL=https://gateway.preprod.oteryn.internal/`
+   - `OTERYN_WORLD=<WorldId>`
+   - `OTERYN_DEV_ROOT=<path to the public CA file>`
+   - `OTERYN_OAUTH_CLIENT_ID` is the value of `game-auth:native-oauth-client:ensure`, or of the
+     existing `EnsureNativeOAuthClient` command, run on the preprod stack.
 
 ## 5. Certificates and placement
 
@@ -179,8 +237,8 @@ repository or into GitHub. The CA issues:
 
 | Subject / SAN | Purpose | Placement |
 |---|---|---|
-| SAN `platform.preprod.oteryn.internal` | internal mTLS server | `/volume1/oteryn/platform-preprod/secrets/` |
-| SAN `gateway.preprod.oteryn.internal` | Gateway server | same |
+| SAN `platform-internal.preprod.oteryn.internal` | internal mTLS server | `/volume1/oteryn/platform-preprod/secrets/` |
+| SANs `platform.preprod.oteryn.internal`, `gateway.preprod.oteryn.internal` | client-facing HTTPS server (`edge-https`) | same |
 | SAN `node-1.preprod.oteryn.internal` | Game gameplay server | Game `<BASE>/node/secrets/` |
 | `CN=oteryn-preprod-node-1-native-evidence` | node `[platform]` client | Game `<BASE>/node/secrets/platform-client.*` |
 | `CN=oteryn-preprod-node-1-runtime-status` | node runtime status | Game `<BASE>/node/secrets/runtime-status.*` |
@@ -220,7 +278,9 @@ changes a WorldId or a ChannelId.
    off and there is no deploy.
 3. `GAME-PREPROD-TOPOLOGY-1` merges here, with the manifest values as placeholders. It is inert
    too. Steps 2 and 3 may run in either order.
-4. **Owner run-time approval:** the operator deploys `platform-preproduction`. Then, on the NAS:
+4. The owner provisions the `platform-preproduction` environment and reads it back (§3). Then,
+   with **owner run-time approval**, the operator deploys `platform-preproduction`; the run's
+   `protection-check` must pass first. Then, on the NAS:
    1. migrations;
    2. `native-preprod-store:provision`;
    3. provisioning the local World row.
@@ -231,9 +291,11 @@ changes a WorldId or a ChannelId.
       `route_revision`;
    3. run `native-trust:publish-key`;
    4. set the identity variables (§3), then redeploy Platform with owner approval.
-6. A manifest PR in this repository fills in the pinned values. After that, an owner-approved
-   Game deploy to `preproduction` brings the node up: it reports runtime status, then `ops
-   assignment assign`, and the node reaches `ready` (Game README steps 1..10).
+6. A manifest PR in this repository fills in the pinned values. The Game operator then runs the
+   one-time first-start sequence by hand (Game README "First start sequence", steps 1..10). It
+   ends with `ops assignment assign`, after which the node reaches `ready`. Only after that does an
+   owner-approved Game deploy to `preproduction` run, and every later deploy is the automatic
+   workflow path.
 7. `native-route:publish` runs again with login enabled for the scope. Then the joint internal-build
    login E2E runs with mode 33a on (D171).
 8. `PLATFORM-LCFA-1` and `GAME-LCFA-ENABLE-1` land in either order (LCFA contract §4). Once both
@@ -254,25 +316,35 @@ discarded stack keeps its database volume until the owner decides to delete it.
 **Platform operator**, all on the NAS and each deploy with owner approval:
 
 1. Create the CA, then issue the server and client certificates in §5.
-2. Create `/volume1/oteryn/platform-preprod/{secrets,state}` and write the `.env` with the §3
-   variables. Keep the runtime-status and assignment identities off until step 5.
-3. Dispatch `deploy-synology-preprod.yml`.
-4. Run the provision, issue, route-publish and trust-publish steps of §7 steps 4..5, and save each
+2. Have the owner provision `platform-preproduction` with its protection rule and read it back
+   (§3). Do not dispatch until that is done.
+3. Create `/volume1/oteryn/platform-preprod/{secrets,state}` and write the `.env` with the §3
+   variables. Keep the runtime-status and assignment identities off until step 6.
+4. Dispatch `deploy-synology-preprod.yml`. Its `protection-check` job must pass.
+5. Run the provision, issue, route-publish and trust-publish steps of §7 steps 4..5, and save each
    JSON receipt to the manifest PR.
-5. Turn the identities on and redeploy.
-6. Verify that `internal-mtls` rejects a client without a certificate and rejects TLS 1.2.
+6. Turn the identities on and redeploy.
+7. Run three checks:
+   - `internal-mtls` rejects a client without a certificate, and rejects TLS 1.2;
+   - `edge-https` returns `404` for `/internal/`;
+   - a provisioned tester machine (§4.1) opens `https://platform.preprod.oteryn.internal/`
+     without a certificate warning.
 
 **Game operator:**
 
 1. Install the Game-side certificates (§5) under `<BASE>/node/secrets` and `<ROOT_BASE>/ops`.
-2. Render `node.toml`, `report.toml` and `ops.toml` from the templates, using the manifest values
-   and endpoint `https://<NAS LAN address>:8543` with peer name
-   `platform.preprod.oteryn.internal`.
-3. Dispatch `synology-game-deploy.yml` with owner approval. The deploy refuses if the rendered
-   configuration disagrees with the manifest.
-4. Run `ops character interpretation` with the manifest's ruleset and content tokens, then run
-   `ops assignment assign --world <WorldId> --channel <ChannelId>` with the manifest epoch.
-5. Confirm that the node reports `ready`.
+2. Render `node.toml`, `report.toml` and `ops.toml` from the templates (README steps 1..6), using
+   the manifest values and endpoint `https://<NAS LAN address>:8543` with peer name
+   `platform-internal.preprod.oteryn.internal`.
+3. Run the existing one-time "First start sequence" of `deploy/synology-game/README.md`
+   (steps 1..10) by hand, before any workflow dispatch, since the workflow cannot perform the
+   first start. The manifest supplies the step 6 `ops character interpretation` ruleset and
+   content tokens. Step 10 `ops assignment assign --world <WorldId> --channel <ChannelId>` uses
+   the manifest epoch through `report.toml`. Recover an expired first start as that README
+   describes.
+4. Confirm that the node reports `ready`.
+5. Only then dispatch `synology-game-deploy.yml` with owner approval, for this deploy and every
+   later one. The deploy refuses if the rendered configuration disagrees with the manifest.
 
 ## 9. PLATFORM-PREPROD-TOPOLOGY-1 packet (Oteryn/Oteryn-Platform)
 
@@ -288,7 +360,8 @@ discarded stack keeps its database volume until the owner decides to delete it.
   - `app/Console/Commands/ProvisionNativePreprodStore.php` (new);
   - one migration for `native_preprod_store_identity`;
   - `config/game-auth.php`, for the four persistent-store keys only;
-  - `deploy/synology-preprod/` (new: compose, nginx mTLS config, README runbook);
+  - `deploy/synology-preprod/` (new: compose, nginx `internal-mtls` and `edge-https` configs,
+    README runbook including environment provisioning and tester trust/DNS, §4.1);
   - `.github/workflows/deploy-synology-preprod.yml` (new);
   - the matching tests under `tests/`;
   - the Platform contract §17, for one paragraph naming the persistent mode.
@@ -303,15 +376,21 @@ discarded stack keeps its database volume until the owner decides to delete it.
   6. Provisioning refuses a second identity row.
   7. The compose file publishes nothing on `0.0.0.0` and has no tunnel or Canary service.
   8. The nginx config is TLS 1.3 only, with `ssl_verify_client on`.
-  9. The workflow is main-only, `workflow_dispatch` only, and uses environment
-     `platform-preproduction`.
+  9. The workflow is main-only and `workflow_dispatch` only, and uses the environment
+     `platform-preproduction` only in a job that `needs` a `protection-check` job.
+     `protection-check` fails closed on three cases: a missing environment, a missing owner
+     reviewer rule, and a branch policy that admits anything other than `main`.
+  10. `edge-https` is TLS 1.3, serves only the two client-facing names and refuses `/internal/`;
+      the internal-build client logs in through it in the joint E2E (§7 step 7).
 - **Validation:**
   - Platform CI;
   - unit and feature tests for each refusal;
   - a persistent-mode feature test that issues and publishes a topology, then admits a grant
     through `RegistryNativeAdmissionScopeResolver` on the same connection;
   - `docker compose config` on the new compose file;
-  - an `nginx -t` check of the terminator config.
+  - an `nginx -t` check of both nginx configs;
+  - a test of the `protection-check` evaluation against fixture API responses (protected,
+    missing environment, no reviewer, any-branch policy).
 - **Review:** independent review, because this touches persistence, identity issuance and trust.
 
 ## 10. GAME-PREPROD-TOPOLOGY-1 packet (this repository)
