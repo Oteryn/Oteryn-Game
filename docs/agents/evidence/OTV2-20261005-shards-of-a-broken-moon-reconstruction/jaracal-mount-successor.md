@@ -227,3 +227,29 @@ The tree validator's printed `mounts=252 mount_editors=252 mount_bindings=252` e
 - no direct Shards s16 Mount grant;
 - no invented tame RNG/failure semantics;
 - generated tree/repository round-trip and source-binding/editor counts pass.
+
+
+## Fresh Skewered Fish binding correction
+
+Current `main` already contains the exact source binding:
+
+```json
+{
+  "disposition": "EXACT",
+  "external_id": "54638",
+  "identity_namespace": "ots/item_server_id",
+  "source_key": "oteryn:source.crystalserver",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "target": {
+    "family": "Item",
+    "key": "oteryn:item.tibia.i54638",
+    "revision": "definition-r1"
+  }
+}
+```
+
+Therefore the remaining Skewered Fish work is **not** a key migration and not a new source binding.
+
+It is a content/admission promotion of the already-bound canonical Item so that the active Item tree contains `oteryn:item.tibia.i54638` with the already-qualified `tool / Taming Items` semantics and the materializability needed for quest reward/taming flow.
+
+Do not reuse retired historical registry key `oteryn:item.registry.i00038475` as active identity; it is provenance/legacy evidence only.
