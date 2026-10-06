@@ -802,7 +802,7 @@
       "kind": "INSPECT_PLACEMENT_ITEM_GRANT",
       "result_item_semantic": "Lit Torch",
       "outcome": "prison_torch_obtained",
-      "evidence": "FACT_VIDEO_AND_DONOR_IDENTITY_POSITION_UNKNOWN",
+      "evidence": "FACT_VIDEO_SOURCE + HIGH_CONFIDENCE_DERIVED_POSITION",
       "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
@@ -817,6 +817,21 @@
         "name": "lit torch",
         "family_profile": "light_source",
         "canonical_oteryn_identity": "UNRESOLVED_OWNER_ADMISSION"
+      },
+      "position": {
+        "x": 31920,
+        "y": 31360,
+        "z": 9
+      },
+      "position_status": "HIGH_CONFIDENCE_DERIVED_UNIQUE_TOPOLOGY",
+      "position_evidence": {
+        "pinned_world": "zimbadev/crystalserver@00ce02a5:data-global/world/world.otbm",
+        "object": {
+          "id": 8606,
+          "name": "skeleton"
+        },
+        "uniqueness": "1 of 1012 static skeleton placements matches both required topology facts: icicles to the southwest and an ice wall immediately north.",
+        "independent_visual": "ItemLevel escape screenshot places the skeleton southeast of the indicated icicles, matching this OTBM cluster."
       }
     },
     {
@@ -825,12 +840,36 @@
       "kind": "INSPECT_PLACEMENT_ITEM_GRANT",
       "result_item": "oteryn:item.tibia.i39578",
       "outcome": "prison_chisel_obtained",
-      "evidence": "FACT_VIDEO_VERIFIED_POSITION_UNKNOWN",
+      "evidence": "FACT_VIDEO_SOURCE + HIGH_CONFIDENCE_DERIVED_POSITION",
       "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
         "timestamp_approx": "00:22:40",
         "observation": "Client reports: With all your strength, you manage to break off one of the massive icicles."
+      },
+      "position": {
+        "x": 31914,
+        "y": 31364,
+        "z": 9
+      },
+      "position_status": "HIGH_CONFIDENCE_DERIVED_UNIQUE_ROOM_MATCH",
+      "world_object_donor": {
+        "id": 6966,
+        "name": "icicles"
+      },
+      "position_evidence": {
+        "relative_to_skeleton": {
+          "dx": -6,
+          "dy": 4,
+          "semantic": "southwest"
+        },
+        "alternate_nearer_candidate": {
+          "x": 31916,
+          "y": 31362,
+          "z": 9,
+          "status": "REJECTED_BY_FAR_SW_VISUAL_MATCH"
+        },
+        "independent_visual": "ItemLevel screenshot points to the far southwest corner for the icicle interaction while the skeleton is farther east."
       }
     },
     {
@@ -840,13 +879,39 @@
       "required_semantic_item": "Lit Torch",
       "target_semantic": "north crumbling wall",
       "outcome": "prison_wall_prepared",
-      "evidence": "FACT_VIDEO_VERIFIED_POSITION_UNKNOWN",
+      "evidence": "FACT_VIDEO_VERIFIED + HIGH_CONFIDENCE_ROOM + WALL_TILE_UNRESOLVED",
       "owner": "World Interaction + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
         "timestamp_approx": "00:22:48.5",
         "observation": "After an earlier failed chisel attempt, use of the torch produces a clear fire effect on the north-wall crack."
-      }
+      },
+      "position_candidates": [
+        {
+          "x": 31919,
+          "y": 31359,
+          "z": 9,
+          "note": "debris + ice wall"
+        },
+        {
+          "x": 31920,
+          "y": 31359,
+          "z": 9,
+          "note": "directly north of skeleton; debris + ice wall; preferred candidate"
+        },
+        {
+          "x": 31921,
+          "y": 31359,
+          "z": 9,
+          "note": "debris + ice wall orientation variant"
+        }
+      ],
+      "preferred_position": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9
+      },
+      "position_status": "BOUNDED_THREE_TILE_HOLD"
     },
     {
       "id": "prison_wall_chisel",
@@ -858,7 +923,7 @@
         "prison_wall_prepared"
       ],
       "outcome": "prison_wall_open",
-      "evidence": "FACT_VIDEO_VERIFIED_POSITION_UNKNOWN",
+      "evidence": "FACT_VIDEO_VERIFIED + HIGH_CONFIDENCE_ROOM + WALL_TILE_UNRESOLVED",
       "owner": "World Interaction + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
@@ -870,7 +935,33 @@
         "result": "REJECT_WITHOUT_STATE_CHANGE",
         "video_timestamp_approx": "00:22:48.0",
         "observed_message": "You try to pry open the crack in the wall with the icicle. But it doesn't work. You'll have to find a way to widen the crack first using some other method."
-      }
+      },
+      "position_candidates": [
+        {
+          "x": 31919,
+          "y": 31359,
+          "z": 9,
+          "note": "debris + ice wall"
+        },
+        {
+          "x": 31920,
+          "y": 31359,
+          "z": 9,
+          "note": "directly north of skeleton; debris + ice wall; preferred candidate"
+        },
+        {
+          "x": 31921,
+          "y": 31359,
+          "z": 9,
+          "note": "debris + ice wall orientation variant"
+        }
+      ],
+      "preferred_position": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9
+      },
+      "position_status": "BOUNDED_THREE_TILE_HOLD"
     },
     {
       "id": "prison_passage",
@@ -886,7 +977,16 @@
         "walkthrough": "Zz-7UyufXbU",
         "timestamp_window": "00:22:51-00:22:52",
         "observation": "Character crosses the newly opened north-wall passage."
-      }
+      },
+      "room_anchor": {
+        "skeleton": {
+          "x": 31920,
+          "y": 31360,
+          "z": 9
+        },
+        "north_wall_y": 31359
+      },
+      "position_status": "ROOM_RESOLVED_EXIT_TILE_UNRESOLVED"
     },
     {
       "id": "prison_rope_exit",
@@ -972,7 +1072,7 @@
     "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
     "Magnolia special Encounter absent",
     "Blue Lava night-only predicate source conflict",
-    "Escape order and donor Lit Torch 54610 video/source-verified; exact skeleton/icicle/north-wall/Rope Spot placement keys plus canonical Lit Torch admission unresolved",
+    "Escape room topology resolved with unique high-confidence OTBM match (skeleton 31920,31360,9; SW icicles 31914,31364,9); exact north-wall tile remains a bounded 3-tile hold (31919..31921,31359,9), Rope Spot/scripted exit placement and canonical Lit Torch 54610 admission remain unresolved",
     "Forbidden Gardens Achievement predicate composition missing",
     "No full real-character start→reward→relog/restart E2E qualification"
   ],
@@ -995,6 +1095,40 @@
       "required_for_progress": false,
       "status": "OPTIONAL_LORE_EXACT_PLACEMENT",
       "walkthrough_observation": "Continuous pre-Plinth sequence shows successful Plinth use without a visible note interaction."
+    },
+    "prison_room_candidate": {
+      "status": "HIGH_CONFIDENCE_DERIVED_UNIQUE_TOPOLOGY",
+      "skeleton": {
+        "x": 31920,
+        "y": 31360,
+        "z": 9,
+        "item_id": 8606
+      },
+      "icicles": {
+        "x": 31914,
+        "y": 31364,
+        "z": 9,
+        "item_id": 6966
+      },
+      "north_wall_candidates": [
+        {
+          "x": 31919,
+          "y": 31359,
+          "z": 9
+        },
+        {
+          "x": 31920,
+          "y": 31359,
+          "z": 9
+        },
+        {
+          "x": 31921,
+          "y": 31359,
+          "z": 9
+        }
+      ],
+      "uniqueness_scan": "1012 static skeletons scanned; exactly one placement had both SW icicles and an immediate north ice wall.",
+      "note": "Do not promote the exact wall tile or Rope Spot until a coordinate-bearing source or runtime source binds it."
     }
   }
 }
