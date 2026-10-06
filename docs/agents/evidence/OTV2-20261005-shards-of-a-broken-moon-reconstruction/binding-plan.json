@@ -1162,7 +1162,7 @@
       ],
       "outcome": "completed",
       "evidence": "FACT",
-      "owner": "NPC-QUEST-1 + QuestState",
+      "owner": "NPC-QUEST-1 + RewardClaim/Durability + QuestState",
       "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
       "reward_evidence_ref": "terminal-reward-evidence.json",
       "follow_up_taming": {
@@ -1175,7 +1175,22 @@
         ],
         "chance_semantics": "UNKNOWN_DO_NOT_INVENT",
         "note": "s16 grants Skewered Fish only; Jaracal mount is a later tame interaction, not a direct quest-completion grant."
-      }
+      },
+      "reward_claim": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal",
+      "reward_claim_semantics": {
+        "key": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal",
+        "per": "character",
+        "repeat": "once",
+        "item": {
+          "key": "oteryn:item.tibia.i54638",
+          "count": 1
+        },
+        "achievement": "oteryn:achievement/amati_s_echo@1",
+        "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+        "execution_owner": "NPC-QUEST-1 + RewardClaim/Durability",
+        "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only."
+      },
+      "note": "Both terminal NPC routes must use the same once-per-character claim identity."
     },
     {
       "id": "complete_nilavarna_alt",
@@ -1190,9 +1205,24 @@
       ],
       "outcome": "completed",
       "evidence": "FACT_REFERENCE_ONLY",
-      "owner": "NPC-QUEST-1 + QuestState",
+      "owner": "NPC-QUEST-1 + RewardClaim/Durability + QuestState",
       "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
-      "reward_evidence_ref": "terminal-reward-evidence.json"
+      "reward_evidence_ref": "terminal-reward-evidence.json",
+      "reward_claim": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal",
+      "reward_claim_semantics": {
+        "key": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal",
+        "per": "character",
+        "repeat": "once",
+        "item": {
+          "key": "oteryn:item.tibia.i54638",
+          "count": 1
+        },
+        "achievement": "oteryn:achievement/amati_s_echo@1",
+        "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+        "execution_owner": "NPC-QUEST-1 + RewardClaim/Durability",
+        "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only."
+      },
+      "note": "Both terminal NPC routes must use the same once-per-character claim identity."
     },
     {
       "id": "reward_skewered_fish",
@@ -1204,8 +1234,9 @@
       "owner": "Reward/Item/Durability",
       "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY",
       "materializable": false,
-      "blocker": "Existing oteryn:item.tibia.i54638 requires Item admission/materialization + terminal reward delivery binding; do not mint a duplicate.",
-      "reward_evidence_ref": "terminal-reward-evidence.json"
+      "blocker": "Item i54638 must become materializable; delivery itself is the accepted NPC dialogue RewardClaim path under NPC-QUEST-1.",
+      "reward_evidence_ref": "terminal-reward-evidence.json",
+      "delivery_via": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal"
     },
     {
       "id": "reward_amatis_echo",
@@ -1215,8 +1246,9 @@
       "evidence": "FACT_IDENTITY",
       "owner": "Achievement",
       "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY",
-      "blocker": "Terminal s16 -> Achievement-owned grant binding missing.",
-      "reward_evidence_ref": "terminal-reward-evidence.json"
+      "blocker": "No separate Achievement dispatcher needed; grant rides inside the accepted NPC dialogue RewardClaim transaction under NPC-QUEST-1.",
+      "reward_evidence_ref": "terminal-reward-evidence.json",
+      "delivery_via": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal"
     },
     {
       "id": "forbidden_gardens_gate",
@@ -1235,7 +1267,7 @@
   "blockers": [
     "QUEST-GATE-1 is dependency-ready on current main but executable child is not yet integrated",
     "QUEST-TRIGGER-1 durable-cause architecture is resolved by PR #1886 option A (root CommandRef + distinct transition_key invariant); runtime remains serialized after QUEST-GATE-1 and waits for #1886 merge/allocation",
-    "NPC-QUEST-1 remains blocked by NPC-TALK-1; NPC-WIRE-1 #1866 is merged, remaining dependencies include NPC-PLACE-1 + MAP-CUTOVER-1",
+    "NPC-QUEST-1 remains blocked by NPC-TALK-1; NPC-WIRE-1 #1866 is merged, remaining dependencies include NPC-PLACE-1 + MAP-CUTOVER-1; this child must also realize the already-accepted dialogue RewardClaim source/content representation for s16",
     "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
     "Magnolia Encounter content is source-qualified, and set_phase/prevent_death/lethal_damage already exist in authoring + ProjectV2. Exact remaining representation gap: phase-2 60000 max/current HP cannot be represented above the base Creature max 52000; needs one bounded Encounter-local max-health override disposition. Runtime still waits on ENC-RT-1 -> ENC-OUTCOME-1.",
     "Escape geometry and Rope Spot are resolved end-to-end (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9; Rope Spot 31923,31377,9 -> generic moveUpstairs destination 31923,31378,8). Remaining prison blocker: separate canonical admission of donor Lit Torch 54610; do not alias to i34017.",
@@ -1546,6 +1578,24 @@
       "night_required": false,
       "status": "RESOLVED_CURRENT_REFERENCE",
       "note": "Historical/Fandom night-only claim retained as provenance, not executable predicate."
+    },
+    "terminal_reward_execution": {
+      "status": "ARCHITECTURE_ACCEPTED_IMPLEMENTATION_PENDING",
+      "claim": {
+        "key": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal",
+        "per": "character",
+        "repeat": "once",
+        "item": {
+          "key": "oteryn:item.tibia.i54638",
+          "count": 1
+        },
+        "achievement": "oteryn:achievement/amati_s_echo@1",
+        "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+        "execution_owner": "NPC-QUEST-1 + RewardClaim/Durability",
+        "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only."
+      },
+      "evidence_ref": "terminal-npc-reward-claim-boundary.md",
+      "warning": "Do not invent a synthetic chest placement."
     }
   }
 }
