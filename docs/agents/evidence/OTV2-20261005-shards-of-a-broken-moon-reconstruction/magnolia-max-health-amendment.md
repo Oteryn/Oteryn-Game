@@ -6,7 +6,7 @@ Status: **ARCHITECT DISPOSITION RECORDED IN #1891 / NO RUNTIME MUTATION**
 
 PR #1891 (`ENCOUNTER-RT-0 §17`) selects **option B** and supersedes this packet's earlier proposed `set_health(max,current)` action.
 
-Accepted shape at #1891 head `5dfe40ee3886174d3f3f56023ed5aee29c40e41a`:
+Accepted shape at #1891 head `b8f3d605b1f5cc4cb1a6aaccdb56d8fa93015624`:
 
 ```text
 attribute(max_health, set 60000)
