@@ -282,7 +282,7 @@ impl ApplicationHandler for Application {
         }
     }
 
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
         if let Some(play) = &mut self.play
             && let Err(class) = play.view.tick(&play.link)
         {
