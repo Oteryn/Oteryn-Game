@@ -3,7 +3,8 @@
 - Decision id: ARCH-I18N-A11Y-CREATIVE-0. Gaps: `UX-I18N-A11Y-01`, `CREATIVE-DIRECTION-01`.
 - Origin: owner ruling 2026-10-06: localization, accessibility and creative direction are decided now.
 - Status: proposed decision; it has no runtime authority. The owner rulings of 2026-10-06 on Q1,
-  Q2, Q3 and the field of view are recorded in §4 and the body follows them. The §1 rulings and
+  Q2, Q3 and the field of view are recorded in §4 and the body follows them; Q5 is open with a
+  PROPOSED default. The §1 rulings and
   the §3 packets are accepted on merge. Every contract amendment in §2 is exact text marked
   pending: it is applied by the named packet, because the owning file is a candidate
   (`ALPHA-CLIENT-01`) or because the change lands with the packet that builds it. Creative taste
@@ -49,18 +50,25 @@
 14. Every shipped asset and text corpus has a provenance record in `content/assets/catalog/`:
     ORIGINAL, LICENSED, OWNER_CLEARED_THIRD_PARTY or REFERENCE_ONLY. Every AI-produced asset has
     one too.
-15. A shipped-build manifest and a CI validator fail any input that is REFERENCE_ONLY or has no
-    record. Until packaging exists the check covers client inputs and the text the server serves.
-16. Two UI layouts in one client, switched in the client settings: A classic-faithful (built
-    first), B modern Oteryn. Both are data files over theme tokens; final art is AI-produced. The
-    switch is presentation only. Layout A has the fixed classic field of view; layout B carries
-    the field-of-view experiment on a non-production channel. The server sets the cap.
-17. Packets: I18N-CATALOG-0 (after ERR-CLIENT-2), then A11Y-BASELINE-1. ASSET-PROVENANCE-2 runs
+15. A shipped-build manifest and a CI validator fail any shipped input that is REFERENCE_ONLY or
+    has no record. Only what a release build ships is scanned: the release-compiled embeds of the
+    two production roots, the content trees the production boot path loads and the packaged
+    client assets. Test, dev and fixture files are never scanned (§1.17).
+16. Two UI layouts in one client, switched by the client setting `ui_layout`: A classic-faithful
+    (built first), B modern Oteryn. Both are data files over theme tokens; final art is
+    AI-produced. The switch is presentation only and never touches the field of view.
+17. The field-of-view experiment is a second, independent client setting `fov_arm`: FOV-fixed
+    standard, FOV-fixed large, FOV-responsive. Any arm runs under either layout. The client only
+    requests; the server grants a per-session extent within the channel cap and the viewport
+    budget, on a non-production test channel only (§1.21, packet MAP-VIEW-EXTENT-7).
+18. Packets: I18N-CATALOG-0 (after ERR-CLIENT-2), then A11Y-BASELINE-1. ASSET-PROVENANCE-2 runs
     in parallel. CREATIVE-DOC-3 needs the owner. I18N-TEXT-RENDER-4 follows P4-T. UI-LAYOUT-6
-    follows packet 0. I18N-CONTENT-KEYS-5 is deferred until a content locale is chosen.
-18. Owner rulings 2026-10-06 (§4): Q1 b; Q2 a (OWNER_CLEARED_THIRD_PARTY, the owner's risk;
+    follows packet 0. MAP-VIEW-EXTENT-7 follows MAP-CUTOVER-1 and needs protocol review.
+    I18N-CONTENT-KEYS-5 is deferred until a content locale is chosen.
+19. Owner rulings 2026-10-06 (§4): Q1 b; Q2 a (OWNER_CLEARED_THIRD_PARTY, the owner's risk;
     distribution still waits for the provenance records and validator); Q3 both layouts, A
-    first; the final field-of-view policy waits for the experiment's evidence.
+    first; both field-of-view arms built and switchable in the client for the A/B test, final
+    policy after the evidence. Q5 (the larger fixed size) is open with a PROPOSED default.
 
 ## 0. Facts
 
@@ -144,6 +152,26 @@
   runs both behind a non-production switch. ARCH-MAP-VIEWPORT-BUDGET-V1
   (`reviews/OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md`) fixes an 18x14 viewport and
   `MAP01-VIEWPORT-SNAPSHOT-US` at 2,000 us p99.
+- F23 PROVEN. The server view is fixed at 18x14 today. `apps/game-server/src/movement/interest.rs`
+  line 77: `VisibilitySettings` is an immutable per-Channel size, `REFERENCE` 18x14, and `new`
+  admits 15..=36 by 11..=28 (lines 24–27). The entity query of capability 6 uses `REFERENCE`
+  (`gameplay_transport/world_spatial.rs` line 175). The domain 17 window is wire-fixed:
+  `crates/protocol-oteryn/src/world_map.rs` lines 66–69 (`VIEW_WIDTH` 18, `VIEW_HEIGHT` 14,
+  left 8, top 6), `MAPW-RL-02` = 2,016 tiles (line 40), and `world_map_v1.proto` line 7 makes a
+  tile outside the window fail closed. Attack and creature-targeting legality also use
+  `REFERENCE.can_see` (`gameplay_transport/attack.rs` line 224, `ai/targeting.rs` line 56).
+  Capability 18 is not offered (`offer_gate` in `PROTOCOL_OTERYN_V1_REGISTRY.json`).
+- F24 PROVEN. Not every embed is shipped. `crates/protocol-oteryn/src/damage_element.rs` lines
+  49–54 and `apps/game-server/src/durability/schema.rs` lines 136–139 embed a `.proto`, a SQL
+  migration and Rust source inside `#[cfg(test)]` modules; many server modules embed fixtures in
+  test modules. `workspace-boundaries.toml` line 5 names the production roots: `oteryn-client`
+  and `oteryn-game-server`. Release-compiled embeds of the server today include
+  `content/achievements/`, `content/quests/missions/`, `content/combat/`, `content/movement/`,
+  `rulesets/progression/` and even a file under `tools/content-schema/spell-authoring/samples/`
+  (`spell/native.rs` lines 18–20), so directory names do not tell shipped from test inputs; the
+  client embeds `content/movement/step_speed_v1.json` (`apps/client/src/input.rs` line 62). The
+  NPC loader takes a pinned tree hash (`load_data_only_npc_catalogue`,
+  `content/npc_catalogue.rs` line 48).
 
 ## 1. Rulings
 
@@ -263,19 +291,41 @@
 
 1.17 **Shipped-build manifest.** A generator lists the files and corpora a client or server build
    packages. A validator fails an entry that has no record, is REFERENCE_ONLY, differs from its
-   record hash, or is LICENSED without attribution in the shipped notices file. Until packaging
-   exists (F18), an interim manifest enumerates the inputs, not the records, so an unrecorded
-   input fails:
-   - client: every file the client embeds (`include_str!`, `include_bytes!`) or loads at run time;
-   - server: every `include_str!` and `include_bytes!` target under `apps/game-server/src/` and
-     `crates/` (today the achievement shards, F21), and every content family a server path reads
-     at run time (`content/npcs/`, `content/dialogues/`, `content/quests/`, `content/items/` and
-     each family the WorldProject declares).
-   Each input maps to exactly one record or corpus record; a corpus record covers a family root
-   and the hash of its tree. The check runs in the content path class of `game-gate`. Tests: a
-   fixture `include_str!` of an unrecorded file fails; a new content family without a corpus
-   record fails; a REFERENCE_ONLY corpus read by a server path fails. This decision grants and
-   narrows no rights; rights come only from owner records (§4 Q2 ruling).
+   record hash, or is LICENSED without attribution in the shipped notices file. The manifest
+   enumerates shipped inputs, not records, so an unrecorded shipped input fails. Only shipped
+   production inputs are in it. Until packaging exists (F18) the interim set S is the union of:
+   - E, release embeds: every non-`.rs` path in the dep-info that the release compile writes for
+     each bin target of the production roots (`workspace-boundaries.toml` `production_roots`:
+     `oteryn-client`, `oteryn-game-server`): `cargo build --release --locked`, default features,
+     `target/release/<bin>.d`; the packet may read the per-unit `.d` of
+     `cargo check --release --locked` instead if a test shows the same set. The compiler decides
+     membership, not a directory name or a regex (F24): `#[cfg(test)]` modules (and the
+     `*_tests.rs` files they declare), `tests/`, `benches/`, `examples/`, dev-dependencies and
+     `tools/dev-client` are never compiled into these targets, so their embeds are never in E.
+   - L, run-time loads: the content trees the production boot path loads, each named once in
+     `tools/asset-provenance/shipped_inputs.json` with the loader that reads it and the tree hash
+     it pins (the WorldProject families, `content/npcs/`, `content/dialogues/`; F21). A test
+     checks that every production loader's root is listed there. Test WorldProjects and fixture
+     trees that no production loader reads are not in L.
+   - P, packaged client assets: the asset roots the release client loads at run time
+     (`content/assets/files/`, and `apps/client/locales/`, `themes/` and `layouts/` once they
+     exist), listed in the same file.
+   Each member of S is either an asset or text input, which maps to exactly one record or corpus
+   record (a corpus record covers a family root and the hash of its tree), or a reviewed
+   `NON_ASSET_INPUT` entry in `shipped_inputs.json` naming a path or root and the reason. That
+   class is for files with no media and no player-visible text: numeric rule tables, protocol and
+   resource registries, SQL migrations. It needs no provenance record and adds none to the
+   catalogue. A member that is neither fails, so a new release embed always needs a decision; a
+   `NON_ASSET_INPUT` entry inside a text corpus root or an asset root is refused. Once packaging
+   exists, P becomes the release manifest of the packaged set and E stays. The check runs in the
+   content path class of `game-gate`. Tests: a release-path embed of an unrecorded corpus file
+   fails; an unclassified release embed fails; a `NON_ASSET_INPUT` entry under a corpus root is
+   refused; an unrecorded file embedded only under `#[cfg(test)]` or by a `tests/` target is not
+   in S and passes; on the current tree the `#[cfg(test)]` embeds of F24
+   (`damage_element_v1.proto`, the durability migration and Rust source) are not in S; a new
+   production content family without a corpus record fails; a REFERENCE_ONLY corpus in L fails; a
+   fixture WorldProject no production loader reads is ignored. This decision grants and narrows
+   no rights; rights come only from owner records (§4 Q2 ruling).
 
 1.18 **Stale text.** ASSET-PROVENANCE-2 adds one line under "Non-claims" in the asset-version
    decision, pointing to the 2026-09-29 supersession (F16).
@@ -285,7 +335,8 @@
    (`<identity>#<field>`, `asset_id`). (5) Older clients get generic fallback text and never
    receive `TextRef`, which is sent only under the capability of §1.7. (6) Content text and its
    `TextRef` leave in one message from one path. (7) The layout setting changes presentation only
-   (§1.20); the field of view is a server-set cap, never a client setting (§1.21).
+   (§1.20). The field-of-view arm is a separate setting; the client requests, the server grants
+   within the channel cap, and the two settings never read each other (§1.21).
 
 1.20 **UI layouts (Q3 ruling).** One client carries two layouts, switched by an `OS_USER` setting
    `ui_layout`: A classic-faithful and B modern Oteryn. A is built first and is the default; B
@@ -297,21 +348,52 @@
      `apps/client/layouts/<layout_id>.json` (new). The client code has no branch per layout; a
      new layout is a new data file.
    The switch never changes gameplay information (UI baseline §17, F13): both layout files expose
-   the same set of gameplay information, which a test checks, and the switch does not change the
-   field of view. Final art for both layouts is produced with AI tools, by agents or with an
-   external AI tool; every such asset gets a §1.16 record before it ships. The creative document
-   §5 records the owner's taste for each layout.
+   the same set of gameplay information, which a test checks. A layout file has no field-of-view
+   field and `ui_layout` is never sent to the server, so switching layout leaves the granted
+   extent unchanged under every `fov_arm` (§1.21). Final art for both layouts is produced with AI
+   tools, by agents or with an external AI tool; every such asset gets a §1.16 record before it
+   ships. The creative document §5 records the owner's taste for each layout.
 
-1.21 **Field of view.** The server sets the field-of-view cap, the same for every player on a
-   channel; the client never decides how much of the map it receives. Layout A uses the fixed
-   classic field of view. Layout B runs the experiment of
-   `OTERYN_NATIVE_CLIENT_VIEWPORT_AB_EXPERIMENT_PLAN_2026-09-10.md` (F22), comparing the standard
-   game window with a larger one to judge whether the larger window gives too much advantage. To
-   avoid a clash with layouts A and B, this decision calls that plan's Variant B **FOV-fixed** and
-   its Variant A **FOV-responsive**. FOV-responsive runs only on a non-production test channel.
-   Its extra cost is measured against ARCH-MAP-VIEWPORT-BUDGET-V1 (18x14 viewport,
-   `MAP01-VIEWPORT-SNAPSHOT-US` 2,000 us p99). The final field-of-view policy stays undecided
-   until the plan's evidence (§12) exists.
+1.21 **Field of view (owner ruling 2026-10-06, §4 item 4).** Both arms of
+   `OTERYN_NATIVE_CLIENT_VIEWPORT_AB_EXPERIMENT_PLAN_2026-09-10.md` (F22) are built and can be
+   switched in the client for the A/B test. To avoid a clash with layouts A and B, this decision
+   calls the plan's Variant B **FOV-fixed** and its Variant A **FOV-responsive**. The client
+   setting `fov_arm` (`OS_USER`) has three values:
+   - `FIXED_STANDARD`: today's 18x14 extent (F23), the default;
+   - `FIXED_LARGE`: the larger fixed extent, which is the channel cap (Q5, PROPOSED: the largest
+     candidate that measures within budget), to judge whether a larger map gives too much
+     advantage;
+   - `RESPONSIVE`: an extent in whole tiles derived from the client's world viewport and world
+     zoom (plan §5).
+   Rules:
+   - (a) Independence. `fov_arm` and `ui_layout` (§1.20) are separate settings with separate
+     defaults. Neither reads the other, no packet or wire field carries the layout, and every
+     pair of layout and arm is a valid configuration. A comparison between arms holds the layout
+     and the world zoom equal (plan §7). The tester or harness sets the arm for each run and the
+     evidence records it; the arm is never derived from the layout.
+   - (b) The server decides. The client sends only a request: the arm and, for `RESPONSIVE`, its
+     tile extent. The server grants a per-session extent. `FIXED_STANDARD` and an unknown arm get
+     18x14; `FIXED_LARGE` gets the channel cap; `RESPONSIVE` gets the request clamped on each
+     axis between 18x14 and the channel cap. No grant exceeds the channel cap; a larger request
+     is clamped, not refused. A session without the extent capability gets the legacy 18x14 view
+     whatever its arm. The client draws only what it is sent and never invents tiles (plan §5).
+   - (c) Fairness. The cap is a per-Channel setting, the same for every session on that channel.
+     A production World never offers the extent capability, so every production session keeps
+     the 18x14 legacy view until the final policy is decided. Only a non-production test channel
+     sets a cap above 18x14, and there the differences between arms are what the experiment
+     measures (plan §9).
+   - (d) Delivery, not legality. The grant sizes only that session's domain 17 window and its
+     capability 6 entity query. Attack and targeting legality, line of sight and every other
+     `can_see` use stay on `VisibilitySettings::REFERENCE` (F23, plan §4).
+   - (e) Budget. A cap above 18x14 is admitted only when the domain 17 snapshot at that extent
+     measures within `MAP01-VIEWPORT-SNAPSHOT-US` (2,000 us p99, ARCH-MAP-VIEWPORT-BUDGET-V1) by
+     that decision's §1.1 method on the reference node class. If it does not fit, the cap stays
+     18x14 and the packet returns a budget question (an encode optimisation or a separate
+     test-channel row); the wire is never changed only to pass. Each arm also reports the
+     network and server measurements of plan §8.
+   - (f) The final policy stays undecided (`RESPONSIVE_FOV_POLICY` and `FIXED_FOV_POLICY` are
+     UNDECIDED) until the plan's §12 evidence exists. Packet MAP-VIEW-EXTENT-7 builds the server
+     side and the client request; UI-LAYOUT-6 has no field-of-view code.
 
 ## 2. Contract amendments
 
@@ -353,11 +435,14 @@
   settings file; conflict and reserved key refused; the UI baseline §7 formula; flash rate ≤ 3/s; legibility
   check fixes the CANDIDATE range.
 - **ASSET-PROVENANCE-2** (parallel). Owned: `content/assets/catalog/`, `tools/asset-provenance/`
-  (new), CI path routing, one line in `OTERYN_CLIENT_ASSET_VERSION_OWNER_DECISION_2026-09-27.md`.
-  Builds §1.16–§1.18, including the four text corpus records of the Q2 ruling and the interim
-  client and server input scan. Tests: REFERENCE_ONLY fixture fails; missing record fails; hash
-  drift fails; LICENSED without attribution fails; an unrecorded server `include_str!` or content
-  family fails; an AI-produced asset without a record fails; the 15.30 package passes.
+  (new, with `shipped_inputs.json`), CI path routing, one line in
+  `OTERYN_CLIENT_ASSET_VERSION_OWNER_DECISION_2026-09-27.md`. Builds §1.16–§1.18, including the
+  four text corpus records of the Q2 ruling and the interim shipped-input set of §1.17 (release
+  embeds, production loads, packaged client assets). Tests: REFERENCE_ONLY fixture fails;
+  missing record fails; hash drift fails; LICENSED without attribution fails; the §1.17 set tests
+  (an unrecorded release embed fails, a test-only embed is not scanned, an unclassified embed
+  fails, `NON_ASSET_INPUT` under a corpus root is refused, an unrecorded production content
+  family fails); an AI-produced asset without a record fails; the 15.30 package passes.
 - **CREATIVE-DOC-3** (owner). Owned: `docs/architecture/OTERYN_CREATIVE_DIRECTION.md` (new) with
   the §1.14 sections; the owner fills or accepts it, and the Q3 ruling and each layout's taste go
   in §5.
@@ -376,12 +461,47 @@
   unchanged.
 - **UI-LAYOUT-6** (after packet 0; layout A first, then B). Owned: `apps/client/src/`,
   `apps/client/themes/` (new), `apps/client/layouts/` (new), AI-produced art and its records in
-  `content/assets/`. Builds §1.20 and the client side of §1.21. Tests: both layout files load and
-  validate; widgets reference only tokens; both layouts expose the same gameplay information set;
-  switching layout changes no request to the server and no field of view. The FOV-fixed versus
-  FOV-responsive comparison runs under the viewport plan, on a non-production test channel.
+  `content/assets/`. Builds §1.20 only; it has no field-of-view code. Tests: both layout files
+  load and validate; widgets reference only tokens; both layouts expose the same gameplay
+  information set; the layout schema has no field-of-view field; switching layout sends nothing
+  to the server.
+- **MAP-VIEW-EXTENT-7** (§1.21; after MAP-CUTOVER-1 offers capability 18 on a testing World;
+  independent of packet 6; protocol review; numbers leased by the control plane). Owned:
+  `docs/contracts/protocol-oteryn/v1/world_map_extent_v1.proto` (new),
+  `PROTOCOL_OTERYN_V1_REGISTRY.json` (capability, command type, domain 17 snapshot and delta
+  type 2), `RESOURCE_LIMITS_REGISTRY.json`, `crates/protocol-oteryn/src/` (a new extent codec
+  beside `world_map.rs`), `apps/game-server/src/map/view.rs`,
+  `apps/game-server/src/gameplay_transport/` (`world_map.rs`, `world_spatial.rs`, capability
+  selection, the command), the channel
+  configuration that holds the cap, `apps/client/src/` (the `fov_arm` setting, the request, the
+  decoder), their tests and one evidence file under `docs/agents/evidence/`. Builds:
+  - a capability (working name `WORLD_MAP_VIEW_EXTENT_V1`, requires 18), offered only on testing
+    and preproduction Worlds, as 18 is;
+  - a command `ViewExtentRequestV1 {arm, width_tiles, height_tiles}`;
+  - under that capability, domain 17 snapshot and delta type 2, whose header carries the granted
+    `width` and `height`; the window runs from `(x - (w - 1) / 2, y - (h - 1) / 2)`, which is
+    `VisibilitySettings`' west and north and today's 8 and 6 at 18x14; a tile outside the granted
+    window fails closed. A session without the capability gets type 1 byte for byte (F23);
+  - the §1.21 (b) grant, kept in the GameSession's map state and across resume; a changed grant
+    sends a full snapshot; requests are coalesced to at most one applied change per CANDIDATE
+    1,000 ms per session (plan §8 debounce);
+  - the session's capability 6 entity query at `VisibilitySettings::new(w, h)` (15..=36 by
+    11..=28, F23); legality unchanged (§1.21 d);
+  - CANDIDATE limit rows from the cap: snapshot tiles `w * h * 8`, delta entries
+    `(w + h - 1) * 8`, handles by measurement under the existing cut rule, the payload bounds
+    that follow, and the request rate.
+  Tests: a session without the capability receives byte-equal type 1 payloads; a request above
+  the cap is granted the cap; an unknown arm and a request below 18x14 are granted 18x14; a
+  production World does not offer the capability; switching `ui_layout` sends no request and
+  leaves the grant unchanged under each arm; every pair of layout and arm configures; attack and
+  targeting legality are unchanged at every grant; the new decoder fails a tile outside the
+  granted window; the grant survives resume; a request flood is coalesced. Measurement: snapshot
+  p99 at each proposed cap by the budget's §1.1 method (release, reference node class) and the
+  plan §8 network numbers for each arm, in the evidence file; a cap that misses 2,000 us is not
+  admitted (§1.21 e).
 
-Order: 0, then 1, 4 and 6 (A, then B); 2 in parallel; 3 waits for the owner; 5 last.
+Order: 0, then 1, 4 and 6 (A, then B); 2 in parallel; 3 waits for the owner; 7 after
+MAP-CUTOVER-1, in parallel with 6; 5 last.
 
 ## 4. Owner questions
 
@@ -419,13 +539,24 @@ Order: 0, then 1, 4 and 6 (A, then B); 2 in parallel; 3 waits for the owner; 5 l
    sets referenced by token, not hard-coded) and layouts described as data (one client, a data
    file per layout, no code fork). The switch is client presentation only and never changes
    gameplay information. Body: §1.20, packet UI-LAYOUT-6.
-4. **Field of view (game window size).** **Owner direction 2026-10-06.** Layout A uses the fixed
-   classic field of view. Layout B runs the viewport plan's experiment, FOV-fixed against
-   FOV-responsive, to judge whether the larger window gives too much advantage. The server sets
-   the cap, the same for every player on a channel; the client never decides how much of the map
-   it receives; FOV-responsive is tried only on a non-production test channel; its extra cost is
-   measured against ARCH-MAP-VIEWPORT-BUDGET-V1. The final policy stays undecided until the
-   plan's evidence exists. Body: §1.21.
+4. **Field of view (game window size).** **Owner ruling 2026-10-06.** Both arms of the viewport
+   plan are built and switchable in the client for the A/B test: FOV-fixed (plan Variant B) with
+   a standard and a larger fixed size, to judge whether a larger map gives too much advantage,
+   and FOV-responsive (plan Variant A). The arm is its own setting, independent of `ui_layout`;
+   this replaces the round-1 text that tied the fixed view to layout A and the experiment to
+   layout B. The server grants each session's extent within a per-channel cap, so the client
+   cannot widen its view past the cap; caps above 18x14 exist only on a non-production test
+   channel; their cost is measured against ARCH-MAP-VIEWPORT-BUDGET-V1. The final policy stays
+   undecided until the plan's evidence exists. Body: §1.21, packet MAP-VIEW-EXTENT-7.
+5. **Q5. What is the larger fixed size (`FIXED_LARGE`)?** Today's view is 18x14; the server
+   admits 15..=36 by 11..=28 (F23). The 18x14 snapshot measured 1.683 ms p99 against the
+   2,000 us gate, so a linear estimate puts 22x16 (1.4 times the tiles) near 2.35 ms: the
+   measurement decides whether it fits. The same estimate puts 20x16 near 2.14 ms; about 299
+   tiles (for example 20x15) fit. a) 22x16 (+4 columns, +2 rows); b) 26x20; c) the largest of
+   20x15, 20x16, 22x16 and 26x20 that measures within 2,000 us p99. **Recommendation: c**,
+   because the estimate puts a and b over the budget; with §1.21 (e): if no candidate fits, the
+   cap stays 18x14 and the packet returns a budget question. **PROPOSED default until the owner
+   answers: c** (reversible; test channel only).
 
 ## 5. Rejected options
 
@@ -437,7 +568,12 @@ Order: 0, then 1, 4 and 6 (A, then B); 2 in parallel; 3 waits for the owner; 5 l
   text, and it forces translation before alpha (§1.7).
 - `TextRef` as an ungated additive field: deployed strict decoders reject it (F20, §1.7).
 - A code fork or build per UI layout: two clients to keep in step (§1.20).
-- A client-chosen field of view: the client would decide how much of the map it receives (§1.21).
+- A client-decided field of view: the client would decide how much of the map it receives;
+  it only requests and the server grants within the cap (§1.21 b).
+- The field-of-view arm tied to the layout (fixed in A, experiment in B): comparing arms would
+  also change the layout, and switching layout would change the field of view (§1.21 a).
+- Scanning every `include_str!` under the source trees: it catches test-only embeds and fixtures
+  and would fill the catalogue with non-assets; the release dep-info decides (§1.17).
 - Localized NPC keywords on the server: needs the locale on the server.
 - Translations without a source hash: stale text shows silently.
 - Own shaping or plural code, or a fluent-rs fork: upstream is sufficient (playable-first policy).
