@@ -251,6 +251,7 @@ pub struct MapItemMintEventIdentity<'a> {
 pub fn encode_map_item_mint_event(
     identity: MapItemMintEventIdentity<'_>,
     minted: OneItemMapItemMintV1,
+    tuple: mint::Type2EventTuple,
 ) -> Result<Vec<u8>, AuditError> {
     check_uuid_v7(&identity.event_id)?;
     check_uuid_v7(&identity.transaction_id)?;
@@ -277,10 +278,10 @@ pub fn encode_map_item_mint_event(
         envelope_revision: mint::ENVELOPE_REVISION,
         event_id: identity.event_id.to_vec(),
         event_type_id: mint::EVENT_TYPE_ID,
-        event_schema_revision: mint::EVENT_SCHEMA_REVISION,
+        event_schema_revision: tuple.schema_revision(),
         durability_class: mint::DURABLE_AUDIT,
         privacy_class: mint::RESTRICTED_PLAYER_LINKED,
-        retention_profile_id: mint::RETENTION_PROFILE_ID.into(),
+        retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(entry.world_id),
         channel_id: Some(entry.channel_id),
@@ -409,7 +410,8 @@ mod tests {
 
     #[test]
     fn map_item_mint_round_trips_with_its_full_cause() {
-        let wire = encode_map_item_mint_event(identity(), minted()).unwrap();
+        let wire =
+            encode_map_item_mint_event(identity(), minted(), mint::Type2EventTuple::V1).unwrap();
         let (envelope, decoded) = decode_map_item_mint_envelope(&wire).unwrap();
         assert_eq!(decoded, minted());
         assert_eq!(envelope.world_id, Some(uuid(1)));
@@ -419,7 +421,7 @@ mod tests {
         assert_eq!(envelope.connection_generation, Some(5));
         // Deterministic: the same frozen inputs give the same exact bytes.
         assert_eq!(
-            encode_map_item_mint_event(identity(), minted()).unwrap(),
+            encode_map_item_mint_event(identity(), minted(), mint::Type2EventTuple::V1).unwrap(),
             wire
         );
         // Every other operation gate rejects the map-item operation.
@@ -433,7 +435,8 @@ mod tests {
 
     #[test]
     fn map_item_mint_refuses_a_missing_or_extra_cause_field() {
-        let wire = encode_map_item_mint_event(identity(), minted()).unwrap();
+        let wire =
+            encode_map_item_mint_event(identity(), minted(), mint::Type2EventTuple::V1).unwrap();
         let (envelope, _) = decode_map_item_mint_envelope(&wire).unwrap();
         // Missing: the cause without its materialization re-encodes shorter
         // and is refused by the closed shape.
@@ -592,7 +595,7 @@ mod tests {
             mutate(&mut value);
             assert!(check_map_item_mint(&value).is_err(), "{label}");
             assert!(
-                encode_map_item_mint_event(identity(), value).is_err(),
+                encode_map_item_mint_event(identity(), value, mint::Type2EventTuple::V1).is_err(),
                 "{label}"
             );
         }
@@ -607,7 +610,8 @@ mod tests {
 
     #[test]
     fn map_item_mint_envelope_binds_the_materialization_scope() {
-        let wire = encode_map_item_mint_event(identity(), minted()).unwrap();
+        let wire =
+            encode_map_item_mint_event(identity(), minted(), mint::Type2EventTuple::V1).unwrap();
         let (envelope, _) = decode_map_item_mint_envelope(&wire).unwrap();
         type Mutation = Box<dyn Fn(&mut EventEnvelopeV1)>;
         let cases: Vec<(&str, Mutation)> = vec![

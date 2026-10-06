@@ -66,12 +66,12 @@ fn creature_fixture(seed: u64) -> CombatDeathFixture {
 fn sixteen_distinct_contributors_are_tracked_and_a_seventeenth_is_not() {
     let mut contributors = DamageContributors::default();
     for seed in 1..=16_u8 {
-        contributors.record(character(seed), 1, u64::from(seed) - 1, None);
+        contributors.record(character(seed), 1, u64::from(seed) - 1, None, None);
     }
     assert_eq!(contributors.entries.len(), 16);
     // The 17th distinct contributor deals more damage than anyone tracked, but must never be
     // added to the map and must never become (or affect) the winner.
-    contributors.record(character(17), 1_000, 16, None);
+    contributors.record(character(17), 1_000, 16, None, None);
     assert_eq!(
         contributors.entries.len(),
         COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX
@@ -90,11 +90,11 @@ fn sixteen_distinct_contributors_are_tracked_and_a_seventeenth_is_not() {
 fn an_already_tracked_contributor_keeps_accumulating_past_the_cap() {
     let mut contributors = DamageContributors::default();
     for seed in 1..=16_u8 {
-        contributors.record(character(seed), 1, u64::from(seed) - 1, None);
+        contributors.record(character(seed), 1, u64::from(seed) - 1, None, None);
     }
-    contributors.record(character(17), 1, 16, None); // untracked: map already at capacity
+    contributors.record(character(17), 1, 16, None, None); // untracked: map already at capacity
     // character(1) is already tracked, so it keeps accumulating even though the map is full.
-    contributors.record(character(1), 10, 17, None);
+    contributors.record(character(1), 10, 17, None, None);
     assert_eq!(contributors.entries.len(), 16);
     assert_eq!(contributors.top_damage_character(), Some(character(1)));
 }
@@ -102,9 +102,9 @@ fn an_already_tracked_contributor_keeps_accumulating_past_the_cap() {
 #[test]
 fn equal_top_totals_resolve_to_the_contributor_that_reached_it_first() {
     let mut contributors = DamageContributors::default();
-    contributors.record(character(1), 3, 0, None); // ordinal 0: character(1) total = 3
-    contributors.record(character(2), 5, 1, None); // ordinal 1: character(2) total = 5 (current max)
-    contributors.record(character(1), 2, 2, None); // ordinal 2: character(1) total = 5 (tied)
+    contributors.record(character(1), 3, 0, None, None); // ordinal 0: character(1) total = 3
+    contributors.record(character(2), 5, 1, None, None); // ordinal 1: character(2) total = 5 (current max)
+    contributors.record(character(1), 2, 2, None, None); // ordinal 2: character(1) total = 5 (tied)
     // Both now total 5; character(2) reached 5 at the earlier ordinal (1 < 2), so it wins even
     // though character(1) struck first chronologically.
     assert_eq!(contributors.top_damage_character(), Some(character(2)));
@@ -121,12 +121,14 @@ fn a_same_ordinal_tie_resolves_to_the_lowest_character_id() {
         total: 7,
         last_update_ordinal: 4,
         high_water: None,
+        last_damage_at_ms: None,
     };
     let lower = DamageContributor {
         character: character(3),
         total: 7,
         last_update_ordinal: 4,
         high_water: None,
+        last_damage_at_ms: None,
     };
     let contributors = DamageContributors {
         entries: vec![higher, lower],
@@ -147,24 +149,28 @@ fn top_damage_character_is_independent_of_entry_insertion_order() {
             total: 12,
             last_update_ordinal: 6,
             high_water: None,
+            last_damage_at_ms: None,
         },
         DamageContributor {
             character: character(1),
             total: 20,
             last_update_ordinal: 2,
             high_water: None,
+            last_damage_at_ms: None,
         },
         DamageContributor {
             character: character(8),
             total: 20,
             last_update_ordinal: 5,
             high_water: None,
+            last_damage_at_ms: None,
         },
         DamageContributor {
             character: character(2),
             total: 3,
             last_update_ordinal: 0,
             high_water: None,
+            last_damage_at_ms: None,
         },
     ];
     // character(1) and character(8) tie at the highest total (20); character(1) reached it at
