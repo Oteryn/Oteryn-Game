@@ -134,12 +134,36 @@ pub(crate) struct MapPlan {
     entries: Vec<PlannedEntry>,
     /// The handle-bearing entries within the budget, nearest first.
     keys: Vec<ItemKey>,
+    scratch: PlanBuffers,
+}
+
+/// The buffers of a plan, kept between the updates of a view so that a plan does not grow them
+/// again.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct PlanBuffers {
+    tiles: Vec<PlannedTile>,
+    entries: Vec<PlannedEntry>,
+    keys: Vec<ItemKey>,
+    pool: Vec<ComposedEntry>,
+    slots: Vec<Slot>,
+    roof: Vec<RoofFacts>,
+    ranked: Vec<(u128, usize)>,
 }
 
 impl MapPlan {
     /// The handle-table keys within the budget, nearest first.
     pub(crate) fn keys(&self) -> &[ItemKey] {
         &self.keys
+    }
+
+    /// The buffers of this plan, for the next.
+    fn into_buffers(self) -> PlanBuffers {
+        PlanBuffers {
+            tiles: self.tiles,
+            entries: self.entries,
+            keys: self.keys,
+            ..self.scratch
+        }
     }
 
     /// The wire tiles in wire order, with the handles `table` holds.
@@ -205,7 +229,7 @@ pub(crate) fn tile_pos(actor: ActorPosition) -> Option<TilePos> {
 }
 
 /// One composed window slot: its stack is `pool[start..start + len]`.
-#[derive(Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 struct Slot {
     start: usize,
     len: usize,
@@ -231,12 +255,32 @@ pub(crate) fn plan<F: MapFacts>(
     source: &MapViewSource<'_, F>,
     actor: ActorPosition,
 ) -> Result<MapPlan, MapViewError> {
+    plan_with(source, actor, PlanBuffers::default())
+}
+
+/// [`plan`] in the buffers of an earlier plan.
+fn plan_with<F: MapFacts>(
+    source: &MapViewSource<'_, F>,
+    actor: ActorPosition,
+    buffers: PlanBuffers,
+) -> Result<MapPlan, MapViewError> {
+    let PlanBuffers {
+        mut tiles,
+        mut entries,
+        mut keys,
+        mut pool,
+        mut slots,
+        mut roof,
+        mut ranked,
+    } = buffers;
     let at = tile_pos(actor).ok_or(MapViewError::Position)?;
     let layout = WindowLayout::of(at).ok_or(MapViewError::Position)?;
     let overlays = window_overlay(source.overlay, &layout);
-    let mut pool: Vec<ComposedEntry> = Vec::with_capacity(layout.len());
-    let mut slots = vec![Slot::default(); layout.len()];
-    let mut roof = vec![RoofFacts::EMPTY; layout.len()];
+    pool.clear();
+    slots.clear();
+    slots.resize(layout.len(), Slot::default());
+    roof.clear();
+    roof.resize(layout.len(), RoofFacts::EMPTY);
     for (index, slot) in slots.iter_mut().enumerate() {
         let Some(pos) = layout.pos_of(index) else {
             continue;
@@ -276,9 +320,9 @@ pub(crate) fn plan<F: MapFacts>(
             .map_or(RoofFacts::EMPTY, |(_, facts)| *facts),
     });
 
-    let mut tiles = Vec::new();
-    let mut entries: Vec<PlannedEntry> = Vec::with_capacity(pool.len());
-    let mut ranked: Vec<(u128, usize)> = Vec::new();
+    tiles.clear();
+    entries.clear();
+    ranked.clear();
     for (index, slot) in slots.iter().enumerate() {
         if slot.len == 0 {
             continue;
@@ -287,11 +331,10 @@ pub(crate) fn plan<F: MapFacts>(
             continue;
         };
         let stack = &pool[slot.start..slot.start + slot.len];
-        let (kept, more) = view::cut(stack);
-        let bottom_skip = stack.len() - kept.len();
+        let (kept, more) = view::cut_indices(stack.len());
         let start = entries.len();
-        for (index, entry) in kept.into_iter().enumerate() {
-            let stack_index = if index == 0 { 0 } else { index + bottom_skip };
+        for stack_index in kept {
+            let entry = &stack[stack_index];
             if entry.source.handle_bearing() {
                 ranked.push((view::budget_key(at, pos, stack_index), entries.len()));
             }
@@ -316,9 +359,9 @@ pub(crate) fn plan<F: MapFacts>(
         });
     }
     ranked.sort_unstable_by_key(|(key, _)| *key);
-    let mut keys = Vec::with_capacity(ranked.len().min(MAX_MAP_VIEW_HANDLES));
-    for (_, entry) in ranked.into_iter().take(MAX_MAP_VIEW_HANDLES) {
-        let entry = &mut entries[entry];
+    keys.clear();
+    for (_, entry) in ranked.iter().take(MAX_MAP_VIEW_HANDLES) {
+        let entry = &mut entries[*entry];
         entry.in_budget = true;
         keys.push(source.item_key(entry.source.key()));
     }
@@ -333,6 +376,13 @@ pub(crate) fn plan<F: MapFacts>(
         tiles,
         entries,
         keys,
+        scratch: PlanBuffers {
+            pool,
+            slots,
+            roof,
+            ranked,
+            ..PlanBuffers::default()
+        },
     })
 }
 
@@ -355,6 +405,7 @@ struct SentView {
 pub(crate) struct SessionMapView {
     revision: u64,
     sent: Option<SentView>,
+    buffers: PlanBuffers,
 }
 
 enum Planned {
@@ -369,6 +420,7 @@ impl SessionMapView {
         Self {
             revision: last,
             sent: None,
+            buffers: PlanBuffers::default(),
         }
     }
 
@@ -399,14 +451,13 @@ impl SessionMapView {
         source: &MapViewSource<'_, F>,
         actor: ActorPosition,
     ) -> Result<Option<MapUpdate>, MapViewError> {
-        let plan = plan(source, actor)?;
+        let plan = plan_with(source, actor, std::mem::take(&mut self.buffers))?;
         let sent = self.sent.as_ref();
         let (planned, tiles) = items.map_view(plan.keys(), |table| {
             let tiles = plan
                 .tiles(table, source)
                 .map_err(|_| ItemViewError::Encode)?;
-            let planned = encode(sent, &plan.header, &tiles).map_err(|_| ItemViewError::Encode)?;
-            Ok((planned, tiles))
+            encode(sent, &plan.header, tiles).map_err(|_| ItemViewError::Encode)
         })?;
         let update = match planned {
             Planned::Nothing => None,
@@ -431,6 +482,7 @@ impl SessionMapView {
             header: plan.header,
             tiles,
         });
+        self.buffers = plan.into_buffers();
         Ok(update)
     }
 }
@@ -454,21 +506,31 @@ fn delta_applies(sent: &MapViewHeader, header: &MapViewHeader) -> bool {
         && i64::from(from.y).abs_diff(i64::from(to.y)) <= 1
 }
 
+/// The update from `sent` to `tiles`, which it hands back.
 fn encode(
     sent: Option<&SentView>,
     header: &MapViewHeader,
+    tiles: Vec<MapTile>,
+) -> Result<(Planned, Vec<MapTile>), WorldMapWireError> {
+    if let Some(sent) = sent.filter(|sent| delta_applies(&sent.header, header))
+        && let Some(planned) = delta(sent, header, &tiles)?
+    {
+        return Ok((planned, tiles));
+    }
+    let snapshot = WorldMapViewSnapshot {
+        header: *header,
+        tiles,
+    };
+    let payload = encode_world_map_snapshot(&snapshot)?;
+    Ok((Planned::Snapshot(payload), snapshot.tiles))
+}
+
+/// The delta or nothing from `sent` to `tiles`; `None` when only a snapshot carries it.
+fn delta(
+    sent: &SentView,
+    header: &MapViewHeader,
     tiles: &[MapTile],
-) -> Result<Planned, WorldMapWireError> {
-    let snapshot = || {
-        encode_world_map_snapshot(&WorldMapViewSnapshot {
-            header: *header,
-            tiles: tiles.to_vec(),
-        })
-        .map(Planned::Snapshot)
-    };
-    let Some(sent) = sent.filter(|sent| delta_applies(&sent.header, header)) else {
-        return snapshot();
-    };
+) -> Result<Option<Planned>, WorldMapWireError> {
     // Both tile lists are in wire order: one merge pass finds the changed and the cleared tiles.
     let mut changed = Vec::new();
     let mut cleared = Vec::new();
@@ -478,7 +540,7 @@ fn encode(
             (None, None) => break,
             (Some(tile), None) => {
                 if changed.len() == MAX_DELTA_ENTRIES {
-                    return snapshot();
+                    return Ok(None);
                 }
                 changed.push((*tile).clone());
                 now.next();
@@ -493,7 +555,7 @@ fn encode(
                 match tile_order(&new.position).cmp(&tile_order(&old.position)) {
                     Ordering::Less => {
                         if changed.len() == MAX_DELTA_ENTRIES {
-                            return snapshot();
+                            return Ok(None);
                         }
                         changed.push((*new).clone());
                         now.next();
@@ -507,7 +569,7 @@ fn encode(
                     Ordering::Equal => {
                         if new != old {
                             if changed.len() == MAX_DELTA_ENTRIES {
-                                return snapshot();
+                                return Ok(None);
                             }
                             changed.push((*new).clone());
                         }
@@ -519,14 +581,14 @@ fn encode(
         }
     }
     if changed.len() + cleared.len() > MAX_DELTA_ENTRIES {
-        return snapshot();
+        return Ok(None);
     }
     if changed.is_empty()
         && cleared.is_empty()
         && sent.header.origin == header.origin
         && sent.header.first_visible_floor == header.first_visible_floor
     {
-        return Ok(Planned::Nothing);
+        return Ok(Some(Planned::Nothing));
     }
     encode_world_map_delta(
         &sent.header,
@@ -536,7 +598,7 @@ fn encode(
             cleared,
         },
     )
-    .map(Planned::Delta)
+    .map(|payload| Some(Planned::Delta(payload)))
 }
 
 /// A resolved 40-byte map target.
