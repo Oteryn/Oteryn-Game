@@ -95,7 +95,59 @@ pub enum BootError {
     WorldBundleUnserved,
 }
 
+oteryn_error_codes::error_kinds! {
+    /// The registered code of each [`BootError`] variant.
+    pub enum BootErrorKind {
+        ConfigInvalid = (2001, "CONFIG_INVALID", InvalidInput, Terminal),
+        DatabaseUnavailable = (2002, "BOOT_DATABASE_UNAVAILABLE", DependencyUnavailable, Retryable),
+        RegistrationRejected = (2003, "BOOT_REGISTRATION_REJECTED", Conflict, Terminal),
+        SourceCustodyFailed = (2004, "BOOT_SOURCE_CUSTODY_FAILED", InternalUnavailable, Terminal),
+        CharacterAuthorityUnavailable = (2005, "BOOT_CHARACTER_AUTHORITY_UNAVAILABLE", DependencyUnavailable, Retryable),
+        AssignmentWaitTimeout = (2006, "BOOT_ASSIGNMENT_WAIT_TIMEOUT", Timeout, Retryable),
+        BindFailed = (2007, "BOOT_BIND_FAILED", DependencyUnavailable, Retryable),
+        ReadinessFailed = (2008, "BOOT_READINESS_FAILED", DependencyUnavailable, Retryable),
+        ClockSkew = (2009, "BOOT_CLOCK_SKEW", InternalUnavailable, Retryable),
+        ServeConfigRejected = (2010, "BOOT_SERVE_CONFIG_REJECTED", InvalidInput, Terminal),
+        ContentActivationRefused = (2011, "BOOT_CONTENT_ACTIVATION_REFUSED", Conflict, Terminal),
+        WorldBundleRefused = (2012, "BOOT_WORLD_BUNDLE_REFUSED", InvalidInput, Terminal),
+        WorldBundleUnserved = (2013, "BOOT_WORLD_BUNDLE_UNSERVED", UnsupportedRevision, Terminal),
+    }
+}
+
+oteryn_error_codes::error_kinds! {
+    /// Node diagnostics codes that no [`BootError`] carries.
+    pub enum LogKind {
+        SpecInvalid = (2014, "LOG_SPEC_INVALID", InvalidInput, Terminal),
+    }
+}
+
 impl BootError {
+    /// The registered kind of this failure; the match has no wildcard arm.
+    #[must_use]
+    pub const fn kind(&self) -> BootErrorKind {
+        match self {
+            Self::Startup(StartupError::Database(_)) => BootErrorKind::DatabaseUnavailable,
+            Self::Startup(_) => BootErrorKind::ConfigInvalid,
+            Self::Registration => BootErrorKind::RegistrationRejected,
+            Self::SourceCustody(_) => BootErrorKind::SourceCustodyFailed,
+            Self::CharacterAuthority => BootErrorKind::CharacterAuthorityUnavailable,
+            Self::AssignmentWait => BootErrorKind::AssignmentWaitTimeout,
+            Self::Bind(_) => BootErrorKind::BindFailed,
+            Self::Readiness(_) => BootErrorKind::ReadinessFailed,
+            Self::ClockSkew => BootErrorKind::ClockSkew,
+            Self::Serve => BootErrorKind::ServeConfigRejected,
+            Self::ContentActivation(_) => BootErrorKind::ContentActivationRefused,
+            Self::WorldBundle(_) => BootErrorKind::WorldBundleRefused,
+            Self::WorldBundleUnserved => BootErrorKind::WorldBundleUnserved,
+        }
+    }
+
+    /// The registered code of this failure.
+    #[must_use]
+    pub const fn code(&self) -> oteryn_error_codes::ErrorCode {
+        self.kind().code()
+    }
+
     /// Closed process exit codes.
     #[must_use]
     pub const fn exit_code(&self) -> u8 {
@@ -148,9 +200,169 @@ impl From<StartupError> for BootError {
     }
 }
 
-/// One structured stderr event line (D6). Only non-secret values are passed.
+static BOOT_TRACE: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+const PROCESS: &str = "oteryn-game-server";
+
+/// Write one leveled diagnostic line of `process` to stderr unless `OTERYN_LOG` drops it
+/// (ERR-NODE-1). Warn, error and coded lines are always written.
+pub fn emit(process: &str, line: &oteryn_error_codes::Line<'_>) {
+    if oteryn_error_codes::filter().allows(line.level, line.module, line.code.is_some()) {
+        eprintln!("{}", line.render(process, oteryn_error_codes::unix_ms()));
+    }
+}
+
+/// Start of a game-server process, before anything else: mint the boot trace, install the
+/// panic hook, read `OTERYN_LOG` once and write the `process_start` line. A malformed
+/// `OTERYN_LOG` writes its coded line and returns the error; the caller exits.
+pub fn begin_process(
+    process: &'static str,
+    version: &str,
+    log_spec_code: oteryn_error_codes::ErrorCode,
+) -> Result<String, oteryn_error_codes::LogSpecError> {
+    use oteryn_error_codes::{Level, Line};
+    let trace = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
+    let build = oteryn_error_codes::build_id(version);
+    oteryn_error_codes::install_panic_hook(process, build.clone(), trace.clone());
+    if let Some(trace) = &trace {
+        let _ = BOOT_TRACE.set(trace.clone());
+    }
+    // A non-UTF-8 value is lossy-decoded: U+FFFD is in no spec, so it takes the malformed path.
+    let spec = std::env::var_os("OTERYN_LOG").map(|value| value.to_string_lossy().into_owned());
+    let filtered = oteryn_error_codes::init_filter(spec.as_deref());
+    let start = Line::new(Level::Info, "process", "process_start").build(&build);
+    // The first line of every process carries the build whatever the filter says.
+    eprintln!(
+        "{}",
+        trace
+            .as_deref()
+            .map_or(start.clone(), |trace| start.clone().trace(trace))
+            .render(process, oteryn_error_codes::unix_ms())
+    );
+    if let Err(error) = filtered {
+        let detail = error.to_string();
+        let mut line = Line::new(Level::Error, "process", "log_spec_invalid")
+            .code(log_spec_code)
+            .detail(&detail);
+        if let Some(trace) = &trace {
+            line = line.trace(trace);
+        }
+        emit(process, &line);
+        return Err(error);
+    }
+    Ok(trace.unwrap_or_default())
+}
+
+/// The failure line of a one-shot tool: a registered SQLSTATE on the error's source chain gives
+/// that code, any other error gives `default`, with the error text in `detail`.
+pub fn tool_failure_line(
+    process: &str,
+    default: oteryn_error_codes::ErrorCode,
+    error: &(dyn std::error::Error + 'static),
+    trace: Option<&str>,
+    ts_ms: u64,
+) -> String {
+    use oteryn_error_codes::{Level, Line};
+    let code = crate::durability::sqlstate_codes::SqlstateKind::of_error(error)
+        .map_or(default, |kind| kind.code());
+    let detail = error.to_string();
+    let mut line = Line::new(Level::Error, "tool", "failed")
+        .code(code)
+        .detail(&detail);
+    if let Some(trace) = trace {
+        line = line.trace(trace);
+    }
+    line.render(process, ts_ms)
+}
+
+/// Run a one-shot game-server tool: panic hook, `process_start`, `--version`, then `run`. A
+/// failure writes exactly one coded line and exits 1.
+pub fn run_tool(
+    process: &'static str,
+    version: &str,
+    failure: oteryn_error_codes::ErrorCode,
+    run: impl FnOnce() -> Result<(), Box<dyn std::error::Error>>,
+) -> std::process::ExitCode {
+    let Ok(trace) = begin_process(process, version, LogKind::SpecInvalid.code()) else {
+        return std::process::ExitCode::from(2);
+    };
+    if std::env::args().nth(1).as_deref() == Some("--version") {
+        println!("{process} {}", oteryn_error_codes::build_id(version));
+        return std::process::ExitCode::SUCCESS;
+    }
+    match run() {
+        Ok(()) => std::process::ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!(
+                "{}",
+                tool_failure_line(
+                    process,
+                    failure,
+                    error.as_ref(),
+                    Some(trace.as_str()).filter(|trace| !trace.is_empty()),
+                    oteryn_error_codes::unix_ms(),
+                )
+            );
+            std::process::ExitCode::from(1)
+        }
+    }
+}
+
+/// The `boot_failed` line: the code and the free-text reason in `detail`.
+pub fn boot_failed_line(
+    process: &str,
+    error: &BootError,
+    trace: Option<&str>,
+    ts_ms: u64,
+) -> String {
+    use oteryn_error_codes::{Level, Line};
+    let detail = error.to_string();
+    let mut line = Line::new(Level::Error, "node", "boot_failed")
+        .code(error.code())
+        .detail(&detail);
+    if let Some(trace) = trace {
+        line = line.trace(trace);
+    }
+    line.render(process, ts_ms)
+}
+
+/// Write the `boot_failed` line for `error` (always written: it is coded).
+pub fn report_boot_failure(error: &BootError) {
+    eprintln!(
+        "{}",
+        boot_failed_line(
+            PROCESS,
+            error,
+            BOOT_TRACE.get().map(String::as_str),
+            oteryn_error_codes::unix_ms()
+        )
+    );
+}
+
+/// One structured stderr event line (D6). Only non-secret values are passed: the
+/// `event=<name>` token becomes the `event` field and the rest is `detail`.
 fn event(line: &str) {
-    eprintln!("oteryn-game-server {line}");
+    event_traced(line, BOOT_TRACE.get().map(String::as_str));
+}
+
+fn event_traced(line: &str, trace: Option<&str>) {
+    let (level, module, event, detail) = split_event(line);
+    let mut out = oteryn_error_codes::Line::new(level, module, event);
+    if let Some(trace) = trace {
+        out = out.trace(trace);
+    }
+    if !detail.is_empty() {
+        out = out.detail(detail);
+    }
+    emit(PROCESS, &out);
+}
+
+/// `event=<name> rest` as level, module, event and detail.
+fn split_event(line: &str) -> (oteryn_error_codes::Level, &'static str, &str, &str) {
+    let (name, rest) = match line.strip_prefix("event=") {
+        Some(tail) => tail.split_once(' ').unwrap_or((tail, "")),
+        None => ("unnamed", line),
+    };
+    (oteryn_error_codes::Level::Info, "node", name, rest)
 }
 
 fn unix_now() -> i64 {
@@ -1015,6 +1227,9 @@ async fn control_loop(
         {
             continue;
         }
+        // One trace per accepted connection, minted here and never read from the peer.
+        let connection = uuid_v7().ok().map(|bytes| uuid_text(&bytes));
+        let connection = connection.as_deref();
         let served = tokio::time::timeout(CONTROL_DEADLINE, async {
             let answer = match handle_control(&mut stream).await {
                 Some(operation) => {
@@ -1025,13 +1240,19 @@ async fn control_loop(
                 }
                 None => "rejected",
             };
-            event(&format!("event=character_bootstrap result={answer}"));
+            event_traced(
+                &format!("event=character_bootstrap result={answer}"),
+                connection,
+            );
             let _ = stream.write_all(format!("{answer}\n").as_bytes()).await;
             let _ = stream.shutdown().await;
         })
         .await;
         if served.is_err() {
-            event("event=character_bootstrap result=unavailable reason=deadline");
+            event_traced(
+                "event=character_bootstrap result=unavailable reason=deadline",
+                connection,
+            );
         }
     }
 }
@@ -1702,6 +1923,122 @@ mod tests {
                 key: "world_bundle.path"
             }))
         ));
+    }
+
+    #[test]
+    fn boot_error_codes_match_the_registry() {
+        use crate::native_admission_source::runtime_status::NotDeliveredKind;
+        let mut codes: Vec<_> = BootErrorKind::ALL.iter().map(|kind| kind.code()).collect();
+        codes.extend(LogKind::ALL.iter().map(|kind| kind.code()));
+        codes.extend(NotDeliveredKind::ALL.iter().map(|kind| kind.code()));
+        crate::durability::sqlstate_codes::tests::assert_in_registry(&codes);
+    }
+
+    #[test]
+    fn not_delivered_classes_map_to_5001_through_5007() {
+        use crate::native_admission_source::runtime_status::NotDelivered as N;
+        let classes = [
+            N::InvalidReport,
+            N::Malformed,
+            N::Unauthenticated,
+            N::Conflict,
+            N::RateLimited,
+            N::InvalidResponse,
+            N::Unavailable,
+        ];
+        let numbers: Vec<u32> = classes.iter().map(|class| class.code().number).collect();
+        assert_eq!(numbers, (5001..=5007).collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn boot_failed_parses_in_order_keeps_its_exit_status_and_has_no_player_fields() {
+        let cases = [
+            (
+                BootError::Startup(StartupError::Invalid { key: "x" }),
+                10,
+                2001,
+            ),
+            (BootError::Startup(StartupError::Database("x")), 11, 2002),
+            (BootError::Registration, 12, 2003),
+            (BootError::SourceCustody("x"), 13, 2004),
+            (BootError::CharacterAuthority, 14, 2005),
+            (BootError::AssignmentWait, 15, 2006),
+            (BootError::Bind("x"), 16, 2007),
+            (BootError::Readiness("x"), 17, 2008),
+            (BootError::ClockSkew, 17, 2009),
+            (BootError::Serve, 18, 2010),
+            (BootError::ContentActivation("x"), 19, 2011),
+            (
+                BootError::WorldBundle(crate::map::boot::BootRefusal::MapRevision),
+                20,
+                2012,
+            ),
+            (BootError::WorldBundleUnserved, 21, 2013),
+        ];
+        for (error, exit, number) in cases {
+            assert_eq!(error.exit_code(), exit);
+            let text = boot_failed_line(
+                PROCESS,
+                &error,
+                Some("0192e0a8-0000-7000-8000-000000000001"),
+                9,
+            );
+            let parsed = oteryn_error_codes::parse_line(&text).expect("parses in field order");
+            assert_eq!(parsed.event, "boot_failed");
+            assert_eq!(parsed.code, Some(number));
+            assert_eq!(parsed.detail.as_deref(), Some(error.to_string().as_str()));
+            assert!(!text.contains("character="));
+        }
+        // A reason that forges fields stays inside `detail`.
+        let hostile = BootError::SourceCustody("x\" code=E9999 name=FAKE\nsecond");
+        let text = boot_failed_line(PROCESS, &hostile, None, 1);
+        assert_eq!(text.lines().count(), 1);
+        assert_eq!(
+            oteryn_error_codes::parse_line(&text).expect("parses").code,
+            Some(2004)
+        );
+    }
+
+    #[test]
+    fn a_connection_scoped_line_has_the_trace_and_no_character_field() {
+        let (level, module, event, detail) =
+            split_event("event=character_bootstrap result=rejected");
+        let trace = "0192e0a8-0000-7000-8000-000000000002";
+        let text = oteryn_error_codes::Line::new(level, module, event)
+            .trace(trace)
+            .detail(detail)
+            .render(PROCESS, 3);
+        let parsed = oteryn_error_codes::parse_line(&text).expect("parses");
+        assert_eq!(parsed.trace.as_deref(), Some(trace));
+        assert!(!text.contains("character="));
+        assert!(!text.contains("character_id"));
+    }
+
+    #[test]
+    fn tool_failures_carry_their_own_code_and_a_sqlstate_code_wins() {
+        use crate::durability::sqlstate_codes::ToolKind;
+        let plain = std::io::Error::other("db url missing");
+        let text = tool_failure_line(
+            "oteryn-game-migrate",
+            ToolKind::MigrationFailed.code(),
+            &plain,
+            None,
+            4,
+        );
+        let parsed = oteryn_error_codes::parse_line(&text).expect("parses");
+        assert_eq!(parsed.code, Some(3010));
+        assert_eq!(parsed.detail.as_deref(), Some("db url missing"));
+        let text = tool_failure_line(
+            "oteryn-game-import-proficiencies",
+            ToolKind::ProficiencyImportFailed.code(),
+            &plain,
+            None,
+            4,
+        );
+        assert_eq!(
+            oteryn_error_codes::parse_line(&text).expect("parses").code,
+            Some(3011)
+        );
     }
 
     #[test]

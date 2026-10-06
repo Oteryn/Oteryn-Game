@@ -118,6 +118,15 @@ class QuestTreeTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[3]
         return root, tool.source_catalogue_packet(root)
 
+    def test_index_authoring_source_paths_are_portable(self):
+        root = Path(__file__).resolve().parents[3]
+        index = json.loads(tool.expected_files(root)[tool.DIRECTORY + 'index.json'])
+        for entry in index['authoring_sources']:
+            path = entry['path']
+            self.assertNotIn('\\', path)
+            self.assertFalse(Path(path).is_absolute())
+            self.assertEqual(path, Path(path).as_posix())
+
     def test_source_packet_false_cardinality_and_kind_counts_are_rejected(self):
         root, packet = self.packet_fixture()
         wrong = copy.deepcopy(packet); wrong['record_count'] += 1
