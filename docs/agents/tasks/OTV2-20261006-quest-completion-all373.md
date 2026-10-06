@@ -204,10 +204,25 @@ All seven have a terminal `complete` stage with count greater than one. They rem
 
 The next implementation lane is therefore native event dispatch for the **207** typed chosen quests, starting with event kinds that already have exact canonical target identities or an existing declared encounter outcome seam. Source fidelity holds remain tracked independently and do not erase chosen Oteryn recipe work.
 
+
+### Exact kill-event seam qualification
+
+The chosen-source event/reward packet contains **8** exact existing Encounter outcome seams for kill stages. These are now exposed by `kill_binding_candidates(packet)` and guarded by a focused test. Every row retains:
+
+- exact canonical `Encounter` ref;
+- stage key and target;
+- declared outcome and credit policy;
+- encounter rule key;
+- `execution_verified: false`;
+- `native_dispatch_binding: null`;
+- `runtime_admitted: false`.
+
+This is the first bounded native-dispatch candidate lane. The production death pipeline still has no quest transition consumer, so no runtime binding is promoted by this checkpoint.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: completion candidate expanded to 303 canonical quests; source139 binding plan retained fail-closed
+last_progress: 303-quest typed-progress candidate retained; 8 exact kill encounter seams formally qualified without runtime promotion
 status: implementing
 branch: codex/quest-completion-all373-20261006
 head_sha: null
@@ -229,5 +244,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: qualify native event-dispatch lanes for the 207 chosen typed-progress quests without runtime promotion
+next_action: validate branch on a runner, then wire the exact creature-death quest consumer behind the 8 qualified seams or escalate if owner boundary requires architecture approval
 ```
