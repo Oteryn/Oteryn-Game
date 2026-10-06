@@ -76,6 +76,9 @@ its own independent review under the item 1 grant.
 - [x] `game-auth:native-topology:issue` applies the environment fence and the run-directory
       check before its first write and refuses with nothing written, with issuer refusal tests
       (P1 4195238904).
+- [x] Option A runs only with `APP_ENV=preproduction`, where the unchanged guard admits only the
+      retained per-run SQLite file, and both new commands require that file in `testing` too,
+      with refusal tests (P1 4195923710).
 - [x] The mandatory decision test is answered (decision §6).
 - [x] Owner answer 1a (D831, final §2 path list) and 2a (D824) are recorded; the Synology shape of Option B is noted as not
       decided (decision §3, §7).
@@ -136,6 +139,19 @@ guard relaxation. No decision on Option B or its Synology shape.
   - Tests: issuer refusal rows (symlinked per-run directory; `local`, `staging`, `production`;
     a non-disposable store) with nothing written.
   - `isolatedConnection()` semantics and the D831 path list are unchanged.
+- Review round 7, Codex P1 4195923710 on c6127d3d (in `testing` the guard admits the loopback
+  `oteryn_concurrency` MariaDB, so issuance and the route command could write there, against the
+  per-run-SQLite blast radius). Confirmed in `isolatedConnection()` (MySQL clause; `:memory:` is
+  admitted in `testing` too).
+  - Option A now runs only with `APP_ENV=preproduction`, in CI too. There the unchanged guard
+    admits only the retained per-run SQLite file, so issuance is fenced to it without touching
+    `IssueNativeTopology.php`, which is outside the D831 list.
+  - Both new commands require the retained per-run SQLite file in `testing` as in
+    `preproduction` (a `DisposableNativeStore` check, formerly trust-command only).
+  - Tests: issuer refusal in `preproduction` for `:memory:` and the loopback store; each new
+    command refuses both in `testing`; the happy path runs in `preproduction`.
+  - The issue command in `testing` still admits those test stores; that is unchanged Platform
+    behaviour that Option A does not use, and no route or trust state can follow it.
 
 ## Validation
 
@@ -177,7 +193,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## PR and closeout
 
 - changed-file review: two owned paths
-- unresolved review threads: none after the round-6 replies to 4194718086 and 4195238904
+- unresolved review threads: none after the round-7 reply to 4195923710
 - related/superseded PRs: none
 - protected auto-merge: control plane
 - merge commit/result: in PR #1871
@@ -186,7 +202,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## Context checkpoint
 
 ```yaml
-last_progress: round 6, shared-guard run-directory check fences issuance (4194718086, 4195238904)
+last_progress: round 7, Option A preproduction-only and retained-file check on both commands (4195923710)
 status: completed
 branch: cand/preprod-route-publish-auth-1
 pr: 1871

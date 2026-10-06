@@ -144,7 +144,8 @@ It cannot do that from a shell without the commands from Option A.
 
 **What is mutated.** All mutations happen in the per-run SQLite file
 `<tmp>/oteryn-native-topology-<hex>/oteryn-native-topology.sqlite` of one disposable Platform
-process (`APP_ENV=preproduction`, or `testing` in CI). The changed rows are:
+process with `APP_ENV=preproduction`, in CI as on a developer machine. Option A never runs in
+`testing`. The changed rows are:
 
 - one `game_worlds` row from `game-auth:world:ensure` (login disabled);
 - its `world_id` and one `game_channels` row from `game-auth:native-topology:issue`;
@@ -153,7 +154,10 @@ process (`APP_ENV=preproduction`, or `testing` in CI). The changed rows are:
   floor file in the per-run `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY`.
 
 Nothing outside the run's temporary directories changes. No staging, production or shared
-database is touched.
+database is touched. In `preproduction` the unchanged shared guard admits only the retained
+per-run SQLite file: it refuses every MySQL/MariaDB store, the loopback `oteryn_concurrency`
+test database included, and `:memory:` (F3). That fences issuance to the file, as well as the
+two new commands.
 
 **Where.** A developer machine, or a CI job on a GitHub-hosted runner. Never inside the Synology
 staging stack or against its database. A per-run job on the self-hosted `oteryn-synology-game`
@@ -186,6 +190,12 @@ Each run has one writer. The commands run against that run's Platform only.
     (`:181-189`). On any failure the command refuses with nothing written.
   - After the move, `isolatedConnection()` calls the shared guard, so issuance and the route
     command share one fence.
+  - In `testing` that guard also admits `:memory:` and the loopback `oteryn_concurrency` test
+    database, which Platform's own tests use. Option A therefore runs issuance only with
+    `APP_ENV=preproduction` (above). `IssueNativeTopology.php` and the predicate stay unchanged
+    and outside the D831 list. Issuance run in `testing` by mistake writes only to those test
+    stores, as it can at 3896bcd today, and both new commands then refuse, so no route or trust
+    state follows.
 - `php artisan game-auth:native-route:publish --world-row-id= --channel-key= --host= --port=
   --tls-server-name= --login-enabled=<true|false>`
   - It calls `publishRouteForPreproduction` unchanged.
@@ -205,6 +215,10 @@ Each run has one writer. The commands run against that run's Platform only.
     readback, this command and the trust command. On a host whose system temporary path is a
     symlink, the run passes the canonical path. The run's single writer owns the directory, so
     it does not change between the check and the write.
+  - Before any write it also requires the **retained per-run SQLite file**, in `testing` as in
+    `preproduction`. It refuses `:memory:` and the loopback `oteryn_concurrency` database, which
+    the shared guard admits in `testing`, with nothing written. The trust command applies the
+    same retained-file check (below).
   - It prints a JSON readback receipt: `world_id`, `channel_id`, `route_version`,
     `route_revision`, `native_login_enabled`.
   - On failure it prints only a generic error, never the exception.
@@ -228,12 +242,12 @@ Each run has one writer. The commands run against that run's Platform only.
     configured `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY`. The configured path must be a
     canonical directory (its `realpath` equals the configured value), neither it nor its parent
     a symlink, and directly beneath the per-run directory that holds the current database
-    file. To bind that directory to the current run, the trust command accepts only the retained
-    per-run SQLite file, in `testing` as in `preproduction`. It refuses `:memory:` and the
-    loopback `oteryn_concurrency` database, which the shared guard otherwise allows, because
-    neither names a per-run directory. Otherwise the command refuses with nothing written. This
-    check lives in `DisposableNativeStore` and only the trust command calls it; the witness and
-    the registry's guard are not changed.
+    file. To bind that directory to the current run, the trust command applies the retained-file
+    check (route command above): it refuses `:memory:` and the loopback `oteryn_concurrency`
+    database, which the shared guard otherwise allows, because neither names a per-run
+    directory. Otherwise the command refuses with nothing written. Both checks live in
+    `DisposableNativeStore`. Both new commands call the retained-file check; only the trust
+    command calls the high-water check. The witness and the registry's guard are not changed.
   - It reads 32 raw bytes from a regular file that is not a symlink, and never takes the key from
     an argument.
   - It prints the key ID and the profile version.
@@ -253,19 +267,21 @@ Each run has one writer. The commands run against that run's Platform only.
     regular and not a symlink, with no row, floor file or lock file written in the target; for
     issuance, no `world_id` and no `game_channels` row;
   - the issue command refuses in `local`, `staging` and `production` and with a non-disposable
-    `preproduction` store, with no `world_id` and no `game_channels` row written (the issue
-    command tests exercise the shared guard through its issuance caller);
+    `preproduction` store, including `:memory:` and the loopback `oteryn_concurrency` database,
+    with no `world_id` and no `game_channels` row written (the issue command tests exercise the
+    shared guard through its issuance caller);
   - the trust command refuses, with a disposable store, when the high-water directory is outside
     the per-run directory, in another run's directory, a symlink or under a symlinked parent,
     with no row, floor file or lock file written;
-  - the trust command refuses in `testing` with a `:memory:` store or the loopback
-    `oteryn_concurrency` database, even with a high-water directory under some other run's
-    per-run directory, with no row, floor file or lock file written;
+  - each new command refuses in `testing` with a `:memory:` store or the loopback
+    `oteryn_concurrency` database, with no route column, row, floor file or lock file written;
+    the trust command does so even with a high-water directory under some other run's per-run
+    directory;
   - the registry's existing `isolatedConnection()` tests pass unchanged after the guard moves,
     including
     `test_controlled_regular_file_reconnect_retains_issuer_readback_and_symlink_profile_is_refused`;
-  - the happy path in `testing` writes the rows and prints the receipt (the trust command with a
-    retained per-run SQLite file and a high-water directory beneath it);
+  - the happy path in `preproduction`, with a retained per-run SQLite file (and, for the trust
+    command, a high-water directory beneath it), issues, writes the rows and prints the receipts;
   - an endpoint change advances `route_version`;
   - `--login-enabled=false` keeps the endpoint and clears login;
   - a malformed selector, port or key file is refused before any write.
@@ -303,10 +319,15 @@ No GitHub, Synology, Cloudflare or database credential of any deployed environme
 - A wrong command in a deployed environment refuses before any write. The issue command and
   both new commands pass the environment fence and then the shared disposable-store guard, whose
   run-directory check refuses a symlinked per-run directory. None can therefore write to a
-  staging, production or other persistent database, even when `APP_ENV` is set to
+  staging, production or shared database, even when `APP_ENV` is set to
   `preproduction` by mistake or the per-run directory is a symlink to a persistent one. The
   trust command also refuses a high-water directory outside the run's own temporary directory,
   so no trust state is written to a shared or persistent path.
+- Option A runs only in `preproduction`, where the guard admits only the retained per-run file,
+  and both new commands require that file in `testing` too. The existing issue command in
+  `testing` still admits `:memory:` and the loopback `oteryn_concurrency` test database (F3).
+  That is unchanged Platform behaviour, which Option A does not use; no route or trust state
+  can follow it.
 - Public staging, production, Canary and the Game repositories are not affected.
 
 ## 3. Option B (deferred): a persistent private preproduction environment
