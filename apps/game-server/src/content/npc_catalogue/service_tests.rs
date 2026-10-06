@@ -1,4 +1,5 @@
 #![allow(clippy::expect_used)]
+use super::replies::NpcReplyTemplate;
 use super::service::build;
 use super::service::*;
 use crate::content::{
@@ -362,13 +363,58 @@ fn held_npc_and_generated_replies() {
     let replies = boatman.generated_replies.as_ref().expect("generated");
     assert_eq!(replies.greeting.text, "Greetings, I am A Boatman.");
     assert_eq!(replies.farewell.text, "Farewell.");
-    // The empty service is not admitted, so no line.
-    assert_eq!(replies.services.len(), 1);
+    // One line per referenced service; the empty service is retained with an idle line.
+    assert_eq!(replies.services.len(), 2);
     assert_eq!(
         replies.services[0].1.text,
         "A Boatman can take you to thais for free, carlin for 110 gold."
     );
+    assert_eq!(replies.services[1].1.template, NpcReplyTemplate::Idle);
     assert_eq!(m.generated_reply_npc_count(), 1);
+}
+
+#[test]
+fn generated_reply_has_exactly_one_line_per_service() {
+    let mut held = offer("oteryn:item.plain", Dir::SellToPlayer, 5, None);
+    held.currency = Some(item("oteryn:item.token"));
+    let records = [
+        service(
+            "oteryn:service.mixed",
+            vec![offer("oteryn:item.plain", Dir::SellToPlayer, 5, None)],
+            vec![route("thais", 0)],
+        ),
+        service("oteryn:service.empty", vec![], vec![]),
+        service("oteryn:service.allheld", vec![held], vec![]),
+        npc(
+            "oteryn:npc.a_merchant",
+            None,
+            &[
+                "oteryn:service.mixed",
+                "oteryn:service.empty",
+                "oteryn:service.allheld",
+            ],
+        ),
+    ];
+    let m = model(&records);
+    let merchant = &m.npcs()[&reference(ProjectV2Family::Npc, "oteryn:npc.a_merchant")];
+    assert_eq!(
+        merchant.services.len(),
+        3,
+        "empty and held services retained"
+    );
+    let lines = &merchant
+        .generated_replies
+        .as_ref()
+        .expect("generated")
+        .services;
+    assert_eq!(lines.len(), 3);
+    assert_eq!(lines[0].1.template, NpcReplyTemplate::TradeAndTravel);
+    assert_eq!(
+        lines[0].1.text,
+        "A Merchant buys and sells goods and can take you to thais for free."
+    );
+    assert_eq!(lines[1].1.template, NpcReplyTemplate::Idle);
+    assert_eq!(lines[2].1.template, NpcReplyTemplate::Idle);
 }
 
 #[test]

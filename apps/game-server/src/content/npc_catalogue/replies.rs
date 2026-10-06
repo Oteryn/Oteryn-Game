@@ -10,6 +10,10 @@ pub enum NpcReplyTemplate {
     Farewell,
     Trade,
     Travel,
+    /// A service with both admitted offers and routes.
+    TradeAndTravel,
+    /// A service with no admitted offer and no route (empty or fully held).
+    Idle,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,7 +26,8 @@ pub struct NpcReplyLine {
 pub struct NpcGeneratedReplies {
     pub greeting: NpcReplyLine,
     pub farewell: NpcReplyLine,
-    /// One line per admitted service and kind, in the NPC's service order.
+    /// Exactly one line per referenced service, in the NPC's service order; empty and fully held
+    /// services are retained with an `Idle` line.
     pub services: Vec<(ProjectV2DefinitionRef, NpcReplyLine)>,
 }
 
@@ -55,30 +60,31 @@ pub(super) fn generate<'a>(
 ) -> NpcGeneratedReplies {
     let mut lines = Vec::new();
     for (reference, entry) in services {
-        if !entry.offers.is_empty() {
-            lines.push((
-                reference.clone(),
-                NpcReplyLine {
-                    template: NpcReplyTemplate::Trade,
-                    text: format!("{name} buys and sells goods."),
-                },
-            ));
-        }
-        if !entry.routes.is_empty() {
-            let routes = entry
-                .routes
-                .iter()
-                .map(|route| route_phrase(&route.key, route.price))
-                .collect::<Vec<_>>()
-                .join(", ");
-            lines.push((
-                reference.clone(),
-                NpcReplyLine {
-                    template: NpcReplyTemplate::Travel,
-                    text: format!("{name} can take you to {routes}."),
-                },
-            ));
-        }
+        let routes = entry
+            .routes
+            .iter()
+            .map(|route| route_phrase(&route.key, route.price))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let (template, text) = match (entry.offers.is_empty(), entry.routes.is_empty()) {
+            (false, true) => (
+                NpcReplyTemplate::Trade,
+                format!("{name} buys and sells goods."),
+            ),
+            (true, false) => (
+                NpcReplyTemplate::Travel,
+                format!("{name} can take you to {routes}."),
+            ),
+            (false, false) => (
+                NpcReplyTemplate::TradeAndTravel,
+                format!("{name} buys and sells goods and can take you to {routes}."),
+            ),
+            (true, true) => (
+                NpcReplyTemplate::Idle,
+                format!("{name} has nothing to offer right now."),
+            ),
+        };
+        lines.push((reference.clone(), NpcReplyLine { template, text }));
     }
     NpcGeneratedReplies {
         greeting: NpcReplyLine {

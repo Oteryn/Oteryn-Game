@@ -55,6 +55,8 @@ Held offers by reason: `NonGoldCurrency` 31, `SellPriceAboveCoinCapacity` 299,
 - An NPC is held whole when its Dialogue or Service reference does not resolve.
 - NPC display name is derived from the key slug (`oteryn:npc.a_seagull` is "A Seagull"); only 133
   NPCs have `bulk.name`, so there is no uniform name field. Assumption for NPC-TALK-1 to confirm.
+- Generated replies carry exactly one line per referenced service (repair of Codex P2): `Trade`,
+  `Travel`, `TradeAndTravel` (offers and routes) or `Idle` (empty or fully held, retained).
 - Service recipes are ignored.
 - `mod npc_catalogue` is private and `content/mod.rs` is not owned, so the model types are not
   nameable from integration tests; entry points are methods on `NpcDataCatalogue` and the test
