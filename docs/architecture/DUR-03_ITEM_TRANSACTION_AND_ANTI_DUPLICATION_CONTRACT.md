@@ -1758,7 +1758,11 @@ state, **retired**, for a reservation whose trigger plan was lost before its MIN
   own transaction for `TriggerPlanChild` only, and a guard trigger refuses the insert unless the
   current transaction inserted that reservation. A later pass whose origin disagrees with the row's
   presence refuses with `ConflictingCause`. The runtime role gets `SELECT, INSERT` only, with a
-  no-truncate trigger. A dialogue claim and a D39 chest `USE` claim have the `Other` origin.
+  no-truncate trigger. Every MINT reserved under a root that carries a trigger plan has the
+  `TriggerPlanChild` origin: the plan's `RewardClaim` children and the D39 chest claim of a `USE`
+  that roots the plan. Only a dialogue claim and the D39 chest claim of a `USE` with no trigger plan
+  have the `Other` origin. The root's plan check runs before the root commits, so every pass under
+  one CommandRef computes the same origin.
 - **Retirement.** A new operation in `reward_claim_mint.rs` loads the reservation by its CommandRef
   and refuses with `NotRetirable`, writing nothing, unless its `character_id` is the reconciled
   Character and its trigger-child row exists. In one transaction under the current recovery fence

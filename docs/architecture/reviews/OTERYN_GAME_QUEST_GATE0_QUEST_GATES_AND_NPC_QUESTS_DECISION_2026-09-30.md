@@ -633,8 +633,12 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
            dialogue claim (§5.4) and a D39 chest `USE` claim reserve on the same MINT, so the
            same migration adds an insert-only table `game_reward_claim_mint_trigger_children`,
            keyed by the reservation's (game_session_id, command_id) and referencing it.
-           `RewardClaimMintRequest` gains a closed origin: `TriggerPlanChild` for a trigger plan's
-           `RewardClaim` child, `Other` for every other MINT. `freeze_reward_claim_mint` inserts
+           `RewardClaimMintRequest` gains a closed origin. `TriggerPlanChild` covers every MINT
+           reserved under a root that carries a trigger plan: the plan's `RewardClaim` children
+           and the D39 chest claim of a `USE` that roots the plan. `Other` covers only the
+           D39 chest claim of a `USE` with no trigger plan and the NPC-QUEST-1 dialogue claim.
+           The root's plan check runs before the root commits (item 6 of §16.7), so every pass
+           under one CommandRef computes the same origin. `freeze_reward_claim_mint` inserts
            the row in the transaction that inserts the reservation, and only for
            `TriggerPlanChild`. A guard trigger refuses the insert unless that reservation row was
            inserted by the current transaction, so no later call can make an existing
@@ -644,7 +648,10 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
          - **Retirement.** The operation loads the reservation by the root CommandRef. It
            refuses with `NotRetirable` and writes nothing unless the reservation's
            `character_id` is the reconciled Character and its trigger-child row exists; a
-           dialogue or D39 chest `USE` reservation is never retired and keeps its own rule.
+           dialogue reservation, or the chest claim of a `USE` with no trigger plan, is never
+           retired and keeps its own rule. The chest claim of a `USE` whose plan was lost is
+           retired like the plan's own children, so a fresh `USE` is not refused with
+           `ClaimPending` forever.
            Then, in one transaction under the current recovery fence, it takes the commit pass's
            locks in their order (`lock_admission_relations`, then `lock_cause`, which waits for
            a pass already in flight) and reads the receipt, then the retirement row. With a
@@ -797,8 +804,12 @@ encoding and a new receipt key migration. It is decided with the first accepted 
      fresh `USE` claims the chest once. The test runs once with that charge as the first RL-08
      unit and once as the third and final unit, where the stored count equals the pass's own;
    - a reservation of another Character under the same CommandRef is refused and left unchanged;
-   - a reservation written by an NPC-QUEST-1 dialogue claim or a D39 chest `USE` claim has no
-     trigger-child row: the retirement refuses with `NotRetirable`, writes nothing, and the
+   - the D39 chest claim of a `USE` that roots a trigger plan has a trigger-child row; after a
+     process loss that loses the plan with that claim reserved and no receipt, the retirement
+     inserts the retirement row, the reconciliation returns `Retired` and settles `REJECTED`,
+     and a fresh `USE` claims the chest once and is not refused with `ClaimPending`;
+   - a reservation written by an NPC-QUEST-1 dialogue claim, or by the D39 chest claim of a
+     `USE` with no trigger plan, has no trigger-child row: the retirement refuses with `NotRetirable`, writes nothing, and the
      reservation keeps its own pending or replay rule; a trigger-child row inserted outside the
      transaction that inserts its reservation is refused by the guard; a pass whose origin
      disagrees with the row's presence refuses with `ConflictingCause`;
