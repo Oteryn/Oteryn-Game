@@ -352,7 +352,8 @@ mod tests {
 
     #[test]
     fn rejects_unknown_target_duplicate_and_unknown_item() {
-        let unknown = packet(&[row(HEAD, "HEAD", "SOUTH", "oteryn:item.tibia.i9", HEAD)]);
+        let missing = format!("oteryn:item.tibia.i{}", 9);
+        let unknown = packet(&[row(HEAD, "HEAD", "SOUTH", &missing, HEAD)]);
         assert!(apply(&unknown, &mut pair()).is_err());
         let duplicate = packet(&[
             row(HEAD, "HEAD", "SOUTH", HEAD, HEAD),
