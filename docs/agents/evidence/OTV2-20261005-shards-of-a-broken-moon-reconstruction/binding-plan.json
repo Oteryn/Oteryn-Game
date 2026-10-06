@@ -456,16 +456,24 @@
     {
       "id": "laboratory_note",
       "visible_stage": "s8",
-      "kind": "READ_PLACED_DOCUMENT",
+      "kind": "OPTIONAL_READABLE_DOCUMENT",
       "position": {
         "x": 33881,
-        "y": 32688,
+        "y": 32684,
         "z": 9
       },
       "object_semantics": "generic Note Pinned on the Wall placement; do not mint a new portable quest item",
-      "outcome": "lab_note_read",
-      "evidence": "FACT_REFERENCE_ONLY",
-      "owner": "WorldObject + Document + QUEST-TRIGGER-1"
+      "outcome": null,
+      "evidence": "FACT_EXACT_PLACEMENT_OPTIONAL_LORE",
+      "owner": "WorldObject + Document",
+      "world_object": {
+        "donor_id": 6121,
+        "name": "note pinned on the wall",
+        "source_attributes": {
+          "allowDistRead": "1"
+        }
+      },
+      "note": "Pinned OTBM exact placement. Continuous walkthrough from room entry to Crystal Plinth shows no note interaction before successful Plinth progression; do not require lab_note_read for quest advancement."
     },
     {
       "id": "crystal_plinth",
@@ -489,7 +497,8 @@
         "timestamp_approx": "00:11:25",
         "observation": "Using the Crystal Plinth reports that the character learns the shard-room access sequence."
       },
-      "note": "Dense visual inspection through 00:11:32–00:11:42 shows no separate code UI, manual colour entry or panel-click sequence before the door is crossed."
+      "note": "Dense visual inspection through 00:11:32–00:11:42 shows no separate code UI, manual colour entry or panel-click sequence before the door is crossed. Video review additionally shows no required Note Pinned on the Wall interaction before this event.",
+      "requires": []
     },
     {
       "id": "laboratory_sealed_door",
@@ -961,7 +970,6 @@
     "QUEST-TRIGGER-1 remains serialized after QUEST-GATE-1",
     "NPC-QUEST-1 remains blocked by NPC-TALK-1 (NPC-WIRE-1 #1866 + NPC-PLACE-1 + MAP-CUTOVER-1 dependencies)",
     "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
-    "Laboratory Note exact canonical placement/document binding unresolved",
     "Magnolia special Encounter absent",
     "Blue Lava night-only predicate source conflict",
     "Escape order and donor Lit Torch 54610 video/source-verified; exact skeleton/icicle/north-wall/Rope Spot placement keys plus canonical Lit Torch admission unresolved",
@@ -976,6 +984,17 @@
       "npc_quest_1": "BLOCKED_BY_NPC_TALK_1",
       "npc_wire_1_pr": 1866,
       "monster_encounter_owner_pr": 1807
+    },
+    "laboratory_note": {
+      "donor_id": 6121,
+      "exact_position": {
+        "x": 33881,
+        "y": 32684,
+        "z": 9
+      },
+      "required_for_progress": false,
+      "status": "OPTIONAL_LORE_EXACT_PLACEMENT",
+      "walkthrough_observation": "Continuous pre-Plinth sequence shows successful Plinth use without a visible note interaction."
     }
   }
 }
