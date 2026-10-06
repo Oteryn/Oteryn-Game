@@ -66,6 +66,8 @@ Codex round 1 on `7f6f8cd3` raised four P1 findings, all fixed in one push:
   (§8);
 - this record is archived.
 
-The same push records D855 (owner-confirmed Registry issuance) and D607 (dedicated MariaDB).
+The same push records D855 (owner-confirmed Registry issuance), D856 (owner-confirmed new
+`platform-preproduction` environment, `synology-staging` not reused) and D607 (dedicated
+MariaDB).
 Review is decided by the control plane on the frozen head. Merge result: squash merge of
 #1893, pending CI and Merge Queue at authoring.

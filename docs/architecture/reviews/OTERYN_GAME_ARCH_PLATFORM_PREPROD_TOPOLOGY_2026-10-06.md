@@ -2,11 +2,11 @@
 
 - Decision: `ARCH-PLATFORM-PREPROD-TOPOLOGY-V1`
 - Status: **PROPOSED** 2026-10-06. It needs owner acceptance through the control plane. It takes
-  effect when the PR that carries it merges. Two rulings are already settled:
+  effect when the PR that carries it merges. Three rulings are already settled:
   - Registry issuance of the WorldId and ChannelId (§1) is owner-confirmed (D855).
+  - The new GitHub environment `platform-preproduction`, with `synology-staging` not reused
+    (§1), is owner-confirmed (D856).
   - The dedicated MariaDB store (§2) was decided by the control plane (D607).
-
-  The `platform-preproduction` environment ruling is still open with the owner.
 - Role: Supervising Architect (architect worker for the control plane, #1622 D852)
 - Answers: the control plane, D852 (#1622, owner answer **1a**, 2026-10-06). The question is the
   smallest path to a persistent Platform preproduction topology in which the Synology Game node
@@ -59,8 +59,8 @@
 
 | Item | Ruling |
 |---|---|
-| Platform environment | new private stack `oteryn-preprod` on the Synology host, GitHub environment `platform-preproduction` (main-only, owner as required reviewer), the same `platform-runners`/`oteryn-platform` runner and the same image build as staging; `APP_ENV=preproduction` |
-| Not reused | `synology-staging` (`APP_ENV=staging`, public via Cloudflare Tunnel, MariaDB shared with Canary: F1, Option C) |
+| Platform environment | owner-confirmed (D856): new private stack `oteryn-preprod` on the Synology host, GitHub environment `platform-preproduction` (main-only, owner as required reviewer), the same `platform-runners`/`oteryn-platform` runner and the same image build as staging; `APP_ENV=preproduction` |
+| Not reused | owner-confirmed (D856): `synology-staging` (`APP_ENV=staging`, public via Cloudflare Tunnel, MariaDB shared with Canary: F1, Option C) |
 | Store | decided by the control plane (D607): dedicated MariaDB service in `oteryn-preprod` with its own volume, reachable only on the compose network; never the staging/Canary database |
 | Guard | new `PersistentPreprodNativeStore`; `DisposableNativeStore` unchanged ("may not be relaxed or forked"); a `TMPDIR` or retained-file trick to make the disposable guard admit a persistent file is a configuration bypass and is refused |
 | Trust-key write (F4) | `game-auth:native-trust:publish-key` runs only behind one of the two guards; in persistent mode its high-water directory must lie inside a configured persistent root |
