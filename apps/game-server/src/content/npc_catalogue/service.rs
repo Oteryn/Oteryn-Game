@@ -5,9 +5,10 @@
 //! ascending key order.
 use super::{NpcDataCatalogue, replies};
 use crate::content::{
-    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Family, ProjectV2ServiceOffer,
-    ProjectV2ServiceOfferDirection, ProjectV2TravelRoute, ReferenceDefinitionKind,
-    ReferenceItemField, ReferenceItemStackClass, ReferencePlayableContentSource,
+    ProjectError, ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Family,
+    ProjectV2ServiceOffer, ProjectV2ServiceOfferDirection, ProjectV2TravelRoute,
+    ReferenceDefinitionKind, ReferenceItemField, ReferenceItemStackClass,
+    ReferencePlayableContentSource,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -236,13 +237,12 @@ impl NpcDataCatalogue {
         )
     }
 
-    /// Production entry point: item facts from the Reference definitions of a World Project
-    /// (`WorldProject::lower_reference_source`).
-    pub fn service_model_for_reference_source(
-        &self,
-        source: &ReferencePlayableContentSource,
-    ) -> NpcServiceModel {
-        self.service_model(&ReferenceNpcItemFacts::from_reference_source(source))
+    /// Production entry point: item facts from the Reference definitions of this catalogue's own
+    /// World Project (`WorldProject::lower_reference_source`), so facts and content identity
+    /// always describe the same project.
+    pub fn service_model_for_project(&self) -> Result<NpcServiceModel, ProjectError> {
+        let source = self.project.lower_reference_source()?;
+        Ok(self.service_model(&ReferenceNpcItemFacts::from_reference_source(&source)))
     }
 }
 

@@ -3,7 +3,7 @@
 use oteryn_game_server::content::*;
 use std::{collections::BTreeMap, ffi::OsStr, path::PathBuf};
 
-fn build() -> (NpcDataCatalogue, WorldProject) {
+fn build() -> NpcDataCatalogue {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../content/world");
     let project = capture_world_project(
         root.parent().expect("parent"),
@@ -11,20 +11,19 @@ fn build() -> (NpcDataCatalogue, WorldProject) {
         npc_catalogue_preproduction_limits(),
     )
     .expect("validated repository source");
-    let catalogue = NpcDataCatalogue::from_project(
-        project.clone(),
-        npc_catalogue_preproduction_limits().project,
-    )
-    .expect("data import");
-    (catalogue, project)
+    NpcDataCatalogue::from_project(project, npc_catalogue_preproduction_limits().project)
+        .expect("data import")
 }
 
 #[test]
 fn pinned_catalogue_service_model_counts() {
-    let (catalogue, project) = build();
-    let source = project.lower_reference_source().expect("Reference source");
-    let model = catalogue.service_model_for_reference_source(&source);
-    let again = catalogue.service_model_for_reference_source(&source);
+    let catalogue = build();
+    let model = catalogue
+        .service_model_for_project()
+        .expect("service model");
+    let again = catalogue
+        .service_model_for_project()
+        .expect("service model");
     assert_eq!(model, again, "built twice");
     assert_eq!(model.source_tree_digest(), catalogue.source_tree_digest());
     let counts: BTreeMap<&str, usize> = model.held_offer_counts();

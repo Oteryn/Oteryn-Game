@@ -61,9 +61,11 @@ Held offers by reason: `NonGoldCurrency` 31, `SellPriceAboveCoinCapacity` 299,
 - `mod npc_catalogue` is private and `content/mod.rs` is not owned, so the model types are not
   nameable from integration tests; entry points are methods on `NpcDataCatalogue` and the test
   uses only those. NPC-TALK-1 owns the re-export.
-- Item facts come through the `NpcItemFacts` trait; the production adapter reads the public
-  `ReferencePlayableContentSource.definitions`, so `reference_playable.rs` and `item_admission.rs`
-  are untouched.
+- Item facts come through the `NpcItemFacts` trait. The production entry
+  (`service_model_for_project`) derives them from the catalogue's own World Project via
+  `lower_reference_source()` and returns the lowering error, so facts and content identity always
+  describe the same project; `service_model(&dyn NpcItemFacts)` stays for tests.
+  `reference_playable.rs` and `item_admission.rs` are untouched.
 
 ## Validation
 
