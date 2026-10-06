@@ -8,7 +8,7 @@
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Amended (2026-10-03): §15, reconciled with `main` for acceptance (control plane D352).
 - Amended (2026-10-06): §16, the durable cause of a trigger's quest child, plan loss and push
-  roots (architect ruling on #1622 6021612356); §4 "Accepted successor sections", "Roots" and
+  roots, which request no quest and no `RewardClaim` child (architect ruling on #1622 6021612356); §4 "Accepted successor sections", "Roots" and
   "Quest child" amended in place; WORLD-INTERACTION-0 §7.1 and its PUSH-1 brief row amended in
   place (§16.3).
 - Answers: the callers QUEST-STATE-0 names (NPC-QUEST-0 dialogue, QUEST-GATE-0 doors) and its
@@ -182,7 +182,8 @@ declared initial value (QUEST-STATE-0 §3), and the predicate is then evaluated 
   `PROPOSED / NONCANONICAL`.
 - **Roots.** `USE`: the `USE_INTENT` CommandRef. `ON_ENTER` and `ON_LEAVE`: the occurrence that
   moved the character, which is its own move command (in v1 `WORLD_ACTOR_STEP_INTENT`, §16.2)
-  or another player's push command (a push root requests no quest child, §16.3). A move
+  or another player's push command (a push root requests no quest and no `RewardClaim` child,
+  §16.3). A move
   with no such root fires nothing (successor §18: no ad hoc identity): an admission placement and,
   by architect ruling (fail closed), the landing of a D37 relocation child. A relocation child
   is never a trigger root, so there is no relocation-to-trigger cascade and nested cascades
@@ -655,14 +656,25 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
 
 - A push moves the pushed character under the pushing player's command. QUEST-STATE-0 §5.3 refuses
   a cause from another GameSession.
-- In v1, therefore, a push root requests no quest child, and its children declared `after_quest`
-  do not run. Its other relocation, overlay and presentation children run as declared.
+- A `RewardClaim` child is fenced the same way: its MINT admission
+  (`durability/reward_claim_mint.rs`, `admit`) refuses a CommandRef that is not the acting
+  character's current item fence (`character_item_fence_is_current`, `AuthorityRejected`), and a
+  push CommandRef belongs to the pusher. Run under it, the claim is refused or names the wrong
+  actor's session.
+- In v1, therefore, a push root requests no quest child and no `RewardClaim` child, so it creates
+  no claim obligation and no claim reservation, and its children declared `after_quest` do not
+  run. Its other relocation, overlay and presentation children run as declared. Content may bind
+  a claim on an `ON_ENTER` or `ON_LEAVE` cell; it fires on the character's own step and stays
+  silent on a push.
+- QUEST-TRIGGER-1 tests: a push onto a cell whose binding declares a quest child and a
+  `RewardClaim` writes no quest receipt, no claim reservation, no MINT and no obligation, and runs
+  the cell's other declared children.
 - WORLD-INTERACTION-0 §7.1 (the pushed step's `ON_ENTER` and `ON_LEAVE` fire with the push command
   as root) and its PUSH-1 brief row are amended in place to carry this exception, so PUSH-1 and
   QUEST-TRIGGER-1 build to one rule.
 - No push command is registered today, so this case is latent.
 - This is a declared v1 difference: in Tibia, a pushed player's step-in fires.
-- The push command's own decision may admit a cross-character quest cause.
+- The push command's own decision may admit a cross-character quest or claim cause.
 
 ### 16.4 Not decided
 
@@ -672,7 +684,8 @@ encoding and a new receipt key migration. It is decided with the first accepted 
 - Commands that move more than one cell (autowalk, a path).
 - Roots that are not commands (timers, world events, creature movement).
 - Nested cascades.
-- Quest children that move another character's quest (party, push, a lever that acts on others).
+- Quest or `RewardClaim` children that act for another character (party, push, a lever that acts
+  on others).
 - Durable trigger plans.
 
 ### 16.5 Decision test
