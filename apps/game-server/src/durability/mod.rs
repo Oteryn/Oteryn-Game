@@ -69,6 +69,7 @@ pub(crate) mod spell_parameter_result;
 pub(crate) mod spell_premium_abi;
 pub(crate) mod spell_privacy;
 pub(crate) mod spell_wheel_abi;
+pub mod sqlstate_codes;
 pub(crate) mod world_house_instance;
 pub(crate) mod world_party;
 

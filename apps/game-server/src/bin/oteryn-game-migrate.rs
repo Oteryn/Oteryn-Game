@@ -3,8 +3,10 @@
 // Use the canonical library so private adapter seals and the ledger share one
 // crate identity; this entry point still performs migration-only execution.
 use oteryn_game_server::durability::MigrationExecutor;
+use oteryn_game_server::durability::sqlstate_codes::ToolKind;
+use std::process::ExitCode;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn migrate() -> Result<(), Box<dyn std::error::Error>> {
     let database_url = std::env::var("OTERYN_GAME_MIGRATION_DATABASE_URL").map_err(|_error| {
         std::io::Error::other("OTERYN_GAME_MIGRATION_DATABASE_URL is required for migrations")
     })?;
@@ -16,4 +18,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             executor.apply_embedded_ledger().await
         })?;
     Ok(())
+}
+
+fn main() -> ExitCode {
+    oteryn_game_server::node::serve::run_tool(
+        "oteryn-game-migrate",
+        env!("CARGO_PKG_VERSION"),
+        ToolKind::MigrationFailed.code(),
+        migrate,
+    )
 }
