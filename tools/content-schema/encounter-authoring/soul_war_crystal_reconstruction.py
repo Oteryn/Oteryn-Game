@@ -396,6 +396,103 @@ def hatred():
     m=manifest(e["identity"]["key"],sources,entries,{"GoshnarsHatredBuff":[cref("Goshnar's Hatred")["key"]],"BurningChangeForm":[cref("Ashes of Burning Hatred")["key"],cref("Spark of Burning Hatred")["key"],cref("Flame of Burning Hatred")["key"],cref("Blaze of Burning Hatred")["key"]]})
     return e,catalog(e),m
 
+
+def claustrophobic_raid(number, bounds, sand_positions, brachias, demons, phantoms, exit_position, source_lines, bad_spawn=False):
+    roles=[("brachiodemon","Brachiodemon",brachias),("infernal_demon","Infernal Demon",demons),("infernal_phantom","Infernal Phantom",phantoms)]
+    participants=[(role,[name]) for role,name,_ in roles]
+    anchors=[area("arena",bounds[0],bounds[1],bounds[2],bounds[3],bounds[4])]
+    anchors.append({
+      "key":"entry_gate","kind":"area",
+      "description":f"Crystal Claustrophobic Inferno raid {number} sand-timer entry tiles.",
+      "location":{"boxes":[{"x":[x,x],"y":[y,y],"floor":z} for x,y,z in sand_positions]}
+    })
+    anchors.append(point("source_exit",exit_position[0],exit_position[1],exit_position[2]))
+    for role,_,positions in roles:
+        for n,(x,y,z) in enumerate(positions,1):
+            anchors.append(point(f"{role}_spawn_{n}",x,y,z))
+
+    e=base(
+      f"claustrophobic_inferno_raid_{number}_crystal",
+      f"Soul War: Claustrophobic Inferno Raid {number} (Crystal reconstruction)",
+      participants, anchors,
+      counters=[{"name":"wave_count","initial":0}],
+      timers=[
+        {"name":"wave_tick","duration_ms":20000,"repeat":True},
+        {"name":"survival","duration_ms":120000,"repeat":False},
+      ],
+      outcomes=["raid_survived"],
+    )
+
+    def wave_actions():
+        actions=[]
+        for role,name,positions in roles:
+            for n,_ in enumerate(positions,1):
+                actions.append({
+                  "kind":"spawn","creature":cref(name),"role":role,"count":1,
+                  "at":{"anchor":f"{role}_spawn_{n}"},"owner":"none","health":"full"
+                })
+        return actions
+
+    e["rules"]=[
+      {"key":"start_raid_clock","trigger":{"kind":"encounter_started"},"conditions":[],
+       "actions":[
+         {"kind":"counter","counter":"wave_count","operation":"set","value":1},
+         {"kind":"timer","timer":"wave_tick","operation":"start"},
+         {"kind":"timer","timer":"survival","operation":"start"}]},
+      {"key":"first_wave_after_spawn_warning","trigger":{"kind":"encounter_started"},"delay_ms":3000,"conditions":[],
+       "actions":wave_actions()},
+      {"key":"next_wave_every_twenty_seconds","trigger":{"kind":"timer_elapsed","timer":"wave_tick"},"delay_ms":3000,
+       "conditions":[{"kind":"counter_compare","counter":"wave_count","op":"<","value":6}],
+       "actions":wave_actions()+[{"kind":"counter","counter":"wave_count","operation":"add","value":1}]},
+      {"key":"survive_two_minutes","trigger":{"kind":"timer_elapsed","timer":"survival"},"conditions":[],
+       "actions":[
+         {"kind":"timer","timer":"wave_tick","operation":"stop"},
+         {"kind":"remove","all_in":"arena"},
+         {"kind":"emit_outcome","outcome":"raid_survived","credited":"players_in_anchor","anchor":"arena"}]},
+    ]
+    sources=[
+      src("data-global/lib/quests/soul_war.lua","4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703"),
+      src("data-global/scripts/quests/soul_war/moveevent-claustrophobic-inferno-raid.lua","39f3e156051d8a7fa0344a0a2a4448b56014f70c"),
+    ]
+    entries=[
+      entry(0,source_lines,"mapped",f"Raid {number} zone, sand-timer tiles and every concrete Brachiodemon/Infernal Demon/Infernal Phantom spawn coordinate are pinned as anchors.","/encounter/anchors"),
+      entry(0,[259,260,261],"mapped","Crystal summer-update sets spawnTime=20 seconds, surviveTime=120 seconds and timeToKick=5 seconds.","/encounter/state/timers"),
+      entry(1,list(range(13,47)),"mapped","The donor creates six stages (120/20), each spawning all three configured monster groups after a 3 second warning; the core models waves at t=3,23,43,63,83,103 seconds.","/encounter/rules"),
+      entry(1,list(range(48,60)),"unresolved_semantics","On reset Crystal removes monsters, waits 5 seconds, refreshes the zone and removes players. Encounter v1 has no delayed players-in-area removal/kick action."),
+      entry(1,list(range(61,79)),"unresolved_semantics","Raid start is a sand-timer MoveEvent with direction filtering and a 10 second post-reset cooldown. This belongs to interaction/world entry ownership, not the encounter core."),
+    ]
+    if bad_spawn:
+        entries.append(entry(0,[208],"unresolved_semantics","Crystal raid 2 contains a bare 'Pos' token in spawnsPhantons. The missing coordinate is deliberately not guessed or copied."))
+    covers={"ClaustrophobicInfernoRaid":[cref("Brachiodemon")["key"],cref("Infernal Demon")["key"],cref("Infernal Phantom")["key"]]}
+    return e,catalog(e),manifest(e["identity"]["key"],sources,entries,covers)
+
+def claustrophobic_raid_1():
+    return claustrophobic_raid(
+      1,(33985,34045,31053,31077,9),
+      [(34012,31049,9),(34013,31049,9),(34014,31049,9),(34015,31049,9)],
+      [(33994,31068,9),(33998,31062,9),(34012,31061,9),(34006,31075,9),(34037,31072,9),(34026,31063,9),(34034,31057,9),(34019,31067,9),(34040,31064,9)],
+      [(33994,31073,9),(34015,31075,9),(34034,31070,9)],
+      [(34018,31058,9),(33997,31058,9),(34008,31066,9),(34013,31070,9),(34037,31060,9),(34026,31073,9),(34006,31058,9)],
+      (34009,31083,9),list(range(126,169)))
+
+def claustrophobic_raid_2():
+    return claustrophobic_raid(
+      2,(33988,34043,31042,31068,10),
+      [(34012,31075,10),(34011,31075,10),(34010,31075,10)],
+      [(33999,31048,10),(33996,31053,10),(33996,31061,10),(34006,31056,10),(34010,31066,10),(34019,31068,10),(34023,31063,10),(34013,31046,10),(34022,31045,10),(34036,31063,10),(34035,31047,10)],
+      [(34017,31040,10),(34001,31058,10),(34016,31056,10),(34028,31046,10),(34030,31058,10)],
+      [(33991,31059,10),(34005,31045,10),(34006,31051,10),(34020,31051,10),(34036,31053,10),(34020,31072,10),(34007,31070,10)],
+      (34011,31028,10),list(range(169,215)),True)
+
+def claustrophobic_raid_3():
+    return claustrophobic_raid(
+      3,(33987,34044,31043,31076,11),
+      [(34009,31036,11),(34010,31036,11),(34011,31036,11),(34012,31036,11),(34013,31036,11),(34014,31036,11)],
+      [(34016,31047,11),(34007,31047,11),(33998,31051,11),(33993,31057,11),(33995,31065,11),(34006,31069,11),(34007,31060,11),(34020,31060,11),(34032,31058,11),(34032,31067,11),(34039,31067,11)],
+      [(33998,31061,11),(34012,31060,11),(34030,31063,11)],
+      [(34001,31047,11),(34013,31064,11),(34007,31053,11),(34023,31054,11),(34038,31053,11)],
+      (34014,31085,11),list(range(215,259)))
+
 def write_one(name,bundle):
     e,c,m=bundle
     d=OUT/name
@@ -404,6 +501,9 @@ def write_one(name,bundle):
         (d/fn).write_text(json.dumps(val,ensure_ascii=False,indent=2)+"\n",encoding="utf-8",newline="\n")
 
 def main():
+    write_one("claustrophobic_inferno_raid_1",claustrophobic_raid_1())
+    write_one("claustrophobic_inferno_raid_2",claustrophobic_raid_2())
+    write_one("claustrophobic_inferno_raid_3",claustrophobic_raid_3())
     write_one("goshnars_greed",greed())
     write_one("goshnars_malice",malice())
     write_one("goshnars_spite",spite())
@@ -414,7 +514,7 @@ def main():
       "schema":"OTERYN_SOUL_WAR_CRYSTAL_ENCOUNTER_RECONSTRUCTION/v1",
       "source":{"repository":"zimbadev/crystalserver","revision":CRYSTAL,"branch":"summer-update"},
       "runtime_qualified":False,
-      "encounters":["goshnars_greed","goshnars_malice","goshnars_spite","goshnars_cruelty","goshnars_hatred","goshnars_megalomania"],
+      "encounters":["claustrophobic_inferno_raid_1","claustrophobic_inferno_raid_2","claustrophobic_inferno_raid_3","goshnars_greed","goshnars_malice","goshnars_spite","goshnars_cruelty","goshnars_hatred","goshnars_megalomania"],
       "note":"Source-backed representable cores only. unresolved_semantics rows are hard holds, not approximations."
     }
     OUT.mkdir(parents=True,exist_ok=True)
