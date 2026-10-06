@@ -15,6 +15,11 @@ uuid='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 number='^[0-9]{1,18}$'
 fail() { echo "deploy-ops: $*" >&2; exit 2; }
 check() { [[ "$2" =~ $1 ]] || fail "invalid argument"; }
+# Exactly scope_assignment::valid_node_identity: 1..=256 bytes of ASCII alphanumerics and
+# space . , = : _ - / @ +, with no leading or trailing space.
+node_identity_ok() {
+  [[ "$1" =~ ^[A-Za-z0-9\ .,=:_/@+-]{1,256}$ && "$1" != " "* && "$1" != *" " ]] || fail "invalid node identity"
+}
 
 [[ "$(id -u)" = 0 ]] || fail "must run as root"
 [[ $# -ge 1 ]] || fail "usage"
@@ -37,11 +42,21 @@ case "$command" in
     world="$(sed -n 's/^WORLD_ID=//p' "$SCOPE_FILE")"
     channel="$(sed -n 's/^CHANNEL_ID=//p' "$SCOPE_FILE")"
     identity="$(sed -n 's/^NODE_IDENTITY=//p' "$SCOPE_FILE")"
-    check "$uuid" "$world"; check "$uuid" "$channel"; check '^[A-Za-z0-9=,._-]{1,128}$' "$identity"
+    check "$uuid" "$world"; check "$uuid" "$channel"; node_identity_ok "$identity"
     [[ -f "$REPORT_CONFIG" && ! -L "$REPORT_CONFIG" && "$(stat -c %u "$REPORT_CONFIG")" = 0 ]] || fail "report config"
     # Report the new ownership generation to Platform with the assignment.
     args=(assignment "$1" --report-config "$REPORT_CONFIG" --node-config "$NODE_CONFIG" --node-identity "$identity"
       --request "assign-$2-$3.json" --world "$world" --channel "$channel" --node-id "$4" --revision "$5")
+    ;;
+  reconcile)
+    # reconcile <run-id> <attempt>: reconcile the retained assignment request of that run before
+    # any new assignment (the ops writer slot refuses new work while one is unreconciled).
+    [[ $# -eq 2 ]] || fail "usage: reconcile <run-id> <attempt>"
+    check "$number" "$1"; check "$number" "$2"
+    [[ -f "$BASE/state/assign-$1-$2.json" ]] || { echo "deploy-ops: no retained request assign-$1-$2.json; nothing to reconcile"; exit 0; }
+    [[ -f "$REPORT_CONFIG" && ! -L "$REPORT_CONFIG" && "$(stat -c %u "$REPORT_CONFIG")" = 0 ]] || fail "report config"
+    # reconcile does not accept --node-identity (the retained request carries it).
+    args=(assignment reconcile --report-config "$REPORT_CONFIG" --node-config "$NODE_CONFIG" --request "assign-$1-$2.json")
     ;;
   *) fail "unknown command" ;;
 esac

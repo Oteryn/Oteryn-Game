@@ -247,13 +247,29 @@ jobs:
           set -euo pipefail
           log="$BASE/log/node.log"
           node_id="$(tr -d '[:space:]' < "$BASE/run/current-node-id")"
+          # An earlier run whose replace outcome was unknown left the writer slot occupied: the ops
+          # tool's own reconcile path clears it before any new assignment (it refuses new work otherwise).
+          if [[ -s "$BASE/run/pending-assignment" ]]; then
+            read -r prev_run prev_attempt < "$BASE/run/pending-assignment"
+            sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" reconcile "$prev_run" "$prev_attempt"
+            rm -f "$BASE/run/pending-assignment"
+          fi
           if [[ "$(cat "$BASE/run/node-state")" = awaiting_assignment ]]; then
             line="$(grep 'event=awaiting_assignment' "$log" | tail -n 1)"
             revision="$(sed -n 's/.*registration_revision=\([0-9]\{1,18\}\).*/\1/p' <<< "$line")"
             test -n "$revision"
             # The manual first start already assigned the scope, so every deploy replaces.
+            echo "$GITHUB_RUN_ID $GITHUB_RUN_ATTEMPT" > "$BASE/run/pending-assignment"
             sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" assign replace \
-              "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$node_id" "$revision"
+              "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$node_id" "$revision" ||
+              {
+                # Outcome unknown (or rejected): reconcile at once. Committed counts as success; anything
+                # else fails the deploy, and the marker makes the next run reconcile before it assigns.
+                out="$(sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" reconcile "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" 2>&1)" || true
+                echo "$out"
+                grep -q 'assignment=committed' <<< "$out" || { echo "::error::assignment replace did not commit"; exit 1; }
+              }
+            rm -f "$BASE/run/pending-assignment"
           fi
           # The log belongs to this incarnation (start moves the previous one aside). Ready means the
           # process is alive and the latest readiness event is ready=true, and it must hold on a re-check.
