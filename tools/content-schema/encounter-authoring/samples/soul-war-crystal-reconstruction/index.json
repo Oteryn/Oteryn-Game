@@ -8,7 +8,10 @@
   "runtime_qualified": false,
   "encounters": [
     "goshnars_greed",
-    "goshnars_malice"
+    "goshnars_malice",
+    "goshnars_spite",
+    "goshnars_cruelty",
+    "goshnars_megalomania"
   ],
   "note": "Source-backed representable cores only. unresolved_semantics rows are hard holds, not approximations."
 }
