@@ -165,3 +165,30 @@ After identity admission, the Item owner still must qualify:
 - persistence/consumption behavior.
 
 The quest runtime must consume the canonical `oteryn:item.tibia.i54610`, never raw donor id 54610 and never i34017.
+
+
+## Fresh donor-binding correction
+
+Current `main` readback of `imports/crystalserver/bindings/items.json` changes the exact implementation seam:
+
+- donor source id `54610` has **no binding row**;
+- this is consistent with the historical B1b `PROBABLE_MATCH` hold against 34017;
+- therefore 54610 cannot enter the active Item tree merely by toggling materializability or by reusing an existing exact binding.
+
+The correct successor sequence is:
+
+```text
+1. admit one exact Crystal source binding:
+   source = zimbadev/crystalserver@00ce02a5
+   namespace = ots/item_server_id
+   external_id = 54610
+   target = oteryn:item.tibia.i54610@definition-r1
+
+2. add/admit the canonical Item record under that A12 key
+
+3. separately qualify materializable/light-source/timed semantics required by Shards
+```
+
+Do not route 54610 through `apply_tibia_id_key_rule_with_appearance_items()`: that helper explicitly accepts only current CipSoft ids **absent from the source allocation**. 54610 is a donor Item identity and needs a donor-binding successor, not the appearance-only path.
+
+This is distinct from Skewered Fish 54638, whose exact Crystal binding already exists on main.
