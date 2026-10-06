@@ -1,186 +1,198 @@
 # Laboratory and post-Magnolia escape addendum
 
-Status: **EVIDENCE / PARTIAL SEMANTICS ONLY**
+Status: **EVIDENCE / VIDEO-VERIFIED SEMANTICS; EXACT PLACEMENT IDENTITIES STILL PARTIAL**
 
-This addendum closes what can be closed from current public quest references and the pinned Crystal Summer donor without inventing missing puzzle mechanics.
+Walkthrough inspected visually from the actual video:
+`https://www.youtube.com/watch?v=Zz-7UyufXbU`
 
-## Laboratory: exact known facts
+The frame readback below supersedes the earlier assumption that the laboratory requires a separate manual colour-input puzzle.
+
+## Laboratory: source + video result
 
 Current quest reference places the laboratory sequence at:
 
 - laboratory room entry: approximately `33881,32687,9`;
-- Note Pinned on the Wall: reference guide places the note immediately at the laboratory entrance, with the detailed route using `33881,32688,9`;
+- Note Pinned on the Wall: detailed route `33881,32688,9`;
 - sealed door: `33874,32686,9`;
 - Crystal Apparatus: `33874,32677,9`.
 
-The exact Summer map pin already contains these route cells.
+The exact Summer map pin contains these route cells.
 
-### The note is not a new Shards quest Item
+### Laboratory note
 
-“Note Pinned on the Wall” is an existing generic readable immovable object class used elsewhere in Tibia. The current authored recipe’s label `Laboratory note` should therefore not mint a new quest-item identity by name.
+“Note Pinned on the Wall” is an existing generic readable immovable object class, not a new portable Shards quest Item.
 
-The missing Shards binding is:
+The missing native binding remains:
 
 ```text
 exact placed readable object
-+ exact laboratory text/document
++ exact Shards laboratory document text
 + inspect/read interaction
 + quest transition
 ```
 
-If the current canonical WorldObject/Document catalogues do not already bind that exact placement, the implementation should bind the placement to the existing generic readable-object identity and the Shards-specific document text rather than creating a duplicate portable Item.
+Do not mint a new portable `Laboratory note` Item by name.
 
-## Crystal Plinth puzzle
-
-The current quest reference explicitly states:
-
-- the note explains that access to the lunar-fragment chamber depends on a **specific crystal-colour sequence**;
-- that sequence **changes**;
-- using the Crystal Plinth reveals the currently active colour order;
-- the player then passes the sealed door and proceeds to the Crystal Apparatus.
+### Crystal Plinth — manual colour input is NOT part of the observed player path
 
 Known canonical object:
 
 - Crystal Plinth: `oteryn:item.tibia.i54515` routed to WorldObject.
 
-Pinned Crystal Summer and current Canary source search show no quest script for:
+The supplied walkthrough was inspected frame-by-frame in the original-video interval `11:17–11:42`, with a 720p readback around the Plinth.
 
-- reading the changing sequence;
-- selecting/inputting crystal colours;
-- validating the sequence;
-- failure/reset semantics;
-- opening the sealed door from that puzzle.
+Observed sequence:
 
-Therefore the following details remain **UNKNOWN** and must not be invented:
+1. the character enters the laboratory;
+2. an incorrect/irrelevant object use visibly refuses with `You cannot use this object.`;
+3. the character uses the Crystal Plinth;
+4. at approximately `11:25`, the game reports:
+   > From the colours and arrangement of the crystal panels on the plinth you learn the access sequence for the shard room.
+5. the Quest Tracker updates to state that the player learned which colour code opens the shard-room doors;
+6. dense `0.5 s` frame inspection from `11:32` through `11:42` shows **no separate code UI, no manual colour entry and no panel-click sequence**;
+7. the character simply leaves the Plinth area and crosses the sealed-door boundary at about `11:40–11:41`.
 
-1. where the active sequence is stored;
-2. whether the sequence is per-character, per-channel, per-room or global;
-3. whether it is random, cyclic or derived from world state;
-4. which exact placed objects accept colour input;
-5. how many inputs are required;
-6. what happens on a wrong input;
-7. whether using the Plinth itself is sufficient to authorize the sealed door, or whether the player must actively reproduce the shown sequence.
+Therefore the executable Reference-facing behavior is:
 
-The current 16-stage recipe’s `s8 kind=explore count=3` is therefore insufficient for Reference-parity activation.
+```text
+use Crystal Plinth
+  -> lab_access_sequence_learned
 
-### Required implementation shape after observation closes the UNKNOWNs
+sealed shard-room door
+  requires lab_access_sequence_learned
+  -> pass/open
+```
+
+The visible colour arrangement may vary as presentation, but the supplied Reference walkthrough does not expose a player-authored sequence value that needs durable Quest storage.
+
+### Consequence for the previous UNKNOWN
+
+The previous blocker:
+
+```text
+Laboratory colour-sequence input/storage/reset semantics UNKNOWN
+```
+
+is **CLOSED for executable Shards parity**.
+
+Do not invent:
+
+- a random/cyclic persisted colour sequence;
+- a per-character sequence value;
+- manual coloured-panel input;
+- failure/reset logic for a non-observed input mechanism.
+
+If a later stronger source proves server-internal colour generation that materially affects a client-visible result, it can be added under its owning World/Interaction contract. It is not required to reproduce the observed quest path.
+
+### Final laboratory shape
 
 ```text
 read laboratory note
   -> lab_note_read
 
 use Crystal Plinth
-  -> reveal current sequence (presentation-only observation)
-  -> plinth_sequence_observed
+  -> lab_access_sequence_learned
 
-[UNKNOWN exact input mechanism]
-  -> lab_sequence_solved
-
-gate sealed door on lab_sequence_solved
+gate exact sealed door on lab_access_sequence_learned
   -> laboratory_inner_chamber_entered
 
-use Crystal Apparatus
+use/inspect Crystal Apparatus
   -> crystal_apparatus_inspected
   -> laboratory_done
 ```
 
-Do not encode a guessed colour-input mechanism from the phrase “sequence” alone.
+The exact canonical placement/document binding of the laboratory note remains open.
 
-## Post-Magnolia escape: source consensus
+## Post-Magnolia escape: video-verified order
 
-After the permanent Magnolia kill, the character is moved into a separate/collapsed chamber and must improvise an exit.
+The supplied walkthrough was also inspected visually across `22:10–23:10`.
 
-Current TibiaWiki reference gives the following durable semantic order:
+Observed timeline:
 
-1. examine the skeleton -> obtain **Lit Torch**;
-2. examine the icicles -> obtain **Icicle Chisel**;
-3. use the lit torch and icicle chisel on the **north wall** / crumbling passage;
-4. the wall opens enough to squeeze through and collapses behind the character;
-5. follow the corridor to a **Rope Spot** and leave.
+- `22:10–22:17`: final Magnolia combat;
+- approximately `22:21`: relocation into the white/icy prison chamber;
+- `22:22–22:45`: object inspections/interactions inside the chamber;
+- approximately `22:48`: a clear flame/fire effect appears on the north wall;
+- immediately afterward: a second tool interaction occurs on the prepared wall;
+- approximately `22:52`: the character moves through the newly opened passage;
+- `22:53–22:58`: the character follows the narrow escape corridor;
+- approximately `22:59`: relocation out of the prison route;
+- `23:05–23:10`: completion dialogue begins and the quest-completion UI appears.
 
-It records the resulting message after the chisel breaks the remaining wall:
+This visual order agrees with the current reference guide:
 
-> You use the icicle to knock down the rest of the crumbling wall.
+1. inspect skeleton -> obtain **Lit Torch**;
+2. inspect icicles -> obtain **Icicle Chisel**;
+3. use Lit Torch on the north wall;
+4. use Icicle Chisel on the prepared wall;
+5. cross the opening/collapsing passage;
+6. follow the corridor to the Rope Spot / exit.
 
-This quote is kept short only to identify the observable transition.
+Known canonical Item:
 
-A second independent walkthrough guide agrees on the functional route and describes:
+- Icicle Chisel: `oteryn:item.tibia.i39578`.
 
-- icicles in the south-west portion of the room;
-- a nearby skeleton containing/providing the torch;
-- torch on the northern wall, then chisel on the affected wall section.
-
-Some secondary prose describes “use one on the other and then on the wall”. That wording is not strong enough to promote an item-on-item combination transaction.
+The Lit Torch must use the existing Timed Item / Item owner semantics; do not create a quest-private torch implementation.
 
 ### Safe native semantics
 
-The implementation can safely model the source consensus as:
-
 ```text
 inspect exact skeleton placement
-  -> Item/Durability grant Lit Torch
+  -> grant Lit Torch through Item/Durability owner
   -> prison_torch_obtained
 
 inspect exact icicle placement
-  -> Item/Durability grant Icicle Chisel i39578
+  -> grant Icicle Chisel i39578
   -> prison_chisel_obtained
 
 use Lit Torch on exact north-wall target
-  [both acquisition facts]
   -> wall_heated/prepared
 
-use Icicle Chisel on the prepared wall
+use Icicle Chisel on prepared wall
   -> wall opening state
   -> prison_wall_open
 
-step/cross exact opening
+cross opening
   -> prison_escaped_from_chamber
-  -> collapse/reclose behind player
+  -> collapse/reclose behind character
 
-reach/use Rope Spot
-  -> relocate to exterior route
+use/reach Rope Spot
+  -> relocation
   -> prison_escaped
 ```
 
-This ordering matches the strongest current guide description while remaining compatible with the supplied video’s visible escape sequence.
+### What is still UNKNOWN
 
-### What remains placement-UNKNOWN
+The broad previous blocker “escape sequence not re-observed” is now obsolete. The gameplay order is visually verified.
 
-Until the exact video frames or current map placement evidence are read again, do not invent:
+Only these placement/identity details remain open:
 
-- skeleton coordinate;
-- icicle coordinate;
-- north-wall placement key/item id;
-- Rope Spot coordinate;
-- whether the wall change is a LocalObject state transition, an overlay transform, or a relocation trigger;
-- exact Lit Torch source appearance if the room uses a presentation alias.
+- exact skeleton coordinate / placement key;
+- exact icicle coordinate / placement key;
+- exact north-wall placement key / appearance id;
+- exact Rope Spot coordinate / placement key;
+- exact Lit Torch source appearance/alias used by the prison;
+- whether the collapsing wall is represented by an existing LocalObject state, overlay transform or another accepted World Interaction representation.
 
-The item identities alone are not enough to bind the world interaction.
+Do not invent these coordinates or IDs from the video viewport alone.
 
 ## Donor status
 
-Pinned Crystal Summer does not provide a Shards quest script for the laboratory puzzle or the escape sequence.
+Pinned Crystal Summer does not provide a Shards quest script for either the laboratory access flow or the post-Magnolia escape.
 
-Therefore neither mechanic may be described as “copied from Crystal”. Crystal supplies map/object/item evidence; Oteryn still needs native Interaction/Quest producers and exact placement bindings.
+Crystal supplies map/object/item evidence. Oteryn still needs native World/Interaction/Quest producer bindings.
 
 ## Runtime ownership
 
-- note/plinth/sealed door: WorldObject + Document + QUEST-TRIGGER-1 / QUEST-GATE-1;
-- any colour-sequence state: requires architect/owner decision after observation establishes the real semantics;
+- laboratory note: WorldObject + Document + QUEST-TRIGGER-1;
+- Crystal Plinth: WorldObject + QUEST-TRIGGER-1;
+- sealed laboratory door: QUEST-GATE-1 + Door, gated by `lab_access_sequence_learned`;
 - skeleton/icicles/wall/Rope Spot: WorldObject/Terrain + Item/Durability + QUEST-TRIGGER-1;
-- wall overlay/local-state change: existing World Interaction owner;
+- wall state change: existing World Interaction owner;
 - final progress: existing `QuestTransitionRequest` writer.
 
-No direct QuestState mutation should be implemented inside an object handler.
+No direct QuestState mutation belongs in an object handler.
 
-## Re-verification still required
+## Remaining verification target
 
-When the supplied video can be inspected again at full relevant frames, verify:
-
-1. whether the player inputs a colour sequence or merely uses the Plinth and passes;
-2. exact laboratory interactive placements;
-3. exact skeleton/icicle/wall/Rope Spot positions;
-4. exact order of Torch vs Chisel use;
-5. whether any tool is consumed/transformed.
-
-Until then those details remain explicitly UNKNOWN.
+Use exact map/source placement evidence to bind the prison skeleton, icicles, north wall and Rope Spot. The interaction order itself no longer needs re-observation.
