@@ -910,14 +910,14 @@
       "required_semantic_item": "Lit Torch",
       "target_semantic": "north crumbling wall",
       "outcome": "prison_wall_prepared",
-      "evidence": "FACT_VIDEO_VERIFIED + HIGH_CONFIDENCE_ROOM + WALL_TILE_UNRESOLVED",
+      "evidence": "FACT_VIDEO_VERIFIED + UNIQUE_OTBM_TOPOLOGY_CANDIDATE",
       "owner": "World Interaction + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
         "timestamp_approx": "00:22:48.5",
         "observation": "After an earlier failed chisel attempt, use of the torch produces a clear fire effect on the north-wall crack."
       },
-      "position_status": "EXACT_VIDEO_PLUS_OTBM",
+      "position_status": "HIGH_CONFIDENCE_DERIVED_WITHIN_UNIQUE_TOPOLOGY_CANDIDATE",
       "position": {
         "x": 31920,
         "y": 31359,
@@ -934,7 +934,8 @@
       "position_evidence": {
         "video": "22:47–22:51 action/effect is centered exactly one tile north of the prison skeleton.",
         "topology": "Prison skeleton is at 31920,31360,9; direct north tile is 31920,31359,9.",
-        "otbm": "Direct north tile contains central ice wall 6729 + debris 6374. Side candidates use different debris/orientation variants; 31921 uses corner/variant wall 6737."
+        "otbm": "Direct north tile contains central ice wall 6729 + debris 6374. Side candidates use different debris/orientation variants; 31921 uses corner/variant wall 6737.",
+        "qualification": "Coordinates are not published by the external quest guides. Treat as the unique OTBM topology candidate, not as independent exact-source coordinates."
       }
     },
     {
@@ -947,7 +948,7 @@
         "prison_wall_prepared"
       ],
       "outcome": "prison_wall_open",
-      "evidence": "FACT_VIDEO_VERIFIED + HIGH_CONFIDENCE_ROOM + WALL_TILE_UNRESOLVED",
+      "evidence": "FACT_VIDEO_VERIFIED + UNIQUE_OTBM_TOPOLOGY_CANDIDATE",
       "owner": "World Interaction + QUEST-TRIGGER-1",
       "video": {
         "walkthrough": "Zz-7UyufXbU",
@@ -960,7 +961,7 @@
         "video_timestamp_approx": "00:22:48.0",
         "observed_message": "You try to pry open the crack in the wall with the icicle. But it doesn't work. You'll have to find a way to widen the crack first using some other method."
       },
-      "position_status": "EXACT_VIDEO_PLUS_OTBM",
+      "position_status": "HIGH_CONFIDENCE_DERIVED_WITHIN_UNIQUE_TOPOLOGY_CANDIDATE",
       "position": {
         "x": 31920,
         "y": 31359,
@@ -977,7 +978,8 @@
       "position_evidence": {
         "video": "22:47–22:51 action/effect is centered exactly one tile north of the prison skeleton.",
         "topology": "Prison skeleton is at 31920,31360,9; direct north tile is 31920,31359,9.",
-        "otbm": "Direct north tile contains central ice wall 6729 + debris 6374. Side candidates use different debris/orientation variants; 31921 uses corner/variant wall 6737."
+        "otbm": "Direct north tile contains central ice wall 6729 + debris 6374. Side candidates use different debris/orientation variants; 31921 uses corner/variant wall 6737.",
+        "qualification": "Coordinates are not published by the external quest guides. Treat as the unique OTBM topology candidate, not as independent exact-source coordinates."
       }
     },
     {
@@ -1003,7 +1005,7 @@
         },
         "north_wall_y": 31359
       },
-      "position_status": "EXACT_OPENING_TILE",
+      "position_status": "HIGH_CONFIDENCE_DERIVED_OPENING_TILE",
       "position": {
         "x": 31920,
         "y": 31359,
@@ -1189,6 +1191,16 @@
       "encounter_owner_pr_1807": "OPEN_NO_MAGNOLIA_ENCOUNTER"
     },
     "terminal_reward_evidence": "terminal-reward-evidence.json",
-    "jaracal_mount_catalogue_status": "ABSENT_FROM_252_CANONICAL_MOUNTS"
+    "jaracal_mount_catalogue_status": "ABSENT_FROM_252_CANONICAL_MOUNTS",
+    "prison_topology_qualification": {
+      "status": "HIGH_CONFIDENCE_DERIVED_NOT_EXACT_SOURCE",
+      "candidate_anchor": {
+        "x": 31920,
+        "y": 31360,
+        "z": 9
+      },
+      "basis": "Only full-world candidate matching skeleton + southwest icicles + north wall + north corridor + east turn.",
+      "hold": "No public guide/map link found that publishes prison-room coordinates; scripted endpoint remains unresolved."
+    }
   }
 }
