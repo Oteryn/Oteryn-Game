@@ -178,7 +178,7 @@
       "command_types": [],
       "state_domains": [17],
       "offered": false,
-      "offer_gate": "MAP-CUTOVER-1: the server does not offer this capability before a live node boots a World from a bundle and the composition plus encode p99 of an 18x14 viewport over 8 floors is within MAP01-VIEWPORT-US. It requires 4 ITEM_VIEW_MOVE_V1 (the handles of its entries) and 6 WORLD_SPATIAL_ENTITIES. Without it selected, domain 17 is never sent, a bundle World refuses admission with CAPABILITY_MISMATCH and a fixture World keeps domain 2."
+      "offer_gate": "MAP-CUTOVER-1: the server does not offer this capability before a live node boots a World from a bundle and the snapshot p99 of an 18x14 viewport over 8 floors (compose, handles and encode) is within MAP01-VIEWPORT-SNAPSHOT-US, which holds on a testing or preproduction World only; a production World does not offer it before the snapshot and delta limits of MAP-VIEWPORT-MEASURE-1 are registered and met (ARCH-MAP-VIEWPORT-BUDGET-V1). MAP01-VIEWPORT-US stays the assembly budget. It requires 4 ITEM_VIEW_MOVE_V1 (the handles of its entries) and 6 WORLD_SPATIAL_ENTITIES. Without it selected, domain 17 is never sent, a bundle World refuses admission with CAPABILITY_MISMATCH and a fixture World keeps domain 2."
     }
   ],
   "command_types": [
