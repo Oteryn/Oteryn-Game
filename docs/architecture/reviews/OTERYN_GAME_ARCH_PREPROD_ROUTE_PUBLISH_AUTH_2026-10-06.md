@@ -5,7 +5,8 @@
   its own owner answer is recorded here; an item without a recorded answer grants nothing, and
   no item waits for the others. The document itself grants no authority beyond those recorded
   answers. Recorded: 1a (control plane D831, #162, given against the owned-path list of its
-  question, §7; it replaces D824 1a) and 2a (D824). Open, so granting nothing: items 3 and 4.
+  question, §7; it replaces D824 1a) and 2a (D824). Open: items 3 and 4, and no answer to
+  either grants authority (§7). **Option B is a deferred, undecided backlog entry (§3).**
   **Option A is deferred, pending the owner's ruling (§6).** This document recommends deferral,
   because the merged RUNBOOK-1 reaches the Platform methods without new commands (F6). The owner
   has been asked, through the control plane, whether Option A stays deferred or proceeds
@@ -47,9 +48,9 @@ So the request is a choice:
 - **Option A (deferred, pending the owner's ruling).** The same stack, plus one small Platform
   PR that adds two testing/preproduction-only artisan commands. It is a backlog entry (§2), not a
   frozen design; §6 lists what would reopen it.
-- **Option B.** Stand up a persistent private preproduction environment. This needs deployment,
-  database, secret and Platform code authority. Ask for it only when step 7 needs a persistent
-  environment.
+- **Option B (deferred, undecided).** A persistent private preproduction environment. It is a
+  backlog entry (§3) with no chosen design, reopened when step 7 needs an environment that
+  outlives one run.
 - **Option C (rejected).** Enable native login on public staging.
 
 ## 1. Findings
@@ -195,9 +196,10 @@ the failure is DERIVED (no recorded run, F6).
 
 New commands would not fix this: issuance and route publication call `isolatedConnection()`
 themselves (`NativeTopologyRegistry.php:16,89`), whoever calls them. The fix belongs to
-RUNBOOK-1's own paths (for example, running Platform with the retained per-run SQLite file as its
-whole default database, F3, so that the world row, issuance and route share one store) and is for
-RUNBOOK-1-FU (D834). UNKNOWN: whether the rest of the Platform stack runs on that SQLite profile.
+RUNBOOK-1's own paths and is for RUNBOOK-1-FU (D834). One example, not a choice: running Platform
+with the retained per-run SQLite file as its whole default database (F3), so that the world row,
+issuance and route share one store. UNKNOWN: whether the rest of the Platform stack runs on that
+SQLite profile.
 
 ## 2. Option A (deferred, pending the owner's ruling): backlog entry
 
@@ -224,75 +226,32 @@ this decision before the control plane allocates any Platform PR.
 **Authority.** This document grants no Platform write. Answer 1a stays recorded as given (§7);
 whether it covers a reassessed design is for the owner's ruling, not for this document.
 
-## 3. Option B (deferred): a persistent private preproduction environment
+## 3. Option B (deferred, undecided): backlog entry
 
-Use this only when step 7 ("enablement for internal builds in `testing`/`preproduction` only",
-login contract line 425) needs an environment that outlives one run. The items below are the
-scope that answer 3a would authorize, given so the owner can answer item 3; the design is set
-when step 7 is scheduled.
+**Subject.** A persistent private preproduction environment for Platform native login, one that
+outlives a single run.
 
-**What is mutated.**
+**Status.** Registered for later, not designed. No technology, host, store, network, guard change,
+workflow, operator or credential set is chosen here, and no answer to §7 item 3 authorizes any of
+it. The owner prefers Synology and the control plane has proposed a separate private stack there
+with no guard relaxation; both are recorded as history only, not as a design or a decision.
 
-- A new Synology compose project, separate from the staging project, with:
-  - `APP_ENV=preproduction`;
-  - its own MariaDB volume and database;
-  - its own Redis;
-  - no Cloudflare Tunnel route (reached only over a private network or VPN);
-  - its own Gateway and game-node ports.
-- In that database, the issued WorldId and ChannelId, the route record and the trust key, all
-  **permanent**: the issued identities cannot be removed (F5).
-- Platform code: `isolatedConnection()` must accept the configured preproduction MariaDB, in
-  `preproduction` only. That changes a guard that the issuer review relied on, so it needs its
-  own security review.
-- The deployment workflow: a new manual, main-only job, on the runner that `Deploy Synology
-  Staging` uses (F1) or on a new runner label.
+**Safety constraints** (facts from §1 that any later design must address):
 
-**By whom.**
+- Issued WorldId and ChannelId are permanent on a persistent store; rollback cannot remove them
+  (F5).
+- In `preproduction` the unchanged `isolatedConnection()` admits only the retained per-run SQLite
+  file and refuses any MySQL/MariaDB store (F3). A persistent store therefore needs either a
+  reviewed change to a guard that the issuer review relied on, or a store that guard admits.
+- `publishTrustedKey` writes to the default connection and the high-water directory with no store
+  or environment guard (F4).
+- Public staging shares one MariaDB with Canary and is publicly reachable (F1); Option C stays
+  refused (§4).
 
-- A named operator identity with Synology shell or workflow-dispatch access runs the operator
-  path inside the preproduction Platform container.
-- The control plane records each run.
-
-**Credentials (by kind).**
-
-- The native-login configuration secrets (admission signing key, Gateway service token, producer
-  identities), generated for preproduction, held on the Synology host, never in Git.
-- The preproduction database passwords (new names).
-- The runner's deploy access.
-- No Cloudflare token, because no public route is created.
-
-**Rollback.**
-
-- Set `native_login_enabled=false` for the Channel; outstanding grants expire within their TTL,
-  never above 30 s (login contract lines 293, 427).
-- Stop the compose project.
-- The issued identities remain (F5).
-- Deleting the database volume removes them, but that is a separate destructive act that needs
-  its own approval.
-
-**Blast radius.**
-
-- The shared Synology host: CPU, memory, disk and the runner queue it shares with staging.
-- A misconfigured `.env` could point at the staging database. The relaxed guard must therefore
-  check the configured preproduction database name and host, not only the environment.
-
-**Approvals needed.**
-
-- Deployment.
-- A new database and volume.
-- Preproduction secrets.
-- The Platform guard change, with security review.
-- The workflow change.
-- The named operator.
-
-**The likely shape on Synology (not an owner decision).** The owner prefers Synology. The control
-plane proposed a separate private preproduction stack there: its own database, no Cloudflare
-route, and no guard relaxation. This is the probable form of Option B, but item 3 is open and
-nothing here records it as decided. It has one tension: with the guard unchanged, a
-`preproduction` Platform writes routes only to the retained per-run SQLite file under the system
-temporary directory. A persistent stack with its own MariaDB would be refused (F3). So "no guard
-relaxation" means either a per-run disposable stack on Synology (like RUNBOOK-1) or a reviewed
-guard change (above). The owner's item 3 answer decides which.
+**Reopening trigger.** Rollout step 7 ("enablement for internal builds in
+`testing`/`preproduction` only", login contract line 425) is scheduled and needs an environment
+that outlives one run. Option B is then designed in an amendment to this decision, or in a
+successor decision, and its authority is asked for afresh.
 
 ## 4. Option C (rejected): native login on public staging
 
@@ -312,7 +271,8 @@ testing and preproduction; production needs U8; login contract line 425). Not of
 4. `PLATFORM-NATIVE-PREPROD-OPS-1` (Option A) stays deferred until the owner rules. It starts only
    after an amendment with a reassessed design is recorded here (§2) and the control plane
    allocates it on #162.
-5. Option B is asked for separately when step 7 is scheduled.
+5. Option B stays a backlog entry until its §3 trigger; its design and authority are then asked
+   for afresh.
 
 ## 6. Mandatory decision test
 
@@ -320,8 +280,9 @@ testing and preproduction; production needs U8; login contract line 425). Not of
 
 1. **Must decide now?** NO for Option A: nothing is blocked on it (item 2), so this document
    recommends deferral and registers it as a backlog entry (§2) without a frozen design. The
-   owner's ruling on deferral versus proceeding under 1a is pending. NO for Option B, which stays
-   deferred (item 3).
+   owner's ruling on deferral versus proceeding under 1a is pending. NO for Option B: nothing
+   needs a persistent environment before step 7, so it is a backlog entry (§3) with no chosen
+   technology or topology.
 2. **Blocked downstream work.** None on the Option A commands. RUNBOOK-1 reaches every method it
    needs through `php -r` in its throwaway container (F6), and its README says no step is pending
    `PLATFORM-NATIVE-PREPROD-OPS-1`. Its first run is blocked by the store guard (F7), which new
@@ -330,7 +291,7 @@ testing and preproduction; production needs U8; login contract line 425). Not of
    calls the methods by name, so a Platform change to those methods breaks it at the next pin
    bump. Adding commands later is additive.
 4. **Evidence that reopens Option A.** Any one of:
-   - a protected or persistent preproduction environment (Option B, item 3), or a CI or operator
+   - a protected or persistent preproduction environment (Option B, §3), or a CI or operator
      context where evaluating ad-hoc PHP inside the Platform container is not admissible;
    - a CI gate job that needs stable flags and receipts across Platform revisions instead of a
      pinned `php -r` snippet;
@@ -342,17 +303,24 @@ testing and preproduction; production needs U8; login contract line 425). Not of
    and a reassessed design and authority (§2). The control plane then allocates the Platform PR on
    #162. Whether answer 1a covers it is the owner's call; any path the D831 question did not list
    needs a new owner answer.
-5. **Deliberately not decided.** Option A's design and the owner's ruling on it; Option B and its
-   shape on Synology; any guard relaxation; the RUNBOOK-1 store fix (RUNBOOK-1-FU); the release
-   and production operator path; production trust keys. Option C stays refused.
+
+   **Evidence that reopens Option B:** the §3 trigger (step 7 scheduled and needing an
+   environment that outlives one run).
+5. **Deliberately not decided.** Option A's design and the owner's ruling on it; Option B, its
+   host, store, network, workflow, operator and credentials; any guard relaxation; the RUNBOOK-1
+   store fix (RUNBOOK-1-FU); the release and production operator path; production trust keys.
+   Option C stays refused.
 
 ## 7. Owner approvals requested
 
 Each item takes effect independently once its answer is recorded here. Recorded: **1a**
 (control plane D831, #162, 2026-10-06) and **2a** (D824). Their use waits for the owner's ruling
-on Option A (§6): no Platform PR is allocated under 1a now. Items 3 and 4 are open and grant
-nothing. Answer 1a rests on D831, which replaces the earlier D824 1a: that answer predated two of
-the paths below.
+on Option A (§6): no Platform PR is allocated under 1a now. Items 3 and 4 are open, and no
+answer to either grants authority: item 3 only confirms that Option B stays a backlog entry, and
+item 4 only confirms a refusal. An answer recorded to an earlier form of item 3, including one
+that read "authorize now", is history only and grants nothing; Option B's design and authority
+are reassessed at its §3 trigger. Answer 1a rests on D831, which replaces the earlier D824 1a:
+that answer predated two of the paths below.
 
 Paths listed in the D831 question, kept as the record of what 1a answered (not a design and not
 an allocation): `app/Console/Commands/PublishNativeRoute.php`,
@@ -361,7 +329,7 @@ an allocation): `app/Console/Commands/PublishNativeRoute.php`,
 only), their tests under `tests/Feature/GameAuth/`, one line in the Platform native gateway login
 contract §14 or §17, and the Platform task record.
 
-Answer as, for example, `1a 2a 3b`.
+Answer as, for example, `1a 2a 3a 4a`.
 
 1. **Platform write for one PR, `PLATFORM-NATIVE-PREPROD-OPS-1`** (the paths above, two
    commands gated to testing and preproduction, no guard change).
@@ -373,8 +341,7 @@ Answer as, for example, `1a 2a 3b`.
      (recommended);
    - b) the RUNBOOK-1 operator only, with no CI job.
 3. **Persistent preproduction (Option B).**
-   - a) authorize now: deployment, database, secrets, guard change and operator;
-   - b) defer until step 7 is scheduled (recommended).
+   - a) confirm that it stays an undecided backlog entry until its §3 trigger (recommended).
 4. **Public staging (Option C).**
    - a) confirm that it stays refused (recommended).
 
@@ -382,7 +349,7 @@ Answer as, for example, `1a 2a 3b`.
 
 This document authorizes no code, migration, deployment, secret, runner, Cloudflare, database or
 Platform change now. Answers 1a and 2a stay recorded, but Option A is deferred pending the
-owner's ruling (§6), so no Platform PR is allocated under them, and §2 freezes no design. Items 3
-and 4 grant nothing until answered. Each approved item needs its own #162 allocation. A Platform
-PR for Option A starts only after the §6 amendment, and any path outside the D831 list needs a new
-owner answer.
+owner's ruling (§6), so no Platform PR is allocated under them, and §2 freezes no design. Option
+B is a backlog entry (§3); no answer to item 3 or 4 grants anything, and §3 freezes no design.
+Each approved item needs its own #162 allocation. A Platform PR for Option A starts only after
+the §6 amendment, and any path outside the D831 list needs a new owner answer.
