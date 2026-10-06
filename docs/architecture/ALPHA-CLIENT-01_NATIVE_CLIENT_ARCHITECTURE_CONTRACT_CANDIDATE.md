@@ -402,7 +402,7 @@ A normal update/restart/settings migration MUST NOT silently re-enable diagnosti
 
 Reusable credentials, gameplay admission material and reconnect secrets MUST NOT be written to general configuration, logs, content cache or crash spool.
 
-Exact directories, registry behavior, install scope, physical account-profile synchronization mechanism and credential-vault technology are deferred.
+Exact directories, registry behavior, install scope, physical account-profile synchronization mechanism and credential-vault technology are deferred, except the install scope and the install/per-user data directories, which `CLIENT-INSTALLER-0` specifies.
 
 ## 16. Logging and crash diagnostics contract
 
@@ -450,7 +450,7 @@ Rollback MUST NOT bypass current Platform/protocol/content compatibility policy 
 
 Update/install/uninstall mechanics MUST keep release payload identity separate from per-user settings/cache/diagnostics. Destruction/migration of user data requires an explicit product/retention action rather than being an accidental side effect of binary replacement.
 
-Installer/updater technology remains deferred.
+Installer technology, install layout and the updater model are specified by `docs/architecture/CLIENT-INSTALLER-0_WINDOWS_CLIENT_INSTALLER_CONTRACT_CANDIDATE.md`.
 
 ## 18. Windows-first platform contract
 
