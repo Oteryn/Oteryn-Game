@@ -28,6 +28,15 @@ Needs Docker, `openssl`, `sudo`, Rust 1.94.0 and a display for the OAuth browser
 keeps the services up for a Windows client; `LOGIN_LOCAL_KEEP=1` skips teardown (the work directory
 then holds per-run secrets).
 
+**Hosts.** The full client walk needs the Windows client on the same host as the services, because every
+port is bound to loopback. On a Windows PC run the script under WSL2 with Docker. A NAS run (for example
+Synology) stops at `READY`: it proves the server side only.
+
+**Slow hosts.** The MariaDB service gets a `start_period` of `300s` from `compose.override.yml` (the
+`wp5_s3a` healthcheck alone allows about 2 minutes of first initialisation, which a NAS can exceed and
+ends `dependency failed to start: ... db-1 is unhealthy`). Override it with
+`LOGIN_LOCAL_DB_START_PERIOD=600s bash tools/qualification/login_local/run.sh`.
+
 ## What it does
 
 1. Blocks (`BLOCKED reason=...`) without Docker, the pinned Platform checkout, or PostgreSQL 17.6.
@@ -37,7 +46,10 @@ then holds per-run secrets).
 3. Starts Platform with `APP_ENV=preproduction`, mode 33a
    (`GAME_AUTH_NATIVE_ADMISSION_UNVERIFIED_CHARACTER_OWNERSHIP=true`, world id = the node's world) and
    the issuer key file (0600, `www-data`); publishes its public key with `publishTrustedKey`.
-4. Issues the topology (`issueForPreproduction`) and reads back the uuid7 WorldId/ChannelId, publishes the
+4. Issues the topology (`issueForPreproduction`) on a retained per-run SQLite fixture, because Platform's
+   `isolatedConnection()` refuses MySQL outside `APP_ENV=testing` (the fixture lives in the 0700 work directory,
+   is bind-mounted at `/tmp/oteryn-native-topology-<hex>/` and its world/channel rows are mirrored into the
+   Platform database), and reads back the uuid7 WorldId/ChannelId, publishes the
    route (`publishRouteForPreproduction`, `native_login_enabled=true`, `tls_server_name=localhost`) and
    writes its `rt.<version>.<digest>` into the node's `route_revision`.
 5. Runs the Go gateway with `GATEWAY_NATIVE_LOGIN_ENABLED=true` and the hashed/plain service token pair.

@@ -27,7 +27,7 @@ EVENTS_SHA = '4b77071f3e44e90c64260c4db6830c5acab7f0142627d9819d2b4266c6d100a1'
 EVENT_CORRECTIONS = TOOL + 'samples/server-completion/events-rewards/corrections.json'
 EVENT_CORRECTIONS_SHA = 'a68d889f319fec1221cf86c92d4a354ca53acb301935834992ddf23fd0373902'
 SOURCE_EVENTS = TOOL + 'samples/server-completion/chosen-source-events-rewards/packet.json'
-SOURCE_EVENTS_SHA = 'ebe3c5374225470898869b14b2a3aaa51b08e04cfbcff6d01216677c26024594'
+SOURCE_EVENTS_SHA = '707a4e00047a154e1abdb72acd29875482b68d55ef8c45f8eaf08b0a4bd881ac'
 NPC = TOOL + 'samples/server-completion/npc-dialogue/candidates.json'
 NPC_SHA = 'e72477218339f8c2527706ec877750823014843566e13bc0a134ccaf6e4b2286'
 PLAN = 'content/quests/missions/completion-binding-plan.json'
@@ -95,7 +95,7 @@ def binding_plan(choices, events, npc, event_followup, source_choices, source_ev
     event_rows = {q['quest_ref']['key']: q for q in events['records']}
     source_event_rows = {q['quest_ref']['key']: q for q in source_events['records']}
     npc_rows = {(r['quest']['key'], r['stage']): r for r in npc['records']}
-    if (len(event_rows) != 68 or len(source_event_rows) != 139
+    if (len(event_rows) != 68 or len(source_event_rows) != 227
             or len(npc_rows) != len(npc['records'])):
         raise ValueError('Duplicate or missing binding owner')
     records = []
@@ -127,7 +127,7 @@ def binding_plan(choices, events, npc, event_followup, source_choices, source_ev
             'native_reward_delivery_binding': None,
             'runtime_enabled': False,
         })
-    for quest in source_choices['quests']:
+    for quest in source_choices['quests'] + source_choices['overlays']:
         owner = quest['quest']
         event = source_event_rows[owner]
         by_stage = {s['stage_key']: s for s in event['stages']}
@@ -237,7 +237,7 @@ def expected(root):
             'Stage counts are explicitly chosen occurrence counters, not donor equivalence',
             'NPC/event eligibility, level/premium/prerequisite checks and rewards require owning callers',
             'Authored and chosen-source daily recipes have no cycle-reset binding',
-            'Seven chosen-source recipes are held because terminal completion count is greater than one',
+            'Nine chosen-source recipes are held because terminal completion count is greater than one',
             'XP is retained as intent; the accepted JSON loader does not import experience',
             'This file is not the production embedded quest-state.json',
         ],
@@ -259,7 +259,7 @@ def main():
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(raw)
-    print('Completion import: 303 quests; 2441 tracks; 4374 transitions; 382 unsupported; 7 chosen-source holds; activation=false')
+    print('Completion import: 303 quests; 3148 tracks; 5081 transitions; 382 unsupported; 9 chosen-source holds; activation=false')
 
 
 if __name__ == '__main__':

@@ -14,22 +14,22 @@ class ChosenSourceEventsRewardsTest(unittest.TestCase):
         cls.packet = json.loads(PACKET.read_text(encoding="utf-8"))
 
     def test_population_and_epoch(self):
-        self.assertEqual("OTERYN_CHOSEN_SOURCE139_EVENT_REWARD_ASSOCIATIONS/v1", self.packet["schema"])
+        self.assertEqual("OTERYN_CHOSEN_SOURCE_EVENT_REWARD_ASSOCIATIONS/v2", self.packet["schema"])
         self.assertEqual(PIN, self.packet["epoch"])
         self.assertEqual(WORLD_SHA, self.packet["input_refs"]["qualified_world_sha256"])
-        self.assertEqual(139, self.packet["counts"]["quests"])
-        self.assertEqual(695, self.packet["counts"]["stages"])
-        self.assertEqual(611, self.packet["counts"]["non_dialogue_stages"])
-        self.assertEqual(301, self.packet["counts"]["reward_intents"])
-        self.assertEqual(283, self.packet["counts"]["exact_stage_target_refs"])
-        self.assertEqual(232, self.packet["counts"]["exact_reward_refs"])
-        self.assertEqual(8, self.packet["counts"]["encounter_outcome_seams"])
+        self.assertEqual(227, self.packet["counts"]["quests"])
+        self.assertEqual(1402, self.packet["counts"]["stages"])
+        self.assertEqual(1154, self.packet["counts"]["non_dialogue_stages"])
+        self.assertEqual(486, self.packet["counts"]["reward_intents"])
+        self.assertEqual(599, self.packet["counts"]["exact_stage_target_refs"])
+        self.assertEqual(353, self.packet["counts"]["exact_reward_refs"])
+        self.assertEqual(25, self.packet["counts"]["encounter_outcome_seams"])
 
     def test_no_runtime_promotion(self):
         self.assertFalse(self.packet["runtime_admitted"])
-        self.assertEqual(139, len(self.packet["records"]))
+        self.assertEqual(227, len(self.packet["records"]))
         self.assertEqual(
-            139,
+            227,
             len({row["quest_ref"]["key"] for row in self.packet["records"]}),
         )
         for quest in self.packet["records"]:
@@ -69,9 +69,9 @@ class ChosenSourceEventsRewardsTest(unittest.TestCase):
 
     def test_exact_kill_encounter_seams_are_qualified_but_not_promoted(self):
         rows = kill_binding_candidates(self.packet)
-        self.assertEqual(8, len(rows))
+        self.assertEqual(25, len(rows))
         self.assertEqual(
-            8,
+            25,
             len({
                 (
                     row["quest_ref"]["key"],
@@ -98,7 +98,7 @@ class ChosenSourceEventsRewardsTest(unittest.TestCase):
             for stage in quest["stages"]
             if stage["kind"] == "complete"
         ]
-        self.assertEqual(139, len(completion))
+        self.assertEqual(227, len(completion))
         self.assertTrue(
             all("NATIVE_COMPLETION_REDUCER_BINDING_PENDING" in stage["unresolved"]
                 for stage in completion)

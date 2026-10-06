@@ -1,3 +1,4 @@
+import copy
 import importlib.util
 import json
 import pathlib
@@ -6,7 +7,7 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 BUILDER = ROOT / "tools/content-schema/quest-authoring/samples/server-completion/chosen-source-progress/builder.py"
-CANDIDATE = ROOT / "content/quests/missions/quest-state-completion-candidate.json"
+SOURCE_STATE = ROOT / "content/quests/missions/quest-state.json"
 
 
 def load_builder():
@@ -23,17 +24,22 @@ class ChosenSourceProgressTest(unittest.TestCase):
         cls.packet = cls.builder.build(ROOT)
 
     def test_closed_source_recipe_population(self):
-        self.assertEqual(139, self.packet["summary"]["quests"])
-        self.assertEqual(695, self.packet["summary"]["tracks"])
-        self.assertEqual(695, self.packet["summary"]["transitions"])
-        self.assertEqual(139, self.packet["summary"]["completion_transitions"])
-        self.assertEqual(7, self.packet["summary"]["held_quests"])
+        summary = self.packet["summary"]
+        self.assertEqual(227, summary["quests"])
+        self.assertEqual(139, summary["new_quests"])
+        self.assertEqual(88, summary["overlay_quests"])
+        self.assertEqual(6, summary["source_lowered_skipped"])
+        self.assertEqual(1402, summary["tracks"])
+        self.assertEqual(1402, summary["transitions"])
+        self.assertEqual(227, summary["completion_transitions"])
+        self.assertEqual(9, summary["held_quests"])
         self.assertFalse(self.packet["native_admission"])
         self.assertFalse(self.packet["runtime_enabled"])
 
-    def test_seven_non_unit_terminal_recipes_remain_held(self):
+    def test_nine_non_unit_terminal_recipes_remain_held(self):
         self.assertEqual(
             {
+                "oteryn:quest.barbarian_arena_quest",
                 "oteryn:quest.bear_room_quest",
                 "oteryn:quest.behemoth_quest",
                 "oteryn:quest.demon_helmet_quest",
@@ -41,25 +47,89 @@ class ChosenSourceProgressTest(unittest.TestCase):
                 "oteryn:quest.edron_goblin_quest",
                 "oteryn:quest.opticording_sphere_quest",
                 "oteryn:quest.rift_warrior_outfits_quest",
+                "oteryn:quest.the_ancient_tombs_quest",
             },
             {row["quest"] for row in self.packet["held"]},
         )
-        self.assertTrue(all(row["reason"] == "Terminal completion count must be one" for row in self.packet["held"]))
+        self.assertTrue(
+            all(
+                row["reason"] == "Terminal completion count must be one"
+                for row in self.packet["held"]
+            )
+        )
 
-    def test_merge_extends_existing_candidate_without_activation(self):
-        source = json.loads(CANDIDATE.read_text(encoding="utf-8"))
-        incoming = {q["quest"] for q in self.packet["quests"]}
-        source = dict(source, quests=[q for q in source["quests"] if q["quest"] not in incoming])
-        merged = self.builder.merge(source, self.packet)
-        self.assertEqual(303, merged["counts"]["quests"])
-        self.assertEqual(2441, merged["counts"]["tracks"])
-        self.assertEqual(4374, merged["counts"]["transitions"])
-        self.assertEqual(139, merged["counts"]["completion"]["CHOSEN_SOURCE_TYPED_PROGRESS_ONLY"])
-        chosen = [q for q in merged["quests"] if isinstance(q["completion"], dict)
-                  and q["completion"].get("state") == "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY"]
-        self.assertEqual(139, len(chosen))
-        self.assertTrue(all(q["completion"]["runtime_enabled"] is False for q in chosen))
-        self.assertTrue(all(q["completion"]["source_equivalence"] is False for q in chosen))
+    def test_six_source_completed_quests_are_not_overlaid(self):
+        self.assertEqual(
+            {
+                "oteryn:quest.hot_cuisine_quest",
+                "oteryn:quest.oramond_quest",
+                "oteryn:quest.sam_s_old_backpack_quest",
+                "oteryn:quest.spirithunters_quest",
+                "oteryn:quest.the_ape_city_quest",
+                "oteryn:quest.the_outlaw_camp_quest",
+            },
+            {row["quest"] for row in self.packet["skipped_source_lowered"]},
+        )
+        self.assertTrue(
+            all(
+                row["source_completion_state"] == "LOWERED"
+                for row in self.packet["skipped_source_lowered"]
+            )
+        )
+
+    def test_merge_adds_overlay_without_mutating_source_prefix(self):
+        base = json.loads(SOURCE_STATE.read_text(encoding="utf-8"))
+        before = {quest["quest"]: copy.deepcopy(quest) for quest in base["quests"]}
+
+        merged = self.builder.merge(base, self.packet)
+
+        self.assertEqual(235, merged["counts"]["quests"])
+        self.assertEqual(2730, merged["counts"]["tracks"])
+        self.assertEqual(4665, merged["counts"]["transitions"])
+        self.assertEqual(231, merged["counts"]["completes"])
+        self.assertEqual(
+            {
+                "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 139,
+                "LOWERED": 6,
+                "NOT_LOWERED_MULTI_TRACK": 1,
+                "NOT_LOWERED_NO_MISSIONS": 1,
+                "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY": 88,
+            },
+            merged["counts"]["completion"],
+        )
+
+        by_owner = {quest["quest"]: quest for quest in merged["quests"]}
+        for overlay in self.packet["overlays"]:
+            key = overlay["quest"]
+            source = before[key]
+            after = by_owner[key]
+            self.assertEqual(
+                source["tracks"],
+                after["tracks"][: len(source["tracks"])],
+                key,
+            )
+            self.assertEqual(
+                source["transitions"],
+                after["transitions"][: len(source["transitions"])],
+                key,
+            )
+            self.assertEqual(
+                overlay["tracks"],
+                after["tracks"][len(source["tracks"]) :],
+                key,
+            )
+            self.assertEqual(
+                overlay["transitions"],
+                after["transitions"][len(source["transitions"]) :],
+                key,
+            )
+            self.assertEqual(
+                "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY",
+                after["completion"]["state"],
+            )
+            self.assertTrue(after["completion"]["source_progress_preserved"])
+            self.assertFalse(after["completion"]["runtime_enabled"])
+            self.assertFalse(after["completion"]["source_equivalence"])
 
 
 if __name__ == "__main__":
