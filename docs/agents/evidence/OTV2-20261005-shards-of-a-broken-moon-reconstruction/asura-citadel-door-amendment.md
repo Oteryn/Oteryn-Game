@@ -127,3 +127,70 @@ It solves the exact source shape while preserving:
 - Item durability unchanged;
 - no second persistence model;
 - no Shards-specific coordinate branch in runtime.
+
+
+## Existing-composition alternatives checked
+
+Fresh accepted-contract readback rules out the two apparent shortcuts.
+
+### Generic `tool_target` is not an arbitrary Item-definition matcher
+
+WORLD-INTERACTION-0 §6.3 defines `tool_target` only by closed `tool_kind` values such as:
+
+```text
+rope
+shovel
+pick
+machete
+```
+
+It is not an `ItemDefinitionRef` matcher. Reclassifying the Asura Citadel key as a generic tool would falsify Item semantics.
+
+### QUEST-TRIGGER-1 does not own USE-WITH
+
+QUEST-GATE-0 §4 defines trigger edges as:
+
+```text
+USE
+ON_ENTER
+ON_LEAVE
+```
+
+It does not define `USE-WITH carried Item -> map item` as a quest-trigger root.
+
+Therefore the key use cannot honestly be represented as:
+
+```text
+QUEST-TRIGGER-1(item 54262 on door) -> overlay open
+```
+
+without broadening the Quest trigger contract merely to avoid the Door/Key amendment.
+
+### WORLDINT key path is numeric-only today
+
+WORLD-INTERACTION-0 §4.3/§4.4 explicitly requires:
+
+```text
+key.key_number == door.key_binding
+key_number in 1..65535
+```
+
+and the key number is immutable ItemInstance state.
+
+Exact donor `54262` has no such source field.
+
+## Result
+
+The narrow identity-key door amendment remains the smallest owner-correct representation:
+
+```text
+Door/Key owner:
+  required_item = oteryn:item.tibia.i54262
+  optional bypass = quest_completed(Shards)
+```
+
+This avoids all three invalid alternatives:
+
+- inventing a numeric key number;
+- pretending the key is a rope/shovel/pick/machete-like tool;
+- widening QUEST-TRIGGER-1 to USE-WITH only for this door.
