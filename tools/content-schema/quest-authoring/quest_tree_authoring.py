@@ -445,7 +445,7 @@ def main():
                 differences.append(relative)
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(text, encoding='utf-8')
+            path.write_bytes(text.encode('utf-8'))
     if differences:
         parser.exit(1, 'Quest tree differences: ' + ', '.join(differences) + '\n')
     if args.source_packet:
@@ -455,7 +455,7 @@ def main():
                 parser.exit(1, 'Quest source packet differs from current inputs\n')
         else:
             args.source_packet.parent.mkdir(parents=True, exist_ok=True)
-            args.source_packet.write_text(packet, encoding='utf-8')
+            args.source_packet.write_bytes(packet.encode('utf-8'))
     print(f'Quest tree: {len(files)-4} shards; check={args.check}; family registries regenerated')
 
 

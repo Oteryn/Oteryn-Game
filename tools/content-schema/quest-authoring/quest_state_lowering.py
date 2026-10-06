@@ -394,7 +394,7 @@ def main():
             if not path.is_file() or path.read_text(encoding='utf-8') != text:
                 differences.append(relative)
         else:
-            path.write_text(text, encoding='utf-8')
+            path.write_bytes(text.encode('utf-8'))
     if differences:
         parser.exit(1, 'QuestState lowering differences: ' + ', '.join(differences) + '\n')
     counts = json.loads(files[OUTPUT])['counts']
