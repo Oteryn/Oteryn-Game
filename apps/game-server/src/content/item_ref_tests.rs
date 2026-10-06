@@ -151,6 +151,39 @@ fn region(tiles: &[Tile]) -> Vec<u8> {
     out
 }
 
+/// The pinned production key set is exactly the Item identities of every checked-in Item
+/// definition shard, in ascending byte order, so a stale pinned index fails the tests.
+#[test]
+fn the_pinned_key_set_equals_the_item_definition_shards() {
+    let mut derived: Vec<(String, String)> = shards("content/items/definitions", "items-")
+        .iter()
+        .flat_map(|shard| {
+            serde_json::from_slice::<serde_json::Value>(shard).unwrap()["records"]
+                .as_array()
+                .unwrap()
+                .clone()
+        })
+        .map(|record| record["definition"]["identity"].clone())
+        .filter(|identity| identity["family"] == "Item")
+        .map(|identity| {
+            (
+                identity["key"].as_str().unwrap().to_owned(),
+                identity["revision"].as_str().unwrap().to_owned(),
+            )
+        })
+        .collect();
+    derived.sort();
+    let pinned: Vec<(String, String)> =
+        serde_json::from_slice::<serde_json::Value>(PRODUCTION_KEYS).unwrap()["records"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| serde_json::from_value(row.clone()).unwrap())
+            .collect();
+    assert!(!derived.is_empty());
+    assert_eq!(pinned, derived);
+}
+
 /// The index of the pinned production key set gives every Item palette entry of a bundle,
 /// compiled by the World bundle compiler over the checked-in Item definitions, exactly
 /// 1 + its palette `id` (§1.6 "Bundle World").
