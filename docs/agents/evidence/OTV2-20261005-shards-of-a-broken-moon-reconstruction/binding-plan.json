@@ -816,7 +816,31 @@
         "donor_key": "donor:crystalserver@00ce02a5:item/54610",
         "name": "lit torch",
         "family_profile": "light_source",
-        "canonical_oteryn_identity": "UNRESOLVED_OWNER_ADMISSION"
+        "canonical_oteryn_identity": "PENDING_SEPARATE_ITEM_ADMISSION",
+        "alias_to_i34017": "REJECTED_BY_CROSS_SOURCE_DISTINCT_IDENTITY",
+        "identity_evidence": {
+          "fandom_item_ids": {
+            "Lit Torch (Quest)": 34017,
+            "Lit Torch (SU26)": 54610,
+            "Torch (SU26)": 54609
+          },
+          "pinned_donor": {
+            "34017": {
+              "name": "lit torch",
+              "weight": "500"
+            },
+            "54609": {
+              "name": "torch",
+              "stopduration": "1",
+              "weight": "500"
+            },
+            "54610": {
+              "name": "lit torch",
+              "weight": "500"
+            }
+          },
+          "conclusion": "SU26 quest torch is a distinct source identity even though donor attributes overlap with the old quest lit torch."
+        }
       },
       "position": {
         "x": 31920,
@@ -1072,7 +1096,7 @@
     "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
     "Magnolia special Encounter absent",
     "Blue Lava night-only predicate source conflict",
-    "Escape room topology resolved with unique high-confidence OTBM match (skeleton 31920,31360,9; SW icicles 31914,31364,9); exact north-wall tile remains a bounded 3-tile hold (31919..31921,31359,9), Rope Spot/scripted exit placement and canonical Lit Torch 54610 admission remain unresolved",
+    "Escape room topology resolved with unique high-confidence OTBM match (skeleton 31920,31360,9; SW icicles 31914,31364,9); exact north-wall tile remains a bounded 3-tile hold (31919..31921,31359,9), Rope Spot/scripted exit remains unresolved, and donor Lit Torch 54610 requires separate Item admission (do not alias to i34017)",
     "Forbidden Gardens Achievement predicate composition missing",
     "No full real-character start→reward→relog/restart E2E qualification"
   ],
@@ -1129,6 +1153,12 @@
       ],
       "uniqueness_scan": "1012 static skeletons scanned; exactly one placement had both SW icicles and an immediate north ice wall.",
       "note": "Do not promote the exact wall tile or Rope Spot until a coordinate-bearing source or runtime source binds it."
+    },
+    "su26_lit_torch": {
+      "donor_id": 54610,
+      "status": "PENDING_SEPARATE_ITEM_ADMISSION",
+      "alias_i34017": "REJECTED",
+      "reason": "Public Item IDs distinguish Lit Torch (Quest) 34017 from Lit Torch (SU26) 54610; pinned donor also carries separate Torch (SU26) 54609 -> lit 54610 identity surface."
     }
   }
 }
