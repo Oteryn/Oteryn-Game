@@ -1944,6 +1944,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-error-codes"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "oteryn-foundation"
 version = "0.1.0"
 dependencies = [
@@ -1959,6 +1966,7 @@ dependencies = [
  "cap-std",
  "ed25519-dalek",
  "oteryn-dev-client",
+ "oteryn-error-codes",
  "oteryn-foundation",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
