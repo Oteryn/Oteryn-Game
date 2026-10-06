@@ -70,6 +70,8 @@ its own independent review under the item 1 grant.
 - [x] The trust command fences the high-water directory to the run's own per-run directory, and
       the shared-guard paths are in the write grant (review round 2); it accepts only the
       retained per-run SQLite file so the directory is bound to the current run (round 3).
+- [x] Both commands refuse a symlinked or non-canonical per-run database directory before any
+      write, with a refusal test for each command (P1 4194718086).
 - [x] The mandatory decision test is answered (decision §6).
 - [x] Owner answer 1a (D831, final §2 path list) and 2a (D824) are recorded; the Synology shape of Option B is noted as not
       decided (decision §3, §7).
@@ -108,6 +110,13 @@ guard relaxation. No decision on Option B or its Synology shape.
 - Codex P1 4194207250 (status said nothing takes effect until every §7 item is answered, while §8
   relies on item 1): status, §7 and §8 now say each §7 item takes effect independently once its
   answer is recorded; 1a and 2a are in effect, items 3 and 4 grant nothing.
+- Codex P1 4194718086 on e5b6d970: the shared predicate checks only the database file, so a
+  per-run directory that is a symlink to a persistent directory passes it, and the route command
+  could publish into the target. Fixed with a run-directory check in `DisposableNativeStore` that
+  both commands call before any write: the per-run directory is not a symlink and is canonical
+  directly beneath the canonical system temporary root, and the database file is canonical inside
+  it. A refusal test covers each command. `isolatedConnection()` and the D831 path list are
+  unchanged, so answer 1a still covers the Platform write.
 
 ## Validation
 
@@ -149,7 +158,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## PR and closeout
 
 - changed-file review: two owned paths
-- unresolved review threads: none after the independent-effect reply
+- unresolved review threads: none after the run-directory reply
 - related/superseded PRs: none
 - protected auto-merge: control plane
 - merge commit/result: in PR #1871
@@ -158,7 +167,7 @@ guard relaxation. No decision on Option B or its Synology shape.
 ## Context checkpoint
 
 ```yaml
-last_progress: independent effect of §7 answers stated (P1 4194207250)
+last_progress: run-directory check for both commands (P1 4194718086)
 status: completed
 branch: cand/preprod-route-publish-auth-1
 pr: 1871
