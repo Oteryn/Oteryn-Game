@@ -2,11 +2,13 @@
 """Coded failure output of the two governance validators (ERR-TOOLS-3)."""
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import io
 import json
 import os
 from pathlib import Path
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -45,6 +47,30 @@ class CodedOutputTests(unittest.TestCase):
                     self.assertIn(f"::error title={code} {name}::bad 100%25%0Athing", lines)
                 else:
                     self.assertFalse(any(line.startswith("::error") for line in lines))
+
+    def test_core_failures_are_recoded(self) -> None:
+        module = load("tools/repository/validate_repository_policy.py")
+
+        def core_failure() -> int:
+            print("Repository policy validation failed:", file=sys.stderr)
+            print("- missing thing", file=sys.stderr)
+            return 1
+
+        err = io.StringIO()
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}), contextlib.redirect_stderr(err):
+            self.assertEqual(module.run_core(core_failure), 1)
+        lines = err.getvalue().splitlines()
+        self.assertIn("Repository policy validation failed:", lines)
+        self.assertIn("E8002 REPOSITORY_POLICY_CHECK_FAILED: missing thing", lines)
+        self.assertIn("::error title=E8002 REPOSITORY_POLICY_CHECK_FAILED::missing thing", lines)
+        self.assertNotIn("- missing thing", lines)
+
+    def test_core_success_passes_through(self) -> None:
+        module = load("tools/repository/validate_repository_policy.py")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(module.run_core(lambda: print("passed") or 0), 0)
+        self.assertEqual(out.getvalue(), "passed\n")
 
 
 if __name__ == "__main__":

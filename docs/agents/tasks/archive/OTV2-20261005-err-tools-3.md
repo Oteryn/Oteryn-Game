@@ -34,7 +34,7 @@ external_repositories: []
 `GITHUB_ACTIONS=true` also an `::error title=…::` annotation with `%`, CR and LF escaped. Pass/fail
 logic and exit codes are unchanged. Two 8xxx registry rows added. The pinned
 `validate_repository_policy_core.py` and `.github/workflows` are untouched; the core's own failure
-lines stay uncoded. Annotations carry no `file=`/`line=` because the validators' errors have no
+lines are recoded by the wrapper (`run_core` captures the core's stderr and re-reports its `- ` lines as E8002; core untouched). Annotations carry no `file=`/`line=` because the validators' errors have no
 single source location.
 
 ## Validation
@@ -42,7 +42,7 @@ single source location.
 - `python tools/agents/validate_governance.py`: pass.
 - `python tools/repository/validate_repository_policy.py`: pass.
 - `python -m unittest discover -s tools/agents/tests`: pass (54 tests).
-- `python tools/repository/test_validate_coded_output.py`: pass (2 tests, codes match registry).
+- `python tools/repository/test_validate_coded_output.py`: pass (4 tests: codes match registry, line and annotation, core failure recoded, core success pass-through).
 - `python3 -m unittest tools/errors/tests/test_registry.py`: OK (15 tests). Fixed on CP instruction: the protocol-code range assertion assumed 1001..1050 and predates N8-1 (#1824, codes 1100..1116); it now reads the protocol block range from the registry's `blocks`. Nothing else in the test changed.
 - `tools/repository/test_validate_merge_group_pg_sim.py` and `test_validate_pr_gate_pg_sim.py`: not run to completion; they need `pwsh`, which this container lacks (environment, same on unmodified `main`). Left alone.
 - `git diff --check`: pass.

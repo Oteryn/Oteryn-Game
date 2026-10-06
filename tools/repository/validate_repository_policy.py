@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import contextlib
 import importlib.util
+import io
 import json
 import os
 import re
@@ -856,7 +858,26 @@ def main() -> int:
         print("Repository policy validation failed:")
         report_failure("E8002", "REPOSITORY_POLICY_CHECK_FAILED", errors, sys.stdout)
         return 1
-    return load_core().main()
+    return run_core(load_core().main)
+
+
+def run_core(core_main) -> int:
+    """Run the pinned core and recode its `- message` failure lines."""
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        status = core_main()
+    sys.stdout.write(out.getvalue())
+    if status == 0:
+        sys.stderr.write(err.getvalue())
+        return status
+    messages = []
+    for line in err.getvalue().splitlines():
+        if line.startswith("- "):
+            messages.append(line[2:])
+        else:
+            print(line, file=sys.stderr)
+    report_failure("E8002", "REPOSITORY_POLICY_CHECK_FAILED", messages, sys.stderr)
+    return status
 
 
 if __name__ == "__main__":
