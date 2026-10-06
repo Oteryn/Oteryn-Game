@@ -27,23 +27,23 @@ fn reference(index: &ItemDefinitionIndex, key: &str, revision: &str) -> Option<u
 
 #[test]
 fn reference_is_one_plus_the_ascending_byte_order_item_index() {
-    // Byte order, not numeric order: "i10" sorts before "i2".
+    // Byte order, not numeric order: "i1000" sorts before "i200".
     let index = ItemDefinitionIndex::decode(&document(&[
-        ("oteryn:item.tibia.i10", "definition-r1"),
         ("oteryn:item.tibia.i100", "definition-r1"),
-        ("oteryn:item.tibia.i2", "definition-r2"),
+        ("oteryn:item.tibia.i1000", "definition-r1"),
+        ("oteryn:item.tibia.i200", "definition-r2"),
     ]))
     .unwrap();
     assert_eq!(
-        reference(&index, "oteryn:item.tibia.i10", "definition-r1"),
+        reference(&index, "oteryn:item.tibia.i100", "definition-r1"),
         Some(1)
     );
     assert_eq!(
-        reference(&index, "oteryn:item.tibia.i100", "definition-r1"),
+        reference(&index, "oteryn:item.tibia.i1000", "definition-r1"),
         Some(2)
     );
     assert_eq!(
-        reference(&index, "oteryn:item.tibia.i2", "definition-r2"),
+        reference(&index, "oteryn:item.tibia.i200", "definition-r2"),
         Some(3)
     );
 }
@@ -78,10 +78,10 @@ fn lookup_refuses_a_non_item_family_an_unknown_key_and_another_revision() {
 fn decode_refuses_an_unordered_duplicate_or_foreign_key_set() {
     let key = |k: &'static str| (k, "definition-r1");
     for records in [
-        vec![key("oteryn:item.tibia.i2"), key("oteryn:item.tibia.i10")],
-        vec![key("oteryn:item.tibia.i2"), key("oteryn:item.tibia.i2")],
+        vec![key("oteryn:item.tibia.i200"), key("oteryn:item.tibia.i100")],
+        vec![key("oteryn:item.tibia.i200"), key("oteryn:item.tibia.i200")],
         vec![key("no-namespace")],
-        vec![("oteryn:item.tibia.i2", "")],
+        vec![("oteryn:item.tibia.i200", "")],
     ] {
         assert!(ItemDefinitionIndex::decode(&document(&records)).is_err());
     }
