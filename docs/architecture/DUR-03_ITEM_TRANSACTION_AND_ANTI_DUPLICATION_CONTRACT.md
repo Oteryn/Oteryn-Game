@@ -1743,6 +1743,30 @@ Once accepted, in its NPC-QUEST-1 child:
   independent of the BURN lines. Every other §39 obligation is unchanged; its rows are suffixed
   `-QUEST-EXCHANGE`.
 
+**Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §16.2.5).**
+Once accepted, in its QUEST-TRIGGER-1 child, the reward chest amendment's MINT gains one terminal
+state, **retired**, for a reservation whose trigger plan was lost before its MINT committed:
+
+- **Record.** One migration adds the insert-only table `game_reward_claim_mint_retirements`, keyed
+  by the reservation's (game_session_id, command_id) and referencing it. The runtime role gets
+  `SELECT, INSERT` only, and a no-truncate trigger is added as for the 0012 tables. The 0012
+  reservation guard is unchanged.
+- **Retirement.** A new operation in `reward_claim_mint.rs` loads the reservation by its CommandRef
+  and refuses unless its `character_id` is the reconciled Character. In one transaction under the
+  current recovery fence it takes the commit pass's locks in their order and reads the receipt.
+  With a receipt it writes nothing; with none it inserts the retirement row. It spends no RL-08
+  work unit.
+- **Commit and freeze.** `commit_reward_claim_mint_noticed` and `freeze_reward_claim_mint` refuse
+  with `CapacityExceeded`, under the cause lock and before any write, when a retirement row exists
+  for their CommandRef, whatever the stored work unit count.
+- **Terminal.** A retired reservation is terminal and not pending (GAME-INTERACTION-01 successor
+  §17.2): no item, no `RewardClaim` row and no quest obligation exist for it, and the claim may be
+  taken by a fresh `USE` under a new CommandRef. The same CommandRef never commits a MINT after its
+  retirement.
+
+Every other reward MINT obligation (the §38 rewards row, D40-D42, §39.1-§39.3 as amended) is
+unchanged.
+
 **Amendment (pending on acceptance of RUNE-USE-0; `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`
 §39.3).** `reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md` §5 and §10, once
 accepted, admit for these shapes only: (a) **rune use**, the item use burn shape above under a

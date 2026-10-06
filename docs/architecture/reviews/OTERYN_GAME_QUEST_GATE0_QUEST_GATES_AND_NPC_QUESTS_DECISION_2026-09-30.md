@@ -29,7 +29,8 @@
   pointer); NPC-0 §3.4 and §11; the quest format §3.1; the GAME-INTERACTION-01 successor header
   (accepted sections for §4 edges); the relocation and world object owners proposal header (§3 and
   §4 for gates and triggers); DUR-03 §15 and §39.3 (`QuestExchangeCause`, the dialogue claim
-  source); the composition decision (exchange obligation).
+  source, and the reward MINT retirement of §16.2.5); the composition decision (exchange
+  obligation).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -610,7 +611,8 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
          identities, FND-02 never re-enqueues the reserved CommandRef, and a replacement
          GameSession fails `character_item_fence_is_current`. The reconciliation therefore
          retires it through a new DUR-03 operation in `reward_claim_mint.rs`, with a durable
-         terminal record:
+         terminal record. DUR-03 §39.3 carries this as an amendment pending on acceptance of
+         QUEST-GATE-0; the rules below are its detail:
          - **Retirement record.** QUEST-TRIGGER-1 adds one migration (its version above the
            highest on `main` at authoring) with an insert-only table
            `game_reward_claim_mint_retirements`, keyed by the reservation's (game_session_id,
@@ -631,8 +633,9 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
            before the retirement reads, so the receipt settles the child. A pass that locks
            after the retirement sees the row and writes nothing, whatever its own or the stored
            work unit count. This holds when its charge reached the RL-08 maximum.
-         - **Pending.** §17.2 counts a reservation with a retirement row as not pending, so a
-           fresh `USE` is not refused with `ClaimPending`.
+         - **Pending.** A retirement row makes the reservation provably terminal (successor
+           §17.2), so the MINT's pending check counts it as not pending and a fresh `USE` is not
+           refused with `ClaimPending`.
          - **Settlement.** A receipt means `COMMITTED`, and the claim's obligation row exists. A
            retirement row means `REJECTED`: no item, no RewardClaim and no obligation, so the
            claim stays unclaimed and a fresh `USE` (a new CommandRef) can claim it. A rerun of
@@ -726,7 +729,8 @@ encoding and a new receipt key migration. It is decided with the first accepted 
 
 1. **Amendments:** §4 "Accepted successor sections", "Roots" and "Quest child", the header and
    the brief row, in place; QUEST-STATE-0 §4 "Request" carries a pointer; WORLD-INTERACTION-0
-   §7.1 and its PUSH-1 brief row, in place.
+   §7.1 and its PUSH-1 brief row, in place; DUR-03 §39.3 carries the reward MINT retirement
+   amendment (§16.2.5), pending on acceptance of QUEST-GATE-0.
 2. **Serialization:** unchanged. Quest children run in canonical order in one sequencer slot.
 3. **Restart:**
    - Receipts and obligations are durable.
