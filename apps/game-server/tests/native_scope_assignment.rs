@@ -1,10 +1,11 @@
-//! `ReportScopeAssignmentV1` (`oteryn-game-native-runtime-status-v1` §5)
-//! producer tests against a loopback Platform stub. Every certificate is
+//! `ReportScopeAssignmentV1` and `ReportScopeRevocationV1`
+//! (`oteryn-game-native-runtime-status-v1` §5, §16.1) producer tests against a
+//! loopback Platform stub. Every certificate is
 //! generated here for the test only.
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 use oteryn_game_server::native_admission_source::scope_assignment::{
-    self as sa, Assignment, Delivery, NotDelivered, ReportConfig, RetryPolicy,
+    self as sa, Assignment, Delivery, NotDelivered, ReportConfig, RetryPolicy, Revocation,
     ScopeAssignmentDescriptor,
 };
 use oteryn_game_server::native_admission_source::{SourceError, TransientCapacity};
@@ -13,7 +14,7 @@ use rcgen::{
     ExtendedKeyUsagePurpose, IsCa, KeyPair,
 };
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -88,11 +89,23 @@ fn result(result: &str) -> Answer {
 }
 
 type Seen = Arc<Mutex<Vec<(String, Vec<u8>)>>>;
+/// Answers one authenticated `(path, raw body)`; `None` answers `401`.
+type Handler = Arc<dyn Fn(&str, &[u8]) -> Option<Answer> + Send + Sync>;
+
+/// Platform stub: each authenticated request takes the next scripted answer.
+async fn platform(pki: &Pki, script: Vec<Answer>) -> (u16, Seen) {
+    let script = Mutex::new(VecDeque::from(script));
+    serve(
+        pki,
+        Arc::new(move |_, _| script.lock().unwrap().pop_front()),
+    )
+    .await
+}
 
 /// Platform stub: only the ownership-authority identity may report (else
-/// `401`). Each authenticated request takes the next scripted answer and is
-/// recorded as `(path, raw body)`.
-async fn platform(pki: &Pki, script: Vec<Answer>) -> (u16, Seen) {
+/// `401`). Each authenticated request is recorded as `(path, raw body)` and
+/// answered by `handler`.
+async fn serve(pki: &Pki, handler: Handler) -> (u16, Seen) {
     let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
     let mut roots = rustls::RootCertStore::empty();
     roots.add(pki.ca.clone()).unwrap();
@@ -113,14 +126,13 @@ async fn platform(pki: &Pki, script: Vec<Answer>) -> (u16, Seen) {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
     let seen: Seen = Arc::default();
-    let script = Arc::new(Mutex::new(VecDeque::from(script)));
     let (allowed, record) = (pki.authority.chain[0].clone(), seen.clone());
     tokio::spawn(async move {
         while let Ok((tcp, _)) = listener.accept().await {
             let Ok(mut tls) = acceptor.accept(tcp).await else {
                 continue;
             };
-            let (allowed, record, script) = (allowed.clone(), record.clone(), script.clone());
+            let (allowed, record, handler) = (allowed.clone(), record.clone(), handler.clone());
             tokio::spawn(async move {
                 let mut raw = Vec::new();
                 let mut byte = [0u8];
@@ -142,8 +154,9 @@ async fn platform(pki: &Pki, script: Vec<Answer>) -> (u16, Seen) {
                     .peer_certificates()
                     .and_then(|c| c.first().cloned());
                 let next = if identity.as_ref() == Some(&allowed) {
+                    let next = handler(&path, &body);
                     record.lock().unwrap().push((path, body));
-                    script.lock().unwrap().pop_front()
+                    next
                 } else {
                     None
                 };
@@ -644,4 +657,611 @@ fn node_certificate_must_carry_its_configured_node_identity() {
         &CertificateDer::from(vec![0x30, 0x03, 0x02, 0x01, 0x01]),
         NODE
     ));
+}
+
+// ---------------------------------------------------------------------------
+// `ReportScopeRevocationV1` (§16.1)
+// ---------------------------------------------------------------------------
+
+/// The contract §16.1 fixture, compact.
+const REVOCATION_FIXTURE: &str = concat!(
+    r#"{"contract_version":1,"operation":"ReportScopeRevocationV1","#,
+    r#""assignment_epoch":"1","#,
+    r#""world_id":"01934f10-7c02-7001-805b-3b1122334401","#,
+    r#""channel_id":"01934f10-7c03-7001-805b-3b1122334401","#,
+    r#""ownership_generation":"4","revoked_at":"1790000100"}"#
+);
+
+const REVOCATION_MEMBERS: [&str; 7] = [
+    "contract_version",
+    "operation",
+    "assignment_epoch",
+    "world_id",
+    "channel_id",
+    "ownership_generation",
+    "revoked_at",
+];
+
+fn revocation(generation: u64) -> Revocation {
+    Revocation {
+        assignment_epoch: 1,
+        world_id: WORLD.into(),
+        channel_id: CHANNEL.into(),
+        ownership_generation: generation,
+        revoked_at: 1_790_000_100,
+    }
+}
+
+/// The valid fixture with one member's raw JSON value replaced.
+fn with_value(member: &str, raw: &str) -> String {
+    let start = REVOCATION_FIXTURE.find(&format!(r#""{member}":"#)).unwrap() + member.len() + 3;
+    let end = start + REVOCATION_FIXTURE[start..].find([',', '}']).unwrap();
+    format!(
+        "{}{raw}{}",
+        &REVOCATION_FIXTURE[..start],
+        &REVOCATION_FIXTURE[end..]
+    )
+}
+
+/// Contract §13 negative and value fixtures for `ReportScopeRevocationV1`,
+/// shared with the Platform consumer, which refuses each with `400`.
+fn revocation_refusal_fixtures() -> Vec<(String, String)> {
+    let mut fixtures: Vec<(String, String)> = vec![
+        (
+            "unknown member".into(),
+            REVOCATION_FIXTURE.replace(
+                r#""revoked_at""#,
+                r#""node_identity":"node-a.runtime-status","revoked_at""#,
+            ),
+        ),
+        (
+            "duplicate member".into(),
+            REVOCATION_FIXTURE.replace(
+                r#""revoked_at""#,
+                r#""ownership_generation":"4","revoked_at""#,
+            ),
+        ),
+        ("null member".into(), with_value("revoked_at", "null")),
+        (
+            "missing member".into(),
+            REVOCATION_FIXTURE.replace(r#","revoked_at":"1790000100""#, ""),
+        ),
+        (
+            "nested object".into(),
+            with_value(
+                "world_id",
+                r#"{"id":"01934f10-7c02-7001-805b-3b1122334401"}"#,
+            ),
+        ),
+        (
+            "over-long body".into(),
+            REVOCATION_FIXTURE.replace(
+                r#""revoked_at""#,
+                &format!(r#"{}"revoked_at""#, " ".repeat(sa::REPORT_BYTES)),
+            ),
+        ),
+    ];
+    let values: &[(&str, &[&str])] = &[
+        (
+            "operation",
+            &[
+                r#""ReportScopeAssignmentV1""#,
+                r#""ReportRuntimeStatusV1""#,
+                r#""reportscoperevocationv1""#,
+                r#""REPORTSCOPEREVOCATIONV1""#,
+                r#""ReportScopeRevocationV2""#,
+                "1",
+            ],
+        ),
+        (
+            "contract_version",
+            &[r#""1""#, "2", "0", "1.0", "1e0", "-1", "true"],
+        ),
+        (
+            "world_id",
+            &[
+                r#""01934F10-7C02-7001-805B-3B1122334401""#,
+                r#""{01934f10-7c02-7001-805b-3b1122334401}""#,
+                r#""01934f107c027001805b3b1122334401""#,
+                r#""01934f10-7c02-4001-805b-3b1122334401""#,
+                r#""01934f10-7c02-7001-805b-3b112233440""#,
+                r#""01934f10-7c02-7001-805b-3b112233440100""#,
+                "1934",
+            ],
+        ),
+        (
+            "channel_id",
+            &[
+                r#""01934F10-7C03-7001-805B-3B1122334401""#,
+                r#""{01934f10-7c03-7001-805b-3b1122334401}""#,
+                r#""01934f107c037001805b3b1122334401""#,
+                r#""01934f10-7c03-4001-805b-3b1122334401""#,
+                r#""01934f10-7c03-7001-805b-3b112233440""#,
+                r#""01934f10-7c03-7001-805b-3b112233440100""#,
+                "1934",
+            ],
+        ),
+    ];
+    let counter = [
+        r#""0""#,
+        r#""04""#,
+        r#""+4""#,
+        r#""-4""#,
+        r#""4.0""#,
+        r#""4e0""#,
+        r#"" 4""#,
+        r#""4 ""#,
+        r#""18446744073709551616""#,
+        "4",
+    ];
+    let time = [
+        r#""-1""#,
+        r#""01790000100""#,
+        r#""+1790000100""#,
+        r#""1790000100.0""#,
+        r#""1.79e9""#,
+        r#"" 1790000100""#,
+        r#""18446744073709551616""#,
+        "1790000100",
+    ];
+    let mut push = |member: &str, raws: &[&str]| {
+        for raw in raws {
+            fixtures.push((format!("{member}={raw}"), with_value(member, raw)));
+        }
+    };
+    for (member, raws) in values {
+        push(member, raws);
+    }
+    push("assignment_epoch", &counter);
+    push("ownership_generation", &counter);
+    push("revoked_at", &time);
+    fixtures
+}
+
+/// A deliberately lenient reading of a fixture as encoder input: numbers and
+/// strings are both accepted and parsed loosely, so that as many fixtures as
+/// possible reach the encoder.
+fn lenient_revocation(body: &str) -> Option<Revocation> {
+    let value: serde_json::Value = serde_json::from_str(body).ok()?;
+    let object = value.as_object()?;
+    let text = |member: &str| match object.get(member)? {
+        serde_json::Value::String(text) => Some(text.trim().to_owned()),
+        serde_json::Value::Number(number) => Some(number.to_string()),
+        _ => None,
+    };
+    Some(Revocation {
+        assignment_epoch: text("assignment_epoch")?
+            .trim_start_matches('+')
+            .parse()
+            .ok()?,
+        world_id: text("world_id")?,
+        channel_id: text("channel_id")?,
+        ownership_generation: text("ownership_generation")?
+            .trim_start_matches('+')
+            .parse()
+            .ok()?,
+        revoked_at: text("revoked_at")?.trim_start_matches('+').parse().ok()?,
+    })
+}
+
+#[test]
+fn revocation_is_the_exact_contract_wire() {
+    let body = sa::encode_revocation(&revocation(4)).unwrap();
+    assert_eq!(body, REVOCATION_FIXTURE);
+    // The exact member set: no node identity, nothing nested.
+    let value: serde_json::Value = serde_json::from_str(&body).unwrap();
+    let object = value.as_object().unwrap();
+    let mut members: Vec<&str> = object.keys().map(String::as_str).collect();
+    members.sort_unstable();
+    let mut expected = REVOCATION_MEMBERS.to_vec();
+    expected.sort_unstable();
+    assert_eq!(members, expected);
+    assert!(object.values().all(|v| v.is_string() || v.is_number()));
+    // The valid fixture read back re-encodes to itself.
+    assert_eq!(
+        sa::encode_revocation(&lenient_revocation(REVOCATION_FIXTURE).unwrap()).unwrap(),
+        REVOCATION_FIXTURE
+    );
+}
+
+#[test]
+fn revocation_is_byte_identical_after_a_restart() {
+    // Only the durable row and the declared epoch feed the body: a fresh
+    // process deriving it again produces the same bytes.
+    let first = sa::encode_revocation(&revocation(4)).unwrap();
+    let restarted = sa::encode_revocation(&Revocation {
+        assignment_epoch: 1,
+        world_id: String::from(WORLD),
+        channel_id: String::from(CHANNEL),
+        ownership_generation: 4,
+        revoked_at: 1_790_000_100,
+    })
+    .unwrap();
+    assert_eq!(first, restarted);
+}
+
+#[test]
+fn revocation_refusal_fixtures_are_refused_by_construction() {
+    let fixtures = revocation_refusal_fixtures();
+    assert!(fixtures.len() > 50);
+    for (name, body) in &fixtures {
+        assert_ne!(body, REVOCATION_FIXTURE, "{name}");
+        if name == "over-long body" {
+            assert!(body.len() > sa::REPORT_BYTES);
+        }
+        // Whatever a lenient reader makes of the fixture, the encoder either
+        // refuses it or emits other bytes: it cannot emit the fixture.
+        if let Some(input) = lenient_revocation(body)
+            && let Ok(encoded) = sa::encode_revocation(&input)
+        {
+            assert_ne!(&encoded, body, "{name}");
+        }
+    }
+    // The encoder's output for every grammar-valid input is canonical, so no
+    // fixture is among the bodies the encoder emits.
+    for generation in [1, 4, 10, u64::MAX] {
+        for epoch in [1, 4, u64::MAX] {
+            let mut r = revocation(generation);
+            r.assignment_epoch = epoch;
+            let encoded = sa::encode_revocation(&r).unwrap();
+            assert!(fixtures.iter().all(|(_, body)| body != &encoded));
+        }
+    }
+}
+
+#[test]
+fn revocation_outside_the_grammar_is_refused_before_sending() {
+    let cases: [fn(&mut Revocation); 7] = [
+        |r| r.assignment_epoch = 0,
+        |r| r.ownership_generation = 0,
+        |r| r.world_id = "01934F10-7C02-7001-805B-3B1122334401".into(),
+        |r| r.world_id = "{01934f10-7c02-7001-805b-3b1122334401}".into(),
+        |r| r.channel_id = "01934f10-7c03-4001-805b-3b1122334401".into(),
+        |r| r.channel_id = WORLD.into(),
+        |r| r.revoked_at = -1,
+    ];
+    for mutate in cases {
+        let mut r = revocation(4);
+        mutate(&mut r);
+        assert!(matches!(
+            sa::encode_revocation(&r),
+            Err(SourceError::InvalidInput)
+        ));
+    }
+}
+
+#[test]
+fn revocation_response_decoder_accepts_only_the_exact_success_bodies() {
+    assert_eq!(
+        sa::decode_revocation_response(br#"{"contract_version":1,"result":"accepted"}"#).unwrap(),
+        Delivery::Accepted
+    );
+    assert_eq!(
+        sa::decode_revocation_response(br#"{"contract_version":1,"result":"superseded"}"#).unwrap(),
+        Delivery::Superseded
+    );
+}
+
+/// One test per contract §13 response shape: each is "not delivered".
+macro_rules! revocation_response_refused {
+    ($($name:ident: [$($raw:expr),+ $(,)?];)+) => {$(
+        #[test]
+        fn $name() {
+            for raw in [$(&$raw[..]),+] {
+                assert!(
+                    sa::decode_revocation_response(raw).is_err(),
+                    "{}",
+                    String::from_utf8_lossy(raw)
+                );
+            }
+        }
+    )+};
+}
+
+revocation_response_refused! {
+    revocation_response_with_an_unknown_member_is_not_delivered: [
+        br#"{"contract_version":1,"result":"accepted","extra":1}"#,
+        br#"{"contract_version":1,"result":"accepted","node_identity":"node-a"}"#,
+    ];
+    revocation_response_with_a_duplicate_member_is_not_delivered: [
+        br#"{"contract_version":1,"result":"accepted","result":"accepted"}"#,
+        br#"{"contract_version":1,"contract_version":1,"result":"accepted"}"#,
+    ];
+    revocation_response_with_a_null_member_is_not_delivered: [
+        br#"{"contract_version":1,"result":null}"#,
+        br#"{"contract_version":null,"result":"accepted"}"#,
+    ];
+    revocation_response_without_contract_version_is_not_delivered: [
+        br#"{"result":"accepted"}"#,
+    ];
+    revocation_response_without_result_is_not_delivered: [
+        br#"{"contract_version":1}"#,
+    ];
+    revocation_response_with_a_wrong_contract_version_is_not_delivered: [
+        br#"{"contract_version":"1","result":"accepted"}"#,
+        br#"{"contract_version":2,"result":"accepted"}"#,
+        br#"{"contract_version":1.0,"result":"accepted"}"#,
+        br#"{"contract_version":0,"result":"accepted"}"#,
+    ];
+    revocation_response_with_a_wrong_result_is_not_delivered: [
+        br#"{"contract_version":1,"result":"refreshed"}"#,
+        br#"{"contract_version":1,"result":"Accepted"}"#,
+        br#"{"contract_version":1,"result":"rejected"}"#,
+        br#"{"contract_version":1,"result":1}"#,
+        br#"{"contract_version":1,"result":["accepted"]}"#,
+        br#"{"contract_version":1,"result":true}"#,
+    ];
+    revocation_response_that_is_not_an_object_is_not_delivered: [
+        b"",
+        b"null",
+        br#""accepted""#,
+        b"1",
+        br#"[{"contract_version":1,"result":"accepted"}]"#,
+    ];
+    revocation_response_with_trailing_bytes_is_not_delivered: [
+        b"{\"contract_version\":1,\"result\":\"accepted\"}\n",
+        br#"{"contract_version":1,"result":"accepted"} "#,
+        br#"{"contract_version":1,"result":"accepted"}{}"#,
+    ];
+}
+
+#[derive(Default)]
+struct Ledger {
+    /// Latest entry per scope: `(epoch, generation, raw body)`.
+    latest: BTreeMap<(String, String), (u64, u64, Vec<u8>)>,
+    /// Number of state changes.
+    changes: usize,
+}
+
+/// A Platform consumer ordering assignment and revocation reports of one
+/// scope as a single sequence by `(assignment_epoch, ownership_generation)`
+/// (§16.1). Without `revocations` it has no revocation endpoint (`404`).
+fn ordering_platform(revocations: bool) -> (Handler, Arc<Mutex<Ledger>>) {
+    let ledger = Arc::new(Mutex::new(Ledger::default()));
+    let state = ledger.clone();
+    let handler: Handler = Arc::new(move |path, body| {
+        if path != sa::PATH && !(revocations && path == sa::REVOCATION_PATH) {
+            return Some(answer("404 Not Found", ""));
+        }
+        let Ok(value) = serde_json::from_slice::<serde_json::Value>(body) else {
+            return Some(answer("400 Bad Request", ""));
+        };
+        let member = |name: &str| value[name].as_str().map(str::to_owned);
+        let counter = |name: &str| member(name).and_then(|v| v.parse::<u64>().ok());
+        let (Some(world), Some(channel), Some(epoch), Some(generation)) = (
+            member("world_id"),
+            member("channel_id"),
+            counter("assignment_epoch"),
+            counter("ownership_generation"),
+        ) else {
+            return Some(answer("400 Bad Request", ""));
+        };
+        let mut ledger = state.lock().unwrap();
+        let next = match ledger.latest.get(&(world.clone(), channel.clone())) {
+            Some((e, g, _)) if (*e, *g) > (epoch, generation) => result("superseded"),
+            Some((e, g, latest)) if (*e, *g) == (epoch, generation) => {
+                if latest == body {
+                    result("accepted")
+                } else {
+                    answer("409 Conflict", "")
+                }
+            }
+            _ => {
+                ledger
+                    .latest
+                    .insert((world, channel), (epoch, generation, body.to_vec()));
+                ledger.changes += 1;
+                result("accepted")
+            }
+        };
+        Some(next)
+    });
+    (handler, ledger)
+}
+
+#[test]
+fn platform_orders_a_revocation_after_the_assignment_it_revokes() {
+    block_on(async {
+        let pki = pki();
+        let (handler, ledger) = ordering_platform(true);
+        let (port, seen) = serve(&pki, handler).await;
+        let d = descriptor(&pki, port, &pki.authority).unwrap();
+        // An assignment at G-1, then the revocation at G.
+        let report = sa::report(&d, &assignment(3), fast()).await;
+        assert_eq!(report.result, Ok(Delivery::Accepted));
+        let report = sa::report_revocation(&d, &revocation(4), fast()).await;
+        assert_eq!(
+            (report.result, report.attempts),
+            (Ok(Delivery::Accepted), 1)
+        );
+        {
+            let seen = seen.lock().unwrap();
+            assert_eq!(seen[1].0, sa::REVOCATION_PATH);
+            assert_eq!(seen[1].1, REVOCATION_FIXTURE.as_bytes());
+        }
+        let changes = ledger.lock().unwrap().changes;
+        assert_eq!(changes, 2);
+        // A byte-identical replay of the latest revocation: accepted, no
+        // state change.
+        let report = sa::report_revocation(&d, &revocation(4), fast()).await;
+        assert_eq!(report.result, Ok(Delivery::Accepted));
+        assert_eq!(ledger.lock().unwrap().changes, changes);
+        // Lower generations are superseded.
+        let report = sa::report_revocation(&d, &revocation(3), fast()).await;
+        assert_eq!(report.result, Ok(Delivery::Superseded));
+        let report = sa::report(&d, &assignment(3), fast()).await;
+        assert_eq!(report.result, Ok(Delivery::Superseded));
+        // An assignment, or another revocation time, at the revocation's key
+        // conflicts; `409` is definite.
+        let report = sa::report(&d, &assignment(4), fast()).await;
+        assert_eq!(
+            (report.result, report.attempts),
+            (Err(NotDelivered::Conflict), 1)
+        );
+        let mut other = revocation(4);
+        other.revoked_at += 1;
+        let report = sa::report_revocation(&d, &other, fast()).await;
+        assert_eq!(
+            (report.result, report.attempts),
+            (Err(NotDelivered::Conflict), 1)
+        );
+        let ledger = ledger.lock().unwrap();
+        assert_eq!(ledger.changes, changes);
+        let latest = ledger.latest.values().next().unwrap();
+        assert_eq!(latest.2, REVOCATION_FIXTURE.as_bytes());
+    });
+}
+
+#[test]
+fn a_revocation_conflicts_with_an_assignment_at_its_key() {
+    block_on(async {
+        let pki = pki();
+        let (handler, ledger) = ordering_platform(true);
+        let (port, _) = serve(&pki, handler).await;
+        let d = descriptor(&pki, port, &pki.authority).unwrap();
+        let report = sa::report(&d, &assignment(4), fast()).await;
+        assert_eq!(report.result, Ok(Delivery::Accepted));
+        let report = sa::report_revocation(&d, &revocation(4), fast()).await;
+        assert_eq!(
+            (report.result, report.attempts),
+            (Err(NotDelivered::Conflict), 1)
+        );
+        // Only an assignment above the revocation makes the scope routable.
+        let report = sa::report_revocation(&d, &revocation(5), fast()).await;
+        assert_eq!(report.result, Ok(Delivery::Accepted));
+        let report = sa::report(&d, &assignment(6), fast()).await;
+        assert_eq!(report.result, Ok(Delivery::Accepted));
+        assert_eq!(ledger.lock().unwrap().changes, 3);
+    });
+}
+
+#[test]
+fn a_platform_without_the_revocation_endpoint_stops_the_report_at_once() {
+    block_on(async {
+        let pki = pki();
+        let (handler, ledger) = ordering_platform(false);
+        let (port, seen) = serve(&pki, handler).await;
+        let d = descriptor(&pki, port, &pki.authority).unwrap();
+        let report = sa::report_revocation(&d, &revocation(4), fast()).await;
+        assert_eq!(
+            (report.result, report.attempts),
+            (Err(NotDelivered::UnexpectedStatus), 1)
+        );
+        assert!(NotDelivered::UnexpectedStatus.definite());
+        assert_eq!(seen.lock().unwrap().len(), 1);
+        assert_eq!(ledger.lock().unwrap().changes, 0);
+    });
+}
+
+#[test]
+fn revocation_statuses_follow_the_section_4_list() {
+    block_on(async {
+        let pki = pki();
+        let script = vec![
+            answer("400 Bad Request", ""),
+            answer("401 Unauthorized", ""),
+            answer("409 Conflict", ""),
+            answer("429 Too Many Requests", ""),
+            answer("503 Service Unavailable", ""),
+            answer("404 Not Found", ""),
+            answer("500 Internal Server Error", ""),
+            answer("200 OK", r#"{"contract_version":1,"result":"refreshed"}"#),
+            answer("503 Service Unavailable", "busy"),
+            // The assignment's own handling of a status outside §4 is
+            // unchanged.
+            answer("404 Not Found", ""),
+        ];
+        let (port, _) = platform(&pki, script).await;
+        let d = descriptor(&pki, port, &pki.authority).unwrap();
+        let capacity = TransientCapacity::new();
+        let body = sa::encode_revocation(&revocation(4)).unwrap();
+        for expected in [
+            NotDelivered::Malformed,
+            NotDelivered::Unauthenticated,
+            NotDelivered::Conflict,
+            NotDelivered::RateLimited,
+            NotDelivered::Unavailable,
+            NotDelivered::UnexpectedStatus,
+            NotDelivered::UnexpectedStatus,
+            NotDelivered::InvalidResponse,
+            NotDelivered::InvalidResponse,
+        ] {
+            assert_eq!(
+                sa::deliver_revocation(&d, &capacity, &body).await,
+                Err(expected)
+            );
+        }
+        let body = sa::encode(&assignment(3)).unwrap();
+        assert_eq!(
+            sa::deliver(&d, &capacity, &body).await,
+            Err(NotDelivered::Unavailable)
+        );
+    });
+}
+
+#[test]
+fn revocation_response_over_the_bound_is_refused_in_transport_for_every_status() {
+    block_on(async {
+        let pki = pki();
+        let oversized = " ".repeat(sa::RESPONSE_BYTES + 1);
+        let script = vec![
+            answer("200 OK", &oversized),
+            answer("409 Conflict", &oversized),
+            answer("404 Not Found", &oversized),
+            answer("200 OK", &" ".repeat(sa::RESPONSE_BYTES)),
+        ];
+        let (port, _) = platform(&pki, script).await;
+        let d = descriptor(&pki, port, &pki.authority).unwrap();
+        let capacity = TransientCapacity::new();
+        let body = sa::encode_revocation(&revocation(4)).unwrap();
+        for _ in 0..3 {
+            assert_eq!(
+                sa::deliver_revocation(&d, &capacity, &body).await,
+                Err(NotDelivered::Unavailable)
+            );
+        }
+        // At the bound the body reaches the exact decoder.
+        assert_eq!(
+            sa::deliver_revocation(&d, &capacity, &body).await,
+            Err(NotDelivered::InvalidResponse)
+        );
+    });
+}
+
+#[test]
+fn transient_revocation_failures_retry_with_identical_bytes() {
+    block_on(async {
+        let pki = pki();
+        let script = vec![
+            answer("503 Service Unavailable", ""),
+            answer("429 Too Many Requests", ""),
+            result("accepted"),
+        ];
+        let (port, seen) = platform(&pki, script).await;
+        let d = descriptor(&pki, port, &pki.authority).unwrap();
+        let report = sa::report_revocation(&d, &revocation(4), fast()).await;
+        assert_eq!(
+            (report.result, report.attempts),
+            (Ok(Delivery::Accepted), 3)
+        );
+        let seen = seen.lock().unwrap();
+        assert!(seen.iter().all(
+            |(path, body)| path == sa::REVOCATION_PATH && body == REVOCATION_FIXTURE.as_bytes()
+        ));
+    });
+}
+
+#[test]
+fn revocation_outside_the_grammar_is_not_sent() {
+    block_on(async {
+        let pki = pki();
+        let (port, seen) = platform(&pki, vec![result("accepted")]).await;
+        let d = descriptor(&pki, port, &pki.authority).unwrap();
+        let report = sa::report_revocation(&d, &revocation(0), fast()).await;
+        assert_eq!(
+            (report.result, report.attempts),
+            (Err(NotDelivered::InvalidReport), 0)
+        );
+        assert!(seen.lock().unwrap().is_empty());
+    });
 }

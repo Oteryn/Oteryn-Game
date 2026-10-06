@@ -144,7 +144,10 @@ async fn exchange_status(
         tls.write_all(request.as_bytes()).await?;
         if operation == Operation::ReadPremiumSnapshotV1 {
             read_response_bounded(&mut tls, require_ok, 1024, true).await
-        } else if operation == Operation::ReportScopeAssignmentV1 {
+        } else if matches!(
+            operation,
+            Operation::ReportScopeAssignmentV1 | Operation::ReportScopeRevocationV1
+        ) {
             // `NRS-RESPONSE-BYTES` bounds the body of every status, not only 200.
             read_response_bounded(
                 &mut tls,
