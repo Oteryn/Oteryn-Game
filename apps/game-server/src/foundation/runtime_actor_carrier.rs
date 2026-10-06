@@ -2975,6 +2975,8 @@ impl ChannelActorCarrier {
         reservation: PlayerActorReservation,
     ) -> Result<ExactActorRef, CarrierError> {
         let index = self.validate_ref(continuity, reservation.actor_ref)?;
+        // SPELL-LOCK-2 §1.3: a slot reserved by a pending spell batch refuses retryably.
+        self.assert_slot_spell_unreserved(index)?;
         match &mut self.slots[index] {
             Slot::Occupied {
                 generation,
@@ -4568,6 +4570,10 @@ impl ChannelActorCarrier {
         successor: GameSessionId,
         lease: CharacterLease,
     ) -> Result<(), CarrierError> {
+        // SPELL-LOCK-2 §1.3: a slot reserved by a pending spell batch keeps its session binding
+        // until that batch installs or releases; the rebind refuses retryably before any write.
+        let index = self.player_slot_index(continuity, actor_ref, terminal)?;
+        self.assert_slot_spell_unreserved(index)?;
         let authority = self.attacker_authority_mut(continuity, actor_ref, terminal)?;
         // Only a newer lease of the same Character, under a different session, is a successor.
         match authority.lease {
@@ -4582,7 +4588,6 @@ impl ChannelActorCarrier {
             lease: Some(lease),
             fence: None,
         };
-        let index = self.player_slot_index(continuity, actor_ref, terminal)?;
         if let Slot::Occupied {
             game_session_id,
             lifecycle,

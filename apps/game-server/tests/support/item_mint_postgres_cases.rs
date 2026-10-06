@@ -12,7 +12,6 @@ use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentReceipt, AssignmentRequest, BootstrapSecret,
     ControlActor, LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
 };
-use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::durability::{DurabilityError, DurabilityRoot};
 use crate::foundation::{
     CarrierError, ChannelId, CombatDeathFixture, CreatureDeathOccurrenceKey, MovementLocalPosition,

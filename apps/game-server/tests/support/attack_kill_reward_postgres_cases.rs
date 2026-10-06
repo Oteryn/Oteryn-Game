@@ -46,11 +46,14 @@ use sqlx::{Connection, Executor};
 /// SPELL-LOCK-2 §1.2: the settle holds the death Channel's lane; a fresh lane stands in for the
 /// Channel runtime this PostgreSQL case does not own.
 async fn settle_on_fresh_lane<const N: usize>(
-    facts: ProjectedCreatureDeathFacts,
-    session: &DurabilitySession<'_, '_, '_>,
-    slot: &mut RevisionSlot,
-    input: CreatureDeathRewardInput<N>,
-) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
+    facts: crate::combat::ProjectedCreatureDeathFacts,
+    session: &crate::combat::DurabilitySession<'_, '_, '_>,
+    slot: &mut crate::durability::character_revision_sequencer::RevisionSlot,
+    input: crate::combat::CreatureDeathRewardInput<N>,
+) -> Result<
+    crate::combat::CreatureDeathRewardOutcome,
+    crate::combat::CreatureDeathRewardAdmissionError,
+> {
     let permit =
         SpellLanePermit::of_fresh_lane(facts.death.world_id(), facts.death.channel_id()).await;
     settle_creature_death_rewards(&permit, facts, session, slot, input).await

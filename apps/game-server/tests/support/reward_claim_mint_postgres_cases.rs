@@ -538,9 +538,7 @@ impl Harness {
             .await?;
         self.root
             .commit_item_transfer(
-                &SpellLanePermit::of_fresh_scope((fence).runtime_scope)
-                    .await
-                    .map_err(debug)?,
+                &SpellLanePermit::of_fresh_scope(fence.runtime_scope).await?,
                 authority,
                 &self.node,
                 fence,
@@ -1938,7 +1936,7 @@ fn concurrent_claims_mint_once_and_serialize_with_pickup_and_xp() -> TestResult 
             .map_err(debug)?;
         let (moved, minted) = join_two(
             harness.root.commit_item_transfer(
-                &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope)
                     .await
                     .map_err(debug)?,
                 &first,

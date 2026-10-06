@@ -633,6 +633,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.clear_target();
                 continue;
             }
+            // SPELL-LOCK-2 §1.3: while the attacker's own slot is reserved by a pending spell
+            // batch, its swing defers to a later turn; the held target and swing clock stay.
+            if runtime.assert_actor_spell_unreserved(entry.actor).is_err() {
+                continue;
+            }
             let character_facts = player.character_facts();
             let Some(facts) = target_facts(&runtime, room, entry.actor, entry.session, target, now)
             else {

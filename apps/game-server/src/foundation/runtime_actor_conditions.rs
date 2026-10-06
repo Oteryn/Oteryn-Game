@@ -441,6 +441,9 @@ impl ChannelRuntimeV1 {
         commit_vitals: impl FnOnce(&Self) -> Option<(R, bool)>,
     ) -> Result<Option<R>, ConditionOwnerError> {
         let index = self.condition_index(plan.actor, plan.session)?;
+        // SPELL-LOCK-2 §1.3: as in `commit_actor_condition`.
+        self.assert_actor_spell_unreserved(plan.actor)
+            .map_err(ConditionOwnerError::Actor)?;
         let current = self.condition_state(index);
         if plan.receipt.at > now.get() || now.get() < current.at {
             return Err(ConditionOwnerError::TimeMismatch);
@@ -490,6 +493,9 @@ impl ChannelRuntimeV1 {
         commit: impl FnOnce(&Self) -> Option<(R, bool)>,
     ) -> Result<Option<R>, ConditionOwnerError> {
         let index = self.condition_index(actor, Some(session))?;
+        // SPELL-LOCK-2 §1.3: as in `commit_actor_condition`.
+        self.assert_actor_spell_unreserved(actor)
+            .map_err(ConditionOwnerError::Actor)?;
         let revision = self
             .condition_state(index)
             .revision
@@ -532,6 +538,10 @@ impl ChannelRuntimeV1 {
         now: SemanticTimeMicros,
     ) -> Result<bool, ConditionOwnerError> {
         let index = self.condition_index(plan.actor, plan.session)?;
+        // SPELL-LOCK-2 §1.3: a slot reserved by a pending spell batch changes only through that
+        // batch's install or release; this commit refuses retryably until then.
+        self.assert_actor_spell_unreserved(plan.actor)
+            .map_err(ConditionOwnerError::Actor)?;
         let current = self.condition_state(index);
         if plan.receipt.at > now.get() || now.get() < current.at {
             return Err(ConditionOwnerError::TimeMismatch);
@@ -696,6 +706,9 @@ impl ChannelRuntimeV1 {
                 return Err(ConditionOwnerError::FactsMismatch);
             }
             let index = self.condition_index(plan.actor, None)?;
+            // SPELL-LOCK-2 §1.3: as in `commit_actor_condition`, before any slot is written.
+            self.assert_actor_spell_unreserved(plan.actor)
+                .map_err(ConditionOwnerError::Actor)?;
             if successors.iter().any(|(old, _)| *old == index) {
                 return Err(ConditionOwnerError::FactsMismatch);
             }

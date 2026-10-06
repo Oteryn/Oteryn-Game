@@ -540,3 +540,135 @@ pub(crate) async fn commit_spell_owner_transaction<T: Send + 'static>(
         physical_transaction: pending.physical_transaction,
     })
 }
+
+/// ARCH-SPELL-LOCK-2 §1.2 and §1.6: the lane, its permit and the commit window.
+#[cfg(test)]
+mod lane_tests {
+    use super::*;
+
+    fn identity(last: u8) -> [u8; 16] {
+        [0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, last]
+    }
+
+    fn lane(channel: u8) -> SpellLane {
+        let (Ok(world), Ok(channel)) = (
+            WorldId::decode(&identity(9)),
+            ChannelId::decode(&identity(channel)),
+        ) else {
+            unreachable!("the fixed identities are valid UUIDv7 bytes")
+        };
+        SpellLane::new(world, channel)
+    }
+
+    fn block_on<F: std::future::Future>(future: F) -> F::Output {
+        match tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+        {
+            Ok(runtime) => runtime.block_on(future),
+            Err(error) => unreachable!("a current-thread runtime builds: {error}"),
+        }
+    }
+
+    fn park(attempt: u32) -> Box<dyn Any + Send> {
+        Box::new(attempt)
+    }
+
+    async fn permit(lane: &SpellLane) -> SpellLanePermit {
+        match lane.acquire().await {
+            Ok(permit) => permit,
+            Err(_) => panic!("the lane holds no parked attempt"),
+        }
+    }
+
+    #[test]
+    fn a_dropped_window_parks_its_attempt_and_only_the_resolution_yields_a_permit() {
+        block_on(async {
+            let lane = lane(41);
+            let mut permit = permit(&lane).await;
+            drop(permit.open_commit_window(7_u32, park));
+            assert!(permit.has_unresolved());
+            assert!(matches!(
+                permit.check_channel(lane.world_id(), lane.channel_id()),
+                Err(DurabilityError::Unavailable)
+            ));
+            drop(permit);
+            let Err(unresolved) = lane.acquire().await else {
+                panic!("a parked attempt blocks the plain permit")
+            };
+            let (permit, attempt) = unresolved.into_resolution();
+            assert_eq!(attempt.downcast_ref::<u32>(), Some(&7));
+            assert!(!permit.has_unresolved());
+            drop(permit);
+            assert!(lane.acquire().await.is_ok());
+        });
+    }
+
+    #[test]
+    fn an_explicit_park_holds_the_attempt_like_a_drop() {
+        block_on(async {
+            let lane = lane(41);
+            let mut permit = permit(&lane).await;
+            let mut window = permit.open_commit_window(3_u32, park);
+            window.mark_already_committed();
+            let Err(window) = window.reclaim_uncommitted() else {
+                panic!("a committed attempt is never reclaimed")
+            };
+            window.park();
+            assert!(permit.has_unresolved());
+        });
+    }
+
+    #[test]
+    fn install_release_and_uncommitted_reclaim_consume_the_window_without_parking() {
+        block_on(async {
+            let lane = lane(41);
+            let mut permit = permit(&lane).await;
+            assert_eq!(permit.open_commit_window(1_u32, park).install(), 1);
+            assert_eq!(permit.open_commit_window(2_u32, park).release(), 2);
+            let window = permit.open_commit_window(3_u32, park);
+            assert!(!window.commit_called());
+            assert!(matches!(window.reclaim_uncommitted(), Ok(3)));
+            assert!(!permit.has_unresolved());
+        });
+    }
+
+    #[test]
+    fn a_permit_for_another_channel_is_refused() {
+        block_on(async {
+            let own = lane(41);
+            let other = lane(42);
+            let permit = permit(&own).await;
+            assert!(matches!(
+                permit.check_channel(other.world_id(), other.channel_id()),
+                Err(DurabilityError::InvalidStoredState)
+            ));
+            assert!(matches!(
+                permit.check_stored_channel(
+                    other.world_id().as_bytes().as_slice(),
+                    other.channel_id().as_bytes().as_slice()
+                ),
+                Err(DurabilityError::InvalidStoredState)
+            ));
+            assert!(matches!(
+                permit.check_channel(own.world_id(), own.channel_id()),
+                Ok(())
+            ));
+        });
+    }
+
+    #[test]
+    fn the_lane_admits_one_holder_and_a_reload_drops_the_parked_attempt() {
+        block_on(async {
+            let lane = lane(41);
+            let mut held = permit(&lane).await;
+            let waiting =
+                tokio::time::timeout(std::time::Duration::from_millis(20), lane.acquire());
+            assert!(waiting.await.is_err(), "a second holder waits for the lane");
+            drop(held.open_commit_window(5_u32, park));
+            drop(held);
+            lane.clear_after_reload().await;
+            assert!(lane.acquire().await.is_ok());
+        });
+    }
+}

@@ -560,9 +560,7 @@ impl Harness {
         match self
             .root
             .commit_item_transfer(
-                &SpellLanePermit::of_fresh_scope((fence).runtime_scope)
-                    .await
-                    .map_err(debug)?,
+                &SpellLanePermit::of_fresh_scope(fence.runtime_scope).await?,
                 authority,
                 &self.node,
                 fence,
@@ -588,9 +586,7 @@ impl Harness {
             .await?;
         self.root
             .commit_map_item_mint(
-                &SpellLanePermit::of_fresh_scope((fence).runtime_scope)
-                    .await
-                    .map_err(debug)?,
+                &SpellLanePermit::of_fresh_scope(fence.runtime_scope).await?,
                 authority,
                 &self.node,
                 fence,
