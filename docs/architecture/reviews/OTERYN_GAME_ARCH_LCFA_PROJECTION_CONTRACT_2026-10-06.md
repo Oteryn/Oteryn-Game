@@ -102,9 +102,13 @@
    - A higher epoch, whether from a snapshot or a watermark, invalidates every entry of a lower
      epoch in the same transaction.
    - A snapshot for an unknown `AccountId` is stored and authorizes nothing.
-3. **Feed liveness.** The feed is `live` while both hold:
+3. **Feed liveness.** A watermark is refused with `400` and not stored when `complete_through`
+   is after its `observed_at`, or when either value is more than `clock_uncertainty` after
+   Platform's `now` (a Game clock ahead of Platform). The feed is `live` while all hold:
    - `now - complete_through + clock_uncertainty <= S`, with S 30 s and uncertainty 1 s, both
      configurable;
+   - `complete_through <= now + clock_uncertainty`, so a stored value that is now in the future
+     (Platform's clock stepped back) never counts as fresh;
    - the watermark epoch equals the highest epoch seen.
 
    Otherwise the feed is `stale`.
@@ -164,10 +168,14 @@ Out of scope:
   - Ordering: lower is superseded; equal and identical is idempotent and keeps the first
     `source_observed_at`; equal with different content gives `409` and an invalid account; a
     higher pair clears it.
-  - Epoch: a raise by snapshot or by watermark invalidates lower entries; Unix-millisecond epochs
+  - Epoch: a snapshot or watermark of an epoch below the highest seen is `superseded` and never
+    makes the feed live. A raise by snapshot or by watermark invalidates lower entries; Unix-millisecond epochs
     are above 2^32 and must compare correctly.
   - Watermark: the feed is stale past S and stale on a lower watermark epoch; issuance refuses
-    while stale.
+    while stale. A watermark more than `clock_uncertainty` ahead of Platform's clock, or with
+    `complete_through` after `observed_at`, is refused with `400` and leaves the feed stale once
+    the last valid one ages past S; a stored `complete_through` in Platform's future after a
+    clock step back reads as stale. D2 answers `503` in each of these cases.
   - Issuance: not listed, `UNAVAILABLE`, World mismatch, invalid account and old epoch all
     refused; mode 33a ignored while the feed switch is on.
   - Identity per purpose, in both directions.
@@ -206,14 +214,17 @@ Out of scope:
      that is, its database role can read Character ownership.
   2. `oteryn-game-ops projection resync --raise-epoch=<true|false>` calls
      `game_character_account_projection_resync`. The explicit choice is required, and the command
-     prints only the resulting epoch.
+     prints only the resulting epoch. Its help text states the contract §5 restore precondition:
+     raise only with a synchronized clock; if Platform answers `superseded` to the new epoch's
+     watermarks, fix the clock and raise again.
   3. The stack generates a projection certificate per run, configures the Platform identity list,
      turns mode 33a off and the feed switch on, and runs a resync before the first login.
 - **Validation:**
   - `cargo test --locked -p oteryn-game-server account_characters`;
   - the node config tests;
   - the publisher against a fake Platform sink: accepted, superseded, 409 and 503 paths, the
-    watermark cadence, and refusal while unreconciled;
+    watermark cadence, refusal while unreconciled, and a `superseded` watermark of the current
+    epoch logged by result class (the restore detection signal);
   - `cargo clippy` with the repository flags;
   - the PostgreSQL-backed projection tests in CI.
 - **No** new migration, wire change or Platform change.
