@@ -36,9 +36,12 @@ STOPPED = ('I can guide you. You must confront its most devoted servant, the maj
            'order towards my cause.')
 
 
+HESITATE = 'I hesitate to ask. Would you consider {helping} me?'
+
+
 def marrow_chain():
     return [say(['unpleasant'], 'It must be {stopped}.'), say(['stopped'], STOPPED),
-            say(['name'], 'Doctor Marrow.')]
+            say(['hesitate'], HESITATE), say(['name'], 'Doctor Marrow.')]
 
 
 def cipfried_tibia():
@@ -46,23 +49,34 @@ def cipfried_tibia():
 
 
 class SourceIncompleteTests(unittest.TestCase):
-    def test_doctor_marrow_stopped_keeps_its_link_and_records_one_entry(self):
+    def test_doctor_marrow_stopped_keeps_its_link_and_records_both_entries(self):
         result = dialogue(*marrow_chain())
         stopped = next(node for node in result['keywords'] if node['key'] == 'stopped')
         self.assertEqual(stopped['links'], ['traitor'])
-        self.assertEqual(result['source_incomplete'], [{'node': 'stopped', 'link': 'traitor', 'reason': 'NO_HANDLER'}])
+        self.assertEqual(result['source_incomplete'],
+                         [{'node': 'hesitate', 'link': 'helping', 'reason': 'NO_HANDLER'},
+                          {'node': 'stopped', 'link': 'traitor', 'reason': 'NO_HANDLER'}])
         declaration = stage.build_declaration('doctor_marrow', result)
         self.assertEqual(declaration['source_incomplete'], result['source_incomplete'])
 
     def test_every_emitted_node_keeps_its_links(self):
         result = dialogue(*marrow_chain())
         self.assertEqual({node['key']: node.get('links') for node in result['keywords']},
-                         {'unpleasant': ['stopped'], 'stopped': ['traitor'], 'name': None})
+                         {'unpleasant': ['stopped'], 'stopped': ['traitor'], 'hesitate': ['helping'], 'name': None})
 
     def test_a_link_with_a_handler_adds_no_entry(self):
-        nodes = marrow_chain() + [say(['traitor'], 'A traitor indeed.')]
+        nodes = marrow_chain() + [say(['traitor'], 'A traitor indeed.'), say(['helping'], 'Helping.')]
         self.assertIsNone(entries(*nodes))
         self.assertNotIn('source_incomplete', stage.build_declaration('doctor_marrow', dialogue(*nodes)))
+
+    def test_a_link_answered_only_by_a_lua_callback_still_records_an_entry(self):
+        # The engine never runs a MsgContains callback: it is no KeywordNode handler (D17(e)), so it is
+        # absent from the bundle's keyword tree and the link stays unanswered.
+        bundle = {'dialogue': {'keywords': [say(['hesitate'], HESITATE)]},
+                  'unresolved': [{'path': 'dialogue.keywords[1]', 'reason': 'LUA_CALLBACK', 'detail': 'helping'}]}
+        result = stage.build_dialogue(bundle, collections.Counter())
+        self.assertEqual(result['source_incomplete'],
+                         [{'node': 'hesitate', 'link': 'helping', 'reason': 'NO_HANDLER'}])
 
     def test_cipfried_inflected_links_are_answered_by_substring(self):
         nodes = [cipfried_tibia(), say(['citizen'], 'Citizens.'), say(['merchant'], 'Merchants.'),
@@ -92,7 +106,7 @@ class SourceIncompleteTests(unittest.TestCase):
     def test_a_link_answered_only_by_an_unemitted_node_adds_no_entry(self):
         gated = say(['traitor'], 'Hidden.')
         gated['gate'] = 'QUEST'  # not emitted, still a source handler
-        result = dialogue(*(marrow_chain() + [gated]))
+        result = dialogue(*(marrow_chain() + [gated, say(['helping'], 'Helping.')]))
         self.assertNotIn('traitor', [node['key'] for node in result['keywords']])
         self.assertNotIn('source_incomplete', result)
 
@@ -128,14 +142,14 @@ class SourceIncompleteTests(unittest.TestCase):
 
     def test_dropping_the_links_or_the_entry_fails(self):
         result = dialogue(*marrow_chain())
-        self.assertEqual(len(result['source_incomplete']), 1)
+        self.assertEqual(len(result['source_incomplete']), 2)
         stopped = next(node for node in result['keywords'] if node['key'] == 'stopped')
         self.assertTrue(stopped.get('links'))
         stripped = dict(stopped)
         stripped.pop('links')
         self.assertNotEqual(stopped, stripped)
         declaration = stage.build_declaration('doctor_marrow', result)
-        self.assertEqual([e['link'] for e in declaration['source_incomplete']], ['traitor'])
+        self.assertEqual([e['link'] for e in declaration['source_incomplete']], ['helping', 'traitor'])
 
 
 if __name__ == '__main__':
