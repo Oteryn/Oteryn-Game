@@ -1,9 +1,9 @@
 # Soul War reconstruction readback — Crystal summer-update + YouTube
 
-**Task:** `OTV2-20261005-soul-war-reconstruction`  
-**Primary donor:** `zimbadev/crystalserver@00ce02a57ca5a12e48f32a3476e37471167e4c3f` (`summer-update`)  
-**Cross-check:** `opentibiabr/canary@04b83b512114bfd888000d6e1433ed8ecaec7c5b`  
-**Behavioral evidence:** YouTube playlist `PL2czNtPw97ZRaU9SIaoZF42p6K5BTu-qX`, six parts, visually reviewed.  
+**Task:** `OTV2-20261005-soul-war-reconstruction`
+**Primary donor:** `zimbadev/crystalserver@00ce02a57ca5a12e48f32a3476e37471167e4c3f` (`summer-update`)
+**Cross-check:** `opentibiabr/canary@04b83b512114bfd888000d6e1433ed8ecaec7c5b`
+**Behavioral evidence:** YouTube playlist `PL2czNtPw97ZRaU9SIaoZF42p6K5BTu-qX`, six parts, visually reviewed.
 **Runtime authority:** none. The reconstruction is content/evidence only; it does not activate Quest or Encounter runtime.
 
 ## Result matrix
@@ -46,4 +46,3 @@ The canonical Quest DATA is separately materialized through the Quest authoring 
 - `tools/content-schema/encounter-authoring/samples/soul-war-crystal-reconstruction/**`
 - `tools/content-schema/encounter-authoring/test_soul_war_crystal_reconstruction.py`
 - canonical Quest shard `content/quests/definitions/quests-00200-00299.json`
-
