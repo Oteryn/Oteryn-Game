@@ -109,7 +109,7 @@
   "purpose": "HISTORICAL_INPUT_REPLAY_NOT_RUNTIME_AUTHORITY",
   "retained_inputs": {
     "apps/game-server/src/content/reference_playable.rs": {
-      "current_sha256": "300b9d33412caeb9afc889723853baeecc370ede6134e4e58fea706fd8144242",
+      "current_sha256": "1b6dc3a31123197c987b38b3d3f6aa159be58a963d2186c33c08581dfcb5e1fd",
       "git_blob_oid": "fc21fef3f5a4174549fd10f90af4af9f8d8941f2",
       "historical_sha256": "fd81a9d9359e11c3f1f841b78b4d10246bc886dcabec692b51cc7e7ba98e44d7"
     },

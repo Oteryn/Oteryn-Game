@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[3]
 CONTEXT = (
     "docs/agents/evidence/monster-final-seven-20261004/item-closed-context-20261005"
 )
-CONTEXT_SHA = "c7e8171b9c11af332ccd637095affdb83e1b191f428e32bea968f981169d7fd7"
+CONTEXT_SHA = "3139ccfbfcd9968b2d4138b271244e525e4be2dddaeefc20acc7c23c1a4db6ec"
 RUST = "apps/game-server/src/content/reference_playable.rs"
 TOOL = "tools/content-schema/item-authoring"
 
