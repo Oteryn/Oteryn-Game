@@ -178,6 +178,19 @@ jobs:
           args=(issue "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT")
           # Supersede the node that is actually registered: the newest incarnation's log
           # wins over current-node-id, which a failed earlier deploy may have left stale.
+          # A previous run cancelled after the detached start may leave a node that is running but not
+          # registered yet: wait for it to register, otherwise stop it, before reading the id.
+          if "$BASE/bin/supervisor.sh" status > /dev/null; then
+            for _ in $(seq 1 60); do
+              { grep 'event=registered' "$BASE/log/node.log" || true; } | grep -q . && break
+              "$BASE/bin/supervisor.sh" status > /dev/null || break
+              sleep 2
+            done
+            if "$BASE/bin/supervisor.sh" status > /dev/null &&
+              ! { grep 'event=registered' "$BASE/log/node.log" || true; } | grep -q .; then
+              "$BASE/bin/supervisor.sh" stop
+            fi
+          fi
           previous=""
           if [[ -f "$BASE/log/node.log" ]]; then
             previous="$({ grep 'event=registered' "$BASE/log/node.log" || true; } | tail -n 1 | sed -n 's/.*node_id=\([^ ]*\).*/\1/p')"
