@@ -30,8 +30,9 @@
   (accepted sections for §4 edges); the relocation and world object owners proposal header (§3 and
   §4 for gates and triggers); WORLD-INTERACTION-0 §3 (durable trigger children follow §16.2.5,
   not occurrence recovery); DUR-03 §15 and §39.3 (`QuestExchangeCause`, the dialogue claim
-  source, and the reward MINT retirement of §16.2.5); the composition decision (exchange
-  obligation).
+  source, and the reward MINT retirement of §16.2.5); D39 §4.1 (the accepted successor §17 and
+  §19.1 for a reward MINT reserved under a lost trigger plan: its reconciliation is the §16.2.5
+  retirement); the composition decision (exchange obligation).
 - Runtime, migration and production authority: NONE. Each child needs its own #162 allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -612,8 +613,14 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
          identities, FND-02 never re-enqueues the reserved CommandRef, and a replacement
          GameSession fails `character_item_fence_is_current`. The reconciliation therefore
          retires it through a new DUR-03 operation in `reward_claim_mint.rs`, with a durable
-         terminal record. DUR-03 §39.3 carries this as an amendment pending on acceptance of
-         QUEST-GATE-0; the rules below are its detail:
+         terminal record. DUR-03 §39.3 and D39 §4.1 carry this as amendments pending on
+         acceptance of QUEST-GATE-0. D39 accepts successor §17 and §19.1: an ambiguous MINT stays
+         pending on its DUR-03 transaction, and a new GameSession reconciles the old occurrence
+         before a duplicate is allowed. The retirement is that reconciliation, on the same DUR-03
+         transaction key (the root CommandRef) under its cause lock, so the D39 amendment changes
+         how the occurrence becomes terminal, not when a duplicate may start. Until a receipt or a
+         retirement row exists, the existing pending rule applies unchanged. A chest `USE` whose
+         trigger plan was not lost keeps D39 as accepted. The rules below are the detail:
          - **Retirement record.** QUEST-TRIGGER-1 adds one migration (its version above the
            highest on `main` at authoring) with an insert-only table
            `game_reward_claim_mint_retirements`, keyed by the reservation's (game_session_id,
@@ -731,8 +738,8 @@ encoding and a new receipt key migration. It is decided with the first accepted 
 1. **Amendments:** §4 "Accepted successor sections", "Roots" and "Quest child", the header and
    the brief row, in place; QUEST-STATE-0 §4 "Request" carries a pointer; WORLD-INTERACTION-0
    §7.1 and its PUSH-1 brief row, in place; WORLD-INTERACTION-0 §3 durable trigger children
-   recovery (§16.2.5), in place; DUR-03 §39.3 carries the reward MINT retirement
-   amendment (§16.2.5), pending on acceptance of QUEST-GATE-0.
+   recovery (§16.2.5), in place; DUR-03 §39.3 and D39 §4.1 carry the reward MINT retirement
+   amendment (§16.2.5) in place, pending on acceptance of QUEST-GATE-0.
 2. **Serialization:** unchanged. Quest children run in canonical order in one sequencer slot.
 3. **Restart:**
    - Receipts and obligations are durable.
