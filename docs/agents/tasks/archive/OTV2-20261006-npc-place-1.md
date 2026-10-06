@@ -58,6 +58,13 @@ external_repositories: []
   - 4199606575 (P1, §6): a travel destination on a walkable house tile passed. Fixed: reason
     `HouseTile` (nonzero tile house id), at compile time and in NPC-TRAVEL-1 at runtime; the
     NPC-0 NPC-TRAVEL-1 row amendment says so.
+- Review round 2 (Codex, fixed under D742):
+  - 4199707745 (P2, §6): the runtime refusal could not reproduce the compiler's reasons; the
+    game server's collision index has no floor change, teleport, spawn point or house id. Fixed:
+    the compiler is the only classifier. The manifest gains `npcs.routes_held` (held route record
+    keys, empty in production); NPC-TRAVEL-1 refuses a listed route, and every route when the
+    bundle's content revision differs from the loaded travel catalogue's. The NPC-0 row
+    amendment, §3.1, §3.5 §8 row, §11 and brief item 8 say so.
 - Owner questions: none.
 
 ## Validation
