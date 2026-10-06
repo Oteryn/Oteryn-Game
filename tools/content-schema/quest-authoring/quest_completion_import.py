@@ -19,9 +19,12 @@ BASE_SHA = 'c82b7e6e32456527e2c90d54c28573ebde89e0db73dc926ca3a937be1a0ad649'
 OUTPUT = 'content/quests/missions/quest-state-completion-candidate.json'
 RECEIPT = 'content/quests/missions/completion-candidate.json'
 STAGES = TOOL + 'samples/server-completion/chosen-progress/builder.py'
+SOURCE_STAGES = TOOL + 'samples/server-completion/chosen-source-progress/builder.py'
 REFINE = TOOL + 'samples/state-effect-refinements/effect_refinements.py'
 EVENTS = TOOL + 'samples/server-completion/events-rewards/packet.json'
 EVENTS_SHA = '4b77071f3e44e90c64260c4db6830c5acab7f0142627d9819d2b4266c6d100a1'
+SOURCE_EVENTS = TOOL + 'samples/server-completion/chosen-source-events-rewards/packet.json'
+SOURCE_EVENTS_SHA = 'a96babef6e20e151ab4aff75653a9a0026c6d2386b6caa2da9d2fe1d14212caf'
 NPC = TOOL + 'samples/server-completion/npc-dialogue/candidates.json'
 NPC_SHA = 'e72477218339f8c2527706ec877750823014843566e13bc0a134ccaf6e4b2286'
 PLAN = 'content/quests/missions/completion-binding-plan.json'
@@ -49,10 +52,11 @@ def pinned(root, path, expected_sha):
     return json.loads(raw)
 
 
-def binding_plan(choices, events, npc):
+def binding_plan(choices, events, npc, source_choices, source_events):
     event_rows = {q['quest_ref']['key']: q for q in events['records']}
+    source_event_rows = {q['quest_ref']['key']: q for q in source_events['records']}
     npc_rows = {(r['quest']['key'], r['stage']): r for r in npc['records']}
-    if len(event_rows) != 68 or len(npc_rows) != len(npc['records']):
+    if len(event_rows) != 68 or len(source_event_rows) != 139 or len(npc_rows) != len(npc['records']):
         raise ValueError('Duplicate or missing binding owner')
     records = []
     for quest in choices['quests']:
@@ -83,12 +87,40 @@ def binding_plan(choices, events, npc):
             'native_reward_delivery_binding': None,
             'runtime_enabled': False,
         })
+    for quest in source_choices['quests']:
+        owner = quest['quest']
+        event = source_event_rows[owner]
+        by_stage = {s['stage_key']: s for s in event['stages']}
+        rows = []
+        for transition in quest['transitions']:
+            stage = transition['source']['chosen_stage']
+            intent = by_stage[stage['key']]
+            if intent['kind'] != stage['kind'] or intent['count'] != stage['count']:
+                raise ValueError('Chosen source event/count mismatch')
+            rows.append({
+                'stage_key': stage['key'],
+                'quest_transition_key': transition['key'],
+                'event_identity_associations': intent,
+                'NPC_dialogue_candidates': None,
+                'selected_NPC_branch': None,
+                'native_dispatch_binding': None,
+                'runtime_enabled': False,
+            })
+        records.append({
+            'quest': owner, 'stages': rows,
+            'reward_identity_associations': event['reward_intents'],
+            'native_reward_delivery_binding': None,
+            'runtime_enabled': False,
+        })
     return {
         'schema': 'OTERYN_QUEST_COMPLETION_BINDING_PLAN/v1',
         'runtime_enabled': False,
         'counts': {'quests': len(records), 'stages': sum(len(q['stages']) for q in records)},
-        'input_packets': [{'path': EVENTS, 'sha256': EVENTS_SHA}, {'path': NPC, 'sha256': NPC_SHA}],
+        'input_packets': [{'path': EVENTS, 'sha256': EVENTS_SHA},
+                          {'path': SOURCE_EVENTS, 'sha256': SOURCE_EVENTS_SHA},
+                          {'path': NPC, 'sha256': NPC_SHA}],
         'limits': ['Identity associations and derived branch candidates are not executable bindings',
+                   'Chosen-source talk stages intentionally have no selected dialogue branch',
                    'Transition keys refer to the actual typed progress candidate, not a new family'],
         'records': records,
     }
@@ -100,16 +132,26 @@ def expected(root):
         raise ValueError('Accepted current-main catalogue drift')
     source = json.loads(raw)
     stages = module(root, STAGES, 'chosen_completion_stages')
+    source_stages = module(root, SOURCE_STAGES, 'chosen_source_completion_stages')
     refine = module(root, REFINE, 'chosen_completion_refinements')
     choices = stages.build(root)
+    source_choices = source_stages.build(root)
     stages.validate_packet(choices)
-    plan = binding_plan(choices, pinned(root, EVENTS, EVENTS_SHA), pinned(root, NPC, NPC_SHA))
+    source_stages.validate_packet(source_choices)
+    plan = binding_plan(
+        choices,
+        pinned(root, EVENTS, EVENTS_SHA),
+        pinned(root, NPC, NPC_SHA),
+        source_choices,
+        pinned(root, SOURCE_EVENTS, SOURCE_EVENTS_SHA),
+    )
     refined, proof = refine.apply(root, source['quests'])
     base = dict(source, quests=refined)
     candidate = stages.merge(base, choices)
-    inputs = [BASE, STAGES, REFINE, proof['path'],
+    candidate = source_stages.merge(candidate, source_choices)
+    inputs = [BASE, STAGES, SOURCE_STAGES, REFINE, proof['path'],
               TOOL + 'samples/state-effect-refinements/effect_refinements.schema.json',
-              EVENTS, NPC,
+              EVENTS, SOURCE_EVENTS, NPC,
               TOOL + 'quest_completion_import.py']
     sources = [{'path': path, 'sha256': sha((root / path).read_bytes())} for path in inputs]
     sources += choices['authoring_sources']
@@ -121,7 +163,7 @@ def expected(root):
     transitions = [t for q in candidate['quests'] for t in q['transitions']]
     unsupported = sum(any(e['effect']['kind'] == 'COMPUTED' or not e['from_exact']
                           for e in t['effects']) for t in transitions)
-    if unsupported != 382 or candidate['counts']['quests'] != 164:
+    if unsupported != 382 or candidate['counts']['quests'] != 303:
         raise ValueError('Finite completion selection changed')
     data = encode(candidate)
     receipt = {
@@ -132,6 +174,8 @@ def expected(root):
         'counts': candidate['counts'],
         'unsupported_transitions': unsupported,
         'chosen_progress': choices['summary'],
+        'chosen_source_progress': source_choices['summary'],
+        'chosen_source_progress_holds': source_choices['held'],
         'source_effect_refinements': 5,
         'input_provenance': sources,
         'production_source_lowering_unchanged': True,
@@ -144,7 +188,8 @@ def expected(root):
         'limits': [
             'Stage counts are explicitly chosen occurrence counters, not donor equivalence',
             'NPC/event eligibility, level/premium/prerequisite checks and rewards require owning callers',
-            'Nine daily recipes have no cycle-reset binding',
+            'Authored and chosen-source daily recipes have no cycle-reset binding',
+            'Seven chosen-source recipes are held because terminal completion count is greater than one',
             'XP is retained as intent; the accepted JSON loader does not import experience',
             'This file is not the production embedded quest-state.json',
         ],
@@ -166,7 +211,7 @@ def main():
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(raw)
-    print('Completion import: 164 quests; 1746 tracks; 3679 transitions; 382 held; activation=false')
+    print('Completion import: 303 quests; 2445 tracks; 4378 transitions; 382 unsupported; 7 chosen-source holds; activation=false')
 
 
 if __name__ == '__main__':
