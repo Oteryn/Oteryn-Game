@@ -267,6 +267,7 @@ def build_keyword_nodes(nodes: list, depth: int, stats: dict, trace: list | None
 LUA_MAX_CAPTURES = 32
 LUA_MAX_RECURSION = 200
 LUA_ESCAPE = '%'
+LUA_SPECIALS = '^$*+?.([%-'
 
 
 class LuaPatternError(Exception):
@@ -368,7 +369,7 @@ def _lua_single_match(text: str, s: int, pattern: str, p: int, ep: int) -> bool:
 
 def _lua_match(text: str, s: int, pattern: str, p: int, depth: int = 0) -> int | None:
     """Port of lstrlib.c `match`, without captures: returns the end of the match or None."""
-    if depth > LUA_MAX_RECURSION:
+    if depth + 1 > LUA_MAX_RECURSION:  # lj ++ms->depth > LJ_MAX_XLEVEL; the top-level call is depth 1
         raise LuaPatternError('pattern too complex')
     while True:
         if p >= len(pattern):
@@ -378,7 +379,7 @@ def _lua_match(text: str, s: int, pattern: str, p: int, depth: int = 0) -> int |
             raise LuaPatternError('captures are not evaluated')
         if head == '$' and p + 1 == len(pattern):
             return s if s == len(text) else None
-        if head == LUA_ESCAPE and p + 1 < len(pattern) and pattern[p + 1] in 'bf123456789':
+        if head == LUA_ESCAPE and p + 1 < len(pattern) and pattern[p + 1] in 'bf0123456789':
             raise LuaPatternError('%b, %f and back references are not evaluated')
         ep = _lua_class_end(pattern, p)
         marker = pattern[ep] if ep < len(pattern) else ''
@@ -421,6 +422,8 @@ def lua_find(text: str, pattern: str) -> bool:
     pattern this port does not evaluate (captures, %b, %f, back references) or that is malformed."""
     if not text.isascii() or not pattern.isascii():
         raise LuaPatternError('non-ASCII text is not evaluated')
+    if not any(char in LUA_SPECIALS for char in pattern):  # lj_str_haspattern: a plain substring search
+        return pattern in text
     anchored = pattern.startswith('^')
     p = 1 if anchored else 0
     s = 0

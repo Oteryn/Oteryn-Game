@@ -143,6 +143,147 @@ class SourceIncompleteTests(unittest.TestCase):
             with self.assertRaises(stage.StageError, msg=keyword):
                 entries(say(['a'], 'See {x}.'), say([keyword], 'Yes.'))
 
+    # Expected results come from running string.find on the pinned LuaJIT; 'ERR' is a Lua pattern
+    # error, which the stage may only mirror by stopping (LuaPatternError), never by answering.
+    LUAJIT_FIND = (
+        ('a', '%a', 'Y'),
+        ('1', '%a', 'N'),
+        (' ', '%a', 'N'),
+        ('.', '%a', 'N'),
+        ('A', '%A', 'N'),
+        ('!', '%A', 'Y'),
+        ('\x01', '%a', 'N'),
+        ('a', '%c', 'N'),
+        ('1', '%c', 'N'),
+        (' ', '%c', 'N'),
+        ('.', '%c', 'N'),
+        ('A', '%C', 'Y'),
+        ('!', '%C', 'Y'),
+        ('\x01', '%c', 'Y'),
+        ('a', '%d', 'N'),
+        ('1', '%d', 'Y'),
+        (' ', '%d', 'N'),
+        ('.', '%d', 'N'),
+        ('A', '%D', 'Y'),
+        ('!', '%D', 'Y'),
+        ('\x01', '%d', 'N'),
+        ('a', '%g', 'Y'),
+        ('1', '%g', 'Y'),
+        (' ', '%g', 'N'),
+        ('.', '%g', 'Y'),
+        ('A', '%G', 'N'),
+        ('!', '%G', 'N'),
+        ('\x01', '%g', 'N'),
+        ('a', '%l', 'Y'),
+        ('1', '%l', 'N'),
+        (' ', '%l', 'N'),
+        ('.', '%l', 'N'),
+        ('A', '%L', 'Y'),
+        ('!', '%L', 'Y'),
+        ('\x01', '%l', 'N'),
+        ('a', '%p', 'N'),
+        ('1', '%p', 'N'),
+        (' ', '%p', 'N'),
+        ('.', '%p', 'Y'),
+        ('A', '%P', 'Y'),
+        ('!', '%P', 'N'),
+        ('\x01', '%p', 'N'),
+        ('a', '%s', 'N'),
+        ('1', '%s', 'N'),
+        (' ', '%s', 'Y'),
+        ('.', '%s', 'N'),
+        ('A', '%S', 'Y'),
+        ('!', '%S', 'Y'),
+        ('\x01', '%s', 'N'),
+        ('a', '%u', 'N'),
+        ('1', '%u', 'N'),
+        (' ', '%u', 'N'),
+        ('.', '%u', 'N'),
+        ('A', '%U', 'N'),
+        ('!', '%U', 'Y'),
+        ('\x01', '%u', 'N'),
+        ('a', '%w', 'Y'),
+        ('1', '%w', 'Y'),
+        (' ', '%w', 'N'),
+        ('.', '%w', 'N'),
+        ('A', '%W', 'N'),
+        ('!', '%W', 'Y'),
+        ('\x01', '%w', 'N'),
+        ('a', '%x', 'Y'),
+        ('1', '%x', 'Y'),
+        (' ', '%x', 'N'),
+        ('.', '%x', 'N'),
+        ('A', '%X', 'N'),
+        ('!', '%X', 'Y'),
+        ('\x01', '%x', 'N'),
+        ('z', '%z', 'N'),
+        ('z', '%Z', 'Y'),
+        ('\x00', '%z', 'Y'),
+        ('a', '%0', 'ERR'),
+        ('a', '%1', 'ERR'),
+        ('ab', '^a', 'Y'),
+        ('ab', '^b', 'N'),
+        ('ab', 'b$', 'Y'),
+        ('ab', 'a$', 'N'),
+        ('a^b', 'a^b', 'Y'),
+        ('a$b', 'a$b', 'Y'),
+        ('ab', '^ab$', 'Y'),
+        ('aaa', '^a-$', 'Y'),
+        ('b', 'a-b', 'Y'),
+        ('b', 'a*b', 'Y'),
+        ('b', 'a+b', 'N'),
+        ('b', 'ab?', 'N'),
+        ('ab', 'ab?c', 'N'),
+        ('a.c', 'a.c', 'Y'),
+        ('b', '[a-c]', 'Y'),
+        ('d', '[a-c]', 'N'),
+        ('d', '[^a-c]', 'Y'),
+        (']', '[]a]', 'Y'),
+        ('b', '[^]]', 'Y'),
+        ('-', '[a-]', 'Y'),
+        ('-', '[%a-]', 'Y'),
+        ('5', '[%d-]', 'Y'),
+        ('a', '[a', 'ERR'),
+        ('a', 'a%', 'ERR'),
+        ('a', '%', 'ERR'),
+        ('a)', 'a)', 'Y'),
+        ('a]', 'a]', 'Y'),
+        ('a)', '%)', 'Y'),
+        ('(', '(', 'ERR'),
+        ('a', 'a)', 'N'),
+        ('a', '[%]]', 'N'),
+        (']', '[%]]', 'Y'),
+        ('a b', 'a b', 'Y'),
+        ('', '', 'Y'),
+        ('a', '', 'Y'),
+    )
+
+    def test_lua_find_agrees_with_luajit_or_stops(self):
+        for text, pattern, expected in self.LUAJIT_FIND:
+            with self.subTest(text=text, pattern=pattern):
+                if expected == 'ERR':
+                    with self.assertRaises(stage.LuaPatternError):
+                        stage.lua_find(text, pattern)
+                else:
+                    self.assertEqual(stage.lua_find(text, pattern), expected == 'Y')
+
+    def test_lua_find_stops_where_it_cannot_evaluate(self):
+        for pattern in ('(a)', '%bxy', '%f[a]', '%0', '%1', '%9', '[a', '%'):
+            with self.subTest(pattern=pattern):
+                with self.assertRaises(stage.LuaPatternError):
+                    stage.lua_find('xy', pattern)
+
+    def test_lua_find_takes_the_plain_substring_path_without_specials(self):
+        self.assertTrue(stage.lua_find('a)b', ')'))
+        self.assertTrue(stage.lua_find('a]b', ']'))
+        self.assertFalse(stage.lua_find('ab', ')'))
+
+    def test_lua_find_depth_limit_matches_luajit(self):
+        self.assertTrue(stage.lua_find('a' * 199, '^' + 'a?' * 199 + '$'))
+        for count in (200, 250):
+            with self.assertRaises(stage.LuaPatternError):
+                stage.lua_find('a' * count, '^' + 'a?' * count + '$')
+
     def test_no_unanswered_link_leaves_the_field_absent(self):
         result = dialogue(say(['name'], 'Doctor Marrow.'))
         self.assertNotIn('source_incomplete', result)
