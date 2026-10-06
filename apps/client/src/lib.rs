@@ -3,6 +3,7 @@
 
 pub mod cyclopedia;
 pub mod input;
+pub mod play;
 pub mod scene;
 pub mod spell;
 
@@ -114,6 +115,11 @@ impl ClientBootstrap {
         self.runtime
             .block_on(native_entry::enter(config, self.runtime.cancellation()))
             .map_err(|_error| GameplayEntryError::Rejected(PublicClass::TemporarilyUnavailable))?
+    }
+
+    /// Runs `future` on the client runtime, which the admitted session's stream is bound to.
+    pub fn block_on<F: std::future::Future>(&self, future: F) -> Result<F::Output, RuntimeError> {
+        self.runtime.block_on(future)
     }
 
     pub fn shutdown(self) {
@@ -281,6 +287,19 @@ mod native_entry {
         #[must_use]
         pub fn channel_id(&self) -> &str {
             &self.channel_id
+        }
+
+        /// The placeholder view of the join snapshot.
+        pub fn play_view(&self) -> Result<crate::play::PlayView, oteryn_renderer::BatchError> {
+            crate::play::PlayView::from_join(self.session.join_snapshot())
+        }
+
+        /// Sends the view's next step, if one is due; `true` when the view changed.
+        pub async fn pump(
+            &mut self,
+            view: &mut crate::play::PlayView,
+        ) -> Result<bool, GameplayEntryError> {
+            view.pump(&mut self.session).await
         }
 
         #[must_use]
