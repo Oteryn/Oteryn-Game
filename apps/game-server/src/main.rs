@@ -3,7 +3,17 @@ use std::ffi::OsStr;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
+    use oteryn_game_server::node::serve::{LogKind, begin_process};
+    let process = "oteryn-game-server";
+    let version = env!("CARGO_PKG_VERSION");
+    if begin_process(process, version, LogKind::SpecInvalid.code()).is_err() {
+        return ExitCode::from(2);
+    }
     let arguments: Vec<_> = std::env::args_os().skip(1).collect();
+    if arguments.first().map(|argument| argument.as_os_str()) == Some(OsStr::new("--version")) {
+        println!("{process} {}", oteryn_error_codes::build_id(version));
+        return ExitCode::SUCCESS;
+    }
     // `serve --config <path>` starts one GameNode (OPS-NODE-BOOT-01).
     if arguments.first().map(|argument| argument.as_os_str()) == Some(OsStr::new("serve")) {
         return serve(&arguments[1..]);
@@ -16,14 +26,26 @@ fn main() -> ExitCode {
         return match bootstrap_smoke() {
             Ok(()) => ExitCode::SUCCESS,
             Err(error) => {
-                eprintln!("game-server bootstrap smoke failed: {error}");
+                diagnose(
+                    "smoke_failed",
+                    &format!("game-server bootstrap smoke failed: {error}"),
+                );
                 ExitCode::from(1)
             }
         };
     }
 
-    eprintln!("Oteryn Game Server gameplay unavailable: {GAMEPLAY_UNAVAILABLE_REASON}");
+    diagnose("gameplay_unavailable", GAMEPLAY_UNAVAILABLE_REASON);
     ExitCode::from(2)
+}
+
+/// One uncoded error line of the server process; the free text goes in `detail`.
+fn diagnose(event: &str, detail: &str) {
+    use oteryn_error_codes::{Level, Line};
+    oteryn_game_server::node::serve::emit(
+        "oteryn-game-server",
+        &Line::new(Level::Error, "main", event).detail(detail),
+    );
 }
 
 fn serve(arguments: &[std::ffi::OsString]) -> ExitCode {
@@ -39,14 +61,18 @@ fn serve(arguments: &[std::ffi::OsString]) -> ExitCode {
             (flag, path, Some((std::path::Path::new(project), digest)))
         }
         _ => {
-            eprintln!(
-                "usage: oteryn-game-server serve --config <path> [--npc-data-project <path> --npc-data-sha256 <sha256>]"
+            diagnose(
+                "usage_invalid",
+                "usage: oteryn-game-server serve --config <path> [--npc-data-project <path> --npc-data-sha256 <sha256>]",
             );
             return ExitCode::from(2);
         }
     };
     if flag != OsStr::new("--config") {
-        eprintln!("usage: oteryn-game-server serve --config <path>");
+        diagnose(
+            "usage_invalid",
+            "usage: oteryn-game-server serve --config <path>",
+        );
         return ExitCode::from(2);
     }
     let runtime = match tokio::runtime::Builder::new_multi_thread()
@@ -62,7 +88,7 @@ fn serve(arguments: &[std::ffi::OsString]) -> ExitCode {
     )) {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
-            eprintln!("oteryn-game-server event=boot_failed reason=\"{error}\"");
+            oteryn_game_server::node::serve::report_boot_failure(&error);
             ExitCode::from(error.exit_code())
         }
     }
@@ -70,8 +96,9 @@ fn serve(arguments: &[std::ffi::OsString]) -> ExitCode {
 
 fn import_npc_data(arguments: &[std::ffi::OsString]) -> ExitCode {
     let [root_flag, root, digest_flag, digest] = arguments else {
-        eprintln!(
-            "usage: oteryn-game-server npc-import --project-root <path> --expected-tree-sha256 <sha256>"
+        diagnose(
+            "usage_invalid",
+            "usage: oteryn-game-server npc-import --project-root <path> --expected-tree-sha256 <sha256>",
         );
         return ExitCode::from(2);
     };
@@ -105,7 +132,10 @@ fn import_npc_data(arguments: &[std::ffi::OsString]) -> ExitCode {
             ExitCode::SUCCESS
         }
         Err(error) => {
-            eprintln!("NPC data import failed: {error}");
+            diagnose(
+                "npc_import_failed",
+                &format!("NPC data import failed: {error}"),
+            );
             ExitCode::from(19)
         }
     }
