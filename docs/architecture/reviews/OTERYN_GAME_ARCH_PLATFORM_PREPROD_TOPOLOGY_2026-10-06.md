@@ -178,9 +178,18 @@ mirror step exists.
   - `ssl_protocols TLSv1.3`, `ssl_verify_client on`, `ssl_verify_depth 2`,
     `ssl_session_tickets off`, `ssl_client_certificate <preprod CA>`, and server name
     `platform-internal.preprod.oteryn.internal`;
-  - exactly four `POST` routes, `/internal/v1/game-auth/` followed by `native-evidence`,
-    `character-bootstrap-intents/read`, `native-runtime-status` or `native-scope-assignments`,
-    and `404` for everything else;
+  - exactly six `POST` routes, and `404` for everything else. All six are
+    `/internal/v1/game-auth/` followed by:
+    - `native-evidence`;
+    - `character-bootstrap-intents/read`;
+    - `native-runtime-status`;
+    - `native-scope-assignments`;
+    - `native-account-characters`;
+    - `native-account-characters/watermark`.
+
+    The last two are the LCFA feed routes (LCFA contract §3,
+    `apps/game-server/src/native_admission_source/descriptor.rs`). Platform answers them only
+    once `PLATFORM-LCFA-1` is deployed, and admits only the projection certificate (§5);
   - each route is passed to the Platform PHP-FPM upstream over FastCGI with
     `fastcgi_param HTTPS on`, `SSL_CLIENT_VERIFY`, `SSL_PROTOCOL` and `SSL_CLIENT_S_DN` taken from
     the TLS session, as `GuardNativeRuntimeStatusPeer` requires. The six request-header forms
@@ -320,7 +329,7 @@ repository or into GitHub. The CA issues:
 | `CN=oteryn-preprod-node-1-native-evidence` | node `[platform]` client | Game `<BASE>/node/secrets/platform-client.*` |
 | `CN=oteryn-preprod-node-1-runtime-status` | node runtime status | Game `<BASE>/node/secrets/runtime-status.*` |
 | `CN=oteryn-preprod-game-ops` | ownership authority (assignment) | Game `<ROOT_BASE>/ops/authority.*` |
-| `CN=oteryn-preprod-character-projection` | LCFA feed, later (U-LC6) | issued when GAME-LCFA-ENABLE-1 is deployed here |
+| `CN=oteryn-preprod-character-projection` | LCFA feed (U-LC6) | Game `<BASE>/node/secrets/account-characters.*`, issued before §7 step 8 |
 
 The node evidence certificate also authenticates the character bootstrap intent read, so there
 is no separate bootstrap certificate (§3). The runtime-status certificate's subject is the
@@ -403,9 +412,35 @@ changes a WorldId or a ChannelId.
    workflow path.
 7. `native-route:publish` runs again with login enabled for the scope. Then the joint internal-build
    login E2E runs with mode 33a on (D171).
-8. `PLATFORM-LCFA-1` and `GAME-LCFA-ENABLE-1` land in either order (LCFA contract §4). Once both
-   are deployed here with owner approval, the feed switch goes on and mode 33a goes off, and the
-   joint E2E reruns with the full §5.4 check.
+8. `PLATFORM-LCFA-1` and `GAME-LCFA-ENABLE-1` (#1898) land in either order (LCFA contract §4).
+   `GAME-LCFA-ENABLE-1` owns the code and the `[platform.account_characters]` template section.
+   This document owns only the operator steps and their order. Once both are deployed here with
+   owner approval, the operator runs these steps in order, and mode 33a stays on until the last
+   one passes:
+   1. On Platform, set the projection identity variable that `PLATFORM-LCFA-1` defines to
+      `CN=oteryn-preprod-character-projection`, then redeploy with owner approval.
+   2. Render `[platform.account_characters]` in `node.toml` with:
+      - the projection certificate and key (§5);
+      - the Character Authority source authority;
+      - the epoch-fence file path, `<BASE>/node/lcfa/epoch.fence`.
+
+      The fence file lives outside the Character store and outside every Game backup.
+   3. Create the fence file once with value `0`, in the format `GAME-LCFA-ENABLE-1` defines. It
+      shares the lifetime of the Platform read model: delete it only when Platform `state/` and
+      the database volume are deleted, and never when the Game store is restored (LCFA contract
+      §5 epoch fence).
+   4. Start the publisher, then run the initial resync,
+      `game_character_account_projection_resync(false)`.
+   5. Gate on freshness:
+      - the latest watermark is at the highest epoch, and Platform does not report it stale
+        under S = 30 s (LCFA contract §5.1, U-LC5);
+      - the account Character list read returns each tester's Character.
+
+      The precondition for turning mode 33a off is a feed that is fresh and non-empty. Anything
+      else blocks this step, and mode 33a stays on.
+   6. Turn mode 33a off, set
+      `GAME_AUTH_NATIVE_ADMISSION_UNVERIFIED_CHARACTER_OWNERSHIP=false`, and redeploy Platform
+      with owner approval. Then rerun the joint E2E with the full §5.4 check.
 
 **Rollback.**
 
@@ -443,8 +478,9 @@ discarded stack keeps its database volume until the owner decides to delete it.
 
 1. Install the Game-side certificates (§5) under `<BASE>/node/secrets` and `<ROOT_BASE>/ops`.
 2. Render `node.toml`, `report.toml` and `ops.toml` from the templates (README steps 1..6), using
-   the manifest values and endpoint `https://<NAS LAN address>:8543` with peer name
-   `platform-internal.preprod.oteryn.internal`.
+   the manifest values. The endpoint is the socket address `<NAS LAN address>:8543`, with no
+   scheme, in both `node.toml` `[platform]` and `report.toml`, as the existing templates and
+   `login_local` write it. The peer name is `platform-internal.preprod.oteryn.internal`.
 3. Run the existing one-time "First start sequence" of `deploy/synology-game/README.md`
    (steps 1..10) by hand, before any workflow dispatch, since the workflow cannot perform the
    first start. The manifest `[interpretation]` table supplies all four step 6
@@ -524,8 +560,10 @@ discarded stack keeps its database volume until the owner decides to delete it.
       Platform holds only `GAME_AUTH_GATEWAY_SERVICE_TOKEN_SHA256`. `platform-web` has no
       published port and exposes only `native-admissions` under `/internal/`.
   13. `internal-mtls` passes `SSL_CLIENT_VERIFY`, `SSL_PROTOCOL` and `SSL_CLIENT_S_DN` as FastCGI
-      parameters, clears the `HTTP_SSL_*` and `HTTP_X_SSL_*` forms, allows only `POST` on the
-      four internal routes, and has session tickets off.
+      parameters, clears the `HTTP_SSL_*` and `HTTP_X_SSL_*` forms, and has session tickets
+      off. It allows `POST` on exactly six internal routes: `native-evidence`,
+      `character-bootstrap-intents/read`, `native-runtime-status`, `native-scope-assignments`,
+      `native-account-characters` and `native-account-characters/watermark`.
 - **Validation:**
   - Platform CI;
   - unit and feature tests for each refusal;

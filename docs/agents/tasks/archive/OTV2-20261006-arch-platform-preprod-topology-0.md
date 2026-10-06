@@ -94,6 +94,12 @@ Codex round 4 on `987ebfd9` raised two P1 findings, both fixed in one push:
   separate from the Platform source authority `platform`;
 - §8 gives the complete bootstrap intent invocation of `login_local`, with a recorded
   `OPERATION_ID`.
+Codex round 5 on `fe76f591` raised three P1 findings, all fixed in one push:
+- the mTLS allowlist adds the two LCFA routes and is now exactly six routes;
+- the platform endpoint is the scheme-less socket address `<NAS LAN address>:8543`;
+- §7 step 8 gives the LCFA enablement steps in order: render `[platform.account_characters]`,
+  initialize the fence, run the initial resync, then gate on a fresh, non-empty feed before mode
+  33a goes off. The code and the template section stay with GAME-LCFA-ENABLE-1 (#1898).
 
 Review is decided by the control plane on the frozen head. Merge result: squash merge of
 #1893, pending CI and Merge Queue at authoring.
