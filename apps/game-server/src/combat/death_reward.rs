@@ -8,11 +8,13 @@
 //!
 //! The composition point is right after Combat's own [`super::
 //! project_fixed_one_creature_death`] projects the committed lethal
-//! occurrence: its caller extracts the owned, `Copy`
-//! `(CreatureDeathOccurrenceKey, MovementLocalPosition)` pair (as the D1
-//! `CombatDeathFixture::project_death` test fixture already does) and passes
-//! them in here together with the still-borrowed owner handle, so this
-//! module never re-derives death facts from caller bytes.
+//! occurrence. In that same owner turn, under the runtime lock, the caller
+//! captures one owned, `Copy` [`ProjectedCreatureDeathFacts`] value through
+//! [`capture_projected_death_facts`] (ARCH-KILL-REWARD-LOGOUT-1 §1.2), then
+//! releases every channel guard before any revision slot is acquired or any
+//! durable call is awaited. The settle functions take only those facts, so
+//! this module never re-derives death facts from caller bytes and never holds
+//! the runtime borrow across durable I/O.
 //!
 //! CHARM-2 adds one more independent descendant after XP
 //! ([`settle_creature_death_rewards_with_bestiary`]): the principal's
@@ -52,8 +54,8 @@ use crate::durability::item_mint::{
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::foundation::{
-    CarrierError, CreatureDeathOccurrenceKey, CurrentOwnerCombatDeath, ExactActorRef,
-    MovementLocalPosition,
+    CarrierError, CharacterId, CreatureDeathOccurrenceKey, CurrentOwnerCombatDeath, ExactActorRef,
+    GameSessionId, MovementLocalPosition,
 };
 use oteryn_simulation_determinism::ExactI64;
 
@@ -72,8 +74,9 @@ pub(crate) const GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX: usize =
 /// structurally: [`settle_creature_death_rewards`] issues at most one
 /// `commit_character_experience` call per invocation, keyed by an occurrence
 /// the physical Channel owner memoizes once per (death, character)
-/// ([`CurrentOwnerCombatDeath::reward_occurrence`]), so a repeated
-/// composition call reuses it rather than creating a second descendant.
+/// ([`CurrentOwnerCombatDeath::reward_occurrence`], captured into
+/// [`ProjectedCreatureDeathFacts`]), so a repeated composition call reuses it
+/// rather than creating a second descendant.
 pub(crate) const COMBAT01_XP_DESCENDANTS_PER_DEATH_MAX: usize = 1;
 /// `COMBAT01-REWARD-PRINCIPALS` (§4.1, row 10): exactly one reward principal
 /// per death in this single-principal slice.
@@ -225,15 +228,95 @@ pub(crate) struct CreatureDeathRewardInput<const N: usize> {
     pub(crate) inflight_loot_mints_before_this_death: usize,
     pub(crate) reward_principals: Vec<RewardPrincipal>,
     pub(crate) xp_amount: ExactI64,
-    pub(crate) progression: RewardProgressionBinding<N>,
+    /// §1.5: the seam's progression binding. `None` while no Character
+    /// progression owner is composed: the death then settles its corpse and
+    /// loot only, and both the XP and the Bestiary descendants return
+    /// `NoProgressionBinding` without a write. Such a death is final; it is
+    /// never retried for XP when a binding appears.
+    pub(crate) progression: Option<RewardProgressionBinding<N>>,
+}
+
+/// §1.3: the reward principal's complete identity, read in the owner turn
+/// that projects the death. A successor session or lease of the same
+/// Character never matches it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct CapturedRewardPrincipal {
+    pub(crate) character: CharacterId,
+    pub(crate) lease_generation: u64,
+    pub(crate) session: GameSessionId,
+    pub(crate) actor: ExactActorRef,
+}
+
+impl CapturedRewardPrincipal {
+    /// `true` only for a gameplay fence of this exact Character, lease
+    /// generation and session.
+    fn admits(&self, fence: &CurrentCharacterGameplayFence) -> bool {
+        fence.character_id.as_bytes() == self.character.as_bytes()
+            && fence.character_lease_generation == self.lease_generation
+            && fence.game_session_id == self.session
+    }
+}
+
+/// §1.2: the owned facts of one projected creature death, captured by
+/// [`capture_projected_death_facts`] in the owner turn that projects it,
+/// while the runtime lock is held. Every settle reads only these, after the
+/// channel guards are released.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ProjectedCreatureDeathFacts {
+    pub(crate) death: CreatureDeathOccurrenceKey,
+    pub(crate) corpse: MovementLocalPosition,
+    /// The death's single reward principal (§1.3); the settle refuses a
+    /// gameplay fence of any other Character, lease generation or session.
+    pub(crate) principal: CapturedRewardPrincipal,
+    /// D132/§4.3: the owner's tie-broken top-damage winner, carried by the
+    /// corpse MINT. The principal when no contributor was tracked.
+    pub(crate) top_damage_character: CharacterId,
+    /// The owner clock of the principal's last recorded damage; `None` when
+    /// no clocked hit of the principal was recorded, which fails closed to no
+    /// Bestiary credit.
+    pub(crate) principal_last_damage_at_ms: Option<u64>,
+    /// The owner clock of the turn that committed the lethal receipt, read
+    /// from the retained projection, so a replayed projection keeps it.
+    pub(crate) death_at_ms: u64,
+    /// The memoized (death, principal) XP and Bestiary occurrence bytes.
+    pub(crate) occurrence: [u8; 16],
+}
+
+/// §1.2: captures [`ProjectedCreatureDeathFacts`] for `actor`'s projected
+/// death and the reward `principal` from the owner's own reads, the same
+/// reads the settle made before this split. `turn_now_ms` is the projecting
+/// turn's owner clock, used only when the retained projection carries none.
+pub(crate) fn capture_projected_death_facts(
+    owner: &mut CurrentOwnerCombatDeath<'_>,
+    actor: ExactActorRef,
+    principal: CapturedRewardPrincipal,
+    principal_last_damage_at_ms: Option<u64>,
+    turn_now_ms: u64,
+) -> Result<ProjectedCreatureDeathFacts, CarrierError> {
+    let (death, corpse) = owner.projected_death(actor)?;
+    let death_at_ms = owner.projected_death_at_ms(actor)?.unwrap_or(turn_now_ms);
+    let top_damage_character = owner
+        .top_damage_character(actor)?
+        .unwrap_or(principal.character);
+    let (occurrence, _) = owner.reward_occurrence(actor, *principal.character.as_bytes())?;
+    Ok(ProjectedCreatureDeathFacts {
+        death,
+        corpse,
+        principal,
+        top_damage_character,
+        principal_last_damage_at_ms,
+        death_at_ms,
+        occurrence,
+    })
 }
 
 /// Refusals before either descendant runs.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CreatureDeathRewardAdmissionError {
     Limit(CombatResourceLimitError),
-    /// `actor` is not this generation's projected committed death.
-    Death(CarrierError),
+    /// The supplied gameplay fence is not the captured reward principal's:
+    /// another Character, or a successor lease or session of the same one.
+    PrincipalMismatch,
 }
 
 #[derive(Debug)]
@@ -258,7 +341,10 @@ pub(crate) struct CommittedCorpseLoot {
 
 #[derive(Debug)]
 pub(crate) enum CombatDeathRewardXpError {
-    Occurrence(CarrierError),
+    /// §1.5: no progression binding is composed; nothing was written. The
+    /// caller logs `kill_reward_refused reason=no_progression_binding` once
+    /// for the death.
+    NoProgressionBinding,
     InvalidOccurrence,
     Progression(CharacterProgressionError),
 }
@@ -438,8 +524,7 @@ fn committed(outcome: ItemMintOutcome) -> CommittedItemMint {
 async fn settle_experience<const N: usize>(
     session: &DurabilitySession<'_, '_, '_>,
     slot: &mut RevisionSlot,
-    owner: &mut CurrentOwnerCombatDeath<'_>,
-    actor: ExactActorRef,
+    occurrence_bytes: [u8; 16],
     principal: &RewardPrincipal,
     progression: &RewardProgressionBinding<N>,
     amount: ExactI64,
@@ -451,9 +536,6 @@ async fn settle_experience<const N: usize>(
     // the award is then attempted once more. A failed earlier initialization
     // therefore never strands the award (a retry re-initializes), and an
     // already advanced revision never rejects a legitimate replay.
-    let (occurrence_bytes, _) = owner
-        .reward_occurrence(actor, *principal.gameplay_fence.character_id.as_bytes())
-        .map_err(CombatDeathRewardXpError::Occurrence)?;
     let occurrence = ExperienceRewardOccurrence::from_bytes(occurrence_bytes)
         .map_err(|_| CombatDeathRewardXpError::InvalidOccurrence)?;
 
@@ -549,47 +631,25 @@ pub(crate) struct DurabilitySession<'a, 'f, 's> {
 }
 
 /// D2b entry point: compose one already-committed, already-projected
-/// creature death (`death`, `corpse`) into its loot and XP descendants.
-/// `owner` is the same borrowed handle Combat used to project the death
-/// (`super::project_fixed_one_creature_death`); the caller extracts `death`/
-/// `corpse` as owned `Copy` values first so this call does not conflict with
-/// that earlier borrow. `COMBAT01-REWARD-PRINCIPALS` is checked before
-/// anything else runs; loot and XP then always both run, independently,
-/// regardless of whether the other fails. `slot` is the reward principal's
-/// revision slot, acquired before the runtime lock.
+/// creature death, captured as `facts` under the runtime lock, into its loot
+/// and XP descendants. No owner handle is borrowed: the caller has released
+/// every channel guard before this call (§1.2). `COMBAT01-REWARD-PRINCIPALS`
+/// and the principal's identity are checked before anything else runs; loot
+/// and XP then always both run, independently, regardless of whether the
+/// other fails. `slot` is the reward principal's revision slot, acquired
+/// after the guards were released.
 pub(crate) async fn settle_creature_death_rewards<const N: usize>(
-    actor: ExactActorRef,
-    owner: &mut CurrentOwnerCombatDeath<'_>,
+    facts: ProjectedCreatureDeathFacts,
     session: &DurabilitySession<'_, '_, '_>,
     slot: &mut RevisionSlot,
     input: CreatureDeathRewardInput<N>,
 ) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
-    check_reward_principal_count(input.reward_principals.len())
-        .map_err(CreatureDeathRewardAdmissionError::Limit)?;
-    // The death key and corpse position come only from the owner's own
-    // projection of `actor`, so loot and XP always settle one bound death.
-    let (death, corpse) = owner
-        .projected_death(actor)
-        .map_err(CreatureDeathRewardAdmissionError::Death)?;
-    let principal = input.reward_principals[0];
-    // D132/§4.3: the owner's already tie-broken top-damage winner, read at the
-    // same moment as `(death, corpse)`. A death with no tracked contributor
-    // (damage-free, or every hit from an untracked attacker) names the death's
-    // single reward principal, the only character with a claim on it in this
-    // single-principal slice (`COMBAT01-REWARD-PRINCIPALS`).
-    let top_damage_character_id = match owner
-        .top_damage_character(actor)
-        .map_err(CreatureDeathRewardAdmissionError::Death)?
-    {
-        Some(character) => *character.as_bytes(),
-        None => *principal.gameplay_fence.character_id.as_bytes(),
-    };
-
+    let principal = admit_principal(&facts, &input)?;
     let loot = settle_loot(
         session,
-        death,
-        corpse,
-        top_damage_character_id,
+        facts.death,
+        facts.corpse,
+        *facts.top_damage_character.as_bytes(),
         &input.ground,
         &input.corpse_item,
         &input.loot_table_ref,
@@ -598,29 +658,55 @@ pub(crate) async fn settle_creature_death_rewards<const N: usize>(
     )
     .await;
 
-    let xp = settle_experience(
-        session,
-        slot,
-        owner,
-        actor,
-        &principal,
-        &input.progression,
-        input.xp_amount,
-    )
-    .await;
+    let xp = match &input.progression {
+        Some(progression) => {
+            settle_experience(
+                session,
+                slot,
+                facts.occurrence,
+                &principal,
+                progression,
+                input.xp_amount,
+            )
+            .await
+        }
+        None => Err(CombatDeathRewardXpError::NoProgressionBinding),
+    };
 
-    Ok(CreatureDeathRewardOutcome { death, loot, xp })
+    Ok(CreatureDeathRewardOutcome {
+        death: facts.death,
+        loot,
+        xp,
+    })
+}
+
+/// `COMBAT01-REWARD-PRINCIPALS`, then the single principal's fence must be
+/// the captured principal's own Character, lease generation and session: an
+/// authority never settles another Character's kill, and a successor session
+/// of the same Character never settles its predecessor's.
+fn admit_principal<const N: usize>(
+    facts: &ProjectedCreatureDeathFacts,
+    input: &CreatureDeathRewardInput<N>,
+) -> Result<RewardPrincipal, CreatureDeathRewardAdmissionError> {
+    check_reward_principal_count(input.reward_principals.len())
+        .map_err(CreatureDeathRewardAdmissionError::Limit)?;
+    let principal = input.reward_principals[0];
+    if !facts.principal.admits(&principal.gameplay_fence) {
+        return Err(CreatureDeathRewardAdmissionError::PrincipalMismatch);
+    }
+    Ok(principal)
 }
 
 /// CHARM-2 input of the Bestiary descendant: the dead creature's race as
-/// bound from its Creature definition, and the credit evidence of the death's
-/// single reward principal (CHARM-0 answer 6a).
+/// bound from its Creature definition. The credit evidence of the death's
+/// single reward principal (CHARM-0 answer 6a) comes from the captured
+/// [`ProjectedCreatureDeathFacts`], never from the attacker's hit or the
+/// settle time (§1.2).
 #[derive(Debug, Clone)]
 pub(crate) struct CreatureDeathBestiaryInput {
     /// `None` when the creature's definition carries no Bestiary block: such
     /// a creature is never counted.
     pub(crate) race: Option<BestiaryRace>,
-    pub(crate) credit: BestiaryKillCredit,
 }
 
 /// A kill the Bestiary descendant settled without an error.
@@ -628,16 +714,17 @@ pub(crate) struct CreatureDeathBestiaryInput {
 pub(crate) enum CombatBestiaryOutcome {
     /// The creature is not a Bestiary race. Nothing was written.
     NotABestiaryRace,
-    /// The principal's last damage is older than the credit window. Nothing
-    /// was written.
+    /// The principal's last damage is older than the credit window, or no
+    /// clocked damage of the principal was recorded. Nothing was written.
     OutsideCreditWindow,
     Recorded(BestiaryKillOutcome),
 }
 
 #[derive(Debug)]
 pub(crate) enum CombatDeathRewardBestiaryError {
+    /// §1.5: no progression binding is composed; nothing was written.
+    NoProgressionBinding,
     Credit(BestiaryError),
-    Occurrence(CarrierError),
     InvalidOccurrence,
     Progress(BestiaryProgressError),
 }
@@ -657,27 +744,28 @@ pub(crate) struct CreatureDeathRewardWithBestiaryOutcome {
 /// rolls back either of them; an admission refusal refuses all three. The
 /// same held `slot` covers XP and Bestiary.
 pub(crate) async fn settle_creature_death_rewards_with_bestiary<const N: usize>(
-    actor: ExactActorRef,
-    owner: &mut CurrentOwnerCombatDeath<'_>,
+    facts: ProjectedCreatureDeathFacts,
     session: &DurabilitySession<'_, '_, '_>,
     slot: &mut RevisionSlot,
     input: CreatureDeathRewardInput<N>,
     bestiary: CreatureDeathBestiaryInput,
 ) -> Result<CreatureDeathRewardWithBestiaryOutcome, CreatureDeathRewardAdmissionError> {
-    let binding = BestiaryProgressionBinding {
-        context: input.progression.context.clone(),
-        policy_revision: input.progression.policy_revision.clone(),
-        reward_revision: input.progression.reward_revision.clone(),
+    let binding = input
+        .progression
+        .as_ref()
+        .map(|progression| BestiaryProgressionBinding {
+            context: progression.context.clone(),
+            policy_revision: progression.policy_revision.clone(),
+            reward_revision: progression.reward_revision.clone(),
+        });
+    let principal = admit_principal(&facts, &input)?;
+    let rewards = settle_creature_death_rewards(facts, session, slot, input).await?;
+    let bestiary = match binding {
+        Some(binding) => {
+            settle_bestiary(session, slot, &facts, &principal, &binding, bestiary).await
+        }
+        None => Err(CombatDeathRewardBestiaryError::NoProgressionBinding),
     };
-    // The admission check inside refuses anything but exactly one principal
-    // before any descendant runs, so `first` is that principal on success.
-    let principal = input.reward_principals.first().copied();
-    let rewards = settle_creature_death_rewards(actor, owner, session, slot, input).await?;
-    let principal = principal.ok_or(CreatureDeathRewardAdmissionError::Limit(
-        CombatResourceLimitError::RewardPrincipalsExceeded,
-    ))?;
-    let bestiary =
-        settle_bestiary(session, slot, owner, actor, &principal, &binding, bestiary).await;
     Ok(CreatureDeathRewardWithBestiaryOutcome { rewards, bestiary })
 }
 
@@ -695,8 +783,7 @@ struct BestiaryProgressionBinding {
 async fn settle_bestiary(
     session: &DurabilitySession<'_, '_, '_>,
     slot: &mut RevisionSlot,
-    owner: &mut CurrentOwnerCombatDeath<'_>,
-    actor: ExactActorRef,
+    facts: &ProjectedCreatureDeathFacts,
     principal: &RewardPrincipal,
     binding: &BestiaryProgressionBinding,
     input: CreatureDeathBestiaryInput,
@@ -704,8 +791,15 @@ async fn settle_bestiary(
     let Some(race) = input.race else {
         return Ok(CombatBestiaryOutcome::NotABestiaryRace);
     };
-    if !input
-        .credit
+    // An unclocked principal fails closed: no evidence, no credit.
+    let Some(principal_last_damage_at_ms) = facts.principal_last_damage_at_ms else {
+        return Ok(CombatBestiaryOutcome::OutsideCreditWindow);
+    };
+    let credit = BestiaryKillCredit {
+        principal_last_damage_at_ms,
+        death_at_ms: facts.death_at_ms,
+    };
+    if !credit
         .is_credited()
         .map_err(CombatDeathRewardBestiaryError::Credit)?
     {
@@ -713,10 +807,7 @@ async fn settle_bestiary(
     }
     // The same (death, character) occurrence the XP award is keyed by, so a
     // repeated composition call replays this kill instead of adding one.
-    let (occurrence_bytes, _) = owner
-        .reward_occurrence(actor, *principal.gameplay_fence.character_id.as_bytes())
-        .map_err(CombatDeathRewardBestiaryError::Occurrence)?;
-    let occurrence = BestiaryKillOccurrence::from_bytes(occurrence_bytes)
+    let occurrence = BestiaryKillOccurrence::from_bytes(facts.occurrence)
         .map_err(|_| CombatDeathRewardBestiaryError::InvalidOccurrence)?;
     slot.commit_bestiary(
         session.root,
@@ -785,6 +876,60 @@ mod tests {
             check_corpse_container_capacity(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX + 1),
             Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
         );
+    }
+
+    #[test]
+    fn the_captured_principal_admits_only_its_own_lease_and_session() {
+        use crate::foundation::{
+            ChannelId, CombatDeathFixture, ConnectionGeneration, RuntimeScopeRefV1,
+            ScopeOwnershipGeneration, WorldId,
+        };
+
+        fn id(seed: u8) -> [u8; 16] {
+            [
+                seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
+            ]
+        }
+
+        let world = WorldId::decode(&id(1)).expect("world");
+        let channel = ChannelId::decode(&id(2)).expect("channel");
+        let generation = ScopeOwnershipGeneration::new(1).expect("generation");
+        let actor = CombatDeathFixture::new(world, channel, generation)
+            .expect("fixture")
+            .actor();
+        let session = GameSessionId::decode(&id(50)).expect("session");
+        let fence = CurrentCharacterGameplayFence {
+            character_id: crate::domain::CharacterId::from_bytes(id(41)).expect("character"),
+            game_session_id: session,
+            connection_generation: ConnectionGeneration::new(1).expect("connection"),
+            character_lease_generation: 3,
+            runtime_scope: RuntimeScopeRefV1::channel(world, channel),
+            scope_ownership_generation: generation,
+            expected_character_revision: CharacterRevision::new(1).expect("revision"),
+        };
+        let principal = CapturedRewardPrincipal {
+            character: CharacterId::decode(&id(41)).expect("character"),
+            lease_generation: 3,
+            session,
+            actor,
+        };
+        assert!(principal.admits(&fence));
+        // A successor lease or session of the same Character never matches.
+        let successor_lease = CurrentCharacterGameplayFence {
+            character_lease_generation: 4,
+            ..fence
+        };
+        assert!(!principal.admits(&successor_lease));
+        let successor_session = CurrentCharacterGameplayFence {
+            game_session_id: GameSessionId::decode(&id(51)).expect("session"),
+            ..fence
+        };
+        assert!(!principal.admits(&successor_session));
+        let other_character = CurrentCharacterGameplayFence {
+            character_id: crate::domain::CharacterId::from_bytes(id(42)).expect("character"),
+            ..fence
+        };
+        assert!(!principal.admits(&other_character));
     }
 
     #[test]
