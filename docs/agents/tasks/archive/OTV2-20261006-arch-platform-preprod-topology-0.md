@@ -116,5 +116,9 @@ Codex round 7 on `2e8467e2` raised two P1 findings, both fixed in one push:
 - the raw 32-byte admission public key goes to a temporary file, and is published with
   `--public-key-file` before the PEM and the temporary file are deleted.
 
+Codex round 8 on `c5e21169` raised one security P1, fixed in one push. Platform (PHP-FPM) and
+Gateway are compose-network only. Only `edge-https` `443` and `internal-mtls` `8543` are published,
+both on the NAS LAN address, and acceptance item 7 rejects any other published port.
+
 Review is decided by the control plane on the frozen head. Merge result: squash merge of
 #1893, pending CI and Merge Queue at authoring.

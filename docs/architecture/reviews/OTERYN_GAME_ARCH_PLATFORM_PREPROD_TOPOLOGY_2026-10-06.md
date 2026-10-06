@@ -134,8 +134,9 @@ mirror step exists.
   these differences:
   - `mariadb` gets its own volume and no port mapping.
   - `redis` is unchanged.
-  - `platform` has `APP_ENV=preproduction` and binds to the NAS LAN address only.
-  - `gateway` binds to the NAS LAN address only.
+  - `platform` (PHP-FPM) has `APP_ENV=preproduction` and no port mapping. Only the three nginx
+    services reach it, over the compose network.
+  - `gateway` has no port mapping. `edge-https` reaches it over the compose network.
   - `internal-mtls` (nginx) listens on the NAS LAN address, port `8543`.
   - `edge-https` (nginx) listens on the NAS LAN address, port `443`. It serves
     `platform.preprod.oteryn.internal` and `gateway.preprod.oteryn.internal` over TLS 1.3 with no
@@ -143,6 +144,9 @@ mirror step exists.
     `/internal/` so that internal routes stay behind `internal-mtls`.
   - `platform-web` (nginx) listens on `8080` on the compose network only, with no published
     port, for Gateway's service-token call (below).
+  - Exactly two host ports are published, both bound to the NAS LAN address: `edge-https` `443`
+    and `internal-mtls` `8543`. No other service publishes a port on any address, so the
+    FastCGI port and the plain HTTP ports of Platform and Gateway are not reachable from the LAN.
   - There is no `canary` service, no Cloudflare Tunnel and no public endpoint.
 - **Environment provisioning, before any dispatch.** Naming an environment in workflow YAML
   creates it without protection, so the owner first creates `platform-preproduction` in the
@@ -569,7 +573,10 @@ discarded stack keeps its database volume until the owner decides to delete it.
      resolver sees the route without a mirror.
   5. The trust publish refuses a high-water directory outside the state root.
   6. Provisioning refuses a second identity row.
-  7. The compose file publishes nothing on `0.0.0.0` and has no tunnel or Canary service.
+  7. The resolved compose file (`docker compose config`) publishes exactly two host ports,
+     `edge-https` `443` and `internal-mtls` `8543`, both bound to the NAS LAN address. Any other
+     published port, on any service or address, fails the check, as does a wildcard or `0.0.0.0`
+     binding. It has no tunnel or Canary service.
   8. The nginx config is TLS 1.3 only, with `ssl_verify_client on`.
   9. The workflow is main-only and `workflow_dispatch` only, and uses the environment
      `platform-preproduction` only in a job that `needs` a `protection-check` job.
