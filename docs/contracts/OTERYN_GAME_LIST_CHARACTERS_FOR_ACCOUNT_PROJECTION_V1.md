@@ -1,9 +1,8 @@
 # Oteryn Game ListCharactersForAccount Projection v1
 
-- Status: Candidate, revision 2 (GAME-LCFA-PROJECTION-CONTRACT-1, 2026-10-06). The owner accepts it
-  after the independent review of this revision (owner answer **1a** to D821, #162). Until then
-  it authorizes no implementation; on acceptance it authorizes only the Platform consumer packet
-  and the Game enablement packet of
+- Status: **Accepted**, revision 2 (GAME-LCFA-PROJECTION-CONTRACT-1), 2026-10-06: owner acceptance
+  relayed by CP, D828 (after owner answer **1a** to D821, #162). It authorizes only the Platform
+  consumer packet and the Game enablement packet of
   `docs/architecture/reviews/OTERYN_GAME_ARCH_LCFA_PROJECTION_CONTRACT_2026-10-06.md`, for
   `testing` and `preproduction` only.
 - Revision 2 changes no member, type, path, bound or response of revision 1. It adds the
@@ -236,6 +235,6 @@ open and needs its own decision.
 
 ## 12. Acceptance
 
-The owner accepts this revision after its independent review (D821 answer 1a). Acceptance makes
+Accepted 2026-10-06: owner acceptance relayed by CP, D828 (D821 answer 1a). Acceptance makes
 revision 2 the frozen v1 wire for `testing` and `preproduction`; any change to a member, path,
 bound or response after that is a new `contract_version`.

@@ -69,7 +69,8 @@ ownership.
 - [x] The decision document carries the mandatory decision test (decision §5).
 - [x] Future-dated watermarks never make the feed live, and the epoch restore precondition,
       detection and recovery are stated (review round 2).
-- [ ] Owner acceptance after independent review of the frozen head (D821 1a).
+- [x] Owner acceptance after independent review of the frozen head (D821 1a): accepted
+      2026-10-06, owner acceptance relayed by CP, D828.
 
 ## Excluded scope
 
@@ -144,7 +145,7 @@ ruling for U-LC1, U-LC5 or U-LC6, no production restore runbook, no PKI. No chan
 ## Context checkpoint
 
 ```yaml
-last_progress: review round 2 fixed
+last_progress: owner acceptance recorded (D828)
 status: completed
 branch: cand/lcfa-projection-contract-1
 pr: 1870
