@@ -29,6 +29,7 @@ use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
     LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
 };
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
     AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
@@ -41,6 +42,19 @@ use crate::foundation::{
 };
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 use sqlx::{Connection, Executor};
+
+/// SPELL-LOCK-2 §1.2: the settle holds the death Channel's lane; a fresh lane stands in for the
+/// Channel runtime this PostgreSQL case does not own.
+async fn settle_on_fresh_lane<const N: usize>(
+    facts: ProjectedCreatureDeathFacts,
+    session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
+    input: CreatureDeathRewardInput<N>,
+) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
+    let permit =
+        SpellLanePermit::of_fresh_lane(facts.death.world_id(), facts.death.channel_id()).await;
+    settle_creature_death_rewards(&permit, facts, session, slot, input).await
+}
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -658,14 +672,10 @@ fn swing_committed_kill_composes_with_explicit_reward_settlement() -> TestResult
             0,
         )
         .map_err(debug)?;
-        let outcome = settle_creature_death_rewards(
-            facts,
-            &session,
-            &mut slot,
-            input(rat_loot_table(), 1, 1)?,
-        )
-        .await
-        .map_err(debug)?;
+        let outcome =
+            settle_on_fresh_lane(facts, &session, &mut slot, input(rat_loot_table(), 1, 1)?)
+                .await
+                .map_err(debug)?;
         let minted = outcome.loot.map_err(debug)?;
         assert_eq!(minted.entries.len(), 1);
         let ExperienceCommitOutcome::Committed(award) = outcome.xp.map_err(debug)? else {

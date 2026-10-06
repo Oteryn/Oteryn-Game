@@ -765,7 +765,9 @@ impl ChannelRuntimeV1 {
         }
         if let Some(spawn) = spawn {
             self.validate_companion_spawn(spawn)?;
-            let index = self.carrier.validate_ref(&self.continuity, spawn.actor().0)?;
+            let index = self
+                .carrier
+                .validate_ref(&self.continuity, spawn.actor().0)?;
             // Only the already reserved slot stays valid across the despawn above.
             if !matches!(&self.carrier.slots[index], Slot::CreatureReserved { .. }) {
                 return Err(CarrierError::PlanConflict);

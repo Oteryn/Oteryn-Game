@@ -98,7 +98,9 @@ impl ChannelSpellStates {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
-        self.pending_familiars.iter().any(|v| v.is_for(actor, session))
+        self.pending_familiars
+            .iter()
+            .any(|v| v.is_for(actor, session))
             || self
                 .pending_familiar_lifecycle
                 .iter()
@@ -149,6 +151,7 @@ pub(crate) trait CurrentFamiliarSourceOwner: source_registration::Registered {
         now_micros: u64,
     ) -> Option<CurrentProjection<FamiliarSourceSettings>>;
 }
+use super::native_combat_cast::UnresolvedSpellCommit;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::domain::CharacterId;
 use crate::durability::character_build::BuildOccurrence;
@@ -156,13 +159,12 @@ use crate::durability::character_familiar::FamiliarStateOccurrence;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::spell_items_abi::SpellItemTransactionRequest;
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{CommandId, CommandRef, GameSessionState, RuntimeScopeRefV1};
 use crate::spell::companion_lifecycle::{
-    FamiliarOwnerFacts, check_commit_familiar, familiar_cost_binding,
-    finish_familiar_payment, install_familiar, prepare_familiar,
+    FamiliarOwnerFacts, check_commit_familiar, familiar_cost_binding, finish_familiar_payment,
+    install_familiar, prepare_familiar,
 };
-use crate::durability::spell_owner_commit::SpellLanePermit;
-use super::native_combat_cast::UnresolvedSpellCommit;
 use crate::spell::delayed_execution::{
     CastBinding, ScheduleRequest, SpellTimerOccurrence, TimerPayload,
 };
@@ -1177,7 +1179,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return (SpellCastOutcome::rejected(), None);
         }
-        let Ok(checked_batch) = super::check_owner_batch(runtime, states, &staged, Some(&base_preflight))
+        let Ok(checked_batch) =
+            super::check_owner_batch(runtime, states, &staged, Some(&base_preflight))
         else {
             return (SpellCastOutcome::rejected(), None);
         };

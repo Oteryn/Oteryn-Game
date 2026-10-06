@@ -149,8 +149,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !familiar_spell(spell) {
             return NativeCastDispatch::NotApplicable;
         }
-        self.cast_native_familiar_inner(actor, session, command_id, intent, access, active_spell, None)
-            .await
+        self.cast_native_familiar_inner(
+            actor,
+            session,
+            command_id,
+            intent,
+            access,
+            active_spell,
+            None,
+        )
+        .await
     }
 
     /// Takes the lane first (§1.2) unless a resolver already holds it and passes it in.
@@ -177,7 +185,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let result = self
-            .dispatch_familiar_inner(permit, actor, session, command_id, intent, access, active_spell)
+            .dispatch_familiar_inner(
+                permit,
+                actor,
+                session,
+                command_id,
+                intent,
+                access,
+                active_spell,
+            )
             .await;
         let states = self.spell_states.lock().await;
         if states

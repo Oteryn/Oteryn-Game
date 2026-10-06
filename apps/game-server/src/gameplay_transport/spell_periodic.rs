@@ -285,7 +285,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let read = match self
             .root
-            .read_standing_player_tile(&permit, self.character, self.holder, fence, content_digest, target)
+            .read_standing_player_tile(
+                &permit,
+                self.character,
+                self.holder,
+                fence,
+                content_digest,
+                target,
+            )
             .await
         {
             Ok(read) => read,

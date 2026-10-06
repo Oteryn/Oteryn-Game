@@ -23,10 +23,26 @@ use crate::durability::character_progression::{
     CharacterProgressionError, ExperienceCommitOutcome,
 };
 use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{
     ChannelId, CombatDeathFixture, ExactActorRef, ScopeOwnershipGeneration, WorldId,
 };
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+
+/// SPELL-LOCK-2 §1.2: the settle holds the death Channel's lane; a fresh lane stands in for the
+/// Channel runtime this PostgreSQL case does not own.
+async fn settle_on_fresh_lane<const N: usize>(
+    facts: ProjectedCreatureDeathFacts,
+    session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
+    input: CreatureDeathRewardInput<N>,
+    bestiary: CreatureDeathBestiaryInput,
+) -> Result<CreatureDeathRewardWithBestiaryOutcome, CreatureDeathRewardAdmissionError> {
+    let permit =
+        SpellLanePermit::of_fresh_lane(facts.death.world_id(), facts.death.channel_id()).await;
+    settle_creature_death_rewards_with_bestiary(&permit, facts, session, slot, input, bestiary)
+        .await
+}
 
 const RAT: &str = "oteryn:creature.rat";
 const RAT_XP: i64 = 5;
@@ -178,7 +194,7 @@ fn a_credited_death_counts_its_race_once_after_loot_and_xp_and_replays() -> Test
             let mut slot = CharacterRevisionSequencer::new()
                 .acquire(fence(1)?.character_id)
                 .await;
-            let outcome = settle_creature_death_rewards_with_bestiary(
+            let outcome = settle_on_fresh_lane(
                 capture(&mut fixture, actor, 300_000)?,
                 &session,
                 &mut slot,
@@ -265,7 +281,7 @@ fn a_non_bestiary_or_uncredited_death_counts_nothing_and_never_touches_loot_or_x
             let mut slot = CharacterRevisionSequencer::new()
                 .acquire(fence(1)?.character_id)
                 .await;
-            let outcome = settle_creature_death_rewards_with_bestiary(
+            let outcome = settle_on_fresh_lane(
                 capture(&mut fixture, actor, last_damage_before_death_ms)?,
                 &session,
                 &mut slot,
@@ -335,7 +351,7 @@ fn a_failed_xp_award_neither_blocks_the_kill_nor_is_rolled_back_by_it() -> TestR
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(fence(1)?.character_id)
             .await;
-        let outcome = settle_creature_death_rewards_with_bestiary(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor, 0)?,
             &session,
             &mut slot,

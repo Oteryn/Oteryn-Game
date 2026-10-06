@@ -9,13 +9,13 @@ use super::{
     ChannelSpellStates, PlayerBatchPreflight, SpellCastOutcome, check_owner_batch,
     commit_owner_batch, install_owner_batch, stage_player_batch,
 };
-use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::ability::{AbilityOccurrence, RevisionSet};
 use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplayState};
 use crate::durability::character_build::{BuildCommitOutcome, BuildOccurrence};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::spell_items_abi::*;
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::durability::{DurabilityError, spell_item_transaction as items};
 use crate::foundation::{
     ChannelRuntimeV1, CommandRef, ExactActorRef, GameSessionId, StagedSpellBatch,

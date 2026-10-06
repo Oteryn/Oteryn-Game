@@ -28,6 +28,7 @@ use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
     LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
 };
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
     AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
@@ -41,6 +42,19 @@ use crate::foundation::{
 };
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 use sqlx::{Connection, Executor};
+
+/// SPELL-LOCK-2 §1.2: the settle holds the death Channel's lane; a fresh lane stands in for the
+/// Channel runtime this PostgreSQL case does not own.
+async fn settle_on_fresh_lane<const N: usize>(
+    facts: ProjectedCreatureDeathFacts,
+    session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
+    input: CreatureDeathRewardInput<N>,
+) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
+    let permit =
+        SpellLanePermit::of_fresh_lane(facts.death.world_id(), facts.death.channel_id()).await;
+    settle_creature_death_rewards(&permit, facts, session, slot, input).await
+}
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -738,7 +752,7 @@ fn one_creature_death_mints_the_plan_and_awards_xp_once() -> TestResult {
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -823,7 +837,7 @@ fn replay_is_idempotent_with_no_duplicate_mint_or_xp() -> TestResult {
             let mut slot = CharacterRevisionSequencer::new()
                 .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
                 .await;
-            let outcome = settle_creature_death_rewards(
+            let outcome = settle_on_fresh_lane(
                 capture(&mut fixture, actor)?,
                 &session,
                 &mut slot,
@@ -906,7 +920,7 @@ fn generation_change_leaves_a_stale_death_rejected_with_no_write() -> TestResult
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -974,7 +988,7 @@ fn a_stale_xp_fence_rejects_xp_without_blocking_loot() -> TestResult {
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1027,7 +1041,7 @@ fn an_unsupported_loot_table_rejects_loot_without_blocking_xp() -> TestResult {
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1090,7 +1104,7 @@ fn a_damage_free_death_names_the_reward_principal_as_the_window_winner() -> Test
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1143,7 +1157,7 @@ fn a_death_with_no_loot_entries_still_materializes_a_corpse() -> TestResult {
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1192,7 +1206,7 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let first = settle_creature_death_rewards(
+        let first = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1236,7 +1250,7 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1318,7 +1332,13 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
                 .map_err(debug)?;
             harness
                 .root
-                .commit_corpse_mint(&authority, &harness.node, &mut candidate, id(61))
+                .commit_corpse_mint(
+                    &candidate.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut candidate,
+                    id(61),
+                )
                 .await
                 .map_err(debug)?;
         }
@@ -1334,7 +1354,7 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,

@@ -891,9 +891,10 @@ pub(crate) async fn read_standing_player_tile_in_transaction(
         content_digest,
         target,
     )
-        .await
+    .await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn read_standing_player_tile_with_recovery(
     tx: &mut Transaction<'_, Postgres>,
     permit: &SpellLanePermit,
@@ -1106,6 +1107,7 @@ impl SpellItemAuthority {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn assert_spell_item_authority_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     permit: &SpellLanePermit,
@@ -1132,6 +1134,7 @@ pub(crate) async fn assert_spell_item_authority_in_transaction(
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn assert_spell_item_authority_with_recovery(
     tx: &mut Transaction<'_, Postgres>,
     permit: &SpellLanePermit,

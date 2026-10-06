@@ -70,7 +70,8 @@ async fn authority(
         .await
         .map_err(debug)?;
     assert_spell_item_authority_in_transaction(
-        tx,&lane_permit().await?,
+        tx,
+        &lane_permit().await?,
         &h.root,
         &recovery,
         &h.node,
@@ -215,7 +216,8 @@ fn source_authority_is_transaction_bound_and_stale_current_fences_refuse() -> Te
             let mut tx = h.pool.begin().await?;
             assert!(
                 assert_spell_item_authority_in_transaction(
-                    &mut tx,&lane_permit().await?,
+                    &mut tx,
+                    &lane_permit().await?,
                     &h.root,
                     &recovery,
                     &h.node,
@@ -1242,7 +1244,8 @@ fn genuine_two_fresh_players_require_target_consent_and_block_policy_before_invi
             }
             let mut tx = h.pool.begin().await?;
             let proof = assert_spell_item_authority_in_transaction(
-                &mut tx,&lane_permit().await?,
+                &mut tx,
+                &lane_permit().await?,
                 &h.root,
                 &recovery,
                 &h.node,
@@ -1291,7 +1294,8 @@ fn genuine_two_fresh_players_require_target_consent_and_block_policy_before_invi
         let party: [u8; 16] = party.try_into().map_err(|_| "party ID")?;
         let mut accept = h.pool.begin().await?;
         let proof = assert_spell_item_authority_in_transaction(
-            &mut accept,&lane_permit().await?,
+            &mut accept,
+            &lane_permit().await?,
             &h.root,
             &recovery,
             &h.node,
@@ -1325,7 +1329,8 @@ fn genuine_two_fresh_players_require_target_consent_and_block_policy_before_invi
         accept.commit().await?;
         let mut view_tx = h.pool.begin().await?;
         let view_authority = assert_spell_item_authority_in_transaction(
-            &mut view_tx,&lane_permit().await?,
+            &mut view_tx,
+            &lane_permit().await?,
             &h.root,
             &recovery,
             &h.node,
@@ -1403,7 +1408,8 @@ fn genuine_two_fresh_players_require_target_consent_and_block_policy_before_invi
         let mut publish_tx = h.pool.begin().await?;
         let scope =
             crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
-                &mut publish_tx,&lane_permit().await?,
+                &mut publish_tx,
+                &lane_permit().await?,
                 &h.root,
                 &recovery,
                 &h.node,
@@ -1442,7 +1448,8 @@ fn genuine_two_fresh_players_require_target_consent_and_block_policy_before_invi
         let mut presence_tx = h.pool.begin().await?;
         let scope =
             crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
-                &mut presence_tx,&lane_permit().await?,
+                &mut presence_tx,
+                &lane_permit().await?,
                 &h.root,
                 &recovery,
                 &h.node,
@@ -1496,7 +1503,8 @@ fn genuine_two_fresh_players_require_target_consent_and_block_policy_before_invi
         let mut reveal_tx = h.pool.begin().await?;
         let scope =
             crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
-                &mut reveal_tx,&lane_permit().await?,
+                &mut reveal_tx,
+                &lane_permit().await?,
                 &h.root,
                 &recovery,
                 &h.node,
@@ -1561,7 +1569,13 @@ fn real_scoped_expiry_preserves_live_invites_and_disbands_only_empty_leader_part
         let mut stale = h.pool.begin().await?;
         assert!(
             assert_spell_item_scope_in_transaction(
-                &mut stale,&lane_permit().await?, &h.root, &recovery, &h.node, scope, 2
+                &mut stale,
+                &lane_permit().await?,
+                &h.root,
+                &recovery,
+                &h.node,
+                scope,
+                2
             )
             .await
             .is_err()
@@ -1570,7 +1584,13 @@ fn real_scoped_expiry_preserves_live_invites_and_disbands_only_empty_leader_part
         assert_eq!(footprint(h).await?, (2, 2, 3, 0, 0));
         let mut drain = h.pool.begin().await?;
         let authority = assert_spell_item_scope_in_transaction(
-            &mut drain,&lane_permit().await?, &h.root, &recovery, &h.node, scope, 1,
+            &mut drain,
+            &lane_permit().await?,
+            &h.root,
+            &recovery,
+            &h.node,
+            scope,
+            1,
         )
         .await
         .map_err(debug)?;
@@ -1598,7 +1618,13 @@ fn real_scoped_expiry_preserves_live_invites_and_disbands_only_empty_leader_part
         wrong_tx.rollback().await?;
         let mut drain = h.pool.begin().await?;
         let authority = assert_spell_item_scope_in_transaction(
-            &mut drain,&lane_permit().await?, &h.root, &recovery, &h.node, scope, 1,
+            &mut drain,
+            &lane_permit().await?,
+            &h.root,
+            &recovery,
+            &h.node,
+            scope,
+            1,
         )
         .await
         .map_err(debug)?;
@@ -1682,7 +1708,8 @@ fn genuine_session_absence_hides_presence_without_removing_protected_or_active_m
         let mut tx = h.pool.begin().await?;
         let scope =
             crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
-                &mut tx,&lane_permit().await?,
+                &mut tx,
+                &lane_permit().await?,
                 &h.root,
                 &recovery,
                 &h.node,

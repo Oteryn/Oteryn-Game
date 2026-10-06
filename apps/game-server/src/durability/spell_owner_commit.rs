@@ -48,7 +48,7 @@ impl SpellLaneState {
 
 /// Proof that the holder owns the spell lane of one World and Channel. Its only constructor
 /// acquires the lane, and it is never handed out while an attempt is parked in `unresolved`.
-pub(crate) struct SpellLanePermit {
+pub struct SpellLanePermit {
     world_id: WorldId,
     channel_id: ChannelId,
     guard: tokio::sync::OwnedMutexGuard<SpellLaneState>,
@@ -100,21 +100,60 @@ impl SpellLane {
     }
 }
 
+/// A held attempt: an unresolved lane's from the park until its resolution takes it, an open
+/// commit window's until the consuming call takes it. Both take it only while consuming their
+/// owner, so it is never observed absent.
+fn held<T>(attempt: Option<T>) -> T {
+    match attempt {
+        Some(attempt) => attempt,
+        None => unreachable!("a held spell attempt is present until its owner is consumed"),
+    }
+}
+
 impl UnresolvedLane {
     /// The only path from an [`UnresolvedLane`] to a permit: the caller takes the parked attempt
     /// and must install it, release it as proven uncommitted, or park it again.
     pub(crate) fn into_resolution(mut self) -> (SpellLanePermit, Box<dyn Any + Send>) {
-        let attempt = self
-            .permit
-            .guard
-            .unresolved()
-            .take()
-            .expect("an unresolved lane holds its parked attempt");
+        let attempt = self.permit.guard.unresolved().take();
+        let attempt = held(attempt);
         (self.permit, attempt)
     }
 }
 
 impl SpellLanePermit {
+    /// The permit of a fresh lane, which never holds a parked attempt: for the PostgreSQL test
+    /// support of the DB-only item writers, which owns no Channel runtime.
+    #[cfg(test)]
+    #[allow(
+        dead_code,
+        reason = "used only by the PostgreSQL item-writer test support"
+    )]
+    pub(crate) async fn of_fresh_scope(
+        scope: crate::foundation::RuntimeScopeRefV1,
+    ) -> Result<Self, DurabilityError> {
+        match scope {
+            crate::foundation::RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => Ok(Self::of_fresh_lane(world_id, channel_id).await),
+            _ => Err(DurabilityError::InvalidStoredState),
+        }
+    }
+
+    #[cfg(test)]
+    #[allow(
+        dead_code,
+        reason = "used only by the PostgreSQL item-writer test support"
+    )]
+    pub(crate) async fn of_fresh_lane(world_id: WorldId, channel_id: ChannelId) -> Self {
+        let lane = SpellLane::new(world_id, channel_id);
+        Self {
+            world_id,
+            channel_id,
+            guard: Arc::clone(&lane.state).lock_owned().await,
+        }
+    }
+
     pub(crate) fn world_id(&self) -> WorldId {
         self.world_id
     }
@@ -143,6 +182,24 @@ impl SpellLanePermit {
         if self.has_unresolved() {
             Err(DurabilityError::Unavailable)
         } else if self.world_id == world_id && self.channel_id == channel_id {
+            Ok(())
+        } else {
+            Err(DurabilityError::InvalidStoredState)
+        }
+    }
+
+    /// [`Self::check_channel`] against the stored identifiers of a Ground row (or of a corpse
+    /// entry's Ground root).
+    pub(crate) fn check_stored_channel(
+        &self,
+        world_id: &[u8],
+        channel_id: &[u8],
+    ) -> Result<(), DurabilityError> {
+        if self.has_unresolved() {
+            Err(DurabilityError::Unavailable)
+        } else if self.world_id.as_bytes().as_slice() == world_id
+            && self.channel_id.as_bytes().as_slice() == channel_id
+        {
             Ok(())
         } else {
             Err(DurabilityError::InvalidStoredState)
@@ -196,21 +253,21 @@ impl<T: Send + 'static> SpellCommitWindow<'_, T> {
     }
 
     pub(crate) fn attempt(&self) -> &T {
-        self.attempt.as_ref().expect("an open commit window holds its attempt")
+        held(self.attempt.as_ref())
     }
 
     pub(crate) fn attempt_mut(&mut self) -> &mut T {
-        self.attempt.as_mut().expect("an open commit window holds its attempt")
+        held(self.attempt.as_mut())
     }
 
     /// Consumes the window for the infallible install phase.
     pub(crate) fn install(mut self) -> T {
-        self.attempt.take().expect("an open commit window holds its attempt")
+        held(self.attempt.take())
     }
 
     /// Consumes the window for the release of an attempt proven uncommitted.
     pub(crate) fn release(mut self) -> T {
-        self.attempt.take().expect("an open commit window holds its attempt")
+        held(self.attempt.take())
     }
 
     /// Whether `commit_spell_owner_transaction` reached the `COMMIT` call through this window.
@@ -225,7 +282,7 @@ impl<T: Send + 'static> SpellCommitWindow<'_, T> {
         if self.commit_called {
             Err(self)
         } else {
-            Ok(self.attempt.take().expect("an open commit window holds its attempt"))
+            Ok(held(self.attempt.take()))
         }
     }
 

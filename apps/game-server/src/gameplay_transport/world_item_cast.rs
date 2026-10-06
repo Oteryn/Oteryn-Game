@@ -3,16 +3,16 @@
 //! result nor a historical receipt can supply current player or Content authority.
 use super::native_combat_cast::{NativeCastDispatch, UnresolvedSpellCommit};
 use super::{
-    ChannelSpellStates, PlayerBatchPreflight, SpellCastIntent, SpellCastOutcome,
-    check_owner_batch, install_owner_batch, stage_player_batch,
+    ChannelSpellStates, PlayerBatchPreflight, SpellCastIntent, SpellCastOutcome, check_owner_batch,
+    install_owner_batch, stage_player_batch,
 };
-use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::ability::{AbilityOccurrence, RevisionSet};
 use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplayState};
 use crate::durability::character_build::{BuildCommitOutcome, BuildOccurrence};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::spell_items_abi::*;
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::durability::{DurabilityError, spell_item_transaction as items};
 use crate::foundation::{
     ChannelRuntimeV1, CommandRef, ExactActorRef, GameSessionId, StagedSpellBatch,
@@ -734,8 +734,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         permit: &mut SpellLanePermit,
         attempt: PreparedWorldItemCast,
     ) -> &'static str {
-        let (actor, session, intent, command) =
-            (attempt.actor, attempt.session, attempt.intent, attempt.batch.command);
+        let (actor, session, intent, command) = (
+            attempt.actor,
+            attempt.session,
+            attempt.intent,
+            attempt.batch.command,
+        );
         {
             let mut states = self.spell_states.lock().await;
             super::PendingSpellMarker::restore(
@@ -950,8 +954,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         // before the commit window it stays in the context, after it the window
         // parks it in the lane.
         let objects = self.door.lock().await;
-        let mut context =
-            (self, access, permit, Some((runtime, states, objects)), retained);
+        let mut context = (
+            self,
+            access,
+            permit,
+            Some((runtime, states, objects)),
+            retained,
+        );
         let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
             let (owner,access,permit,guards,pending)=ctx;
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;

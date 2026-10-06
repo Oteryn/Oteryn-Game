@@ -8,7 +8,10 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
-use super::{ChannelSpellStates, check_owner_batch, commit_owner_batch, install_owner_batch, stage_player_batch};
+use super::{
+    ChannelSpellStates, check_owner_batch, commit_owner_batch, install_owner_batch,
+    stage_player_batch,
+};
 use crate::ability::AbilityOccurrence;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{QualifiedNativeEntryRoom, SpellTileLookupError};
@@ -172,30 +175,30 @@ pub(crate) type NativeMarkerIntent = (
 /// variant holds its install fields by value.
 #[derive(Debug)]
 pub(crate) enum UnresolvedSpellCommit {
-    Native(PendingNativeCast),
-    WorldItem(super::world_item_cast::PreparedWorldItemCast),
-    Parameter(super::parameter_cast::PreparedParameterCast),
-    Familiar(super::familiar_cast::PreparedFamiliarCast),
+    Native(Box<PendingNativeCast>),
+    WorldItem(Box<super::world_item_cast::PreparedWorldItemCast>),
+    Parameter(Box<super::parameter_cast::PreparedParameterCast>),
+    Familiar(Box<super::familiar_cast::PreparedFamiliarCast>),
 }
 
 impl UnresolvedSpellCommit {
     pub(crate) fn park_native(attempt: PendingNativeCast) -> Box<dyn std::any::Any + Send> {
-        Box::new(Self::Native(attempt))
+        Box::new(Self::Native(Box::new(attempt)))
     }
     pub(crate) fn park_world_item(
         attempt: super::world_item_cast::PreparedWorldItemCast,
     ) -> Box<dyn std::any::Any + Send> {
-        Box::new(Self::WorldItem(attempt))
+        Box::new(Self::WorldItem(Box::new(attempt)))
     }
     pub(crate) fn park_parameter(
         attempt: super::parameter_cast::PreparedParameterCast,
     ) -> Box<dyn std::any::Any + Send> {
-        Box::new(Self::Parameter(attempt))
+        Box::new(Self::Parameter(Box::new(attempt)))
     }
     pub(crate) fn park_familiar(
         attempt: super::familiar_cast::PreparedFamiliarCast,
     ) -> Box<dyn std::any::Any + Send> {
-        Box::new(Self::Familiar(attempt))
+        Box::new(Self::Familiar(Box::new(attempt)))
     }
 }
 
@@ -238,19 +241,19 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let (writer, outcome) = match attempt {
             UnresolvedSpellCommit::Native(attempt) => (
                 "native",
-                self.resolve_parked_native(&mut permit, attempt).await,
+                self.resolve_parked_native(&mut permit, *attempt).await,
             ),
             UnresolvedSpellCommit::WorldItem(attempt) => (
                 "world_item",
-                self.resolve_parked_world_items(&mut permit, attempt).await,
+                self.resolve_parked_world_items(&mut permit, *attempt).await,
             ),
             UnresolvedSpellCommit::Parameter(attempt) => (
                 "parameter",
-                self.resolve_parked_parameter(&mut permit, attempt).await,
+                self.resolve_parked_parameter(&mut permit, *attempt).await,
             ),
             UnresolvedSpellCommit::Familiar(attempt) => (
                 "familiar",
-                self.resolve_parked_familiar(&mut permit, attempt).await,
+                self.resolve_parked_familiar(&mut permit, *attempt).await,
             ),
         };
         if permit.has_unresolved() {
@@ -288,9 +291,7 @@ pub(crate) fn dispatch_outcome_token(dispatch: &NativeCastDispatch) -> &'static 
 
 impl ChannelSpellStates {
     pub(crate) fn has_pending_native(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
-        self.pending_native
-            .iter()
-            .any(|p| p.is_for(actor, session))
+        self.pending_native.iter().any(|p| p.is_for(actor, session))
     }
 }
 
@@ -2569,8 +2570,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         permit: &mut SpellLanePermit,
         attempt: PendingNativeCast,
     ) -> &'static str {
-        let (actor, session, command) =
-            (attempt.actor, attempt.session, attempt.prepared.batch.command);
+        let (actor, session, command) = (
+            attempt.actor,
+            attempt.session,
+            attempt.prepared.batch.command,
+        );
         let intent: NativeMarkerIntent = (attempt.intent, attempt.rune, attempt.parameter.clone());
         {
             let mut states = self.spell_states.lock().await;

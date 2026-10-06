@@ -99,7 +99,10 @@ pub(crate) struct ChannelSpellStates {
     pub(crate) pending_familiar_lifecycle: Vec<familiar_cast::PreparedFamiliarLifecycle>,
     pub(crate) pending_familiar_logouts: Vec<familiar_cast::PreparedFamiliarLogout>,
     pub(crate) pending_native: Vec<
-        PendingSpellMarker<native_combat_cast::NativeMarkerIntent, native_combat_cast::PendingNativeCast>,
+        PendingSpellMarker<
+            native_combat_cast::NativeMarkerIntent,
+            native_combat_cast::PendingNativeCast,
+        >,
     >,
     pub(crate) pending_world_items: Vec<
         PendingSpellMarker<

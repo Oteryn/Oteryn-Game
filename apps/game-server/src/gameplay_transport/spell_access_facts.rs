@@ -243,8 +243,9 @@ pub(crate) async fn load_owned_cast_facts_in_transaction(
         .player_control_facts(actor, fence.game_session_id)
         .map_err(|_| AccessFactsError::Unavailable("current player owner"))?;
     check_content_pin(runtime, active)?;
-    let read = read_owned_cast_facts_in_transaction(tx, root, recovery, node, fence, command, active)
-        .await?;
+    let read =
+        read_owned_cast_facts_in_transaction(tx, root, recovery, node, fence, command, active)
+            .await?;
     qualify_owned_cast_read(
         &read,
         command,

@@ -3212,7 +3212,9 @@ impl ChannelActorCarrier {
             Slot::Occupied { .. } | Slot::CreatureOccupied { .. } => {
                 return Err(CarrierError::StaleActorGeneration);
             }
-            Slot::CreatureReserved { .. } | Slot::VacantReusable { .. } | Slot::Exhausted { .. } => {
+            Slot::CreatureReserved { .. }
+            | Slot::VacantReusable { .. }
+            | Slot::Exhausted { .. } => {
                 return Err(CarrierError::PlanConflict);
             }
         }
