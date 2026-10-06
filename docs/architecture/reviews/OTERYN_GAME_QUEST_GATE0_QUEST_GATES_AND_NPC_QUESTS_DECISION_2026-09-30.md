@@ -7,6 +7,8 @@
   Tibia text 1:1 (§7).
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Amended (2026-10-03): §15, reconciled with `main` for acceptance (control plane D352).
+- Amended (2026-10-06): §16, the durable cause of a trigger's quest child and push roots
+  (architect ruling on #1622 6021612356); §4 "Roots" and "Quest child" amended in place.
 - Answers: the callers QUEST-STATE-0 names (NPC-QUEST-0 dialogue, QUEST-GATE-0 doors) and its
   deferred quest log wire (A8); NPC-0 §11 (quest-conditioned dialogue, answer 4b) and §3.4
   (quest-gated routes); the owner's direction of 2026-09-30: build now, full Tibia Global parity
@@ -34,7 +36,7 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | QUEST-GATE-1 | hard, security review | `Gate` lowering bound to door `placement_key`s; gate checks at USE and at step-in in the channel runtime; open, pass-through, push-back and close (§3) | QUEST-PRED-1; MAP-LOAD-1; MAP-WIRE-2; QUEST-CONTENT-2 |
-| QUEST-TRIGGER-1 | hard, persistence review | `USE`, `ON_ENTER` and `ON_LEAVE` interaction triggers on placed objects and tiles, their occurrence roots, and quest, relocation and overlay children (§4) | QUEST-STATE-1; QUEST-GATE-1 |
+| QUEST-TRIGGER-1 | hard, persistence review | `USE`, `ON_ENTER` and `ON_LEAVE` interaction triggers on placed objects and tiles, their occurrence roots, and quest, relocation and overlay children (§4); the root CommandRef as quest cause, its content validation and plan check (§16) | QUEST-STATE-1; QUEST-GATE-1 |
 | NPC-QUEST-1 | hard, persistence review | typed quest conditions and outcomes in the NPC talk runtime; confirmation binding; the dialogue claim; the exchange transaction with its gold hand-in, coins then bank (§5) | NPC-TALK-1; QUEST-STATE-1; QUEST-PRED-1; CHEST-1 (merged); GOLD-FEE-2 (the bank part) |
 | QUEST-XP-1 | hard, persistence review | the quest XP obligation and its XP writer path (§5.5) | QUEST-STATE-1; CHAR-REV-SEQ-1 |
 | QUEST-LOG-WIRE-1 | impl, protocol review | capability `QUEST_LOG_V1`, command and domain; list, quest line and tracker views (§7) | QUEST-PRED-1; QUEST-LOWER-1 |
@@ -175,15 +177,16 @@ declared initial value (QUEST-STATE-0 §3), and the predicate is then evaluated 
   still authorize it (§7), else it is `REJECTED`. Nested cascades and every other child kind stay
   `PROPOSED / NONCANONICAL`.
 - **Roots.** `USE`: the `USE_INTENT` CommandRef. `ON_ENTER` and `ON_LEAVE`: the occurrence that
-  moved the character, which is its own move command or another player's push command. A move
+  moved the character, which is its own move command or another player's push command (a push
+  root requests no quest child, §16.3). A move
   with no such root fires nothing (successor §18: no ad hoc identity): an admission placement and,
   by architect ruling (fail closed), the landing of a D37 relocation child. A relocation child
   is never a trigger root, so there is no relocation-to-trigger cascade and nested cascades
   stay `PROPOSED / NONCANONICAL`; content validation still checks the target tile, and a
   destination that carries `ON_ENTER` is a declared v1 difference (the trigger stays silent on a
   relocation landing).
-- **Quest child.** `request_transition(fence, character, transition_key, cause)` with the child
-  occurrence as cause (QUEST-STATE-0 §4). Several quest children request their transitions in the
+- **Quest child.** `request_transition(fence, character, transition_key, cause)` with the root's
+  CommandRef as cause, the durable index of the child occurrence (§16; QUEST-STATE-0 §4). Several quest children request their transitions in the
   successor's canonical child order (§6.1) within one sequencer slot.
 - **Dependent children.** A relocation, overlay or presentation child declared `after_quest` runs
   only on the quest child's `COMMITTED`, as a new request of the scope runtime; if its fences
@@ -477,3 +480,130 @@ its last creature leaves, as in the reference servers.
   and are outside this decision: no gate, trigger, dialogue or log view uses them until an
   accepted decision admits them (owner rule: Tibia fidelity).
 - §1-§14 stand otherwise; the amendment pointers of the header remain pending on acceptance.
+
+## 16. The quest child's durable cause (2026-10-06)
+
+Answers the QUEST-TRIGGER-1 allocation blocker (#1622 6021612356). Architect ruling: **option A**,
+as the representation choice that successor §5.9 leaves open (a compact index MAY stand for the
+child tuple while the tuple stays authoritative and collisions are handled safely). Option B (a
+new cause kind with a receipt key migration) is rejected for v1 (§16.6).
+
+### 16.1 Facts
+
+**PROVEN**
+- `QuestCause` (`apps/game-server/src/durability/quest_state.rs`) has four kinds: `Command`,
+  `Use` and `ClaimObligation`, each a CommandRef (GameSessionId, CommandId), and
+  `CreatureDeath`. Migration `0056` checks that set. The receipt key is (character_id, cause_id,
+  cause_ordinal, transition_key), without `cause_kind`. The binding covers the request only
+  (character, transition key, cause), so the same key under another kind conflicts.
+- A `Command` or `Use` cause must belong to the fenced GameSession, otherwise the request is
+  refused (`AuthorityRejected`). A same-GameSession reconnect commits a pending cause. An
+  obligation may come from an earlier session (QUEST-STATE-0 §5.3).
+- The successor's child reference is the tuple (parent, definition, target, edge, optional
+  ordinal, semantic revisions) (§5.1). Its representation is not frozen (§5.9).
+- One `WORLD_ACTOR_STEP_INTENT` moves to one destination cell, including a source floor change
+  (`apps/game-server/src/movement/source_floor_change.rs`). So one step leaves one cell and enters
+  one cell.
+- The protocol registry has no push command and no multi-cell move command.
+
+**DERIVED**
+- In v1, trigger children are first-level only (§4; nested cascades are `NONCANONICAL`). The plan
+  is reproduced from the root and its bound content revision (§4; successor §6.1, §6.2).
+- Within one root, a quest child's tuple is therefore fixed by (character, transition_key)
+  exactly when no two quest children of that root share it.
+
+### 16.2 Ruling
+
+1. **Cause.**
+   - A quest child of a `USE` root requests its transition with `QuestCause::Use`, carrying the
+     root `USE_INTENT` CommandRef.
+   - A quest child of an `ON_ENTER` or `ON_LEAVE` root requests it with `QuestCause::Command`,
+     carrying the CommandRef of the character's own step command.
+   - The receipt key (character, root CommandRef, transition_key) is the child's durable index.
+   - The full child reference stays Interaction-owned. Quest does not persist it.
+   - There is no new cause kind and no migration. A child reference is never hashed into a UUID,
+     and `CommandId` or `cause_ordinal` are never overloaded.
+2. **Invariant.** A root's plan holds at most one quest child for each (character,
+   transition_key). In v1 a quest child moves only the root's own character (§16.3), so this is
+   one quest child for each transition_key per root.
+3. **Content validation.** QUEST-CONTENT-2 lowering enforces these rules; a violation fails the
+   build.
+   - (a) In one `USE` definition, the quest children's transition keys are distinct. They are also
+     disjoint from the transition key of any `RewardClaim` obligation that the same definition
+     declares. That obligation's cause carries the same CommandRef, so with an equal transition
+     key its receipt key would collide with the child's, under another kind.
+   - (b) Among the `ON_ENTER` definitions on one cell (the tile and the objects placed on it), the
+     quest children's transition keys are distinct. The same holds for `ON_LEAVE`.
+   - (c) No transition key is the quest child of both an `ON_ENTER` and an `ON_LEAVE` definition,
+     because one step leaves one cell and enters another.
+   - Objects created by an overlay have no placement and carry no trigger (§4 edges).
+4. **Plan check (defence in depth).** The trigger runtime builds the plan before the root commits,
+   where `QUESTGATE0-RL-03` is checked. If a plan holds two quest children with equal (character,
+   transition_key):
+   - the root is refused before commit, as under RL-03: the `USE` changes nothing and the step is
+     refused;
+   - a content defect is recorded;
+   - equal children are never collapsed into one.
+5. **Recovery.** A quest child's receipt is its `COMMITTED` record. Recovery reproduces the plan
+   (§4) and looks up each quest child by (character, root CommandRef, transition_key):
+   - a receipt exists: the child is `COMMITTED`, and a repeated request replays the first
+     outcome;
+   - no receipt: the child is `UNSTARTED`. It is requested once under the QUEST-STATE-0 §5.3
+     fence. In a replaced GameSession that request is refused, so the child is `REJECTED`.
+
+   A child refused by validation leaves no receipt. Recovery may request it again within the same
+   GameSession, and that request is decided on the then-current state. At most one receipt can
+   ever exist for the child, so its effect still happens at most once.
+
+   A root that leaves no durable record recovery can reproduce from fails closed under successor
+   §6.2. This ruling adds no root durability.
+
+### 16.3 Push roots
+
+- A push moves the pushed character under the pushing player's command. QUEST-STATE-0 §5.3 refuses
+  a cause from another GameSession.
+- In v1, therefore, a push root requests no quest child. Its relocation, overlay and presentation
+  children run as declared.
+- No push command is registered today, so this case is latent.
+- This is a declared v1 difference: in Tibia, a pushed player's step-in fires.
+- The push command's own decision may admit a cross-character quest cause.
+
+### 16.4 Not decided
+
+Each of these needs a durable child discriminator: option B, a new cause kind with an explicit
+encoding and a new receipt key migration. It is decided with the first accepted need.
+
+- Commands that move more than one cell (autowalk, a path).
+- Roots that are not commands (timers, world events, creature movement).
+- Nested cascades.
+- Quest children that move another character's quest (party, push).
+
+### 16.5 Decision test
+
+- **Must decide now:** YES. QUEST-TRIGGER-1 is `ALLOCATION_BLOCKED` on it.
+- **Blocked:** QUEST-TRIGGER-1, and the levers and step triggers of QUEST-CONTENT-2.
+- **Harder later:** nothing irreversible. Option B adds a kind and a key; existing receipts keep
+  their kinds and are not rewritten.
+- **Superseding evidence:** content that needs two quest children with one transition key under one
+  root; an accepted nested cascade, multi-cell command, non-command root or cross-character cause.
+- **Deliberately not decided:** §16.4.
+
+### 16.6 Rejected
+
+- **Option B now.** A cause kind, a receipt key migration and a new binding version, for no v1
+  content need.
+- **Hashing the child reference into a UUIDv7, or packing it into `CommandId` or
+  `cause_ordinal`.** This is the ad hoc identity that successor §18 forbids.
+- **Merging equal quest children of one root at runtime.** It silently loses a declared child.
+
+### 16.7 Before-freeze checklist
+
+1. **Amendments:** §4 "Roots" and "Quest child", the header and the brief row, in place;
+   QUEST-STATE-0 §4 "Request" carries a pointer.
+2. **Serialization:** unchanged. Quest children run in canonical order in one sequencer slot.
+3. **Restart:** receipts are durable; recovery follows §16.2.5.
+4. **Typed references:** the root CommandRef (GameSessionId, CommandId), `transition_key`, the
+   plan's definition and `placement_key`, and the content revision.
+5. **Wire:** none.
+6. **Atomic commit:** one transaction per quest child (QUEST-STATE-0 §5). The plan check runs
+   before the root commits.
