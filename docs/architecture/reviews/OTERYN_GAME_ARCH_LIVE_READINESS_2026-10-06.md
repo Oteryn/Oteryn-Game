@@ -1,0 +1,655 @@
+# ARCH-LIVE-READINESS-0: before external players (GM and support, threat model and live operations, economy incidents and privacy)
+
+- Decision id: ARCH-LIVE-READINESS-0.
+- Status: the rulings of §1–§3 and the packets are accepted on merge. The owner ruled on
+  2026-10-06 (item 3b) that the "before external players" package is authored now, in parallel
+  with the alpha package. Every contract amendment below is exact text marked pending: it is
+  applied by the named packet, because the owning file is a candidate, because the control plane
+  leases registry and event numbers, because protocol review must register a wire code, or
+  because the target is an accepted cross-repository contract
+  (`CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md`) that needs control-plane and Platform review.
+  Platform proposals (§1 P1, §2 P1, §3 PLATFORM-PRIVACY-PROP-1 and PLATFORM-ECON-PROP-1) are
+  routed by the control plane and bind nothing in Game until Platform accepts. The owner items of
+  §4.2 are pending; each ruling that depends on one names it, and the recommended option is the
+  working assumption until the owner answers.
+- Origin: owner request (2026-10-06): review what exists and decide what still has to be fixed
+  architecturally, because the owner had to point out errors by hand.
+- Gaps: OPS-GM-01 (§23) in §1; PROD-LIVEOPS-01 (§22) and the system threat model (§27, §29) in
+  §2; economy incident response and DATA-PRIVACY-01 (§28) in §3.
+- Owning contracts: `docs/architecture/reviews/OTERYN_GAME_ARCH_ERROR_CODES_2026-10-05.md`
+  (ERR-CODES; §1.9 release display), `FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md` and
+  `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json` (wire codes 1200 and 1201, `STAFF_V1`,
+  `SERVICE_NOTICE_V1`), `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json` (event type
+  `STAFF_ACTION`), ANL-01, ANL-03, DUR-03 (remediation and retirement causes), FND-04 and
+  FND-04A (admission binding, Platform veto), OPS-NODE-BOOT-01 (configuration and secrets),
+  CHAT-0, WRITE-0, SEC-CLIENT-01 and `CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md` (account erasure).
+- Related: ARCH-ALPHA-OPS-0 (alpha operability). §3 ruling 18's erasure journal lives in its §3
+  restore fence directory and is re-applied by its §3 ruling 9 step 7; node diagnostic logs use
+  its §1 retention; §2 THREAT-DOS-1 uses its §2 measurement. ARCH-I18N-A11Y-CREATIVE-0 amendment 3
+  replaces the localization item of ERR-CODES §1.9; §2 amendment A3 replaces the release-display
+  item of the same section; the two edits touch different sentences.
+
+## Implementation brief
+
+1. No staff action creates value, ever. Every value correction is a §3 remediation record under
+   the two-person rule; staff have no raw SQL (§1 ruling 1).
+2. Alpha staff work is operator-only: `oteryn-game-ops staff …` and `reports …` on the node host,
+   request file then control socket, idempotent by `operation_id` (§1 rulings 2–3; §2 ruling 4).
+3. Kick is a typed terminal release `TerminalRelease::StaffKick`; the client gets protocol code
+   1201 SESSION_STAFF_DISCONNECT (TERMINAL) and never resumes; the first terminal commit wins
+   (§1 ruling 5).
+4. Mute is a `game_character_sanctions` row, never a Character aggregate write; chat answers
+   `MUTED {seconds}` from the later of auto-mute and staff mute (§1 ruling 6).
+5. Account bans are Platform's; Game ends the live session by kick (alpha) or by Platform's
+   typed `AccountSessionsTerminationRequestedV1` (proposal P1, EXT) (§1 ruling 7).
+6. EXT staff authority is a Game roster `game_staff_roles`, bound at admission and re-read by
+   every staff command; MODERATOR and GAMEMASTER tiers; in-game commands use `STAFF_V1`, never
+   chat text; staff characters cannot move value (§1 rulings 4, 8–10).
+7. Every staff, operator and Platform-security action is one `STAFF_ACTION` DURABLE_AUDIT event
+   in the same transaction as its mutation; inspect commits its audit before showing data
+   (§1 ruling 11).
+8. EXT player reports are a typed `PLAYER_REPORT` intent with a closed reason and no free text
+   (§1 ruling 12).
+9. One system threat model, `docs/architecture/OTERYN_GAME_SYSTEM_THREAT_MODEL.md`, STRIDE per
+   boundary B1–B8; any PR that changes a trust boundary updates it (§2 rulings 1–3).
+10. Release builds keep showing the public wire code, subject to ERR-PUBLIC-REVIEW-1 before the
+    first external player (§2 ruling 5).
+11. Every node setting is restart-only; no reload signal, no flag service; the only kill switch
+    is `[capabilities] withheld` (§2 rulings 6–8).
+12. Maintenance is an announced graceful stop ending in protocol code 1200
+    SESSION_SERVICE_MAINTENANCE (TERMINAL); reopen is a new launch (§2 rulings 9–11).
+13. Secrets stay files read once; rotation is a node replacement (§2 rulings 12–14).
+14. Economy incidents start as an ANL-03 case; containment is a typed
+    `EconomyContainmentFence` read inside every value transaction, fail closed, never touching
+    sessions (§3 rulings 1–4).
+15. Remediation is a compensating DUR-03 transaction under `IntegrityRemediationCause`, recorded
+    in `game_economy_remediation_records` with a two-person, plan-hash-bound approval; an economy
+    bug is never repaired by a restore (§3 rulings 7–13).
+16. `docs/contracts/GAME_PERSONAL_DATA_INVENTORY.json` lists every personal-data store and is
+    checked against migrations (§3 ruling 14).
+17. Platform holds account PII and is the entry point for data subject requests; account erasure
+    is a typed, idempotent Platform→Game request; Game retires value and tombstones the root
+    (§3 rulings 15–17).
+18. Erasures are journalled in the restore fence directory and re-applied after any restore
+    (§3 ruling 18; ARCH-ALPHA-OPS-0 §3 ruling 9 step 7).
+19. Packet order: OPS-GM-AUDIT-1, THREAT-MODEL-0, ECON-FENCE-1 and PRIVACY-INVENTORY-1 first;
+    OPS-GM-SANCTION-2 after LOGOUT-WIRE-1; LIVEOPS-MAINT-1 after protocol review of 1200;
+    PRIVACY-ERASURE-1 after DATA-RESTORE-OPS-2.
+20. Numbers leased by the control plane at packet time: event type 4 `STAFF_ACTION`, the
+    `STAFF_V1` and `SERVICE_NOTICE_V1` capability and domain ids, and the new 6xxx ops codes.
+    Protocol codes 1200 and 1201 are fixed here and registered through protocol review.
+
+## 1. GM, moderation, staff audit and player support
+
+Gap: OPS-GM-01. Scope: the alpha minimum, and the "before external players" package (owner ruling 2026-10-06).
+
+### Facts
+
+| # | Fact | Locator | Class |
+|---|---|---|---|
+| F1 | OPS-GM-01 is REGISTERED_UNRESOLVED. The open items are role boundaries; mute, ban, kick, teleport, inspect and recovery; audited corrections; impersonation and account access; case management, appeals and review; dual control; immutable admin audit; and emergency rollback. | docs/architecture/ARCHITECTURE_ANALYSIS_GAP_REGISTER.md §23 | PROVEN |
+| F2 | OPS-GM-01 is REQUIRED_FOR_ALPHA operational completeness. It must keep "no hidden unaudited GM mutation path" and "stale administrators cannot bypass session, item or revision fences". | docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md (OPS-GM-01, line 554, line 684); FOUNDATION_DECISION_BACKLOG.md lines 578, 644, 661 | PROVEN |
+| F3 | No staff authority exists in Game. The ops binary has issue/reconcile/revoke and assignment commands only. Migration 0043 pins group_id=1 and account_type=1 and says privileged Control authority is separate. | apps/game-server/src/bin/oteryn-game-ops.rs; apps/game-server/migrations/0043_spell_familiar_group.sql | PROVEN |
+| F4 | The node has a uid-0 Unix control socket. It serves one bounded request at a time, and today only bootstrap by operation id. | apps/game-server/src/node/serve.rs:984-1024 | PROVEN |
+| F5 | Platform defines no staff roles. Its role is account authority, UX/commercial orchestration and read projections. | docs/contracts/CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md:359 | PROVEN |
+| F6 | The pre-admission grant has an exact claim set, and an unknown claim is rejected. A staff claim would need a new grant profile version, owned jointly with Platform. | docs/contracts/FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md §5, §5.2 | PROVEN |
+| F7 | Platform security evidence (account disabled, generation floor, freshness of 5 s or less) is a pre-admission veto only. Platform has no post-admission GameSession authority. Ending a live session needs a game-domain control contract. | FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md §10 (line 228); docs/architecture/FND-04A_AUTHORITY_FRESH_ADMISSION_CONTRACT.md §9.4; FND-04_PLATFORM_PRE_ADMISSION_RECONCILIATION_REFINEMENT.md §3.4 | PROVEN |
+| F8 | A recovery grant binds account_security_generation. A disabled or revoked account gets RECOVERY_GRANT_SECURITY_STATE_REVOKED. | docs/contracts/FND-04_REAUTHENTICATED_RECOVERY_GRANT_PROFILE_V1.md lines 140, 241, 265, 390 | PROVEN |
+| F9 | So a Platform ban blocks fresh login and resume, but it does not end a live session. | F7, F8 | DERIVED |
+| F10 | OPS-REVOKE-REPORT-1 reports channel scope revocation to Platform. It does not cover account bans or session termination. | docs/architecture/reviews/OTERYN_GAME_ARCH_REVOKE_REPORT_2026-10-05.md | DERIVED |
+| F11 | ADR-0003 lets the game server do final checks "such as … ban/disabled policy where contracted". | docs/architecture/ADR-0003-platform-identity-game-gateway-and-admission-boundary.md §6 (line 106) | PROVEN |
+| F12 | Support and admin tools must use audited domain commands, never raw SQL. | docs/architecture/ADR-0012-character-authority-and-platform-lifecycle-boundary.md:264 | PROVEN |
+| F13 | A correction is a new compensating transaction with a new TransactionId and causation. Mint, burn and transform need a typed authorized cause. | docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md §2 item 7, §26 | PROVEN (CANDIDATE contract) |
+| F14 | Detectors never sanction. Enforcement and GM policy are outside ANL-03. | docs/architecture/ANL-03_ECONOMY_INTEGRITY_SECURITY_ANALYTICS_CONTRACT_CANDIDATE.md lines 30, 213, 291, 297 | PROVEN |
+| F15 | ANL-01: DURABLE_AUDIT is atomic with the mutation. Event types register owner, schema, durability, privacy floor, a finite retention profile and atomic evidence. Investigation tools cannot mutate or sanction. | docs/architecture/ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md §10, §12, §15-§17 | PROVEN |
+| F16 | Registered event types are 1-3, so the next free id is 4. Audit retention today is P90D (character, one-item) and P30D (economy, market, guild). | docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json | PROVEN |
+| F17 | SEC-CLIENT-01 retention precedents: a reviewer audit is kept 1 year (RL-15), and identity/access audit 2 years (RL-16). Reviewer identity is staff data. In alpha there are no ban waves. Before open beta, signals and player reports open cases in "the OPS-GM-01 queue". | docs/architecture/reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md §5.1, §6 | PROVEN (CANDIDATE) |
+| F18 | WRITE-0 has a text report store readable by the moderation role, with states OPEN → CLOSED or EXPIRED by conditional update, kept 180 days (RL-03). Text removal is keyed by a moderation action id. Close/clear authority and any result beyond OK/STALE are left to "the GM tools decision". | docs/architecture/reviews/OTERYN_GAME_WRITE0_BOOKS_SCROLLS_AND_BLACKBOARDS_DECISION_2026-10-01.md §6 | PROVEN (CANDIDATE) |
+| F19 | CHAT-0 keeps an auto-mute row `game_character_chat_mutes`, written under the session fence. It is read at admission, reconnect and channel transfer, and the answer is `MUTED {seconds}`. Chat text is not stored. | docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md §6, §7; apps/game-server/src/chat/ | PROVEN |
+| F20 | A second client cannot kick a healthy incumbent that is in combat, in a PZ or logout-locked. No logout command exists yet. LOGOUT-WIRE-1 adds `TerminalRelease::Logout` with the settle handshake and `session_state = 3`. | FND-ID-01_ACCOUNT_SINGLE_ONLINE_CHARACTER_OWNER_BASELINE.md:224; reviews/OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md; apps/game-server/src/gameplay_transport/mod.rs:794 | PROVEN |
+| F21 | The F12 report line has no player-linked ids and no free text, and nothing is uploaded. Crash privacy: an allowlist, no private chat, and opting out is not suspicion evidence. | reviews/OTERYN_GAME_ARCH_ERROR_CODES_2026-10-05.md §1.10 item 3; CLIENT_CRASH_DIAGNOSTICS_PRIVACY_OWNER_BASELINE.md | PROVEN |
+| F22 | §2 ruling 4 allows no GM path on the wire until OPS-GM-STAFF-5, and admin actions go through `oteryn-game-ops` with a retained request file. §3 has a remediation record with a two-person rule, and §3 owner question 1 asks who approves. | this document §2 ruling 4; §3 rulings 7, 8, 11 | DERIVED |
+| F23 | Ops error codes 6001-6006 are taken. Protocol wire codes 1100-1116 are admission and 1117 is taken by ARCH-ALPHA-OPS-0 §4; §2 takes 1200 for maintenance. | docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json; docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json; §2 amendment A1 | PROVEN |
+| F24 | Content has a teleporter item. A generic in-session relocation primitive was not confirmed. | apps/game-server/src/content/encounter_map_item.rs:912 | UNKNOWN |
+
+### Rulings
+
+Normative. Phases: **ALPHA** (the minimum for alpha operational completeness) and **EXT** (required before external players).
+
+1. **No value-creating staff action, in either phase.** Item, gold or dust grants, character stat or skill edits, position edits on offline characters, and "compensation" are forbidden as staff actions. Every value correction is a §3 remediation record: a DUR-03 §26 compensating transaction with a typed cause and the two-person rule (F13, F22). Staff have no raw SQL (F12). This closes "audited domain transactions for corrections" and "dual control" for OPS-GM-01. Dual control applies only to value.
+2. **ALPHA: operator-only, no GM path on the wire.** All alpha staff actions run as `oteryn-game-ops staff …` and `oteryn-game-ops reports …` on the node host as root, on the §2 ruling 4 pattern (F22). The flow is: request file, then the control socket (F4), then the node. The `operation_id` is the idempotency key, and an ambiguous outcome is reconciled from the retained file. The actor is `OPERATOR`. The human is attributed by host login audit (§2 ruling 3, row B5). No in-game staff role exists in alpha.
+3. **ALPHA action set.**
+   - `staff inspect --character` is a read-only snapshot of character state, position, session and active sanctions. The audit event is committed before the data is returned. If the audit write fails, nothing is shown.
+   - `staff kick --character | --account` ends the live session (ruling 5).
+   - `staff mute --character --for <dur> --reason <code>` and `staff unmute --sanction <id>` (ruling 6).
+   - `reports list | close` and `reports clear-text` act on the WRITE-0 report store (F18).
+   - Teleport and roster administration are not in alpha.
+4. **EXT: Game-owned staff roster.** New table `game_staff_roles`: account_id, character_id (one designated staff character), tier, granted_at, revoked_at, revision. It is written only by `oteryn-game-ops staff grant | revoke`, and each change is audited.
+   - The final admission transaction reads the roster row and binds `{tier, roster revision}` to the session.
+   - Every staff command re-reads the row in its own transaction (`FOR SHARE`) and refuses `ROLE_REVOKED` if it is revoked or its revision changed. A stale admin acts on nothing (F2).
+   - Platform is not asked for a staff claim (F5, F6; owner question 1).
+   - Each environment has its own roster, because each environment has its own database.
+   - Impersonation is forbidden. Staff never log in to a player's account, never receive player credentials and act only through their own staff character. Account access is Platform's.
+5. **Kick is an immediate, typed terminal release.** It adds `TerminalRelease::StaffKick(StaffActionRef)` to the release enum from LOGOUT-WIRE-1, with the same settle handshake and `session_state = 3`.
+   - It ignores the logout lock, because a player cannot trigger it. That is not an escape path.
+   - The client gets the new protocol wire code 1201 SESSION_STAFF_DISCONNECT (amendment A7), progression TERMINAL, so it does not resume.
+   - The server refuses a resume because the session is released.
+   - It serializes with the player's own logout, channel transfer or control-loss expiry on the session's single terminal transition. The first commit wins, and a late kick returns `ALREADY_RELEASED`.
+6. **Game sanctions are staff records, not Character aggregate writes.** New table `game_character_sanctions`: sanction_id (UUIDv7), character_id, kind (closed enum: `MUTE` only for now), starts_at, ends_at (finite), reason_code (closed enum), actor, status ACTIVE or LIFTED, revision, and `basis_refs` (typed `{family: WRITE0_REPORT | PLAYER_REPORT, id}`).
+   - Mute inserts a row. Unmute changes ACTIVE to LIFTED by compare-and-set on the revision.
+   - Two concurrent mutes make two rows, and the latest active `ends_at` applies.
+   - No session ever writes this table, so it does not contend with the CHAT-0 fenced auto-mute row (F19).
+   - The chat path checks the auto-mute and the active staff mute, and answers `MUTED {seconds}` from the later of the two.
+   - Live delivery: the owning node commits the row and the audit together, then updates its in-memory session. If the target is offline, the row is read at the next admission, reconnect or channel transfer.
+   - Restart-safe: the rows are durable, and the in-memory copy is rebuilt from them at admission.
+7. **Account bans are Platform's. Game ends the live session.** A ban sets the Platform account to disabled, which blocks fresh login and resume (F9). For a live session:
+   - ALPHA: the operator runs `staff kick --account`. Platform disable plus Game kick is the ban procedure.
+   - EXT: proposal P1 (routed by the control plane) is a typed, idempotent Platform→Game request `AccountSessionsTerminationRequestedV1 {operation_id, account_id, account_security_generation}`. Game kicks every session of that account with `StaffKick` and actor `PLATFORM_SECURITY`, and reports completion. This is the game-domain control contract that F7 requires. Platform gains no other post-admission authority.
+8. **EXT: tiers.**
+   - Two tiers, a closed enum: `MODERATOR` (1) and `GAMEMASTER` (2).
+   - MODERATOR: inspect (session, position, sanctions only), mute, unmute, kick, report triage and close, and text clear.
+   - GAMEMASTER: everything a moderator has, plus full inspect, teleport self to a position or a character, and teleport a target to self or to the temple.
+   - The roster, configuration and maintenance stay operator-only. TUTOR is not created.
+9. **EXT: in-game staff commands use a typed capability, not chat text.**
+   - A new capability `STAFF_V1` with one command type `STAFF_COMMAND`. Each command has a closed kind enum and typed targets.
+   - It is offered only to a session whose admission bound a roster row. Ordinary and older clients never see it, so no gating change is needed.
+   - Results: OK, ROLE_REVOKED, TIER_INSUFFICIENT, TARGET_NOT_FOUND, TARGET_NOT_IN_CHANNEL, STALE, ALREADY_RELEASED and RATE_LIMITED.
+   - In-game commands act only on targets in the staff session's own (WorldId, ChannelId). The node that owns the target's session does the work, so the target's session-generation fence applies.
+   - Cross-channel actions use the ops tool against the owning node. A cross-channel teleport is forbidden; the only cross-channel move is the GAME-CHANNEL-01 §12 evacuation.
+   - Teleport is a server-authoritative position change in the target's session loop (F24).
+10. **EXT: staff character isolation.** A staff-bound session refuses trade, market, mail/parcel and bank transfer intents, with one check at intent dispatch. Staff characters cannot move value between players.
+11. **Staff audit is a single ANL-01 event type, `STAFF_ACTION`** (amendment A1).
+    - DURABLE_AUDIT. The privacy floor is RESTRICTED_PLAYER_LINKED.
+    - For a mutation, it is in the same transaction as the sanction, release or report change. For inspect, it is committed before the read result is released.
+    - Payload: action_id, actor kind (OPERATOR, STAFF, PLATFORM_SECURITY), the staff character and roster revision if any, action kind, typed target, reason code, result, basis refs and trace id. It never contains player text or chat.
+    - Roster grant and revoke use the same event type.
+    - Retention is a new profile, `STAFF_ACTION_AUDIT_RETENTION_V1` (owner question 3). Rows are never edited. A mistake is reversed by a new action.
+12. **Reports.**
+    - ALPHA: text reports already exist in WRITE-0. Bug reports go out of band with the pasted F12 line (owner question 2). No new Game queue in alpha.
+    - EXT: a new `PLAYER_REPORT` intent creates a row in `game_player_reports` with target CharacterId and a closed reason (BOT, HARASSMENT, NAME, CHEATING, BUG_ABUSE). There is no free text.
+    - The server attaches world, channel, position, time and the reporter's trace.
+    - It uses the WRITE-0 state machine, dedup and admission order (F18) and the restricted store. The limits reuse WRITE0-RL-04/05 values as CANDIDATE, and RL-03 sets retention to 180 days (CANDIDATE).
+    - SEC-CLIENT-01 signals open rows here (F17). Chat evidence is owner question 4.
+13. **Not a GM tool: case management, appeals and rollback.**
+    - A sanction's `basis_refs` are the case link. Appeals go to the owner out of band, and the result is an audited unmute or lift.
+    - World or economy rollback is never a GM action. Use §2 maintenance or the kill switch, the §3 containment fence or the ARCH-ALPHA-OPS-0 §3 restore.
+    - Ban waves stay a Platform decision before open beta (F17).
+14. **Before-freeze check.**
+    - Serialization: release (ruling 5), sanction compare-and-set (ruling 6), report compare-and-set (F18) and roster re-read (ruling 4).
+    - Restart: the rows are durable, a kick needs no resume state, and an ambiguous ops outcome is reconciled from the request file.
+    - Typed references: `basis_refs`, `StaffActionRef` and the roster revision.
+    - Older clients: `STAFF_V1` is never offered to them. An old client that gets SESSION_STAFF_DISCONNECT uses the unknown-code fallback (DERIVED).
+    - Multi-component: the node commits row and audit in one transaction before any in-memory or wire effect.
+
+### Contract amendments
+
+- **A1. docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json, `event_types`.** Append `{"id": 4, "name": "STAFF_ACTION", "owner_gate": "OPS_GM_01_STAFF_ACTIONS", "payload_schema": "docs/contracts/game-events/v2/staff_action.proto", "payload_message": "oteryn.events.v2.StaffActionV1", "current_schema_revision": 1, "durability_class": "DURABLE_AUDIT", "privacy_class_floor": "RESTRICTED_PLAYER_LINKED", "retention_profile_id": "STAFF_ACTION_AUDIT_RETENTION_V1", "atomic_mutation_evidence": true}`. The id is 4 unless another packet takes it first; the control plane leases it.
+- **A2. Same file, `retention_profiles`.** Append `STAFF_ACTION_AUDIT_RETENTION_V1`:
+  - purpose "Prove every staff, operator and Platform-security action on players";
+  - privacy_class RESTRICTED_PLAYER_LINKED;
+  - finite_retention_duration_or_ceiling "P1Y CANDIDATE (owner question 3)";
+  - permitted_roles ["owner", "authorized security"];
+  - export_redaction_policy, deletion_or_anonymization_policy and legal_hold_policy copied verbatim from CHARACTER_AUTHORITY_DURABLE_AUDIT_RETENTION_V1;
+  - policy_revision 1.
+- **A3. reviews/OTERYN_GAME_WRITE0_BOOKS_SCROLLS_AND_BLACKBOARDS_DECISION_2026-10-01.md §6.** Replace each "GM tools decision" with "ARCH-LIVE-READINESS-0 §1 (OPS-GM-01)". Add: "Close and clear are allowed for OPERATOR in alpha and for MODERATOR or above after that. Results: OK, STALE, ROLE_REVOKED, TIER_INSUFFICIENT. Each is a STAFF_ACTION event."
+- **A4. reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md §6.** Add: "A character is also muted while an ACTIVE staff MUTE sanction covers now (ARCH-LIVE-READINESS-0 §1 ruling 6). `MUTED {seconds}` uses the later end time."
+- **A5. reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md §6.** Replace "the OPS-GM-01 queue" with "`game_player_reports` (ARCH-LIVE-READINESS-0 §1 ruling 12)".
+- **A6. docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json.** Add capability `STAFF_V1` and command type `STAFF_COMMAND`, with `"offered": false` and offer_gate "offered only to a session whose admission bound a game_staff_roles row; not before OPS-GM-STAFF-5". Also add intent `PLAYER_REPORT`, not offered before OPS-GM-PREPORT-6. The control plane leases the numbers.
+- **A7. Error codes.**
+  - `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`, `error_codes`, after §2's 1200 (through FND-02 registration and protocol review): `{"code": 1201, "name": "SESSION_STAFF_DISCONNECT", "category": "SESSION_REJECTED", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "SESSION_UNAVAILABLE"}`. All values come from the registry's existing closed sets; no new public class is added. The player sees the SESSION_UNAVAILABLE text with code 1201 (§2 ruling 5), which support recognises.
+  - `docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json`, 6xxx block: ops codes `OPS_STAFF_NODE_UNREACHABLE` and `OPS_STAFF_TARGET_NOT_ONLINE`, numbered from the next free 6xxx code the control plane leases at packet time.
+- **A8. docs/architecture/ARCHITECTURE_ANALYSIS_GAP_REGISTER.md §23.** Status: "Decided for alpha and EXT by ARCH-LIVE-READINESS-0 §1. Residual: name lock, offline unstuck, chat evidence (if Q4 = b)."
+- **No change** to the FND-04 grant profiles (ruling 4).
+
+### Packets
+
+| Id | Owned paths | Tests | Order |
+|---|---|---|---|
+| OPS-GM-AUDIT-1 | docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json; docs/contracts/game-events/v2/staff_action.proto (new); apps/game-server/src/staff/audit.rs (new) | registry check passes; an audit insert rolls back with its mutation; a failed inspect audit shows nothing | ALPHA, first |
+| OPS-GM-SANCTION-2 | apps/game-server/migrations/NNNN_character_sanctions.sql (new); apps/game-server/src/staff/{mod,sanction}.rs (new); apps/game-server/src/chat/ (mute check); apps/game-server/src/node/serve.rs (control commands); apps/game-server/src/bin/oteryn-game-ops.rs; gameplay_transport release enum; the protocol and error code registries (A7) | kick vs logout race has one winner; kick in combat releases; no resume after a kick; mute on a live and an offline target; concurrent mutes; unmute compare-and-set; mute survives a restart; ops replay is idempotent | ALPHA, after AUDIT-1 and LOGOUT-WIRE-1 |
+| OPS-GM-REPORT-3 | apps/game-server/src/bin/oteryn-game-ops.rs (`reports`); WRITE-0 moderation module | list, close, compare-and-set, stale close; clear-text is keyed by action id and audited | ALPHA, after WRITE-MOD-1 |
+| OPS-GM-ROSTER-4 | migrations (new) `game_staff_roles`; apps/game-server/src/staff/roster.rs; admission binding; ops `staff grant / revoke` | a revoke mid-session refuses the next command; a revision change gives ROLE_REVOKED; grant and revoke are audited | EXT |
+| OPS-GM-STAFF-5 | protocol registry (A6); apps/game-server/src/staff/command.rs; intent-dispatch isolation check; native client staff panel | not offered to a non-staff or older client; tier matrix; same-channel only; teleport goes through the target's fence; a staff character's trade is refused | EXT, after ROSTER-4 |
+| OPS-GM-PREPORT-6 | migrations (new) `game_player_reports`; apps/game-server/src/staff/report.rs; protocol registry | dedup; limits; expiry; restricted read; no free text accepted | EXT |
+| P1 (proposal, Platform) | none in Game until accepted; Game handler in OPS-GM-SANCTION-2 follow-up | idempotent replay; stale account_security_generation ignored | EXT; routed by the control plane |
+
+### Owner questions
+
+1. Where does staff authority come from? a) A Game roster written by the operator with `oteryn-game-ops` (ruling 4). b) A Platform staff claim in a new grant profile version (cross-repo). **Recommend a.** It is local, immediate to revoke and needs no Platform change.
+2. Where do player bug reports go? a) Alpha: an out-of-band channel you name, with the pasted F12 line; EXT: the same, plus in-game rule-violation reports only. b) An in-game bug report into the Game queue. c) The Platform support desk (needs a Platform proposal). **Recommend a.**
+3. How long is staff action audit kept? a) 1 year (like the SEC-CLIENT-01 reviewer audit). b) 2 years (like the identity and access audit). c) 90 days (like the character audit). **Recommend a.** It covers appeals and staff-abuse review.
+4. Can a harassment report carry the reported chat line? a) No. Staff act on report counts and live observation. b) Yes. The node keeps the last lines a reporter received in memory only, and a report snapshots the one line chosen into the restricted store for 180 days. **Recommend b for EXT.** Without it, chat moderation has no evidence.
+
+### Rejected options
+
+- GM item or gold grants with an audit trail: these create value outside DUR-03 and the two-person rule (ruling 1).
+- Chat-prefix "/" commands parsed out of CHAT_INTENT: this mixes privileged commands into a broadcast path with spam limits, and it is untyped.
+- A staff claim in the FND-04 grant now: it needs a cross-repo profile version, and revocation only reaches the session at the next admission.
+- Staff mute in the CHAT-0 auto-mute row: a staff write would contend with the session fence.
+- Kick as a plain transport close: the player could resume, or the character would stay in the world during grace.
+- Letting Platform end sessions through grant validation: FND-04 §3.4 forbids it.
+- A TUTOR tier, a case management system, ban waves and GM rollback: not needed before external players.
+
+### Open unknowns
+
+- U1 (UNKNOWN): an in-session relocation primitive for teleport (F24). OPS-GM-STAFF-5 confirms it or adds the smallest one.
+- U2 (UNKNOWN): how the ops tool finds the owning node's control socket when nodes are on different hosts. Today it is local only (F4).
+- U3 (CANDIDATE): sanction and report limits and durations (ruling 12, A2). Fixed by owner question 3 and the RL rows.
+- U4: an offline "unstuck" relocation and a character name lock are not decided. A name lock may touch Platform lifecycle.
+- U5: WRITE-0, CHAT-0, SEC-CLIENT-01, DUR-03, ANL-01 and FND-04A are CANDIDATE. Rulings that amend them land with or after their acceptance. No CONFLICT was found.
+
+## 2. System threat model and live-ops controls
+
+Scope: one living threat model, the boundary inventory, the deferred §1.9 display item from
+ARCH-ERROR-CODES-0, and gap PROD-LIVEOPS-01 (runtime config, flags, maintenance, secrets).
+Builds on ARCH-ERROR-CODES-0 (`docs/architecture/reviews/OTERYN_GAME_ARCH_ERROR_CODES_2026-10-05.md`)
+and OPS-NODE-BOOT-01 (`docs/architecture/reviews/OTERYN_GAME_NODE_BOOT_COMPOSITION_DECISION_2026-09-24.md`).
+No secret values appear here.
+
+### Facts
+
+F1. PROVEN. No whole-system threat model exists. Partial ones: DUR-03 analysis §24 "Threat review"
+(`docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_ANALYSIS.md`), FND-04B §24
+(`docs/architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md`), the SEC-CLIENT-01 decision
+(`docs/architecture/reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md`, CANDIDATE),
+the registration bootstrap decision and the revoke-report decision.
+F2. PROVEN. The owner-accepted refinements require "a maintained threat model covering client, Gateway,
+GameNode, admin plane and update pipeline" before external alpha
+(`docs/architecture/ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-10.md:168`). The same requirement appears in
+`docs/architecture/ALPHA-CLIENT-01_NATIVE_CLIENT_ARCHITECTURE_CONTRACT_CANDIDATE.md:582`.
+F3. PROVEN. Gap register: PROD-LIVEOPS-01 §22 (lines 413–426) REGISTERED_UNRESOLVED; OPS-GM-01 §23 unresolved;
+§26 lists secrets; SEC-CLIENT-01 §27; EXP-SECURITY-01 §29 lists supply chain, signing keys, secret
+management and incident response (`docs/architecture/ARCHITECTURE_ANALYSIS_GAP_REGISTER.md`).
+F4. PROVEN. Node configuration is one closed-schema TOML read once at start. Sections: listener, scope,
+database, character, control, readiness, platform, launch, world_bundle
+(`apps/game-server/src/node/config.rs:182-191`). No reload or SIGHUP path exists in `apps/game-server/src`
+(grep). Changes take effect only by stop-then-start replacement with a new NodeId (OPS-NODE-BOOT-01 D3/D5).
+F5. PROVEN. Secrets arrive only as file references, opened without following symlinks, owner = reading user,
+mode 0600/0400, parent not group/other writable (`apps/game-server/src/node/secure_file.rs`; OPS-NODE-BOOT-01 D1).
+Secret file keys: `database.password_file`, `database.root_ca_file`, `listener.private_key_file`,
+`platform.client_key_file`, `platform.runtime_status.client_key_file`, `platform.trust_roots_file`,
+`launch.authorization_file` (`config.rs:45-135`).
+F6. PROVEN. Two PostgreSQL group roles (runtime, control-plane); login roles are members; the control-scope
+grant table is writable only by the DB owner (OPS-NODE-BOOT-01 D2). `oteryn-game-ops` runs only as root,
+holds only the control-plane credential, and writes each request file durably before submitting it
+(`apps/game-server/src/bin/oteryn-game-ops.rs:1-7`). Exit classes 2–7 (`oteryn-game-ops.rs:58-70`).
+F7. PROVEN. Shutdown on SIGTERM/SIGINT withdraws readiness first within a 10 s budget, then stops the loops.
+In-flight admissions and durability passes run to their own outcome (`apps/game-server/src/node/serve.rs:70,1076,1520-1556`).
+Connected sessions are not told why they close. DERIVED from the same lines: they see a transport close.
+F8. PROVEN. Wire codes reach the player through `ProtocolError` (message type 14, phase ANY) and
+`CommandResult` (`docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json:42`). No maintenance, drain or
+shutdown code exists. 1100–1116 are admission; 1117–1199 are reserved to admission; 1200–1999 are future
+wire codes through FND-02 registration (ARCH-ERROR-CODES-0 §1.2).
+F9. PROVEN. FND-04A §3 gives Platform the "configured world/channel/login/maintenance/entitlement policy",
+offer/route orchestration and grant signing. Game owns final admission, readiness, presence and session
+(`docs/architecture/FND-04A_AUTHORITY_FRESH_ADMISSION_CONTRACT.md:68`).
+F10. PROVEN. A ready=false report or a stale heartbeat makes Platform stop routing to the scope. Heartbeat 5 s
+and freshness 15 s are proposed, not accepted (`docs/contracts/OTERYN_GAME_NATIVE_RUNTIME_STATUS_PRODUCER_V1.md` §8).
+mTLS, TLS 1.3, one client certificate per purpose (§3). Key separation §16.2 is pending
+(`docs/architecture/reviews/OTERYN_GAME_ARCH_REVOKE_REPORT_2026-10-05.md`).
+F11. PROVEN. FND-04B §22: after node replacement the same session continues only with fenced recoverable
+evidence; a process restart is not a loss epoch.
+F12. PROVEN. Connection bounds: `MAX_CONNECTIONS = 256`, `MAX_HANDSHAKE_UNITS = 64`,
+`MAX_ENTRY_DEADLINE_MS = 60_000` (`config.rs:13-19`). No per-source rate limit exists (grep, DERIVED).
+F13. PROVEN. CI runs cargo-deny 0.20.2 pinned by commit SHA (`.github/workflows/rust.yml:425`,
+`.github/workflows/merge-gate.yml:1225`; `deny.toml` denies yanked crates and restricts licenses) and CodeQL
+(`.github/workflows/codeql.yml`). No release signing, SBOM or build provenance workflow exists (grep).
+F14. PROVEN. Capabilities carry `offered` and an `offer_gate`; a capability not selected is never sent and its
+commands are refused (`PROTOCOL_OTERYN_V1_REGISTRY.json:78-86`, CHAT_V1). 1116
+ADMISSION_CAPABILITY_REQUIRED exists (`:691`).
+F15. PROVEN. ARCH-ERROR-CODES-0 §1.8 item 2 and §1.9: the player sees the code now; whether release builds keep it
+is decided "after a security review of the `public_class` codes, before the first public release"; the
+catalogue keeps display in one place. Live log-level change is deferred (§1.9); `OTERYN_LOG` is read once (§1.10).
+F16. CONFLICT. `docs/architecture/GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md` header says CANDIDATE;
+`docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md:42` says ACCEPTED/LIFECYCLE_CLOSED. This draft relies
+on its §12 (typed maintenance evacuation) and §27 (DRAINING class) only as the register states them.
+F17. UNKNOWN. How the native client trusts the gameplay TLS certificate (pin in grant, private CA or public CA).
+F18. UNKNOWN. Which admission code a not-ready node returns today.
+
+### Rulings
+
+1. **One threat model.** Path: `docs/architecture/OTERYN_GAME_SYSTEM_THREAT_MODEL.md` (new). Owner: the
+   supervising architect role. Method: STRIDE per trust boundary, one table per boundary with threat,
+   control + locator, or gap + packet. It replaces no partial model; it links them.
+2. **Update trigger.** Any PR that adds or changes a trust boundary, credential, secret file key, wire
+   authentication, ops privilege, CI publication path or content ingest path must update the threat model in
+   the same PR. Enforcement: the PR template checkbox plus architect review; no new CI rule in this packet.
+3. **Initial inventory.** The model starts from this table. A gap blocks external players unless marked "later".
+
+| # | Boundary | Top threats (STRIDE) | Existing control (locator) | Gap → packet |
+|---|---|---|---|---|
+| B1 | client ↔ GameNode | S grant replay; T/I on wire; D connection floods; E modified client | one-shot grant and admission (FND-04A); evidence age ≤ 5 s (FND-04A:39); TLS 1.3 + ALPN (registry:16); 256/64 bounds (config.rs:13-14); server authority; public_class (ERR §1.8) | per-source connection rate limit → THREAT-DOS-1; network DDoS → OQ2; client integrity → SEC-CLIENT-01 |
+| B2 | Platform gateway ↔ node (route, grant) | S forged grant or route; T stale route; R who routed | Platform-signed grants; 1108–1110 stale codes; runtime generation check | grant verification key delivery and rotation unknown (U4) → SEC-ROTATION-1 |
+| B3 | node ↔ PostgreSQL | S stolen credential; T cross-scope writes; E runtime role doing control work | TLS with pinned CA (config.rs:45-52); two group roles + owner-only grant table (D2); session-generation fence; DUR-03 §24 | backup encryption and access → ARCH-ALPHA-OPS-0 §3 ruling 7; credential rotation → SEC-ROTATION-1 |
+| B4 | node ↔ Platform (registration, status, projection) | S node impersonation; T false ready; I identity leak | one-shot launch authorization, NodeId never a credential (registration decision §2-§4); mTLS per purpose (RS §3); revocation report carries no identity | key separation §16.2 pending → OPS-KEY-SEPARATION-2 (existing) |
+| B5 | ops tooling ↔ node/DB | S non-root caller; R which human acted; T replayed request | root only; control socket SO_PEERCRED uid 0; request file before submit; idempotent replay (D2, ops.rs:1-7) | per-human attribution: root hides the human → THREAT-MODEL-0 records host login audit (auditd/journald) as the control |
+| B6 | CI / supply chain | T malicious dependency or action; S unsigned release | cargo-deny pinned by SHA; CodeQL; Merge Queue + game-gate | release signing, SBOM, provenance → SUPPLY-SIGN-1 (later for closed alpha, required before external players) |
+| B7 | content pipeline | T corrupt or hostile bundle; I redistribution of third-party files | bundle digest pinned in config (`world_bundle.digest`, config.rs:144-156); activation via ops request | bundle provenance is the CI build that produced the digest → SUPPLY-SIGN-1 covers bundles |
+| B8 | admin / GM | E any player gaining GM power; R unaudited GM action | none: no GM path exists (gap §23) | ruling 4; staff tooling and audit → §1 (OPS-GM-01) |
+
+4. **No GM path on the wire** until OPS-GM-STAFF-5 delivers the typed `STAFF_V1` capability (§1 ruling 9). Any admin action meanwhile goes through
+   `oteryn-game-ops` with a retained request file. This is a control, not a deferral.
+5. **Release-build code display (closes ARCH-ERROR-CODES-0 §1.9 item).** Release builds keep showing the
+   public wire code next to the text. Reason: §1.8 already forbids a code that reveals more than its public
+   text, and the number is in every client binary anyway. Condition: ERR-PUBLIC-REVIEW-1 passes before the
+   first external player. If the review finds a code that reveals hidden state, that code changes its
+   public_class or merges; the display switch stays on. Codes without public_class never reach the player (§1.8).
+6. **Runtime configuration.** For alpha and the first external players every node setting is restart-only
+   (F4). Live change happens only through existing control-plane state: assignment, authorization, content
+   activation and readiness, each through `oteryn-game-ops` with request files. No reload signal, no remote
+   config channel. Live log level stays deferred (ERR §1.9).
+7. **Config provenance.** At `process_start` the node logs the SHA-256 of the exact config bytes, the
+   `platform.descriptor_revision` and the world bundle digest. The deployment keeps config files in a private
+   version-controlled location; the logged digest must match a reviewed revision. The deployment tool is
+   the gap §26 decision, not this one.
+8. **Feature flags.** No flag service. Three mechanisms only: (a) protocol capabilities with `offered` and
+   `offer_gate` (F14); (b) closed-schema config keys, added only by a decision; (c) content activation.
+   Kill switch: one new config key `[capabilities] withheld = [ids]` (LIVEOPS-KILL-2). A withheld capability
+   is not offered; a client that requires it gets 1116. Staged rollout = replacing one channel's node at a time.
+9. **Maintenance mode = announced graceful stop.** Sequence for one `RuntimeScopeRefV1` (WorldId, ChannelId):
+   (1) Platform sets its maintenance policy and stops offers and grant signing for the scope (Platform-owned,
+   F9; proposal P1). (2) The operator runs `oteryn-game-ops maintenance --world W --channel C --close-at T`
+   (new); it writes the request file, then sends it over the control socket. (3) The node publishes
+   ready=false (CompareAndSet, as at shutdown) and reports it; Platform stops routing (F10). New admissions use
+   the existing refusal codes; RETRY_LOGIN returns the player to Platform, which shows the maintenance state.
+   (4) Clients that selected SERVICE_NOTICE_V1 get one notice with `close_at`. (5) At `close_at` the node sends
+   `ProtocolError` code 1200 SESSION_SERVICE_MAINTENANCE to every session and closes it. (6) Drain is the
+   existing shutdown: in-flight durability passes finish; every acknowledged Character write is already durable
+   and session-generation fenced, so there is no separate "save all" step. (7) Reopen is a new launch:
+   stop-then-start, new NodeId, new launch authorization, then Platform clears its policy. No in-place reopen
+   of the same incarnation.
+10. **Maintenance close is terminal.** Code 1200 has progression TERMINAL: the client does not resume; the
+    player logs in fresh. A cross-channel evacuation stays the typed, audited GAME-CHANNEL-01 §12 exception, not
+    this path.
+11. **Older clients.** A client without SERVICE_NOTICE_V1 gets no countdown. An older client that does not
+    know 1200 shows the generic text of its block (ERR §1.6). No version gate is needed for the close code.
+12. **Secrets stay files** with the F5 checks. No secret service in alpha. Delivery for production is part of the
+    gap §26 deployment decision; recommended upstream: systemd credentials (`LoadCredential=`) if
+    SEC-ROTATION-1 shows they pass the `secure_file` checks, else the config-management tool's file deploy.
+    HashiCorp Vault/OpenBao is rejected for now (rejected options).
+13. **Rotation means restart.** Every secret is read once. Rotating any of them is a node replacement, run as a
+    maintenance (ruling 9) or as a rolling replacement per channel. Live sessions continue only through the
+    FND-04B fenced path (F11); otherwise they receive 1200 and log in fresh.
+
+| Secret (file key) | Holder | Rotation | Live-session effect |
+|---|---|---|---|
+| DB runtime password (`database.password_file`) | node | two login roles in the runtime group; switch the inactive one, replace nodes, then disable the old | node restart |
+| DB control-plane password (`OpsConfig.database`) | ops tool | same pattern, control-plane group | none |
+| DB CA (`database.root_ca_file`) | node, ops | add new CA alongside old, replace, remove old | node restart |
+| Gameplay TLS key (`listener.private_key_file`) | node | new chain + key, replace node | restart; trust path F17 |
+| Platform client keys (`platform.client_key_file`, `runtime_status.client_key_file`) | node, ops | new cert per purpose, new `descriptor_revision` issued (D3 step 4) | restart |
+| Platform trust roots (`platform.trust_roots_file`) | node | overlap old and new roots across one replacement | restart |
+| Launch authorization (`launch.authorization_file`) | node | one-shot, consumed; never rotated, revoke/supersede only | none |
+
+14. **Compromise response.** On suspected key compromise: revoke with `oteryn-game-ops` authorization/assignment
+    revoke (revocation report, ARCH-REVOKE-REPORT), rotate per the table, record in the threat model change log.
+    Scheduled rotation periods are CANDIDATE: TLS and mTLS leaf 90 days, DB passwords 180 days, fixed by
+    SEC-ROTATION-1 after one timed rehearsal on the disposable preprod stack.
+15. **Before-freeze check for ruling 9.** Concurrent transitions: maintenance, signal and assignment revoke all
+    feed the one shutdown token; the first wins and the rest are no-ops. Restart/resume: the request file and
+    operation id make the ops command replay-safe; a node that died mid-drain restarts not ready. Typed
+    references: the command carries `RuntimeScopeRefV1`, checked against the node's own scope; a mismatch is
+    rejected (6xxx). Older peers: ruling 11; Platform needs no wire change. Multi-component: Platform policy and
+    Game drain are independent; if Game acts first, ready=false still stops routing; if Platform acts first,
+    no new grants arrive.
+
+### Contract amendments
+
+A1. `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`, `error_codes`, after 1116 (through FND-02 registration
+and protocol review):
+`{"code": 1200, "name": "SESSION_SERVICE_MAINTENANCE", "category": "INTERNAL_UNAVAILABLE", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "TEMPORARILY_UNAVAILABLE"}`
+A2. Same file, `capabilities`: `SERVICE_NOTICE_V1`, one state domain carrying `{kind: MAINTENANCE, close_at_unix_ms}`,
+`"offered": false`, `offer_gate`: "not offered before LIVEOPS-MAINT-1 composes the notice". Capability id and
+state-domain id are leased by the #162 control plane; no number is chosen here.
+A3. `docs/architecture/reviews/OTERYN_GAME_ARCH_ERROR_CODES_2026-10-05.md` §1.9, replace the release-display
+sentence with: "Release builds keep showing the public wire code (ARCH-LIVE-READINESS-0 §2 ruling 5), subject
+to ERR-PUBLIC-REVIEW-1 passing before the first external player."
+A4. `docs/architecture/ARCHITECTURE_ANALYSIS_GAP_REGISTER.md` §22: status "PARTIALLY_RESOLVED by
+ARCH-LIVE-READINESS-0: static config, no flag service, maintenance sequence, secrets as files. Open: event and
+rate schedules, live log level." Add the threat model path to §27 and §29.
+A5. `docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json`, 6xxx block: add
+`OPS_MAINTENANCE_SCOPE_MISMATCH` for ruling 15 (number assigned by LIVEOPS-MAINT-1 from the next free 6xxx code).
+
+### Packets
+
+- **THREAT-MODEL-0.** Writes the threat model from ruling 3, with links to the partial models and the update
+  trigger. Owned: `docs/architecture/OTERYN_GAME_SYSTEM_THREAT_MODEL.md` (new), `.github/pull_request_template.md`
+  (checkbox line). Tests: agent-governance and architecture-semantic-audit workflows pass. Depends: none.
+- **ERR-PUBLIC-REVIEW-1.** Reviews every code with a public_class against its text; records one line per code.
+  Owned: the threat model §B1, A3 edit. Tests: a registry check that every public_class code has a review row
+  (`apps/game-server` registry tests or `tools/` validator, path decided by the packet). Depends: THREAT-MODEL-0.
+- **LIVEOPS-CONFIG-AUDIT-1.** Logs config SHA-256, descriptor revision and bundle digest at `process_start`.
+  Owned: `apps/game-server/src/node/serve.rs`, `apps/game-server/src/node/config.rs`. Tests: unit test that the
+  digest equals SHA-256 of the input bytes and that no secret value appears in the line. Depends: none.
+- **LIVEOPS-MAINT-1.** Code 1200 (A1), ops `maintenance` subcommand, control-socket command, close of all
+  sessions at `close_at`, A5 code. Owned: `apps/game-server/src/bin/oteryn-game-ops.rs`,
+  `apps/game-server/src/node/serve.rs`, `apps/game-server/src/node/operator_files.rs`, the registry files.
+  Tests: drain closes every session with 1200 and leaves no unacknowledged write; replayed request is a
+  no-op; scope mismatch rejected; signal during maintenance converges. Depends: protocol review of A1.
+- **LIVEOPS-NOTICE-2.** SERVICE_NOTICE_V1 server side and native client display. Owned: the registry,
+  `apps/game-server/src/node/serve.rs`, client paths named by the client lane. Tests: unselected client never
+  gets the domain. Depends: LIVEOPS-MAINT-1, A2 lease. Before external players, not alpha.
+- **LIVEOPS-KILL-2.** `[capabilities] withheld` config key. Owned: `apps/game-server/src/node/config.rs`,
+  capability offer site. Tests: withheld capability is not offered; unknown id rejects the config. Depends: none.
+- **THREAT-DOS-1.** Per-source connection and handshake rate limit at accept. Numbers CANDIDATE, fixed by a
+  load measurement. Owned: `apps/game-server/src/node/serve.rs`, `config.rs`. Tests: flood from one source
+  does not exhaust handshake units. Depends: ARCH-ALPHA-OPS-0 §2 PERF-ALPHA-1 measurement.
+- **SEC-ROTATION-1.** Rotation runbook for every row of the ruling 13 table, rehearsed once on the disposable
+  preprod stack; checks systemd credentials against `secure_file`. Owned: `docs/operations/` runbook (new).
+  Tests: the rehearsal log. Depends: preprod route authority items 3–4.
+- **SUPPLY-SIGN-1.** Release artifacts and world bundles signed and attested: GitHub artifact attestations
+  (Sigstore), SBOM by `cargo-cyclonedx`, `cargo-auditable` binaries. Owned: `.github/workflows/` (new
+  release workflow). Tests: verification step fails on a tampered artifact. Depends: SEC-REL-1 of SEC-CLIENT-01.
+
+### Owner questions
+
+1. Who triggers the Game-side maintenance drain? Context: Platform owns the policy (F9); Game owns readiness.
+   a) Game operator runs `oteryn-game-ops maintenance` locally; Platform operator sets its policy separately.
+   b) Platform calls a new Game control endpoint. c) Both, Platform-first. Recommend a: no new remote control
+   channel; proposal P1 to Platform covers only "stop offers and grants, show maintenance in login".
+2. Network DDoS protection before external players. Context: only node-level bounds exist (F12); this is spending.
+   a) Host-included network mitigation, chosen with the hosting decision. b) Paid L4 proxy in front of nodes.
+   c) None until public release. Recommend a.
+3. External security review before external players. Context: the threat model is internal; spending.
+   a) Internal review only. b) One paid external review of B1, B4 and B5 before public release. c) Bug bounty.
+   Recommend a for the first external players, b before public release.
+
+### Rejected options
+
+- Hot reload of node config (SIGHUP): adds restart/resume state to every setting; replacement already exists.
+- Feature-flag service (LaunchDarkly, Unleash, flagd): a second authority for behaviour; capabilities suffice.
+- Secret manager (Vault/OpenBao) in alpha: a new stateful service and credential to protect; files suffice.
+- In-place reopen of the same incarnation after maintenance: new readiness transitions; stop-then-start is proven.
+- New admission code for maintenance in 1117–1199: Platform already shows maintenance at login.
+- Hiding codes in release builds: no security gain under §1.8; harms support.
+- Generic "maintenance bypass" flag for evacuation: forbidden by GAME-CHANNEL-01 §12.
+
+### Open unknowns
+
+- U1. Gameplay TLS trust path in the native client (F17); needed by SEC-ROTATION-1. Ask the client lane.
+- U2. Admission code a not-ready node returns (F18); LIVEOPS-MAINT-1 test records it.
+- U3. Heartbeat and freshness values remain CANDIDATE (U-RS1); maintenance timing depends on F.
+- U4. How the node learns Platform's grant verification key and how that key rotates (B2). Proposal to Platform.
+- U5. GAME-CHANNEL-01 lifecycle CONFLICT (F16); the register owner must fix the header or the register.
+- U6. Whether systemd credentials satisfy the `secure_file` owner and mode checks; SEC-ROTATION-1 measures.
+
+## 3. Economy incident response and data privacy lifecycle
+
+Scope A is the response to a duplication or value bug. Scope B is the data privacy lifecycle (gap `DATA-PRIVACY-01`).
+Package: "before external players", authored in parallel with the alpha package (owner ruling, 2026-10-06).
+Full disaster recovery restore belongs to ARCH-ALPHA-OPS-0 §3 (data continuity). It is referenced here, not decided.
+
+### Facts
+
+| # | Fact | Locator | Class |
+|---|---|---|---|
+| F1 | A correction is a new TransactionId with causation to the original, current authorization and full conservation evidence. "Raw row/audit rewrite is not compensation." | DUR-03 §26 | PROVEN |
+| F2 | Analytics may detect. It may not mutate, auto-delete duplicates, mint compensation or sanction. Correction uses a new typed, authorized transaction under the owning gameplay/admin/security contract. | DUR-03 §42; ANL-03 §2 | PROVEN |
+| F3 | Raw SQL or an admin mutation is not an ordinary correction. | DUR-03 §49; CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md "Security and privacy consequences" | PROVEN |
+| F4 | An integrity failure keeps the affected mutation closed until an explicit, safe repair or compensation path exists. | DUR-03 §41 | PROVEN |
+| F5 | The burn causes are a closed set: FeeBurnCause, NpcTradeCause, ItemUseCause and DECAY_RETIRE (CorpseDecay, WorldReset). Silent deletion or quantity=0 is not a sink. No cause covers remediation or character retirement. | DUR-03 §15 | PROVEN |
+| F6 | No cross-world transfer. A burn and mint across worlds is laundering. The same occurrence cannot mint twice. | DUR-03 §19, §14 | PROVEN |
+| F7 | Value outside items: bank gold per (AccountId, WorldId) with an immutable ledger (BANK-0, migration 0071); forge dust per Character (FORGE-1a, migration 0059). | DUR-03 §18; apps/game-server/migrations/0071_account_bank.sql, 0059 | PROVEN |
+| F8 | ANL-03 defines a provenance projection, 11 integrity invariants, and finding classes INVARIANT_VIOLATION_SUPPORTED, ANOMALY_HYPOTHESIS and REPLAY_CORROBORATED_DEFECT, plus case dispositions with an immutable audit. | ANL-03 §6, §6.1, §10, §11 | PROVEN |
+| F9 | Enforcement, GM and account remediation authority are outside ANL-03 and need an owning contract. | ANL-03 §22 ANL03-XD-02 | PROVEN |
+| F10 | Store coin balance, payment flow and purchase ledger are Platform's. Delivery ownership, entitlement revocation, refunds, chargebacks and fraud correction are open. | OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md §2, §3 | PROVEN |
+| F11 | Platform decides grant, expiry and revocation. Game enforces through a durable consumer fence. Revocation does not force a logout. | PROD-ENTITLEMENTS-01_GAME_CONSUMER_ENFORCEMENT_CONTRACT_CANDIDATE.md §2.1, §6, §12 | PROVEN (contract is CANDIDATE) |
+| F12 | Database restore/PITR needs an external recovery register successor. Restored rows are historical evidence until they are reconciled. | reviews/OTERYN_CHARACTER_RESTORE_NONROLLBACK_FENCE_DECISION_2026-09-23.md "Restore / PITR" | PROVEN |
+| F13 | Character audit retention is P90D (RESTRICTED_PLAYER_LINKED). One-item audit retention is P90D. The economy, market and guild event profiles are P30D (CANDIDATE). Authoritative bank, ledger, offer, escrow and guild tables are game state and are never deleted by these profiles. | reviews/…CHARACTER_DURABLE_AUDIT_RETENTION_DECISION_2026-09-22.md; …DUR03_ONE_ITEM_…_2026-09-27.md; …ECON_RET0_…_2026-10-04.md | PROVEN |
+| F14 | A legal hold table exists for character audit only: `game_character_audit_legal_holds` (reason, actor, start, release). There is no hold for item audit or economy events. | apps/game-server/migrations/0005_character_authority.sql:157 | PROVEN |
+| F15 | ANL-01 privacy classes: INTERNAL_NON_PERSONAL, PSEUDONYMOUS_ANALYTICS, RESTRICTED_PLAYER_LINKED and SECURITY_SENSITIVE. Every event type needs a finite retention profile, and unlimited retention is forbidden. Pseudonym map access is audited. No player-linked ids appear in metric labels or logs. | ANL-01 §15, §16, §17, §18 | PROVEN |
+| F16 | SEC-CLIENT-01 defines a DSR reader (PRIVACY_DSR purpose), a 30-day account deletion bound (RL-18) and a deletion marker for ids (IDRES-1). Only the privacy officer role named by DATA-PRIVACY-01 may place a hold. Until that role is named, no hold can be placed. | reviews/OTERYN_GAME_SEC_CLIENT01_…_2026-10-01.md §5.1 | PROVEN (CANDIDATE decision) |
+| F17 | Crash upload is on by default with a global opt-out. The lawful basis must be reviewed before production release. | CLIENT_CRASH_DIAGNOSTICS_PRIVACY_OWNER_BASELINE.md | PROVEN |
+| F18 | Chat text is never written to a table or to ordinary logs. Mail and book text is player content in a text store, never in logs or audit. | CHAT-0 decision; MAIL-0 decision; WRITE-0 decision | PROVEN |
+| F19 | Deletion lifecycle is Game-owned. A Platform workflow row is not proof. A deleted CharacterId is never reused. A released name key is blocked for 30 days (D183). | CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md §6.1, §7, §8; ADR-0012 | PROVEN |
+| F20 | Cross-system deletion goes through a domain API, never through direct Platform SQL. | ADR-0004 | PROVEN |
+| F21 | A guild leader cannot be deleted until they resign. | GUILD-0 decision | PROVEN |
+| F22 | Whether Game transport or logs persist client IP addresses. | apps/game-server/src (no match for logged peer addresses found) | UNKNOWN |
+| F23 | The DUR-03 file header says CANDIDATE/NONBINDING. The programme status lists DUR-03, ANL-01 and ANL-03 as ACCEPTED. | DUR-03 header; FOUNDATION_PROGRAMME_CURRENT_STATUS.md:55-68 | CONFLICT |
+| F24 | The DATA-PRIVACY-01 items are classification, retention/deletion/anonymisation/legal hold, account deletion, export/access, consent, pseudonymous analytics, backup/audit exceptions and diagnostics. | ARCHITECTURE_ANALYSIS_GAP_REGISTER.md §28 | PROVEN |
+
+### Rulings
+
+#### A. Economy incident response
+
+1. **One entry point.** An economy incident starts as an ANL-03 case (F8). The case opens from a detector signal, an integrity E-code line (DUR-03 §43) or a support report. The case id is the reference that every later record carries. Detection never mutates (F2).
+2. **Containment is a typed fence.** New Game state `EconomyContainmentFence` with these scopes: `ITEM_TYPE_SET` (WorldId, ItemType ids), `MARKET` (WorldId), `CHARACTER_VALUE` (CharacterId), `BANK` (AccountId, WorldId). Every DUR-03 value mutation (TRANSFER, SPLIT_MERGE_QUANTITY, MINT, BURN, TRANSFORM, CONVERSION, bank and dust ledger) reads the fence inside its own transaction, so a raise serializes with in-flight writers. A covered mutation is refused with a typed outcome and no partial write. The fence is stored in Game PostgreSQL and survives restart. If the fence state cannot be read, the mutation is refused (fail closed, F4). Closing a whole channel uses the existing scope and assignment control. No new channel mechanism is needed.
+3. **Containment does not touch sessions.** `CHARACTER_VALUE` refuses value mutations only. Movement and combat continue. The session-generation fence is unchanged. An older client sees the existing generic refusal message, so the protocol does not change (DERIVED: the fence adds no wire message).
+4. **Raise fast, lift carefully.** The on-call operator may raise a fence without approval, because a fence is reversible and destroys nothing. Only the remediation authoriser (ruling 8) may lift a fence. Every raise and lift is DURABLE_AUDIT with case id, actor, reason and scope (ANL-01 §5).
+5. **Preserve evidence at case open.** The case places a case hold on the affected audit and economy event rows before anything expires (P30D/P90D, F13). New hold tables for item audit and economy events copy the shape of `game_character_audit_legal_holds` (F14). A case hold is not a privacy legal hold. The remediation authoriser places it, and the case close releases it. A hold never extends past case close plus the expiry the row had.
+6. **Investigation reads authoritative state.** Lineage comes from receipts, mint receipts, ledgers and escrow rows (game state, never retention-deleted, F13) and the audit outbox, joined into the ANL-03 §6 provenance graph. Tool: a read-only `oteryn-game-ops economy trace` subcommand in the existing ops binary. Output: a lineage report per ItemInstance or ledger line, with each hop's TransactionId and holder CharacterId. Only INVARIANT_VIOLATION_SUPPORTED or REPLAY_CORROBORATED_DEFECT may lead to remediation. ANOMALY_HYPOTHESIS never does.
+7. **Remediation is a compensating DUR-03 transaction only.** Each step is a normal DUR-03 transaction with a new TransactionId, a typed `CausationRef {family, key, revision}` to the original transaction and full conservation evidence (F1). A burn uses the new closed cause `IntegrityRemediationCause` (amendment 1). Restoring a victim uses a MINT under the same cause, with exactly-once identity `(remediation_id, step_no)`. Forbidden: restoring one table, raw SQL, rewriting audit or ledger rows, quantity=0, and a burn+mint across worlds (F3, F5, F6).
+8. **Typed remediation record.** New table `game_economy_remediation_records`: remediation_id (UUIDv7), case_id, finding_ref, world_id, proposer, approver, the step plan, and a state of `PROPOSED -> APPROVED -> EXECUTING -> COMPLETED | ABORTED`. Transitions use compare-and-set on a revision. The approver must differ from the proposer (two-person rule). Approval binds the exact plan hash. A changed plan is a new record. Who may approve is owner question 1.
+9. **Restart and partial completion.** Steps commit one by one. There is no hidden atomicity across steps or worlds. After a restart, the executor resumes at the first step that has no receipt. An `ABORTED` record keeps its committed steps as facts, and undoing them needs a new remediation. A step on a character commits only when no live session writes that character: it takes the character write fence at a new session generation, as a login does, so a stale session is fenced out.
+10. **Items that moved to other players.** The trace finds every current holder of an excess ItemInstance or quantity, including market escrow and house custody. Excess quantity in a merged stack is burned by quantity, with split/merge conservation. A consumed item cannot be retired; it is recorded as unrecovered value on the record. What happens to a holder who paid for the item is owner question 2. Under every option a holder is never sanctioned by remediation alone (F9).
+11. **Sanctions are separate.** Account bans and GM actions belong to OPS-GM-01 and an owning enforcement contract (F9). The remediation record may reference a sanction case. It never applies one.
+12. **Platform commercial value is Platform's.** Game never changes coin balances, purchase ledgers or entitlements (F10, F11). Game sends Platform a proposal (packet PLATFORM-ECON-PROP-1): a typed incident notice carrying the case id and the affected AccountIds, with Platform deciding reversal, refund or revocation. A revocation reaches Game through the PROD-ENTITLEMENTS-01 consumer fence. If Store delivery later becomes Game-owned, a delivered item is remediated by ruling 7 with the Platform purchase ref as its causation.
+13. **Not a disaster restore.** An economy bug is never repaired by a database restore. A restore rolls back every player and needs the recovery register (F12). A full restore happens only when the store is lost or corrupt, under ARCH-ALPHA-OPS-0 §3 ruling 9. After such a restore, open economy cases are re-traced, because restored rows are historical evidence only.
+
+#### B. Data privacy lifecycle
+
+14. **Inventory is a checked artefact.** New `docs/contracts/GAME_PERSONAL_DATA_INVENTORY.json`: one row per table, log stream, file store and event type, with privacy class (ANL-01 §15), retention profile, location and erasure action. A check in `tools/architecture-check/` fails when a migration creates a table that has no row. Initial rows:
+
+| Data | Where | Class | Retention candidate | Erasure action on account deletion |
+|---|---|---|---|---|
+| Character root, name, name_key, AccountId link | 0005, 0022 | RESTRICTED_PLAYER_LINKED | While the character lives | Tombstone. AccountId replaced by a deletion marker (IDRES-1). Name removed. name_key kept 30 days (D183), then deleted. |
+| Inventory, items, house custody | 0010-0015, 0025, 0077 | Game state, player-linked | While the character lives | Retire with `CharacterRetirementCause` (amendment 1) |
+| Receipts, bank and economy ledgers, market and trade rows | 0011-0016, 0023, 0071, ECON-RET-0 tables | Game state, player-linked | While the character lives | Owner question 3 |
+| Character, item and economy audit outboxes | 0005, 0010, 0034, 0035, 0079 | RESTRICTED_PLAYER_LINKED | P90D / P30D (F13) | Expires on its own clock. No early delete. |
+| Mail, inbox and book text | MAIL-TEXT-1 store, 0076 | Player content | While the letter exists | Delete |
+| Chat | Memory only (F18) | Not persisted | None | None |
+| Guild, VIP, party membership | GUILD-0, VIP-0, 0046 | Player-linked | While the character lives | Remove membership. See open unknown U3. |
+| Highscores | Derived snapshots | Public projection | Current + previous | Exclude at once |
+| Anti-cheat telemetry, DSR responses | SEC-CLIENT-01 §5.1 | SECURITY_SENSITIVE | SEC-CLIENT-01 RL values (CANDIDATE) | SEC-CLIENT-01 purge |
+| Crash packages, disconnect forensics | Crash and disconnect baselines | RESTRICTED_PLAYER_LINKED | CANDIDATE, owner question 4 | Delete by AnalyticsActorId |
+| Analytics events | ANL-01 | PSEUDONYMOUS_ANALYTICS | Per profile | Delete the pseudonym map entry |
+| Client IP addresses | Transport and logs (F22) | SECURITY_SENSITIVE | None in durable Game tables | Packet PRIVACY-LOG-REDACT-1 checks this |
+| Node diagnostic logs | Host volume `log/node-*.log` (ARCH-ALPHA-OPS-0 §1 rulings 6-7) | RESTRICTED_PLAYER_LINKED (conservative: `attempt_ref` is linkable by Platform; no Game player id) | 14 days CANDIDATE (ARCH-ALPHA-OPS-0 §1 owner question 2) | Expires on its own clock. Game holds no account link. |
+
+15. **Split with Platform.** Platform holds account PII: email, credentials, payment data, web login IPs and the account profile. Game holds an opaque AccountId and character data only. Game stores no email, real name or payment data. A data subject request enters at Platform. Platform calls a Game domain API for the Game portion and never reads Game SQL (F20). This is proposal PLATFORM-PRIVACY-PROP-1, routed by the control plane.
+16. **Account deletion propagation.** Platform sends a typed, idempotent `AccountErasureRequested {operation_id, account_id}` when its own grace ends. Game runs `ScheduleCharacterDeletion` and then `FinalizeCharacterLifecycle` for each character (F19). Order per character: cancel market offers and return escrow; close trade and party state; remove guild and VIP membership; delete player text; retire held items and dust; retire bank gold per world through a ledger entry with the retirement cause; tombstone the root. Each step is idempotent and resumes after a restart from its receipt. Game reports a typed completion to Platform. The engineering bound is the SEC-CLIENT-01 RL-18 30 days (CANDIDATE). A deleted CharacterId is never reused.
+17. **Integrity data is kept, not linked.** After finalisation, audit rows remain until their own finite expiry (F13). The economy ledger keeps the tombstoned CharacterId only, with no AccountId and no name, so counterparties' histories and conservation still balance. Whether this is enough is owner question 3. An open economy case hold or a privacy legal hold delays only the rows in its scope.
+18. **Backups replay erasure.** Erased CharacterIds and AccountIds are appended to an erasure journal in the Game restore fence directory (ARCH-ALPHA-OPS-0 §3 ruling 8), outside the Game PostgreSQL restore unit, next to the Character recovery fence (F12). An erasure is acknowledged to Platform only after its journal entry is durable. A restore re-applies the journal at ARCH-ALPHA-OPS-0 §3 ruling 9 step 7, before any authority opens; a missing or unreadable journal is a refusal. Backup copies expire on the backup retention clock of ARCH-ALPHA-OPS-0 §3 owner question 1. A journal entry may be dropped once no backup older than it remains.
+19. **Access and export.** `oteryn-game-ops privacy export` runs as the SEC-CLIENT-01 DSR reader (PRIVACY_DSR purpose). It runs only for a verified request id that Platform supplies. It writes one JSON document covering every inventory row marked exportable. Each run is DURABLE_AUDIT. Responses follow SEC-CLIENT-01 RL-17/RL-23.
+20. **Privacy officer role.** DATA-PRIVACY-01 names the role `PRIVACY_OFFICER`. It places, extends and releases privacy legal holds, approves DSR exports, and owns the published disclosure. This unblocks the fail-closed hold rule in SEC-CLIENT-01 (F16). Who holds the role is owner question 4.
+21. **One disclosure.** Before external players, Platform publishes one privacy notice that includes a Game section. Game supplies the section text from the inventory: telemetry without opt-out (SEC-CLIENT-01 R2a), crash upload on by default with opt-out (F17), audit retention and the fact that chat is not stored. Lawful basis categories are the owner's legal choice (owner question 4).
+22. **Before freeze check.** Concurrent transitions: fence reads inside the writer transaction and record compare-and-set (rulings 2, 8). Restart and resume: step receipts (rulings 9, 16). Typed references: CausationRef, case_id and remediation_id. Older clients: no wire change (ruling 3). Commit and recovery across components: per-step commit, the erasure journal and Platform completion acks (rulings 9, 16, 18).
+
+### Contract amendments
+
+1. `docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md` §15, append to the closed cause list:
+   > `IntegrityRemediationCause { remediation_id, step_no, case_id, causation: CausationRef }` — BURN or MINT executed only by an `APPROVED` economy remediation record; exactly-once per `(remediation_id, step_no)`; same World as the original transaction.
+   > `CharacterRetirementCause { character_id, lifecycle_operation_id }` — BURN of items, dust and bank gold held by a Character at `FinalizeCharacterLifecycle`; exactly-once per `(lifecycle_operation_id, asset ref)`.
+   > Both causes require full conservation evidence (§26). Neither permits raw deletion.
+2. `docs/contracts/CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md` §8, append:
+   > Account erasure: Platform sends `AccountErasureRequested {operation_id, account_id}` after its own grace period ends. Game finalises every Character of that AccountId, replaces the AccountId link with a deletion marker, removes the display name, keeps the name key blocked for the D183 period, and returns a typed completion. Platform shows the account as erased only after that completion.
+3. `docs/architecture/ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md` §17, append:
+   > On account erasure, the pseudonym map entry for each affected AnalyticsActorId is deleted. Events already recorded remain under their own retention profile, with no path back to the AccountId or CharacterId.
+
+### Packets
+
+| Id | Owned paths | Tests | Deps / order |
+|---|---|---|---|
+| ECON-FENCE-1 | apps/game-server/migrations/NNNN_economy_containment_fence.sql (new); apps/game-server/src/durability/economy_fence.rs (new); fence checks in apps/game-server/src/durability/{item_fee_burn.rs, bank.rs, item_mint_audit.rs …}; apps/game-server/src/bin/oteryn-game-ops.rs | A raise during an in-flight transfer leaves exactly one ordering; the fence persists across a restart; an unreadable fence refuses; an older client gets the existing refusal | First |
+| ECON-CASE-HOLD-1 | migration (new) for item and economy hold tables; apps/game-server/src/durability/ (new module) | A held row survives expiry; a release returns the row to its original expiry | With FENCE-1 |
+| ECON-TRACE-1 | apps/game-server/src/bin/oteryn-game-ops.rs (`economy trace`, read-only) | A fixture duplicate traces across trade, market escrow and stack merge; the role has no write grant | After FENCE-1 |
+| ECON-REMEDIATION-1 | DUR-03 amendment 1; migration (new) `game_economy_remediation_records`; apps/game-server/src/durability/economy_remediation.rs (new) | Two-person rule; a changed plan is rejected; replaying a step mints nothing; resume after a crash between steps; a cross-world step is refused | After TRACE-1 and owner questions 1-2 |
+| PRIVACY-INVENTORY-1 | docs/contracts/GAME_PERSONAL_DATA_INVENTORY.json (new); tools/architecture-check/ | A migration table with no row fails the check | Independent, first in B |
+| PRIVACY-LOG-REDACT-1 | apps/game-server/src/gameplay_transport/, crates/diagnostics/ | A log-capture test asserts that no IP, AccountId or name appears (ANL-01 §18) | Independent |
+| PRIVACY-ERASURE-1 | Amendments 1-3; apps/game-server/src/durability/character_authority.rs; migration (new) for the tombstone; the erasure journal file in the restore fence directory (ARCH-ALPHA-OPS-0 §3 ruling 8) | Idempotent replay; resume mid-sequence; the leader case (U3); a restore re-applies the journal | After INVENTORY-1, PLATFORM-PRIVACY-PROP-1, owner question 3 and DATA-RESTORE-OPS-2 (journal re-apply) |
+| PRIVACY-DSR-EXPORT-1 | apps/game-server/src/bin/oteryn-game-ops.rs (`privacy export`) | Export covers every exportable inventory row; refused without a verified request id; the run is audited | After INVENTORY-1 and owner question 4 |
+| PLATFORM-PRIVACY-PROP-1 / PLATFORM-ECON-PROP-1 | Proposals only, routed by the control plane to Oteryn-Platform | Platform side | Parallel |
+
+### Owner questions
+
+1. Who may approve an economy remediation (lift a fence, burn or mint for repair)? a) The owner only. b) A named `ECONOMY_REMEDIATOR` role that the owner appoints, under the two-person rule, held by the owner until delegated. c) Any GM. **Recommend b.**
+2. An innocent player holds or paid for a duplicated item. a) Retire the item wherever it is, take back the proceeds from the exploiter along the ledger, and mint compensation for any shortfall up to what the holder paid. b) Retire it everywhere with no compensation. c) Retire it only from the exploiter. **Recommend a.**
+3. After account erasure, economy ledger and receipt rows: a) keep them with only the tombstoned CharacterId (no AccountId, no name) for integrity. b) delete them after a fixed period and record aggregate totals. **Recommend a, subject to legal review.**
+4. Privacy officer and lawful basis: a) the owner holds `PRIVACY_OFFICER` and gets one external legal review of the lawful basis categories, the crash default and the retention candidates before external players. b) the owner appoints someone else, with the same review. **Recommend a.**
+
+### Rejected options
+
+- Restoring one table or a point in time to undo a duplicate: this breaks conservation and rolls back innocent players (F1, F12).
+- Hand edits or raw SQL with a ticket: forbidden as correction (F3).
+- Detectors that auto-remediate: forbidden (F2).
+- Freezing by forcing logouts: a value freeze already contains the damage without touching sessions.
+- Hard-deleting every row that carries a CharacterId on erasure: this breaks counterparties' ledgers and replay protection (DUR-03 one-item retention decision).
+- Game handling coin refunds or entitlements: these are Platform's (F10).
+- One atomic remediation across characters or worlds: no hidden cross-component atomicity, and no cross-world value (F6).
+
+### Open unknowns
+
+- U1 (CONFLICT, F23): DUR-03 and ANL-03 headers still say CANDIDATE. The control plane should reconcile the headers with the status register.
+- U2 (UNKNOWN, F22): whether client IPs reach logs. PRIVACY-LOG-REDACT-1 settles it.
+- U3 (CONFLICT): GUILD-0 blocks deletion of a guild leader (F21), but erasure cannot be blocked indefinitely. A proposal for the GUILD-0 owner: erasure forces succession by the existing GUILD-0 rule or disbands the guild.
+- U4 (DERIVED tension): D183 keeps the name key for 30 days after deletion. Owner question 4's legal review should confirm this.
+- U5 (CANDIDATE): retention values for crash packages, forensic slices and SEC-CLIENT-01 RL values. Fixed by owner question 4's review.
+- U6: SEC-CLIENT-01, ECON-RET-0 and PROD-ENTITLEMENTS-01 are CANDIDATE. These rulings depend on their shapes, not their final numbers.
+- U7: Store delivery ownership is open (F10). Ruling 12 covers both outcomes.
+
+## 4. Checklist and owner items
+
+### 4.1 Before-freeze checklist
+
+This list consolidates §1 ruling 14, §2 ruling 15 and §3 ruling 22.
+
+- Concurrent transitions:
+  - the release, sanction compare-and-set, report compare-and-set and roster re-read (§1);
+  - maintenance, signal and assignment revoke all feed one shutdown token, and the first wins (§2);
+  - fence reads happen inside the writer transaction, and records use compare-and-set (§3).
+- Restart and resume:
+  - staff rows are durable, and a kick needs no resume state (§1);
+  - the request file and operation id make every ops command replay-safe;
+  - a node that died mid-drain restarts not ready (§2);
+  - remediation and erasure steps keep receipts (§3).
+- Typed cross-record references: `basis_refs`, `StaffActionRef`, the roster revision,
+  `RuntimeScopeRefV1`, `CausationRef`, `case_id` and `remediation_id`.
+- Older client and peer gating:
+  - `STAFF_V1` and `SERVICE_NOTICE_V1` are never offered to older clients;
+  - an older client receiving 1200 or 1201 uses the unknown-code fallback;
+  - economy and privacy add no wire change.
+- Multi-component commit and recovery:
+  - the node commits a staff row and its audit in one transaction before any effect (§1);
+  - Platform policy and the Game drain are independent, and either order stops new sessions (§2);
+  - each remediation step commits on its own (§3);
+  - erasure is acknowledged to Platform only after its journal entry is durable (§3).
+- No new authority beyond the Game staff roster (§1 ruling 4) and the `ECONOMY_REMEDIATOR` and
+  `PRIVACY_OFFICER` roles (§3).
+
+### 4.2 Owner items
+
+The recommended option is the working assumption until the owner answers.
+
+| Item | Question | Options | Recommendation |
+|---|---|---|---|
+| §1 Q1 | Source of staff authority | a Game roster via `oteryn-game-ops`; b Platform staff claim (cross-repo) | a |
+| §1 Q2 | Where player bug reports go | a out-of-band channel, in-game rule-violation reports for EXT; b in-game bug queue; c Platform support desk | a |
+| §1 Q3 | Staff action audit retention | a 1 year; b 2 years; c 90 days | a |
+| §1 Q4 | Reported chat line in harassment reports | a no; b one chosen line kept 180 days | b for EXT |
+| §2 Q1 | Who triggers the maintenance drain | a Game operator locally; b Platform endpoint; c both | a |
+| §2 Q2 | Network DDoS protection | a host-included; b paid L4 proxy (spend); c none until public release | a |
+| §2 Q3 | External security review | a internal only; b one paid review; c bug bounty | a for first external players, b before public release |
+| §3 Q1 | Who approves economy remediation | a owner only; b `ECONOMY_REMEDIATOR`, two-person; c any GM | b |
+| §3 Q2 | Innocent holders of duplicated items | a retire everywhere, compensate up to the price paid; b no compensation; c exploiter only | a |
+| §3 Q3 | Ledger rows after erasure | a keep with tombstoned CharacterId; b delete after a period | a, subject to legal review |
+| §3 Q4 | Privacy officer | a owner, plus one external legal review; b appointee | a |
