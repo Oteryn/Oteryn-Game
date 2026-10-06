@@ -2,8 +2,9 @@
 
 - Decision: `ARCH-PREPROD-ROUTE-PUBLISH-AUTH-V1`
 - Status: **CANDIDATE: AUTHORITY REQUEST**. Nothing here takes effect until the owner answers
-  §7 item by item. This document grants no authority. Recorded answers: 1a and 2a (control plane
-  D824, #162); items 3 and 4 are open.
+  §7 item by item. This document grants no authority. Recorded answers: 1a (control plane D831,
+  #162, given against the final §2 owned-path list; it replaces D824 1a) and 2a (D824); items 3
+  and 4 are open.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the control plane, D821 item 2 (#162, 2026-10-06; owner answer **2a**). The request
   covers the route-publish operator path that the joint native-login E2E needs. That E2E is
@@ -153,7 +154,7 @@ Each run has one writer. The commands run against that run's Platform only.
 
 **Platform change.** One Platform PR, `PLATFORM-NATIVE-PREPROD-OPS-1`.
 
-- Owned paths:
+- Owned paths (the exact list the owner approved as answer 1a, D831; nothing outside it):
   - `app/Console/Commands/PublishNativeRoute.php`
   - `app/Console/Commands/PublishNativeTrustedKey.php`
   - `app/GameAuth/Worlds/DisposableNativeStore.php` (new: the shared guard below)
@@ -357,7 +358,10 @@ testing and preproduction; production needs U8). Not offered.
 
 ## 7. Owner approvals requested
 
-Recorded answers: **1a** and **2a** (control plane D824, #162). Items 3 and 4 are open.
+Recorded answers: **1a** (control plane D831, #162, 2026-10-06) and **2a** (D824). Items 3 and 4
+are open. The D831 question listed the final §2 owned paths, including the new
+`DisposableNativeStore.php` and the guard-call-only change to `NativeTopologyRegistry.php`.
+Answer 1a rests on D831, which replaces the earlier D824 1a: that answer predates those two paths.
 
 Answer as, for example, `1a 2a 3b`.
 
@@ -380,4 +384,8 @@ Answer as, for example, `1a 2a 3b`.
 
 This document authorizes no code, migration, deployment, secret, runner, Cloudflare, database or
 Platform change. Each approved item needs its own #162 allocation. The Platform PR uses only the
-write grant from item 1, and only within the §2 owned paths.
+write grant from item 1 (D831), and only within the §2 owned paths that D831 listed: the two
+commands, the new `DisposableNativeStore.php`, the guard call in
+`NativeTopologyRegistry::isolatedConnection()` and nothing else in that file, their tests under
+`tests/Feature/GameAuth/`, one line in the native gateway login contract §14 or §17, and the
+Platform task record. Any other path needs a new owner answer.
