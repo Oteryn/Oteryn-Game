@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "14da7f0971b7ab66424eedac2e5af5ffa524a2c3f1509b2eb8537b5f238ca078",
+  "digest": "aed9aa7c706a4273a8a659957739d3ff2d14a67c6376f0ccba89cbb6c1c01606",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "g4-npc-provisional-enrichment-r28",
@@ -10,5 +10,5 @@
     "y": 10032,
     "floor": 0
   },
-  "inputs_digest": "6fcf755a1c904d9a0ecca579967a9ef0933f548dc6f4ffbfa50eacb4259fdb65"
+  "inputs_digest": "ec45910e51422eda4c2646805a089eb1e3f269bfe25d51e8563987b167f9dfe9"
 }

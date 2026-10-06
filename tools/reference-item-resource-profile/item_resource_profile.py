@@ -8,9 +8,12 @@ typed unit or grammar is not accepted are rejected and listed as explicit unsupp
 `--profile v5` measures the ITEM-SEM-2b-3 grammar of artifact v5
 (OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V2): the base-vocation domain gains `None`
 (wire 6) and the client-safe use-requirements group 17 joins.
-`--profile v6` (the default) measures the ITEM-SEM-USE-1 grammar of artifact v6
+`--profile v6` measures the ITEM-SEM-USE-1 grammar of artifact v6
 (OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3): the server-only consumption group 18
-joins. Without `--output` a v5 or v6 run rebuilds its evidence in memory and fails on any
+joins.
+`--profile v7` (the default) measures the ITEM-SEM-BED-1 grammar of artifact v7
+(OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4): the server-only bed group 19 joins.
+Without `--output` a v5, v6 or v7 run rebuilds its evidence in memory and fails on any
 difference from the committed packet.
 """
 
@@ -93,9 +96,24 @@ RESTORE_RESOURCE_KEYS = ("HEALTH", "MANA")
 FOOD_MAX_REGENERATION_SECONDS = 1_199
 POTION_MAX_RESTORES = 2
 POTION_MAX_RESTORE = 10_000
+# Artifact v7 (ITEM-SEM-BED-1): the server-only bed group.
+BED_GROUP = 19
+BED_PART_KEYS = ("HEAD", "FOOT")
+BED_DIRECTION_KEYS = ("NORTH", "EAST", "SOUTH", "WEST")
+# Typed cross-Item target slots in one server record: ten UseTransform targets, Temporal
+# decay and write-once (V1, 12); the v6 potion empty flask (V3, 13); the v7 bed occupied
+# male and female looks (V4, 15).
+CROSS_ITEM_TARGET_SLOTS_V6 = (
+    "use_transform.use", "use_transform.male", "use_transform.female", "use_transform.rotate",
+    "use_transform.equip", "use_transform.deequip", "use_transform.wrap", "use_transform.unwrap",
+    "use_transform.destroy", "use_transform.decay", "temporal.decay_target_ordinal",
+    "readable_writeable.write_once_target_ordinal", "consumption.empty_flask_ordinal",
+)
+CROSS_ITEM_TARGET_SLOTS_V7 = CROSS_ITEM_TARGET_SLOTS_V6 + ("bed.occupied_male_ordinal", "bed.occupied_female_ordinal")
 ROOT = Path(__file__).resolve().parents[2]
 V5_EVIDENCE = "docs/agents/evidence/OTV2-20261003-item-sem-2b3-v5-resource-evidence.json"
 V6_EVIDENCE = "docs/agents/evidence/OTV2-20261004-item-sem-use-1-v6-resource-evidence.json"
+V7_EVIDENCE = "docs/agents/evidence/OTV2-20261005-item-sem-bed-1-v7-resource-evidence.json"
 assert len(CLASSIFICATION_KEYS) == 24 and len(IMBUEMENT_FAMILY_CANDIDATE_KEYS) == 20
 
 RATIONAL_PERCENT_MODIFIERS = frozenset({
@@ -354,6 +372,17 @@ class Potion:
 
 
 @dataclass(frozen=True)
+class Bed:
+    # Artifact v7 group 19: part (HEAD 1, FOOT 2), the direction of the other half (NORTH 1,
+    # EAST 2, SOUTH 3, WEST 4), then the occupied male and female looks as Item ordinals that
+    # must resolve. An ordinal equal to the record's own Item means "no change".
+    part: int
+    partner_direction: int
+    occupied_male_ordinal: int
+    occupied_female_ordinal: int
+
+
+@dataclass(frozen=True)
 class RetainedItemCore:
     # Existing protected ReferenceItemDefinition semantics. Numeric values mirror
     # the v1-v3 codec: physical 1/unknown 2; stack nonstack 1/stack 2/unknown 3.
@@ -384,6 +413,7 @@ class Item:
     readable_writeable: State = U
     use_requirements: State = U
     consumption: State = U
+    bed: State = U
 
 
 @dataclass(frozen=True)
@@ -582,7 +612,7 @@ def pair_entry(enc_key, dec_key, enc_value, dec_value):
     )
 
 
-def codec(bounds: Bounds, v5: bool = False, v6: bool = False):
+def codec(bounds: Bounds, v5: bool = False, v6: bool = False, v7: bool = False):
     EName, DName = text_codec(bounds.name_bytes)
     EDesc, DDesc = text_codec(bounds.description_bytes)
     EClass, DClass = enum_codec(len(ITEM_TYPE_CANDIDATE_KEYS))
@@ -602,6 +632,8 @@ def codec(bounds: Bounds, v5: bool = False, v6: bool = False):
     EEnforcement, DEnforcement = enum_codec(len(USE_ENFORCEMENT_MODE_KEYS))
     EConsumption, DConsumption = enum_codec(len(CONSUMPTION_VARIANT_KEYS))
     EResource, DResource = enum_codec(len(RESTORE_RESOURCE_KEYS))
+    EBedPart, DBedPart = enum_codec(len(BED_PART_KEYS))
+    EBedDirection, DBedDirection = enum_codec(len(BED_DIRECTION_KEYS))
     ECapability, DCapability = enum_codec(bounds.capabilities)
     EElement, DElement = enum_codec(bounds.weapon_elements)
     EResistance, DResistance = enum_codec(bounds.resistance_kind_domain)
@@ -859,6 +891,19 @@ def codec(bounds: Bounds, v5: bool = False, v6: bool = False):
         restores = tuple(PotionRestore(DResource(reader), DU16(reader), DU16(reader)) for _ in range(count))
         return Potion(restores, dec_state(reader, DOrdinal))
 
+    def enc_bed(value: Bed) -> bytes:
+        if not isinstance(value, Bed):
+            raise ValueError("bed")
+        return (
+            EBedPart(value.part)
+            + EBedDirection(value.partner_direction)
+            + EOrdinal(value.occupied_male_ordinal)
+            + EOrdinal(value.occupied_female_ordinal)
+        )
+
+    def dec_bed(reader: Reader) -> Bed:
+        return Bed(DBedPart(reader), DBedDirection(reader), DOrdinal(reader), DOrdinal(reader))
+
     def enc_group(group_id: int, state: State) -> bytes:
         if group_id == 13:
             payload = enc_state(state, enc_transform)
@@ -866,6 +911,8 @@ def codec(bounds: Bounds, v5: bool = False, v6: bool = False):
             payload = enc_state(state, enc_requirements)
         elif group_id == CONSUMPTION_GROUP:
             payload = enc_state(state, enc_consumption)
+        elif group_id == BED_GROUP:
+            payload = enc_state(state, enc_bed)
         else:
             _, _, specs = group_specs[group_id]
             payload = enc_state(state, lambda obj: seq_enc(obj, specs))
@@ -879,17 +926,19 @@ def codec(bounds: Bounds, v5: bool = False, v6: bool = False):
             state = dec_state(reader, dec_requirements)
         elif group_id == CONSUMPTION_GROUP:
             state = dec_state(reader, dec_consumption)
+        elif group_id == BED_GROUP:
+            state = dec_state(reader, dec_bed)
         else:
             _, cls, specs = group_specs[group_id]
             state = dec_state(reader, lambda r: seq_dec(r, cls, specs))
         reader.finish()
         return state
 
-    server_ids = tuple(range(1, CONSUMPTION_GROUP + 1 if v6 else 18 if v5 else 17))
+    server_ids = tuple(range(1, BED_GROUP + 1 if v7 else CONSUMPTION_GROUP + 1 if v6 else 18 if v5 else 17))
     client_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12) + ((USE_REQUIREMENTS_GROUP,) if v5 else ())
-    special_names = {13: "use_transform", USE_REQUIREMENTS_GROUP: "use_requirements", CONSUMPTION_GROUP: "consumption"}
+    special_names = {13: "use_transform", USE_REQUIREMENTS_GROUP: "use_requirements", CONSUMPTION_GROUP: "consumption", BED_GROUP: "bed"}
     id_name = {gid: special_names.get(gid) or group_specs[gid][0] for gid in server_ids}
-    body_version = 4 if v6 else 3 if v5 else 2
+    body_version = 5 if v7 else 4 if v6 else 3 if v5 else 2
 
     def encode_core(core: RetainedItemCore, projection: str) -> bytes:
         validate_core(core)
@@ -914,6 +963,8 @@ def codec(bounds: Bounds, v5: bool = False, v6: bool = False):
             raise ValueError("use requirements require artifact v5")
         if not v6 and item.consumption.tag != Tag.UNKNOWN:
             raise ValueError("consumption requires artifact v6")
+        if not v7 and item.bed.tag != Tag.UNKNOWN:
+            raise ValueError("bed requires artifact v7")
         return bytes([body_version]) + encode_core(item.core, projection) + struct.pack(">H", len(chunks)) + b"".join(chunks)
 
     def decode(raw: bytes, projection: str, byte_limit: int) -> Item:
@@ -986,6 +1037,10 @@ def validate_item(item: Item, bounds: Bounds, projection: str = "server") -> Non
         raise ValueError("enforcement mode other than on_use")
     if item.consumption.tag == Tag.KNOWN:
         validate_consumption(item.consumption.value)
+    if item.bed.tag == Tag.KNOWN:
+        bed = item.bed.value
+        if not isinstance(bed, Bed) or not 1 <= bed.part <= len(BED_PART_KEYS) or not 1 <= bed.partner_direction <= len(BED_DIRECTION_KEYS):
+            raise ValueError("bed part/direction")
     if item.stack.tag == Tag.KNOWN:
         stack = item.stack.value
         if stack.stackable.tag == Tag.KNOWN:
@@ -1023,7 +1078,7 @@ def validate_consumption(value: Food | Potion) -> None:
 
 def project_client(item: Item) -> Item:
     client_core = RetainedItemCore(item.core.physical_class, U, item.core.stack_class, U)
-    return replace(item, core=client_core, temporal=U, use_transform=U, trade_restrictions=U, fluid=U, readable_writeable=U, consumption=U)
+    return replace(item, core=client_core, temporal=U, use_transform=U, trade_restrictions=U, fluid=U, readable_writeable=U, consumption=U, bed=U)
 
 
 def max_modifier_parameter(key: str) -> Any:
@@ -1051,7 +1106,7 @@ def worst_potion(bounds: Bounds) -> Potion:
     )
 
 
-def base_groups(bounds: Bounds, v5: bool = False, v6: bool = False) -> dict[str, Any]:
+def base_groups(bounds: Bounds, v5: bool = False, v6: bool = False, v7: bool = False) -> dict[str, Any]:
     res = tuple((i, K(RationalPercent(0, 1))) for i in range(1, bounds.resistances + 1))
     mods = tuple(
         ModifierBinding(i, K(i), K(i), K(0), K(max_modifier_parameter(key)))
@@ -1063,6 +1118,8 @@ def base_groups(bounds: Bounds, v5: bool = False, v6: bool = False) -> dict[str,
     } if v5 else {}
     if v6:
         extension["consumption"] = K(worst_potion(bounds))
+    if v7:
+        extension["bed"] = K(Bed(1, 1, bounds.item_count - 1, bounds.item_count - 1))
     return extension | {
         "core": RetainedItemCore(1, K(True), 2, K((1,))),
         "presentation": K(Presentation(K("N" * bounds.name_bytes), K("D" * bounds.description_bytes))),
@@ -1221,12 +1278,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Reproduce the D6-M1 typed Item resource-profile candidate; no content import or gameplay promotion.")
     parser.add_argument("--repo-root", type=Path, default=ROOT, help="Exact Oteryn-Game checkout containing the protected evidence inputs")
     parser.add_argument("--source-xml", type=Path, help="Optional exact pinned Crystal items.xml used only for UTF-8 atom measurement")
-    parser.add_argument("--output", type=Path, help="Destination JSON evidence packet (v4: required; v5/v6: omit to check the committed packet)")
-    parser.add_argument("--profile", choices=("v4", "v5", "v6"), default="v6", help="Typed artifact grammar to measure")
+    parser.add_argument("--output", type=Path, help="Destination JSON evidence packet (v4: required; v5/v6/v7: omit to check the committed packet)")
+    parser.add_argument("--profile", choices=("v4", "v5", "v6", "v7"), default="v7", help="Typed artifact grammar to measure")
     args = parser.parse_args()
     repo_root = args.repo_root.resolve()
     output = args.output
-    v6 = args.profile == "v6"
+    v7 = args.profile == "v7"
+    v6 = args.profile == "v6" or v7
     v5 = args.profile == "v5" or v6
     if output is None and not v5:
         parser.error("--profile v4 requires --output")
@@ -1234,8 +1292,8 @@ def main() -> None:
     if v5:
         # ITEM-SEM-2b-3: every vocation set admits the sixth value `None`.
         bounds = replace(bounds, equipment_vocations=len(BASE_VOCATION_KEYS_V5), trade_vocations=len(BASE_VOCATION_KEYS_V5))
-    encode, decode, _ = codec(bounds, v5, v6)
-    groups = base_groups(bounds, v5, v6)
+    encode, decode, _ = codec(bounds, v5, v6, v7)
+    groups = base_groups(bounds, v5, v6, v7)
     cases = {
         "melee_weapon": ["presentation", "classification", "physical", "stack", "equipment", "weapon", "protection", "imbuement"],
         "distance_weapon": ["presentation", "classification", "physical", "stack", "equipment", "weapon", "skill_modifiers", "imbuement"],
@@ -1291,7 +1349,7 @@ def main() -> None:
     bad_vocation_pattern = replace(first_pattern, vocations=K(tuple(range(1, bounds.equipment_vocations + 2))))
     too_many_vocations = replace(worst, equipment=K(Equipment(K((bad_vocation_pattern,)))))
     vector_checks["equipment_vocations_max_plus_one"] = must_reject(lambda: encode(too_many_vocations, "server"))
-    groups_p3 = base_groups(replace(bounds, equipment_patterns=bounds.equipment_patterns + 1), v5, v6)
+    groups_p3 = base_groups(replace(bounds, equipment_patterns=bounds.equipment_patterns + 1), v5, v6, v7)
     too_many_patterns = replace(worst, equipment=groups_p3["equipment"])
     vector_checks["equipment_patterns_max_plus_one"] = must_reject(lambda: encode(too_many_patterns, "server"))
     semantic_duplicate = replace(first_pattern, pattern_id=2)
@@ -1420,7 +1478,7 @@ def main() -> None:
         lambda: encode(replace(worst, trade_restrictions=K(replace(worst.trade_restrictions.value, character_binding_policy=K(1)))), "server")
     )
 
-    version = bytes([4 if v6 else 3 if v5 else 2])
+    version = bytes([5 if v7 else 4 if v6 else 3 if v5 else 2])
 
     def one_group(gid: int, payload: bytes, projection: str = "server") -> bytes:
         core = b"\x01\x01\x02\x01\x01" if projection == "server" else b"\x01\x02"
@@ -1523,7 +1581,7 @@ def main() -> None:
         vector_checks["vocation_unknown_wire_value_7"] = must_reject(
             lambda: decode(one_group(USE_REQUIREMENTS_GROUP, bytes([Tag.KNOWN, Tag.UNKNOWN, Tag.UNKNOWN, Tag.KNOWN, 1, 7, 1])), "server", len(worst_server))
         )
-        last = CONSUMPTION_GROUP if v6 else USE_REQUIREMENTS_GROUP
+        last = BED_GROUP if v7 else CONSUMPTION_GROUP if v6 else USE_REQUIREMENTS_GROUP
         vector_checks[f"group_id_{last + 1}_unknown"] = must_reject(
             lambda: decode(one_group(last + 1, bytes([Tag.UNKNOWN])), "server", len(worst_server))
         )
@@ -1599,7 +1657,7 @@ def main() -> None:
             lambda: decode(one_group(CONSUMPTION_GROUP, bytes([Tag.KNOWN, 2, 1, 1, 0, 1, 0, 1, Tag.KNOWN]) + struct.pack(">I", bounds.item_count)), "server", len(worst_server))
         )
         vector_checks["client_decode_rejects_consumption_group"] = must_reject(
-            lambda: decode(b"\x04\x01\x02\x00\x01" + bytes([CONSUMPTION_GROUP]) + b"\x00\x01" + bytes([Tag.UNKNOWN]), "client", len(worst_client))
+            lambda: decode(one_group(CONSUMPTION_GROUP, bytes([Tag.UNKNOWN]), "client"), "client", len(worst_client))
         )
         vector_checks["v5_codec_rejects_consumption"] = must_reject(
             lambda: encode_v5(Item(core=worst.core, consumption=K(Food(1))), "server")
@@ -1608,11 +1666,64 @@ def main() -> None:
         vector_checks["v5_decode_rejects_group_18"] = must_reject(lambda: decode_v5(v5_one_group, "server", 3_577))
         vector_checks["v5_decode_rejects_v6_body_version"] = must_reject(lambda: decode_v5(worst_server, "server", len(worst_server)))
 
+    if v7:
+        # ITEM-SEM-BED-1: the server-only bed group exists only in v7; v6 refuses it.
+        encode_v6, decode_v6, _ = codec(bounds, True, True)
+        own = 7
+        for part in (1, 2):
+            for direction in (1, 2, 3, 4):
+                for label, male, female in (
+                    ("distinct_looks", 3, 4),
+                    ("same_look", 3, 3),
+                    ("no_change", own, own),
+                ):
+                    item = Item(core=worst.core, bed=K(Bed(part, direction, male, female)))
+                    server, client = encode(item, "server"), encode(item, "client")
+                    ok = (
+                        decode(server, "server", len(worst_server)) == item
+                        and decode(client, "client", len(worst_client)) == project_client(item)
+                        and client == encode(Item(core=worst.core), "client")
+                        and len(server) == len(encode(Item(core=worst.core), "server")) + 14
+                    )
+                    vector_checks[f"bed_round_trip_{BED_PART_KEYS[part - 1].lower()}_{BED_DIRECTION_KEYS[direction - 1].lower()}_{label}"] = "PASS" if ok else "FAIL"
+        for label, value in (
+            ("part_zero", Bed(0, 1, 3, 4)),
+            ("part_3", Bed(3, 1, 3, 4)),
+            ("direction_zero", Bed(1, 0, 3, 4)),
+            ("direction_5", Bed(1, 5, 3, 4)),
+        ):
+            vector_checks[f"bed_rejects_{label}"] = must_reject(
+                lambda value=value: encode(Item(core=worst.core, bed=K(value)), "server")
+            )
+        vector_checks["bed_rejects_dangling_male_ordinal"] = must_reject(
+            lambda: encode(Item(core=worst.core, bed=K(Bed(1, 1, bounds.item_count, 4))), "server")
+        )
+        vector_checks["bed_part_decode_unknown"] = must_reject(
+            lambda: decode(one_group(BED_GROUP, bytes([Tag.KNOWN, 3, 1]) + struct.pack(">II", 3, 4)), "server", len(worst_server))
+        )
+        vector_checks["bed_direction_decode_unknown"] = must_reject(
+            lambda: decode(one_group(BED_GROUP, bytes([Tag.KNOWN, 1, 5]) + struct.pack(">II", 3, 4)), "server", len(worst_server))
+        )
+        vector_checks["bed_decode_dangling_ordinal"] = must_reject(
+            lambda: decode(one_group(BED_GROUP, bytes([Tag.KNOWN, 1, 1]) + struct.pack(">II", 3, bounds.item_count)), "server", len(worst_server))
+        )
+        vector_checks["client_decode_rejects_bed_group"] = must_reject(
+            lambda: decode(one_group(BED_GROUP, bytes([Tag.UNKNOWN]), "client"), "client", len(worst_client))
+        )
+        vector_checks["v6_codec_rejects_bed"] = must_reject(
+            lambda: encode_v6(Item(core=worst.core, bed=K(Bed(1, 1, 3, 4))), "server")
+        )
+        v6_one_group = b"\x04" + worst_server[1:6] + b"\x00\x01" + bytes([BED_GROUP]) + b"\x00\x01" + bytes([Tag.UNKNOWN])
+        vector_checks["v6_decode_rejects_group_19"] = must_reject(lambda: decode_v6(v6_one_group, "server", 3_598))
+        vector_checks["v6_decode_rejects_v7_body_version"] = must_reject(lambda: decode_v6(worst_server, "server", len(worst_server)))
+        vector_checks["cross_item_target_slots_v6_13"] = "PASS" if len(CROSS_ITEM_TARGET_SLOTS_V6) == 13 else "FAIL"
+        vector_checks["cross_item_target_slots_v7_15"] = "PASS" if len(CROSS_ITEM_TARGET_SLOTS_V7) == 15 else "FAIL"
+
     # Exact affine sizing witness for 1 <= P <= 255 (the wire count width). The
     # selected v1 production P is 2, independently derived by the full census.
     bounds_p1 = replace(bounds, equipment_patterns=1)
-    encode_p1, _, _ = codec(bounds_p1, v5, v6)
-    worst_p1 = Item(**base_groups(bounds_p1, v5, v6))
+    encode_p1, _, _ = codec(bounds_p1, v5, v6, v7)
+    worst_p1 = Item(**base_groups(bounds_p1, v5, v6, v7))
     p1_server = encode_p1(worst_p1, "server")
     p1_client = encode_p1(worst_p1, "client")
     pattern_server_increment = len(worst_server) - len(p1_server)
@@ -1842,9 +1953,11 @@ def main() -> None:
         evidence = v5_evidence(evidence, bounds)
     if v6:
         evidence = v6_evidence(evidence)
+    if v7:
+        evidence = v7_evidence(evidence)
     data = json.dumps(evidence, indent=2) + "\n"
     if output is None:
-        committed_path = V6_EVIDENCE if v6 else V5_EVIDENCE
+        committed_path = V7_EVIDENCE if v7 else V6_EVIDENCE if v6 else V5_EVIDENCE
         committed = repo_root / committed_path
         if committed.read_text() != data:
             print(f"{args.profile} resource evidence drift against {committed_path}", file=sys.stderr)
@@ -1957,6 +2070,69 @@ def v6_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
     ceilings["inherited_unchanged_from_v1"] = ceilings.pop("inherited_unchanged_from_v1")
     evidence["registered_v6_ceilings"] = ceilings
     evidence["remaining_blocker"] = "None for the v6 codec. Lowering consumption from content (ITEM-SEM-USE-2) and executing it (ITEM-USE-1) are separate tasks."
+    return evidence
+
+
+def v7_evidence(evidence: dict[str, Any]) -> dict[str, Any]:
+    """Relabel the v6 measurement for artifact v7 and add what ITEM-SEM-BED-1 changes."""
+    if any(value != "PASS" for value in evidence["boundary_checks"].values()):
+        raise AssertionError("v7 boundary check failed")
+    worst = evidence["worst_shape"]
+    evidence = dict(evidence)
+    evidence["status"] = "TYPED_V7_CEILINGS_RECOMPUTED_FOR_ITEM_SEM_BED_1"
+    evidence["profile"] = {
+        "resource_profile": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4",
+        "artifact_profile": "OTERYN_REFERENCE_PLAYABLE_ARTIFACT/v7",
+        "compiler_profile": "OTERYN_REFERENCE_PLAYABLE_COMPILER/v7",
+        "canonicalization_profile": "OTERYN_REFERENCE_PLAYABLE_CANONICALIZATION/v7",
+        "supersedes_for_writing": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3 (v6 rows stay for v6 decoding)",
+        "decision": "ITEM-SEM-BED bed item group packet §1.1-§1.4 and §2.1 (2026-10-05)",
+    }
+    evidence["retained_core_compatibility"] = dict(evidence["retained_core_compatibility"])
+    evidence["retained_core_compatibility"]["candidate_body_version"] = 5
+    evidence["retained_core_compatibility"]["single_record_layout"] = "version5 + retained ReferenceItemDefinition core + typed group extension"
+    evidence["v7_grammar"] = {
+        "bed_group": {
+            "group_id": BED_GROUP,
+            "projection": "server only; the client projection allowlist is unchanged",
+            "part_ids": {str(index + 1): key for index, key in enumerate(BED_PART_KEYS)},
+            "partner_direction_ids": {str(index + 1): key for index, key in enumerate(BED_DIRECTION_KEYS)},
+            "known_value": "u8 part, u8 partner_direction, u32 occupied_male Item ordinal, u32 occupied_female Item ordinal; 11 payload bytes",
+            "targets": "Both ordinals must resolve; an ordinal equal to the record's own Item means no change.",
+            "set_rule": (
+                "At compile and at load, an occupied target other than the record's own Item must carry a Known bed group "
+                "with the same part and the same partner direction."
+            ),
+            "effect_owner": "BED-1 executes sleep, wake and the occupied look; content records the semantics only",
+        },
+        "server_groups_maximum": BED_GROUP,
+        "client_groups_maximum": len(evidence["client_projection_allowlist"]),
+        "v6_compatibility": "v6 keeps group ids 1-18, body version 4 and its V3 ceilings; a v6 reader refuses v7 by artifact profile id",
+    }
+    evidence["cross_item_targets"] = {
+        "v6_slots": list(CROSS_ITEM_TARGET_SLOTS_V6),
+        "v6_maximum": len(CROSS_ITEM_TARGET_SLOTS_V6),
+        "v7_slots": list(CROSS_ITEM_TARGET_SLOTS_V7),
+        "v7_maximum": len(CROSS_ITEM_TARGET_SLOTS_V7),
+        "correction": "The V1 row registers 12 slots and V3 inherited it, but v6 added the potion empty flask as a thirteenth; V3 is corrected to 13 and V4 registers 15.",
+    }
+    evidence["client_projection_denied"] = evidence["client_projection_denied"] + ["bed"]
+    ceilings = dict(evidence.pop("registered_v6_ceilings"))
+    inherited = ceilings.pop("inherited_unchanged_from_v1")
+    ceilings.update({
+        "server_groups_per_record": BED_GROUP,
+        "cross_item_targets": len(CROSS_ITEM_TARGET_SLOTS_V7),
+        "server_record_bytes": worst["server_record_bytes"],
+        "client_record_bytes": worst["client_record_bytes"],
+        "server_body_bytes": worst["server_body_section_bytes"],
+        "client_body_bytes": worst["client_body_section_bytes"],
+        "server_artifact_bytes": worst["provable_max_server_artifact_bytes"],
+        "client_artifact_bytes": worst["provable_max_client_artifact_bytes"],
+        "generation_pair_bytes": worst["provable_max_generation_pair_bytes"],
+    })
+    ceilings["inherited_unchanged_from_v1"] = inherited.replace("cross-Item targets, ", "")
+    evidence["registered_v7_ceilings"] = ceilings
+    evidence["remaining_blocker"] = "None for the v7 codec. Bed facts and lowering (BED-CONTENT-1) and the bed runtime (BED-1) are separate tasks."
     return evidence
 
 

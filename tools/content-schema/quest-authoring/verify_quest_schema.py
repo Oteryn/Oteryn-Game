@@ -54,6 +54,16 @@ def placement(i):
 
 
 case('fixture accepted', expected=True)
+WRITE = {'marker': 'quest/x/a', 'expression': 'Storage.Quest.X.A', 'value': 1,
+         'source': {'script': 'data/quest_reward_common.lua', 'line': 100}}
+case('chest binding accepted', lambda c, q, cat, m: (c.update(progress_write=dict(WRITE)),
+                                                      c['placements'][0].update(quest_transition='oteryn:quest-transition/quest/x/a/chest')), expected=True)
+case('unknown value accepted with a reason', lambda c, q, cat, m: c.update(progress_write=dict(WRITE, value=None, reason='two writes')), expected=True)
+case('quest transition needs its prefix', lambda c, q, cat, m: c['placements'][0].update(quest_transition='oteryn:quest-progress/quest/x/a'))
+case('progress write has no unknown key', lambda c, q, cat, m: c.update(progress_write=dict(WRITE, extra=1)))
+case('null progress value needs a reason', lambda c, q, cat, m: c.update(progress_write=dict(WRITE, value=None)))
+case('progress value is an integer', lambda c, q, cat, m: c.update(progress_write=dict(WRITE, value='1')))
+case('progress source line is positive', lambda c, q, cat, m: c.update(progress_write=dict(WRITE, source={'script': 's', 'line': 0})))
 case('cooldown claim accepted', lambda c, q, cat, m: c['claim'].update(repeat={'kind': 'cooldown', 'hours': 24}), expected=True)
 case('claims are per character only', lambda c, q, cat, m: c['claim'].update(per='account'))
 case('cooldown needs hours', lambda c, q, cat, m: c['claim'].update(repeat={'kind': 'cooldown'}))

@@ -47,12 +47,13 @@ use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use super::item_mint::uuid_text;
 use super::item_mint_audit::{
     self as mint_audit, AuditError, ITEM_LIFECYCLE_LIVE, OneItemGroundV1, OneItemStateV1,
-    RL08_RETRY_WORK_UNITS_MAX,
+    RL08_RETRY_WORK_UNITS_MAX, SelectedType2Tuple,
 };
 use super::item_transfer::{
     CurrentCharacterItemFence, ItemDefinitionFacts, ItemTransferError, ItemTransferRefusal,
@@ -77,7 +78,6 @@ type Result<T> = std::result::Result<T, MapItemMintError>;
 type Pass<T> = std::result::Result<std::result::Result<T, MapItemMintError>, DurabilityError>;
 const INTENT_BINDING_VERSION: u8 = 1;
 const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
-const EVENT_SCHEMA_REVISION: i64 = mint_audit::EVENT_SCHEMA_REVISION as i64;
 /// The only definition family a map entry mints.
 const ITEM_FAMILY: &str = "Item";
 
@@ -510,7 +510,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let command = frozen.request.command;
@@ -522,7 +522,7 @@ impl DurabilityRoot {
                             return Ok(Err(MapItemMintError::ConflictingCause));
                         }
                         let committed = decode_receipt(&row)?;
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                         return Ok(Ok(MapItemMintOutcome::AlreadyCommitted(committed)));
                     }
 
@@ -557,7 +557,7 @@ impl DurabilityRoot {
                     .bind(frozen.transaction_id.as_slice())
                     .bind(frozen.event_id.as_slice())
                     .bind(frozen.item_instance_id.as_slice())
-                    .fetch_one(&mut *tx)
+                    .fetch_one(&mut **tx)
                     .await?;
                     if identity_reused {
                         return Ok(Err(MapItemMintError::ConflictingCandidate));
@@ -570,6 +570,7 @@ impl DurabilityRoot {
                     }
                     let ground = ground_of(&frozen.request, &reservation, &fence);
                     let message = mint_message(&frozen, &reservation, &fence, ground.clone());
+                    let tuple = tx.tuple();
                     let envelope = match audit::encode_map_item_mint_event(
                         MapItemMintEventIdentity {
                             event_id: frozen.event_id,
@@ -578,13 +579,15 @@ impl DurabilityRoot {
                             server_build_id: SERVER_BUILD_ID,
                         },
                         message,
+                        tuple.tuple(),
                     ) {
                         Ok(envelope) => envelope,
                         Err(error) => return Ok(Err(error.into())),
                     };
                     let committed =
-                        apply_mint(&mut tx, &frozen, &reservation, &ground, &envelope).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                        apply_mint(&mut tx, &frozen, &reservation, &ground, &envelope, tuple)
+                            .await?;
+                    tx.commit(deadline).await?;
                     Ok(Ok(MapItemMintOutcome::Committed(committed)))
                 })
             })
@@ -797,6 +800,7 @@ async fn apply_mint(
     reservation: &Reservation,
     ground: &OneItemGroundV1,
     envelope: &[u8],
+    tuple: SelectedType2Tuple,
 ) -> std::result::Result<CommittedMapItemMint, DurabilityError> {
     let request = &frozen.request;
     let placement = MapItemPlacement::of_key(request.placement_key)
@@ -849,8 +853,8 @@ async fn apply_mint(
     .bind(frozen.event_id.as_slice())
     .bind(tx_id)
     .bind(EVENT_TYPE_ID)
-    .bind(EVENT_SCHEMA_REVISION)
-    .bind(mint_audit::RETENTION_PROFILE_ID)
+    .bind(i64::from(tuple.schema_revision()))
+    .bind(tuple.retention_profile_id())
     .bind(item_id)
     .bind(frozen.occurred_at_unix_ms)
     .bind(mint_audit::AUDIT_RETENTION_P90D_MS)
