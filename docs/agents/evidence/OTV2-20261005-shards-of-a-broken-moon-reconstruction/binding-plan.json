@@ -1045,7 +1045,18 @@
       "evidence": "FACT",
       "owner": "NPC-QUEST-1 + QuestState",
       "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
-      "reward_evidence_ref": "terminal-reward-evidence.json"
+      "reward_evidence_ref": "terminal-reward-evidence.json",
+      "follow_up_taming": {
+        "reward_item": "oteryn:item.tibia.i54638",
+        "target_creature": "oteryn:creature.jaracal",
+        "target_mount": "PENDING_MOUNT_OWNER_ADMISSION",
+        "on_success": [
+          "ACCOUNT_MOUNT_UNLOCK",
+          "oteryn:achievement/six_steps_ahead@1"
+        ],
+        "chance_semantics": "UNKNOWN_DO_NOT_INVENT",
+        "note": "s16 grants Skewered Fish only; Jaracal mount is a later tame interaction, not a direct quest-completion grant."
+      }
     },
     {
       "id": "complete_nilavarna_alt",
@@ -1112,7 +1123,7 @@
     "Escape room/skeleton/icicles/north-wall are resolved (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9); Rope Spot/scripted exit remains unresolved, and donor Lit Torch 54610 requires separate Item admission (do not alias to i34017)",
     "Forbidden Gardens Achievement predicate composition missing",
     "No full real-character start→reward→relog/restart E2E qualification",
-    "Jaracal mount/tame follow-up missing: Mount catalogue has no Jaracal; i54638 must tame canonical Jaracal through Mount/Item/Interaction owners, not direct s16 grant"
+    "Jaracal Mount content admission missing: refresh G4/TibiaWiki Mount source, add Jaracal Mount using existing taming_item/acquisition_interactions, bind i54638 on oteryn:creature.jaracal, grant account mount + existing achievement oteryn:achievement/six_steps_ahead@1 on successful tame; tame chance semantics remain UNKNOWN"
   ],
   "readback": {
     "refreshed_main": "52712f633786721c0d255888a92c81165cd2d5c3",
@@ -1201,6 +1212,34 @@
       },
       "basis": "Only full-world candidate matching skeleton + southwest icicles + north wall + north corridor + east turn.",
       "hold": "No public guide/map link found that publishes prison-room coordinates; scripted endpoint remains unresolved."
+    },
+    "jaracal_mount": {
+      "status": "SOURCE_READY_CONTENT_ADMISSION_MISSING",
+      "creature_key": "oteryn:creature.jaracal",
+      "taming_item": "oteryn:item.tibia.i54638",
+      "mount_catalogue_present": false,
+      "current_mount_record_count": 252,
+      "mount_source_gap": "Current G4/TibiaWiki Mount snapshot predates Jaracal; local tibiawiki/cipsoft-staticdata corpus has Jaracal Creature/Achievement facts but no Mount record.",
+      "reference": {
+        "premium": true,
+        "speed_bonus": 10,
+        "added": "15.30.a30dad",
+        "method": "Use Skewered Fish on a Jaracal",
+        "success_achievement": "oteryn:achievement/six_steps_ahead@1",
+        "success_achievement_source_id": 592,
+        "chance_semantics": "UNKNOWN_DO_NOT_INVENT"
+      },
+      "architecture": {
+        "mount_model_fields": [
+          "taming_item",
+          "acquisition_interactions",
+          "premium",
+          "speed_bonus",
+          "presentation"
+        ],
+        "unlock_scope": "ACCOUNT_D47",
+        "required_action": "Refresh/admit Jaracal through Mount owner pipeline, then bind item-on-creature tame interaction; do not grant mount directly from Shards s16."
+      }
     }
   }
 }
