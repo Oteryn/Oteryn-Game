@@ -4275,11 +4275,12 @@
         },
         {
           "kind": "use",
-          "objective": "Use the cargo-crate disguise to cross the guarded Venore storehouse, exploiting noise distractions and restarting the infiltration if a guard catches you.",
+          "objective": "Use the cargo-crate disguise to cross the guarded Venore storehouse while Powerless, avoiding guards, noisy grates and sneeze-triggering webs before entering the loading teleport.",
           "targets": [
             "cargo crate",
             "storehouse guards",
-            "noise distractions",
+            "noisy grates",
+            "sneeze-triggering webs",
             "Venore supply storehouse portal"
           ],
           "count": 1,
@@ -4291,7 +4292,7 @@
         },
         {
           "kind": "talk",
-          "objective": "Ask Mayor Pocaro how to earn Salgadara's trust.",
+          "objective": "Ask Mayor Pocaro how to earn Salgadora's trust.",
           "targets": [
             "Mayor Pocaro"
           ],
@@ -4304,8 +4305,9 @@
         },
         {
           "kind": "kill",
-          "objective": "Defend Salgadara by defeating the Moonspawn Juggernaut.",
+          "objective": "Participate in Salgadora's Moonspawn invasion and deal damage to at least one Moonspawn Juggernaut; the last hit is not required.",
           "targets": [
+            "Moonspawn invasion",
             "Moonspawn Juggernaut"
           ],
           "count": 1,
@@ -4429,7 +4431,7 @@
         },
         {
           "kind": "kill",
-          "objective": "Defeat Maior Domus by building twenty Knight-or-Monk charges and thirty other-vocation charges, then using all three energized-platform damage windows and repeating the cycle as required.",
+          "objective": "Defeat Maior Domus by building twenty Knight-or-Monk charges and thirty Sorcerer-Druid-Paladin charges, then using all three energized-platform damage windows and repeating the cycle as required.",
           "targets": [
             "Maior Domus",
             "vocation charge carriers",
@@ -4567,6 +4569,7 @@
       "adaptations": [
         "The old three-device red-blue-yellow gong approximation is removed. The chosen journey now retains the post-release five-colour observed sequence without inventing a fixed colour order.",
         "The old six-floor guardian approximation is removed. The chosen journey now requires all eight Elite Fanatics to be simultaneously Petrified on their designated floors.",
+        "The authored stage vocabulary has no damage-participation kind. Stage s4 therefore remains kind=kill only as a non-executable DATA approximation; Native credit must advance when the player damages at least one Moonspawn Juggernaut during the invasion and must not require the last hit or death attribution.",
         "Mimar Haffar, Maior Domus and Phosphorus now retain their repeated shield or vulnerability cycles and key encounter mechanics in the authored journey. These repeats remain encounter-owned behavior rather than a cyclic quest-state graph, and scalable difficulty remains an encounter-system concern instead of an invented Quest progress field.",
         "The video-observed supply-store stealth behavior is retained as reference detail, but exact guard paths, tile positions and timing constants remain Native binding work. Quest completion unlocks access; it does not directly grant Moonsilver boss loot, Cloud in a Bottle or the Illuminated Warrior outfit."
       ],
@@ -4597,8 +4600,9 @@
         }
       ],
       "source_notes": [
-        "The pinned historical spoiler recorded the pre-release six-Fanatic state. A post-release 2026-10-05 TibiaWiki cross-check for Make Believe reports five gong colours, eight simultaneous Elite Fanatics, the ordered vocation-Rival phase, sequential Maior Domus then Mimar Haffar rematches, permanent Phosphorus hazards, Fate Forge access and three boss shortcuts. The chosen Oteryn journey follows the post-release state while preserving the original pinned source_refs unchanged.",
+        "The pinned historical spoiler recorded the pre-release six-Fanatic state. A post-release 2026-10-06 TibiaWiki cross-check for Make Believe reports five gong colours, eight simultaneous Elite Fanatics, the ordered vocation-Rival phase, sequential Maior Domus then Mimar Haffar rematches, permanent Phosphorus hazards, Fate Forge access and three boss shortcuts. It also states that Salgadora invasion credit requires damaging at least one Moonspawn Juggernaut, not the last hit. The chosen Oteryn journey follows the post-release state while preserving the original pinned source_refs unchanged.",
         "Video reference https://www.youtube.com/watch?v=LJ5k5TZGiCQ, title 'Make Believe Quest [Summer Update 2026]', uploaded 2026-07-12 before production release. It supplies test-server observations for the Venore stealth route and encounter flow; where it conflicts with post-release evidence, the post-release state wins.",
+        "The post-release cross-check explicitly identifies Doctor Marrow (NPC) and gives his prison-cell dialogue sequence. Current Oteryn NPC supplement evidence held Doctor Marrow as a boss under the older summer-source classification, so Native wiring must reconcile or admit the NPC identity rather than coerce this talk stage onto a Creature identity.",
         "Crystal summer supplies registered boss names and Wayland dialogue as separate comparison evidence; canonical donors remain on their original pins.",
         "All behavior and reward delivery remain authored Oteryn choices. Named entities are reference identities until canonical bindings exist; Native placement, triggers, encounter wiring, persistence and gameplay execution remain WAITING_IMPLEMENTATION."
       ]
