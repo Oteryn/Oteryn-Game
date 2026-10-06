@@ -122,6 +122,15 @@ def test_a_placed_part_without_group_19_is_a_finding():
     assert v.validate(houses, BED_A + BED_B, FACTS, set(), {9})["errors"] == []
 
 
+def test_a_census_bed_id_in_neither_facts_nor_held_fails_closed():
+    houses = [house(1, 2, GRID)]
+    report = v.validate(houses, BED_A + BED_B + [(77, 11, 12, 7)], FACTS, set(), {9})
+    assert codes(report) == ["UNKNOWN_BED_ITEM"]
+    assert report["errors"][0]["tile"] == [11, 12, 7]
+    outside = v.validate(houses, BED_A + BED_B + [(77, 50, 50, 7)], FACTS, set(), {9})
+    assert outside["errors"] == []
+
+
 def test_committed_facts_load_and_cover_both_parts():
     facts = v.load_facts()
     assert {part for part, _ in facts.values()} == {"head", "foot"}

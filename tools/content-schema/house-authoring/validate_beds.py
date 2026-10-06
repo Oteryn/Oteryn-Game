@@ -74,6 +74,7 @@ def validate(houses, placed, facts, exceptions, held=frozenset()):
     `houses`: dicts with `source_id`, `beds`, `tiles` (x, y, z). `placed`: (item_id, x, y, z).
     `facts`: item id -> (part, partner_direction). `exceptions`: excepted house source ids.
     `held`: bed Item ids without group 19; a placed one is a PART_WITHOUT_GROUP_19 finding.
+    A census id in neither `facts` nor `held` is an UNKNOWN_BED_ITEM finding.
     """
     owner = {}
     for house in houses:
@@ -96,6 +97,18 @@ def validate(houses, placed, facts, exceptions, held=frozenset()):
                 )
         elif item_id in facts:
             parts[(x, y, z)].append((item_id, *facts[item_id]))
+        else:  # fail closed: a census bed id with neither group 19 facts nor a hold
+            house = owner.get((x, y, z))
+            if house is not None:
+                bad_houses.add(house)
+                errors.append(
+                    {
+                        "code": "UNKNOWN_BED_ITEM",
+                        "house": house,
+                        "tile": [x, y, z],
+                        "detail": f"item {item_id} is in neither the facts nor the held set",
+                    }
+                )
 
     def fail(code, house, tile, detail=""):
         bad_houses.add(house)
