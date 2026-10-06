@@ -54,6 +54,28 @@
       "duration_seconds": 1449,
       "inspected_visuals": true,
       "transcript_used_as_secondary_corroboration": true
+    },
+    "official_post_release": {
+      "authority": "CIPSOFT_OFFICIAL",
+      "retrieved_utc": "2026-10-06",
+      "changes": [
+        {
+          "date": "2026-08-25",
+          "facts": [
+            "Furious Jaracals now spawn close to the noxious catnip instead of the centre of the room.",
+            "Noxious catnip expire time was reduced.",
+            "Minions spawning in the south of the boss room now spawn closer to the teleporter."
+          ],
+          "consequence": "Do not reproduce release-day spawn placement from the supplied July video."
+        },
+        {
+          "date": "2026-09-15",
+          "facts": [
+            "Leaving the Moonsnow Magnolia boss room during phase two previously could cause excessive monster spawns and performance issues; this was fixed."
+          ],
+          "consequence": "Encounter cleanup/leave must cancel or fence phase-owned spawn schedules so no phase-two spawns continue after the actor leaves."
+        }
+      ]
     }
   },
   "admission": {
@@ -313,9 +335,9 @@
     "Whether the ~30 s recommendation is merely safe player cadence or a server cooldown.",
     "Exact ~70 s pressure timer value if the reference is rounded.",
     "Exact phase-transition ordering if the ~5000 Ice burst kills the player.",
-    "Exact arena reset/cleanup semantics on timeout, logout, death or channel restart.",
     "Exact encounter admission/cooldown owner representation until current Encounter owner releases/allocates the slice.",
-    "Exact prison relocation position/event binding."
+    "Exact prison relocation position/event binding.",
+    "Exact cleanup implementation details remain owner-defined, but current Global behavior must not continue Magnolia phase-owned spawn schedules after room leave; Sep 15 fix is authoritative on that outcome."
   ],
   "implementation_fence": {
     "owner": "Encounter",
@@ -347,13 +369,16 @@
       "Moonsilver Drift spawn/lifetime/step callbacks",
       "first-lethal prevention, approximately 5000 Ice burst and immediate 60000-HP phase-2 return",
       "permanent second lethal and one-shot Magnolia encounter completion",
-      "post-kill relocation into the prison escape"
+      "post-kill relocation into the prison escape",
+      "current post-release spawn placement policy: Furious Jaracals near noxious catnip; south minions nearer the teleporter",
+      "phase-owned spawn cancellation/fencing on room leave, including phase 2; no post-leave spawn leak"
     ],
     "forbidden_shortcuts": [
       "Do not copy Crystal's static ordinary summon table as the Magnolia encounter implementation.",
       "Do not promote donor TODO(balance) damage/defense estimates to Reference parity.",
       "Do not persist phase timers or drift cells as durable QuestState tracks.",
-      "Do not emit magnolia_defeated on the first lethal."
+      "Do not emit magnolia_defeated on the first lethal.",
+      "Do not reproduce July release-day spawn positions where later official balancing moved the spawns."
     ]
   }
 }
