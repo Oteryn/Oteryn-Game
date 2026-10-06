@@ -542,27 +542,38 @@ new cause kind with a receipt key migration) is rejected for v1 (§16.6).
    - There is no new cause kind and no cause or receipt key migration (the §16.2.5 retirement
      table is a separate claim record). A child reference is never hashed into a UUID,
      and `CommandId` or `cause_ordinal` are never overloaded.
-2. **Invariant.** The quest children and claim obligations under one root CommandRef have
-   pairwise distinct transition keys. A quest child names only the root's acting character
-   (§16.3), so the invariant is checked per root.
+2. **Invariant.**
+   - The quest children and claim obligations under one root CommandRef have pairwise distinct
+     transition keys. A quest child names only the root's acting character (§16.3), so the
+     invariant is checked per root.
+   - One root CommandRef has at most one `RewardClaim` child, the D39 chest claim included. Its
+     MINT is keyed by the root CommandRef, and the DUR-03 reservation admits one logical MINT per
+     CommandRef (`0012_reward_claim_backpack_mint.sql`), so a second claim would conflict with
+     the first after that one may have committed. A claim-only child has no transition key, so
+     the first rule alone does not catch it.
 3. **Content validation.** QUEST-CONTENT-2 lowering enforces these rules; a violation fails the
    build. A binding is a definition at one placement.
    - (a) **USE.** Across every binding one `USE_INTENT` can fire, the transition keys of quest
      children and `RewardClaim` obligations are pairwise distinct. That covers the used
      placement, the used item, the `use_with` target and a D39 chest claim on the same placement.
+     The same bindings hold at most one `RewardClaim` child in total, that chest claim included.
    - (b) **Step.** Among the `ON_ENTER` bindings on one cell (the tile and the objects placed on
      it), the transition keys of quest children and claim obligations are pairwise distinct. The
-     same holds for `ON_LEAVE`.
+     same holds for `ON_LEAVE`. The `ON_ENTER` bindings on one cell hold at most one
+     `RewardClaim` child.
    - (c) **Leave and enter.** No transition key is a quest child or claim obligation of both an
      `ON_ENTER` and an `ON_LEAVE` binding, because one step leaves one cell and enters another.
    - (d) **Acting character only.** A quest child names only the root's acting character.
+   - (f) **No claim on leave.** In v1 an `ON_LEAVE` binding names no `RewardClaim` child. A step
+     then has claims only from the cell it enters, and (b) bounds those to one. This is a declared
+     v1 limit.
    - (e) **Placement.**
      - A placed object that carries a trigger is not movable by `ITEM_MOVE_INTENT`.
      - A floor-change cell carries no `ON_ENTER`, because a step never enters it.
      - Objects created by an overlay have no placement and carry no trigger.
 4. **Plan check (defence in depth).** The trigger runtime builds the plan before the root commits,
    where `QUESTGATE0-RL-03` is checked. If a plan holds two quest children or claim obligations
-   with an equal (character, transition_key):
+   with an equal (character, transition_key), or more than one `RewardClaim` child:
    - the root is refused before commit, as under RL-03. The `USE` changes nothing and the step is
      refused, with the existing `USE_INTENT` and step refusal results.
    - a content defect is recorded;
@@ -698,6 +709,7 @@ encoding and a new receipt key migration. It is decided with the first accepted 
   their kinds and are not rewritten.
 - **Superseding evidence:**
   - content that needs two quest children or claims with one transition key under one root;
+  - content that needs two `RewardClaim` children under one root, or a claim on `ON_LEAVE`;
   - an accepted nested cascade, multi-cell command, non-command root or cross-character cause;
   - official behaviour of quest step triggers on a push or relocation.
 - **Deliberately not decided:** §16.4.
@@ -749,3 +761,9 @@ encoding and a new receipt key migration. It is decided with the first accepted 
    - a freeze under a retired CommandRef refuses; the runtime role cannot update, delete or
      truncate a retirement row;
    - a replacement GameSession never resumes the old reservation.
+8. **One claim per root (§16.2.2):**
+   - QUEST-CONTENT-2 validation fails on each of these: two `RewardClaim` children on one `USE`
+     binding set; a trigger claim beside the D39 chest claim of the same placement; two claims
+     among one cell's `ON_ENTER` bindings; a claim on an `ON_LEAVE` binding;
+   - QUEST-TRIGGER-1: a plan that holds two `RewardClaim` children is refused before the root
+     commits, with no reservation, no MINT and a content defect recorded.
