@@ -38,19 +38,20 @@ external_repositories: []
 - Options:
   - current route: the disposable stack of the merged RUNBOOK-1, which calls the Platform methods
     through `php -r` with no Platform change.
-  - A (deferred, pending the owner's ruling): the same stack, plus one Platform PR adding two
-    commands limited to testing and preproduction. A backlog entry with no frozen design; the
-    design and authority are reassessed in an amendment if the owner proceeds under 1a or a §6
-    trigger occurs.
+  - A (decided, control plane D842, confirmed by the owner directly to this architect session):
+    the same stack, plus one Platform PR `PLATFORM-NATIVE-PREPROD-OPS-1` adding two commands
+    limited to testing and preproduction and fenced to the per-run store. It proceeds now under
+    1a; the round-7 design is frozen in §2, reassessed against Platform 3896bcd.
   - B (deferred, undecided): persistent private preproduction. A backlog entry with subject,
     safety constraints and a reopening trigger (step 7 scheduled and needing an environment that
     outlives one run); no technology or topology is chosen, and no answer authorizes it now.
   - C: public staging, rejected.
 - Owner questions §7 items 1–4 are routed through the control plane. Recorded answers 1a
-  (D831, against the owned-path list of its question; replaces D824 1a) and 2a (D824) stay
-  recorded, but no Platform PR is allocated under them while Option A is deferred pending the
-  owner's ruling (deferral versus proceeding under 1a); items 3 and 4 are open and only confirm
-  a backlog entry and a refusal, so no answer to them grants authority.
+  (D831, against the §2 owned-path list; replaces D824 1a) and 2a (D824) are in effect, and the
+  control plane D842 ruling (confirmed by the owner directly to this architect session) is that
+  Option A proceeds now under 1a; the control plane allocates its Platform PR on #162 after this
+  document merges. Items 3 and 4 are open and only confirm a backlog entry and a refusal, so no
+  answer to them grants authority.
 
 ## Architecture and source of truth
 
@@ -75,7 +76,7 @@ external_repositories: []
 ## High-risk authority/recovery qualification
 
 `NOT_APPLICABLE`: this task changes only a decision document and this record. It performs no
-mutation and grants no authority. If Option A goes ahead, its Platform PR touches trust
+mutation and grants no authority. Option A's Platform PR (D842) touches trust
 registration and gets its own independent review.
 
 ## Acceptance criteria
@@ -84,17 +85,18 @@ registration and gets its own independent review.
 - [x] The safety facts from review rounds 1–7 (unguarded trust write and its high-water lock
       before the transaction, permanent issuance, the run-directory check, the `testing` stores
       the guard admits) are kept as constraints for a later reassessment (decision §2, F3–F5).
-- [x] Option A is a backlog entry with no frozen class, command, flag, test or path design, and
-      no pre-allocated Platform write (P1 4197089671).
+- [x] Option A's design is frozen in §2 only after the owner's ruling (D842), with its crash and
+      retry rule and its relation to RUNBOOK-1; no Game path change is granted (P1 4197089671).
 - [x] Whether RUNBOOK-1 has run is UNKNOWN, not PROVEN (P2 4197089687).
 - [x] The mandatory decision test is answered (decision §6).
-- [x] Owner answer 1a (D831, the path list of its question, kept in §7) and 2a (D824) are
-      recorded (decision §7).
+- [x] Owner answer 1a (D831, given against the §2 owned-path list) and 2a (D824) are recorded
+      (decision §7).
 - [x] Option B is a backlog entry with no chosen technology, topology, guard change or workflow,
       and no §7 answer authorizes its scope now (P1 4197646953).
-- [x] F6 and §6 reassessed against the merged RUNBOOK-1: Option A deferred, pending the owner's
-      ruling, with reopen triggers; no new Platform command authorized now (P1 4196578216).
-- [ ] The owner's ruling on Option A (deferral versus proceeding under 1a).
+- [x] F6 and §6 reassessed against the merged RUNBOOK-1: nothing is strictly blocked on the
+      commands; the commands do not fix F7 (P1 4196578216).
+- [x] The owner's ruling on Option A: proceed now under 1a (control plane D842, confirmed by the
+      owner directly to this architect session).
 - [ ] Owner answers to items 3 and 4 (neither grants authority).
 
 ## Excluded scope
@@ -207,6 +209,18 @@ guard relaxation. No decision on Option B's design, technology, topology or auth
   - Sweep for other `NO` items that froze a design: §6 item 5 no longer names a Synology shape;
     the §6 Option A trigger cites §3, not item 3; F7's SQLite store fix is marked as one example,
     not a choice. Answers 1a and 2a and the D831 path list stay recorded as given.
+- Control plane D842 (2026-10-06): the ruling on Option A is to proceed now under 1a, which the
+  owner confirmed directly to this architect session. Folded:
+  - Status, §0, F6 and F7 wording: Option A is decided; Option B stays a deferred, undecided
+    backlog entry.
+  - §2 restores the round-7 design as the frozen specification for
+    `PLATFORM-NATIVE-PREPROD-OPS-1`, reassessed against Platform 3896bcd (unchanged), with the
+    D831 owned-path list. It adds a crash and retry rule (one writer per run; issuance and route
+    are one transaction each; a failure after the trust witness's lock file discards the run) and
+    the relation to RUNBOOK-1 (the commands do not fix F7; the runbook's switch is a separate Game
+    task).
+  - §5 sequencing, §6 decision test (YES for Option A by ruling), §7 intro and §8 follow. No Game
+    path change is granted.
 
 ## Validation
 
@@ -235,6 +249,7 @@ guard relaxation. No decision on Option B's design, technology, topology or auth
 - exact head: the frozen head
 - method/reviewer: Sol Supervising Architect
 - material findings: none open after the P1 4197089671, P2 4197089687 and P1 4197646953 fixes
+  and the D842 fold
 - verdict: ready for independent review
 
 ## Independent review
@@ -257,7 +272,7 @@ guard relaxation. No decision on Option B's design, technology, topology or auth
 ## Context checkpoint
 
 ```yaml
-last_progress: P1 4197646953 (§3 Option B reduced to a backlog entry; §7 item 3 cannot authorize; sweep of other NO items)
+last_progress: D842 fold (Option A decided, proceeds now under 1a; §2 round-7 design frozen with crash/retry and RUNBOOK-1 relation)
 status: completed
 branch: cand/preprod-route-publish-auth-1
 pr: 1871
