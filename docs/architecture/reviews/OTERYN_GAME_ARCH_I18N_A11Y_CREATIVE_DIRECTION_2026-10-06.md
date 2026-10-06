@@ -360,8 +360,9 @@
    calls the plan's Variant B **FOV-fixed** and its Variant A **FOV-responsive**. The client
    setting `fov_arm` (`OS_USER`) has three values:
    - `FIXED_STANDARD`: today's 18x14 extent (F23), the default;
-   - `FIXED_LARGE`: the larger fixed extent, which is the channel cap (Q5, PROPOSED 22x16), to
-     judge whether a larger map gives too much advantage;
+   - `FIXED_LARGE`: the larger fixed extent, which is the channel cap (Q5, PROPOSED: the largest
+     candidate that measures within budget), to judge whether a larger map gives too much
+     advantage;
    - `RESPONSIVE`: an extent in whole tiles derived from the client's world viewport and world
      zoom (plan §5).
    Rules:
@@ -550,10 +551,12 @@ MAP-CUTOVER-1, in parallel with 6; 5 last.
 5. **Q5. What is the larger fixed size (`FIXED_LARGE`)?** Today's view is 18x14; the server
    admits 15..=36 by 11..=28 (F23). The 18x14 snapshot measured 1.683 ms p99 against the
    2,000 us gate, so a linear estimate puts 22x16 (1.4 times the tiles) near 2.35 ms: the
-   measurement decides whether it fits. a) 22x16 (+4 columns, +2 rows); b) 26x20; c) the largest
-   of 20x16, 22x16 and 26x20 that measures within 2,000 us p99. **Recommendation: a**, with
-   §1.21 (e): if 22x16 misses the budget, the cap stays 18x14 and the packet returns a budget
-   question. **PROPOSED default until the owner answers: a** (reversible; test channel only).
+   measurement decides whether it fits. The same estimate puts 20x16 near 2.14 ms; about 299
+   tiles (for example 20x15) fit. a) 22x16 (+4 columns, +2 rows); b) 26x20; c) the largest of
+   20x15, 20x16, 22x16 and 26x20 that measures within 2,000 us p99. **Recommendation: c**,
+   because the estimate puts a and b over the budget; with §1.21 (e): if no candidate fits, the
+   cap stays 18x14 and the packet returns a budget question. **PROPOSED default until the owner
+   answers: c** (reversible; test channel only).
 
 ## 5. Rejected options
 

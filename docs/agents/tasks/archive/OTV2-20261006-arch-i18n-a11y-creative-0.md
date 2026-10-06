@@ -32,7 +32,7 @@ external_repositories: []
 - Amendment 3 to ERR-CODES §1.9 replaces a different sentence than ARCH-LIVE-READINESS-0 §2 A3.
 - Owner rulings of 2026-10-06 are recorded in §4: Q1 b; Q2 a; Q3 both layouts (A first); both
   field-of-view arms built and switchable in the client, independent of the layout, final policy
-  open. Q5 (the larger fixed size) is open with PROPOSED default a (22x16).
+  open. Q5 (the larger fixed size) is open with PROPOSED default c (the largest candidate that measures within budget).
 
 ## Owner rulings
 
