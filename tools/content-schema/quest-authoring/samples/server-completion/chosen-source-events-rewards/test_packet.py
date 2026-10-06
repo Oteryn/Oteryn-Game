@@ -2,7 +2,7 @@ import json
 import pathlib
 import unittest
 
-from builder import PIN, WORLD_SHA, norm, resolve
+from builder import PIN, WORLD_SHA, kill_binding_candidates, norm, resolve
 
 ROOT = pathlib.Path(__file__).parent
 PACKET = ROOT / "packet.json"
@@ -65,6 +65,31 @@ class ChosenSourceEventsRewardsTest(unittest.TestCase):
                 self.assertEqual(1, len(row["refs"]))
                 self.assertTrue(row["evidence"])
                 self.assertTrue(all(ev["epoch"] == PIN for ev in row["evidence"]))
+
+
+    def test_exact_kill_encounter_seams_are_qualified_but_not_promoted(self):
+        rows = kill_binding_candidates(self.packet)
+        self.assertEqual(8, len(rows))
+        self.assertEqual(
+            8,
+            len({
+                (
+                    row["quest_ref"]["key"],
+                    row["stage_key"],
+                    row["target"],
+                    row["encounter_ref"]["key"],
+                    row["outcome"],
+                )
+                for row in rows
+            }),
+        )
+        for row in rows:
+            self.assertEqual("Encounter", row["encounter_ref"]["family"])
+            self.assertTrue(row["outcome"])
+            self.assertTrue(row["rule_key"])
+            self.assertFalse(row["execution_verified"])
+            self.assertIsNone(row["native_dispatch_binding"])
+            self.assertFalse(row["runtime_admitted"])
 
     def test_all_completion_stages_remain_unbound(self):
         completion = [
