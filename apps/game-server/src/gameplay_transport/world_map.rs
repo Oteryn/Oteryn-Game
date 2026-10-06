@@ -751,3 +751,7 @@ pub(crate) const fn carried_in_domain_1(kind: EntityKind, map_view: bool) -> boo
 #[cfg(test)]
 #[path = "world_map_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "world_map_real_tests.rs"]
+mod real_tests;

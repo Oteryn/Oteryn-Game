@@ -26,6 +26,16 @@ class BindingIndexControls(unittest.TestCase):
         with self.assertRaises(jsonschema.ValidationError):
             validate_index(self.root, self.scratch, value)
 
+    def test_repository_paths_are_portable(self):
+        paths = [entry['path'] for entry in self.manifest['outputs']]
+        for record in self.manifest['records']:
+            paths.append(record['definition']['path'])
+            paths.extend(ref['path'] for ref in record['supplement_refs'])
+        for path in paths:
+            self.assertNotIn('\\', path)
+            self.assertFalse(Path(path).is_absolute())
+            self.assertEqual(path, Path(path).as_posix())
+
     def test_stale_definition_rejected(self):
         value = self.candidate()
         value['records'][0]['definition']['sha256'] = '0' * 64

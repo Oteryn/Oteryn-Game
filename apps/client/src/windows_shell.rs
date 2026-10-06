@@ -1,8 +1,11 @@
-use oteryn_client::input::{ClickWalk, MouseActions, click_tile};
+use oteryn_client::input::{MouseActions, arrow_step, click_tile};
+use oteryn_client::play::{PlayLink, PlayView};
 use oteryn_client::pre_native_status;
 use oteryn_client::scene::PlaceholderScene;
+use oteryn_client::{AdmittedSession, ClientBootstrap, GameplayEntryError};
 use oteryn_foundation::ProcessGeneration;
 use oteryn_input_platform::InputPlatformAdapter;
+use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{SurfacePhase, WindowsRenderer};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
@@ -50,24 +53,44 @@ struct Application {
     window: Option<Arc<Window>>,
     renderer: Option<WindowsRenderer<Arc<Window>>>,
     scene: Option<PlaceholderScene>,
+    client: Option<ClientBootstrap>,
+    play: Option<Play>,
     generation: ProcessGeneration,
     input: InputPlatformAdapter,
     actions: MouseActions,
-    walk: ClickWalk,
     fatal_error: Option<ShellError>,
 }
 
+/// The view of an admitted session and the link to its task on the client runtime.
+struct Play {
+    view: PlayView,
+    link: PlayLink,
+}
+
 impl Application {
-    fn new(smoke: bool) -> Result<Self, ShellError> {
+    fn new(
+        smoke: bool,
+        play: Option<(ClientBootstrap, AdmittedSession)>,
+    ) -> Result<Self, ShellError> {
+        let (client, play) = match play {
+            Some((client, admitted)) => {
+                let (view, link) = client
+                    .start_play(admitted)
+                    .map_err(|_error| ShellError::RendererInitialization)?;
+                (Some(client), Some(Play { view, link }))
+            }
+            None => (None, None),
+        };
         Ok(Self {
             smoke,
             window: None,
             renderer: None,
             scene: None,
+            client,
+            play,
             generation: ProcessGeneration::new(1),
             input: InputPlatformAdapter::new(),
             actions: MouseActions::new().map_err(|_error| ShellError::InputInitialization)?,
-            walk: ClickWalk::new(),
             fatal_error: None,
         })
     }
@@ -77,19 +100,49 @@ impl Application {
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
+        if let Some(play) = &mut self.play {
+            if let Some(direction) = arrow_step(events) {
+                play.view.arrow(direction);
+            }
+            let mut render_failed = false;
+            for click in self.actions.route(events) {
+                if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
+                    render_failed |= play.view.click(tile).is_err();
+                }
+            }
+            if render_failed {
+                self.fail(event_loop, ShellError::RendererRender);
+            }
+            return;
+        }
         for click in self.actions.route(events) {
             let picked = self.scene.as_mut().and_then(|scene| {
                 let tile = click_tile(scene.view(), click.x, click.y)?;
                 Some((tile, scene.select_tile(tile)))
             });
-            // A visible entity or object becomes the target; any other tile becomes the walk
-            // goal. N4 drives `walk` through the session's `step`.
-            match picked {
-                Some((_, Ok(Some(_)))) | None => {}
-                Some((tile, Ok(None))) => self.walk.set_goal(tile),
-                Some((_, Err(_error))) => self.fail(event_loop, ShellError::RendererRender),
+            // Without a session a click only selects a visible entity or object.
+            if let Some((_, Err(_error))) = picked {
+                self.fail(event_loop, ShellError::RendererRender);
             }
         }
+    }
+
+    /// A session end returns to the pre-admission state: the placeholder scene, with the public
+    /// class in the title and on the console. The session task is gone with its link.
+    fn return_to_login(&mut self, class: PublicClass) {
+        self.play = None;
+        let message = GameplayEntryError::Rejected(class).to_string();
+        println!("Oteryn: {message}");
+        if let Some(window) = &self.window {
+            window.set_title(&format!("Oteryn — {message}"));
+        }
+        let Ok(scene) = PlaceholderScene::new() else {
+            return;
+        };
+        if let Some(renderer) = &mut self.renderer {
+            renderer.set_atlas(scene.atlas().clone());
+        }
+        self.scene = Some(scene);
     }
 
     fn fail(&mut self, event_loop: &ActiveEventLoop, error: ShellError) {
@@ -150,7 +203,11 @@ impl ApplicationHandler for Application {
             self.fail(event_loop, ShellError::RendererInitialization);
             return;
         };
-        renderer.set_atlas(scene.atlas().clone());
+        let atlas = self
+            .play
+            .as_ref()
+            .map_or_else(|| scene.atlas(), |play| play.view.scene().atlas());
+        renderer.set_atlas(atlas.clone());
         window.request_redraw();
         self.window = Some(window);
         self.renderer = Some(renderer);
@@ -207,7 +264,12 @@ impl ApplicationHandler for Application {
                 }
             }
             WindowEvent::RedrawRequested => {
-                if let (Some(renderer), Some(scene)) = (&mut self.renderer, &self.scene)
+                let scene = self
+                    .play
+                    .as_ref()
+                    .map(|play| play.view.scene())
+                    .or(self.scene.as_ref());
+                if let (Some(renderer), Some(scene)) = (&mut self.renderer, scene)
                     && redraw_eligible(Some(renderer.state().phase()))
                     && renderer
                         .render_batches(self.generation, scene.tiles(), scene.sprites())
@@ -221,6 +283,11 @@ impl ApplicationHandler for Application {
     }
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(play) = &mut self.play
+            && let Err(class) = play.view.tick(&play.link)
+        {
+            self.return_to_login(class);
+        }
         if let Some(window) = &self.window
             && redraw_eligible(
                 self.renderer
@@ -233,13 +300,17 @@ impl ApplicationHandler for Application {
     }
 }
 
-pub fn run() -> Result<(), ShellError> {
+pub fn run(play: Option<(ClientBootstrap, AdmittedSession)>) -> Result<(), ShellError> {
     let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
     let smoke = std::env::args().any(|argument| argument == "--smoke");
-    let mut application = Application::new(smoke)?;
+    let mut application = Application::new(smoke, play)?;
     let run_result = event_loop
         .run_app(&mut application)
         .map_err(|_error| ShellError::EventLoopRun);
+    drop(application.play.take());
+    if let Some(client) = application.client.take() {
+        client.shutdown();
+    }
     if let Some(error) = application.fatal_error {
         return Err(error);
     }

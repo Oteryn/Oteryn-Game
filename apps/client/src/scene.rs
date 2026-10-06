@@ -26,17 +26,10 @@ pub struct PlaceholderScene {
 impl PlaceholderScene {
     /// Builds the scene: a stone border, a dirt road, a pond, and three sprites around tile (0, 0).
     pub fn new() -> Result<Self, BatchError> {
-        let source = placeholder_atlas();
-        let atlas = AtlasImage::new(source.cell_px, source.columns, source.rows, source.rgba)?;
         let origin = TileCoord::new(-7, -5);
-        let view = TileView::new(origin, SCENE_TILE_PX, SCENE_COLUMNS, SCENE_ROWS)?;
-        let mut cells = Vec::new();
-        for row in 0..SCENE_ROWS {
-            for column in 0..SCENE_COLUMNS {
-                cells.push(terrain_cell(column, row).index());
-            }
-        }
-        let tiles = TileBatch::from_cells(&view, &atlas, &cells)?;
+        let cells = (0..SCENE_ROWS)
+            .flat_map(|row| (0..SCENE_COLUMNS).map(move |column| terrain_cell(column, row)))
+            .collect::<Vec<_>>();
         // Fixtures until VIS-2: four entities (player, creature, other player, NPC) and one tile object (a boulder).
         let visible = [
             (0, 0, TargetKind::Entity, PlaceholderCell::Player),
@@ -56,6 +49,63 @@ impl PlaceholderScene {
             )
         })
         .to_vec();
+        Self::build(origin, &cells, visible)
+    }
+
+    /// The play view (N2N3-1): a placeholder ground grid centred on `own`, the own actor on it
+    /// and one marker per overlay object tile. No map data is drawn.
+    pub fn centered_on(own: TileCoord, markers: &[TileCoord]) -> Result<Self, BatchError> {
+        let origin = TileCoord::new(
+            own.x
+                .saturating_sub(i32::try_from(SCENE_COLUMNS / 2).unwrap_or(0)),
+            own.y
+                .saturating_sub(i32::try_from(SCENE_ROWS / 2).unwrap_or(0)),
+        );
+        let cells = (0..SCENE_ROWS)
+            .flat_map(|row| {
+                (0..SCENE_COLUMNS).map(move |column| {
+                    let (dx, dy) = (i64::from(column), i64::from(row));
+                    let (x, y) = (i64::from(origin.x) + dx, i64::from(origin.y) + dy);
+                    if (x + y) % 2 == 0 {
+                        PlaceholderCell::Grass
+                    } else {
+                        PlaceholderCell::Dirt
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+        let visible = markers
+            .iter()
+            .map(|&tile| {
+                (
+                    Targetable {
+                        tile,
+                        kind: TargetKind::Object,
+                    },
+                    PlaceholderCell::Stone,
+                )
+            })
+            .chain([(
+                Targetable {
+                    tile: own,
+                    kind: TargetKind::Entity,
+                },
+                PlaceholderCell::Player,
+            )])
+            .collect();
+        Self::build(origin, &cells, visible)
+    }
+
+    fn build(
+        origin: TileCoord,
+        cells: &[PlaceholderCell],
+        visible: Vec<(Targetable, PlaceholderCell)>,
+    ) -> Result<Self, BatchError> {
+        let source = placeholder_atlas();
+        let atlas = AtlasImage::new(source.cell_px, source.columns, source.rows, source.rgba)?;
+        let view = TileView::new(origin, SCENE_TILE_PX, SCENE_COLUMNS, SCENE_ROWS)?;
+        let cells = cells.iter().map(|cell| cell.index()).collect::<Vec<_>>();
+        let tiles = TileBatch::from_cells(&view, &atlas, &cells)?;
         let mut scene = Self {
             atlas,
             view,

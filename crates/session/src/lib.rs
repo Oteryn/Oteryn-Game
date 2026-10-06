@@ -16,7 +16,6 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
-pub use oteryn_protocol_oteryn::CharacterId;
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
 /// direct `protocol-oteryn` edge (ADR-0020 section 1).
@@ -36,11 +35,12 @@ pub use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
 };
-use oteryn_protocol_oteryn::world_object::{
-    self, UseDisposition, WorldObjectOverlayEntry, WorldObjectTarget,
-};
-use oteryn_protocol_oteryn::world_spatial::{
-    self, CAPABILITY_PACED_MOVEMENT_V1, StepDirection, StepDisposition, WorldSpatialObservation,
+pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
+use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
+use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
+/// The step types a client names when it walks and reads the outcome (ADR-0020 section 1).
+pub use oteryn_protocol_oteryn::world_spatial::{
+    ActorPosition, StepDirection, StepDisposition, WorldSpatialObservation,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::{
     self, CAPABILITY_WORLD_SPATIAL_ENTITIES, MAX_SNAPSHOT_ENTITIES,
@@ -55,12 +55,13 @@ pub use oteryn_protocol_oteryn::world_spatial_entities::{
 pub use oteryn_protocol_oteryn::{
     ADMISSION_REFUSAL_CODES, AdmissionProgression, AdmissionPublicClass, admission_refusal_class,
 };
+pub use oteryn_protocol_oteryn::{CharacterId, CommandStatus};
 use oteryn_protocol_oteryn::{
-    ClientBootstrapValue, ClientCommandValue, CommandStatus, Direction, FoundationProtocolError,
-    FrameLength, GameSessionId, MessageType, ProtocolDisposition, decode_command_result,
-    decode_liveness_probe, decode_protocol_error, decode_server_accepted, decode_snapshot_begin,
-    decode_snapshot_body, decode_snapshot_chunk_framing, decode_snapshot_id, decode_state_delta,
-    decode_wire_envelope, encode_client_bootstrap, encode_client_command, encode_liveness_ack,
+    ClientBootstrapValue, ClientCommandValue, Direction, FoundationProtocolError, FrameLength,
+    GameSessionId, MessageType, ProtocolDisposition, decode_command_result, decode_liveness_probe,
+    decode_protocol_error, decode_server_accepted, decode_snapshot_begin, decode_snapshot_body,
+    decode_snapshot_chunk_framing, decode_snapshot_id, decode_state_delta, decode_wire_envelope,
+    encode_client_bootstrap, encode_client_command, encode_liveness_ack,
 };
 use oteryn_protocol_oteryn::{
     achievement_notices::{

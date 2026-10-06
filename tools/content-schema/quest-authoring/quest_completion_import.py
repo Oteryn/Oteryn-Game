@@ -7,6 +7,7 @@ five finite Source-proved effect refinements. It does not supply event callers.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import importlib.util
 import json
@@ -22,6 +23,8 @@ STAGES = TOOL + 'samples/server-completion/chosen-progress/builder.py'
 REFINE = TOOL + 'samples/state-effect-refinements/effect_refinements.py'
 EVENTS = TOOL + 'samples/server-completion/events-rewards/packet.json'
 EVENTS_SHA = '4b77071f3e44e90c64260c4db6830c5acab7f0142627d9819d2b4266c6d100a1'
+EVENT_CORRECTIONS = TOOL + 'samples/server-completion/events-rewards/corrections.json'
+EVENT_CORRECTIONS_SHA = 'a68d889f319fec1221cf86c92d4a354ca53acb301935834992ddf23fd0373902'
 NPC = TOOL + 'samples/server-completion/npc-dialogue/candidates.json'
 NPC_SHA = 'e72477218339f8c2527706ec877750823014843566e13bc0a134ccaf6e4b2286'
 PLAN = 'content/quests/missions/completion-binding-plan.json'
@@ -49,7 +52,43 @@ def pinned(root, path, expected_sha):
     return json.loads(raw)
 
 
-def binding_plan(choices, events, npc):
+def apply_event_corrections(root, choices, events):
+    raw = (root / EVENT_CORRECTIONS).read_bytes()
+    if sha(raw) != EVENT_CORRECTIONS_SHA:
+        raise ValueError('Approved event-count correction packet drift')
+    packet = json.loads(raw)
+    if (packet.get('schema') != 'OTERYN_AUTHORED_EVENT_COUNT_CORRECTIONS/v1'
+            or packet.get('runtime_enabled') is not False
+            or packet.get('native_admission') is not False
+            or packet.get('source_holds_preserved') is not True
+            or packet.get('baseline_events_sha256') != EVENTS_SHA):
+        raise ValueError('Event-count correction packet scope differs')
+    result = copy.deepcopy(events)
+    event_rows = {q['quest_ref']['key']: q for q in result['records']}
+    chosen = {q['quest']: {t['source']['chosen_stage']['key']: t['source']['chosen_stage']
+                           for t in q['transitions']} for q in choices['quests']}
+    seen = set()
+    for change in packet.get('corrections', []):
+        key = (change['quest'], change['stage'])
+        if key in seen or change['quest'] not in event_rows or change['quest'] not in chosen:
+            raise ValueError('Unknown or duplicate event-count correction')
+        seen.add(key)
+        current = chosen[change['quest']].get(change['stage'])
+        if current is None or (current['kind'], current['count']) != (change['new_kind'], change['new_count']):
+            raise ValueError('Corrected chosen stage differs from current recipe')
+        event = next((s for s in event_rows[change['quest']]['stages']
+                      if s['stage_key'] == change['stage']), None)
+        if event is None or (event['kind'], event['count']) != (change['old_kind'], change['old_count']):
+            raise ValueError('Historical event/count fence differs')
+        event['kind'], event['count'] = change['new_kind'], change['new_count']
+    expected = {('oteryn:quest.authored.make_believe_quest', 's8'),
+                ('oteryn:quest.authored.make_believe_quest', 's14')}
+    if seen != expected:
+        raise ValueError('Expected exactly the two Make Believe count corrections')
+    return result, {'path': EVENT_CORRECTIONS, 'sha256': EVENT_CORRECTIONS_SHA}
+
+
+def binding_plan(choices, events, npc, event_followup):
     event_rows = {q['quest_ref']['key']: q for q in events['records']}
     npc_rows = {(r['quest']['key'], r['stage']): r for r in npc['records']}
     if len(event_rows) != 68 or len(npc_rows) != len(npc['records']):
@@ -87,9 +126,10 @@ def binding_plan(choices, events, npc):
         'schema': 'OTERYN_QUEST_COMPLETION_BINDING_PLAN/v1',
         'runtime_enabled': False,
         'counts': {'quests': len(records), 'stages': sum(len(q['stages']) for q in records)},
-        'input_packets': [{'path': EVENTS, 'sha256': EVENTS_SHA}, {'path': NPC, 'sha256': NPC_SHA}],
+        'input_packets': [{'path': EVENTS, 'sha256': EVENTS_SHA}, event_followup, {'path': NPC, 'sha256': NPC_SHA}],
         'limits': ['Identity associations and derived branch candidates are not executable bindings',
-                   'Transition keys refer to the actual typed progress candidate, not a new family'],
+                   'Transition keys refer to the actual typed progress candidate, not a new family',
+                   'The finite event overlay corrects chosen occurrence counts only; historical target identity associations remain non-executable evidence'],
         'records': records,
     }
 
@@ -103,13 +143,14 @@ def expected(root):
     refine = module(root, REFINE, 'chosen_completion_refinements')
     choices = stages.build(root)
     stages.validate_packet(choices)
-    plan = binding_plan(choices, pinned(root, EVENTS, EVENTS_SHA), pinned(root, NPC, NPC_SHA))
+    events, event_followup = apply_event_corrections(root, choices, pinned(root, EVENTS, EVENTS_SHA))
+    plan = binding_plan(choices, events, pinned(root, NPC, NPC_SHA), event_followup)
     refined, proof = refine.apply(root, source['quests'])
     base = dict(source, quests=refined)
     candidate = stages.merge(base, choices)
     inputs = [BASE, STAGES, REFINE, proof['path'],
               TOOL + 'samples/state-effect-refinements/effect_refinements.schema.json',
-              EVENTS, NPC,
+              EVENTS, event_followup['path'], NPC,
               TOOL + 'quest_completion_import.py']
     sources = [{'path': path, 'sha256': sha((root / path).read_bytes())} for path in inputs]
     sources += choices['authoring_sources']
