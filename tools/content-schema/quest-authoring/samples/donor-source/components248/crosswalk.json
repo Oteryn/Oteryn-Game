@@ -6040,9 +6040,9 @@
   "input_sha256": {
     "content/quests/definitions/quests-00000-00099.json": "dfa67d1cfd370c1e44093b3cc5b227806b784ac14eca7bf2f5b51d79d35db27f",
     "content/quests/definitions/quests-00100-00199.json": "52ef3655191bc7de1206700a1576af330872d1ec1b3856cdaf64f53693ca587e",
-    "content/quests/definitions/quests-00200-00299.json": "e7f9f1a2f178dd55af2331132706e92ecf131bf46c9dc4423b5d28af4448fa70",
-    "content/quests/definitions/quests-00300-00351.json": "52997b06343ebd94d6298765473c38fff4297e39143cfd855b14ba26f8c63db0",
-    "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json": "b255f34f557828b275eebae3f26ec2e6053a97068674e5a0141720716ffa13a5",
+    "content/quests/definitions/quests-00200-00299.json": "a534f03446e690f775cf40f5bfceff7b1aa1cac2fa51e1307966fe56e82dd658",
+    "content/quests/definitions/quests-00300-00351.json": "2cb47e5cd136f063fe7ff7607dc795ffff6597896d10c0a725cd17d2fe750781",
+    "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json": "48deb910c9bb60aa077ce4cea9391fab2f16432da1003dd4b47a8f48f61d87e8",
     "tools/content-schema/quest-authoring/samples/source_migration/bundle.json": "12771f0d11bdf8109a017c1e4c1d113f1966e031dfcf36fef1b917e505a8571d"
   },
   "quests": [
