@@ -917,32 +917,25 @@
         "timestamp_approx": "00:22:48.5",
         "observation": "After an earlier failed chisel attempt, use of the torch produces a clear fire effect on the north-wall crack."
       },
-      "position_candidates": [
-        {
-          "x": 31919,
-          "y": 31359,
-          "z": 9,
-          "note": "debris + ice wall"
-        },
-        {
-          "x": 31920,
-          "y": 31359,
-          "z": 9,
-          "note": "directly north of skeleton; debris + ice wall; preferred candidate"
-        },
-        {
-          "x": 31921,
-          "y": 31359,
-          "z": 9,
-          "note": "debris + ice wall orientation variant"
-        }
-      ],
-      "preferred_position": {
+      "position_status": "EXACT_VIDEO_PLUS_OTBM",
+      "position": {
         "x": 31920,
         "y": 31359,
         "z": 9
       },
-      "position_status": "BOUNDED_THREE_TILE_HOLD"
+      "world_target": {
+        "base_ground_id": 4728,
+        "base_ground_name": "swamp",
+        "debris_id": 6374,
+        "debris_name": "debris",
+        "wall_id": 6729,
+        "wall_name": "ice wall"
+      },
+      "position_evidence": {
+        "video": "22:47–22:51 action/effect is centered exactly one tile north of the prison skeleton.",
+        "topology": "Prison skeleton is at 31920,31360,9; direct north tile is 31920,31359,9.",
+        "otbm": "Direct north tile contains central ice wall 6729 + debris 6374. Side candidates use different debris/orientation variants; 31921 uses corner/variant wall 6737."
+      }
     },
     {
       "id": "prison_wall_chisel",
@@ -967,32 +960,25 @@
         "video_timestamp_approx": "00:22:48.0",
         "observed_message": "You try to pry open the crack in the wall with the icicle. But it doesn't work. You'll have to find a way to widen the crack first using some other method."
       },
-      "position_candidates": [
-        {
-          "x": 31919,
-          "y": 31359,
-          "z": 9,
-          "note": "debris + ice wall"
-        },
-        {
-          "x": 31920,
-          "y": 31359,
-          "z": 9,
-          "note": "directly north of skeleton; debris + ice wall; preferred candidate"
-        },
-        {
-          "x": 31921,
-          "y": 31359,
-          "z": 9,
-          "note": "debris + ice wall orientation variant"
-        }
-      ],
-      "preferred_position": {
+      "position_status": "EXACT_VIDEO_PLUS_OTBM",
+      "position": {
         "x": 31920,
         "y": 31359,
         "z": 9
       },
-      "position_status": "BOUNDED_THREE_TILE_HOLD"
+      "world_target": {
+        "base_ground_id": 4728,
+        "base_ground_name": "swamp",
+        "debris_id": 6374,
+        "debris_name": "debris",
+        "wall_id": 6729,
+        "wall_name": "ice wall"
+      },
+      "position_evidence": {
+        "video": "22:47–22:51 action/effect is centered exactly one tile north of the prison skeleton.",
+        "topology": "Prison skeleton is at 31920,31360,9; direct north tile is 31920,31359,9.",
+        "otbm": "Direct north tile contains central ice wall 6729 + debris 6374. Side candidates use different debris/orientation variants; 31921 uses corner/variant wall 6737."
+      }
     },
     {
       "id": "prison_passage",
@@ -1017,7 +1003,13 @@
         },
         "north_wall_y": 31359
       },
-      "position_status": "ROOM_RESOLVED_EXIT_TILE_UNRESOLVED"
+      "position_status": "EXACT_OPENING_TILE",
+      "position": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9
+      },
+      "note": "Opening/crossing begins at the exact wall target after chisel succeeds; downstream corridor/rope-exit trigger remains unresolved."
     },
     {
       "id": "prison_rope_exit",
@@ -1115,7 +1107,7 @@
     "Asura Citadel door needs identity-based i54262 key check plus post-completion bypass under DOOR-1/KEY-1; donor has no keyNumber",
     "Magnolia special Encounter absent",
     "Blue Lava night-only predicate source conflict",
-    "Escape room topology resolved with unique high-confidence OTBM match (skeleton 31920,31360,9; SW icicles 31914,31364,9); exact north-wall tile remains a bounded 3-tile hold (31919..31921,31359,9), Rope Spot/scripted exit remains unresolved, and donor Lit Torch 54610 requires separate Item admission (do not alias to i34017)",
+    "Escape room/skeleton/icicles/north-wall are resolved (skeleton 31920,31360,9; icicles 31914,31364,9; wall 31920,31359,9); Rope Spot/scripted exit remains unresolved, and donor Lit Torch 54610 requires separate Item admission (do not alias to i34017)",
     "Forbidden Gardens Achievement predicate composition missing",
     "No full real-character start→reward→relog/restart E2E qualification",
     "Jaracal mount/tame follow-up missing: Mount catalogue has no Jaracal; i54638 must tame canonical Jaracal through Mount/Item/Interaction owners, not direct s16 grant"
