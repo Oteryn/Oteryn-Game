@@ -52,6 +52,18 @@ WORK="$(mktemp -d "${RUNNER_TEMP:-/tmp}/login-local.XXXXXX")"
 WP5_PKI="$WORK/pki"
 WP5_SCRATCH="$WORK/scratch"
 mkdir -p "$WP5_PKI" "$WP5_SCRATCH"
+# F7: Platform's isolatedConnection() refuses MySQL outside APP_ENV=testing, so preproduction topology
+# issuance runs against a retained per-run SQLite fixture. The Platform guard requires the file to be a
+# regular file at <tmp>/oteryn-native-topology-<hex>/oteryn-native-topology.sqlite inside the container;
+# the host side lives in the 0700 work directory and is bind-mounted there (www-data uid 33 needs write
+# access to the directory; the 0700 parent keeps other host users out).
+LL_TOPOLOGY_HEX="$(openssl rand -hex 8)"
+LL_TOPOLOGY_DIR="$WORK/topology-db"
+mkdir -p "$LL_TOPOLOGY_DIR"
+: > "$LL_TOPOLOGY_DIR/oteryn-native-topology.sqlite"
+chmod 0777 "$LL_TOPOLOGY_DIR"
+chmod 0666 "$LL_TOPOLOGY_DIR/oteryn-native-topology.sqlite"
+LL_TOPOLOGY_SQLITE="/tmp/oteryn-native-topology-$LL_TOPOLOGY_HEX/oteryn-native-topology.sqlite"
 WP5_PORT="${LOGIN_LOCAL_PLATFORM_MTLS_PORT:-18563}"
 LL_PLATFORM_HTTP_PORT="${LOGIN_LOCAL_PLATFORM_HTTP_PORT:-18564}"
 LL_GATEWAY_PORT="${LOGIN_LOCAL_GATEWAY_PORT:-18565}"
@@ -76,6 +88,7 @@ LL_WORLD_ID=00000000-0000-7000-8000-000000000000
 LL_RUNTIME_STATUS_IDENTITIES='{}'
 LL_SCOPE_ASSIGNMENT_IDENTITIES='{}'
 export GAME_SOURCE PLATFORM_SOURCE WP5_PKI WP5_SCRATCH WP5_PORT WP5_PROJECT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
+export LL_TOPOLOGY_HEX LL_TOPOLOGY_DIR
 export WP5_APP_KEY WP5_TOPOLOGY_REVISION WP5_FSYNC_FAULT LL_PLATFORM_HTTP_PORT LL_GATEWAY_PORT
 export LL_SERVICE_TOKEN LL_SERVICE_TOKEN_SHA256 LL_ADMISSION_KEY_ID LL_WORLD_ID LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
 NODE_PID=""
@@ -163,11 +176,22 @@ compose up --detach --wait db platform nginx
 php_exec() { compose exec --no-TTY --user www-data platform php -r 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); '"$1"; }
 
 # Registry topology: one world row, one issued WorldId/ChannelId (uuid7, read back, never invented).
-php_exec 'Illuminate\Support\Facades\Artisan::call("game-auth:world:ensure",["--id"=>"1","--slug"=>"login-local","--name"=>"Login Local","--region"=>"local","--host"=>"127.0.0.1","--port"=>"'"$GAME_PORT"'"]); $r=app(App\GameAuth\Worlds\NativeTopologyRegistry::class)->issueForPreproduction(1,"'"$CHANNEL_KEY"'"); echo $r->worldId," ",$r->channelId,"\n";' > "$WORK/topology"
+# F7: issue on the retained SQLite fixture (migrated, one world row), then mirror the issued ids and
+# route columns into the Platform database, whose Registry reads the same rows.
+sqlite_exec() {
+  compose exec --no-TTY --user www-data -e DB_CONNECTION=sqlite -e DB_DATABASE="$LL_TOPOLOGY_SQLITE" platform php -r \
+    'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); '"$1"
+}
+ENSURE_WORLD='Illuminate\Support\Facades\Artisan::call("game-auth:world:ensure",["--id"=>"1","--slug"=>"login-local","--name"=>"Login Local","--region"=>"local","--host"=>"127.0.0.1","--port"=>"'"$GAME_PORT"'"]);'
+php_exec "$ENSURE_WORLD"
+sqlite_exec 'Illuminate\Support\Facades\Artisan::call("migrate",["--force"=>true,"--no-interaction"=>true]); '"$ENSURE_WORLD"' $r=app(App\GameAuth\Worlds\NativeTopologyRegistry::class)->issueForPreproduction(1,"'"$CHANNEL_KEY"'"); echo $r->worldId," ",$r->channelId,"\n";' | tail -n 1 > "$WORK/topology"
 read -r WORLD_ID CHANNEL_ID < "$WORK/topology"
 [[ "$WORLD_ID" =~ ^[0-9a-f-]{36}$ && "$CHANNEL_ID" =~ ^[0-9a-f-]{36}$ ]] || { echo "registry topology issuance failed"; exit 1; }
 # Mode 34a: route record (tls_server_name must be in the gameplay certificate SAN) with native login enabled.
-ROUTE_REVISION="$(php_exec 'echo app(App\GameAuth\Worlds\NativeTopologyRegistry::class)->publishRouteForPreproduction(1,"'"$CHANNEL_KEY"'","127.0.0.1",'"$GAME_PORT"',"localhost",true)->routeRevision;')"
+ROUTE_REVISION="$(sqlite_exec 'echo app(App\GameAuth\Worlds\NativeTopologyRegistry::class)->publishRouteForPreproduction(1,"'"$CHANNEL_KEY"'","127.0.0.1",'"$GAME_PORT"',"localhost",true)->routeRevision;' | tail -n 1)"
+TOPOLOGY_MIRROR="$(sqlite_exec 'echo base64_encode(json_encode(["world_id"=>Illuminate\Support\Facades\DB::table("game_worlds")->where("id",1)->value("world_id"),"channel"=>(array) Illuminate\Support\Facades\DB::table("game_channels")->where("game_world_id",1)->where("channel_key","'"$CHANNEL_KEY"'")->first()]));' | tail -n 1)"
+php_exec '$d=json_decode(base64_decode("'"$TOPOLOGY_MIRROR"'"),true); $c=$d["channel"]; unset($c["id"]); Illuminate\Support\Facades\DB::table("game_worlds")->where("id",1)->update(["world_id"=>$d["world_id"]]); Illuminate\Support\Facades\DB::table("game_channels")->updateOrInsert(["game_world_id"=>1,"channel_key"=>"'"$CHANNEL_KEY"'"],$c);'
+unset TOPOLOGY_MIRROR
 [[ "$ROUTE_REVISION" =~ ^rt\.[0-9]+\.[0-9a-f]+$ ]] || { echo "route publication failed"; exit 1; }
 evidence "registry world_id=$WORLD_ID channel_id=$CHANNEL_ID route_revision=$ROUTE_REVISION native_login_enabled=true"
 
