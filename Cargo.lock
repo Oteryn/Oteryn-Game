@@ -1881,6 +1881,10 @@ dependencies = [
  "oteryn-renderer",
  "oteryn-session",
  "oteryn-session-tcp",
+ "rcgen",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
  "winit",
 ]
 
@@ -2010,6 +2014,8 @@ dependencies = [
  "oteryn-foundation",
  "oteryn-platform-contracts",
  "reqwest",
+ "rustls",
+ "serde",
  "serde_json",
  "tokio",
 ]
@@ -2070,6 +2076,7 @@ name = "oteryn-session-tcp"
 version = "0.1.0"
 dependencies = [
  "oteryn-session",
+ "rcgen",
  "rustls",
  "tokio",
  "tokio-rustls",

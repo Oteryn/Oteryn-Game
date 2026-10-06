@@ -1000,6 +1000,7 @@ impl ChannelRuntimeV1 {
                             false,
                             MAX_EFFECTS as u16,
                             deferred,
+                            Some(batch.now_ms),
                         )?);
                     }
                     OwnerCombatChange::Heal {

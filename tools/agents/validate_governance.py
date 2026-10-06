@@ -6,6 +6,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -19,6 +20,15 @@ PROMPT_LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
 HANDOVER_LIFECYCLE_PATH = ROOT / "docs/agents/HANDOVER_LIFECYCLE.json"
 PROGRAM_LIFECYCLE_PATH = ROOT / "docs/agents/PROGRAM_LIFECYCLE.json"
 EXPECTED_REPOSITORY = "Oteryn/Oteryn-Game"
+
+
+def report_failure(code: str, name: str, errors: list[str], stream) -> None:
+    """Print each failure as `E8xxx NAME: message` (+ a GitHub Actions annotation)."""
+    for error in errors:
+        print(f"{code} {name}: {error}", file=stream)
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            escaped = error.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+            print(f"::error title={code} {name}::{escaped}", file=stream)
 
 
 def load_json(path: Path, errors: list[str]) -> dict:
@@ -765,8 +775,7 @@ def main() -> int:
 
     if errors:
         print("Governance validation failed:", file=sys.stderr)
-        for error in errors:
-            print(f"- {error}", file=sys.stderr)
+        report_failure("E8001", "GOVERNANCE_CHECK_FAILED", errors, sys.stderr)
         return 1
 
     print(f"Governance validation passed for {EXPECTED_REPOSITORY}.")

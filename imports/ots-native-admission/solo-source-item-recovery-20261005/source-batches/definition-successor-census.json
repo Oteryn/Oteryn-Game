@@ -1,0 +1,11 @@
+{
+  "targets": 33975,
+  "observations": 55012,
+  "max_observations": 8,
+  "max_assignments": 5,
+  "new_observations": 45721,
+  "old_registry_inverse": "EXACT",
+  "actual_cpp_execution": "UNKNOWN",
+  "runtime_artifact": "HELD",
+  "bounds_installation": "REQUIRES_INDEPENDENT_MEASURED_SUCCESSOR_REVIEW"
+}

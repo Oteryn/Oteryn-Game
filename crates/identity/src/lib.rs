@@ -3,12 +3,18 @@
 use oteryn_foundation::{BoundedText, Cancellable, CancellationToken, cancellable};
 use sha2::{Digest, Sha256};
 use std::fmt::{self, Debug, Display, Formatter};
+use std::net::{Ipv4Addr, SocketAddr};
 use std::time::Duration;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc;
 
 const MIN_ENTROPY_BYTES: usize = 32;
 const MAX_ENTROPY_BYTES: usize = 96;
 const MAX_CALLBACK_QUERY_BYTES: usize = 4096;
+const MAX_CALLBACK_REQUEST_LINE_BYTES: usize = 8192;
+const CALLBACK_READ_TIMEOUT: Duration = Duration::from_secs(5);
+const CALLBACK_PATH: &str = "/callback";
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct SecretString(String);
@@ -46,6 +52,8 @@ pub enum IdentityError {
     Cancelled,
     Timeout,
     CallbackClosed,
+    /// The loopback redirect listener could not be bound.
+    Listener,
 }
 
 impl Display for IdentityError {
@@ -60,6 +68,7 @@ impl Display for IdentityError {
             Self::Cancelled => "Identity flow was cancelled",
             Self::Timeout => "Identity callback timed out",
             Self::CallbackClosed => "Identity callback channel closed",
+            Self::Listener => "Identity loopback listener could not be bound",
         })
     }
 }
@@ -193,6 +202,106 @@ impl IdentityFlow {
     }
 }
 
+/// The native client's OAuth redirect target: a listener on `127.0.0.1` with an OS-chosen port
+/// (RFC 8252 §7.3). It forwards only the first `/callback` request's query to an [`IdentityFlow`],
+/// which checks the exact `state`, and stops listening once the flow ends.
+#[derive(Debug)]
+pub struct LoopbackRedirect {
+    listener: TcpListener,
+    address: SocketAddr,
+}
+
+impl LoopbackRedirect {
+    pub async fn bind() -> Result<Self, IdentityError> {
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0))
+            .await
+            .map_err(|_error| IdentityError::Listener)?;
+        let address = listener
+            .local_addr()
+            .map_err(|_error| IdentityError::Listener)?;
+        Ok(Self { listener, address })
+    }
+
+    #[must_use]
+    pub fn redirect_uri(&self) -> String {
+        format!("http://{}{CALLBACK_PATH}", self.address)
+    }
+
+    /// Serves the redirect until `flow` accepts or rejects the first callback, times out or is
+    /// cancelled. The listener is closed on return.
+    pub async fn await_code(
+        self,
+        flow: &IdentityFlow,
+        cancellation: CancellationToken,
+    ) -> Result<AuthorizationCode, IdentityError> {
+        let (sender, mut receiver) = mpsc::channel(1);
+        let listener = self.listener;
+        let server = tokio::spawn(async move {
+            loop {
+                let Ok((stream, _peer)) = listener.accept().await else {
+                    continue;
+                };
+                if let Some(query) = serve_redirect(stream).await {
+                    let _ = sender.send(query).await;
+                    return;
+                }
+            }
+        });
+        let result = flow.await_callback(&mut receiver, cancellation).await;
+        server.abort();
+        result
+    }
+}
+
+/// Answers one loopback request. Returns the query of a `GET /callback?...` request.
+async fn serve_redirect(mut stream: TcpStream) -> Option<String> {
+    let request_line = tokio::time::timeout(CALLBACK_READ_TIMEOUT, read_request_line(&mut stream))
+        .await
+        .ok()
+        .flatten();
+    let query = request_line.as_deref().and_then(|line| {
+        let target = line.strip_prefix("GET ")?.strip_suffix(" HTTP/1.1")?;
+        target
+            .strip_prefix(CALLBACK_PATH)?
+            .strip_prefix('?')
+            .map(str::to_owned)
+    });
+    let (status, body) = if query.is_some() {
+        ("200 OK", "Sign-in received. You can return to Oteryn.")
+    } else {
+        ("404 Not Found", "Not found.")
+    };
+    let response = format!(
+        "HTTP/1.1 {status}\r\ncontent-type: text/plain; charset=utf-8\r\ncontent-length: {}\r\ncache-control: no-store\r\nconnection: close\r\n\r\n{body}",
+        body.len()
+    );
+    let _ = tokio::time::timeout(CALLBACK_READ_TIMEOUT, async {
+        let _ = stream.write_all(response.as_bytes()).await;
+        let _ = stream.shutdown().await;
+    })
+    .await;
+    query
+}
+
+async fn read_request_line(stream: &mut TcpStream) -> Option<String> {
+    let mut line = Vec::new();
+    let mut chunk = [0_u8; 1024];
+    loop {
+        let read = stream.read(&mut chunk).await.ok()?;
+        if read == 0 {
+            return None;
+        }
+        line.extend_from_slice(&chunk[..read]);
+        if let Some(end) = line.windows(2).position(|pair| pair == b"\r\n") {
+            line.truncate(end);
+            return String::from_utf8(line).ok();
+        }
+        if line.len() > MAX_CALLBACK_REQUEST_LINE_BYTES {
+            return None;
+        }
+    }
+}
+
 fn base64_url_no_pad(bytes: &[u8]) -> String {
     const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
     let mut output = String::with_capacity(bytes.len().div_ceil(3) * 4);
@@ -299,6 +408,55 @@ mod tests {
             PkceMaterial::from_entropy(&[7_u8; 97]),
             Err(IdentityError::EntropyLengthOutOfRange)
         );
+    }
+
+    async fn get(redirect_uri: &str, path: &str) -> Result<String, std::io::Error> {
+        let address = redirect_uri
+            .trim_start_matches("http://")
+            .trim_end_matches(CALLBACK_PATH);
+        let mut stream = TcpStream::connect(address).await?;
+        stream
+            .write_all(format!("GET {path} HTTP/1.1\r\nhost: {address}\r\n\r\n").as_bytes())
+            .await?;
+        let mut response = String::new();
+        stream.read_to_string(&mut response).await?;
+        Ok(response)
+    }
+
+    #[test]
+    fn loopback_redirect_returns_the_code_for_the_exact_state()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()?;
+        runtime.block_on(async {
+            let redirect = LoopbackRedirect::bind().await?;
+            let uri = redirect.redirect_uri();
+            assert!(uri.starts_with("http://127.0.0.1:"));
+            assert!(uri.ends_with("/callback"));
+            let flow = IdentityFlow::new(StateNonce::new("state-1")?, Duration::from_secs(5));
+            let waiting = tokio::spawn({
+                let flow = flow.clone();
+                async move { redirect.await_code(&flow, CancellationToken::new()).await }
+            });
+            let not_found = get(&uri, "/favicon.ico").await?;
+            assert!(not_found.starts_with("HTTP/1.1 404"));
+            let accepted = get(&uri, "/callback?code=abc&state=state-1").await?;
+            assert!(accepted.starts_with("HTTP/1.1 200"));
+            let code = waiting.await??;
+            assert_eq!(code.expose().expose(), "abc");
+            assert!(get(&uri, "/callback?code=abc&state=state-1").await.is_err());
+
+            let redirect = LoopbackRedirect::bind().await?;
+            let uri = redirect.redirect_uri();
+            let waiting =
+                tokio::spawn(
+                    async move { redirect.await_code(&flow, CancellationToken::new()).await },
+                );
+            get(&uri, "/callback?code=abc&state=other").await?;
+            assert_eq!(waiting.await?, Err(IdentityError::StateMismatch));
+            Ok(())
+        })
     }
 
     #[test]

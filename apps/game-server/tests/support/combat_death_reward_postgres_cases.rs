@@ -4,9 +4,10 @@
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
 use crate::combat::{
-    CombatDeathRewardLootError, CombatDeathRewardXpError, CreatureDeathRewardInput,
-    DeathGroundContext, DurabilitySession, LootDefinitionRef, LootSelectionAlgorithm,
-    LootTableDefinition, LootTableEntry, RewardPrincipal, RewardProgressionBinding,
+    CapturedRewardPrincipal, CombatDeathRewardLootError, CombatDeathRewardXpError,
+    CreatureDeathRewardInput, DeathGroundContext, DurabilitySession, LootDefinitionRef,
+    LootSelectionAlgorithm, LootTableDefinition, LootTableEntry, ProjectedCreatureDeathFacts,
+    RewardPrincipal, RewardProgressionBinding, capture_projected_death_facts,
     settle_creature_death_rewards,
 };
 use crate::domain::CharacterId;
@@ -35,7 +36,8 @@ use crate::foundation::admission_authority_publication::{
     AdmissionPublicationSourceV1,
 };
 use crate::foundation::{
-    ChannelId, CombatDeathFixture, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+    ChannelId, CombatDeathFixture, ExactActorRef, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+    WorldId,
 };
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 use sqlx::{Connection, Executor};
@@ -594,7 +596,40 @@ fn input(
             character_revision,
         )?],
         xp_amount: ExactI64::new(RAT_XP),
-        progression: progression_binding(),
+        progression: Some(progression_binding()),
+    })
+}
+
+/// §1.2: the facts the projecting owner turn captures under the lock, for
+/// the fixed reward principal `id(41)`. No clocked damage is recorded here,
+/// so the facts carry no last-damage time.
+fn capture(
+    fixture: &mut CombatDeathFixture,
+    actor: ExactActorRef,
+) -> TestResult<ProjectedCreatureDeathFacts> {
+    let principal = captured_principal(&gameplay_fence(1, 1)?, actor)?;
+    capture_projected_death_facts(
+        &mut fixture.borrow_combat_death(),
+        actor,
+        principal,
+        None,
+        0,
+    )
+    .map_err(|error| debug(error).into())
+}
+
+/// The captured principal identity of `fence`'s own Character, lease and
+/// session; the settle never reads `actor`.
+fn captured_principal(
+    fence: &CurrentCharacterGameplayFence,
+    actor: ExactActorRef,
+) -> TestResult<CapturedRewardPrincipal> {
+    Ok(CapturedRewardPrincipal {
+        character: crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+            .map_err(debug)?,
+        lease_generation: fence.character_lease_generation,
+        session: fence.game_session_id,
+        actor,
     })
 }
 
@@ -704,8 +739,7 @@ fn one_creature_death_mints_the_plan_and_awards_xp_once() -> TestResult {
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
         let outcome = settle_creature_death_rewards(
-            actor,
-            &mut fixture.borrow_combat_death(),
+            capture(&mut fixture, actor)?,
             &session,
             &mut slot,
             input(rat_loot_table(), 1, 1)?,
@@ -790,8 +824,7 @@ fn replay_is_idempotent_with_no_duplicate_mint_or_xp() -> TestResult {
                 .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
                 .await;
             let outcome = settle_creature_death_rewards(
-                actor,
-                &mut fixture.borrow_combat_death(),
+                capture(&mut fixture, actor)?,
                 &session,
                 &mut slot,
                 input(rat_loot_table(), 1, 1)?,
@@ -874,8 +907,7 @@ fn generation_change_leaves_a_stale_death_rejected_with_no_write() -> TestResult
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
         let outcome = settle_creature_death_rewards(
-            actor,
-            &mut fixture.borrow_combat_death(),
+            capture(&mut fixture, actor)?,
             &session,
             &mut slot,
             input(rat_loot_table(), 1, 1)?,
@@ -943,8 +975,7 @@ fn a_stale_xp_fence_rejects_xp_without_blocking_loot() -> TestResult {
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
         let outcome = settle_creature_death_rewards(
-            actor,
-            &mut fixture.borrow_combat_death(),
+            capture(&mut fixture, actor)?,
             &session,
             &mut slot,
             input(rat_loot_table(), 1, 1)?,
@@ -997,8 +1028,7 @@ fn an_unsupported_loot_table_rejects_loot_without_blocking_xp() -> TestResult {
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
         let outcome = settle_creature_death_rewards(
-            actor,
-            &mut fixture.borrow_combat_death(),
+            capture(&mut fixture, actor)?,
             &session,
             &mut slot,
             input(unsupported_algorithm_loot_table(), 1, 1)?,
@@ -1061,8 +1091,7 @@ fn a_damage_free_death_names_the_reward_principal_as_the_window_winner() -> Test
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
         let outcome = settle_creature_death_rewards(
-            actor,
-            &mut fixture.borrow_combat_death(),
+            capture(&mut fixture, actor)?,
             &session,
             &mut slot,
             input(rat_loot_table(), 1, 1)?,
@@ -1115,8 +1144,7 @@ fn a_death_with_no_loot_entries_still_materializes_a_corpse() -> TestResult {
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
         let outcome = settle_creature_death_rewards(
-            actor,
-            &mut fixture.borrow_combat_death(),
+            capture(&mut fixture, actor)?,
             &session,
             &mut slot,
             input(empty, 1, 1)?,
@@ -1165,8 +1193,7 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
         let first = settle_creature_death_rewards(
-            actor,
-            &mut fixture.borrow_combat_death(),
+            capture(&mut fixture, actor)?,
             &session,
             &mut slot,
             input(rat_loot_table(), 1, 1)?,
@@ -1210,8 +1237,7 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
         let outcome = settle_creature_death_rewards(
-            actor,
-            &mut fixture.borrow_combat_death(),
+            capture(&mut fixture, actor)?,
             &session,
             &mut slot,
             input(two_entry_loot_table(), 1, 1)?,
@@ -1309,8 +1335,7 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
         let outcome = settle_creature_death_rewards(
-            actor,
-            &mut fixture.borrow_combat_death(),
+            capture(&mut fixture, actor)?,
             &session,
             &mut slot,
             input(rat_loot_table(), 1, 1)?,

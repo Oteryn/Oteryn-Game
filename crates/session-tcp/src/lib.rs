@@ -9,12 +9,15 @@
 //! produces its own `SessionStream` without changing the session crate.
 
 use oteryn_session::{ALPN_OTERYN_GAME_V1, SessionStream};
+use rustls::pki_types::pem::PemObject;
 use rustls::pki_types::{CertificateDer, ServerName};
 use std::error::Error as StdError;
 use std::fmt;
 use std::future::Future;
 use std::io;
+use std::io::Read;
 use std::net::SocketAddr;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::net::TcpStream;
@@ -135,3 +138,70 @@ fn tls_connector(root: &CertificateDer<'static>) -> Result<TlsConnector, TcpAdap
     config.alpn_protocols = vec![ALPN_OTERYN_GAME_V1.as_bytes().to_vec()];
     Ok(TlsConnector::from(Arc::new(config)))
 }
+
+/// A trust-root file larger than this is not a single certificate.
+pub const MAX_ROOT_CERTIFICATE_BYTES: u64 = 65_536;
+
+#[derive(Debug)]
+pub enum RootCertificateError {
+    Io(io::Error),
+    TooLarge,
+    /// Not exactly one PEM `CERTIFICATE` block or one DER certificate.
+    Invalid,
+}
+
+impl fmt::Display for RootCertificateError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Io(error) => write!(formatter, "trust root could not be read: {error}"),
+            Self::TooLarge => write!(formatter, "trust root file exceeds its bound"),
+            Self::Invalid => write!(formatter, "trust root is not exactly one certificate"),
+        }
+    }
+}
+
+impl StdError for RootCertificateError {}
+
+/// Loads the single configured trust root for [`TcpConnect::root_certificate`] from a file holding
+/// exactly one PEM `CERTIFICATE` block or one DER certificate. The system trust store is never
+/// consulted: the connection trusts this root and nothing else.
+pub fn load_root_certificate(path: &Path) -> Result<CertificateDer<'static>, RootCertificateError> {
+    let file = std::fs::File::open(path).map_err(RootCertificateError::Io)?;
+    let mut bytes = Vec::new();
+    file.take(MAX_ROOT_CERTIFICATE_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(RootCertificateError::Io)?;
+    if bytes.len() as u64 > MAX_ROOT_CERTIFICATE_BYTES {
+        return Err(RootCertificateError::TooLarge);
+    }
+    parse_root_certificate(&bytes)
+}
+
+/// [`load_root_certificate`] on bytes already in memory.
+pub fn parse_root_certificate(
+    bytes: &[u8],
+) -> Result<CertificateDer<'static>, RootCertificateError> {
+    if bytes.first() == Some(&0x30) {
+        let certificate = CertificateDer::from(bytes.to_vec());
+        // Reject DER that a trust store cannot take, so a bad file fails here, not at connect.
+        rustls::RootCertStore::empty()
+            .add(certificate.clone())
+            .map_err(|_error| RootCertificateError::Invalid)?;
+        return Ok(certificate);
+    }
+    let mut certificates = CertificateDer::pem_slice_iter(bytes);
+    let first = certificates
+        .next()
+        .ok_or(RootCertificateError::Invalid)?
+        .map_err(|_error| RootCertificateError::Invalid)?;
+    if certificates.next().is_some() {
+        return Err(RootCertificateError::Invalid);
+    }
+    rustls::RootCertStore::empty()
+        .add(first.clone())
+        .map_err(|_error| RootCertificateError::Invalid)?;
+    Ok(first)
+}
+
+#[cfg(test)]
+mod tests;
