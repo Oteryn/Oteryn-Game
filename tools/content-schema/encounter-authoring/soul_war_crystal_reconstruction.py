@@ -324,6 +324,78 @@ def megalomania():
     m=manifest(e["identity"]["key"],sources,entries,{"SoulWarAspectOfPowerDeath":[cref("Aspect of Power")["key"]],"SoulWarMegalomaniaDeath":[cref("Goshnar's Megalomania Purple")["key"]]})
     return e,catalog(e),m
 
+
+def hatred():
+    participants=[
+      ("goshnars_hatred",["Goshnar's Hatred"]),
+      ("burning_hatred",["Ashes of Burning Hatred","Spark of Burning Hatred","Flame of Burning Hatred","Blaze of Burning Hatred"]),
+    ]
+    anchors=[area("arena",33735,33751,31592,31606,14),point("burning_hatred_start",33743,31599,14)]
+    e=base("goshnars_hatred_crystal","Soul War: Goshnar's Hatred (Crystal reconstruction)",participants,anchors,
+           counters=[{"name":"hatred","initial":0}],
+           timers=[
+             {"name":"ashes_burns","duration_ms":45000,"repeat":False},
+             {"name":"spark_burns","duration_ms":45000,"repeat":False},
+             {"name":"flame_burns","duration_ms":45000,"repeat":False},
+             {"name":"blaze_burns","duration_ms":46000,"repeat":False},
+           ],
+           outcomes=["boss_defeated"])
+    sorrow={"family":"Item","key":"canary:item/33793","revision":REV}
+    e["rules"]=[
+      {"key":"start_burning_cycle","trigger":{"kind":"encounter_started"},"conditions":[],
+       "actions":[{"kind":"timer","timer":"ashes_burns","operation":"start"}]},
+      {"key":"ashes_become_spark","trigger":{"kind":"timer_elapsed","timer":"ashes_burns"},"conditions":[],
+       "actions":[{"kind":"transform","role":"burning_hatred","into":cref("Spark of Burning Hatred"),"health":"full"},{"kind":"timer","timer":"spark_burns","operation":"start"}]},
+      {"key":"spark_becomes_flame","trigger":{"kind":"timer_elapsed","timer":"spark_burns"},"conditions":[],
+       "actions":[{"kind":"transform","role":"burning_hatred","into":cref("Flame of Burning Hatred"),"health":"full"},{"kind":"timer","timer":"flame_burns","operation":"start"}]},
+      {"key":"flame_becomes_blaze","trigger":{"kind":"timer_elapsed","timer":"flame_burns"},"conditions":[],
+       "actions":[{"kind":"transform","role":"burning_hatred","into":cref("Blaze of Burning Hatred"),"health":"full"},{"kind":"timer","timer":"blaze_burns","operation":"start"}]},
+      {"key":"blaze_returns_to_ashes_and_empowers_boss","trigger":{"kind":"timer_elapsed","timer":"blaze_burns"},"conditions":[],
+       "actions":[
+         {"kind":"transform","role":"burning_hatred","into":cref("Ashes of Burning Hatred"),"health":"full"},
+         {"kind":"timer","timer":"ashes_burns","operation":"start"},
+         {"kind":"counter","counter":"hatred","operation":"add","value":10},
+         {"kind":"attribute","role":"goshnars_hatred","attribute":"outgoing_damage_percent","operation":"add","value":10}]},
+      {"key":"sorrow_delays_running_fire_form","trigger":{"kind":"item_used","role":"burning_hatred","item":sorrow},"conditions":[],
+       "actions":[
+         {"kind":"timer","timer":"ashes_burns","operation":"add","ms":10000},
+         {"kind":"timer","timer":"spark_burns","operation":"add","ms":10000},
+         {"kind":"timer","timer":"flame_burns","operation":"add","ms":10000},
+         {"kind":"timer","timer":"blaze_burns","operation":"add","ms":10000}]},
+      {"key":"hatred_hardens_on_player_hit","trigger":{"kind":"damage_taken","role":"goshnars_hatred","source":"player"},
+       "conditions":[{"kind":"counter_compare","counter":"hatred","op":">","value":0}],
+       "actions":[{"kind":"attribute","role":"goshnars_hatred","attribute":"defense","operation":"add","value":{"counter":"hatred"}}]},
+      {"key":"boss_death_stops_burning_cycle","trigger":{"kind":"creature_died","role":"goshnars_hatred"},"conditions":[],
+       "actions":[
+         {"kind":"remove","role":"burning_hatred"},
+         {"kind":"timer","timer":"ashes_burns","operation":"stop"},
+         {"kind":"timer","timer":"spark_burns","operation":"stop"},
+         {"kind":"timer","timer":"flame_burns","operation":"stop"},
+         {"kind":"timer","timer":"blaze_burns","operation":"stop"},
+         {"kind":"emit_outcome","outcome":"boss_defeated","credited":"damage_contributors"}]},
+    ]
+    sources=[
+      src("data-global/lib/quests/soul_war.lua","4c9d3ac502ecbd7ec32f4823a8cab13d7ad6f703"),
+      src("data-global/scripts/quests/soul_war/soul_war_mechanics.lua","51d42e7e970a2f24fc8438a833aacac2c061dfc2"),
+      src("data-global/monster/quests/soul_war/goshnars_hatred.lua","cc6652eb9d91f15b5d182206076bb216c0e43bf9"),
+      src("data-global/monster/quests/soul_war/normal_monsters/burning_hatred/ashes_of_burning_hatred.lua","995cad06686c3a5115a884f272a895d1a2333918"),
+      src("data-global/monster/quests/soul_war/normal_monsters/burning_hatred/spark_of_burning_hatred.lua","c3c9d73749f95caa7bc2e360b86d9a532ce6bc1c"),
+      src("data-global/monster/quests/soul_war/normal_monsters/burning_hatred/flame_of_burning_hatred.lua","20f253efa7960ecdc25afdf8d3ee4f8d05afde9c"),
+      src("data-global/monster/quests/soul_war/normal_monsters/burning_hatred/blaze_of_burning_hatred.lua","77b619b70eaf259e124c00e5f7e3951684a74088"),
+    ]
+    entries=[
+      entry(0,list(range(394,421)),"mapped","The lever starts Goshnar's Hatred with Ashes of Burning Hatred and initializes the shared burn timer to 180 seconds.","/encounter/rules/0"),
+      entry(0,list(range(489,504)),"mapped","Crystal defines the Ashes/Spark/Flame/Blaze thresholds at 180/135/90/45 seconds.","/encounter/state/timers"),
+      entry(1,list(range(577,599)),"mapped","Using Sorrow of Burning Hatred on the active fire consumes the item and adds 10 seconds to the shared burning time.","/encounter/rules/5"),
+      entry(1,list(range(600,640)),"mapped","BurningChangeForm advances Ashes -> Spark -> Flame -> Blaze -> Ashes; the Blaze reset requires the extra reset tick, represented by a 46 second Blaze timer. New Ashes adds +10 hatred.","/encounter/rules"),
+      entry(1,list(range(641,671)),"mapped","The hatred multiplier adds to boss defense on player hits and increases boss outgoing damage; the accepted Oteryn counter/attribute model is retained.","/encounter/rules/4"),
+      entry(1,list(range(672,696)),"unresolved_semantics","Two Condensed Remorse pickups reset a player's torment counter. Encounter v1 has no per-player item-step counter/state for this mechanic."),
+      entry(2,list(range(136,146)),"mapped","When Hatred disappears all Burning Hatred forms are removed; boss death stops the authored fire cycle.","/encounter/rules/7"),
+      entry(1,list(range(93,119)),"mapped","SoulWarBossesDeath credits contributors; the encounter exposes boss_defeated while persistent taints and boss flags remain Quest state.","/encounter/rules/7"),
+    ]
+    m=manifest(e["identity"]["key"],sources,entries,{"GoshnarsHatredBuff":[cref("Goshnar's Hatred")["key"]],"BurningChangeForm":[cref("Ashes of Burning Hatred")["key"],cref("Spark of Burning Hatred")["key"],cref("Flame of Burning Hatred")["key"],cref("Blaze of Burning Hatred")["key"]]})
+    return e,catalog(e),m
+
 def write_one(name,bundle):
     e,c,m=bundle
     d=OUT/name
@@ -337,11 +409,12 @@ def main():
     write_one("goshnars_spite",spite())
     write_one("goshnars_cruelty",cruelty())
     write_one("goshnars_megalomania",megalomania())
+    write_one("goshnars_hatred",hatred())
     index={
       "schema":"OTERYN_SOUL_WAR_CRYSTAL_ENCOUNTER_RECONSTRUCTION/v1",
       "source":{"repository":"zimbadev/crystalserver","revision":CRYSTAL,"branch":"summer-update"},
       "runtime_qualified":False,
-      "encounters":["goshnars_greed","goshnars_malice","goshnars_spite","goshnars_cruelty","goshnars_megalomania"],
+      "encounters":["goshnars_greed","goshnars_malice","goshnars_spite","goshnars_cruelty","goshnars_hatred","goshnars_megalomania"],
       "note":"Source-backed representable cores only. unresolved_semantics rows are hard holds, not approximations."
     }
     OUT.mkdir(parents=True,exist_ok=True)
