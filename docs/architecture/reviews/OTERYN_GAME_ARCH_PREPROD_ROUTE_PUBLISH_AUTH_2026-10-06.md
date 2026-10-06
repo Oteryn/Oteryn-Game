@@ -156,6 +156,9 @@ Each run has one writer. The commands run against that run's Platform only.
 - Owned paths:
   - `app/Console/Commands/PublishNativeRoute.php`
   - `app/Console/Commands/PublishNativeTrustedKey.php`
+  - `app/GameAuth/Worlds/DisposableNativeStore.php` (new: the shared guard below)
+  - `app/GameAuth/Worlds/NativeTopologyRegistry.php` (only to call the shared guard from
+    `isolatedConnection()`; no other change)
   - their tests under `tests/Feature/GameAuth/`
   - one line in the Platform native gateway login contract §14 or §17
   - the Platform task record
@@ -177,9 +180,18 @@ Each run has one writer. The commands run against that run's Platform only.
     `<sys_get_temp_dir>/oteryn-native-topology-<hex>/oteryn-native-topology.sqlite` with no
     symlink. An environment check alone is not enough, because `publishTrustedKey` writes to the
     default connection, which in a deployed process is its persistent database.
-  - The Platform PR moves that predicate out of `NativeTopologyRegistry` into one shared guard
-    that both the registry and this command call. It may not relax or fork it; the registry's
-    behaviour stays identical, which its existing tests prove.
+  - The Platform PR moves that predicate out of `NativeTopologyRegistry` into one shared guard,
+    `DisposableNativeStore`, that both the registry and this command call. It may not relax or
+    fork it; the registry's behaviour stays identical, which its existing tests prove.
+  - Before any write it also fences the high-water directory, because `publishTrustedKey` writes
+    the floor file, the witness-store lock file and the provenance row through the separately
+    configured `GAME_AUTH_NATIVE_EVIDENCE_HIGH_WATER_DIRECTORY`. The configured path must be a
+    canonical directory (its `realpath` equals the configured value), neither it nor its parent
+    a symlink, and directly beneath a per-run directory
+    `<sys_get_temp_dir>/oteryn-native-topology-<hex>/`. When the store is the retained SQLite
+    file, that per-run directory must be the database's own. Otherwise the command refuses with
+    nothing written. This check lives in `DisposableNativeStore` and only the trust command
+    calls it; the witness itself is not changed.
   - It reads 32 raw bytes from a regular file that is not a symlink, and never takes the key from
     an argument.
   - It prints the key ID and the profile version.
@@ -192,6 +204,9 @@ Each run has one writer. The commands run against that run's Platform only.
   - each command refuses in `preproduction` when the default store is not disposable (a MariaDB
     connection as in the staging deployment, a SQLite file outside the per-run directory, a
     symlinked file) with no row written and no high-water floor file created;
+  - the trust command refuses, with a disposable store, when the high-water directory is outside
+    the per-run directory, in another run's directory, a symlink or under a symlinked parent,
+    with no row, floor file or lock file written;
   - the registry's existing `isolatedConnection()` tests pass unchanged after the guard moves;
   - the happy path in `testing` writes the rows and prints the receipt;
   - an endpoint change advances `route_version`;
@@ -231,7 +246,8 @@ No GitHub, Synology, Cloudflare or database credential of any deployed environme
 - A wrong command in a deployed environment refuses before any write. Both commands check the
   environment and then the shared disposable-store guard, so neither can write to a staging,
   production or other persistent database, even when `APP_ENV` is set to `preproduction` by
-  mistake.
+  mistake. The trust command also refuses a high-water directory outside the run's own
+  temporary directory, so no trust state is written to a shared or persistent path.
 - Public staging, production, Canary and the Game repositories are not affected.
 
 ## 3. Option B (deferred): a persistent private preproduction environment
