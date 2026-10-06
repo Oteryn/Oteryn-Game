@@ -270,14 +270,19 @@ pub fn compose_tile(
 /// The cut of a composed stack (contract §2): the bottom entry and the 9 topmost, in stack
 /// order, and whether entries were dropped.
 pub fn cut<T>(entries: &[T]) -> (Vec<&T>, bool) {
-    if entries.len() <= MAX_TILE_ITEMS {
-        return (entries.iter().collect(), false);
-    }
-    let top = entries.len() - (MAX_TILE_ITEMS - 1);
-    let kept = std::iter::once(&entries[0])
-        .chain(&entries[top..])
-        .collect();
-    (kept, true)
+    let (kept, more) = cut_indices(entries.len());
+    (kept.map(|index| &entries[index]).collect(), more)
+}
+
+/// [`cut`] of a stack of `len` entries as stack indices, without allocating.
+pub fn cut_indices(len: usize) -> (impl Iterator<Item = usize>, bool) {
+    let more = len > MAX_TILE_ITEMS;
+    let top = if more {
+        len - (MAX_TILE_ITEMS - 1)
+    } else {
+        len.min(1)
+    };
+    ((0..len.min(1)).chain(top..len), more)
 }
 
 /// Tiles of one floor of a window.
