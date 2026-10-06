@@ -789,3 +789,77 @@ fn the_registries_bind_the_npc_service_constants() {
     }
     assert_eq!(TALK_RANGE_TILES, 4);
 }
+
+/// Hand-written wire bytes, independent of the production encoder: `EntityRefV1` is
+/// `identity = 1` (bytes, length 16) then `generation = 2` (varint), here generation 7.
+fn golden_npc() -> Vec<u8> {
+    let mut bytes = vec![0x0A, 0x14, 0x0A, 0x10];
+    bytes.extend_from_slice(&[0xA5; 16]);
+    bytes.extend_from_slice(&[0x10, 0x07]);
+    bytes
+}
+
+#[test]
+fn the_talk_intent_matches_the_hand_written_golden_bytes() {
+    // npc_actor = 1 (LEN), text = 2 (LEN).
+    let mut golden = golden_npc();
+    golden.extend_from_slice(&[0x12, 0x02, b'h', b'i']);
+    let intent = NpcTalkIntent {
+        npc_actor: npc(7),
+        text: "hi".to_owned(),
+    };
+    assert_eq!(encode_npc_talk_intent(&intent), Ok(golden.clone()));
+    assert_eq!(decode_npc_talk_intent(&golden), Ok(intent));
+}
+
+#[test]
+fn the_trade_intent_matches_the_hand_written_golden_bytes() {
+    // npc_actor = 1 (LEN), catalogue_revision = 2, offer_index = 3, side = 4, quantity = 5,
+    // expected_unit_price = 6 (all varint). A multi-byte varint (300 = AC 02) is included.
+    let mut golden = golden_npc();
+    golden.extend_from_slice(&[0x10, 0xAC, 0x02]);
+    golden.extend_from_slice(&[0x18, 0x02]);
+    golden.extend_from_slice(&[0x20, 0x02]);
+    golden.extend_from_slice(&[0x28, 0x03]);
+    golden.extend_from_slice(&[0x30, 0x0A]);
+    let intent = NpcTradeIntent {
+        npc_actor: npc(7),
+        catalogue_revision: 300,
+        offer_index: 2,
+        side: NpcTradeSide::Sell,
+        quantity: 3,
+        expected_unit_price: 10,
+    };
+    assert_eq!(encode_npc_trade_intent(&intent), Ok(golden.clone()));
+    assert_eq!(decode_npc_trade_intent(&golden), Ok(intent));
+
+    // Zero-valued scalars are omitted on the wire, and a decoder reads them back as zero.
+    let mut golden = golden_npc();
+    golden.extend_from_slice(&[0x20, 0x01, 0x28, 0x01]);
+    let intent = NpcTradeIntent {
+        npc_actor: npc(7),
+        catalogue_revision: 0,
+        offer_index: 0,
+        side: NpcTradeSide::Buy,
+        quantity: 1,
+        expected_unit_price: 0,
+    };
+    assert_eq!(encode_npc_trade_intent(&intent), Ok(golden.clone()));
+    assert_eq!(decode_npc_trade_intent(&golden), Ok(intent));
+}
+
+#[test]
+fn the_intent_result_matches_the_hand_written_golden_bytes() {
+    // disposition = 1 (varint).
+    for (disposition, value) in [
+        (NpcIntentDisposition::Ok, 1),
+        (NpcIntentDisposition::NotInRange, 2),
+        (NpcIntentDisposition::NoConversation, 3),
+        (NpcIntentDisposition::RateLimited, 4),
+        (NpcIntentDisposition::Stale, 5),
+        (NpcIntentDisposition::Rejected, 6),
+    ] {
+        assert_eq!(encode_npc_intent_result(disposition), vec![0x08, value]);
+        assert_eq!(decode_npc_intent_result(&[0x08, value]), Ok(disposition));
+    }
+}
