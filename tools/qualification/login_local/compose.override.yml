@@ -17,6 +17,15 @@ services:
       GAME_AUTH_NATIVE_RUNTIME_STATUS_IDENTITIES: ${LL_RUNTIME_STATUS_IDENTITIES:?set LL_RUNTIME_STATUS_IDENTITIES}
       GAME_AUTH_NATIVE_SCOPE_ASSIGNMENT_ENABLED: "true"
       GAME_AUTH_NATIVE_SCOPE_ASSIGNMENT_IDENTITIES: ${LL_SCOPE_ASSIGNMENT_IDENTITIES:?set LL_SCOPE_ASSIGNMENT_IDENTITIES}
+    # wp5_s3a runs `php artisan migrate` before PHP-FPM and allows about 2 minutes (2s x 60, no start_period);
+    # on a NAS single migrations take over a minute. Same socket test and final healthy requirement; failures
+    # inside start_period do not count, and `compose up --wait` and nginx's service_healthy wait for it.
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$s=@fsockopen('127.0.0.1',9000); exit(is_resource($$s)?0:1);"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: ${LOGIN_LOCAL_PLATFORM_START_PERIOD:-1800s}
     tmpfs:
       - /run/oteryn-admission:mode=0700,uid=33,gid=33
     volumes:

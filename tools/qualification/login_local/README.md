@@ -22,7 +22,7 @@ git clone https://github.com/Oteryn/Oteryn-Platform _platform && git -C _platfor
 bash tools/qualification/login_local/run.sh
 ```
 
-Needs Docker, `openssl`, `sudo`, Rust 1.94.0 and a display for the OAuth browser step. Ports:
+Needs Docker, `openssl`, `sudo`, Rust 1.94.0 (or the container mode below) and a display for the OAuth browser step. Ports:
 `LOGIN_LOCAL_PLATFORM_MTLS_PORT` (18563), `_PLATFORM_HTTP_PORT` (18564), `_GATEWAY_PORT` (18565),
 `_GAME_PORT` (17281), `_PG_PORT` (15533). `LOGIN_LOCAL_RUN_CLIENT=0` stops at READY; `LOGIN_LOCAL_HOLD=1`
 keeps the services up for a Windows client; `LOGIN_LOCAL_KEEP=1` skips teardown (the work directory
@@ -82,7 +82,7 @@ Variant of the section above when the NAS already has a TLS reverse proxy (Synol
 are reached through DSM and only the game node is reached directly on the LAN. Set both
 `LOGIN_LOCAL_PUBLIC_PLATFORM_URL` and `LOGIN_LOCAL_PUBLIC_GATEWAY_URL` (each `https://host[:port]`, nothing else) and
 `LOGIN_LOCAL_HOST` (required). Anything else ends `BLOCKED` (`public_url_pair_required`, `public_url_not_https`,
-`host_required_for_public_urls`). No LAN listener and no LAN CA are created; Platform HTTP and the gateway stay published
+`host_required_for_public_urls`, and `public_url_port_out_of_range` for a port outside 1..65535). No LAN listener and no LAN CA are created; Platform HTTP and the gateway stay published
 on `127.0.0.1:18564` / `127.0.0.1:18565`, and the run does not probe the public URLs, so DSM can be configured after the
 run starts.
 
@@ -118,6 +118,26 @@ any of these ports on the router, and do not publish PostgreSQL (15533) or 18563
 `wp5_s3a` healthcheck alone allows about 2 minutes of first initialisation, which a NAS can exceed and
 ends `dependency failed to start: ... db-1 is unhealthy`). Override it with
 `LOGIN_LOCAL_DB_START_PERIOD=600s bash tools/qualification/login_local/run.sh`.
+
+Platform runs `php artisan migrate` (61 migrations) before PHP-FPM listens; on a NAS a single migration can take over a
+minute, so the Platform healthcheck (the same PHP-FPM socket test, still required to pass before nginx and the run
+continue) gets `start_period` `LOGIN_LOCAL_PLATFORM_START_PERIOD` (default `1800s`). Game PostgreSQL is ready only when
+`pg_isready -h 127.0.0.1` and a `SELECT 1` over TCP succeed inside its container (the image's temporary init server
+listens on the Unix socket only, so a socket probe can pass before the final server is up), polled for
+`LOGIN_LOCAL_PG_READY_SECONDS` (default 300) seconds.
+
+**No host Rust (Synology DSM).** `LOGIN_LOCAL_RUST` is `auto` (default), `host` or `container`. `auto` picks `container`
+when `cargo`, `cc` or `useradd` is missing. Container mode builds the server binaries in the pinned
+`rust:1.94.0-bookworm` image (as the invoking uid; cargo home and target under the ignored
+`target/login-local-container/`) and runs migrate, ops and the node in one container of that image on the host network.
+The node runs as numeric uid `LOGIN_LOCAL_SERVICE_UID` (default `64990`, never 0) instead of a host system user. There is
+no client build, so container mode needs `LOGIN_LOCAL_RUN_CLIENT=0` (`BLOCKED reason=client_run_needs_host_rust`
+otherwise); use the PC client against `client.env`. `LOGIN_LOCAL_RUST=host` with a missing tool ends
+`BLOCKED reason=<tool>_missing`.
+
+**Failure evidence.** With `LOGIN_LOCAL_KEEP=1`, a failing run first writes `docker compose logs` and the container state
+of every service, plus the Game PostgreSQL log, to `<work dir>/evidence/` (printed as `failure_logs=`) before it exits.
+A file is written only from a successful capture and is never replaced.
 
 ## What it does
 
@@ -174,6 +194,11 @@ PLATFORM-NATIVE-PREPROD-OPS-1. The account is inserted into `identities` by the 
 operator command creates accounts).
 
 ## Validation record
+
+LOGIN-LOCAL-NAS-2: `bash -n` and `shellcheck -x` pass on `run.sh` (only the pre-existing SC2034 warnings);
+`docker compose config` merges the Platform `start_period` with the default and an override, with and without
+`compose.lan.yml` / `compose.proxy.yml`; the public URL port check was exercised for 1, 65535, 0 and 65536. The
+NAS and container-mode run was not executed here (no Docker daemon).
 
 `bash -n` passes on `run.sh`; `shellcheck` was not available when LOGIN-LOCAL-LAN-1 was written. LOGIN-LOCAL-LAN-1: host validation was exercised
 for loopback, the three private ranges and rejected values; `docker compose config` with and without `compose.lan.yml` merges as intended
