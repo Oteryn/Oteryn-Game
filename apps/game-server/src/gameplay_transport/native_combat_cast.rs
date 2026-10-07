@@ -3359,11 +3359,15 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 window.attempt().prepared.check_commit(&runtime,&states,&current_owned,receipt,committed.companion(),
                     committed.direct_companion(),fresh_reconnect.as_ref()).map_err(|_|DurabilityError::Unavailable)?
             };
+            // Kill recording's only await comes before the window gives up the attempt, so a
+            // cancellation here still parks it and the resolver installs and records again.
+            let attack=owner.attack.lock().await;
             // Phase 2: no awaited work, allocation, new random draw or fallible branch.
             let mut attempt=window.install();
             let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
             // §1.4: the committed batch's kills, under the same runtime turn, after installation.
-            owner.record_spell_kills(&mut runtime,std::iter::once(&batch)).await;
+            owner.record_spell_kills_locked(&attack,&mut runtime,std::iter::once(&batch));
+            drop(attack);
             let disposition=private_result.as_ref().map_or(SpellCastDisposition::Cast,|r|r.disposition);
             **parameter_output=private_result;
             Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,

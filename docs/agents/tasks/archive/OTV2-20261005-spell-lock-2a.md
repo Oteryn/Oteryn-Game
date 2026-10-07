@@ -159,6 +159,14 @@ in-process concurrency invariant of the Channel owner (decision §1.7).
   the lane's `InvalidStoredState` before the fence check. `commit_item_transfer` and
   `commit_map_item_mint` refuse a non-Channel fence as `AuthorityRejected` before the lane
   check, as before SPELL-LOCK-2; the cases commit such a fence under the fenced Channel's lane.
+- 4210534479: the native writer takes the attack guard before `window.install()` and records
+  the batch's kills synchronously under it (`record_spell_kills_locked`), so a cancellation
+  while waiting on the attack mutex still parks the attempt and the resolver installs and
+  records again. Lock order is unchanged (`runtime → spell_states → attack`). Source pin
+  `no_cast_writer_awaits_after_its_window_gives_up_the_attempt` over all four writers; the
+  in-window cancellation itself is `lane_tests::a_cancelled_writer_pass_parks_its_attempt_or_its_marker`.
+  Gap: no harness drives a native cast commit end to end, so no behavioural test cancels at
+  the attack mutex.
 
 ## Validation
 

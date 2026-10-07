@@ -880,6 +880,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         receipts: impl Iterator<Item = &'r CombatBatchReceipt>,
     ) {
         let attack = self.attack.lock().await;
+        self.record_spell_kills_locked(&attack, runtime, receipts);
+    }
+
+    /// [`Self::record_spell_kills`] under an attack-state guard the caller already holds, so a
+    /// writer can take the guard before it releases its cancellation-safe attempt.
+    pub(super) fn record_spell_kills_locked<'r>(
+        &self,
+        attack: &ChannelAttackStates,
+        runtime: &mut ChannelRuntimeV1,
+        receipts: impl Iterator<Item = &'r CombatBatchReceipt>,
+    ) {
         let sink = KillSink {
             queue: attack.kills(),
             rewards: self.reward_table(),

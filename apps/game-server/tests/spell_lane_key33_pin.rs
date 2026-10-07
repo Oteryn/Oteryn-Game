@@ -499,3 +499,46 @@ fn every_cast_writer_runs_its_pass_under_a_cancel_safe_guard() {
         }
     }
 }
+
+#[test]
+fn no_cast_writer_awaits_after_its_window_gives_up_the_attempt() {
+    for file in [
+        "src/gameplay_transport/native_combat_cast.rs",
+        "src/gameplay_transport/world_item_cast.rs",
+        "src/gameplay_transport/parameter_cast.rs",
+        "src/gameplay_transport/familiar_cast.rs",
+    ] {
+        let raw = fs::read_to_string(root().join(file)).expect("source");
+        let text = collapse(&raw).replace(' ', "");
+        let installs = find_all(&text, "window.install();");
+        assert!(!installs.is_empty(), "{file} installs its attempt");
+        for at in installs {
+            let rest = &text[at..];
+            let end = ["Ok(", "(SpellCastOutcome{"]
+                .iter()
+                .filter_map(|done| rest.find(done))
+                .min()
+                .unwrap_or_else(|| panic!("{file} returns after installing"));
+            assert!(
+                !rest[..end].contains(".await"),
+                "{file} awaits nothing once the window gave up the attempt"
+            );
+        }
+    }
+    let raw = fs::read_to_string(root().join("src/gameplay_transport/native_combat_cast.rs"))
+        .expect("source");
+    let text = collapse(&raw).replace(' ', "");
+    let lock = text
+        .find("letattack=owner.attack.lock().await;")
+        .expect("native takes the attack guard");
+    let install = text
+        .find("letmutattempt=window.install();")
+        .expect("native installs");
+    let record = text
+        .find("owner.record_spell_kills_locked(&attack,&mutruntime,std::iter::once(&batch));")
+        .expect("native records its kills under the guard");
+    assert!(
+        lock < install && install < record,
+        "native takes the attack guard before the window gives up the attempt"
+    );
+}
