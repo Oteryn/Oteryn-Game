@@ -46,6 +46,11 @@ def classify_transition(transition: dict) -> tuple[str, str]:
             raise ValueError(
                 f"{transition['key']}: Source {owner} transition unexpectedly has requested_by"
             )
+        callback = source.get("callback")
+        if not isinstance(callback, str) or not callback.strip():
+            raise ValueError(
+                f"{transition['key']}: Source {owner} transition lacks callback evidence"
+            )
         return TRIGGER_LANE, "QUEST_STATE_SOURCE_CALLBACK_EVIDENCE"
     raise ValueError(f"{transition['key']}: unsupported Source transition owner {owner!r}")
 
