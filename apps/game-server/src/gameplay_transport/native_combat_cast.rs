@@ -3239,34 +3239,60 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Err(_)=>return Err(DurabilityError::Unavailable),
             };
-            let private_result=if let Some(parameter)=attempt.parameter.as_ref(){
-                let binding:Value=serde_json::from_slice(&attempt.prepared.batch.binding).map_err(|_|DurabilityError::InvalidStoredState)?;
-                let bytes:Vec<u8>=serde_json::from_value(binding["parameter_result"].clone()).map_err(|_|DurabilityError::InvalidStoredState)?;
-                let result=decode_parameter_spell_cast_result(&bytes).map_err(|_|DurabilityError::InvalidStoredState)?;
-                crate::durability::spell_parameter_result::write_parameter_result_in_transaction(&mut tx,&authority,&attempt.request.spell,parameter,&result,Some(attempt.request.transaction_id)).await.map_err(|_|DurabilityError::Unavailable)?;
-                Some(result)
-            }else{None};
-            let formula=content.training_formula().ok_or(DurabilityError::Unavailable)?;
-            let training=if let Some(request)=attempt.prepared.training_request(){
-                Some(crate::durability::character_build::prepare_character_build_in_transaction(owner.root,&mut tx,
-                    owner.character,owner.holder,attempt.fence,request.clone(),formula).await.map_err(|_|DurabilityError::Unavailable)?)
-            }else{None};
+            let historical=matches!(items,SpellItemTransactionOutcome::AlreadyCommitted(_));
+            let attempt=pending.take().ok_or(DurabilityError::Unavailable)?;
+            let mut window=permit.open_commit_window(attempt,UnresolvedSpellCommit::park_native);
+            // A historical outcome is marked before any fallible follow-up, so each later
+            // failure parks the attempt and keeps the lane fenced. Before a COMMIT is attempted
+            // a new write's failure reclaims the attempt into the marker instead.
+            if historical{window.mark_already_committed();}
+            let follow_ups=async{
+                let attempt=window.attempt();
+                let private_result=if let Some(parameter)=attempt.parameter.as_ref(){
+                    let binding:Value=serde_json::from_slice(&attempt.prepared.batch.binding).map_err(|_|DurabilityError::InvalidStoredState)?;
+                    let bytes:Vec<u8>=serde_json::from_value(binding["parameter_result"].clone()).map_err(|_|DurabilityError::InvalidStoredState)?;
+                    let result=decode_parameter_spell_cast_result(&bytes).map_err(|_|DurabilityError::InvalidStoredState)?;
+                    crate::durability::spell_parameter_result::write_parameter_result_in_transaction(&mut tx,&authority,&attempt.request.spell,parameter,&result,Some(attempt.request.transaction_id)).await.map_err(|_|DurabilityError::Unavailable)?;
+                    Some(result)
+                }else{None};
+                let formula=content.training_formula().ok_or(DurabilityError::Unavailable)?;
+                let training=if let Some(request)=attempt.prepared.training_request(){
+                    Some(crate::durability::character_build::prepare_character_build_in_transaction(owner.root,&mut tx,
+                        owner.character,owner.holder,attempt.fence,request.clone(),formula).await.map_err(|_|DurabilityError::Unavailable)?)
+                }else{None};
+                Ok::<_,DurabilityError>((private_result,training))
+            }.await;
+            let (private_result,training)=match follow_ups{
+                Ok(follow_ups)=>follow_ups,
+                Err(error)=>{
+                    if !historical{if let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}}
+                    return Err(error);
+                }
+            };
             let committed=match items{
                 SpellItemTransactionOutcome::Applied(items)=>{
-                    let companion=if let Some(companion)=attempt.prepared.corpse_companion.as_ref(){
-                        Some(item_tx::record_companion_acquisition_in_transaction(&mut tx,&authority,&attempt.request,&companion.spawn)
-                            .await.map_err(|_|DurabilityError::Unavailable)?)
-                    }else{None};
-                    let prepared=if attempt.prepared.direct_companion.is_some(){
-                        if companion.is_some(){return Err(DurabilityError::InvalidStoredState);}
-                        let direct=item_tx::record_prepared_direct_companion_acquisition_in_transaction(&mut tx,&authority,&attempt.request)
-                            .await.map_err(|_|DurabilityError::Unavailable)?;
-                        item_tx::stage_spell_owner_commit_with_direct(&mut tx,&authority,items,direct,deadline).await
-                    } else {
-                        item_tx::stage_spell_owner_commit(&mut tx,&authority,items,companion,None,deadline).await
-                    }.map_err(|_|DurabilityError::Unavailable)?;
-                    let attempt=pending.take().ok_or(DurabilityError::Unavailable)?;
-                    let mut window=permit.open_commit_window(attempt,UnresolvedSpellCommit::park_native);
+                    let staged=async{
+                        let attempt=window.attempt();
+                        let companion=if let Some(companion)=attempt.prepared.corpse_companion.as_ref(){
+                            Some(item_tx::record_companion_acquisition_in_transaction(&mut tx,&authority,&attempt.request,&companion.spawn)
+                                .await.map_err(|_|DurabilityError::Unavailable)?)
+                        }else{None};
+                        if attempt.prepared.direct_companion.is_some(){
+                            if companion.is_some(){return Err(DurabilityError::InvalidStoredState);}
+                            let direct=item_tx::record_prepared_direct_companion_acquisition_in_transaction(&mut tx,&authority,&attempt.request)
+                                .await.map_err(|_|DurabilityError::Unavailable)?;
+                            item_tx::stage_spell_owner_commit_with_direct(&mut tx,&authority,items,direct,deadline).await
+                        } else {
+                            item_tx::stage_spell_owner_commit(&mut tx,&authority,items,companion,None,deadline).await
+                        }.map_err(|_|DurabilityError::Unavailable)
+                    }.await;
+                    let prepared=match staged{
+                        Ok(prepared)=>prepared,
+                        Err(error)=>{
+                            if let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}
+                            return Err(error);
+                        }
+                    };
                     match crate::durability::spell_owner_commit::commit_spell_owner_transaction(tx,prepared,&mut window).await {
                         Ok(committed)=>(committed,window),
                         Err(error)=>{
@@ -3278,12 +3304,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     }
                 }
                 SpellItemTransactionOutcome::AlreadyCommitted(items)=>{
-                    let corpse=attempt.prepared.corpse_companion.is_some();
-                    let direct=attempt.prepared.direct_companion.is_some();
-                    let attempt=pending.take().ok_or(DurabilityError::Unavailable)?;
-                    let mut window=permit.open_commit_window(attempt,UnresolvedSpellCommit::park_native);
-                    window.mark_already_committed();
                     // From here every early return parks the attempt through the window's Drop.
+                    let corpse=window.attempt().prepared.corpse_companion.is_some();
+                    let direct=window.attempt().prepared.direct_companion.is_some();
                     let companion=if corpse{
                         item_tx::reconcile_committed_companion_acquisition_in_transaction(&mut tx,&authority,window.attempt().request.transaction_id)
                             .await.map_err(|_|DurabilityError::Unavailable)?

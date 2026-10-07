@@ -400,3 +400,67 @@ fn familiar_history_marks_the_window_before_any_fallible_reconciliation() {
         assert!(mark < at, "the window is marked before {later}");
     }
 }
+
+/// Fix round 3 (#1907): an item outcome known to be historical opens and marks the commit
+/// window before the parameter-result and training follow-ups, so their failure parks the
+/// attempt and keeps the lane fenced instead of returning it to the marker.
+#[test]
+fn guarded_cast_writers_mark_history_before_any_fallible_follow_up() {
+    for (file, outcome, follow_ups) in [
+        (
+            "src/gameplay_transport/native_combat_cast.rs",
+            "letitems=matchitem_tx::apply_spell_items_in_transaction_guarded(",
+            &[
+                "write_parameter_result_in_transaction(",
+                "prepare_character_build_in_transaction(",
+                "reconcile_spell_owner_commit_in_transaction(",
+            ][..],
+        ),
+        (
+            "src/gameplay_transport/world_item_cast.rs",
+            "letoutcome=matchitems::apply_spell_items_in_transaction_guarded(",
+            &[
+                "prepare_character_build_in_transaction(",
+                "reconcile_spell_owner_commit_in_transaction(",
+            ][..],
+        ),
+        (
+            "src/gameplay_transport/parameter_cast.rs",
+            "letoutcome=matchitems::apply_spell_items_in_transaction_guarded(",
+            &[
+                "write_parameter_result_in_transaction(",
+                "prepare_character_build_in_transaction(",
+                "reconcile_spell_owner_commit_in_transaction(",
+            ][..],
+        ),
+    ] {
+        let raw = fs::read_to_string(root().join(file)).expect("source");
+        let text = collapse(&raw).replace(' ', "");
+        let at = text
+            .find(outcome)
+            .unwrap_or_else(|| panic!("{file} applies its items"));
+        let body = &text[at..];
+        let mark = body
+            .find("ifhistorical{window.mark_already_committed();}")
+            .unwrap_or_else(|| panic!("{file} marks a historical outcome"));
+        let open = body
+            .find("open_commit_window(")
+            .unwrap_or_else(|| panic!("{file} opens its window"));
+        assert!(open < mark, "{file} marks the window it opened");
+        for later in follow_ups {
+            let found = body
+                .find(later)
+                .unwrap_or_else(|| panic!("{file} runs {later}"));
+            assert!(mark < found, "{file} marks history before {later}");
+        }
+        assert_eq!(
+            body.matches("window.mark_already_committed();").count(),
+            1,
+            "{file} marks history once"
+        );
+        assert!(
+            body.contains("if!historical{ifletOk(attempt)=window.reclaim_uncommitted()"),
+            "{file} reclaims only a new write's follow-up failure"
+        );
+    }
+}

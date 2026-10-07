@@ -1135,15 +1135,30 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Err(_)=>return Err(DurabilityError::Unavailable),
             };
-            crate::durability::spell_parameter_result::write_parameter_result_in_transaction(&mut tx,&authority,&attempt.definition,&attempt.intent,&attempt.result,Some(installation.request.transaction_id)).await.map_err(|_|DurabilityError::Unavailable)?;
-            let formula=content.training_formula().ok_or(DurabilityError::Unavailable)?;
-            let training=match installation.training.request(){
-                Some(request)=>Some(crate::durability::character_build::prepare_character_build_in_transaction(
-                    owner.root,&mut tx,owner.character,owner.holder,CurrentCharacterGameplayFence{connection_generation:fence.connection_generation,..attempt.fence},request.clone(),formula)
-                    .await.map_err(|_|DurabilityError::Unavailable)?),None=>None,
-            };
+            let historical=matches!(outcome,SpellItemTransactionOutcome::AlreadyCommitted(_));
             let attempt=pending.take().ok_or(DurabilityError::Unavailable)?;
             let mut window=permit.open_commit_window(attempt,UnresolvedSpellCommit::park_parameter);
+            // A historical outcome is marked before any fallible follow-up, so each later
+            // failure parks the attempt and keeps the lane fenced.
+            if historical{window.mark_already_committed();}
+            let training=async{
+                let attempt=window.attempt();
+                let installation=attempt.installation.as_ref().ok_or(DurabilityError::Unavailable)?;
+                crate::durability::spell_parameter_result::write_parameter_result_in_transaction(&mut tx,&authority,&attempt.definition,&attempt.intent,&attempt.result,Some(installation.request.transaction_id)).await.map_err(|_|DurabilityError::Unavailable)?;
+                let formula=content.training_formula().ok_or(DurabilityError::Unavailable)?;
+                Ok::<_,DurabilityError>(match installation.training.request(){
+                    Some(request)=>Some(crate::durability::character_build::prepare_character_build_in_transaction(
+                        owner.root,&mut tx,owner.character,owner.holder,CurrentCharacterGameplayFence{connection_generation:fence.connection_generation,..attempt.fence},request.clone(),formula)
+                        .await.map_err(|_|DurabilityError::Unavailable)?),None=>None,
+                })
+            }.await;
+            let training=match training{
+                Ok(training)=>training,
+                Err(error)=>{
+                    if !historical{if let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}}
+                    return Err(error);
+                },
+            };
             let committed=match outcome{
                 SpellItemTransactionOutcome::Applied(descriptor)=>{
                     match items::stage_spell_owner_commit(&mut tx,&authority,descriptor,None,None,deadline).await{
@@ -1152,7 +1167,6 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     }
                 },
                 SpellItemTransactionOutcome::AlreadyCommitted(descriptor)=>{
-                    window.mark_already_committed();
                     let proof=items::reconcile_spell_owner_commit_in_transaction(&mut tx,&authority,descriptor,None)
                         .await.map_err(|_|DurabilityError::Unavailable);drop(tx);proof
                 },
