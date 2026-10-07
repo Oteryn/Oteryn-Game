@@ -47,7 +47,7 @@ readonly BASE=/srv/oteryn-login-local
 readonly RUNTIME_IDENTITY=oteryn-game-node-runtime-status
 readonly OPS_IDENTITY=oteryn-game-ops
 
-blocked() { echo "LOGIN_LOCAL_RESULT=BLOCKED reason=$1"; [[ -z "${WORK:-}" ]] || rm -rf "$WORK"; exit 2; }
+blocked() { echo "LOGIN_LOCAL_RESULT=BLOCKED reason=$1"; [[ -z "${WORK:-}" || "${LOGIN_LOCAL_KEEP:-0}" == 1 ]] || rm -rf "$WORK"; exit 2; }
 command -v docker >/dev/null 2>&1 || blocked docker_missing
 docker info >/dev/null 2>&1 || blocked docker_daemon_unreachable
 for tool in openssl cargo sudo git; do command -v "$tool" >/dev/null 2>&1 || blocked "${tool}_missing"; done

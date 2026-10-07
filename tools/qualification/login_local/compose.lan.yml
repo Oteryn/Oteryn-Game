@@ -2,6 +2,10 @@
 # IP. The loopback publishes of compose.override.yml stay (random host ports, 127.0.0.1). PostgreSQL and the
 # Platform mTLS port are not touched. The per-run LAN CA and leaf come from run.sh (LL_LAN_PKI).
 services:
+  platform:
+    environment:
+      # External URL of the LAN listener, so absolute login/OAuth URLs point at the reachable host.
+      APP_URL: https://${LL_HOST}:${LL_PLATFORM_HTTP_PORT}
   nginx:
     ports:
       - "${LL_HOST:?set LL_HOST}:${LL_PLATFORM_HTTP_PORT:?set LL_PLATFORM_HTTP_PORT}:8446"
