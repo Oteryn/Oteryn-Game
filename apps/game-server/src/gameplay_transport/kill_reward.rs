@@ -180,12 +180,13 @@ impl KillSettlementQueue {
     /// §1.3 step 2, one critical section: when the queue holds no queued or in-flight entry of
     /// `principal`, mark it `releasing` (phase `sealed`). A mark kept from an unknown outcome
     /// keeps its phase and parked entries.
-    pub(crate) fn seal(&self, principal: Principal) -> bool {
+    pub(crate) fn seal(&self, principal: Principal) -> Seal {
         let mut state = self.state();
-        let pending = state.queued.iter().any(|e| principal_of(e) == principal)
-            || state.in_flight.iter().any(|(_, held)| *held == principal);
-        if pending {
-            return false;
+        if state.in_flight.iter().any(|(_, held)| *held == principal) {
+            return Seal::InFlight;
+        }
+        if state.queued.iter().any(|e| principal_of(e) == principal) {
+            return Seal::Queued;
         }
         if let Some(mark) = state.mark(principal) {
             mark.holders += 1;
@@ -198,7 +199,7 @@ impl KillSettlementQueue {
                 parked: Vec::new(),
             });
         }
-        true
+        Seal::Sealed
     }
 
     /// §1.3 step 4, one critical section just before the transaction is sent: an entry parked
@@ -616,6 +617,17 @@ pub(crate) async fn drain_session_kills(
     }
 }
 
+/// The result of [`KillSettlementQueue::seal`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Seal {
+    /// The principal is marked `releasing`.
+    Sealed,
+    /// An entry of the principal was appended after the drain's last take.
+    Queued,
+    /// Another drain is settling an entry of the principal.
+    InFlight,
+}
+
 /// The end of a release handshake's steps 1–4 (§1.3).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum KillRelease {
@@ -671,9 +683,10 @@ impl KillReleaseMark {
 }
 
 /// §1.3 steps 1–4: drain, seal, then move the mark to `committing`, returning to the drain
-/// while the seal finds an entry or a park in phase `sealed` aborts the commit point. Each
-/// return needs a new kill for this principal, so the loop advances with the game. No guard is
-/// held across a settle or on return.
+/// while the seal finds a queued entry or a park in phase `sealed` aborts the commit point.
+/// Each return needs a new kill for this principal, so the loop advances with the game. An
+/// entry another drain is settling defers the release, which the caller retries behind its
+/// backoff instead of waiting on that settle. No guard is held across a settle or on return.
 pub(crate) async fn release_handshake(
     attack: &AsyncMutex<ChannelAttackStates>,
     session: GameSessionId,
@@ -687,9 +700,10 @@ pub(crate) async fn release_handshake(
         {
             return KillRelease::Deferred;
         }
-        if !attack.lock().await.kills().seal(principal) {
-            tokio::task::yield_now().await;
-            continue;
+        match attack.lock().await.kills().seal(principal) {
+            Seal::Sealed => {}
+            Seal::Queued => continue,
+            Seal::InFlight => return KillRelease::Deferred,
         }
         if attack.lock().await.kills().commit_point(principal) {
             return KillRelease::Send(Some(KillReleaseMark { principal }));

@@ -340,16 +340,16 @@ fn the_seal_finds_an_append_after_the_last_take() {
     let principal = (session(50), 3);
     // An append after the drain's last take and before the seal.
     assert_eq!(queue.append(pending(2, 50, 3, 0)), AppendOutcome::Queued);
-    assert!(!queue.seal(principal));
+    assert_eq!(queue.seal(principal), Seal::Queued);
     assert_eq!(queue.parked(principal), None);
     // An in-flight settle of the principal also holds the seal back.
     let in_flight = taken(queue.take(session(50), 3));
-    assert!(!queue.seal(principal));
+    assert_eq!(queue.seal(principal), Seal::InFlight);
     in_flight.finish();
     // Another principal's entry does not.
     assert_eq!(queue.append(pending(3, 51, 3, 0)), AppendOutcome::Queued);
     assert_eq!(queue.append(pending(4, 50, 4, 0)), AppendOutcome::Queued);
-    assert!(queue.seal(principal));
+    assert_eq!(queue.seal(principal), Seal::Sealed);
     assert_eq!(
         queue.parked(principal),
         Some((ReleasePhase::Sealed, vec![]))
@@ -402,6 +402,28 @@ fn a_deferred_drain_marks_nothing() {
     });
 }
 
+/// Another drain owns the principal's only entry: the release defers once instead of
+/// spinning on the queue until that settle ends.
+#[test]
+fn an_entry_another_drain_settles_defers_the_release() {
+    run(async {
+        let attack = AsyncMutex::new(ChannelAttackStates::default());
+        attack.lock().await.kills().append(pending(2, 50, 3, 0));
+        let other = taken(attack.lock().await.kills().take(session(50), 3));
+        let settler = final_settles(&attack, 0);
+        assert_eq!(
+            release_handshake(&attack, session(50), 3, &settler).await,
+            KillRelease::Deferred
+        );
+        assert_eq!(settler.calls.get(), 0);
+        assert_eq!(attack.lock().await.kills().parked((session(50), 3)), None);
+        // Once the other drain finishes, the retry seals and commits.
+        other.finish();
+        let mark = mark(release_handshake(&attack, session(50), 3, &settler).await);
+        mark.settle(attack.lock().await.kills(), ReleaseEnd::Committed);
+    });
+}
+
 /// One kill parked on each side of the step 4 critical section.
 #[test]
 fn a_park_before_the_commit_point_aborts_and_one_after_it_is_committing() {
@@ -410,7 +432,7 @@ fn a_park_before_the_commit_point_aborts_and_one_after_it_is_committing() {
         let principal = (session(50), 3);
         // Sealed by an earlier pass; a kill whose D132 winner is the releasing session is
         // parked before the commit point, with its winner unchanged.
-        assert!(attack.lock().await.kills().seal(principal));
+        assert_eq!(attack.lock().await.kills().seal(principal), Seal::Sealed);
         assert_eq!(
             attack.lock().await.kills().append(pending(2, 50, 3, 1)),
             AppendOutcome::Parked(ReleasePhase::Sealed)
@@ -586,7 +608,7 @@ fn an_entry_whose_principal_has_no_live_session_is_freed() {
     let queue = KillSettlementQueue::default();
     queue.append(pending(3, 50, 3, 0));
     queue.append(pending(4, 51, 2, 0));
-    assert!(queue.seal((session(50), 2)));
+    assert_eq!(queue.seal((session(50), 2)), Seal::Sealed);
     queue.append(pending(5, 50, 2, 0));
     // Lease generation 3 is live: generation 2's parked entry and its mark are gone.
     queue.discard_gone(session(50), Some(3));
@@ -605,7 +627,7 @@ fn an_entry_whose_principal_has_no_live_session_is_freed() {
 #[test]
 fn parked_entries_count_toward_killrw_rl_01() {
     let queue = KillSettlementQueue::default();
-    assert!(queue.seal((session(50), 3)));
+    assert_eq!(queue.seal((session(50), 3)), Seal::Sealed);
     for channel in 2..(2 + KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX as u8) {
         assert_eq!(
             queue.append(pending(channel, 50, 3, 0)),
