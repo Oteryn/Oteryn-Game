@@ -364,3 +364,31 @@ fn no_pinned_appearance_exceeds_the_cell_cap() -> TestResult {
     assert!(widest <= MAX_ENTRY_CELLS);
     Ok(())
 }
+
+#[test]
+fn the_default_outfit_resolves_facing_each_direction() -> TestResult {
+    let (index, mut sheets) = load()?;
+    let outfit = index.outfit(128).ok_or("look type 128 missing")?;
+    assert!(outfit.pattern_width >= 4);
+    let mut seen = Vec::new();
+    for direction in 0..4 {
+        let entry = index.resolve_outfit(&sheets, 128, direction)?;
+        assert!(!entry.cells.is_empty());
+        for cell in &entry.cells {
+            assert_eq!(
+                sheets
+                    .cell_rgba(cell.sprite_id, cell.cell_x, cell.cell_y)?
+                    .len(),
+                32 * 32 * 4
+            );
+        }
+        seen.push(entry.cells[0].sprite_id);
+    }
+    seen.dedup();
+    assert_eq!(seen.len(), 4, "each direction has its own sprite");
+    assert!(matches!(
+        index.resolve_outfit(&sheets, 0, 2),
+        Err(AssetError::UnknownAppearance { id: 0 })
+    ));
+    Ok(())
+}

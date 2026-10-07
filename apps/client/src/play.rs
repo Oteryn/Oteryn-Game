@@ -1,11 +1,13 @@
-//! Play view after admission (N2N3-1): a placeholder ground grid centred on the own actor, one
-//! marker per overlay object, and the walk over `Session::step`.
+//! Play view after admission (N2N3-1): the map around the own actor, one marker per overlay
+//! object, and the walk over `Session::step`.
 //!
 //! The view holds no authority. It is built from the join snapshot, and only a step outcome's
-//! domain-1 and domain-2 deltas move it. Real map tiles arrive with the map track.
+//! domain-1 and domain-2 deltas move it. The map is the start area anchored at the join
+//! position (CLIENT-VIS-1 milestone 1) until positions are map positions.
 
 use crate::input::{ClickWalk, StepDir, StepResult};
-use crate::scene::PlaceholderScene;
+use crate::scene::Scene;
+use crate::world::{START, World};
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
@@ -73,7 +75,10 @@ pub struct PlayView {
     floor: i16,
     /// Every decodable overlay entry with its floor; the current floor selects what is drawn.
     markers: BTreeMap<Vec<u8>, (TileCoord, i16)>,
-    scene: PlaceholderScene,
+    world: Arc<World>,
+    /// Added to a session position to reach the map position drawn there.
+    anchor: TileCoord,
+    scene: Scene,
     walk: ClickWalk,
     /// A step sent to the session task whose outcome has not arrived.
     in_flight: bool,
@@ -96,11 +101,15 @@ impl PlayView {
         floor: i16,
         overlay: &[WorldObjectOverlayEntry],
     ) -> Result<Self, BatchError> {
+        let world = Arc::new(World::builtin()?);
+        let anchor = TileCoord::new(0, 0);
         let mut view = Self {
             own,
             floor,
             markers: BTreeMap::new(),
-            scene: PlaceholderScene::centered_on(own, &[])?,
+            scene: Scene::centered_on(Arc::clone(&world), anchor, own, &[])?,
+            world,
+            anchor,
             walk: ClickWalk::new(),
             in_flight: false,
             key_step: None,
@@ -118,8 +127,18 @@ impl PlayView {
     }
 
     #[must_use]
-    pub const fn scene(&self) -> &PlaceholderScene {
+    pub const fn scene(&self) -> &Scene {
         &self.scene
+    }
+
+    /// Draws `world` with the current own position on the start tile.
+    pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
+        self.world = world;
+        self.anchor = TileCoord::new(
+            START.0.saturating_sub(self.own.x),
+            START.1.saturating_sub(self.own.y),
+        );
+        self.rebuild()
     }
 
     #[must_use]
@@ -213,7 +232,7 @@ impl PlayView {
 
     fn rebuild(&mut self) -> Result<(), BatchError> {
         let markers = self.drawn_markers().collect::<Vec<_>>();
-        self.scene = PlaceholderScene::centered_on(self.own, &markers)?;
+        self.scene = Scene::centered_on(Arc::clone(&self.world), self.anchor, self.own, &markers)?;
         Ok(())
     }
 

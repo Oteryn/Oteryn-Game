@@ -17,6 +17,8 @@ pub const MAX_ENTRY_CELLS: usize = 16;
 struct AppearancesMsg {
     #[prost(message, repeated, tag = "1")]
     object: Vec<AppearanceMsg>,
+    #[prost(message, repeated, tag = "2")]
+    outfit: Vec<AppearanceMsg>,
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -169,10 +171,11 @@ pub struct ResolvedEntry {
     pub on_top: bool,
 }
 
-/// Object id to frame group 0, from the pinned `appearances` file.
+/// Object and outfit id to frame group 0, from the pinned `appearances` file.
 #[derive(Debug, Clone)]
 pub struct AppearanceIndex {
     objects: HashMap<u32, Appearance>,
+    outfits: HashMap<u32, Appearance>,
 }
 
 impl AppearanceIndex {
@@ -185,19 +188,25 @@ impl AppearanceIndex {
                 file: file.to_owned(),
                 reason: error.to_string(),
             })?;
-        let mut objects = HashMap::with_capacity(message.object.len());
-        for object in message.object {
-            let Some(id) = object.id.filter(|id| (1..=MAX_APPEARANCE_ID).contains(id)) else {
-                return Err(AssetError::Malformed {
-                    file: file.to_owned(),
-                    reason: "object without a valid id".into(),
-                });
-            };
-            if let Some(appearance) = convert(id, object) {
-                objects.insert(id, appearance);
+        let convert_all = |entries: Vec<AppearanceMsg>| {
+            let mut converted = HashMap::with_capacity(entries.len());
+            for entry in entries {
+                let Some(id) = entry.id.filter(|id| (1..=MAX_APPEARANCE_ID).contains(id)) else {
+                    return Err(AssetError::Malformed {
+                        file: file.to_owned(),
+                        reason: "object without a valid id".into(),
+                    });
+                };
+                if let Some(appearance) = convert(id, entry) {
+                    converted.insert(id, appearance);
+                }
             }
-        }
-        Ok(Self { objects })
+            Ok(converted)
+        };
+        Ok(Self {
+            objects: convert_all(message.object)?,
+            outfits: convert_all(message.outfit)?,
+        })
     }
 
     #[must_use]
@@ -222,6 +231,28 @@ impl AppearanceIndex {
 
     pub fn iter(&self) -> impl Iterator<Item = &Appearance> {
         self.objects.values()
+    }
+
+    /// Frame group 0 (standing) of an outfit (look type).
+    #[must_use]
+    pub fn outfit(&self, look_type: u32) -> Option<&Appearance> {
+        self.outfits.get(&look_type)
+    }
+
+    /// The cells of an outfit's base layer, standing, facing `direction` (0 north, 1 east,
+    /// 2 south, 3 west), without addons or mount. The colour-mask layer is not drawn.
+    pub fn resolve_outfit(
+        &self,
+        sheets: &SpriteSheets,
+        look_type: u32,
+        direction: u32,
+    ) -> Result<ResolvedEntry, AssetError> {
+        let appearance = self
+            .outfits
+            .get(&look_type)
+            .ok_or(AssetError::UnknownAppearance { id: look_type })?;
+        let pattern_x = direction % appearance.pattern_width;
+        entry(appearance, sheets, (pattern_x, 0, 0), 0..1)
     }
 
     /// The cells to draw for one entry, chosen as the Tibia client does. `floor` is the native
@@ -276,49 +307,64 @@ impl AppearanceIndex {
             )
         };
         let pattern_z = z % appearance.pattern_depth;
-        let mut cells = Vec::new();
-        for layer in 0..appearance.layers {
-            let index = ((pattern_z * appearance.pattern_height + pattern_y)
-                * appearance.pattern_width
-                + pattern_x)
-                * appearance.layers
-                + layer;
-            // Phase 0 is the first block, so the index needs no phase term.
-            let sprite_id = appearance
-                .sprite_ids
-                .get(index as usize)
-                .copied()
-                .ok_or(AssetError::UnknownSprite { sprite_id: 0 })?;
-            if sprite_id == 0 {
-                continue;
-            }
-            let (cells_x, cells_y) = sheets.layout(sprite_id)?.cells();
-            for cell_y in 0..cells_y {
-                for cell_x in 0..cells_x {
-                    cells.push(DrawCell {
-                        sprite_id,
-                        cell_x,
-                        cell_y,
-                        offset_x: (cell_x as i32 + 1 - cells_x as i32) * CELL_PX as i32
-                            - appearance.displacement_x as i32,
-                        offset_y: (cell_y as i32 + 1 - cells_y as i32) * CELL_PX as i32
-                            - appearance.displacement_y as i32,
-                    });
-                }
-            }
-        }
-        if cells.len() > MAX_ENTRY_CELLS {
-            return Err(AssetError::TooManyCells { cells: cells.len() });
-        }
-        Ok(ResolvedEntry {
-            cells,
-            elevation: appearance.elevation,
-            ground: appearance.ground,
-            ground_border: appearance.ground_border,
-            on_bottom: appearance.on_bottom,
-            on_top: appearance.on_top,
-        })
+        entry(
+            appearance,
+            sheets,
+            (pattern_x, pattern_y, pattern_z),
+            0..appearance.layers,
+        )
     }
+}
+
+/// The cells of one pattern of `appearance`, phase 0, over `layers`.
+fn entry(
+    appearance: &Appearance,
+    sheets: &SpriteSheets,
+    (pattern_x, pattern_y, pattern_z): (u32, u32, u32),
+    layers: std::ops::Range<u32>,
+) -> Result<ResolvedEntry, AssetError> {
+    let mut cells = Vec::new();
+    for layer in layers {
+        let index = ((pattern_z * appearance.pattern_height + pattern_y)
+            * appearance.pattern_width
+            + pattern_x)
+            * appearance.layers
+            + layer;
+        // Phase 0 is the first block, so the index needs no phase term.
+        let sprite_id = appearance
+            .sprite_ids
+            .get(index as usize)
+            .copied()
+            .ok_or(AssetError::UnknownSprite { sprite_id: 0 })?;
+        if sprite_id == 0 {
+            continue;
+        }
+        let (cells_x, cells_y) = sheets.layout(sprite_id)?.cells();
+        for cell_y in 0..cells_y {
+            for cell_x in 0..cells_x {
+                cells.push(DrawCell {
+                    sprite_id,
+                    cell_x,
+                    cell_y,
+                    offset_x: (cell_x as i32 + 1 - cells_x as i32) * CELL_PX as i32
+                        - appearance.displacement_x as i32,
+                    offset_y: (cell_y as i32 + 1 - cells_y as i32) * CELL_PX as i32
+                        - appearance.displacement_y as i32,
+                });
+            }
+        }
+    }
+    if cells.len() > MAX_ENTRY_CELLS {
+        return Err(AssetError::TooManyCells { cells: cells.len() });
+    }
+    Ok(ResolvedEntry {
+        cells,
+        elevation: appearance.elevation,
+        ground: appearance.ground,
+        ground_border: appearance.ground_border,
+        on_bottom: appearance.on_bottom,
+        on_top: appearance.on_top,
+    })
 }
 
 fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {

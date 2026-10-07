@@ -1,0 +1,442 @@
+//! The real-sprite world around the start position (CLIENT-VIS-1, milestone 1).
+//!
+//! A bounded square of the floor-7 base map around the Thais temple is decoded once from the
+//! B3 region files, every item is resolved through the pinned 15.30 appearances, and the cells
+//! they need are copied into one static atlas. Walking only rebuilds quads over it. Full map
+//! streaming is milestone 2.
+//!
+//! The data comes from a local asset root laid out like the repository (`OTERYN_ASSET_DIR`);
+//! the installer ships no map or sprite files. Without it, [`World::builtin`] draws only the
+//! builtin cells.
+
+use oteryn_client_assets::{
+    AppearanceIndex, AssetStore, CELL_PX, Catalog, DrawCell, Placement, SpriteSheets,
+};
+use oteryn_renderer::{AtlasImage, BatchError, MAX_ATLAS_DIMENSION};
+use oteryn_world_bundle::sector::{self, Budget, TileLimits};
+use serde::Deserialize;
+use sha2::{Digest, Sha256};
+use std::collections::{BTreeMap, HashMap};
+use std::io::Read;
+use std::path::Path;
+
+/// One resolved map item: draw layer, elevation and cells.
+type Item = (u8, i32, Vec<DrawCell>);
+
+/// Names the local asset root.
+pub const ASSET_DIR_ENV: &str = "OTERYN_ASSET_DIR";
+/// The Thais temple, where the offline view starts and the play view is anchored.
+pub const START: (i32, i32) = (32369, 32241);
+pub const START_FLOOR: u8 = 7;
+/// Tiles decoded on each side of [`START`].
+pub const RADIUS: i32 = 64;
+/// The default outfit (citizen), drawn facing south.
+pub const PLAYER_LOOK_TYPE: u32 = 128;
+const SOUTH: u32 = 2;
+
+/// Builtin cells ahead of the sprite cells: opaque black under every tile, the target
+/// outline, and the marker glyph for overlay objects.
+pub const BLACK_CELL: u16 = 0;
+pub const TARGET_CELL: u16 = 1;
+pub const MARKER_CELL: u16 = 2;
+const BUILTIN_CELLS: usize = 3;
+
+const ATLAS_COLUMNS: usize = (MAX_ATLAS_DIMENSION / CELL_PX) as usize;
+const MAX_CELLS: usize = ATLAS_COLUMNS * ATLAS_COLUMNS;
+const MAX_INDEX_BYTES: u64 = 8 * 1024 * 1024;
+const MAX_REGION_BYTES: u64 = 32 * 1024 * 1024;
+const MAX_SECTOR_BYTES: usize = 16 * 1024 * 1024;
+const REGION_TILES: i32 = 256;
+/// The client's cap on how far elevation lifts what is drawn above it.
+const MAX_ELEVATION: i32 = 24;
+
+/// One atlas cell drawn at a pixel offset from a tile's top-left, in 32 px source pixels.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Draw {
+    pub cell: u16,
+    pub offset: [i32; 2],
+}
+
+/// What one map tile draws: `under` before a creature standing on it, `over` after it.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct MapTile {
+    pub under: Vec<Draw>,
+    /// How far a creature on this tile is lifted, in source pixels.
+    pub elevation: i32,
+    pub over: Vec<Draw>,
+}
+
+#[derive(Debug, Clone)]
+pub struct World {
+    atlas: AtlasImage,
+    tiles: HashMap<(i32, i32), MapTile>,
+    player: Vec<Draw>,
+}
+
+#[derive(Deserialize)]
+struct PlacementIndex {
+    palette: Vec<PaletteEntry>,
+    regions: Vec<RegionEntry>,
+}
+
+#[derive(Deserialize)]
+struct PaletteEntry {
+    source_item_id: u32,
+}
+
+#[derive(Deserialize)]
+struct RegionEntry {
+    path: String,
+    sha256: String,
+}
+
+impl World {
+    /// Only the builtin cells: no map, and the player drawn as the marker glyph.
+    pub fn builtin() -> Result<Self, BatchError> {
+        let atlas = AtlasImage::new(CELL_PX, BUILTIN_CELLS as u32, 1, builtin_rgba())?;
+        Ok(Self {
+            atlas,
+            tiles: HashMap::new(),
+            player: vec![Draw {
+                cell: MARKER_CELL,
+                offset: [0, 0],
+            }],
+        })
+    }
+
+    /// Loads from `OTERYN_ASSET_DIR`; any failure falls back to [`World::builtin`] with the reason.
+    pub fn from_env() -> (Result<Self, BatchError>, Option<String>) {
+        let loaded = std::env::var_os(ASSET_DIR_ENV)
+            .ok_or_else(|| format!("{ASSET_DIR_ENV} is not set"))
+            .and_then(|root| Self::load(Path::new(&root)));
+        match loaded {
+            Ok(world) => (Ok(world), None),
+            Err(reason) => (Self::builtin(), Some(reason)),
+        }
+    }
+
+    /// Decodes the start area from an asset root laid out like the repository.
+    pub fn load(root: &Path) -> Result<Self, String> {
+        let store = AssetStore::open(
+            &root.join("content/assets/files"),
+            &root.join("imports/official/client-assets/15.30/manifest.json"),
+        )
+        .map_err(|error| format!("assets: {error}"))?;
+        let catalog = Catalog::load(&store).map_err(|error| format!("catalog: {error}"))?;
+        let index = AppearanceIndex::load(&store, &catalog)
+            .map_err(|error| format!("appearances: {error}"))?;
+        let mut sheets = SpriteSheets::new(store, catalog);
+        let placements = root.join("content/world/placements");
+        let map: PlacementIndex = serde_json::from_slice(&read_capped(
+            &placements.join("index.json"),
+            MAX_INDEX_BYTES,
+        )?)
+        .map_err(|error| format!("placement index: {error}"))?;
+
+        let (lo_x, hi_x, lo_y, hi_y) = (
+            START.0 - RADIUS,
+            START.0 + RADIUS,
+            START.1 - RADIUS,
+            START.1 + RADIUS,
+        );
+        // Every tile's resolved items, then the cells they use.
+        let mut entries: Vec<((i32, i32), Vec<Item>)> = Vec::new();
+        for ry in lo_y / REGION_TILES..=hi_y / REGION_TILES {
+            for rx in lo_x / REGION_TILES..=hi_x / REGION_TILES {
+                let name = format!("region-z{START_FLOOR:02}-x{rx:03}-y{ry:03}.b3");
+                let Some(entry) = map
+                    .regions
+                    .iter()
+                    .find(|entry| entry.path.rsplit('/').next() == Some(name.as_str()))
+                else {
+                    continue;
+                };
+                let data = read_capped(&placements.join(&name), MAX_REGION_BYTES)?;
+                let digest = Sha256::digest(&data);
+                let hex = digest
+                    .iter()
+                    .map(|byte| format!("{byte:02x}"))
+                    .collect::<String>();
+                if hex != entry.sha256 {
+                    return Err(format!("{name}: sha256 does not match the placement index"));
+                }
+                for tile in decode_region(&data).map_err(|error| format!("{name}: {error}"))? {
+                    let (x, y) = (i32::from(tile.x), i32::from(tile.y));
+                    if !(lo_x..=hi_x).contains(&x) || !(lo_y..=hi_y).contains(&y) {
+                        continue;
+                    }
+                    let mut items = Vec::new();
+                    for item in tile.items.iter().filter(|item| item.depth == 0) {
+                        let Some(palette) = map.palette.get(item.palette as usize) else {
+                            continue;
+                        };
+                        let mut placement = Placement::at(x, y, -i32::from(START_FLOOR));
+                        placement.count = u32::from(item.attrs.count.unwrap_or(1));
+                        // An item the pinned appearances cannot draw is skipped, not fatal.
+                        let Ok(resolved) =
+                            index.resolve(&sheets, palette.source_item_id, placement)
+                        else {
+                            continue;
+                        };
+                        let layer = if resolved.ground {
+                            0
+                        } else if resolved.ground_border {
+                            1
+                        } else if resolved.on_bottom {
+                            2
+                        } else if resolved.on_top {
+                            4
+                        } else {
+                            3
+                        };
+                        items.push((layer, resolved.elevation as i32, resolved.cells));
+                    }
+                    // Stable: items of one layer keep their stack order.
+                    items.sort_by_key(|(layer, _, _)| *layer);
+                    entries.push(((x, y), items));
+                }
+            }
+        }
+        let player = index
+            .resolve_outfit(&sheets, PLAYER_LOOK_TYPE, SOUTH)
+            .map_err(|error| format!("outfit {PLAYER_LOOK_TYPE}: {error}"))?
+            .cells;
+
+        // Cells in sprite order, so each sheet is decoded once; past the atlas cap they are dropped.
+        let mut cells = BTreeMap::new();
+        for cell in entries
+            .iter()
+            .flat_map(|(_, items)| items.iter().flat_map(|(_, _, cells)| cells))
+            .chain(&player)
+        {
+            cells.insert((cell.sprite_id, cell.cell_x, cell.cell_y), 0_u16);
+        }
+        let mut rgba = builtin_rgba();
+        let mut next = BUILTIN_CELLS;
+        for (key, slot) in &mut cells {
+            if next >= MAX_CELLS {
+                break;
+            }
+            let pixels = sheets
+                .cell_rgba(key.0, key.1, key.2)
+                .map_err(|error| format!("sprite {}: {error}", key.0))?;
+            *slot = next as u16;
+            rgba.extend_from_slice(&pixels);
+            next += 1;
+        }
+        let draw = |cell: &DrawCell, lift: i32| {
+            let slot = cells.get(&(cell.sprite_id, cell.cell_x, cell.cell_y))?;
+            (*slot != 0).then_some(Draw {
+                cell: *slot,
+                offset: [cell.offset_x - lift, cell.offset_y - lift],
+            })
+        };
+        let mut tiles = HashMap::with_capacity(entries.len());
+        for (position, items) in &entries {
+            let mut tile = MapTile::default();
+            for (layer, elevation, item_cells) in items {
+                let lift = if *layer == 4 { 0 } else { tile.elevation };
+                let drawn = item_cells.iter().filter_map(|cell| draw(cell, lift));
+                if *layer == 4 {
+                    tile.over.extend(drawn);
+                } else {
+                    tile.under.extend(drawn);
+                    tile.elevation = (tile.elevation + elevation).min(MAX_ELEVATION);
+                }
+            }
+            tiles.insert(*position, tile);
+        }
+        let player = player.iter().filter_map(|cell| draw(cell, 0)).collect();
+        let atlas = atlas_from_cells(rgba, next).map_err(|error| format!("atlas: {error}"))?;
+        Ok(Self {
+            atlas,
+            tiles,
+            player,
+        })
+    }
+
+    #[must_use]
+    pub const fn atlas(&self) -> &AtlasImage {
+        &self.atlas
+    }
+
+    /// The map tile at an absolute map position, if it lies in the loaded area.
+    #[must_use]
+    pub fn tile(&self, x: i32, y: i32) -> Option<&MapTile> {
+        self.tiles.get(&(x, y))
+    }
+
+    #[must_use]
+    pub fn tile_count(&self) -> usize {
+        self.tiles.len()
+    }
+
+    /// The own player's cells, standing on a tile.
+    #[must_use]
+    pub fn player(&self) -> &[Draw] {
+        &self.player
+    }
+}
+
+/// Lays `count` 32 px cells, stored one after another, out in rows of [`ATLAS_COLUMNS`].
+fn atlas_from_cells(cells: Vec<u8>, count: usize) -> Result<AtlasImage, BatchError> {
+    let columns = count.min(ATLAS_COLUMNS);
+    let rows = count.div_ceil(columns);
+    let px = CELL_PX as usize;
+    let mut rgba = vec![0; columns * px * rows * px * 4];
+    for (index, cell) in cells.chunks_exact(px * px * 4).enumerate() {
+        let (column, row) = (index % columns, index / columns);
+        for line in 0..px {
+            let at = ((row * px + line) * columns * px + column * px) * 4;
+            rgba[at..at + px * 4].copy_from_slice(&cell[line * px * 4..(line + 1) * px * 4]);
+        }
+    }
+    AtlasImage::new(CELL_PX, columns as u32, rows as u32, rgba)
+}
+
+/// The builtin cells, one after another: black, a yellow outline, a red square.
+fn builtin_rgba() -> Vec<u8> {
+    let px = CELL_PX as usize;
+    let mut rgba = Vec::with_capacity(BUILTIN_CELLS * px * px * 4);
+    for cell in 0..BUILTIN_CELLS {
+        for y in 0..px {
+            for x in 0..px {
+                let edge = x.min(y).min(px - 1 - x).min(px - 1 - y);
+                rgba.extend_from_slice(&match cell {
+                    0 => [0, 0, 0, 255],
+                    1 if edge < 2 => [255, 220, 40, 255],
+                    2 if edge >= 10 => [220, 40, 40, 255],
+                    _ => [0, 0, 0, 0],
+                });
+            }
+        }
+    }
+    rgba
+}
+
+fn read_capped(path: &Path, max: u64) -> Result<Vec<u8>, String> {
+    let file = std::fs::File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let mut bytes = Vec::new();
+    file.take(max + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| format!("{}: {error}", path.display()))?;
+    if bytes.len() as u64 > max {
+        return Err(format!("{}: larger than {max} bytes", path.display()));
+    }
+    Ok(bytes)
+}
+
+/// Decodes an `OTERYN_WORLD_REGION_B3/v1` file the way `world-bundle-compiler`'s `b3` reader
+/// does: a 12-byte header, `local u8 | offset u32 | length u32` rows, one zstd frame per sector.
+fn decode_region(data: &[u8]) -> Result<Vec<sector::Tile>, String> {
+    const HEADER: usize = 12;
+    const ROW: usize = 9;
+    let le16 = |at: usize| u16::from_le_bytes([data[at], data[at + 1]]);
+    let le32 = |at: usize| {
+        u32::from_le_bytes([data[at], data[at + 1], data[at + 2], data[at + 3]]) as usize
+    };
+    if data.len() < HEADER || &data[..4] != b"OTRB" || data[4] != 1 {
+        return Err("not an OTERYN_WORLD_REGION_B3/v1 file".into());
+    }
+    let (rx, ry, count) = (le16(6), le16(8), usize::from(le16(10)));
+    if count == 0 || count > 64 || rx > 255 || ry > 255 {
+        return Err("header out of range".into());
+    }
+    let mut expected = HEADER + ROW * count;
+    if data.len() < expected {
+        return Err("sector table runs past the end of the file".into());
+    }
+    let limits = TileLimits {
+        max_entries: 4096,
+        max_text_bytes: 4096,
+    };
+    let mut budget = Budget {
+        tiles: 65_536,
+        entries: 4 * 1024 * 1024,
+    };
+    let mut tiles = Vec::new();
+    let mut previous = -1;
+    for row in 0..count {
+        let at = HEADER + ROW * row;
+        let (local, offset, length) = (data[at], le32(at + 1), le32(at + 5));
+        if i32::from(local) <= previous || local >= 64 {
+            return Err("sector table must be strictly ascending within 0..63".into());
+        }
+        if offset != expected || length == 0 || data.len() - offset < length {
+            return Err("sector payloads must be non-empty and contiguous".into());
+        }
+        previous = i32::from(local);
+        expected += length;
+        let frame = &data[offset..offset + length];
+        let capacity = match zstd::zstd_safe::get_frame_content_size(frame) {
+            Ok(Some(size)) if size <= MAX_SECTOR_BYTES as u64 => size as usize,
+            Ok(Some(_)) => return Err("sector payload over the cap".into()),
+            _ => MAX_SECTOR_BYTES,
+        };
+        let payload = zstd::bulk::decompress(frame, capacity)
+            .map_err(|error| format!("sector {local}: {error}"))?;
+        let (sx, sy) = (rx * 8 + u16::from(local) % 8, ry * 8 + u16::from(local) / 8);
+        tiles.extend(
+            sector::decode(&payload, (sx, sy), limits, &mut budget)
+                .map_err(|error| format!("sector {local}: {error:?}"))?,
+        );
+    }
+    if expected != data.len() {
+        return Err("bytes after the last sector payload".into());
+    }
+    Ok(tiles)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn repo() -> std::path::PathBuf {
+        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
+    }
+
+    #[test]
+    fn the_builtin_world_has_only_the_builtin_cells() -> Result<(), BatchError> {
+        let world = World::builtin()?;
+        assert_eq!(world.atlas().cell_count() as usize, BUILTIN_CELLS);
+        assert_eq!(world.tile_count(), 0);
+        assert_eq!(world.player()[0].cell, MARKER_CELL);
+        Ok(())
+    }
+
+    #[test]
+    fn the_temple_area_resolves_to_real_cells_inside_the_atlas() -> Result<(), String> {
+        let world = World::load(&repo())?;
+        let cells = world.atlas().cell_count();
+        assert!(cells as usize > BUILTIN_CELLS + 100, "{cells} cells");
+        assert!(world.tile_count() > 10_000, "{} tiles", world.tile_count());
+        let start = world.tile(START.0, START.1).ok_or("no start tile")?;
+        assert!(!start.under.is_empty(), "the start tile has ground");
+        for tile in world.tiles.values() {
+            for draw in tile.under.iter().chain(&tile.over) {
+                assert!(draw.cell >= BUILTIN_CELLS as u16 && u32::from(draw.cell) < cells);
+                world
+                    .atlas()
+                    .uv_rect(draw.cell)
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+        assert!(!world.player().is_empty());
+        assert!(
+            world
+                .player()
+                .iter()
+                .all(|draw| draw.cell >= BUILTIN_CELLS as u16)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn a_region_that_does_not_match_its_digest_is_refused() -> Result<(), String> {
+        let bad = decode_region(b"OTRB\x02\x07\x7e\x00\x7d\x00\x01\x00");
+        assert!(bad.is_err());
+        let missing = World::load(&repo().join("no-such-root"));
+        assert!(missing.is_err());
+        Ok(())
+    }
+}
