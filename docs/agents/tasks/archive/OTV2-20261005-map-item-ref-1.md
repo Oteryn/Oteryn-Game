@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/map-item-ref-1-20261005-b
 issue: 1622
-pr: "Part A #1906; Part B: the PR of branch agent/map-item-ref-1-20261005-b"
+pr: 1909
 head_sha: "exact frozen head in the control-plane FREEZE_SHA entry"
 final_head_sha: "exact frozen head in the control-plane FREEZE_SHA entry"
 owner: hard worker (control plane session_0114oBVR3osF1auvFMu6ksMH, decisions D607, D879, D885, D886, D887, D888)
@@ -80,4 +80,4 @@ git diff --check: pass
 
 ## Review and closeout
 
-Review is decided by the control plane on the frozen head. Merge result: squash merge of the Part B PR after #1906, with CI and the Merge Queue still pending at authoring.
+Review is decided by the control plane on the frozen head. Merge result: squash merge of #1909 (Part A: #1906), with CI and the Merge Queue still pending at authoring.
