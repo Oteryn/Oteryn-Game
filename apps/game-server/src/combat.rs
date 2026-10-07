@@ -21,12 +21,12 @@ mod death_reward;
 #[path = "combat/loot_plan.rs"]
 mod loot_plan;
 
-// D2a/D2b have no production caller yet (protocol/admission composition is a
-// later, separate stage), so nothing outside this crate's tests reaches
-// these re-exports today.
+// The live kill-reward caller (`gameplay_transport::kill_reward`) uses only
+// part of these re-exports; the rest serve the path-loaded test harnesses,
+// and `foundation/mod.rs` recompiles this file standalone with none used.
 #[allow(
     unused_imports,
-    reason = "no production caller yet; a later admission stage wires one"
+    reason = "partly used by the live caller; the rest serve path-loaded test crates"
 )]
 pub(crate) use death_reward::{
     COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX, COMBAT01_REWARD_PRINCIPALS_MAX,
@@ -42,7 +42,7 @@ pub(crate) use death_reward::{
 };
 #[allow(
     unused_imports,
-    reason = "no production caller yet; a later admission stage wires one"
+    reason = "partly used by the live caller; the rest serve path-loaded test crates"
 )]
 pub(crate) use loot_plan::{
     COMBAT01_LOOT_PLAN_BYTES_MAX, COMBAT01_LOOT_PLAN_ENTRIES_MAX, COMBAT01_LOOT_PLAN_ITEMS_MAX,
