@@ -49,8 +49,8 @@ use crate::native_admission_source::runtime_status::{RuntimeStatusDescriptor, Sy
 use crate::native_admission_source::{CHARACTER_BOOTSTRAP_INTENT_ISSUER, TransientCapacity};
 use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
 use oteryn_foundation::CancellationToken;
-use rustls::pki_types::PrivateKeyDer;
 use rustls::pki_types::pem::PemObject;
+use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use std::future::{Future, poll_fn};
 use std::path::Path;
 use std::pin::pin;
@@ -404,6 +404,21 @@ fn private_key(key: &'static str, pem: &[u8]) -> Result<PrivateKeyDer<'static>, 
     PrivateKeyDer::from_pem_slice(pem).map_err(|_| invalid(key))
 }
 
+/// The projection identity is its own, never the evidence or status one (§3); the
+/// runtime-status chain is compared only when `[platform.runtime_status]` is configured.
+fn projection_descriptor(
+    endpoint: (String, u16),
+    peer_name: String,
+    roots: Vec<CertificateDer<'static>>,
+    (chain, key): (Vec<CertificateDer<'static>>, PrivateKeyDer<'static>),
+    evidence: &[CertificateDer<'static>],
+    status: Option<&[CertificateDer<'static>]>,
+) -> Result<ProjectionDescriptor, BootError> {
+    let others: Vec<&[CertificateDer<'static>]> = std::iter::once(evidence).chain(status).collect();
+    ProjectionDescriptor::new(endpoint, peer_name, roots, chain, key, &others)
+        .map_err(|_| invalid("platform.account_characters"))
+}
+
 fn load(config_path: &Path) -> Result<Material, BootError> {
     let owner = effective_uid();
     let document = read_file(
@@ -517,24 +532,24 @@ fn load(config_path: &Path) -> Result<Material, BootError> {
                 )?,
             )?;
             let status_chain = match &platform.runtime_status {
-                None => Vec::new(),
-                Some(status) => certificates(&secret(
-                    "platform.runtime_status.client_certificate_file",
-                    &status.client_certificate_file,
-                    MAX_PEM_BYTES,
-                )?)
-                .map_err(|_| invalid("platform.runtime_status.client_certificate_file"))?,
+                None => None,
+                Some(status) => Some(
+                    certificates(&secret(
+                        "platform.runtime_status.client_certificate_file",
+                        &status.client_certificate_file,
+                        MAX_PEM_BYTES,
+                    )?)
+                    .map_err(|_| invalid("platform.runtime_status.client_certificate_file"))?,
+                ),
             };
-            // Its own identity, never the evidence or status one (§3).
-            let descriptor = ProjectionDescriptor::new(
+            let descriptor = projection_descriptor(
                 endpoint.clone(),
                 platform.peer_name.clone(),
                 roots.clone(),
-                chain,
-                key,
-                &[&client, &status_chain],
-            )
-            .map_err(|_| invalid("platform.account_characters"))?;
+                (chain, key),
+                &client,
+                status_chain.as_deref(),
+            )?;
             Some((
                 descriptor,
                 projection.source_authority.clone(),
@@ -2105,6 +2120,42 @@ mod tests {
         let (own, foreign) = (key(&first), key(&second));
         assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &own).is_ok());
         assert!(crate::gameplay_transport::validate_gameplay_tls(&chain, &foreign).is_err());
+    }
+
+    #[test]
+    fn account_characters_boots_without_a_runtime_status_section() {
+        let issue = || {
+            let pair =
+                rcgen::generate_simple_self_signed(vec!["localhost".to_owned()]).expect("leaf");
+            let key = PrivateKeyDer::Pkcs8(rustls::pki_types::PrivatePkcs8KeyDer::from(
+                pair.signing_key.serialize_der(),
+            ));
+            (vec![pair.cert.der().clone()], key)
+        };
+        let (projection, evidence, status) = (issue(), issue(), issue());
+        let roots = evidence.0.clone();
+        let build = |identity: &(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>),
+                     status: Option<&[CertificateDer<'static>]>| {
+            projection_descriptor(
+                ("127.0.0.1".to_owned(), 8443),
+                "localhost".to_owned(),
+                roots.clone(),
+                (identity.0.clone(), identity.1.clone_key()),
+                &evidence.0,
+                status,
+            )
+        };
+        // `[platform.account_characters]` without `[platform.runtime_status]` boots.
+        assert!(build(&projection, None).is_ok());
+        assert!(build(&projection, Some(&status.0)).is_ok());
+        // A shared identity is still refused, whichever purpose it is shared with.
+        assert!(matches!(
+            build(&evidence, None),
+            Err(BootError::Startup(StartupError::Invalid {
+                key: "platform.account_characters"
+            }))
+        ));
+        assert!(build(&status, Some(&status.0)).is_err());
     }
 
     #[test]
