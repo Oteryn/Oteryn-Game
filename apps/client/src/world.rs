@@ -26,6 +26,10 @@ type Item = (u8, i32, Vec<DrawCell>);
 
 /// Names the local asset root.
 pub const ASSET_DIR_ENV: &str = "OTERYN_ASSET_DIR";
+/// The sha256 of `imports/official/client-assets/15.30/manifest.json`. The manifest pins every
+/// asset file, so the client pins the manifest instead of trusting the one in the asset root.
+const MANIFEST_SHA256: &str = "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4";
+const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.json";
 /// The Thais temple, where the offline view starts and the play view is anchored.
 pub const START: (i32, i32) = (32369, 32241);
 pub const START_FLOOR: u8 = 7;
@@ -136,9 +140,10 @@ impl World {
 
     /// Decodes the start area from an asset root laid out like the repository.
     pub fn load(root: &Path) -> Result<Self, String> {
-        let store = AssetStore::open(
+        let store = AssetStore::open_pinned(
             &root.join("content/assets/files"),
-            &root.join("imports/official/client-assets/15.30/manifest.json"),
+            &root.join(MANIFEST_PATH),
+            MANIFEST_SHA256,
         )
         .map_err(|error| format!("assets: {error}"))?;
         let catalog = Catalog::load(&store).map_err(|error| format!("catalog: {error}"))?;
@@ -590,6 +595,59 @@ mod tests {
             assert!(player.iter().all(|draw| draw.cell >= BUILTIN_CELLS as u16));
         }
         assert_ne!(world.player(StepDir::North), world.player(StepDir::South));
+        Ok(())
+    }
+
+    #[test]
+    fn the_pinned_manifest_digest_matches_the_repository() -> Result<(), String> {
+        let mut bytes = std::fs::read(repo().join(MANIFEST_PATH)).map_err(|e| e.to_string())?;
+        bytes.retain(|byte| *byte != b'\r');
+        let hex: String = Sha256::digest(&bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        assert_eq!(hex, MANIFEST_SHA256);
+        Ok(())
+    }
+
+    #[test]
+    fn a_crlf_checkout_of_the_manifest_still_matches_the_pin() -> Result<(), String> {
+        let bytes = std::fs::read(repo().join(MANIFEST_PATH)).map_err(|e| e.to_string())?;
+        let crlf: Vec<u8> = bytes
+            .iter()
+            .flat_map(|byte| match byte {
+                b'\n' => vec![b'\r', b'\n'],
+                other => vec![*other],
+            })
+            .collect();
+        let dir = std::env::temp_dir().join(format!("oteryn-manifest-crlf-{}", std::process::id()));
+        let manifest = dir.join("manifest.json");
+        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        std::fs::write(&manifest, crlf).map_err(|e| e.to_string())?;
+        let result = AssetStore::open_pinned(
+            &repo().join("content/assets/files"),
+            &manifest,
+            MANIFEST_SHA256,
+        );
+        std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+        result.map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    #[test]
+    fn a_manifest_off_the_pin_is_refused() -> Result<(), String> {
+        let dir = std::env::temp_dir().join(format!("oteryn-manifest-pin-{}", std::process::id()));
+        let manifest = dir.join(MANIFEST_PATH);
+        let parent = manifest.parent().ok_or("manifest has no parent")?;
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        std::fs::write(&manifest, br#"{"files":[]}"#).map_err(|e| e.to_string())?;
+        let result = World::load(&dir);
+        std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+        let error = result.err().ok_or("a substituted manifest loaded")?;
+        assert!(
+            error.contains("does not match its manifest sha256"),
+            "{error}"
+        );
         Ok(())
     }
 
