@@ -12,6 +12,7 @@ OTERYN_PLATFORM_URL ─ OAuth code+PKCE (game:ticket) ─> Platform (APP_ENV=pre
 client ─ POST /v1/login (protocol_version 2) ─> Go gateway ─ service token ─> Platform admission issuer
 client ─ oteryn-session-tcp, TLS 1.3 against the dev root ─> game node ─ Session::admit ─> join snapshot ─> step
 game node ─ runtime status (own mTLS identity) ─> Platform      ops assignment assign ─ ReportScopeAssignmentV1 ─> Platform
+game node ─ Character projection (own mTLS identity) ─> Platform (ownership read model; mode 33a off)
 ```
 
 ## Run
@@ -144,12 +145,15 @@ A file is written only from a successful capture and is never replaced.
 1. Blocks (`BLOCKED reason=...`) without Docker, the pinned Platform checkout, or PostgreSQL 17.6.
 2. Generates per-run PKI: four distinct mTLS identities with distinct keys (native evidence/Character
    intent, node-host runtime status `CN=oteryn-game-node-runtime-status`, ownership authority
-   `CN=oteryn-game-ops`), the gameplay dev root, the Ed25519 admission issuer key, and a test CA plus an
-   nginx server certificate (SAN `nginx`) for the gateway's Platform upstream. Nothing is committed; all of
-   it lives in the work directory and is removed on exit.
-3. Starts Platform with `APP_ENV=preproduction`, mode 33a
-   (`GAME_AUTH_NATIVE_ADMISSION_UNVERIFIED_CHARACTER_OWNERSHIP=true`, world id = the node's world) and
-   the issuer key file (0600, `www-data`); publishes its public key with `publishTrustedKey`.
+   `CN=oteryn-game-ops`, Character projection `CN=oteryn-game-character-projection`), the gameplay dev
+   root, the Ed25519 admission issuer key, and a test CA plus an nginx server certificate (SAN `nginx`) for
+   the gateway's Platform upstream. Nothing is committed; all of it lives in the work directory and is
+   removed on exit.
+3. Starts Platform with `APP_ENV=preproduction`, mode 33a off
+   (`GAME_AUTH_NATIVE_ADMISSION_UNVERIFIED_CHARACTER_OWNERSHIP=false`), the Character projection feed on
+   (`GAME_AUTH_NATIVE_ACCOUNT_CHARACTERS_ENABLED=true`, the projection identity list and
+   `source_authority`), and the issuer key file (0600, `www-data`); publishes its public key with
+   `publishTrustedKey`. Ownership is checked from the projection (PLATFORM-LCFA-1, contract §5.4).
 4. Issues the topology (`issueForPreproduction`) on a retained per-run SQLite fixture, because Platform's
    `isolatedConnection()` refuses MySQL outside `APP_ENV=testing` (the fixture lives in the 0700 work directory,
    is bind-mounted at `/tmp/oteryn-native-topology-<hex>/` and its world/channel rows are mirrored into the
@@ -161,9 +165,15 @@ A file is written only from a successful capture and is never replaced.
    (in-network TLS listener, not published; only the native-admissions route) and trusts only the per-run
    test CA, mounted read-only as `SSL_CERT_FILE`, with `SSL_CERT_DIR` set to an empty read-only directory so Go
    loads no system roots (the run checks both before starting the gateway).
-6. Runs one node with `[platform.runtime_status]` and `assignment_epoch = 1` (declared, never raised by ops),
-   then `ops assignment assign --node-config --report-config`, which must print `report=ReportScopeAssignmentV1`.
-7. Creates the test account, ensures the OAuth client, bootstraps one Character from a real Platform intent.
+6. Creates the projection epoch fence `/srv/oteryn-login-local/projection/epoch-fence` with value 0 (owned by
+   the node service user, outside the Character fence directory), runs
+   `ops projection resync --raise-epoch true` under the ops `[projection]` credential (the local PostgreSQL
+   admin login: migration 0024 grants the resync function to no runtime or control role), and checks the
+   printed epoch was persisted as F. It then runs one node with `[platform.runtime_status]`,
+   `assignment_epoch = 1` (declared, never raised by ops) and `[platform.account_characters]`, then
+   `ops assignment assign --node-config --report-config`, which must print `report=ReportScopeAssignmentV1`.
+7. Creates the test account, ensures the OAuth client, bootstraps one Character from a real Platform intent,
+   and waits until the node logs an accepted `PublishAccountCharactersV1` and `PublishProjectionWatermarkV1`.
 8. Writes `client.env` (0600; includes the per-run test password in a comment) and runs the client with
    `OTERYN_PLATFORM_URL`, `OTERYN_GATEWAY_URL`, `OTERYN_OAUTH_CLIENT_ID`, `OTERYN_WORLD`,
    `OTERYN_CHARACTER_ID` and `OTERYN_DEV_ROOT`.
@@ -186,6 +196,9 @@ before READY, and only text containing this run's id ends the run `WALKED`.
 With `LOGIN_LOCAL_RUN_CLIENT=1` a client that does not print the admission line ends `FAIL` (exit 1).
 
 ## Platform commands used (Platform main, no Platform change)
+
+The projection feed needs a Platform checkout carrying PLATFORM-LCFA-1 (Platform#1465); until the pin above
+moves to such a commit, the run fails at the projection wait or at ticket issuance.
 
 `game-auth:world:ensure`, `NativeTopologyRegistry::issueForPreproduction` / `publishRouteForPreproduction`,
 `NativeSigningTrustRegistry::publishTrustedKey` (via `php -r` inside the throwaway container, as node_boot does),
