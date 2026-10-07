@@ -1591,16 +1591,44 @@
       ],
       "evidence": "FACT_SEMANTICS_RUNTIME_COMPOSITION_MISSING",
       "owner": "QuestGate + Achievement",
-      "blocker": "Needs both AccountHasAchievement predicate support and an exact current-world door placement_key; fail closed until World owner qualifies the placement.",
+      "blocker": "AccountHasAchievement predicate is still missing, and World/QUEST-GATE-1 owner must confirm candidate door 54613@33873,32620,8 as the active served placement_key before activation.",
       "reward_evidence_ref": "terminal-reward-evidence.json",
       "source_reference": {
         "title": "Shards of a Broken Moon Quest",
         "oldid": 445614
       },
-      "placement": null,
-      "placement_status": "UNRESOLVED_EXACT_PLACEMENT_KEY",
+      "placement": {
+        "x": 33873,
+        "y": 32620,
+        "z": 8
+      },
+      "placement_status": "HIGH_CONFIDENCE_CROSS_SOURCE_CANDIDATE_WORLD_OWNER_CONFIRMATION_REQUIRED",
       "placement_owner": "World / QUEST-GATE-1 content binding",
-      "note": "Reference proves the conjunction semantics (Shards completion + Forbidden Fruit achievement) but does not expose the exact Forbidden Gardens door coordinate/placement key in the quest article. Do not bind by Area name alone."
+      "note": "Semantics are proven. Placement 33873,32620,8 is a high-confidence cross-source candidate, but activation must remain fail-closed until the World/QUEST-GATE-1 owner confirms the current served placement_key against the active world generation.",
+      "door": {
+        "donor_item_id": 54613,
+        "donor_name": "closed door",
+        "donor_attributes": {
+          "type": "door",
+          "blockProjectile": "1"
+        }
+      },
+      "adjacent_anchor": {
+        "position": {
+          "x": 33872,
+          "y": 32620,
+          "z": 8
+        },
+        "item_id": 2023,
+        "item_name": "sign"
+      },
+      "placement_evidence": {
+        "pinned_world": "zimbadev/crystalserver@00ce02a5:data-global/world/world.otbm",
+        "uniqueness": "Only northern closed-door placement in the active Asura Citadel sector; other Summer doors map to already-qualified quest interiors farther south.",
+        "screenshot": "Post-release ItemLevel screenshot 'Door that leads to Forbidden Gardens in Tibia' shows a red/ornate door at the single narrow northern connector to the circular garden area.",
+        "topology": "Candidate is on dirt/earth terrain inside a mountain-framed choke point, with vegetation/dry-grass decoration north of the door, matching the screenshot.",
+        "raw_tibiawiki_forbidden_gardens_oldid_438014": "mapa is empty and rotaLocal is empty; no exact coordinate is published there."
+      }
     }
   ],
   "blockers": [
@@ -1610,7 +1638,7 @@
     "Asura Citadel exact door 53380@33899,32666,8 and key i54262 are resolved; key Item admission is proof-complete but not merged; runtime still needs ITEM-USE-1 USE-WITH + identity-key Door/Key binding + QuestCompleted bypass",
     "Magnolia 60k phase-2 semantics are architect-resolved and merged by #1891 (`attribute max_health set 60000` -> queued `heal full` -> phase 2); current Rust ProjectV2/schema still needs the accepted max_health implementation and ENC-RT-1/ENC-COMBAT-1 -> ENC-OUTCOME-1 runtime",
     "Escape geometry/Rope Spot are resolved end-to-end; Lit Torch i54610 successor identity/admission is proof-complete (holds=[]), but the Item successor has not yet been admitted/materialized",
-    "Forbidden Gardens requires one bounded QuestPredicate amendment (`account_has_achievement(forbidden_fruit)`) AND an exact current-world door placement_key; Reference oldid 445614 proves semantics but does not publish the door coordinate. Achievement owner read already exists.",
+    "Forbidden Gardens semantics are proven; door 54613@33873,32620,8 is a HIGH_CONFIDENCE cross-source candidate from pinned OTBM + porelease screenshot, but World/QUEST-GATE-1 must confirm the active served placement_key. AccountHasAchievement(forbidden_fruit) predicate is still unimplemented.",
     "No full real-character start→reward→relog/restart E2E qualification",
     "Jaracal Mount exact donor identity is resolved; Skewered Fish i54638 already has an EXACT Crystal->A12 binding on main, but lacks active materializable Item admission. Mount successor + tame/account-unlock runtime remain; tame chance semantics UNKNOWN."
   ],
