@@ -2108,7 +2108,6 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         Some(Self::observation(&runtime, snapshot.position()))
     }
 
-
     /// MAP-ITEM-REF-1: domain 9 from the durable backpack, each definition through the Channel
     /// content pin's Item definition index.
     async fn observe_character_inventory(
