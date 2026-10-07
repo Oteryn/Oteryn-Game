@@ -93,9 +93,6 @@ pub enum BootError {
     ContentActivation(&'static str),
     /// MAP-CUTOVER-1a: the configured world bundle failed a boot check.
     WorldBundle(crate::map::boot::BootRefusal),
-    /// MAP-CUTOVER-1a: the world bundle passed its boot checks, but serving it needs client
-    /// capability 18 (MAP-CUTOVER-1b); no listener is opened.
-    WorldBundleUnserved,
 }
 
 oteryn_error_codes::error_kinds! {
@@ -113,7 +110,6 @@ oteryn_error_codes::error_kinds! {
         ServeConfigRejected = (2010, "BOOT_SERVE_CONFIG_REJECTED", InvalidInput, Terminal),
         ContentActivationRefused = (2011, "BOOT_CONTENT_ACTIVATION_REFUSED", Conflict, Terminal),
         WorldBundleRefused = (2012, "BOOT_WORLD_BUNDLE_REFUSED", InvalidInput, Terminal),
-        WorldBundleUnserved = (2013, "BOOT_WORLD_BUNDLE_UNSERVED", UnsupportedRevision, Terminal),
     }
 }
 
@@ -141,7 +137,6 @@ impl BootError {
             Self::Serve => BootErrorKind::ServeConfigRejected,
             Self::ContentActivation(_) => BootErrorKind::ContentActivationRefused,
             Self::WorldBundle(_) => BootErrorKind::WorldBundleRefused,
-            Self::WorldBundleUnserved => BootErrorKind::WorldBundleUnserved,
         }
     }
 
@@ -166,7 +161,6 @@ impl BootError {
             Self::Serve => 18,
             Self::ContentActivation(_) => 19,
             Self::WorldBundle(_) => 20,
-            Self::WorldBundleUnserved => 21,
         }
     }
 }
@@ -190,9 +184,6 @@ impl std::fmt::Display for BootError {
                 )
             }
             Self::WorldBundle(refusal) => write!(formatter, "world bundle refused: {refusal}"),
-            Self::WorldBundleUnserved => formatter.write_str(
-                "world bundle booted; serving it needs client capability 18 (MAP-CUTOVER-1b)",
-            ),
         }
     }
 }
@@ -1617,20 +1608,15 @@ pub async fn run_with_npc_data_project(
         config.scope.world_id, config.scope.channel_id
     ));
     // MAP-CUTOVER-1a: a bundle World is checked before any durable or fixture step.
-    world_bundle_gate(
-        config,
-        |path| {
-            Ok(read_file(
-                "world_bundle.path",
-                path,
-                FileClass::Trusted,
-                effective_uid(),
-                oteryn_world_bundle::bundle::READ_CAPS.file_bytes,
-            )?)
-        },
-        material.world,
-        material.channel,
-    )?;
+    let bundle = world_bundle_gate(config, |path| {
+        Ok(read_file(
+            "world_bundle.path",
+            path,
+            FileClass::Trusted,
+            effective_uid(),
+            oteryn_world_bundle::bundle::READ_CAPS.file_bytes,
+        )?)
+    })?;
     let signalled = CancellationToken::new();
     let watcher = {
         let signalled = signalled.clone();
@@ -1643,7 +1629,7 @@ pub async fn run_with_npc_data_project(
     let root = connect_root(&config.database, effective_uid()).await?;
     let stop_maintenance = CancellationToken::new();
     let maintenance = tokio::spawn(maintain(root.clone(), stop_maintenance.clone()));
-    let result = boot_and_serve(&root, &material, &signalled).await;
+    let result = boot_and_serve(&root, &material, bundle, &signalled).await;
     stop_maintenance.cancel();
     let _ = maintenance.await;
     watcher.abort();
@@ -1657,18 +1643,16 @@ fn stopped_before_ready() {
     event("event=shutdown state=complete");
 }
 
-/// MAP-CUTOVER-1a: without `[world_bundle]` the node goes on to serve the fixture entry room.
-/// With it, the Channel boots from the bundle's pins (`map::boot::boot`) before durability,
-/// registration or fixture activation, then the node stops: serving the bundle needs client
-/// capability 18 (MAP-CUTOVER-1b). Item definitions are not served yet, so every item blocks.
+/// MAP-CUTOVER-1a: without `[world_bundle]` the node serves the fixture entry room. With it,
+/// the bundle's pins are checked (`map::boot::check`) before durability, registration or
+/// fixture activation; the Channel boots from it once the served item definitions are active
+/// ([`boot_bundle_world`], MAP-CUTOVER-1b).
 fn world_bundle_gate(
     config: &NodeConfig,
     read: impl FnOnce(&Path) -> Result<Vec<u8>, BootError>,
-    world: WorldId,
-    channel: ChannelId,
-) -> Result<(), BootError> {
+) -> Result<Option<crate::map::boot::CheckedBundle>, BootError> {
     let Some(bundle) = &config.world_bundle else {
-        return Ok(());
+        return Ok(None);
     };
     let pins = crate::map::boot::BootPins {
         bundle: crate::map::BundlePins {
@@ -1688,18 +1672,86 @@ fn world_bundle_gate(
         },
     };
     let data = read(&bundle.path)?;
-    let booted = crate::map::boot::boot(&data, &pins, world, channel, |_| None)
+    crate::map::boot::check(data, pins)
+        .map(Some)
+        .map_err(BootError::WorldBundle)
+}
+
+/// MAP-CUTOVER-1b: boots the checked bundle's World against the active generation's Item
+/// definitions (§1.6): a palette Item key's revision and reference are the generation's pinned
+/// Item definition index entry for that key (MAP-ITEM-REF-1), and its solidity,
+/// `blocks_projectile` and pickup eligibility are the generation's Item profile for that key and
+/// revision; a fact the generation does not state blocks and is not pickupable. A generation
+/// without an Item key set names no Item, so a bundle with any Item fails closed at boot.
+fn boot_bundle_world(
+    checked: crate::map::boot::CheckedBundle,
+    world: WorldId,
+    channel: ChannelId,
+    gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> Result<crate::map::boot::BundleWorld, BootError> {
+    use crate::content::ReferenceItemField;
+    let index = gameplay.and_then(|state| state.item_index());
+    let item = |key: &str| {
+        let index = index?;
+        let revision = index.revision(key)?;
+        let reference = index.definition_ref("Item", key, revision)?;
+        let profile = gameplay
+            .and_then(|state| state.item_policy(key, revision))
+            .map(|policy| policy.record());
+        let pickupable = profile.is_some_and(|profile| {
+            matches!(
+                &profile.semantics.physical,
+                ReferenceItemField::Known(physical)
+                    if physical.pickupable == ReferenceItemField::Known(true)
+            )
+        });
+        let attributes = profile.map(|profile| &profile.attributes);
+        Some(crate::map::facts::ItemDefinition {
+            reference,
+            solid: attributes.and_then(|attributes| attributes.blocks_movement),
+            blocks_projectile: attributes
+                .and_then(|attributes| attributes.blocks_projectile)
+                .unwrap_or(true),
+            pickupable,
+        })
+    };
+    let booted = checked
+        .boot(world, channel, item)
         .map_err(BootError::WorldBundle)?;
     event(&format!(
         "event=world_bundle state=booted map_revision={}",
         booted.map_revision()
     ));
-    Err(BootError::WorldBundleUnserved)
+    Ok(booted)
+}
+
+/// The Channel content pin of a bundle World: the activated generation's pin with the bundle's
+/// frame binding and map-revision identities and its start (native floor `-z`) as the
+/// first-entry start.
+fn bundle_channel_pin(
+    pin: &crate::foundation::ChannelContentPin,
+    world: &crate::map::boot::BundleWorld,
+) -> Result<crate::foundation::ChannelContentPin, BootError> {
+    let start = world.start();
+    let floor = start
+        .floor
+        .checked_neg()
+        .ok_or(BootError::ContentActivation("world bundle start floor"))?;
+    Ok(crate::foundation::ChannelContentPin::from_activation(
+        pin.world_id(),
+        pin.activation_sequence(),
+        pin.server_artifact_digest(),
+        pin.client_artifact_digest(),
+        world.frame_binding_digest(pin.world_id()),
+        world.map_revision_digest(),
+        (i32::from(start.x), i32::from(start.y), i16::from(floor)),
+    ))
 }
 
 async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
+    bundle: Option<crate::map::boot::CheckedBundle>,
     signalled: &CancellationToken,
 ) -> Result<(), BootError> {
     let config = &material.config;
@@ -1755,6 +1807,21 @@ async fn boot_and_serve(
         .active()
         .ok_or(BootError::ContentActivation("active generation"))?
         .native_gameplay();
+    // MAP-CUTOVER-1b: a bundle World's Channel moves over the bundle from its configured start,
+    // carries its map view in the movement cells and has no entry room: no door, chest, spell
+    // or field qualification of the fixture room applies to it (§1.2).
+    let bundle = bundle
+        .map(|checked| boot_bundle_world(checked, material.world, material.channel, gameplay))
+        .transpose()?;
+    let (channel_pin, movement_cells) = match &bundle {
+        Some(world) => (
+            bundle_channel_pin(&channel_pin, world)?,
+            world
+                .movement_cells(&movement_cells)
+                .map_err(|_| BootError::ContentActivation("world bundle movement cells"))?,
+        ),
+        None => (channel_pin, movement_cells),
+    };
     let spells = match gameplay {
         Some(native) => native.spell_book().clone(),
         None => crate::spell::cast::v1_spell_book()
@@ -1823,8 +1890,11 @@ async fn boot_and_serve(
     // the reward and backpack Item definitions into a clone of this same activated content,
     // like the door above. The compiled Content and its digests stay unchanged. Its claim's
     // achievement (none today) must be in the catalogue, as for the activated content.
-    let chest = crate::interaction_chest_use::with_entry_chest(&door_content)
-        .map_err(|_| BootError::ContentActivation("native entry chest content"))?;
+    let chest = match bundle {
+        Some(_) => door_content.clone(),
+        None => crate::interaction_chest_use::with_entry_chest(&door_content)
+            .map_err(|_| BootError::ContentActivation("native entry chest content"))?,
+    };
     if !achievements
         .unbound_reward_claim_achievements(&chest)
         .is_empty()
@@ -1938,7 +2008,7 @@ async fn boot_and_serve(
         spells: &spells,
         active_generation: active_content.active(),
         premium_coordinator: None,
-        qualified_room: Some(&qualified_room),
+        qualified_room: bundle.is_none().then_some(&qualified_room),
         achievements: &achievements,
         imported_charms: &imported_charms,
         quest_catalogue: &quest_catalogue,
@@ -2200,25 +2270,17 @@ mod tests {
     }
 
     #[test]
-    fn map_cutover_a_fixture_config_serves_and_a_bundle_config_refuses_after_boot() {
+    fn map_cutover_a_fixture_config_skips_and_a_bundle_config_is_checked_before_durability() {
         use super::super::config::tests::{NODE, WORLD_BUNDLE};
-        let id = |n: u8| [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n];
-        let world = WorldId::decode(&id(1)).expect("world");
-        let channel = ChannelId::decode(&id(2)).expect("channel");
         let gate = |document: &str, bytes: &[u8]| {
             let config = NodeConfig::parse(document.as_bytes()).expect("config");
-            world_bundle_gate(&config, |_| Ok(bytes.to_vec()), world, channel)
+            world_bundle_gate(&config, |_| Ok(bytes.to_vec()))
         };
 
         // No `[world_bundle]`: the fixture entry room goes on to serve; nothing is read.
         let config = NodeConfig::parse(NODE.as_bytes()).expect("fixture config");
-        let fixture = world_bundle_gate(
-            &config,
-            |_| Err(invalid("world_bundle.path")),
-            world,
-            channel,
-        );
-        assert!(fixture.is_ok());
+        let fixture = world_bundle_gate(&config, |_| Err(invalid("world_bundle.path")));
+        assert!(matches!(fixture, Ok(None)));
 
         let (bytes, pins) = crate::map::boot::tests::bundle();
         let digest: String = pins.digest.iter().map(|b| format!("{b:02x}")).collect();
@@ -2233,12 +2295,8 @@ mod tests {
             "map_revision = \"map-1\"",
             &format!("map_revision = \"sha256:{digest}\""),
         );
-        assert!(matches!(
-            gate(&bundle, &bytes),
-            Err(BootError::WorldBundleUnserved)
-        ));
-        assert_eq!(BootError::WorldBundleUnserved.exit_code(), 21);
-        // Each boot check refuses before the unserved stop.
+        assert!(matches!(gate(&bundle, &bytes), Ok(Some(_))));
+        // Each check that needs no item definition refuses before any durable step.
         assert!(matches!(
             gate(&configured, &bytes),
             Err(BootError::WorldBundle(
@@ -2258,17 +2316,96 @@ mod tests {
             )))
         ));
         let config = NodeConfig::parse(bundle.as_bytes()).expect("bundle config");
-        let unreadable = world_bundle_gate(
-            &config,
-            |_| Err(invalid("world_bundle.path")),
-            world,
-            channel,
-        );
+        let unreadable = world_bundle_gate(&config, |_| Err(invalid("world_bundle.path")));
         assert!(matches!(
             unreadable,
             Err(BootError::Startup(StartupError::Invalid {
                 key: "world_bundle.path"
             }))
+        ));
+    }
+
+    /// #1916: a bundle whose palette names Items boots on the real path, from the active
+    /// generation's Item key set and profiles, not from the entry room's content, and its
+    /// Channel pin carries the bundle's identities.
+    #[test]
+    fn map_cutover_b_a_bundle_with_items_boots_from_the_active_generation() {
+        const KEYS: &[u8] =
+            include_bytes!("../../../../tools/content-schema/native-gameplay/item-keys.json");
+        let (boxed, coin) = ("oteryn:item.tibia.i100", "oteryn:item.tibia.i1000");
+        let (bytes, pins) = crate::map::boot::tests::bundle_with_items(boxed, coin);
+        let mut revision = String::from("sha256:");
+        for byte in pins.digest {
+            revision.push_str(&format!("{byte:02x}"));
+        }
+        let boot_pins = crate::map::boot::BootPins {
+            bundle: pins,
+            map_revision: revision,
+            start: crate::map::overlay::TilePos {
+                x: 2,
+                y: 0,
+                floor: -7,
+            },
+        };
+        let checked = || crate::map::boot::check(bytes.clone(), boot_pins.clone()).expect("check");
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let with = crate::content::native_gameplay::tests::activated_with_item_keys(Some(KEYS));
+        let gameplay = with.active().expect("active").native_gameplay();
+        let index = gameplay
+            .and_then(|state| state.item_index())
+            .expect("index");
+        let booted = boot_bundle_world(checked(), world, channel, gameplay).expect("booted");
+        for (key, x, compact) in [(boxed, 6, 0), (coin, 7, 1)] {
+            use crate::map::view::MapFacts;
+            let reference = index
+                .definition_ref("Item", key, index.revision(key).expect("revision"))
+                .expect("reference");
+            let at = crate::map::overlay::TilePos { x, y: 0, floor: -7 };
+            let entry = booted
+                .facts()
+                .base_entry(at, 1, compact)
+                .expect("item facts");
+            assert_eq!(
+                entry.definition,
+                oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference)
+            );
+        }
+        // #1916: the Channel pin of the booted World carries the bundle's map-revision and frame
+        // identities, never the entry room's, and starts at the bundle start (legacy `z` 7).
+        let entry = crate::foundation::ChannelContentPin::test(world);
+        let pin = bundle_channel_pin(&entry, &booted).expect("pin");
+        let map_revision: [u8; 32] =
+            <sha2::Sha256 as sha2::Digest>::digest(boot_pins.map_revision.as_bytes()).into();
+        assert_eq!(booted.map_revision_digest(), map_revision);
+        assert_eq!(
+            pin,
+            crate::foundation::ChannelContentPin::from_activation(
+                world,
+                entry.activation_sequence(),
+                entry.server_artifact_digest(),
+                entry.client_artifact_digest(),
+                booted.frame_binding_digest(world),
+                map_revision,
+                (2, 0, 7),
+            )
+        );
+        assert_ne!(pin.map_revision_digest(), entry.map_revision_digest());
+        assert_ne!(pin.frame_binding_digest(), entry.frame_binding_digest());
+        let other = WorldId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3])
+            .expect("other world");
+        assert_ne!(
+            booted.frame_binding_digest(other),
+            booted.frame_binding_digest(world)
+        );
+        // A generation without an Item key set names no Item: the same bundle fails closed.
+        let without = crate::content::native_gameplay::tests::activated_with_item_keys(None);
+        let gameplay = without.active().expect("active").native_gameplay();
+        assert!(matches!(
+            boot_bundle_world(checked(), world, channel, gameplay),
+            Err(BootError::WorldBundle(_))
         ));
     }
 
@@ -2320,7 +2457,6 @@ mod tests {
                 20,
                 2012,
             ),
-            (BootError::WorldBundleUnserved, 21, 2013),
         ];
         for (error, exit, number) in cases {
             assert_eq!(error.exit_code(), exit);
@@ -2402,7 +2538,6 @@ mod tests {
             BootError::Serve.exit_code(),
             BootError::ContentActivation("x").exit_code(),
             BootError::WorldBundle(crate::map::boot::BootRefusal::MapRevision).exit_code(),
-            BootError::WorldBundleUnserved.exit_code(),
         ];
         let unique: std::collections::BTreeSet<_> = codes.iter().collect();
         assert_eq!(unique.len(), codes.len());
