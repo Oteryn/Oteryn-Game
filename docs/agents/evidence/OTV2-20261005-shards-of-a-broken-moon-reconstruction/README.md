@@ -4,6 +4,8 @@ Task: `SHARDS-RECON-0`
 Mode: evidence-only / no runtime mutation
 
 Concrete Q1 owner lowering and acceptance cases: [q1-lowering-owner-plan.md](q1-lowering-owner-plan.md). It uses the current QuestTransitionRequest/writer and locked prerequisite checks; it does not allocate keys or activate content.
+
+Native-loader investigation candidate: [q1-native-catalogue-candidate.json](q1-native-catalogue-candidate.json). Reproduce with `python build_q1_candidate.py --check` and `python run_q1_candidate.py --adversarial` from this packet. [Qualification receipt](q1-catalogue-qualification.json) separates 38 passing pure Quest tests and the deliberately failing missing-guard mutation from still-unqualified durable/runtime composition.
 Original base: `fc3db9abfb4ae05c13b0264752cfbbca13a276e6`
 Current dependency readback: `3bacc59e6adbf138655e6f0c1cf0b4fdf9a36096` (2026-10-07)
 Walkthrough: `https://www.youtube.com/watch?v=Zz-7UyufXbU&t=1295s`
