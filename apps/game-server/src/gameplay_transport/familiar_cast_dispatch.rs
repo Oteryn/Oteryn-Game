@@ -208,25 +208,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// Resumes a parked familiar attempt on its own retained retry path under the held lane
-    /// (§1.6), like `resolve_parked_native`.
+    /// (§1.6), like `resolve_parked_native`. The caller moved the attempt into the caster's
+    /// marker.
     pub(in crate::gameplay_transport) async fn resolve_parked_familiar(
         &self,
         permit: &mut SpellLanePermit,
-        attempt: PreparedFamiliarCast,
+        actor: ExactActorRef,
+        session: GameSessionId,
     ) -> &'static str {
-        let (actor, session, intent) = (attempt.actor, attempt.session, attempt.intent);
-        let command = attempt.familiar.binding().command;
-        {
-            let mut states = self.spell_states.lock().await;
-            super::super::PendingSpellMarker::restore(
-                &mut states.pending_familiars,
-                actor,
-                session,
-                command,
-                intent,
-                attempt,
-            );
-        }
+        let original = super::super::native_combat_cast::parked_original(
+            &self.spell_states.lock().await.pending_familiars,
+            actor,
+            session,
+        );
+        let Some((command, intent)) = original else {
+            return "consumed";
+        };
         let access = self.refresh_spell_access(actor, session).await;
         let active_spell = self
             .spells
@@ -236,7 +233,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .cast_native_familiar_inner(
                 actor,
                 session,
-                command.command_id().get(),
+                command,
                 &intent,
                 &*access,
                 active_spell,

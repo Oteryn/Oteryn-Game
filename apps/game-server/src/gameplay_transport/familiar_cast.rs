@@ -92,6 +92,27 @@ pub(in crate::gameplay_transport) enum FamiliarLogoutSave {
     FencedOut,
     Unknown,
 }
+/// Moves a parked familiar attempt into its caster's marker for the resolution (§1.6).
+pub(crate) fn restore_parked_familiar(
+    states: &mut ChannelSpellStates,
+    attempt: PreparedFamiliarCast,
+) -> super::native_combat_cast::ParkedMarker {
+    let (actor, session, intent) = (attempt.actor, attempt.session, attempt.intent);
+    let command = attempt.familiar.binding().command;
+    super::PendingSpellMarker::restore(
+        &mut states.pending_familiars,
+        actor,
+        session,
+        command,
+        intent,
+        attempt,
+    );
+    super::native_combat_cast::ParkedMarker {
+        kind: super::native_combat_cast::ParkedMarkerKind::Familiar,
+        actor,
+        session,
+    }
+}
 impl ChannelSpellStates {
     pub(crate) fn has_pending_familiar(
         &self,

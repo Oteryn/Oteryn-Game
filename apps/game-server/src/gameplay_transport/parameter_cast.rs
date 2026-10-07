@@ -4,7 +4,9 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
-use super::native_combat_cast::{NativeCastDispatch, UnresolvedSpellCommit};
+use super::native_combat_cast::{
+    NativeCastDispatch, ParkedMarker, ParkedMarkerKind, UnresolvedSpellCommit,
+};
 use super::{
     ChannelSpellStates, PlayerBatchPreflight, SpellCastOutcome, check_owner_batch,
     commit_owner_batch, install_owner_batch, stage_player_batch,
@@ -721,6 +723,31 @@ impl ChannelSpellStates {
             .any(|p| p.is_for(actor, session))
     }
 }
+/// Moves a parked parameter attempt into its caster's marker for the resolution (§1.6).
+pub(crate) fn restore_parked_parameter(
+    states: &mut ChannelSpellStates,
+    attempt: PreparedParameterCast,
+) -> ParkedMarker {
+    let (actor, session, intent, command) = (
+        attempt.actor,
+        attempt.session,
+        attempt.intent.clone(),
+        attempt.batch.command,
+    );
+    super::PendingSpellMarker::restore(
+        &mut states.pending_parameters,
+        actor,
+        session,
+        command,
+        intent,
+        attempt,
+    );
+    ParkedMarker {
+        kind: ParkedMarkerKind::Parameter,
+        actor,
+        session,
+    }
+}
 impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     /// The lane comes first, so an attempt parked in `unresolved` is resolved before the marker
     /// is read.
@@ -765,39 +792,25 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     }
     /// The resolver of a parameter attempt parked in `unresolved` (ARCH-SPELL-LOCK-2 §1.6): the
     /// writer's retained retry path with the original attempt. An attempt the pass does not
-    /// install or release goes back into `unresolved`.
+    /// install or release goes back into `unresolved`. The caller moved the attempt into the
+    /// caster's marker.
     pub(in crate::gameplay_transport) async fn resolve_parked_parameter(
         &self,
         permit: &mut SpellLanePermit,
-        attempt: PreparedParameterCast,
+        actor: ExactActorRef,
+        session: GameSessionId,
     ) -> &'static str {
-        let (actor, session, intent, command) = (
-            attempt.actor,
-            attempt.session,
-            attempt.intent.clone(),
-            attempt.batch.command,
+        let original = super::native_combat_cast::parked_original(
+            &self.spell_states.lock().await.pending_parameters,
+            actor,
+            session,
         );
-        {
-            let mut states = self.spell_states.lock().await;
-            super::PendingSpellMarker::restore(
-                &mut states.pending_parameters,
-                actor,
-                session,
-                command,
-                intent.clone(),
-                attempt,
-            );
-        }
+        let Some((command, intent)) = original else {
+            return "consumed";
+        };
         let access = self.refresh_spell_access(actor, session).await;
         let dispatch = self
-            .cast_parameters_inner(
-                actor,
-                session,
-                command.command_id().get(),
-                &intent,
-                &access,
-                Some(permit),
-            )
+            .cast_parameters_inner(actor, session, command, &intent, &access, Some(permit))
             .await;
         let leftover = {
             let mut states = self.spell_states.lock().await;
