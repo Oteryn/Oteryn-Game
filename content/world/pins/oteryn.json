@@ -1,14 +1,14 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "7144467d54722dbeb421d9c8173e48aed94877b3d00b8450e5bed035e1bf9b37",
+  "digest": "f8b11ebcd96a4140f71dcbb5944519434d3a8e6b0b0f2ecf9fecb9c74f67b6c8",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "item-bed-promotion-20261006-r1",
+  "content_revision": "d3-7-corpse-admitted-20261006-r1",
   "production": false,
   "entry_start": {
     "x": 10228,
     "y": 10032,
     "floor": 0
   },
-  "inputs_digest": "b31def491fd80abca39368bef83b538fc6e33afe3119a09c28fba265d1f1e9b1"
+  "inputs_digest": "952bed5104e4f752c7950e3944341b250598b5e2e96d7565861ac4102b1faa1a"
 }

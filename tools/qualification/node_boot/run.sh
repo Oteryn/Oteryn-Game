@@ -194,6 +194,7 @@ fields = {
     "catalog", "source_selection", "creature_profiles", "presentation_profiles",
     "item_profiles", "spell_appearances", "build_training", "familiar_config",
     "familiar_defenses", "wheel_profile", "source_world", "progression", "item_keys",
+    "loot_tables",
 }
 manifest_bytes = manifest.read_bytes()
 document = json.loads(manifest_bytes)
