@@ -66,6 +66,8 @@ No migration, wire change or Platform change.
 - Codex P1 4204083252 (D742): a fence rename not followed by a successful directory sync leaves F
   unusable (every read refused, so `admit` refuses even at the same epoch) until a directory sync
   succeeds; every fence handle also syncs the directory before its first read.
+- Codex P1 4204399506: a process holds one production durability root, so `projection resync` is
+  dispatched before the operator root is built and connects only the projection login.
 - Follow-up GAME-LCFA-RESYNC-DEADLINE-1 (Codex P2 4200478837): `ops projection resync` runs inside
   the ordinary 2 s root pass (`DB_PASS_DEADLINE`); a bounded maintenance deadline needs a
   durability-root change outside this packet's paths.
