@@ -138,6 +138,7 @@ fn dialogue(key: &str) -> (ProjectV2DefinitionRef, ProjectV2Declaration) {
             send_trade: Vec::new(),
             keywords: Vec::new(),
             voices: None,
+            source_incomplete: vec![],
             fields: Vec::new(),
         },
     )
