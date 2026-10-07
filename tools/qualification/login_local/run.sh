@@ -138,6 +138,10 @@ cp "$WP5_PKI/client.crt" "$WP5_PKI/intent-client.crt"
 cp "$WP5_PKI/client.key" "$WP5_PKI/intent-client.key"
 make_leaf runtime-status "$RUNTIME_IDENTITY" client-ca clientAuth
 make_leaf ops-authority "$OPS_IDENTITY" client-ca clientAuth
+# Gateway -> Platform upstream: nginx serves TLS (SAN nginx) from a test CA the gateway trusts via SSL_CERT_FILE.
+make_ca platform-upstream-ca login-local-platform-upstream-ca
+make_leaf platform-upstream nginx platform-upstream-ca serverAuth DNS:nginx
+chmod 644 "$WP5_PKI/platform-upstream-ca.crt"
 # Gameplay listener leaf: the dev root the client trusts is this self-signed end-entity certificate.
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 -subj "/CN=localhost" \
   -addext "subjectAltName=DNS:localhost" -addext "basicConstraints=critical,CA:FALSE" \
