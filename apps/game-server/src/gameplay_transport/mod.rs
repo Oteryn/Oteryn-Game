@@ -2173,7 +2173,9 @@ fn operator_event(line: &str) {
 
 /// MAP-CUTOVER-1b: domain 17 of the bundle World `movement_cells` carry, at `actor`'s current
 /// position in `runtime`; `None` on a fixture World or when the actor has no current position.
-/// The overlay stays empty (§1.2) and the reset epoch is 0 until MAP-CUTOVER-1c.
+/// The overlay stays empty (§1.2) and the reset epoch is 0 until MAP-CUTOVER-1c. The node
+/// itself reads the position under the runtime lock and updates after release.
+#[cfg(test)]
 fn bundle_world_map(
     runtime: &mut ChannelRuntimeV1,
     movement_cells: &NativeEntryMovementCells,
