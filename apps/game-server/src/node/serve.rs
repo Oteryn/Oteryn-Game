@@ -1413,10 +1413,11 @@ fn world_bundle_gate(
 }
 
 /// MAP-CUTOVER-1b: boots the checked bundle's World against the active generation's Item
-/// definitions (§1.6): a palette Item key's reference is 1 + its index among the generation's
-/// Item keys in ascending byte order, and its solidity, `blocks_projectile` and pickup
-/// eligibility are the generation's own; a fact the generation does not state blocks and is not
-/// pickupable.
+/// definitions (§1.6): a palette Item key's reference is the generation's pinned Item definition
+/// index entry for that key at its content revision (MAP-ITEM-REF-1), and its solidity,
+/// `blocks_projectile` and pickup eligibility are the generation's own; a fact the generation
+/// does not state blocks and is not pickupable. A generation without an Item key set names no
+/// Item, so a bundle with any Item fails closed at boot.
 fn boot_bundle_world(
     checked: crate::map::boot::CheckedBundle,
     world: WorldId,
@@ -1425,35 +1426,18 @@ fn boot_bundle_world(
     gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> Result<crate::map::boot::BundleWorld, BootError> {
     use crate::content::{DefinitionFamily, ReferenceDefinitionKind, ReferenceItemField};
-    let mut keys: Vec<&crate::content::ReferenceDefinition> = content
-        .definitions
-        .iter()
-        .filter(|definition| definition.definition.family() == DefinitionFamily::Item)
-        .collect();
-    keys.sort_unstable_by(|a, b| {
-        a.definition
-            .key()
-            .as_str()
-            .as_bytes()
-            .cmp(b.definition.key().as_str().as_bytes())
-    });
-    keys.dedup_by(|a, b| a.definition.key() == b.definition.key());
+    let index = gameplay.and_then(|state| state.item_index());
+    let definitions: std::collections::HashMap<&str, &crate::content::ReferenceDefinition> =
+        content
+            .definitions
+            .iter()
+            .filter(|definition| definition.definition.family() == DefinitionFamily::Item)
+            .map(|definition| (definition.definition.key().as_str(), definition))
+            .collect();
     let item = |key: &str| {
-        let found = keys
-            .binary_search_by(|definition| {
-                definition
-                    .definition
-                    .key()
-                    .as_str()
-                    .as_bytes()
-                    .cmp(key.as_bytes())
-            })
-            .ok()?;
-        let definition = keys[found];
-        let reference = u32::try_from(found)
-            .ok()
-            .and_then(|id| id.checked_add(1))
-            .and_then(std::num::NonZeroU32::new)?;
+        let definition = *definitions.get(key)?;
+        let revision = definition.definition.revision().as_str();
+        let reference = index?.definition_ref("Item", key, revision)?;
         let pickupable = match &definition.kind {
             ReferenceDefinitionKind::Item(item) => matches!(
                 &item.semantics.physical,
@@ -1463,7 +1447,7 @@ fn boot_bundle_world(
             _ => false,
         };
         let attributes = gameplay
-            .and_then(|state| state.item_policy(key, definition.definition.revision().as_str()))
+            .and_then(|state| state.item_policy(key, revision))
             .map(|policy| &policy.record().attributes);
         Some(crate::map::facts::ItemDefinition {
             reference,

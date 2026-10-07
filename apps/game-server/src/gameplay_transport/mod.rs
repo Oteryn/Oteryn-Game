@@ -9,6 +9,7 @@ mod connection;
 mod container_view;
 pub(crate) mod fresh_evidence;
 mod item_move;
+mod item_ref_admission;
 mod item_view;
 mod monk_save;
 mod monster_ai_cycle;
@@ -2071,12 +2072,13 @@ fn bundle_world_map(
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// MAP-CUTOVER-1b: a bundle World offers the production set plus capability 18 and admits
-    /// only a client that selects 18; a fixture World offers the production set.
+    /// only a client that selects 18. MAP-ITEM-REF-1: any other World offers capability 4 (once
+    /// Part B sets its gate) only when the active generation pins a non-empty Item key set.
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
         if self.bundle_map().is_some() {
             capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
         } else {
-            capabilities::PRODUCTION_OFFERED_CAPABILITIES
+            item_ref_admission::offered_capabilities(self.active_generation)
         }
     }
 
@@ -2104,6 +2106,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         Some(Self::observation(&runtime, snapshot.position()))
+    }
+
+
+    /// MAP-ITEM-REF-1: domain 9 from the durable backpack, each definition through the Channel
+    /// content pin's Item definition index.
+    async fn observe_character_inventory(
+        &self,
+        _actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<item_view::InventoryItems> {
+        item_ref_admission::observe_character_inventory(self, game_session_id).await
     }
 
     /// VIS-3: the Channel's players and live creatures, read in one owner work item. Corpses are

@@ -93,6 +93,28 @@ pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
     set
 };
 
+/// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
+/// requires 6, for a generation that pins a non-empty Item key set. Not yet offered: Part B
+/// offers it together with the composed corpse observation, item target and corpse take.
+pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
+    },
+    OfferedCapability {
+        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_PACED_MOVEMENT_V1,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_ATTACK_V1,
+        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
+    },
+];
+
 /// The command types and state domains each registered capability owns
 /// (`PROTOCOL_OTERYN_V1_REGISTRY.json`; a test keeps them equal). Capability 6
 /// `WORLD_SPATIAL_ENTITIES` is not listed: it extends the core domain 1 with payload type 2, which

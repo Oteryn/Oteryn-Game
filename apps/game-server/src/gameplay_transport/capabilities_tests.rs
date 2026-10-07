@@ -5,7 +5,9 @@ use super::super::connection::{
     FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS, ResumeAttempt,
     SessionContinuity, StepOutcome, admit_frame, serve_admitted,
 };
-use super::super::item_view::{InventoryItems, ItemKey, ItemTargetObservation, ViewItem};
+use super::super::item_view::{
+    InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity, SessionItemView, ViewItem,
+};
 use super::super::world_object::{
     SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
 };
@@ -258,6 +260,19 @@ fn the_production_set_selects_only_capabilities_6_13_and_17_whatever_the_client_
             .as_ref()
             .map(SelectedCapabilities::as_slice),
         Some(&[6, 13, 17][..])
+    );
+    // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
+    assert_eq!(
+        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
+            .as_ref()
+            .map(SelectedCapabilities::as_slice),
+        Some(&[4, 6, 13, 17][..])
+    );
+    assert_eq!(
+        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
+            .as_ref()
+            .map(SelectedCapabilities::as_slice),
+        Some(&[13][..])
     );
     Ok(())
 }
@@ -698,6 +713,48 @@ fn a_fixture_world_offers_exactly_the_production_set_and_never_18() -> Result<()
         let selected = accepted_selection(&frames)?;
         assert!(!selected.contains(&CAPABILITY_WORLD_MAP_VIEW_V1));
         admitted.map_err(|end| format!("{end:?}"))?;
+        Ok(())
+    })
+}
+
+#[test]
+fn item_view_admission_selecting_4_sends_domain_9_and_without_4_none() -> Result<(), Box<dyn Error>>
+{
+    run(async {
+        // MAP-ITEM-REF-1: the Item view offered set selects 4 with its required 6, and the
+        // admitted session is sent domain 9; a session admitted without 4 is sent none. The
+        // fixture serves no combat state, so the client here does not support 17.
+        let authority = NegotiatingAuthority::new(Some(ITEM_VIEW_OFFERED_CAPABILITIES));
+        let inventory = authority
+            .observe_character_inventory(
+                ExactActorRef::transport_fixture(
+                    WorldId::decode(&WORLD)?,
+                    ChannelId::decode(&CHANNEL)?,
+                ),
+                GameSessionId::decode(&SESSION)?,
+            )
+            .await
+            .ok_or("inventory")?;
+        let [nine, _] = SessionItemView::resume(ItemViewContinuity::default())
+            .snapshot(inventory, None)
+            .map_err(|error| format!("{error:?}"))?;
+        let carries_nine = |frames: &[Vec<u8>]| {
+            frames
+                .concat()
+                .windows(nine.payload.len())
+                .any(|w| w == nine.payload)
+        };
+        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [4, 6, 13]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        let (_, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(carries_nine(&frames));
+        let (admitted, frames) = admit(&authority, &bootstrap(&[6, 13])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [6, 13]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        let (_, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(!frames.is_empty());
+        assert!(!carries_nine(&frames));
         Ok(())
     })
 }
