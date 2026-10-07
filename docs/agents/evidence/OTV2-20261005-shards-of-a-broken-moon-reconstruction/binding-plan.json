@@ -917,6 +917,39 @@
         },
         "uniqueness": "1 of 1012 static skeleton placements matches both required topology facts: icicles to the southwest and an ice wall immediately north.",
         "independent_visual": "ItemLevel escape screenshot places the skeleton southeast of the indicated icicles, matching this OTBM cluster."
+      },
+      "lit_torch_successor": {
+        "canonical_key": "oteryn:item.tibia.i54610",
+        "identity_state": "PROOF_COMPLETE_SUCCESSOR_NOT_ADMITTED",
+        "donor": {
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "item_id": 54610,
+          "name": "lit torch",
+          "primarytype": "light sources",
+          "weight": 500
+        },
+        "client_15_30": {
+          "take": true,
+          "usable": true,
+          "multiuse": true,
+          "light": true,
+          "light_brightness": 7,
+          "light_color": 206,
+          "clothes_slot": 10,
+          "cyclopedia_type": 54610
+        },
+        "existing_quest_item_admission_validation": {
+          "stackable": false,
+          "capacity": null,
+          "charges": null,
+          "holds": []
+        },
+        "timed_lifecycle": "UNPROVEN_NOT_REQUIRED",
+        "forbidden": [
+          "alias to i34017",
+          "rewrite frozen epoch2 hold",
+          "invent decay/duration/54609 transform"
+        ]
       }
     },
     {
@@ -1047,6 +1080,39 @@
         "overlays": [
           6926,
           6928
+        ]
+      },
+      "lit_torch_successor": {
+        "canonical_key": "oteryn:item.tibia.i54610",
+        "identity_state": "PROOF_COMPLETE_SUCCESSOR_NOT_ADMITTED",
+        "donor": {
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "item_id": 54610,
+          "name": "lit torch",
+          "primarytype": "light sources",
+          "weight": 500
+        },
+        "client_15_30": {
+          "take": true,
+          "usable": true,
+          "multiuse": true,
+          "light": true,
+          "light_brightness": 7,
+          "light_color": 206,
+          "clothes_slot": 10,
+          "cyclopedia_type": 54610
+        },
+        "existing_quest_item_admission_validation": {
+          "stackable": false,
+          "capacity": null,
+          "charges": null,
+          "holds": []
+        },
+        "timed_lifecycle": "UNPROVEN_NOT_REQUIRED",
+        "forbidden": [
+          "alias to i34017",
+          "rewrite frozen epoch2 hold",
+          "invent decay/duration/54609 transform"
         ]
       }
     },
@@ -1732,6 +1798,11 @@
           "tame runtime"
         ]
       }
+    },
+    "item_successor_candidate": {
+      "evidence_file": "docs/agents/evidence/OTV2-20261005-shards-of-a-broken-moon-reconstruction/item-successor-admission-candidate.json",
+      "lit_torch_54610": "PROOF_COMPLETE_NOT_ADMITTED",
+      "skewered_fish_54638": "EXISTING_IDENTITY_PROMOTION_VALIDATED_NOT_ADMITTED"
     }
   }
 }
