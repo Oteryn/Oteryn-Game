@@ -1934,6 +1934,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         result
     }
 
+    /// MAP-CUTOVER-1b: the map view of a bundle World, which its movement cells carry; `None`
+    /// on a fixture World.
+    fn bundle_map(&self) -> Option<&crate::map::boot::BundleMap> {
+        match self.movement_cells.index() {
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
+                Some(index.map())
+            }
+            _ => None,
+        }
+    }
+
     fn observation(
         runtime: &ChannelRuntimeV1,
         position: crate::foundation::MovementLocalPosition,
@@ -2167,7 +2178,109 @@ fn operator_event(line: &str) {
     eprintln!("oteryn-game-server {line}");
 }
 
+/// MAP-CUTOVER-1b: domain 17 of the bundle World `movement_cells` carry, at `actor`'s current
+/// position in `runtime`; `None` on a fixture World or when the actor has no current position.
+/// The overlay stays empty (§1.2) and the reset epoch is 0 until MAP-CUTOVER-1c. The node
+/// itself reads the position under the runtime lock and updates after release.
+#[cfg(test)]
+fn bundle_world_map(
+    runtime: &mut ChannelRuntimeV1,
+    movement_cells: &NativeEntryMovementCells,
+    actor: ExactActorRef,
+    view: &mut world_map::SessionMapView,
+    items: &mut item_view::SessionItemView,
+) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
+    let at = bundle_map_position(runtime, movement_cells, actor)?;
+    Some(at.update(view, items))
+}
+
+/// What domain 17 needs from the Channel runtime: the bundle map, the actor's native position
+/// and the content generation. It is read under the runtime lock; the view update that composes
+/// and encodes the window runs after the lock is released (§1.4).
+struct BundleMapPosition<'a> {
+    map: &'a crate::map::boot::BundleMap,
+    at: ActorPosition,
+    content_generation: [u8; 32],
+}
+
+impl BundleMapPosition<'_> {
+    fn update(
+        &self,
+        view: &mut world_map::SessionMapView,
+        items: &mut item_view::SessionItemView,
+    ) -> Result<Option<world_map::MapUpdate>, world_map::MapViewError> {
+        let source = world_map::MapViewSource {
+            overlay: &self.map.overlay,
+            facts: &self.map.facts,
+            content_generation: self.content_generation,
+            reset_epoch: 0,
+        };
+        view.update(items, &source, self.at)
+    }
+}
+
+/// The bundle map and `actor`'s current native position in `runtime`; `None` on a fixture World
+/// or when the actor has no current position.
+fn bundle_map_position<'a>(
+    runtime: &mut ChannelRuntimeV1,
+    movement_cells: &'a NativeEntryMovementCells,
+    actor: ExactActorRef,
+) -> Option<BundleMapPosition<'a>> {
+    let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) =
+        movement_cells.index()
+    else {
+        return None;
+    };
+    let snapshot = runtime.borrow_movement_position().read(actor).ok()?;
+    if snapshot.context() != runtime.pinned_movement_context() {
+        return None;
+    }
+    let position = snapshot.position();
+    // The runtime floor is legacy `z`; the native floor is `-z`.
+    Some(BundleMapPosition {
+        map: index.map(),
+        at: ActorPosition {
+            x: position.x,
+            y: position.y,
+            floor: position.floor.checked_neg()?,
+        },
+        content_generation: runtime.content_pin().client_artifact_digest(),
+    })
+}
+
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18 and admits
+    /// only a client that selects 18. MAP-ITEM-REF-1: any other World offers capability 4 (once
+    /// Part B sets its gate) only when the active generation pins a non-empty Item key set.
+    fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
+        if self.bundle_map().is_some() {
+            capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES
+        } else {
+            item_ref_admission::offered_capabilities(self.active_generation)
+        }
+    }
+
+    fn required_capability(&self) -> Option<u32> {
+        self.bundle_map()
+            .map(|_| oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1)
+    }
+
+    /// MAP-CUTOVER-1b: domain 17 of a bundle World at the actor's current position. The position
+    /// is read under the runtime lock `step` takes (§1.4); the window is composed and encoded
+    /// after the lock is released.
+    async fn observe_world_map(
+        &self,
+        actor: ExactActorRef,
+        view: &mut world_map::SessionMapView,
+        items: &mut item_view::SessionItemView,
+    ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
+        let at = {
+            let mut runtime = self.runtime.lock().await;
+            bundle_map_position(&mut runtime, self.movement_cells, actor)?
+        };
+        Some(at.update(view, items))
+    }
+
     async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
         let mut runtime = self.runtime.lock().await;
         let snapshot = runtime.borrow_movement_position().read(actor).ok()?;
@@ -2175,12 +2288,6 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         Some(Self::observation(&runtime, snapshot.position()))
-    }
-
-    /// MAP-ITEM-REF-1: capability 4 (once Part B sets its gate) only when the active generation
-    /// pins a non-empty Item key set.
-    fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
-        item_ref_admission::offered_capabilities(self.active_generation)
     }
 
     /// MAP-ITEM-REF-1: domain 9 from the durable backpack, each definition through the Channel
@@ -2241,6 +2348,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if self
             .qualified_room
             .is_some_and(|room| room.source_world().is_some())
+            || self.bundle_map().is_some()
         {
             return None;
         }
@@ -2297,6 +2405,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let blocking = if self
             .qualified_room
             .is_some_and(|room| room.source_world().is_some())
+            || self.bundle_map().is_some()
         {
             std::collections::BTreeSet::new()
         } else {
@@ -2305,8 +2414,23 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
-        let outcome = self
-            .step_with_field_ingress(
+        // MAP-CUTOVER-1b (§1.2): a bundle World has no field items; a step reads only the bundle
+        // collision index.
+        let outcome = if self.bundle_map().is_some() {
+            states.step_with_creature_field_contact(
+                &mut runtime,
+                self.movement_cells,
+                actor,
+                session,
+                now,
+                cardinal,
+                &blocking,
+                equipped_speed_delta,
+                None,
+                None,
+            )
+        } else {
+            self.step_with_field_ingress(
                 &permit,
                 &mut runtime,
                 &mut states,
@@ -2317,7 +2441,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 &blocking,
                 equipped_speed_delta,
             )
-            .await;
+            .await
+        };
         match outcome {
             Ok((snapshot, duration)) => (
                 StepOutcome {
@@ -2362,6 +2487,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if self
             .qualified_room
             .is_some_and(|room| room.source_world().is_some())
+            || self.bundle_map().is_some()
         {
             return UseOutcome::rejected();
         }

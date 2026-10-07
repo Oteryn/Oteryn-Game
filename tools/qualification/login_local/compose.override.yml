@@ -34,7 +34,7 @@ services:
       start_period: ${LOGIN_LOCAL_DB_START_PERIOD:-300s}
   nginx:
     ports:
-      - "127.0.0.1:${LL_PLATFORM_HTTP_PORT:?set LL_PLATFORM_HTTP_PORT}:8080"
+      - "${LL_PLATFORM_PUBLISH:?set LL_PLATFORM_PUBLISH}"
     volumes:
       - ${GAME_SOURCE}/tools/qualification/login_local/nginx.conf:/etc/nginx/nginx.conf:ro
   gateway:
@@ -44,10 +44,19 @@ services:
       nginx:
         condition: service_started
     environment:
-      OTERYN_PLATFORM_BASE_URL: http://nginx:8080
+      # The gateway accepts http only for loopback hosts: it reaches nginx over TLS (SAN nginx), trusting
+      # only the per-run test CA that run.sh generates.
+      OTERYN_PLATFORM_BASE_URL: https://nginx:8444
+      SSL_CERT_FILE: /run/login-local/platform-upstream-ca.crt
+      # Go on Linux still loads the default certificate directories next to SSL_CERT_FILE; an empty
+      # SSL_CERT_DIR makes the per-run CA the only trusted root.
+      SSL_CERT_DIR: /run/login-local/no-system-roots
       OTERYN_PLATFORM_SERVICE_TOKEN: ${LL_SERVICE_TOKEN:?set LL_SERVICE_TOKEN}
       GATEWAY_LISTEN_ADDR: ":8080"
       GATEWAY_NATIVE_LOGIN_ENABLED: "true"
+    volumes:
+      - ${WP5_PKI:?set WP5_PKI}/platform-upstream-ca.crt:/run/login-local/platform-upstream-ca.crt:ro
+      - ${LL_NO_SYSTEM_ROOTS:?set LL_NO_SYSTEM_ROOTS}:/run/login-local/no-system-roots:ro
     ports:
-      - "127.0.0.1:${LL_GATEWAY_PORT:?set LL_GATEWAY_PORT}:8080"
+      - "${LL_GATEWAY_PUBLISH:?set LL_GATEWAY_PUBLISH}"
     networks: [qualification]

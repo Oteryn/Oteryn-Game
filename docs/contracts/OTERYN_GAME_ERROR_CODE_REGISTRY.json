@@ -208,7 +208,7 @@
       "owner": "apps/game-server::node::serve::BootError",
       "contract": "MAP-CUTOVER-1a",
       "hint": "Boot exit 21: the world bundle is valid but serving it needs client capability 18; no listener opened.",
-      "status": "ACTIVE"
+      "status": "RETIRED"
     },
     {
       "code": 2014,
