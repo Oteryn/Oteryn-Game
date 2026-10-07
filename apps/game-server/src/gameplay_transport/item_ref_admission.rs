@@ -157,7 +157,7 @@ pub(super) async fn observe_item_target(
     };
     let Some(entries) = admission
         .root
-        .read_corpse_contents(admission.character, corpse)
+        .read_corpse_contents(admission.character, corpse.item.item_instance_id)
         .await
         .ok()?
     else {
