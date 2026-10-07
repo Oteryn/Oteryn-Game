@@ -1038,56 +1038,57 @@
         "wall_name": "ice wall"
       },
       "position_evidence": {
-        "room_anchor": {
+        "pinned_world": "zimbadev/crystalserver@00ce02a5:data-global/world/world.otbm",
+        "tile_stack": [
+          {
+            "id": 6869,
+            "name": "ice"
+          },
+          {
+            "id": 4728,
+            "name": "swamp"
+          },
+          {
+            "id": 6374,
+            "name": "debris"
+          },
+          {
+            "id": 6729,
+            "name": "ice wall"
+          },
+          {
+            "id": 6926,
+            "name": "ice"
+          },
+          {
+            "id": 6928,
+            "name": "ice"
+          }
+        ],
+        "relation_to_skeleton": {
+          "dx": 0,
+          "dy": -1,
           "skeleton": {
             "x": 31920,
             "y": 31360,
             "z": 9
           }
         },
-        "video": "Fire/crumbling effect is centered directly north of the skeleton/player axis.",
-        "otbm": {
-          "exact_tile": {
-            "x": 31920,
-            "y": 31359,
-            "z": 9,
-            "stack": [
-              6869,
-              4728,
-              6374,
-              6729,
-              6926,
-              6928
-            ]
-          },
-          "west": {
+        "video": "22:47–22:51 fire and subsequent crumbling effects occur directly north of the skeleton/player axis; side candidates do not match the observed center target.",
+        "rejected_side_tiles": [
+          {
             "x": 31919,
             "y": 31359,
             "z": 9,
-            "stack": [
-              6869,
-              4728,
-              6378,
-              6729,
-              6926
-            ]
+            "reason": "left-side debris variant"
           },
-          "east": {
+          {
             "x": 31921,
             "y": 31359,
             "z": 9,
-            "stack": [
-              6869,
-              4728,
-              6379,
-              7150,
-              6737,
-              6926,
-              6928
-            ]
-          },
-          "conclusion": "center tile is the direct-north straight-wall/debris target; east tile is a corner-wall variant"
-        }
+            "reason": "different wall orientation/stack"
+          }
+        ]
       },
       "world_stack": {
         "ground_or_base": [
@@ -1173,56 +1174,57 @@
         "wall_name": "ice wall"
       },
       "position_evidence": {
-        "room_anchor": {
+        "pinned_world": "zimbadev/crystalserver@00ce02a5:data-global/world/world.otbm",
+        "tile_stack": [
+          {
+            "id": 6869,
+            "name": "ice"
+          },
+          {
+            "id": 4728,
+            "name": "swamp"
+          },
+          {
+            "id": 6374,
+            "name": "debris"
+          },
+          {
+            "id": 6729,
+            "name": "ice wall"
+          },
+          {
+            "id": 6926,
+            "name": "ice"
+          },
+          {
+            "id": 6928,
+            "name": "ice"
+          }
+        ],
+        "relation_to_skeleton": {
+          "dx": 0,
+          "dy": -1,
           "skeleton": {
             "x": 31920,
             "y": 31360,
             "z": 9
           }
         },
-        "video": "Fire/crumbling effect is centered directly north of the skeleton/player axis.",
-        "otbm": {
-          "exact_tile": {
-            "x": 31920,
-            "y": 31359,
-            "z": 9,
-            "stack": [
-              6869,
-              4728,
-              6374,
-              6729,
-              6926,
-              6928
-            ]
-          },
-          "west": {
+        "video": "22:47–22:51 fire and subsequent crumbling effects occur directly north of the skeleton/player axis; side candidates do not match the observed center target.",
+        "rejected_side_tiles": [
+          {
             "x": 31919,
             "y": 31359,
             "z": 9,
-            "stack": [
-              6869,
-              4728,
-              6378,
-              6729,
-              6926
-            ]
+            "reason": "left-side debris variant"
           },
-          "east": {
+          {
             "x": 31921,
             "y": 31359,
             "z": 9,
-            "stack": [
-              6869,
-              4728,
-              6379,
-              7150,
-              6737,
-              6926,
-              6928
-            ]
-          },
-          "conclusion": "center tile is the direct-north straight-wall/debris target; east tile is a corner-wall variant"
-        }
+            "reason": "different wall orientation/stack"
+          }
+        ]
       },
       "world_stack": {
         "ground_or_base": [
@@ -1260,7 +1262,7 @@
         },
         "north_wall_y": 31359
       },
-      "position_status": "HIGH_CONFIDENCE_DERIVED_OPENING_TILE",
+      "position_status": "EXACT_OPENING_TILE",
       "position": {
         "x": 31920,
         "y": 31359,
