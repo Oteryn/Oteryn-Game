@@ -349,7 +349,7 @@ fn the_seal_finds_an_append_after_the_last_take() {
     // Another principal's entry does not.
     assert_eq!(queue.append(pending(3, 51, 3, 0)), AppendOutcome::Queued);
     assert_eq!(queue.append(pending(4, 50, 4, 0)), AppendOutcome::Queued);
-    assert_eq!(queue.seal(principal), Seal::Sealed);
+    assert!(matches!(queue.seal(principal), Seal::Sealed(_)));
     assert_eq!(
         queue.parked(principal),
         Some((ReleasePhase::Sealed, vec![]))
@@ -432,7 +432,10 @@ fn a_park_before_the_commit_point_aborts_and_one_after_it_is_committing() {
         let principal = (session(50), 3);
         // Sealed by an earlier pass; a kill whose D132 winner is the releasing session is
         // parked before the commit point, with its winner unchanged.
-        assert_eq!(attack.lock().await.kills().seal(principal), Seal::Sealed);
+        assert!(matches!(
+            attack.lock().await.kills().seal(principal),
+            Seal::Sealed(_)
+        ));
         assert_eq!(
             attack.lock().await.kills().append(pending(2, 50, 3, 1)),
             AppendOutcome::Parked(ReleasePhase::Sealed)
@@ -454,7 +457,7 @@ fn a_park_before_the_commit_point_aborts_and_one_after_it_is_committing() {
             Some((ReleasePhase::Committing, vec![ReleasePhase::Committing]))
         );
         // A committing park does not abort a second commit point.
-        assert!(kills.kills().commit_point(principal));
+        assert!(kills.kills().commit_point(mark));
         // Committed: the late kill is `principal_gone`, credited to no one, and nothing for
         // the released identity is left queued or parked.
         mark.settle(kills.kills(), ReleaseEnd::Committed);
@@ -540,6 +543,74 @@ fn concurrent_releases_share_the_mark_until_the_last_settles() {
     });
 }
 
+/// Codex 4202610727: a hold whose mark another holder's abort cleared acts on nothing, even
+/// under the principal's next mark.
+#[test]
+fn a_hold_of_a_cleared_mark_does_not_touch_the_next_mark() {
+    let queue = KillSettlementQueue::default();
+    let principal = (session(50), 3);
+    let sealed = |seal| match seal {
+        Seal::Sealed(hold) => hold,
+        other => panic!("expected a seal, found {other:?}"),
+    };
+    // A grace expiry and a mismatch release seal the same mark.
+    let first = sealed(queue.seal(principal));
+    let second = sealed(queue.seal(principal));
+    assert_eq!(queue.holders(principal), Some(2));
+    // A kill parks before the commit point: the first commit point aborts and clears the mark.
+    assert_eq!(
+        queue.append(pending(2, 50, 3, 1)),
+        AppendOutcome::Parked(ReleasePhase::Sealed)
+    );
+    assert!(!queue.commit_point(first));
+    assert_eq!(queue.parked(principal), None);
+    // The first release drains the entry and seals again: a new mark of the principal.
+    taken(queue.take(session(50), 3)).finish();
+    let replacement = sealed(queue.seal(principal));
+    assert_eq!(queue.holders(principal), Some(1));
+    // The second release's hold commits nothing and settles nothing on the new mark.
+    assert!(!queue.commit_point(second));
+    second.settle(&queue, ReleaseEnd::Retryable);
+    second.settle(&queue, ReleaseEnd::Committed);
+    second.reconcile(&queue, ReleaseEnd::Retryable);
+    second.forget(&queue);
+    assert_eq!(
+        queue.parked(principal),
+        Some((ReleasePhase::Sealed, vec![]))
+    );
+    assert_eq!(queue.hold_slots(), vec![replacement.slot]);
+    // The replacement goes through, and at quiescence no hold is counted.
+    assert!(queue.commit_point(replacement));
+    replacement.settle(&queue, ReleaseEnd::Committed);
+    replacement.forget(&queue);
+    assert_eq!(queue.hold_slots(), Vec::<u64>::new());
+    assert_eq!(queue.parked(principal), None);
+}
+
+/// Every hold counted on a mark is a live hold: settles and stale holds leave none behind.
+#[test]
+fn the_holder_count_matches_the_live_holds_at_quiescence() {
+    run(async {
+        for end in [
+            ReleaseEnd::Retryable,
+            ReleaseEnd::Unknown,
+            ReleaseEnd::Committed,
+        ] {
+            let attack = AsyncMutex::new(ChannelAttackStates::default());
+            let settler = final_settles(&attack, 0);
+            let expiry = mark(release_handshake(&attack, session(50), 3, &settler).await);
+            let mismatch = mark(release_handshake(&attack, session(50), 3, &settler).await);
+            assert_eq!(attack.lock().await.kills().hold_slots().len(), 2);
+            expiry.settle(attack.lock().await.kills(), end);
+            // A hold settled twice is not counted off twice.
+            expiry.settle(attack.lock().await.kills(), end);
+            assert_eq!(attack.lock().await.kills().hold_slots().len(), 1);
+            mismatch.settle(attack.lock().await.kills(), end);
+            assert_eq!(attack.lock().await.kills().hold_slots(), Vec::<u64>::new());
+        }
+    });
+}
+
 #[test]
 fn a_committed_release_is_not_undone_by_a_retryable_one() {
     run(async {
@@ -608,7 +679,7 @@ fn an_entry_whose_principal_has_no_live_session_is_freed() {
     let queue = KillSettlementQueue::default();
     queue.append(pending(3, 50, 3, 0));
     queue.append(pending(4, 51, 2, 0));
-    assert_eq!(queue.seal((session(50), 2)), Seal::Sealed);
+    assert!(matches!(queue.seal((session(50), 2)), Seal::Sealed(_)));
     queue.append(pending(5, 50, 2, 0));
     // Lease generation 3 is live: generation 2's parked entry and its mark are gone.
     queue.discard_gone(session(50), Some(3));
@@ -627,7 +698,7 @@ fn an_entry_whose_principal_has_no_live_session_is_freed() {
 #[test]
 fn parked_entries_count_toward_killrw_rl_01() {
     let queue = KillSettlementQueue::default();
-    assert_eq!(queue.seal((session(50), 3)), Seal::Sealed);
+    assert!(matches!(queue.seal((session(50), 3)), Seal::Sealed(_)));
     for channel in 2..(2 + KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX as u8) {
         assert_eq!(
             queue.append(pending(channel, 50, 3, 0)),

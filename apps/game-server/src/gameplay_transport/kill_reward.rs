@@ -70,12 +70,15 @@ pub(crate) enum ReleasePhase {
 
 #[derive(Debug)]
 struct ReleasingMark {
+    /// This mark's identity: a mark cleared and created again for the principal is another
+    /// mark, and a [`KillReleaseMark`] of the first one acts on nothing.
+    id: u64,
     principal: Principal,
     phase: ReleasePhase,
-    /// Releases holding the mark between their seal and their step 5. A grace expiry and a
+    /// The hold slot of each release between its seal and its step 5. A grace expiry and a
     /// mismatch release of one lost epoch may hold it together; one ending retryable leaves it to
     /// the other. An unknown outcome gives up its hold and keeps the mark.
-    holders: usize,
+    holders: Vec<u64>,
     /// A holder's transaction ended the session.
     committed: bool,
     /// Entries appended for the marked principal, each with the phase at its park.
@@ -88,6 +91,8 @@ struct KillQueueState {
     in_flight: Vec<(CreatureDeathOccurrenceKey, Principal)>,
     reserved_loot_mints: usize,
     releasing: Vec<ReleasingMark>,
+    /// The last mark id or hold slot given out.
+    last_id: u64,
 }
 
 impl KillQueueState {
@@ -116,13 +121,26 @@ impl KillQueueState {
             .find(|mark| mark.principal == principal)
     }
 
-    /// Remove `principal`'s mark and give back its parked entries.
-    fn unmark(&mut self, principal: Principal) -> Vec<PendingKillSettlement> {
-        let Some(index) = self
+    fn next_id(&mut self) -> u64 {
+        self.last_id += 1;
+        self.last_id
+    }
+
+    /// The mark `hold` was sealed under, if it still exists.
+    fn held_mark(&mut self, hold: KillReleaseMark) -> Option<&mut ReleasingMark> {
+        let mark = self
             .releasing
-            .iter()
-            .position(|mark| mark.principal == principal)
-        else {
+            .iter_mut()
+            .find(|mark| mark.id == hold.mark && mark.principal == hold.principal);
+        if mark.is_none() {
+            stale_hold(hold);
+        }
+        mark
+    }
+
+    /// Remove mark `id` and give back its parked entries.
+    fn unmark(&mut self, id: u64) -> Vec<PendingKillSettlement> {
+        let Some(index) = self.releasing.iter().position(|mark| mark.id == id) else {
             return Vec::new();
         };
         let mark = self.releasing.swap_remove(index);
@@ -178,8 +196,8 @@ impl KillSettlementQueue {
     }
 
     /// §1.3 step 2, one critical section: when the queue holds no queued or in-flight entry of
-    /// `principal`, mark it `releasing` (phase `sealed`). A mark kept from an unknown outcome
-    /// keeps its phase and parked entries.
+    /// `principal`, mark it `releasing` (phase `sealed`) and give the caller a hold slot on the
+    /// mark. A mark kept from an unknown outcome keeps its phase and parked entries.
     pub(crate) fn seal(&self, principal: Principal) -> Seal {
         let mut state = self.state();
         if state.in_flight.iter().any(|(_, held)| *held == principal) {
@@ -188,27 +206,42 @@ impl KillSettlementQueue {
         if state.queued.iter().any(|e| principal_of(e) == principal) {
             return Seal::Queued;
         }
-        if let Some(mark) = state.mark(principal) {
-            mark.holders += 1;
+        let slot = state.next_id();
+        let mark = if let Some(mark) = state.mark(principal) {
+            mark.holders.push(slot);
+            mark.id
         } else {
+            let id = state.next_id();
             state.releasing.push(ReleasingMark {
+                id,
                 principal,
                 phase: ReleasePhase::Sealed,
-                holders: 1,
+                holders: vec![slot],
                 committed: false,
                 parked: Vec::new(),
             });
-        }
-        Seal::Sealed
+            id
+        };
+        Seal::Sealed(KillReleaseMark {
+            principal,
+            mark,
+            slot,
+        })
     }
 
     /// §1.3 step 4, one critical section just before the transaction is sent: an entry parked
     /// in phase `sealed` aborts the release (the mark is cleared and the parked entries are
     /// queued, `false`); otherwise the mark moves to `committing` (`true`). No holder has sent
-    /// its transaction while a `sealed` park exists, so an abort strands none of them.
-    pub(crate) fn commit_point(&self, principal: Principal) -> bool {
+    /// its transaction while a `sealed` park exists, so an abort strands none of them. A hold
+    /// whose mark another holder's abort cleared commits nothing, even under a newer mark of
+    /// the principal.
+    pub(crate) fn commit_point(&self, hold: KillReleaseMark) -> bool {
         let mut state = self.state();
-        let Some(mark) = state.mark(principal) else {
+        let Some(mark) = state
+            .releasing
+            .iter_mut()
+            .find(|mark| mark.id == hold.mark && mark.holders.contains(&hold.slot))
+        else {
             return false;
         };
         if mark
@@ -219,7 +252,7 @@ impl KillSettlementQueue {
             mark.phase = ReleasePhase::Committing;
             return true;
         }
-        let parked = state.unmark(principal);
+        let parked = state.unmark(hold.mark);
         state.queued.extend(parked);
         false
     }
@@ -227,13 +260,15 @@ impl KillSettlementQueue {
     /// §1.3 step 5, Committed: the session ended at the phase change, so every parked entry is
     /// a kill after it ended and is freed with `principal_gone`. The mark stays until
     /// [`KillSettlementQueue::forget_released`]. `held`: the caller gives up its hold.
-    pub(crate) fn release_committed(&self, principal: Principal, held: bool) {
+    fn release_committed(&self, hold: KillReleaseMark, held: bool) {
         let parked = {
             let mut state = self.state();
             state
-                .mark(principal)
+                .held_mark(hold)
                 .map(|mark| {
-                    mark.holders = mark.holders.saturating_sub(usize::from(held));
+                    if held {
+                        give_back(mark, hold);
+                    }
                     mark.committed = true;
                     std::mem::take(&mut mark.parked)
                 })
@@ -245,8 +280,8 @@ impl KillSettlementQueue {
     }
 
     /// The released actor slot is removed: drop the mark, freeing any late park.
-    pub(crate) fn forget_released(&self, principal: Principal) {
-        let parked = self.state().unmark(principal);
+    fn forget_released(&self, hold: KillReleaseMark) {
+        let parked = self.state().unmark(hold.mark);
         for entry in parked {
             refuse("principal_gone", &entry.creature);
         }
@@ -255,23 +290,25 @@ impl KillSettlementQueue {
     /// §1.3 step 5, retryable failure: once no other release holds the mark and none ended the
     /// session, clear it and queue the parked entries for the resumed session. `held`: the
     /// caller gives up its hold.
-    pub(crate) fn release_failed(&self, principal: Principal, held: bool) {
+    fn release_failed(&self, hold: KillReleaseMark, held: bool) {
         let mut state = self.state();
-        let Some(mark) = state.mark(principal) else {
+        let Some(mark) = state.held_mark(hold) else {
             return;
         };
-        mark.holders = mark.holders.saturating_sub(usize::from(held));
-        if mark.holders == 0 && !mark.committed {
-            let parked = state.unmark(principal);
+        if held {
+            give_back(mark, hold);
+        }
+        if mark.holders.is_empty() && !mark.committed {
+            let parked = state.unmark(hold.mark);
             state.queued.extend(parked);
         }
     }
 
     /// §1.3 step 5, unknown outcome: give up the hold; the mark and its parked entries stay for
     /// the retry.
-    pub(crate) fn release_unknown(&self, principal: Principal) {
-        if let Some(mark) = self.state().mark(principal) {
-            mark.holders = mark.holders.saturating_sub(1);
+    fn release_unknown(&self, hold: KillReleaseMark) {
+        if let Some(mark) = self.state().held_mark(hold) {
+            give_back(mark, hold);
         }
     }
 
@@ -279,14 +316,16 @@ impl KillSettlementQueue {
     /// outcome left with no holder is cleared as retryable, and its parked entries are queued.
     pub(crate) fn release_orphaned(&self, session: GameSessionId) {
         let mut state = self.state();
-        let orphaned: Vec<Principal> = state
+        let orphaned: Vec<u64> = state
             .releasing
             .iter()
-            .filter(|mark| mark.principal.0 == session && mark.holders == 0 && !mark.committed)
-            .map(|mark| mark.principal)
+            .filter(|mark| {
+                mark.principal.0 == session && mark.holders.is_empty() && !mark.committed
+            })
+            .map(|mark| mark.id)
             .collect();
-        for principal in orphaned {
-            let parked = state.unmark(principal);
+        for id in orphaned {
+            let parked = state.unmark(id);
             state.queued.extend(parked);
         }
     }
@@ -366,7 +405,20 @@ impl KillSettlementQueue {
     /// The number of releases holding `principal`'s mark.
     #[cfg(test)]
     pub(crate) fn holders(&self, principal: Principal) -> Option<usize> {
-        self.state().mark(principal).map(|mark| mark.holders)
+        self.state().mark(principal).map(|mark| mark.holders.len())
+    }
+
+    /// Every hold slot still counted on any mark.
+    #[cfg(test)]
+    pub(crate) fn hold_slots(&self) -> Vec<u64> {
+        let state = self.state();
+        let mut slots: Vec<u64> = state
+            .releasing
+            .iter()
+            .flat_map(|mark| mark.holders.iter().copied())
+            .collect();
+        slots.sort_unstable();
+        slots
     }
 
     /// The parked entries' phases under `principal`'s mark, and the mark's phase.
@@ -442,6 +494,25 @@ impl Drop for TakenKillSettlement {
 pub(crate) struct KillSink<'a> {
     pub(crate) queue: &'a KillSettlementQueue,
     pub(crate) rewards: &'a CreatureRewardTable,
+}
+
+/// Give back `hold`'s slot on its mark; a slot already given back is not counted again.
+fn give_back(mark: &mut ReleasingMark, hold: KillReleaseMark) {
+    if let Some(index) = mark.holders.iter().position(|slot| *slot == hold.slot) {
+        mark.holders.swap_remove(index);
+    } else {
+        stale_hold(hold);
+    }
+}
+
+/// A hold acted on a mark it no longer holds: the mark was cleared (an abort, a resumed epoch,
+/// a gone principal) or the slot was given back. Nothing changes.
+fn stale_hold(hold: KillReleaseMark) {
+    debug_assert!(hold.mark != 0, "a hold always names a mark");
+    operator_event(&format!(
+        "kill_release_stale_hold mark={} slot={}",
+        hold.mark, hold.slot
+    ));
 }
 
 fn refuse(reason: &str, creature: &str) {
@@ -620,8 +691,8 @@ pub(crate) async fn drain_session_kills(
 /// The result of [`KillSettlementQueue::seal`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Seal {
-    /// The principal is marked `releasing`.
-    Sealed,
+    /// The principal is marked `releasing`, and the caller holds the mark.
+    Sealed(KillReleaseMark),
     /// An entry of the principal was appended after the drain's last take.
     Queued,
     /// Another drain is settling an entry of the principal.
@@ -650,10 +721,14 @@ pub(crate) enum ReleaseEnd {
     Unknown,
 }
 
-/// A principal marked `committing` by [`release_handshake`].
+/// One release's hold on a principal's mark: the mark's identity and the release's own slot,
+/// from [`KillSettlementQueue::seal`]. Every later step presents it, and acts only on that mark
+/// and slot.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct KillReleaseMark {
     principal: Principal,
+    mark: u64,
+    slot: u64,
 }
 
 impl KillReleaseMark {
@@ -661,24 +736,24 @@ impl KillReleaseMark {
     /// once per [`release_handshake`] that returned the mark.
     pub(crate) fn settle(self, queue: &KillSettlementQueue, end: ReleaseEnd) {
         match end {
-            ReleaseEnd::Committed => queue.release_committed(self.principal, true),
-            ReleaseEnd::Retryable => queue.release_failed(self.principal, true),
-            ReleaseEnd::Unknown => queue.release_unknown(self.principal),
+            ReleaseEnd::Committed => queue.release_committed(self, true),
+            ReleaseEnd::Retryable => queue.release_failed(self, true),
+            ReleaseEnd::Unknown => queue.release_unknown(self),
         }
     }
 
     /// Step 5 from a durable reconcile after the hold was given up to an unknown outcome.
     pub(crate) fn reconcile(self, queue: &KillSettlementQueue, end: ReleaseEnd) {
         match end {
-            ReleaseEnd::Committed => queue.release_committed(self.principal, false),
-            ReleaseEnd::Retryable => queue.release_failed(self.principal, false),
+            ReleaseEnd::Committed => queue.release_committed(self, false),
+            ReleaseEnd::Retryable => queue.release_failed(self, false),
             ReleaseEnd::Unknown => {}
         }
     }
 
     /// The released actor slot is removed.
     pub(crate) fn forget(self, queue: &KillSettlementQueue) {
-        queue.forget_released(self.principal);
+        queue.forget_released(self);
     }
 }
 
@@ -700,13 +775,13 @@ pub(crate) async fn release_handshake(
         {
             return KillRelease::Deferred;
         }
-        match attack.lock().await.kills().seal(principal) {
-            Seal::Sealed => {}
+        let hold = match attack.lock().await.kills().seal(principal) {
+            Seal::Sealed(hold) => hold,
             Seal::Queued => continue,
             Seal::InFlight => return KillRelease::Deferred,
-        }
-        if attack.lock().await.kills().commit_point(principal) {
-            return KillRelease::Send(Some(KillReleaseMark { principal }));
+        };
+        if attack.lock().await.kills().commit_point(hold) {
+            return KillRelease::Send(Some(hold));
         }
     }
 }
