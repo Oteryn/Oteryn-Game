@@ -170,10 +170,7 @@ impl World {
                         let Some(palette) = map.palette.get(item.palette as usize) else {
                             continue;
                         };
-                        let mut placement = Placement::at(x, y, -i32::from(START_FLOOR));
-                        // The encoded value is a stack count or, for fluids, the subtype.
-                        placement.count = u32::from(item.attrs.count.unwrap_or(1));
-                        placement.sub_type = u32::from(item.attrs.count.unwrap_or(0));
+                        let placement = placement(x, y, item.attrs.count);
                         // An item the pinned appearances cannot draw is skipped, not fatal.
                         let Ok(resolved) =
                             index.resolve(&sheets, palette.source_item_id, placement)
@@ -316,6 +313,26 @@ fn builtin_rgba() -> Vec<u8> {
     rgba
 }
 
+/// A start-floor placement; the encoded value is a stack count or, for fluids, the subtype.
+fn placement(x: i32, y: i32, encoded: Option<u8>) -> Placement {
+    let mut placement = Placement::at(x, y, -i32::from(START_FLOOR));
+    placement.count = u32::from(encoded.unwrap_or(1));
+    placement.sub_type = u32::from(encoded.unwrap_or(0));
+    placement
+}
+
+#[cfg(test)]
+impl World {
+    /// The builtin world with the given map tiles.
+    pub(crate) fn builtin_with(
+        tiles: impl IntoIterator<Item = ((i32, i32), MapTile)>,
+    ) -> Result<Self, BatchError> {
+        let mut world = Self::builtin()?;
+        world.tiles.extend(tiles);
+        Ok(world)
+    }
+}
+
 fn read_capped(path: &Path, max: u64) -> Result<Vec<u8>, String> {
     let file = std::fs::File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
     let mut bytes = Vec::new();
@@ -430,6 +447,32 @@ mod tests {
                 .iter()
                 .all(|draw| draw.cell >= BUILTIN_CELLS as u16)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn an_encoded_fluid_value_selects_the_fluid_pattern() -> Result<(), String> {
+        let root = repo();
+        let store = AssetStore::open(
+            &root.join("content/assets/files"),
+            &root.join("imports/official/client-assets/15.30/manifest.json"),
+        )
+        .map_err(|e| e.to_string())?;
+        let catalog = Catalog::load(&store).map_err(|e| e.to_string())?;
+        let index = AppearanceIndex::load(&store, &catalog).map_err(|e| e.to_string())?;
+        let sheets = SpriteSheets::new(store, catalog);
+        let (x, y) = START;
+        assert_eq!(placement(x, y, Some(8)).sub_type, 8);
+        assert_eq!(placement(x, y, None).count, 1);
+        // Fluid appearance 2524 is on the start area with encoded values 1 and 8.
+        let mut resolved = Vec::new();
+        for encoded in [1, 8] {
+            let entry = index
+                .resolve(&sheets, 2524, placement(x, y, Some(encoded)))
+                .map_err(|e| e.to_string())?;
+            resolved.push(entry.cells.iter().map(|c| c.sprite_id).collect::<Vec<_>>());
+        }
+        assert_ne!(resolved[0], resolved[1]);
         Ok(())
     }
 

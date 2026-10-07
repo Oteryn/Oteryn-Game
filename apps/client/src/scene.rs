@@ -222,6 +222,26 @@ mod tests {
     }
 
     #[test]
+    fn a_displaced_sprite_two_tiles_past_the_view_is_drawn() -> Result<(), BatchError> {
+        use crate::world::MapTile;
+        // Column 16 and row 12 of the view, displaced back into its last column and row.
+        let reach = |x, y| {
+            let tile = MapTile {
+                under: vec![Draw {
+                    cell: MARKER_CELL,
+                    offset: [-40, -40],
+                }],
+                ..MapTile::default()
+            };
+            ((x, y), tile)
+        };
+        let world = Arc::new(World::builtin_with([reach(9, 0), reach(0, 7)])?);
+        let scene = Scene::centered_on(world, TileCoord::new(0, 0), TileCoord::new(0, 0), &[])?;
+        assert_eq!(scene.sprites().len(), 3);
+        Ok(())
+    }
+
+    #[test]
     fn the_start_area_draws_real_sprites_around_the_player() -> Result<(), String> {
         let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let world = Arc::new(World::load(&root)?);
