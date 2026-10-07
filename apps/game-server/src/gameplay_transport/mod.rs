@@ -2050,8 +2050,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         item_ref_admission::observe_character_inventory(self, game_session_id).await
     }
 
-    /// VIS-3: the Channel's players and live creatures, read in one owner work item. Corpses are
-    /// not shown until their item binding lands (D3-7).
+    /// VIS-3: the Channel's players and live creatures, read in one owner work item, and
+    /// (MAP-ITEM-REF-1 Part B) its bound corpses as objects in the same read.
     async fn observe_visible_entities(
         &self,
         actor: ExactActorRef,
@@ -2080,6 +2080,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             },
             revision: entry.revision,
         })
+        .chain(item_ref_admission::visible_corpses(
+            &runtime,
+            self.active_generation,
+        ))
         .collect();
         Some(world_spatial::ChannelEntities {
             content_generation: runtime.content_pin().client_artifact_digest(),
@@ -2924,6 +2928,29 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 crate::foundation::CommandRef::new(command.game_session_id, command_id),
             )
             .await
+    }
+
+    /// MAP-ITEM-REF-1 Part B: a bound corpse's durable contents for `USE` (domain 11).
+    async fn observe_item_target(
+        &self,
+        actor: ExactActorRef,
+        target: item_view::ItemKey,
+    ) -> Option<item_view::ItemTargetObservation> {
+        item_ref_admission::observe_item_target(self, actor, target).await
+    }
+
+    /// MAP-ITEM-REF-1 Part B: command 9's corpse-entry TRANSFER into the main backpack.
+    async fn take_corpse_entry(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        corpse: item_view::ItemKey,
+        entry: item_view::ItemKey,
+    ) -> Result<
+        crate::durability::item_transfer::ItemTransferOutcome,
+        crate::combat_pickup::GroundPickupError,
+    > {
+        item_ref_admission::take_corpse_entry(self, actor, command, corpse, entry).await
     }
 }
 
