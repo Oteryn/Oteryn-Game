@@ -19,7 +19,6 @@ members = [
     "crates/input-platform",
     "crates/renderer",
     "crates/client-assets",
-    "crates/placeholder-assets",
     "crates/synthetic-assets",
     "crates/test-support",
     "crates/world-bundle",

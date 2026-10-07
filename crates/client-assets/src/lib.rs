@@ -12,12 +12,12 @@ mod sheets;
 mod store;
 
 pub use appearance::{
-    AppearanceIndex, DrawCell, MAX_APPEARANCE_ID, MAX_ENTRY_CELLS, Placement, ResolvedEntry,
+    AppearanceIndex, DrawCell, Hook, MAX_APPEARANCE_ID, MAX_ENTRY_CELLS, Placement, ResolvedEntry,
 };
 pub use catalog::{Catalog, SpriteLayout, SpriteSheetDescriptor};
 pub use error::AssetError;
 pub use sheets::{CELL_PX, CELL_RGBA_BYTES, MAX_RESIDENT_SHEETS, SpriteSheets};
 pub use store::{
     AssetStore, MAX_APPEARANCES_BYTES, MAX_CATALOG_BYTES, MAX_COMPRESSED_SHEET_BYTES,
-    MAX_DECOMPRESSED_SHEET_BYTES, MAX_MANIFEST_BYTES,
+    MAX_DECOMPRESSED_SHEET_BYTES, MAX_MANIFEST_BYTES, text_sha256,
 };
