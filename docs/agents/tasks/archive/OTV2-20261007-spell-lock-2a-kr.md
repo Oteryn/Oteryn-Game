@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: claude/spell-lock-2a-20261005
 branch: claude/spell-lock-2a-kr-20261007
-pr: null
+pr: 1920
 base_sha: f1e68380751713c2d49636e976315626d2433e7e
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
@@ -48,5 +48,12 @@ No permit is held across a channel await other than the guarded writer's own wor
 
 ## Validation
 
-`cargo fmt --check`, `cargo clippy -p oteryn-game-server --all-targets -D warnings` and the
-kill-reward and item-move unit tests on the branch head; CI `game-gate` on the PR.
+- `cargo fmt --all -- --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server --lib gameplay_transport::`: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+
+## Closeout
+
+- PR: 1920, merged into `claude/spell-lock-2a-20261005` (#1907); reaches `main` with #1907.
