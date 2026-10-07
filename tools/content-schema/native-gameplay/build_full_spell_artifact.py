@@ -31,7 +31,6 @@ LIMITS = {'catalog': 32 * 1024**2, 'source_selection': 256 * 1024,
           'item_keys': 8 * 1024**2}
 ITEM_DEFINITIONS = ROOT / 'content/items/definitions'
 ITEM_KEYS = NATIVE / 'item-keys.json'
-SPELLS_MANIFEST = ROOT / 'content/spells.manifest.json'
 
 
 def digest(raw: bytes) -> str:
@@ -65,16 +64,12 @@ def item_keys(definitions: Path = ITEM_DEFINITIONS) -> bytes:
     return ('{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[\n' + rows + '\n]}\n').encode('utf-8')
 
 
-def refresh_item_keys(output: Path = ITEM_KEYS, manifest: Path = SPELLS_MANIFEST) -> str:
-    """Writes the Item key set and pins its digest in the production native gameplay manifest."""
+def refresh_item_keys(output: Path = ITEM_KEYS) -> str:
+    """Writes the Item key set. It is pinned only beside a progression pin (OTNGP07, D879)."""
     raw = item_keys()
     if len(raw) > LIMITS['item_keys']:
         raise ValueError('Native input exceeds bounded provider size: item_keys')
     output.write_bytes(raw)
-    _, pinned = read(manifest)
-    pinned['item_keys'] = {'path': Path('..', output.relative_to(ROOT)).as_posix(), 'sha256': digest(raw)}
-    manifest.write_bytes((json.dumps(pinned, ensure_ascii=False, sort_keys=True,
-                                     separators=(',', ':')) + '\n').encode('utf-8'))
     return digest(raw)
 
 
@@ -385,8 +380,7 @@ def build(args) -> dict:
         for name in (*missing_proof['outputs'], 'missing-companion-source-proof.json'):
             (output/name).write_bytes((missing_companions/name).read_bytes())
     payloads = {'catalog': catalog_raw, 'source_selection': selection_raw,
-                'creature_profiles': encoded(creatures), 'presentation_profiles': encoded(presentations),
-                'item_keys': item_keys()}
+                'creature_profiles': encoded(creatures), 'presentation_profiles': encoded(presentations)}
     providers = {'item_profiles': args.items, 'spell_appearances': args.appearances,
                  'build_training': args.training, 'familiar_config': args.familiar_config,
                  'familiar_defenses': args.familiar_defenses, 'wheel_profile': args.wheel,
@@ -396,6 +390,8 @@ def build(args) -> dict:
         if path:
             raw, _ = read(path)
             payloads[key] = raw
+    if 'progression' in payloads:
+        payloads['item_keys'] = item_keys()  # OTNGP07: the Item key set rides only with progression
     appearance_source = getattr(args, 'appearance_source', None)
     if appearance_source:
         import build_spell_appearances
@@ -477,8 +473,7 @@ def main():
         print(json.dumps({'item_keys_sha256': refresh_item_keys()}))
         return
     parser = argparse.ArgumentParser(description=__doc__,
-                                     epilog='--refresh-item-keys alone regenerates item-keys.json and its pin '
-                                            'in content/spells.manifest.json')
+                                     epilog='--refresh-item-keys alone regenerates item-keys.json')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--catalog', type=Path, default=SAMPLES / 'executable-spell-catalog.json')
     parser.add_argument('--selection', type=Path, default=SAMPLES / 'executable-spell-source-selection.json')

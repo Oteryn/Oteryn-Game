@@ -31,6 +31,8 @@ pub(crate) const MAGIC_V4: &[u8; 8] = b"OTNGP04\0";
 pub(crate) const MAGIC_V5: &[u8; 8] = b"OTNGP05\0";
 /// V5 plus the tenth `progression` section (PROGRESSION-CONTENT-1).
 pub(crate) const MAGIC_V6: &[u8; 8] = b"OTNGP06\0";
+/// V6 plus the eleventh Item key set section (MAP-ITEM-REF-1, D879).
+pub(crate) const MAGIC_V7: &[u8; 8] = b"OTNGP07\0";
 pub(crate) const MAX_ARTIFACT_BYTES: usize = 88 * 1024 * 1024;
 pub(crate) fn is_envelope(bytes: &[u8]) -> bool {
     bytes.starts_with(MAGIC)
@@ -39,6 +41,7 @@ pub(crate) fn is_envelope(bytes: &[u8]) -> bool {
         || bytes.starts_with(MAGIC_V4)
         || bytes.starts_with(MAGIC_V5)
         || bytes.starts_with(MAGIC_V6)
+        || bytes.starts_with(MAGIC_V7)
 }
 const MAX_CATALOG: usize = 32 * 1024 * 1024;
 const MAX_SELECTION: usize = 256 * 1024;
@@ -82,7 +85,8 @@ pub(crate) struct NativeGameplayInput {
     pub(crate) source_world: Option<PinnedGameplayBytes>,
     /// Canonical Character progression section; selects the V6 envelope.
     pub(crate) progression: Option<PinnedGameplayBytes>,
-    /// The Item key set (`OTERYN_NATIVE_ITEM_KEYS/v1`), an optional trailing V5/V6 section.
+    /// The Item key set (`OTERYN_NATIVE_ITEM_KEYS/v1`); requires progression and selects the V7
+    /// envelope.
     pub(crate) item_keys: Option<PinnedGameplayBytes>,
 }
 #[derive(Debug, Clone)]
@@ -588,7 +592,7 @@ impl NativeGameplayInput {
             || (manifest.schema.ends_with("/v5") != manifest.familiar_config.is_some())
             || (manifest.wheel_profile.is_some() && !manifest.schema.ends_with("/v5"))
             || (manifest.progression.is_some() && !manifest.schema.ends_with("/v5"))
-            || (manifest.item_keys.is_some() && !manifest.schema.ends_with("/v5"))
+            || (manifest.item_keys.is_some() && manifest.progression.is_none())
             || (manifest.native_map_profile != NativeGameplayMapProfile::AcceptedEntryR1
                 && !manifest.schema.ends_with("/v5"))
             || (manifest.native_map_profile != NativeGameplayMapProfile::AcceptedEntryR1
@@ -753,12 +757,14 @@ pub(crate) fn compile_native_gameplay(
         qualify(progression, MAX_PROGRESSION_SECTION_BYTES)?;
     }
     if let Some(keys) = &input.item_keys {
-        if input.familiar_config.is_none() {
-            return Err(invalid("native gameplay Item key set requires explicit v5"));
+        if input.progression.is_none() {
+            return Err(invalid("native gameplay Item key set requires progression"));
         }
         qualify(keys, MAX_PROFILES)?;
     }
-    let mut bytes = if input.progression.is_some() {
+    let mut bytes = if input.item_keys.is_some() {
+        MAGIC_V7
+    } else if input.progression.is_some() {
         MAGIC_V6
     } else if input.familiar_config.is_some() {
         MAGIC_V5
@@ -842,42 +848,14 @@ pub(crate) struct DecodedNativeGameplay<'a> {
     pub(crate) baseline: &'a [u8],
     pub(crate) state: NativeGameplayState,
 }
-/// One `[u32 BE length][sha256][bytes]` section at `cursor`: the section and the cursor after it.
-fn section_at(bytes: &[u8], cursor: usize, limit: usize) -> Result<(&[u8], usize), ContentError> {
-    let header_end = cursor
-        .checked_add(36)
-        .ok_or(ContentError::InvalidSectionBounds)?;
-    let header = bytes
-        .get(cursor..header_end)
-        .ok_or(ContentError::InvalidSectionBounds)?;
-    let len = u32::from_be_bytes(
-        header[..4]
-            .try_into()
-            .map_err(|_| ContentError::InvalidSectionBounds)?,
-    ) as usize;
-    if len == 0 || len > limit {
-        return Err(invalid("native gameplay section bounds"));
-    }
-    let end = header_end
-        .checked_add(len)
-        .ok_or(ContentError::InvalidSectionBounds)?;
-    let section = bytes
-        .get(header_end..end)
-        .ok_or(ContentError::InvalidSectionBounds)?;
-    if sha256(section).as_slice() != &header[4..] {
-        return Err(ContentError::RevisionMismatch(
-            "native gameplay section hash",
-        ));
-    }
-    Ok((section, end))
-}
 pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
     bounded(bytes, MAX_ARTIFACT_BYTES)?;
     if !is_envelope(bytes) {
         return Err(invalid("native gameplay discriminator"));
     }
     let mut cursor = MAGIC.len();
-    let is_v6 = bytes.starts_with(MAGIC_V6);
+    let is_v7 = bytes.starts_with(MAGIC_V7);
+    let is_v6 = bytes.starts_with(MAGIC_V6) || is_v7;
     let is_v5 = bytes.starts_with(MAGIC_V5) || is_v6;
     if !is_v5 && bytes.len() > 80 * 1024 * 1024 {
         return Err(invalid("native gameplay v4 bounds"));
@@ -894,7 +872,9 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
     if !is_v2 && bytes.len() > 56 * 1024 * 1024 {
         return Err(invalid("native gameplay v1 bounds"));
     }
-    let mut sections = Vec::with_capacity(if is_v6 {
+    let mut sections = Vec::with_capacity(if is_v7 {
+        11
+    } else if is_v6 {
         10
     } else if is_v5 {
         9
@@ -914,21 +894,36 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
         .chain(is_v4.then_some(MAX_PROFILES))
         .chain(is_v5.then_some(128 * 1024))
         .chain(is_v6.then_some(MAX_PROGRESSION_SECTION_BYTES))
+        .chain(is_v7.then_some(MAX_PROFILES))
     {
-        let (section, end) = section_at(bytes, cursor, limit)?;
+        let header_end = cursor
+            .checked_add(36)
+            .ok_or(ContentError::InvalidSectionBounds)?;
+        let header = bytes
+            .get(cursor..header_end)
+            .ok_or(ContentError::InvalidSectionBounds)?;
+        let len = u32::from_be_bytes(
+            header[..4]
+                .try_into()
+                .map_err(|_| ContentError::InvalidSectionBounds)?,
+        ) as usize;
+        if len == 0 || len > limit {
+            return Err(invalid("native gameplay section bounds"));
+        }
+        let end = header_end
+            .checked_add(len)
+            .ok_or(ContentError::InvalidSectionBounds)?;
+        let section = bytes
+            .get(header_end..end)
+            .ok_or(ContentError::InvalidSectionBounds)?;
+        if sha256(section).as_slice() != &header[4..] {
+            return Err(ContentError::RevisionMismatch(
+                "native gameplay section hash",
+            ));
+        }
         sections.push(section);
         cursor = end;
     }
-    // MAP-ITEM-REF-1: an optional trailing Item key set after the last V5/V6 section.
-    let item_index = if is_v5 && cursor < bytes.len() {
-        let (section, end) = section_at(bytes, cursor, MAX_PROFILES)?;
-        cursor = end;
-        Some(Arc::new(super::item_ref::ItemDefinitionIndex::decode(
-            section,
-        )?))
-    } else {
-        None
-    };
     if cursor != bytes.len() || is_envelope(sections[0]) {
         return Err(invalid("native gameplay trailing or nested bytes"));
     }
@@ -1190,6 +1185,13 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
     };
     let progression = if is_v6 {
         Some(Arc::new(CharacterProgressionContent::decode(sections[9])?))
+    } else {
+        None
+    };
+    let item_index = if is_v7 {
+        Some(Arc::new(super::item_ref::ItemDefinitionIndex::decode(
+            sections[10],
+        )?))
     } else {
         None
     };
@@ -2185,14 +2187,22 @@ pub(crate) mod tests {
         invalid_section.progression = Some(pinned(b"{}"));
         assert!(compile_native_gameplay(baseline.compiled(), &invalid_section).is_err());
     }
-    /// A controller with the V5 native gameplay generation activated at node boot, with
-    /// `item_keys` as its pinned Item key set section, if any.
+    /// The V6 input (with progression), plus `item_keys` as its Item key set, which selects V7.
+    fn v7_input(item_keys: Option<&[u8]>) -> NativeGameplayInput {
+        let mut supplied = v6_input();
+        supplied.progression = Some(pinned(
+            &super::super::character_progression_content::tests::section_bytes(),
+        ));
+        supplied.item_keys = item_keys.map(pinned);
+        supplied
+    }
+    /// A controller with the native gameplay generation activated at node boot: V7 with
+    /// `item_keys` as its pinned Item key set section, or V6 without one.
     pub(crate) fn activated_with_item_keys(
         item_keys: Option<&[u8]>,
     ) -> ContentActivationController {
         let world = test_source(1).unwrap().world_id;
-        let mut supplied = v6_input();
-        supplied.item_keys = item_keys.map(pinned);
+        let supplied = v7_input(item_keys);
         let room = qualify_native_entry_room_with_gameplay(world, &supplied).unwrap();
         let issuance = NativeEntryActivationIssuance {
             world_id: world,
@@ -2218,39 +2228,59 @@ pub(crate) mod tests {
         let baseline = qualify_native_entry_room(world).unwrap();
         let keys: &[u8] =
             include_bytes!("../../../../tools/content-schema/native-gameplay/item-keys.json");
-        let absent = compile_native_gameplay(baseline.compiled(), &v6_input()).unwrap();
+        let v6 = compile_native_gameplay(baseline.compiled(), &v7_input(None)).unwrap();
+        assert!(v6.server_artifact.starts_with(MAGIC_V6));
         assert!(
-            decode(&absent.server_artifact)
+            decode(&v6.server_artifact)
                 .unwrap()
                 .state
                 .item_index()
                 .is_none()
         );
-        let mut supplied = v6_input();
-        supplied.item_keys = Some(pinned(keys));
-        let compiled = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
-        assert_ne!(absent.server_digest(), compiled.server_digest());
+        let compiled = compile_native_gameplay(baseline.compiled(), &v7_input(Some(keys))).unwrap();
+        // V7 is the unchanged V6 layout plus exactly one framed eleventh section.
+        let mut framed = (keys.len() as u32).to_be_bytes().to_vec();
+        framed.extend_from_slice(&sha256(keys));
+        framed.extend_from_slice(keys);
+        let mut expected = MAGIC_V7.to_vec();
+        expected.extend_from_slice(&v6.server_artifact[MAGIC.len()..]);
+        expected.extend_from_slice(&framed);
+        assert_eq!(compiled.server_artifact, expected);
         let state = decode(&compiled.server_artifact).unwrap().state;
         assert_eq!(
             **state.item_index().unwrap(),
             super::super::item_ref::ItemDefinitionIndex::decode(keys).unwrap()
         );
+        assert!(state.progression().is_some());
+        // Older decoders' layouts stay closed: the section after a V5 or V6 artifact is
+        // trailing bytes, and a V7 artifact without it is truncated.
+        let v5 = compile_native_gameplay(baseline.compiled(), &v6_input()).unwrap();
+        for older in [&v5.server_artifact, &v6.server_artifact] {
+            let mut trailing = older.clone();
+            trailing.extend_from_slice(&framed);
+            assert!(decode(&trailing).is_err());
+        }
+        let mut truncated = MAGIC_V7.to_vec();
+        truncated.extend_from_slice(&v6.server_artifact[MAGIC.len()..]);
+        assert!(decode(&truncated).is_err());
         // A tampered section fails the section digest; a pin of other bytes fails qualification.
         let mut tampered = compiled.server_artifact.clone();
         let last = tampered.len() - 2;
         tampered[last] ^= 1;
         assert!(decode(&tampered).is_err());
-        let mut mispinned = v6_input();
+        let mut mispinned = v7_input(Some(keys));
         let mut pin = pinned(keys);
         pin.sha256 = hex(sha256(b"other bytes"));
         mispinned.item_keys = Some(pin);
         assert!(compile_native_gameplay(baseline.compiled(), &mispinned).is_err());
         // An empty key set decodes to an empty index (capability 4 stays unoffered).
-        let mut empty = v6_input();
-        empty.item_keys = Some(pinned(
-            br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[]}"#,
-        ));
-        let empty = compile_native_gameplay(baseline.compiled(), &empty).unwrap();
+        let empty = compile_native_gameplay(
+            baseline.compiled(),
+            &v7_input(Some(
+                br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[]}"#,
+            )),
+        )
+        .unwrap();
         assert!(
             decode(&empty.server_artifact)
                 .unwrap()
@@ -2259,15 +2289,20 @@ pub(crate) mod tests {
                 .unwrap()
                 .is_empty()
         );
-        // The key set requires the explicit V5 inputs, and an invalid set is refused.
-        let mut bare = input();
-        bare.item_keys = Some(pinned(keys));
-        assert!(compile_native_gameplay(baseline.compiled(), &bare).is_err());
-        let mut unordered = v6_input();
-        unordered.item_keys = Some(pinned(
-            br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.b","definition-r1"],["oteryn:item.a","definition-r1"]]}"#,
-        ));
-        assert!(compile_native_gameplay(baseline.compiled(), &unordered).is_err());
+        // The key set requires progression, and an invalid set is refused.
+        for mut without_progression in [input(), v6_input()] {
+            without_progression.item_keys = Some(pinned(keys));
+            assert!(compile_native_gameplay(baseline.compiled(), &without_progression).is_err());
+        }
+        assert!(
+            compile_native_gameplay(
+                baseline.compiled(),
+                &v7_input(Some(
+                    br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.b","definition-r1"],["oteryn:item.a","definition-r1"]]}"#,
+                )),
+            )
+            .is_err()
+        );
     }
     #[test]
     fn explicit_v5_familiar_config_is_qualified_and_every_table_binds_outer_digest() {
