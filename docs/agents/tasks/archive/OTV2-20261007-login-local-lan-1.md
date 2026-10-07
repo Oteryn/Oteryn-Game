@@ -4,12 +4,12 @@
 task_id: OTV2-20261007-login-local-lan-1
 title: LOGIN-LOCAL-LAN-1 NAS server plus PC client over the LAN
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/login-local-lan-1-20261007
 issue: 1622
-pr: null
+pr: 1919
 base_sha: c627dd43
 head_sha: null
 final_head_sha: null
@@ -20,7 +20,7 @@ updated_at: 2026-10-07T00:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/qualification/login_local/**
-  - docs/agents/tasks/active/OTV2-20261007-login-local-lan-1.md
+  - docs/agents/tasks/archive/OTV2-20261007-login-local-lan-1.md
 public_contracts: []
 depends_on: [OTV2-20261007-login-local-tls-1 (#1915, not merged)]
 blocks: []
@@ -62,3 +62,15 @@ Client code, Platform, other qualification directories, workflows, gate files.
 - `openssl verify -verify_ip` on an `IP:` SAN leaf: OK
 - full `run.sh`: NOT_APPLICABLE, pinned Platform checkout not available
 - `git diff --check`: pass
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+
+## Self-review
+
+Whole diff re-read; no keys, certificates or secrets committed; only owned paths changed.
+
+## PR and closeout
+
+- merge commit/result: squash merge of #1919 (pending; base #1915 merges first)
+- review: control plane requests review on the frozen head
+- decision: `tls_server_name` stays `localhost` (control plane)
