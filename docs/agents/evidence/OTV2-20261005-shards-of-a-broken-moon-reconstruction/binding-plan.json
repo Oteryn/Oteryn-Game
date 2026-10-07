@@ -971,7 +971,7 @@
         "timestamp_approx": "00:22:48.5",
         "observation": "After an earlier failed chisel attempt, use of the torch produces a clear fire effect on the north-wall crack."
       },
-      "position_status": "EXACT_VIDEO_TOPOLOGY_AND_OTBM_STACK",
+      "position_status": "EXACT_CROSS_VIDEO_OTBM",
       "position": {
         "x": 31920,
         "y": 31359,
@@ -986,9 +986,56 @@
         "wall_name": "ice wall"
       },
       "position_evidence": {
-        "video": "22:48–22:51 effect is centered on the tile directly north of the skeleton",
-        "topology": "candidate room anchor skeleton is 31920,31360,9",
-        "otbm": "31920,31359,9 uniquely carries debris 6374 + ice wall 6729 + dual ice overlays among the bounded three candidate tiles"
+        "room_anchor": {
+          "skeleton": {
+            "x": 31920,
+            "y": 31360,
+            "z": 9
+          }
+        },
+        "video": "Fire/crumbling effect is centered directly north of the skeleton/player axis.",
+        "otbm": {
+          "exact_tile": {
+            "x": 31920,
+            "y": 31359,
+            "z": 9,
+            "stack": [
+              6869,
+              4728,
+              6374,
+              6729,
+              6926,
+              6928
+            ]
+          },
+          "west": {
+            "x": 31919,
+            "y": 31359,
+            "z": 9,
+            "stack": [
+              6869,
+              4728,
+              6378,
+              6729,
+              6926
+            ]
+          },
+          "east": {
+            "x": 31921,
+            "y": 31359,
+            "z": 9,
+            "stack": [
+              6869,
+              4728,
+              6379,
+              7150,
+              6737,
+              6926,
+              6928
+            ]
+          },
+          "conclusion": "center tile is the direct-north straight-wall/debris target; east tile is a corner-wall variant"
+        }
       },
       "world_stack": {
         "ground_or_base": [
@@ -1026,7 +1073,7 @@
         "video_timestamp_approx": "00:22:48.0",
         "observed_message": "You try to pry open the crack in the wall with the icicle. But it doesn't work. You'll have to find a way to widen the crack first using some other method."
       },
-      "position_status": "EXACT_VIDEO_TOPOLOGY_AND_OTBM_STACK",
+      "position_status": "EXACT_CROSS_VIDEO_OTBM",
       "position": {
         "x": 31920,
         "y": 31359,
@@ -1041,9 +1088,56 @@
         "wall_name": "ice wall"
       },
       "position_evidence": {
-        "video": "22:48–22:51 effect is centered on the tile directly north of the skeleton",
-        "topology": "candidate room anchor skeleton is 31920,31360,9",
-        "otbm": "31920,31359,9 uniquely carries debris 6374 + ice wall 6729 + dual ice overlays among the bounded three candidate tiles"
+        "room_anchor": {
+          "skeleton": {
+            "x": 31920,
+            "y": 31360,
+            "z": 9
+          }
+        },
+        "video": "Fire/crumbling effect is centered directly north of the skeleton/player axis.",
+        "otbm": {
+          "exact_tile": {
+            "x": 31920,
+            "y": 31359,
+            "z": 9,
+            "stack": [
+              6869,
+              4728,
+              6374,
+              6729,
+              6926,
+              6928
+            ]
+          },
+          "west": {
+            "x": 31919,
+            "y": 31359,
+            "z": 9,
+            "stack": [
+              6869,
+              4728,
+              6378,
+              6729,
+              6926
+            ]
+          },
+          "east": {
+            "x": 31921,
+            "y": 31359,
+            "z": 9,
+            "stack": [
+              6869,
+              4728,
+              6379,
+              7150,
+              6737,
+              6926,
+              6928
+            ]
+          },
+          "conclusion": "center tile is the direct-north straight-wall/debris target; east tile is a corner-wall variant"
+        }
       },
       "world_stack": {
         "ground_or_base": [
