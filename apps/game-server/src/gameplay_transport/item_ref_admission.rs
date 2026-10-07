@@ -228,9 +228,9 @@ pub(super) async fn take_corpse_entry(
         let dead = admission.spell_states.lock().await.is_dead(actor);
         corpse_for_take(&runtime, dead, corpse, entry)?
     };
-    let fence = command
-        .item_fence
-        .ok_or(GroundPickupError::Transfer(ItemTransferError::AuthorityRejected))?;
+    let fence = command.item_fence.ok_or(GroundPickupError::Transfer(
+        ItemTransferError::AuthorityRejected,
+    ))?;
     let command_id = crate::foundation::CommandId::new(command.command_id)
         .map_err(|_| GroundPickupError::Transfer(ItemTransferError::InvalidInput))?;
     let contents = admission

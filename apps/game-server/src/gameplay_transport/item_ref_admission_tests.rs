@@ -5,7 +5,7 @@ use crate::content::native_gameplay::tests::activated_with_item_keys;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{BackpackEntry, CharacterBackpack, InventoryItem};
 use crate::foundation::{
-    ChannelContentPin, ChannelId, ChannelRuntimeV1, CarrierError, ExactActorRef,
+    CarrierError, ChannelContentPin, ChannelId, ChannelRuntimeV1, ExactActorRef,
     MovementLocalPosition, NodeId,
 };
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
@@ -28,7 +28,9 @@ fn production_offers_capability_4_with_a_non_empty_item_key_set() {
         offered_capabilities(with.active()),
         ITEM_VIEW_OFFERED_CAPABILITIES
     );
-    assert!(offered_ids(offered_capabilities(with.active())).contains(&CAPABILITY_ITEM_VIEW_MOVE_V1));
+    assert!(
+        offered_ids(offered_capabilities(with.active())).contains(&CAPABILITY_ITEM_VIEW_MOVE_V1)
+    );
     let without = activated_with_item_keys(None);
     assert_eq!(
         offered_capabilities(without.active()),
@@ -226,14 +228,24 @@ fn a_bound_corpse_is_a_domain_1_object_named_by_the_pinned_index() {
         (101, 100, 7)
     );
     assert_eq!(
-        runtime.bound_corpse(corpse.identity).unwrap().item.item_instance_id,
+        runtime
+            .bound_corpse(corpse.identity)
+            .unwrap()
+            .item
+            .item_instance_id,
         CORPSE_ITEM
     );
     assert!(visible_corpses(&runtime, None).is_empty());
 
     let (mut unmapped, creature) = runtime_with_corpse(generation, true);
     unmapped
-        .bind_corpse_item(creature, CORPSE_ITEM, "Item", "oteryn:item.unknown", "definition-r1")
+        .bind_corpse_item(
+            creature,
+            CORPSE_ITEM,
+            "Item",
+            "oteryn:item.unknown",
+            "definition-r1",
+        )
         .unwrap();
     assert!(visible_corpses(&unmapped, Some(generation)).is_empty());
 

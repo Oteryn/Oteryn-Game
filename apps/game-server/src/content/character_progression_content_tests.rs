@@ -284,14 +284,21 @@ fn committed_production_section_regenerates_from_the_rulesets() {
         "revisions": revisions,
     }))
     .unwrap();
-    let committed = std::fs::read(root.join("content/progression/native-section.json")).unwrap();
-    assert!(regenerated == committed, "native-section.json drifted from the rulesets");
+    let committed =
+        std::fs::read(root.join("rulesets/character/experience/native-section.json")).unwrap();
+    assert!(
+        regenerated == committed,
+        "native-section.json drifted from the rulesets"
+    );
     CharacterProgressionContent::decode(&committed).unwrap();
     let manifest = read("content/spells.manifest.json");
     let hex: String = sha256(&committed)
         .iter()
         .map(|b| format!("{b:02x}"))
         .collect();
-    assert_eq!(manifest["progression"]["path"], "progression/native-section.json");
+    assert_eq!(
+        manifest["progression"]["path"],
+        "../rulesets/character/experience/native-section.json"
+    );
     assert_eq!(manifest["progression"]["sha256"], hex.as_str());
 }

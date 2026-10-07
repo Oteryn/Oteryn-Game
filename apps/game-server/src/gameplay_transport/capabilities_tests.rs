@@ -132,7 +132,10 @@ fn the_production_offered_set_is_the_registry_offered_set_and_registered()
         .cloned()
         .collect();
     assert_eq!(pairs(PRODUCTION_OFFERED_CAPABILITIES), fallback);
-    for set in [PRODUCTION_OFFERED_CAPABILITIES, ITEM_VIEW_OFFERED_CAPABILITIES] {
+    for set in [
+        PRODUCTION_OFFERED_CAPABILITIES,
+        ITEM_VIEW_OFFERED_CAPABILITIES,
+    ] {
         assert!(set.windows(2).all(|pair| pair[0].id < pair[1].id));
         assert!(set.len() <= SELECTED_CAPACITY);
         for capability in set {
