@@ -283,7 +283,7 @@ impl PlayView {
         let before = self.facing;
         let direction = self.next_step();
         if self.facing != before {
-            self.rebuild()?;
+            self.scene.set_facing(self.facing)?;
         }
         Ok(direction)
     }
@@ -598,9 +598,14 @@ mod tests {
     #[test]
     fn sending_a_step_redraws_the_new_facing() -> Result<(), BatchError> {
         let mut view = view()?;
+        view.click(view.own())?;
+        let target = view.scene().target();
+        assert!(target.is_some());
         view.arrow(StepDir::North);
         assert_eq!(view.send_step()?, Some(StepDir::North));
         assert_eq!(view.scene().facing(), StepDir::North);
+        // Turning keeps the selection.
+        assert_eq!(view.scene().target(), target);
         Ok(())
     }
 

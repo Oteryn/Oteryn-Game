@@ -5,15 +5,23 @@
 //! whose positions are not map positions still draws the start area around its actor.
 
 use crate::input::{StepDir, TargetKind, Targetable, pick_target};
-use crate::world::{BLACK_CELL, Draw, MARKER_CELL, TARGET_CELL, World};
+use crate::world::{BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, TARGET_CELL, World};
 use oteryn_client_assets::CELL_PX;
-use oteryn_renderer::{AtlasImage, BatchError, SpriteBatch, TileBatch, TileCoord, TileView};
+use oteryn_renderer::{
+    AtlasImage, BatchError, MAX_BATCH_QUADS, SpriteBatch, TileBatch, TileCoord, TileView,
+};
 use std::sync::Arc;
 
 /// Sprite cells are 32 px; the scene draws them at 1.5x.
 pub const SCENE_TILE_PX: u32 = 48;
 pub const SCENE_COLUMNS: u32 = 15;
 pub const SCENE_ROWS: u32 = 11;
+
+// A full view (map cells, a marker per tile, the player and the target) fits one sprite batch.
+const _: () = assert!(
+    ((SCENE_COLUMNS + 2) * (SCENE_ROWS + 2)) as usize * (MAX_TILE_DRAWS + 1) + MAX_TILE_DRAWS
+        < MAX_BATCH_QUADS
+);
 
 #[derive(Debug, Clone)]
 pub struct Scene {
@@ -88,6 +96,12 @@ impl Scene {
         self.target = Some(picked);
         self.rebuild_sprites()?;
         Ok(Some(picked))
+    }
+
+    /// Turns the player to `facing`, keeping the target.
+    pub fn set_facing(&mut self, facing: StepDir) -> Result<(), BatchError> {
+        self.facing = facing;
+        self.rebuild_sprites()
     }
 
     pub fn clear_target(&mut self) -> Result<(), BatchError> {

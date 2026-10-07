@@ -54,6 +54,9 @@ const SECTOR_TILES: i32 = REGION_TILES / 8;
 /// The most tiles in the sectors the bounded window can overlap.
 #[allow(clippy::cast_sign_loss)]
 const WINDOW_TILES: usize = (((2 * RADIUS + 1) / SECTOR_TILES + 2) * SECTOR_TILES).pow(2) as usize;
+/// The most cells one tile, or the player, may draw, so a full view stays inside one
+/// sprite batch.
+pub const MAX_TILE_DRAWS: usize = 256;
 /// The client's cap on how far elevation lifts what is drawn above it.
 const MAX_ELEVATION: i32 = 24;
 
@@ -264,9 +267,15 @@ impl World {
                 }
             }
             tile.elevation = elevation;
+            within_draw_cap(tile.under.len() + tile.over.len())
+                .map_err(|error| format!("tile {position:?}: {error}"))?;
             tiles.insert(*position, tile);
         }
-        let player = player.map(|cells| cells.iter().filter_map(|cell| draw(cell, 0)).collect());
+        let player: [Vec<Draw>; 4] =
+            player.map(|cells| cells.iter().filter_map(|cell| draw(cell, 0)).collect());
+        for cells in &player {
+            within_draw_cap(cells.len()).map_err(|error| format!("outfit: {error}"))?;
+        }
         let atlas = atlas_from_cells(rgba, next).map_err(|error| format!("atlas: {error}"))?;
         Ok(Self {
             atlas,
@@ -384,6 +393,15 @@ fn read_capped(path: &Path, max: u64) -> Result<Vec<u8>, String> {
         return Err(format!("{}: larger than {max} bytes", path.display()));
     }
     Ok(bytes)
+}
+
+/// Refuses more than [`MAX_TILE_DRAWS`] cells, so the world falls back to the empty map
+/// instead of failing the renderer.
+fn within_draw_cap(draws: usize) -> Result<(), String> {
+    if draws > MAX_TILE_DRAWS {
+        return Err(format!("{draws} cells over the {MAX_TILE_DRAWS} cap"));
+    }
+    Ok(())
 }
 
 /// Decodes an `OTERYN_WORLD_REGION_B3/v1` file the way `world-bundle-compiler`'s `b3` reader
@@ -533,6 +551,12 @@ mod tests {
         let (lifts, elevation) = stack_lifts([(3, 16), (3, 16)]);
         assert_eq!(lifts, [16, MAX_ELEVATION]);
         assert_eq!(elevation, MAX_ELEVATION);
+    }
+
+    #[test]
+    fn a_tile_over_the_draw_cap_is_refused() {
+        assert!(within_draw_cap(MAX_TILE_DRAWS).is_ok());
+        assert!(within_draw_cap(MAX_TILE_DRAWS + 1).is_err());
     }
 
     #[test]
