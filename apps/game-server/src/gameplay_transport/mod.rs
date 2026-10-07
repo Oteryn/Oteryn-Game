@@ -84,6 +84,7 @@ use connection::{
     UseOutcome, admit_frame, serve_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
+use kill_reward::{KillRelease, ReleaseEnd};
 use oteryn_foundation::CancellationToken;
 mod condition_snapshots;
 use std::future::{Future, poll_fn};
@@ -313,7 +314,14 @@ async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
         loop {
             match authority.lose_control(lost.session, wait).await {
                 ControlLossResult::Recorded => {
-                    let _ = authority.expire_control_loss(lost.session).await;
+                    // KILL-REWARD-COMP-1 §1.3: an unknown expiry keeps its fence, kill mark and
+                    // parked kills, and runs again behind the backoff, unbounded in count.
+                    while authority.expire_control_loss(lost.session).await
+                        == GraceExpiryResult::Unknown
+                    {
+                        tokio::time::sleep(backoff).await;
+                        backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                    }
                     break;
                 }
                 ControlLossResult::ResumedHistory => {
@@ -1473,14 +1481,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
+            // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends; a deferred
+            // drain sends nothing, and the lifecycle retries the expiry behind its backoff.
+            let kills = match self.seal_kill_rewards(session).await {
+                KillRelease::Send(mark) => mark,
+                KillRelease::Deferred => return GraceExpiryResult::Unknown,
+            };
             let pause = match store.release_expired_loss(session, &account_id).await {
                 Ok(ExpiredLossReleaseV1::NotApplicable) => {
                     match self.settle_unended(&store, actor, hold).await {
-                        UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
+                        UnendedSettle::Lifted => {
+                            self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
+                            return GraceExpiryResult::NotApplicable;
+                        }
                         UnendedSettle::Terminal => {
-                            return self
+                            self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                            let result = self
                                 .retire_reconciled(controller.account_id, session, actor)
                                 .await;
+                            self.forget_kill_release(kills).await;
+                            return result;
                         }
                         UnendedSettle::Unknown => next_backoff(),
                     }
@@ -1488,23 +1508,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(ExpiredLossReleaseV1::NotExpired { deadline, now }) => {
                     match self.settle_unended(&store, actor, hold).await {
                         UnendedSettle::Lifted => {
+                            self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
                             Duration::from_secs(u64::try_from(deadline - now).unwrap_or(0))
                                 .saturating_add(EXPIRY_SLACK)
                         }
                         UnendedSettle::Terminal => {
-                            return self
+                            self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                            let result = self
                                 .retire_reconciled(controller.account_id, session, actor)
                                 .await;
+                            self.forget_kill_release(kills).await;
+                            return result;
                         }
                         UnendedSettle::Unknown => next_backoff(),
                     }
                 }
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
+                    self.settle_kill_release(kills, ReleaseEnd::Committed).await;
                     // PREM-1b: the session is over; its Premium pulls stop.
                     self.release_premium(controller.account_id, session);
-                    return self.retire(session, actor).await;
+                    let result = self.retire(session, actor).await;
+                    self.forget_kill_release(kills).await;
+                    return result;
                 }
-                // Unknown outcome: keep the fence; the retry reconciles from the durable row.
+                // Unknown outcome: keep the fence and the kill mark; the retry reconciles from
+                // the durable row.
                 Err(_) => next_backoff(),
             };
             tokio::time::sleep(pause).await;
@@ -1679,6 +1707,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
+        let mut kills = None;
         let mut backoff = RECONCILE_BACKOFF;
         let mut next_backoff = || {
             let pause = backoff;
@@ -1719,6 +1748,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
+            // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.
+            kills = match self.seal_kill_rewards(session).await {
+                KillRelease::Send(mark) => mark,
+                KillRelease::Deferred => {
+                    tokio::time::sleep(next_backoff()).await;
+                    continue;
+                }
+            };
             let outcome = match release {
                 TerminalRelease::Abandoned(transport) => {
                     store
@@ -1740,18 +1777,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(
                     ExpiredLossReleaseV1::NotApplicable | ExpiredLossReleaseV1::NotExpired { .. },
                 ) => match self.settle_unended(&store, actor, &mut hold).await {
-                    UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
+                    UnendedSettle::Lifted => {
+                        self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
+                        return GraceExpiryResult::NotApplicable;
+                    }
                     UnendedSettle::Terminal => {
-                        return self
+                        self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                        let result = self
                             .retire_reconciled(controller.account_id, session, actor)
                             .await;
+                        self.forget_kill_release(kills).await;
+                        return result;
                     }
                     UnendedSettle::Unknown => next_backoff(),
                 },
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
-                    return self.retire(session, actor).await;
+                    self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                    let result = self.retire(session, actor).await;
+                    self.forget_kill_release(kills).await;
+                    return result;
                 }
-                // Unknown outcome: keep the fence; the retry reconciles from the durable row.
+                // Unknown outcome: keep the fence and the kill mark; the retry reconciles from
+                // the durable row.
                 Err(_) => next_backoff(),
             };
             tokio::time::sleep(pause).await;
@@ -1763,10 +1810,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // retry can repeat the release.
             return match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Terminal => {
-                    self.retire_reconciled(controller.account_id, session, actor)
-                        .await
+                    self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                    let result = self
+                        .retire_reconciled(controller.account_id, session, actor)
+                        .await;
+                    self.forget_kill_release(kills).await;
+                    result
                 }
-                UnendedSettle::Lifted | UnendedSettle::Unknown => GraceExpiryResult::Unknown,
+                UnendedSettle::Lifted => {
+                    self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
+                    GraceExpiryResult::Unknown
+                }
+                UnendedSettle::Unknown => GraceExpiryResult::Unknown,
             };
         }
         GraceExpiryResult::Unknown
@@ -2626,11 +2681,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {
         let result = self.release_after_grace(admitted).await;
-        // Resumed, released or unprovable: this lost connection can no longer be resumed.
-        self.forget_lost(
-            admitted.game_session_id,
-            admitted.continuity.connection_generation,
-        );
+        // Resumed or released: this lost connection can no longer be resumed. An unknown result
+        // keeps it; the lifecycle runs the expiry again.
+        if result != GraceExpiryResult::Unknown {
+            self.forget_lost(
+                admitted.game_session_id,
+                admitted.continuity.connection_generation,
+            );
+        }
         result
     }
 
@@ -4456,6 +4514,60 @@ mod tests {
             self.expiring.fetch_add(1, Ordering::SeqCst);
             std::future::pending().await
         }
+    }
+
+    /// Records the loss; the first two grace expiries end unknown.
+    struct UnknownExpiryAuthority {
+        inner: GatedAuthority,
+        expiries: AtomicUsize,
+    }
+
+    impl FreshAdmissionAuthority for UnknownExpiryAuthority {
+        async fn admit(
+            &self,
+            attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            self.inner.admit(attempt).await
+        }
+        async fn lose_control(&self, _: AdmittedSession, _: Duration) -> ControlLossResult {
+            ControlLossResult::Recorded
+        }
+        async fn expire_control_loss(&self, _: AdmittedSession) -> GraceExpiryResult {
+            if self.expiries.fetch_add(1, Ordering::SeqCst) < 2 {
+                GraceExpiryResult::Unknown
+            } else {
+                GraceExpiryResult::Released
+            }
+        }
+    }
+
+    /// KILL-REWARD-COMP-1 §1.3: an unknown grace expiry runs again behind the backoff until it
+    /// reaches a final result.
+    #[test]
+    fn an_unknown_grace_expiry_is_retried_until_final() -> Result<(), Box<dyn Error>> {
+        runtime()?.block_on(async {
+            let authority = UnknownExpiryAuthority {
+                inner: GatedAuthority::new(true),
+                expiries: AtomicUsize::new(0),
+            };
+            let session = AdmittedSession {
+                game_session_id: GameSessionId::decode(&CHARACTER)?,
+                world_id: crate::foundation::WorldId::decode(&CHARACTER)?,
+                channel_id: crate::foundation::ChannelId::decode(&CHARACTER)?,
+                runtime_actor: None,
+                first_entry: FirstEntryOutcome::NotApplicable,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            };
+            let lost = LostControl {
+                session,
+                wait: Duration::ZERO,
+            };
+            control_loss_lifecycle(&authority, lost, &CancellationToken::new()).await;
+            assert_eq!(authority.expiries.load(Ordering::SeqCst), 3);
+            Ok(())
+        })
     }
 
     #[test]

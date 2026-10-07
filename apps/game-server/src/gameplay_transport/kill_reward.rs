@@ -5,7 +5,12 @@
 //!
 //! Lock order: `runtime → spell_states → attack`, then the queue's own mutex, which is never held
 //! across an await. No channel guard is held while a revision slot is acquired or any durable
-//! call runs.
+//! call runs, nor across a terminal release transaction.
+//!
+//! §1.3 release handshake: a terminal release drains its session's entries, seals its principal
+//! identity `(GameSessionId, lease generation)` as `releasing` once the queue holds none, and
+//! moves the mark to `committing` just before it sends the transaction. An append for a marked
+//! principal is parked under the mark with the mark's phase at that moment.
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -46,22 +51,84 @@ pub(crate) struct PendingKillSettlement {
     no_progression_logged: bool,
 }
 
+/// A principal identity: the captured session and its Character lease generation.
+type Principal = (GameSessionId, u64);
+
+fn principal_of(entry: &PendingKillSettlement) -> Principal {
+    (
+        entry.facts.principal.session,
+        entry.facts.principal.lease_generation,
+    )
+}
+
+/// The phase of a `releasing` mark (§1.3 steps 2 and 4).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ReleasePhase {
+    Sealed,
+    Committing,
+}
+
+#[derive(Debug)]
+struct ReleasingMark {
+    principal: Principal,
+    phase: ReleasePhase,
+    /// Entries appended for the marked principal, each with the phase at its park.
+    parked: Vec<(PendingKillSettlement, ReleasePhase)>,
+}
+
 #[derive(Debug, Default)]
 struct KillQueueState {
     queued: VecDeque<PendingKillSettlement>,
-    in_flight: Vec<CreatureDeathOccurrenceKey>,
+    in_flight: Vec<(CreatureDeathOccurrenceKey, Principal)>,
     reserved_loot_mints: usize,
+    releasing: Vec<ReleasingMark>,
 }
 
 impl KillQueueState {
     fn holds(&self, death: CreatureDeathOccurrenceKey) -> bool {
-        self.in_flight.contains(&death) || self.queued.iter().any(|e| e.facts.death == death)
+        self.in_flight.iter().any(|(held, _)| *held == death)
+            || self.queued.iter().any(|e| e.facts.death == death)
+            || self
+                .releasing
+                .iter()
+                .any(|mark| mark.parked.iter().any(|(e, _)| e.facts.death == death))
+    }
+
+    fn entries(&self) -> usize {
+        self.queued.len()
+            + self.in_flight.len()
+            + self
+                .releasing
+                .iter()
+                .map(|mark| mark.parked.len())
+                .sum::<usize>()
+    }
+
+    fn mark(&mut self, principal: Principal) -> Option<&mut ReleasingMark> {
+        self.releasing
+            .iter_mut()
+            .find(|mark| mark.principal == principal)
+    }
+
+    /// Remove `principal`'s mark and give back its parked entries.
+    fn unmark(&mut self, principal: Principal) -> Vec<PendingKillSettlement> {
+        let Some(index) = self
+            .releasing
+            .iter()
+            .position(|mark| mark.principal == principal)
+        else {
+            return Vec::new();
+        };
+        let mark = self.releasing.swap_remove(index);
+        mark.parked.into_iter().map(|(entry, _)| entry).collect()
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum AppendOutcome {
     Queued,
+    /// The principal is `releasing`: the entry is parked under its mark in this phase.
+    Parked(ReleasePhase),
     /// The death is already queued or in flight: nothing changed.
     Duplicate,
     /// KILLRW-RL-01 is reached: the death settles nothing.
@@ -92,13 +159,116 @@ impl KillSettlementQueue {
         if state.holds(entry.facts.death) {
             return AppendOutcome::Duplicate;
         }
-        if state.queued.len() + state.in_flight.len()
-            >= KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX
-        {
+        if state.entries() >= KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
             return AppendOutcome::Full;
+        }
+        if let Some(mark) = state.mark(principal_of(&entry)) {
+            let phase = mark.phase;
+            mark.parked.push((entry, phase));
+            return AppendOutcome::Parked(phase);
         }
         state.queued.push_back(entry);
         AppendOutcome::Queued
+    }
+
+    /// §1.3 step 2, one critical section: when the queue holds no queued or in-flight entry of
+    /// `principal`, mark it `releasing` (phase `sealed`). A mark kept from an unknown outcome
+    /// keeps its phase and parked entries.
+    pub(crate) fn seal(&self, principal: Principal) -> bool {
+        let mut state = self.state();
+        let pending = state.queued.iter().any(|e| principal_of(e) == principal)
+            || state.in_flight.iter().any(|(_, held)| *held == principal);
+        if pending {
+            return false;
+        }
+        if state.mark(principal).is_none() {
+            state.releasing.push(ReleasingMark {
+                principal,
+                phase: ReleasePhase::Sealed,
+                parked: Vec::new(),
+            });
+        }
+        true
+    }
+
+    /// §1.3 step 4, one critical section just before the transaction is sent: an entry parked
+    /// in phase `sealed` aborts the release (the mark is cleared and the parked entries are
+    /// queued, `false`); otherwise the mark moves to `committing` (`true`).
+    pub(crate) fn commit_point(&self, principal: Principal) -> bool {
+        let mut state = self.state();
+        let Some(mark) = state.mark(principal) else {
+            return false;
+        };
+        if mark
+            .parked
+            .iter()
+            .all(|(_, phase)| *phase == ReleasePhase::Committing)
+        {
+            mark.phase = ReleasePhase::Committing;
+            return true;
+        }
+        let parked = state.unmark(principal);
+        state.queued.extend(parked);
+        false
+    }
+
+    /// §1.3 step 5, Committed: the session ended at the phase change, so every parked entry is
+    /// a kill after it ended and is freed with `principal_gone`. The mark stays until
+    /// [`KillSettlementQueue::forget_released`].
+    pub(crate) fn release_committed(&self, principal: Principal) {
+        let parked = {
+            let mut state = self.state();
+            state
+                .mark(principal)
+                .map(|mark| std::mem::take(&mut mark.parked))
+                .unwrap_or_default()
+        };
+        for (entry, _) in parked {
+            refuse("principal_gone", &entry.creature);
+        }
+    }
+
+    /// The released actor slot is removed: drop the mark, freeing any late park.
+    pub(crate) fn forget_released(&self, principal: Principal) {
+        let parked = self.state().unmark(principal);
+        for entry in parked {
+            refuse("principal_gone", &entry.creature);
+        }
+    }
+
+    /// §1.3 step 5, retryable failure: clear the mark and queue the parked entries for the
+    /// resumed session.
+    pub(crate) fn release_failed(&self, principal: Principal) {
+        let mut state = self.state();
+        let parked = state.unmark(principal);
+        state.queued.extend(parked);
+    }
+
+    /// Free `session`'s queued and parked entries whose principal has no live session: the
+    /// session is over (`live == None`), or the entry's lease generation is not the live one.
+    /// Their marks go with them.
+    pub(crate) fn discard_gone(&self, session: GameSessionId, live: Option<u64>) {
+        let gone_principal = |(owner, lease): Principal| owner == session && Some(lease) != live;
+        let gone = {
+            let mut state = self.state();
+            let (mut gone, kept) = std::mem::take(&mut state.queued)
+                .into_iter()
+                .partition::<Vec<_>, _>(|e| gone_principal(principal_of(e)));
+            state.queued = kept.into();
+            let (ended, marks) = std::mem::take(&mut state.releasing)
+                .into_iter()
+                .partition::<Vec<_>, _>(|mark| gone_principal(mark.principal));
+            state.releasing = marks;
+            gone.extend(
+                ended
+                    .into_iter()
+                    .flat_map(|mark| mark.parked.into_iter().map(|(entry, _)| entry)),
+            );
+            gone
+        };
+        for entry in gone {
+            refuse("principal_gone", &entry.creature);
+        }
     }
 
     pub(crate) fn has_session(&self, session: GameSessionId) -> bool {
@@ -134,7 +304,9 @@ impl KillSettlementQueue {
             return TakeOutcome::Empty;
         };
         state.reserved_loot_mints = inflight_before + loot_mints;
-        state.in_flight.push(entry.facts.death);
+        state
+            .in_flight
+            .push((entry.facts.death, principal_of(&entry)));
         TakeOutcome::Taken(Box::new(TakenKillSettlement {
             queue: self.clone(),
             death: entry.facts.death,
@@ -142,6 +314,18 @@ impl KillSettlementQueue {
             loot_mints,
             inflight_before,
         }))
+    }
+
+    /// The parked entries' phases under `principal`'s mark, and the mark's phase.
+    #[cfg(test)]
+    pub(crate) fn parked(&self, principal: Principal) -> Option<(ReleasePhase, Vec<ReleasePhase>)> {
+        let mut state = self.state();
+        state.mark(principal).map(|mark| {
+            (
+                mark.phase,
+                mark.parked.iter().map(|(_, phase)| *phase).collect(),
+            )
+        })
     }
 
     #[cfg(test)]
@@ -193,7 +377,7 @@ impl Drop for TakenKillSettlement {
     fn drop(&mut self) {
         let mut state = self.queue.state();
         state.reserved_loot_mints = state.reserved_loot_mints.saturating_sub(self.loot_mints);
-        state.in_flight.retain(|death| *death != self.death);
+        state.in_flight.retain(|(death, _)| *death != self.death);
         if let Some(entry) = self.entry.take() {
             state.queued.push_front(entry);
         }
@@ -380,6 +564,77 @@ pub(crate) async fn drain_session_kills(
     }
 }
 
+/// The end of a release handshake's steps 1–4 (§1.3).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum KillRelease {
+    /// Send the transaction, then report its outcome with [`KillReleaseMark::settle`]. No mark
+    /// is held when the session is already terminal.
+    Send(Option<KillReleaseMark>),
+    /// Step 1 met an unknown outcome or a `capacity_wait`: nothing is marked and the
+    /// transaction must not be sent.
+    Deferred,
+}
+
+/// The terminal release transaction's outcome as step 5 reads it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ReleaseEnd {
+    /// `session_state = 3`.
+    Committed,
+    /// The session did not end.
+    Retryable,
+    /// The outcome is unknown: the mark and the parked entries stay for the next attempt.
+    Unknown,
+}
+
+/// A principal marked `committing` by [`release_handshake`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct KillReleaseMark {
+    principal: Principal,
+}
+
+impl KillReleaseMark {
+    /// §1.3 step 5, in one `attack` critical section.
+    pub(crate) fn settle(self, queue: &KillSettlementQueue, end: ReleaseEnd) {
+        match end {
+            ReleaseEnd::Committed => queue.release_committed(self.principal),
+            ReleaseEnd::Retryable => queue.release_failed(self.principal),
+            ReleaseEnd::Unknown => {}
+        }
+    }
+
+    /// The released actor slot is removed.
+    pub(crate) fn forget(self, queue: &KillSettlementQueue) {
+        queue.forget_released(self.principal);
+    }
+}
+
+/// §1.3 steps 1–4: drain, seal, then move the mark to `committing`, returning to the drain
+/// while the seal finds an entry or a park in phase `sealed` aborts the commit point. Each
+/// return needs a new kill for this principal, so the loop advances with the game. No guard is
+/// held across a settle or on return.
+pub(crate) async fn release_handshake(
+    attack: &AsyncMutex<ChannelAttackStates>,
+    session: GameSessionId,
+    lease_generation: u64,
+    settler: &impl KillSettle,
+) -> KillRelease {
+    let principal = (session, lease_generation);
+    loop {
+        if drain_session_kills(attack, session, lease_generation, settler).await
+            == DrainOutcome::Deferred
+        {
+            return KillRelease::Deferred;
+        }
+        if !attack.lock().await.kills().seal(principal) {
+            tokio::task::yield_now().await;
+            continue;
+        }
+        if attack.lock().await.kills().commit_point(principal) {
+            return KillRelease::Send(Some(KillReleaseMark { principal }));
+        }
+    }
+}
+
 /// An unknown durable outcome: the write may or may not have committed, or capacity freed later
 /// may admit it.
 fn loot_unknown(error: &CombatDeathRewardLootError) -> bool {
@@ -482,16 +737,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    /// Settle `session`'s queued kills (§1.3), after every channel guard is released.
+    /// Settle `session`'s queued kills (§1.3), after every channel guard is released. An entry
+    /// whose principal has no live session is freed with `principal_gone`.
     pub(super) async fn drain_kill_rewards(&self, session: GameSessionId) -> DrainOutcome {
         if !self.attack.lock().await.kills().has_session(session) {
             return DrainOutcome::Drained;
         }
         let fence = match self.current_quest_fence(session).await {
             Ok(Some(fence)) => fence,
-            Ok(None) => return DrainOutcome::Drained,
+            Ok(None) => {
+                self.attack.lock().await.kills().discard_gone(session, None);
+                return DrainOutcome::Drained;
+            }
             Err(()) => return DrainOutcome::Deferred,
         };
+        self.attack
+            .lock()
+            .await
+            .kills()
+            .discard_gone(session, Some(fence.character_lease_generation));
         drain_session_kills(
             &self.attack,
             session,
@@ -502,6 +766,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         )
         .await
+    }
+
+    /// §1.3 release handshake of `session`, run after its monk save and before its terminal
+    /// release transaction.
+    pub(super) async fn seal_kill_rewards(&self, session: GameSessionId) -> KillRelease {
+        let fence = match self.current_quest_fence(session).await {
+            Ok(Some(fence)) => fence,
+            // Already terminal: the transaction only reconciles, and nothing settles any more.
+            Ok(None) => {
+                self.attack.lock().await.kills().discard_gone(session, None);
+                return KillRelease::Send(None);
+            }
+            Err(()) => return KillRelease::Deferred,
+        };
+        let lease_generation = fence.character_lease_generation;
+        self.attack
+            .lock()
+            .await
+            .kills()
+            .discard_gone(session, Some(lease_generation));
+        release_handshake(
+            &self.attack,
+            session,
+            lease_generation,
+            &DurableKillSettle {
+                admission: self,
+                fence,
+            },
+        )
+        .await
+    }
+
+    /// §1.3 step 5 for a release that sent its transaction.
+    pub(super) async fn settle_kill_release(&self, mark: Option<KillReleaseMark>, end: ReleaseEnd) {
+        if let Some(mark) = mark {
+            mark.settle(self.attack.lock().await.kills(), end);
+        }
+    }
+
+    /// The released actor slot is removed: its mark goes.
+    pub(super) async fn forget_kill_release(&self, mark: Option<KillReleaseMark>) {
+        if let Some(mark) = mark {
+            mark.forget(self.attack.lock().await.kills());
+        }
     }
 }
 

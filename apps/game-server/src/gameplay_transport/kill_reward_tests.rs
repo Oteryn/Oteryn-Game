@@ -314,3 +314,216 @@ fn an_unknown_reward_table_row_is_no_loot_binding() {
         Some("loot_table_missing")
     );
 }
+
+fn final_settles(attack: &AsyncMutex<ChannelAttackStates>, count: usize) -> ScriptedSettle<'_> {
+    ScriptedSettle {
+        attack,
+        reports: RefCell::new(
+            (0..count)
+                .map(|_| report(SettleVerdict::Final, false))
+                .collect(),
+        ),
+        calls: Cell::new(0),
+    }
+}
+
+fn mark(outcome: KillRelease) -> KillReleaseMark {
+    match outcome {
+        KillRelease::Send(Some(mark)) => mark,
+        other => panic!("expected a committing mark, found {other:?}"),
+    }
+}
+
+#[test]
+fn the_seal_finds_an_append_after_the_last_take() {
+    let queue = KillSettlementQueue::default();
+    let principal = (session(50), 3);
+    // An append after the drain's last take and before the seal.
+    assert_eq!(queue.append(pending(2, 50, 3, 0)), AppendOutcome::Queued);
+    assert!(!queue.seal(principal));
+    assert_eq!(queue.parked(principal), None);
+    // An in-flight settle of the principal also holds the seal back.
+    let in_flight = taken(queue.take(session(50), 3));
+    assert!(!queue.seal(principal));
+    in_flight.finish();
+    // Another principal's entry does not.
+    assert_eq!(queue.append(pending(3, 51, 3, 0)), AppendOutcome::Queued);
+    assert_eq!(queue.append(pending(4, 50, 4, 0)), AppendOutcome::Queued);
+    assert!(queue.seal(principal));
+    assert_eq!(
+        queue.parked(principal),
+        Some((ReleasePhase::Sealed, vec![]))
+    );
+}
+
+#[test]
+fn the_handshake_settles_every_own_entry_before_it_marks_committing() {
+    run(async {
+        let attack = AsyncMutex::new(ChannelAttackStates::default());
+        for channel in 2..4 {
+            attack
+                .lock()
+                .await
+                .kills()
+                .append(pending(channel, 50, 3, 1));
+        }
+        let settler = final_settles(&attack, 2);
+        let mark = mark(release_handshake(&attack, session(50), 3, &settler).await);
+        assert_eq!(settler.calls.get(), 2);
+        let kills = attack.lock().await;
+        assert_eq!(kills.kills().counts(), (0, 0, 0));
+        assert_eq!(
+            kills.kills().parked((session(50), 3)),
+            Some((ReleasePhase::Committing, vec![]))
+        );
+        mark.settle(kills.kills(), ReleaseEnd::Committed);
+        mark.forget(kills.kills());
+        assert_eq!(kills.kills().parked((session(50), 3)), None);
+    });
+}
+
+#[test]
+fn a_deferred_drain_marks_nothing() {
+    run(async {
+        let attack = AsyncMutex::new(ChannelAttackStates::default());
+        attack.lock().await.kills().append(pending(2, 50, 3, 1));
+        let settler = ScriptedSettle {
+            attack: &attack,
+            reports: RefCell::new(VecDeque::from([report(SettleVerdict::Retry, false)])),
+            calls: Cell::new(0),
+        };
+        assert_eq!(
+            release_handshake(&attack, session(50), 3, &settler).await,
+            KillRelease::Deferred
+        );
+        let kills = attack.lock().await;
+        assert_eq!(kills.kills().counts(), (1, 0, 0));
+        assert_eq!(kills.kills().parked((session(50), 3)), None);
+    });
+}
+
+/// One kill parked on each side of the step 4 critical section.
+#[test]
+fn a_park_before_the_commit_point_aborts_and_one_after_it_is_committing() {
+    run(async {
+        let attack = AsyncMutex::new(ChannelAttackStates::default());
+        let principal = (session(50), 3);
+        // Sealed by an earlier pass; a kill whose D132 winner is the releasing session is
+        // parked before the commit point, with its winner unchanged.
+        assert!(attack.lock().await.kills().seal(principal));
+        assert_eq!(
+            attack.lock().await.kills().append(pending(2, 50, 3, 1)),
+            AppendOutcome::Parked(ReleasePhase::Sealed)
+        );
+        assert_eq!(attack.lock().await.kills().counts(), (0, 0, 0));
+        // The commit point aborts, the parked entry returns to the drain and is settled for
+        // its winner before the mark moves to `committing`.
+        let settler = final_settles(&attack, 1);
+        let mark = mark(release_handshake(&attack, session(50), 3, &settler).await);
+        assert_eq!(settler.calls.get(), 1);
+        // After the commit point a park is in phase `committing`.
+        assert_eq!(
+            attack.lock().await.kills().append(pending(3, 50, 3, 1)),
+            AppendOutcome::Parked(ReleasePhase::Committing)
+        );
+        let kills = attack.lock().await;
+        assert_eq!(
+            kills.kills().parked(principal),
+            Some((ReleasePhase::Committing, vec![ReleasePhase::Committing]))
+        );
+        // A committing park does not abort a second commit point.
+        assert!(kills.kills().commit_point(principal));
+        // Committed: the late kill is `principal_gone`, credited to no one, and nothing for
+        // the released identity is left queued or parked.
+        mark.settle(kills.kills(), ReleaseEnd::Committed);
+        assert_eq!(kills.kills().counts(), (0, 0, 0));
+        assert_eq!(
+            kills.kills().parked(principal),
+            Some((ReleasePhase::Committing, vec![]))
+        );
+        assert!(!kills.kills().has_session(session(50)));
+    });
+}
+
+#[test]
+fn a_retryable_release_failure_requeues_the_parked_entries() {
+    run(async {
+        let attack = AsyncMutex::new(ChannelAttackStates::default());
+        let settler = final_settles(&attack, 2);
+        let mark = mark(release_handshake(&attack, session(50), 3, &settler).await);
+        attack.lock().await.kills().append(pending(2, 50, 3, 1));
+        mark.settle(attack.lock().await.kills(), ReleaseEnd::Retryable);
+        assert_eq!(attack.lock().await.kills().parked((session(50), 3)), None);
+        assert_eq!(attack.lock().await.kills().counts(), (1, 0, 0));
+        // The resumed session settles it, and its next kill enqueues for it.
+        assert_eq!(
+            drain_session_kills(&attack, session(50), 3, &settler).await,
+            DrainOutcome::Drained
+        );
+        assert_eq!(settler.calls.get(), 1);
+        assert_eq!(
+            attack.lock().await.kills().append(pending(3, 50, 3, 1)),
+            AppendOutcome::Queued
+        );
+    });
+}
+
+#[test]
+fn an_unknown_release_keeps_the_mark_until_the_retry_reconciles() {
+    run(async {
+        for (end, queued) in [(ReleaseEnd::Retryable, 1), (ReleaseEnd::Committed, 0)] {
+            let attack = AsyncMutex::new(ChannelAttackStates::default());
+            let principal = (session(50), 3);
+            let settler = final_settles(&attack, 0);
+            let first = mark(release_handshake(&attack, session(50), 3, &settler).await);
+            attack.lock().await.kills().append(pending(2, 50, 3, 1));
+            first.settle(attack.lock().await.kills(), ReleaseEnd::Unknown);
+            assert_eq!(
+                attack.lock().await.kills().parked(principal),
+                Some((ReleasePhase::Committing, vec![ReleasePhase::Committing]))
+            );
+            // The next attempt runs the handshake again; the committing park does not abort.
+            let retry = mark(release_handshake(&attack, session(50), 3, &settler).await);
+            assert_eq!(settler.calls.get(), 0);
+            // The retried transaction reads the row: non-terminal requeues, terminal frees.
+            retry.settle(attack.lock().await.kills(), end);
+            assert_eq!(attack.lock().await.kills().counts(), (queued, 0, 0));
+        }
+    });
+}
+
+#[test]
+fn an_entry_whose_principal_has_no_live_session_is_freed() {
+    let queue = KillSettlementQueue::default();
+    queue.append(pending(3, 50, 3, 0));
+    queue.append(pending(4, 51, 2, 0));
+    assert!(queue.seal((session(50), 2)));
+    queue.append(pending(5, 50, 2, 0));
+    // Lease generation 3 is live: generation 2's parked entry and its mark are gone.
+    queue.discard_gone(session(50), Some(3));
+    assert_eq!(queue.counts(), (2, 0, 0));
+    assert_eq!(queue.parked((session(50), 2)), None);
+    // So is a queued entry of generation 2.
+    assert_eq!(queue.append(pending(2, 50, 2, 0)), AppendOutcome::Queued);
+    queue.discard_gone(session(50), Some(3));
+    assert_eq!(queue.counts(), (2, 0, 0));
+    // The session is over: nothing of it is left; the other session's entry stays.
+    queue.discard_gone(session(50), None);
+    assert_eq!(queue.counts(), (1, 0, 0));
+    assert!(!queue.has_session(session(50)));
+}
+
+#[test]
+fn parked_entries_count_toward_killrw_rl_01() {
+    let queue = KillSettlementQueue::default();
+    assert!(queue.seal((session(50), 3)));
+    for channel in 2..(2 + KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX as u8) {
+        assert_eq!(
+            queue.append(pending(channel, 50, 3, 0)),
+            AppendOutcome::Parked(ReleasePhase::Sealed)
+        );
+    }
+    assert_eq!(queue.append(pending(200, 51, 3, 0)), AppendOutcome::Full);
+    // A parked death is deduplicated like a queued one.
+    assert_eq!(queue.append(pending(2, 50, 3, 0)), AppendOutcome::Duplicate);
+}
