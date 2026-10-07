@@ -11,7 +11,7 @@
 
 use crate::input::StepDir;
 use oteryn_client_assets::{
-    AppearanceIndex, AssetStore, CELL_PX, Catalog, DrawCell, Placement, SpriteSheets,
+    AppearanceIndex, AssetStore, CELL_PX, Catalog, DrawCell, Hook, Placement, SpriteSheets,
 };
 use oteryn_renderer::{AtlasImage, BatchError, MAX_ATLAS_DIMENSION};
 use oteryn_world_bundle::sector::{self, Budget, TileLimits};
@@ -191,12 +191,26 @@ impl World {
                     if !(lo_x..=hi_x).contains(&x) || !(lo_y..=hi_y).contains(&y) {
                         continue;
                     }
-                    let mut items = Vec::new();
+                    let mut stack = Vec::new();
+                    let mut hook = Hook::None;
                     for item in tile.items.iter().filter(|item| item.depth == 0) {
-                        let Some(palette) = map.palette.get(item.palette as usize) else {
-                            continue;
+                        let palette = palette_entry(&map.palette, item.palette, &name)?;
+                        // A hangable entry follows the wall hook of any entry on its tile; a
+                        // south hook wins over an east one, as in the reference resolver.
+                        if let Some(appearance) = index.get(palette.source_item_id)
+                            && hook != Hook::South
+                            && appearance.hook != Hook::None
+                        {
+                            hook = appearance.hook;
+                        }
+                        stack.push((palette, item));
+                    }
+                    let mut items = Vec::new();
+                    for (palette, item) in stack {
+                        let placement = Placement {
+                            hook,
+                            ..placement(x, y, item.attrs.count)
                         };
-                        let placement = placement(x, y, item.attrs.count);
                         // An item the pinned appearances cannot draw is skipped, not fatal.
                         let Ok(resolved) =
                             index.resolve(&sheets, palette.source_item_id, placement)
@@ -372,6 +386,18 @@ fn stack_lifts(items: impl IntoIterator<Item = (u8, i32)>) -> (Vec<i32>, i32) {
 /// profile value can neither wrap negative nor overflow the sum below it.
 fn item_height(elevation: u32) -> i32 {
     i32::try_from(elevation).map_or(MAX_ELEVATION, |height| height.min(MAX_ELEVATION))
+}
+
+/// The palette entry an item names; an index outside the palette fails the whole map closed.
+fn palette_entry<'a>(
+    palette: &'a [PaletteEntry],
+    index: u32,
+    region: &str,
+) -> Result<&'a PaletteEntry, String> {
+    usize::try_from(index)
+        .ok()
+        .and_then(|index| palette.get(index))
+        .ok_or_else(|| format!("{region}: palette index {index} outside the placement index"))
 }
 
 /// A start-floor placement; the encoded value is a stack count or, for fluids, the subtype.
@@ -570,6 +596,17 @@ mod tests {
         let (lifts, elevation) = stack_lifts([(3, 16), (3, 16)]);
         assert_eq!(lifts, [16, MAX_ELEVATION]);
         assert_eq!(elevation, MAX_ELEVATION);
+    }
+
+    #[test]
+    fn a_palette_index_outside_the_placement_index_is_refused() {
+        let palette = [PaletteEntry { source_item_id: 7 }];
+        let found = palette_entry(&palette, 0, "region");
+        assert_eq!(found.map(|entry| entry.source_item_id), Ok(7));
+        assert_eq!(
+            palette_entry(&palette, 1, "region").err().as_deref(),
+            Some("region: palette index 1 outside the placement index")
+        );
     }
 
     #[test]

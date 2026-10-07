@@ -12,7 +12,7 @@ mod sheets;
 mod store;
 
 pub use appearance::{
-    AppearanceIndex, DrawCell, MAX_APPEARANCE_ID, MAX_ENTRY_CELLS, Placement, ResolvedEntry,
+    AppearanceIndex, DrawCell, Hook, MAX_APPEARANCE_ID, MAX_ENTRY_CELLS, Placement, ResolvedEntry,
 };
 pub use catalog::{Catalog, SpriteLayout, SpriteSheetDescriptor};
 pub use error::AssetError;

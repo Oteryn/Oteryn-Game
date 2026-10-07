@@ -82,6 +82,10 @@ struct FlagsMsg {
     liquidpool: Option<bool>,
     #[prost(bool, optional, tag = "19")]
     liquidcontainer: Option<bool>,
+    #[prost(bool, optional, tag = "20")]
+    hang: Option<bool>,
+    #[prost(message, optional, tag = "21")]
+    hook: Option<HookMsg>,
     #[prost(message, optional, tag = "26")]
     shift: Option<ShiftMsg>,
     #[prost(message, optional, tag = "27")]
@@ -90,6 +94,13 @@ struct FlagsMsg {
 
 #[derive(Clone, PartialEq, Message)]
 struct BankMsg {}
+
+#[derive(Clone, PartialEq, Message)]
+struct HookMsg {
+    /// `HOOK_TYPE`: 1 south, 2 east.
+    #[prost(int32, optional, tag = "1")]
+    direction: Option<i32>,
+}
 
 #[derive(Clone, PartialEq, Message)]
 struct ShiftMsg {
@@ -125,6 +136,19 @@ pub struct Appearance {
     pub on_top: bool,
     pub stackable: bool,
     pub fluid: bool,
+    /// Hangs on a wall hook; its pattern follows the hook of the tile it is on.
+    pub hangable: bool,
+    /// The hook this entry gives the tile it is on.
+    pub hook: Hook,
+}
+
+/// The wall hook of a tile, which picks the pattern of a hangable entry on it.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Hook {
+    #[default]
+    None,
+    South,
+    East,
 }
 
 /// The pattern colour of each fluid sub-type in the modern client; unknown sub-types are empty.
@@ -151,6 +175,8 @@ pub struct Placement {
     pub y: i32,
     /// Native floor `-15..=0`.
     pub floor: i32,
+    /// The hook given by the entries of the same tile.
+    pub hook: Hook,
 }
 
 impl Placement {
@@ -162,6 +188,7 @@ impl Placement {
             x,
             y,
             floor,
+            hook: Hook::None,
         }
     }
 }
@@ -281,50 +308,19 @@ impl AppearanceIndex {
         appearance_id: u32,
         placement: Placement,
     ) -> Result<ResolvedEntry, AssetError> {
-        let Placement {
-            count,
-            sub_type,
-            x,
-            y,
-            floor,
-        } = placement;
         if !(1..=MAX_APPEARANCE_ID).contains(&appearance_id) {
             return Err(AssetError::InvalidAppearanceId { id: appearance_id });
         }
-        if !(-15..=0).contains(&floor) {
-            return Err(AssetError::InvalidFloor { floor });
+        if !(-15..=0).contains(&placement.floor) {
+            return Err(AssetError::InvalidFloor {
+                floor: placement.floor,
+            });
         }
         let appearance = self
             .objects
             .get(&appearance_id)
             .ok_or(AssetError::UnknownAppearance { id: appearance_id })?;
-        let z = floor.unsigned_abs();
-        let (pattern_x, pattern_y) = if appearance.fluid {
-            let color = fluid_color(sub_type);
-            (
-                color % 4 % appearance.pattern_width,
-                color / 4 % appearance.pattern_height,
-            )
-        } else if appearance.stackable {
-            // Count thresholds 1, 2, 3, 4, 5, 10, 25, 50 select patterns 0..=7.
-            let step = match count {
-                0..=4 => count.saturating_sub(1),
-                5..=9 => 4,
-                10..=24 => 5,
-                25..=49 => 6,
-                _ => 7,
-            };
-            (
-                step % appearance.pattern_width,
-                step / appearance.pattern_width % appearance.pattern_height,
-            )
-        } else {
-            (
-                x.rem_euclid(appearance.pattern_width as i32) as u32,
-                y.rem_euclid(appearance.pattern_height as i32) as u32,
-            )
-        };
-        let pattern_z = z % appearance.pattern_depth;
+        let (pattern_x, pattern_y, pattern_z) = pattern(appearance, placement);
         entry(
             appearance,
             sheets,
@@ -332,6 +328,54 @@ impl AppearanceIndex {
             0..appearance.layers,
         )
     }
+}
+
+/// The `(x, y, z)` pattern of `appearance` at `placement`, chosen as the Tibia client does. The
+/// depth pattern is selected from `z = -floor`, never from a negative index.
+fn pattern(appearance: &Appearance, placement: Placement) -> (u32, u32, u32) {
+    let Placement {
+        count,
+        sub_type,
+        x,
+        y,
+        floor,
+        hook,
+    } = placement;
+    let z = floor.unsigned_abs();
+    let (pattern_x, pattern_y) = if appearance.fluid {
+        let color = fluid_color(sub_type);
+        (
+            color % 4 % appearance.pattern_width,
+            color / 4 % appearance.pattern_height,
+        )
+    } else if appearance.stackable {
+        // Count thresholds 1, 2, 3, 4, 5, 10, 25, 50 select patterns 0..=7.
+        let step = match count {
+            0..=4 => count.saturating_sub(1),
+            5..=9 => 4,
+            10..=24 => 5,
+            25..=49 => 6,
+            _ => 7,
+        };
+        (
+            step % appearance.pattern_width,
+            step / appearance.pattern_width % appearance.pattern_height,
+        )
+    } else if appearance.hangable {
+        // Pattern 1 hangs on a south hook and 2 on an east hook; 0 lies on the floor.
+        let hooked = match hook {
+            Hook::South if appearance.pattern_width >= 2 => 1,
+            Hook::East if appearance.pattern_width >= 3 => 2,
+            _ => 0,
+        };
+        return (hooked, 0, 0);
+    } else {
+        (
+            x.rem_euclid(appearance.pattern_width as i32) as u32,
+            y.rem_euclid(appearance.pattern_height as i32) as u32,
+        )
+    };
+    (pattern_x, pattern_y, z % appearance.pattern_depth)
 }
 
 /// The cells of one pattern of `appearance`, phase 0, over `layers`.
@@ -426,6 +470,12 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         on_top: flags.top.unwrap_or(false),
         stackable: flags.cumulative.unwrap_or(false),
         fluid: flags.liquidcontainer.unwrap_or(false) || flags.liquidpool.unwrap_or(false),
+        hangable: flags.hang.unwrap_or(false),
+        hook: match flags.hook.and_then(|hook| hook.direction) {
+            Some(1) => Hook::South,
+            Some(2) => Hook::East,
+            _ => Hook::None,
+        },
     })
 }
 
@@ -461,5 +511,59 @@ mod tests {
         );
         assert!(convert(1, shifted(u32::MAX, 0)).is_none());
         assert!(convert(1, shifted(0, MAX_DISPLACEMENT_PX + 1)).is_none());
+    }
+
+    fn with_flags(width: u32, flags: FlagsMsg) -> Option<Appearance> {
+        let message = AppearanceMsg {
+            id: Some(1),
+            frame_group: vec![FrameGroupMsg {
+                sprite_info: Some(SpriteInfoMsg {
+                    pattern_width: Some(width),
+                    sprite_id: vec![1; width as usize],
+                    ..SpriteInfoMsg::default()
+                }),
+            }],
+            flags: Some(flags),
+        };
+        convert(1, message)
+    }
+
+    #[test]
+    fn a_hangable_entry_follows_the_hook_of_its_tile() {
+        let hook = |direction| FlagsMsg {
+            hook: Some(HookMsg {
+                direction: Some(direction),
+            }),
+            ..FlagsMsg::default()
+        };
+        let hooks: Vec<_> = [hook(1), hook(2), hook(7)]
+            .into_iter()
+            .map(|flags| with_flags(1, flags).map(|wall| wall.hook))
+            .collect();
+        assert_eq!(
+            hooks,
+            [Some(Hook::South), Some(Hook::East), Some(Hook::None)]
+        );
+
+        let hanging = FlagsMsg {
+            hang: Some(true),
+            ..FlagsMsg::default()
+        };
+        let on = |width, hook, x| {
+            with_flags(width, hanging.clone()).map(|item| {
+                pattern(
+                    &item,
+                    Placement {
+                        hook,
+                        ..Placement::at(x, 5, -7)
+                    },
+                )
+            })
+        };
+        assert_eq!(on(3, Hook::None, 1), Some((0, 0, 0)));
+        assert_eq!(on(3, Hook::South, 1), Some((1, 0, 0)));
+        assert_eq!(on(3, Hook::East, 1), Some((2, 0, 0)));
+        assert_eq!(on(2, Hook::East, 1), Some((0, 0, 0)));
+        assert_eq!(on(1, Hook::South, 0), Some((0, 0, 0)));
     }
 }

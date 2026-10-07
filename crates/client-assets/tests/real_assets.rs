@@ -194,10 +194,7 @@ fn stackable_count_selects_the_pattern() -> TestResult {
         130,
         Placement {
             count: 5,
-            sub_type: 0,
-            x: 0,
-            y: 0,
-            floor: 0,
+            ..Placement::at(0, 0, 0)
         },
     )?;
     let hundred = index.resolve(
@@ -205,10 +202,7 @@ fn stackable_count_selects_the_pattern() -> TestResult {
         130,
         Placement {
             count: 100,
-            sub_type: 0,
-            x: 0,
-            y: 0,
-            floor: 0,
+            ..Placement::at(0, 0, 0)
         },
     )?;
     assert_ne!(one.cells, five.cells);
