@@ -59,14 +59,46 @@
         "add proof-backed post-A12 canonical identity successor for the resolved historical donor hold",
         "emit current exact Crystal 00ce02a5 binding to oteryn:item.tibia.i54610",
         "run quest interaction Item admission semantics on the canonical record",
-        "qualify separate timed/light/use lifecycle under existing Item owners"
+        "qualify client-proven light/pickup/use facts and the Shards wall use under existing Item/ITEM-USE owners; add timed/decay behavior only if separately sourced"
       ],
       "forbidden": [
         "do not rewrite frozen epoch-2 crosswalk or allocation digest",
         "do not remove 54610 from historical HELD_DONOR_IDS as if history never happened",
         "do not alias 54610 to i34017",
-        "do not put 54610 into appearance-only cohort"
-      ]
+        "do not put 54610 into appearance-only cohort",
+        "do not infer decay/duration/54609<->54610 transform from the old torch family or name similarity"
+      ],
+      "source_lifecycle_readback": {
+        "crystal_summer": {
+          "item_54609": {
+            "name": "torch",
+            "attrs": {
+              "primarytype": "light sources",
+              "stopduration": "1",
+              "weight": "500"
+            }
+          },
+          "item_54610": {
+            "name": "lit torch",
+            "attrs": {
+              "primarytype": "light sources",
+              "weight": "500"
+            }
+          },
+          "script_references_to_54609_or_54610": 0
+        },
+        "comparison": {
+          "item_34017": {
+            "name": "lit torch",
+            "attrs": {
+              "primarytype": "light sources",
+              "weight": "500"
+            }
+          },
+          "conclusion": "No donor duration/decay/use-transform binding exists for 54610. Do not inherit timed lifecycle from an older same-name torch."
+        },
+        "status": "NO_TIMED_LIFECYCLE_PROVEN"
+      }
     },
     {
       "item_id": 54638,
