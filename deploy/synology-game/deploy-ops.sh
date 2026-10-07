@@ -42,7 +42,22 @@ not_placeholder() { # <label> <value>
 }
 mv_() { local v; v="$(m "$1" "$2")"; not_placeholder "[$1] $2" "$v"; printf '%s' "$v"; } # manifest value, no placeholder
 token_ok() { [[ "$2" =~ ^[A-Za-z0-9._:-]{1,64}$ ]] || fail "manifest: invalid token $1"; }
-private_ipv4() { [[ "$1" =~ ^(10\.[0-9]{1,3}|192\.168|172\.(1[6-9]|2[0-9]|3[01]))\.[0-9]{1,3}(\.[0-9]{1,3})?$ ]] || fail "manifest: $2 is not a private IPv4 address"; }
+private_ipv4() { # exactly four decimal octets 0-255 (no leading zeros) in 10/8, 172.16/12 or 192.168/16
+  local o
+  [[ "$1" =~ ^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]] || fail "manifest: $2 is not a dotted IPv4 address"
+  for o in "${BASH_REMATCH[@]:1}"; do [[ "$o" -le 255 ]] || fail "manifest: $2 has an octet above 255"; done
+  [[ "${BASH_REMATCH[1]}" = 10 || ( "${BASH_REMATCH[1]}" = 192 && "${BASH_REMATCH[2]}" = 168 ) ||
+    ( "${BASH_REMATCH[1]}" = 172 && "${BASH_REMATCH[2]}" -ge 16 && "${BASH_REMATCH[2]}" -le 31 ) ]] || fail "manifest: $2 is not a private IPv4 address"
+}
+# report_identity_ok <section> <key|node_identities> <node identity>: the report.toml identity location holds exactly the node identity.
+report_identity_ok() {
+  awk -v sec="$1" -v want="$3" -v mode="$2" '
+    /^[ \t]*\[/ { s = $0; gsub(/^[ \t]*\[+|\]+[ \t]*(#.*)?$/, "", s); cur = s; next }
+    cur != sec { next }
+    mode == "key" && $0 ~ /^[ \t]*"/ { k = $0; sub(/^[ \t]*"/, "", k); sub(/".*$/, "", k); n++; if (k == want) ok++ }
+    mode == "list" && $0 ~ /^[ \t]*node_identities[ \t]*=/ { v = $0; sub(/^[^=]*=[ \t]*/, "", v); sub(/[ \t]*(#.*)?$/, "", v); n++; if (v == "[\"" want "\"]") ok++ }
+    END { exit (n == ok && n >= 1) ? 0 : 1 }' "$REPORT_CONFIG"
+}
 expect_eq() { # <label> <file> <section> <key> <expected>
   local got
   got="$(toml_get "$2" "$3" "$4")" || fail "$1: missing or repeated [$3] $4"
@@ -59,6 +74,14 @@ topology_check() {
   check "$uuid" "$world"; check "$uuid" "$channel"
   [[ "$world" != "$channel" ]] || fail "manifest: WorldId equals ChannelId"
   node_id="$(mv_ node identity)"; node_identity_ok "$node_id"
+  [[ "$(mv_ scope channel_key)" =~ ^[a-z0-9][a-z0-9_-]{0,31}$ ]] || fail "manifest: invalid channel_key"
+  for k in node_native_evidence node_runtime_status game_ops_authority character_projection; do node_identity_ok "$(mv_ certificates "$k")"; done
+  [[ "$(mv_ certificates node_runtime_status)" = "$node_id" ]] || fail "manifest: node_runtime_status differs from [node] identity"
+  [[ "$(mv_ certificates node_native_evidence)" != "$node_id" && "$(mv_ certificates game_ops_authority)" != "$node_id" &&
+    "$(mv_ certificates character_projection)" != "$node_id" &&
+    "$(mv_ certificates node_native_evidence)" != "$(mv_ certificates game_ops_authority)" &&
+    "$(mv_ certificates node_native_evidence)" != "$(mv_ certificates character_projection)" &&
+    "$(mv_ certificates game_ops_authority)" != "$(mv_ certificates character_projection)" ]] || fail "manifest: certificate subjects must be distinct"
   epoch="$(mv_ assignment epoch)"
   [[ "$epoch" =~ ^[1-9][0-9]{0,17}$ ]] || fail "manifest: assignment epoch must be a positive integer"
   lan="$(mv_ nas lan_address)"; private_ipv4 "$lan" "nas lan_address"
@@ -75,7 +98,9 @@ topology_check() {
   done
   [[ "$(mv_ readiness route_revision)" =~ ^rt\. ]] || fail "manifest: route_revision must be a Platform rt.* revision"
   [[ "$(mv_ route route_revision)" = "$(mv_ readiness route_revision)" ]] || fail "manifest: route and readiness route_revision differ"
-  mv_ route route_version >/dev/null; mv_ route tls_server_name >/dev/null
+  mv_ route route_version >/dev/null
+  [[ "$(mv_ certificates platform_internal_san)" = "$peer" ]] || fail "manifest: platform_internal_san differs from platform peer_name"
+  [[ "$(mv_ certificates node_gameplay_san)" = "$(mv_ route tls_server_name)" ]] || fail "manifest: node_gameplay_san differs from route tls_server_name"
   for k in profile_revision ruleset_revision content_revision starter_template_revision; do token_ok "interpretation $k" "$(mv_ interpretation "$k")"; done
   [[ "$(mv_ interpretation ruleset_revision)" = "$(mv_ readiness ruleset_revision)" && "$(mv_ interpretation content_revision)" = "$(mv_ readiness content_revision)" ]] ||
     fail "manifest: interpretation and readiness ruleset/content revisions differ"
@@ -98,6 +123,8 @@ topology_check() {
   expect_eq report.toml "$REPORT_CONFIG" "" peer_name "$peer"
   expect_eq report.toml "$REPORT_CONFIG" scope world_id "$world"
   expect_eq report.toml "$REPORT_CONFIG" scope channel_id "$channel"
+  report_identity_ok node_certificate_files key "$node_id" || fail "report.toml: [node_certificate_files] key differs from the manifest node identity"
+  report_identity_ok scope list "$node_id" || fail "report.toml: [[scope]] node_identities differs from the manifest node identity"
 }
 
 # Sourced only by test-preprod-topology.sh: define the functions and stop before the root-only commands.

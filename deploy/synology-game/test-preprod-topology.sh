@@ -70,5 +70,27 @@ fill_manifest; render; sub "$SCOPE_FILE" "s|^NODE_IDENTITY=.*|NODE_IDENTITY=CN=o
 fill_manifest; render; sub "$NODE_CONFIG" "s|^address = \"0.0.0.0:7172\"|address = \"0.0.0.0:7173\"|"; expect_refused "node.toml listener port"
 fill_manifest; render; sub "$NODE_CONFIG" "s|^\[readiness\]|[readiness]\nmap_revision = \"dup\"|"; expect_refused "repeated key"
 fill_manifest; render; sub "$NODE_CONFIG" "s|^<NONE>||;/^route_revision/d"; expect_refused "missing key"
-fill_manifest; render; ln -sf "$NODE_CONFIG" "$tmp/link"; NODE_CONFIG="$tmp/link"; expect_refused "node.toml symlink"
+fill_manifest; render; real_node="$NODE_CONFIG"; ln -sf "$NODE_CONFIG" "$tmp/link"; NODE_CONFIG="$tmp/link"; expect_refused "node.toml symlink"; NODE_CONFIG="$real_node"; rm -f "$tmp/link"
+# Review round 1: IPv4 octets, every manifest field and identity relation, both report identity locations.
+for bad in 10.0.0.999 192.168.1 10.1.2.3.4 172.32.0.1 172.15.0.1 010.0.0.1 192.168.01.5 10.0.0.256; do
+  fill_manifest; sub "$MANIFEST" "s|^lan_address = .*|lan_address = \"$bad\"|"; sub "$MANIFEST" "s|^host = .*|host = \"$bad\"|"; expect_refused "lan address $bad"
+done
+for good in 10.0.0.1 172.16.0.1 172.31.255.254 192.168.255.255; do
+  fill_manifest; sub "$MANIFEST" "s|^lan_address = .*|lan_address = \"$good\"|"; sub "$MANIFEST" "s|^host = .*|host = \"$good\"|"
+  render; sub "$NODE_CONFIG" "s|^endpoint = .*|endpoint = \"$good:8543\"|"; sub "$REPORT_CONFIG" "s|^endpoint = .*|endpoint = \"$good:8543\"|"
+  run || { echo "FAIL private address $good: $(cat "$tmp/err")" >&2; exit 1; }
+done
+fill_manifest; sub "$MANIFEST" "s|^channel_key = .*|channel_key = \"<CHANNEL_KEY>\"|"; expect_refused "placeholder channel_key"
+fill_manifest; sub "$MANIFEST" "s|^channel_key = .*|channel_key = \"Bad Key\"|"; expect_refused "invalid channel_key"
+fill_manifest; sub "$MANIFEST" "/^game_ops_authority/d"; expect_refused "missing certificates entry"
+fill_manifest; sub "$MANIFEST" "s|^character_projection = .*|character_projection = \"<SUBJECT>\"|"; expect_refused "placeholder certificates entry"
+fill_manifest; sub "$MANIFEST" "s|^node_runtime_status = .*|node_runtime_status = \"CN=other\"|"; expect_refused "runtime-status subject differs from node identity"
+fill_manifest; sub "$MANIFEST" "s|^node_native_evidence = .*|node_native_evidence = \"$NODE\"|"; expect_refused "evidence subject equals node identity"
+fill_manifest; sub "$MANIFEST" "s|^game_ops_authority = .*|game_ops_authority = \"CN=oteryn-preprod-character-projection\"|"; expect_refused "duplicate certificate subjects"
+fill_manifest; sub "$MANIFEST" "s|^platform_internal_san = .*|platform_internal_san = \"other.internal\"|"; expect_refused "platform SAN differs from peer_name"
+fill_manifest; sub "$MANIFEST" "s|^node_gameplay_san = .*|node_gameplay_san = \"other.internal\"|"; expect_refused "gameplay SAN differs from tls_server_name"
+fill_manifest; render; sub "$REPORT_CONFIG" "s|^\"$NODE\" = |\"CN=other\" = |"; expect_refused "report.toml node_certificate_files key"
+fill_manifest; render; sub "$REPORT_CONFIG" "s|^node_identities = .*|node_identities = [\"CN=other\"]|"; expect_refused "report.toml node_identities"
+fill_manifest; render; sub "$REPORT_CONFIG" "s|^node_identities = .*|node_identities = [\"$NODE\", \"CN=other\"]|"; expect_refused "report.toml extra node identity"
+fill_manifest; render; sub "$REPORT_CONFIG" "s|^\(\"$NODE\" = .*\)|\1\n\"CN=other\" = \"/x\"|"; expect_refused "report.toml extra certificate key"
 echo "preprod topology check: ok"
