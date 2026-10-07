@@ -1,7 +1,9 @@
 //! Source-backed world Item casts in the existing Channel and durable Item owners.
 //! The original normalized grant survives an uncertain COMMIT. Neither a planner
 //! result nor a historical receipt can supply current player or Content authority.
-use super::native_combat_cast::{NativeCastDispatch, UnresolvedSpellCommit};
+use super::native_combat_cast::{
+    NativeCastDispatch, ParkedMarker, ParkedMarkerKind, UnresolvedSpellCommit,
+};
 use super::{
     ChannelSpellStates, PlayerBatchPreflight, SpellCastIntent, SpellCastOutcome, check_owner_batch,
     install_owner_batch, stage_player_batch,
@@ -675,6 +677,32 @@ impl ChannelSpellStates {
     }
 }
 
+/// Moves a parked world-item attempt into its caster's marker for the resolution (§1.6).
+pub(crate) fn restore_parked_world_items(
+    states: &mut ChannelSpellStates,
+    attempt: PreparedWorldItemCast,
+) -> ParkedMarker {
+    let (actor, session, intent, command) = (
+        attempt.actor,
+        attempt.session,
+        attempt.intent,
+        attempt.batch.command,
+    );
+    super::PendingSpellMarker::restore(
+        &mut states.pending_world_items,
+        actor,
+        session,
+        command,
+        intent,
+        attempt,
+    );
+    ParkedMarker {
+        kind: ParkedMarkerKind::WorldItem,
+        actor,
+        session,
+    }
+}
+
 impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     /// Background recovery consumes only the privately retained original
     /// occurrence. It cannot allocate a new grant when no pending source exists.
@@ -731,35 +759,28 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     /// The resolver of a world-item attempt parked in `unresolved` (ARCH-SPELL-LOCK-2 §1.6). It
     /// resumes the writer's retained retry path with the original attempt: the AlreadyCommitted
     /// branch when committed, the `Applied` branch in a new commit window when not. An attempt
-    /// the pass does not install or release goes back into `unresolved`.
+    /// the pass does not install or release goes back into `unresolved`. The caller moved the
+    /// attempt into the caster's marker.
     pub(in crate::gameplay_transport) async fn resolve_parked_world_items(
         &self,
         permit: &mut SpellLanePermit,
-        attempt: PreparedWorldItemCast,
+        actor: ExactActorRef,
+        session: GameSessionId,
     ) -> &'static str {
-        let (actor, session, intent, command) = (
-            attempt.actor,
-            attempt.session,
-            attempt.intent,
-            attempt.batch.command,
+        let original = super::native_combat_cast::parked_original(
+            &self.spell_states.lock().await.pending_world_items,
+            actor,
+            session,
         );
-        {
-            let mut states = self.spell_states.lock().await;
-            super::PendingSpellMarker::restore(
-                &mut states.pending_world_items,
-                actor,
-                session,
-                command,
-                intent,
-                attempt,
-            );
-        }
+        let Some((command, intent)) = original else {
+            return "consumed";
+        };
         let access = self.refresh_spell_access(actor, session).await;
         let dispatch = self
             .cast_world_items_inner(
                 actor,
                 session,
-                command.command_id().get(),
+                command,
                 &intent,
                 &access,
                 true,

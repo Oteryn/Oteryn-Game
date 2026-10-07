@@ -179,9 +179,83 @@ pub(crate) enum UnresolvedSpellCommit {
     WorldItem(Box<super::world_item_cast::PreparedWorldItemCast>),
     Parameter(Box<super::parameter_cast::PreparedParameterCast>),
     Familiar(Box<super::familiar_cast::PreparedFamiliarCast>),
+    /// A resolution was dropped while the attempt sat in its caster's pending marker.
+    InMarker(ParkedMarker),
+}
+
+/// The pending-marker list that holds an attempt during its resolution.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ParkedMarkerKind {
+    Native,
+    WorldItem,
+    Parameter,
+    Familiar,
+}
+
+/// The caster's pending marker that holds a resolving attempt (§1.6).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ParkedMarker {
+    pub(crate) kind: ParkedMarkerKind,
+    pub(crate) actor: ExactActorRef,
+    pub(crate) session: GameSessionId,
+}
+
+/// The original of a resolving attempt from its caster's marker: the command id and the intent,
+/// only while the marker still holds the attempt.
+pub(crate) fn parked_original<I: Clone, T>(
+    markers: &[super::PendingSpellMarker<I, T>],
+    actor: ExactActorRef,
+    session: GameSessionId,
+) -> Option<(u64, I)> {
+    markers
+        .iter()
+        .find(|m| m.is_for(actor, session) && m.attempt.is_some())
+        .map(|m| (m.command.command_id().get(), m.intent.clone()))
+}
+
+/// Keeps the lane fenced across the awaits of a resolution (§1.6). From the move of the parked
+/// attempt into its caster's marker until the resolver installs, releases or parks it, dropping
+/// the resolution (a cancelled task) parks a reference to that marker, so no other key-33 writer
+/// takes the lane while the attempt may be committed and is not installed.
+struct ResolutionFence {
+    permit: Option<SpellLanePermit>,
+    marker: Option<ParkedMarker>,
+}
+
+impl ResolutionFence {
+    fn permit(&mut self) -> &mut SpellLanePermit {
+        match self.permit.as_mut() {
+            Some(permit) => permit,
+            None => unreachable!("a resolution fence holds its permit until it finishes"),
+        }
+    }
+
+    /// The resolver returned: its own exit already installed, released or parked the attempt.
+    fn finish(mut self) -> SpellLanePermit {
+        self.marker = None;
+        match self.permit.take() {
+            Some(permit) => permit,
+            None => unreachable!("a resolution fence holds its permit until it finishes"),
+        }
+    }
+}
+
+impl Drop for ResolutionFence {
+    fn drop(&mut self) {
+        if let (Some(permit), Some(marker)) = (self.permit.as_mut(), self.marker.take())
+            && !permit.has_unresolved()
+        {
+            permit
+                .open_commit_window(marker, UnresolvedSpellCommit::park_marker)
+                .park();
+        }
+    }
 }
 
 impl UnresolvedSpellCommit {
+    fn park_marker(marker: ParkedMarker) -> Box<dyn std::any::Any + Send> {
+        Box::new(Self::InMarker(marker))
+    }
     pub(crate) fn park_native(attempt: PendingNativeCast) -> Box<dyn std::any::Any + Send> {
         Box::new(Self::Native(Box::new(attempt)))
     }
@@ -227,10 +301,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     /// definite rejection that path proves, and parks again on any other exit. The resolvers
     /// never call [`Self::spell_lane_permit`].
     async fn resolve_unresolved_spell_commit(&self, unresolved: UnresolvedLane) -> SpellLanePermit {
+        // Locked while the attempt is still parked in the lane, so a cancellation here keeps it
+        // there; the move into the caster's marker below has no await.
+        let mut states = self.spell_states.lock().await;
         let (mut permit, attempt) = unresolved.into_resolution();
         let attempt = match attempt.downcast::<UnresolvedSpellCommit>() {
             Ok(attempt) => *attempt,
             Err(other) => {
+                drop(states);
                 permit
                     .open_commit_window(other, std::convert::identity)
                     .park();
@@ -238,28 +316,75 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 return permit;
             }
         };
-        let (writer, outcome) = match attempt {
-            UnresolvedSpellCommit::Native(attempt) => (
+        let marker = match attempt {
+            UnresolvedSpellCommit::Native(attempt) => restore_parked_native(&mut states, *attempt),
+            UnresolvedSpellCommit::WorldItem(attempt) => {
+                super::world_item_cast::restore_parked_world_items(&mut states, *attempt)
+            }
+            UnresolvedSpellCommit::Parameter(attempt) => {
+                super::parameter_cast::restore_parked_parameter(&mut states, *attempt)
+            }
+            UnresolvedSpellCommit::Familiar(attempt) => {
+                super::familiar_cast::restore_parked_familiar(&mut states, *attempt)
+            }
+            UnresolvedSpellCommit::InMarker(marker) => marker,
+        };
+        drop(states);
+        let mut fence = ResolutionFence {
+            permit: Some(permit),
+            marker: Some(marker),
+        };
+        let (actor, session) = (marker.actor, marker.session);
+        let lane = fence.permit();
+        let (writer, outcome) = match marker.kind {
+            ParkedMarkerKind::Native => (
                 "native",
-                self.resolve_parked_native(&mut permit, *attempt).await,
+                self.resolve_parked_native(lane, actor, session).await,
             ),
-            UnresolvedSpellCommit::WorldItem(attempt) => (
+            ParkedMarkerKind::WorldItem => (
                 "world_item",
-                self.resolve_parked_world_items(&mut permit, *attempt).await,
+                self.resolve_parked_world_items(lane, actor, session).await,
             ),
-            UnresolvedSpellCommit::Parameter(attempt) => (
+            ParkedMarkerKind::Parameter => (
                 "parameter",
-                self.resolve_parked_parameter(&mut permit, *attempt).await,
+                self.resolve_parked_parameter(lane, actor, session).await,
             ),
-            UnresolvedSpellCommit::Familiar(attempt) => (
+            ParkedMarkerKind::Familiar => (
                 "familiar",
-                self.resolve_parked_familiar(&mut permit, *attempt).await,
+                self.resolve_parked_familiar(lane, actor, session).await,
             ),
         };
+        let permit = fence.finish();
         if permit.has_unresolved() {
             log_unresolved_spell_commit(&permit, writer, outcome);
         }
         permit
+    }
+}
+
+/// Moves a parked native attempt into its caster's marker for the resolution (§1.6).
+fn restore_parked_native(
+    states: &mut ChannelSpellStates,
+    attempt: PendingNativeCast,
+) -> ParkedMarker {
+    let (actor, session, command) = (
+        attempt.actor,
+        attempt.session,
+        attempt.prepared.batch.command,
+    );
+    let intent: NativeMarkerIntent = (attempt.intent, attempt.rune, attempt.parameter.clone());
+    super::PendingSpellMarker::restore(
+        &mut states.pending_native,
+        actor,
+        session,
+        command,
+        intent,
+        attempt,
+    );
+    ParkedMarker {
+        kind: ParkedMarkerKind::Native,
+        actor,
+        session,
     }
 }
 
@@ -2563,37 +2688,29 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// The resolver of a native attempt parked in `unresolved` (ARCH-SPELL-LOCK-2 §1.6): the
-    /// control-loss retry path with the original attempt. An attempt the pass does not install
-    /// or release goes back into `unresolved`.
+    /// control-loss retry path with the original attempt, which the caller moved into the
+    /// caster's marker. An attempt the pass does not install or release goes back into
+    /// `unresolved`.
     pub(in crate::gameplay_transport) async fn resolve_parked_native(
         &self,
         permit: &mut SpellLanePermit,
-        attempt: PendingNativeCast,
+        actor: ExactActorRef,
+        session: GameSessionId,
     ) -> &'static str {
-        let (actor, session, command) = (
-            attempt.actor,
-            attempt.session,
-            attempt.prepared.batch.command,
+        let original = parked_original(
+            &self.spell_states.lock().await.pending_native,
+            actor,
+            session,
         );
-        let intent: NativeMarkerIntent = (attempt.intent, attempt.rune, attempt.parameter.clone());
-        {
-            let mut states = self.spell_states.lock().await;
-            super::PendingSpellMarker::restore(
-                &mut states.pending_native,
-                actor,
-                session,
-                command,
-                intent.clone(),
-                attempt,
-            );
-        }
+        let Some((command, (cast, rune, parameter))) = original else {
+            return "consumed";
+        };
         let access = self.refresh_spell_access(actor, session).await;
-        let (cast, rune, parameter) = intent;
         let dispatch = self
             .cast_native_combat_inner(
                 actor,
                 session,
-                command.command_id().get(),
+                command,
                 &cast,
                 rune,
                 parameter,
@@ -3246,8 +3363,100 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+    use crate::durability::spell_owner_commit::SpellLane;
+    use crate::foundation::{ChannelId, WorldId};
     fn p(x: i32, y: i32) -> TilePosition {
         TilePosition { x, y, floor: 7 }
+    }
+
+    fn identity(last: u8) -> [u8; 16] {
+        [0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, last]
+    }
+
+    fn lane() -> SpellLane {
+        SpellLane::new(
+            WorldId::decode(&identity(9)).unwrap(),
+            ChannelId::decode(&identity(41)).unwrap(),
+        )
+    }
+
+    fn marker(lane: &SpellLane) -> ParkedMarker {
+        ParkedMarker {
+            kind: ParkedMarkerKind::Native,
+            actor: ExactActorRef::transport_fixture(lane.world_id(), lane.channel_id()),
+            session: GameSessionId::decode(&identity(22)).unwrap(),
+        }
+    }
+
+    fn block_on<F: std::future::Future>(future: F) -> F::Output {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .unwrap()
+            .block_on(future)
+    }
+
+    /// The attempt a fenced lane yields to its next resolution.
+    async fn parked(lane: &SpellLane) -> Option<UnresolvedSpellCommit> {
+        let unresolved = lane.acquire().await.err()?;
+        let (_permit, attempt) = unresolved.into_resolution();
+        Some(*attempt.downcast::<UnresolvedSpellCommit>().unwrap())
+    }
+
+    #[test]
+    fn a_resolution_cancelled_at_an_await_keeps_the_lane_fenced_on_the_marker() {
+        block_on(async {
+            let lane = lane();
+            let marker = marker(&lane);
+            let resolution = async {
+                let mut fence = ResolutionFence {
+                    permit: Some(lane.acquire().await.ok().unwrap()),
+                    marker: Some(marker),
+                };
+                let _lane = fence.permit();
+                // The access refresh or a writer await that never completes before the cancel.
+                std::future::pending::<()>().await;
+                fence.finish()
+            };
+            let cancelled =
+                tokio::time::timeout(std::time::Duration::from_millis(1), resolution).await;
+            assert!(cancelled.is_err());
+            let Some(UnresolvedSpellCommit::InMarker(kept)) = parked(&lane).await else {
+                unreachable!("a cancelled resolution parks its marker")
+            };
+            assert_eq!(kept, marker);
+            assert!(lane.acquire().await.is_ok());
+        });
+    }
+
+    #[test]
+    fn a_finished_resolution_leaves_the_lane_open_and_a_parked_attempt_wins_over_the_marker() {
+        block_on(async {
+            let lane = lane();
+            let marker = marker(&lane);
+            let fence = ResolutionFence {
+                permit: Some(lane.acquire().await.ok().unwrap()),
+                marker: Some(marker),
+            };
+            drop(fence.finish());
+            assert!(lane.acquire().await.is_ok());
+
+            let mut fence = ResolutionFence {
+                permit: Some(lane.acquire().await.ok().unwrap()),
+                marker: Some(marker),
+            };
+            let mut other = marker;
+            other.kind = ParkedMarkerKind::Familiar;
+            fence
+                .permit()
+                .open_commit_window(other, UnresolvedSpellCommit::park_marker)
+                .park();
+            drop(fence);
+            let Some(UnresolvedSpellCommit::InMarker(kept)) = parked(&lane).await else {
+                unreachable!("the writer's own park stays")
+            };
+            assert_eq!(kept, other);
+        });
     }
     #[test]
     fn rune_instance_and_revision_are_part_of_original_command_binding() {
