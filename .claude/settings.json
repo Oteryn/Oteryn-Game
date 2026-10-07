@@ -2,8 +2,7 @@
   "fastMode": false,
   "permissions": {
     "allow": [
-      "mcp__claude-code-remote__create_session",
-      "Bash(gh api -X POST repos/Oteryn/Oteryn-Game/pulls/*/ccr/comments/*/resolve)"
+      "mcp__claude-code-remote__create_session"
     ]
   }
 }
