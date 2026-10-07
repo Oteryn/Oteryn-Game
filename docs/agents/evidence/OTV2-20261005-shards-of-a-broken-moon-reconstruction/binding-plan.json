@@ -1343,14 +1343,31 @@
       "visible_stage": "s16",
       "kind": "NPC_DIALOGUE_TERMINAL",
       "trigger": {
-        "npc": "oteryn:npc.saraki",
-        "dialogue": "oteryn:dialogue.npc.saraki"
+        "routes": [
+          {
+            "npc": "oteryn:npc.saraki",
+            "dialogue": "oteryn:dialogue.npc.saraki",
+            "branch_sequence": [
+              "hi",
+              "moon"
+            ]
+          },
+          {
+            "npc": "oteryn:npc.nilavarna",
+            "dialogue": "oteryn:dialogue.npc.nilavarna",
+            "branch_sequence": [
+              "hi",
+              "moon"
+            ]
+          }
+        ],
+        "convergence": "same terminal transition + same reward claim"
       },
       "requires": [
         "prison_escaped"
       ],
       "outcome": "completed",
-      "evidence": "FACT",
+      "evidence": "FACT_POST_RELEASE_TERMINAL_ROUTES",
       "owner": "NPC-QUEST-1 + RewardClaim/Durability + QuestState",
       "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
       "reward_evidence_ref": "terminal-reward-evidence.json",
@@ -1377,9 +1394,15 @@
         "achievement": "oteryn:achievement/amati_s_echo@1",
         "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
         "execution_owner": "NPC-QUEST-1 + RewardClaim/Durability",
-        "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only."
+        "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only.",
+        "route_invariant": "All qualified completion routes must resolve to the same once-per-character claim key; route choice must not create a second claim identity."
       },
-      "note": "Both terminal NPC routes must use the same once-per-character claim identity."
+      "note": "Both terminal NPC routes must use the same once-per-character claim identity.",
+      "source_notes": [
+        "Post-release TibiaWiki explicitly permits Saraki or Nilavarna for quest completion with Hi -> Moon.",
+        "Both completion routes grant the same quest completion, Amati's Echo and one Skewered Fish.",
+        "Independent ItemLevel guide confirms Saraki completion and Skewered Fish reward."
+      ]
     },
     {
       "id": "complete_nilavarna_alt",
