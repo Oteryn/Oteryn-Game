@@ -42,23 +42,23 @@ use crate::foundation::{
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 use sqlx::{Connection, Executor};
 
-type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+pub(crate) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 const WORLD: u8 = 42;
 const CHANNEL: u8 = 43;
 const RAT_XP: i64 = 5;
 
-fn id(seed: u8) -> [u8; 16] {
+pub(crate) fn id(seed: u8) -> [u8; 16] {
     [
         seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
     ]
 }
 
-fn debug<E: std::fmt::Debug>(error: E) -> String {
+pub(crate) fn debug<E: std::fmt::Debug>(error: E) -> String {
     format!("{error:?}")
 }
 
-fn configured_admin() -> Option<String> {
+pub(crate) fn configured_admin() -> Option<String> {
     match std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
         Ok(value) => Some(value),
         Err(_) => {
@@ -70,7 +70,7 @@ fn configured_admin() -> Option<String> {
     }
 }
 
-fn runtime() -> TestResult<tokio::runtime::Runtime> {
+pub(crate) fn runtime() -> TestResult<tokio::runtime::Runtime> {
     Ok(tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?)
@@ -341,18 +341,18 @@ async fn seed_character(pool: &sqlx::PgPool) -> TestResult {
     Ok(())
 }
 
-struct Harness {
+pub(crate) struct Harness {
     database: Database,
-    root: DurabilityRoot,
-    pool: sqlx::PgPool,
-    recovery: CharacterRecoveryStore,
+    pub(crate) root: DurabilityRoot,
+    pub(crate) pool: sqlx::PgPool,
+    pub(crate) recovery: CharacterRecoveryStore,
     retained: std::path::PathBuf,
-    node: NodeIncarnationProof,
+    pub(crate) node: NodeIncarnationProof,
     writer: RuntimeScopeAssignmentWriter,
 }
 
 impl Harness {
-    async fn create(admin: String, tag: &str) -> TestResult<Self> {
+    pub(crate) async fn create(admin: String, tag: &str) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
@@ -408,7 +408,7 @@ impl Harness {
         })
     }
 
-    async fn count(&self, relation: &str) -> TestResult<i64> {
+    pub(crate) async fn count(&self, relation: &str) -> TestResult<i64> {
         Ok(sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
             "SELECT count(*) FROM {relation}"
         )))
@@ -416,7 +416,7 @@ impl Harness {
         .await?)
     }
 
-    async fn cleanup(self) -> TestResult {
+    pub(crate) async fn cleanup(self) -> TestResult {
         drop(self.writer);
         self.pool.close().await;
         self.database.cleanup().await?;
@@ -425,7 +425,7 @@ impl Harness {
     }
 }
 
-fn death_fixture() -> TestResult<CombatDeathFixture> {
+pub(crate) fn death_fixture() -> TestResult<CombatDeathFixture> {
     CombatDeathFixture::new(
         WorldId::decode(&id(WORLD)).map_err(debug)?,
         ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
@@ -434,7 +434,7 @@ fn death_fixture() -> TestResult<CombatDeathFixture> {
     .map_err(|error| debug(error).into())
 }
 
-fn ground() -> DeathGroundContext {
+pub(crate) fn ground() -> DeathGroundContext {
     DeathGroundContext {
         map_revision: "fixture:combat-death-reward.map.r1".into(),
         content_revision: "fixture:combat-death-reward.content.r1".into(),
@@ -519,7 +519,7 @@ fn context() -> ProgressionRevisionContext<String> {
     }
 }
 
-fn progression_binding() -> RewardProgressionBinding<2> {
+pub(crate) fn progression_binding() -> RewardProgressionBinding<2> {
     let context = context();
     RewardProgressionBinding {
         context: context.clone(),
@@ -571,7 +571,7 @@ fn gameplay_fence(
     })
 }
 
-fn reward_principal(
+pub(crate) fn reward_principal(
     scope_ownership_generation: u64,
     character_revision: u64,
 ) -> TestResult<RewardPrincipal> {
@@ -603,7 +603,7 @@ fn input(
 /// §1.2: the facts the projecting owner turn captures under the lock, for
 /// the fixed reward principal `id(41)`. No clocked damage is recorded here,
 /// so the facts carry no last-damage time.
-fn capture(
+pub(crate) fn capture(
     fixture: &mut CombatDeathFixture,
     actor: ExactActorRef,
 ) -> TestResult<ProjectedCreatureDeathFacts> {
@@ -633,7 +633,7 @@ fn captured_principal(
     })
 }
 
-fn uuid_text(bytes: [u8; 16]) -> String {
+pub(crate) fn uuid_text(bytes: [u8; 16]) -> String {
     let hex: String = bytes.iter().map(|byte| format!("{byte:02x}")).collect();
     format!(
         "{}-{}-{}-{}-{}",
@@ -647,17 +647,17 @@ fn uuid_text(bytes: [u8; 16]) -> String {
 
 impl Harness {
     /// Live items with a Ground location (the corpses; never loot).
-    async fn ground_items(&self) -> TestResult<i64> {
+    pub(crate) async fn ground_items(&self) -> TestResult<i64> {
         self.count("game_item_ground_locations").await
     }
 
-    async fn corpse_entries(&self) -> TestResult<i64> {
+    pub(crate) async fn corpse_entries(&self) -> TestResult<i64> {
         self.count("game_item_corpse_container_entries").await
     }
 
     /// `(item, parent, ordinal)` of every corpse container entry, ordered by
     /// ordinal.
-    async fn entry_rows(&self) -> TestResult<Vec<([u8; 16], [u8; 16], String)>> {
+    pub(crate) async fn entry_rows(&self) -> TestResult<Vec<([u8; 16], [u8; 16], String)>> {
         use sqlx::Row;
         let rows = sqlx::query(
             "SELECT item_instance_id::text AS item, parent_item_instance_id::text AS parent, \
@@ -687,7 +687,7 @@ impl Harness {
 
     /// `corpse_top_damage_character_id::text` and whether `materialized_at`
     /// was set, for the corpse receipt of `corpse`.
-    async fn corpse_receipt(&self, corpse: [u8; 16]) -> TestResult<(String, bool)> {
+    pub(crate) async fn corpse_receipt(&self, corpse: [u8; 16]) -> TestResult<(String, bool)> {
         use sqlx::Row;
         let row = sqlx::query(
             "SELECT corpse_top_damage_character_id::text AS winner, \
