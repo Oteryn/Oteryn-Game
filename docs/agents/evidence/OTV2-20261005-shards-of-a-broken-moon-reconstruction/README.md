@@ -1,7 +1,7 @@
 # Shards of a Broken Moon â€” reconstruction evidence packet
 
-Task: `SHARDS-RECON-0`  
-Mode: evidence-only / no runtime mutation  
+Task: `SHARDS-RECON-0`
+Mode: evidence-only / no runtime mutation
 Original base: `fc3db9abfb4ae05c13b0264752cfbbca13a276e6`
 Current dependency readback: `3bacc59e6adbf138655e6f0c1cf0b4fdf9a36096` (2026-10-07)
 Walkthrough: `https://www.youtube.com/watch?v=Zz-7UyufXbU&t=1295s`

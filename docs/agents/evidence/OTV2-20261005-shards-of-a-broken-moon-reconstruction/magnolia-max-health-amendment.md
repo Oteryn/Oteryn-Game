@@ -28,7 +28,7 @@ Magnolia's first lethal is intentionally two-step: inline `prevent_death + max_h
 
 The earlier `set_health(max,current)` proposal below is retained only as historical evidence of the gap and is **REJECTED/SUPERSEDED** by #1891.
 
-Quest: Shards of a Broken Moon  
+Quest: Shards of a Broken Moon
 Encounter role: `The Moonsnow Magnolia`
 
 ## Exact gap

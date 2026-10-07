@@ -1,6 +1,6 @@
 # Shards of a Broken Moon — executable micro-transition plan
 
-Status: **EVIDENCE / PROPOSED BINDING PLAN ONLY**  
+Status: **EVIDENCE / PROPOSED BINDING PLAN ONLY**
 No runtime/content authority is granted by this document.
 
 This refines the 16-stage authored recipe after comparing:

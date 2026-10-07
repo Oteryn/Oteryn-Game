@@ -2,8 +2,8 @@
 
 Status: **PROPOSED ARCHITECTURE AMENDMENT / NO RUNTIME MUTATION**
 
-Quest: Shards of a Broken Moon  
-Door: `33899,32666,8`  
+Quest: Shards of a Broken Moon
+Door: `33899,32666,8`
 Key: `oteryn:item.tibia.i54262` (Key (Asura Citadel))
 
 ## Exact source facts
