@@ -1415,11 +1415,11 @@
   ],
   "blockers": [
     "QUEST-GATE-1 is dependency-ready on current main but executable child is not yet integrated",
-    "QUEST-TRIGGER-1 durable-cause architecture is resolved by PR #1886 option A (root CommandRef + distinct transition_key invariant); runtime remains serialized after QUEST-GATE-1 and waits for #1886 merge/allocation",
+    "QUEST-TRIGGER-1 durable-cause architecture is resolved and merged by #1886 (root CommandRef + distinct transition_key invariant); executable runtime is still unallocated and remains serialized after QUEST-GATE-1",
     "NPC-QUEST-1 remains blocked by NPC-TALK-1; accepted NPC-TALK-1 dependencies are specifically NPC-WIRE-1 (merged), NPC-PLACE-1b (not yet implemented), and MAP-CUTOVER-1b (not yet implemented)",
     "Asura Citadel door needs ITEM-USE-1 USE-WITH execution + identity-based i54262 Door/Key binding + post-completion bypass; donor has no keyNumber",
-    "Magnolia 60k phase-2 representation is architect-resolved by PR #1891 option B (current head b8f3d605) (`attribute max_health set 60000` -> queued `heal full`); execution still waits on #1891 merge + ENC-RT-1/ENC-COMBAT-1 -> ENC-OUTCOME-1",
-    "Escape geometry/Rope Spot are resolved end-to-end; remaining prison content blocker is donor 54610: add exact Crystal 54610 -> oteryn:item.tibia.i54610 binding, admit canonical Item, then qualify materializable/light-source semantics. Do not alias to i34017.",
+    "Magnolia 60k phase-2 semantics are architect-resolved and merged by #1891 (`attribute max_health set 60000` -> queued `heal full` -> phase 2); current Rust ProjectV2/schema still needs the accepted max_health implementation and ENC-RT-1/ENC-COMBAT-1 -> ENC-OUTCOME-1 runtime",
+    "Escape geometry/Rope Spot are resolved end-to-end; Lit Torch i54610 successor identity/admission is proof-complete (holds=[]), but the Item successor has not yet been admitted/materialized",
     "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
     "No full real-character start→reward→relog/restart E2E qualification",
     "Jaracal Mount exact donor identity is resolved; Skewered Fish i54638 already has an EXACT Crystal->A12 binding on main, but lacks active materializable Item admission. Mount successor + tame/account-unlock runtime remain; tame chance semantics UNKNOWN."
@@ -1803,6 +1803,11 @@
       "evidence_file": "docs/agents/evidence/OTV2-20261005-shards-of-a-broken-moon-reconstruction/item-successor-admission-candidate.json",
       "lit_torch_54610": "PROOF_COMPLETE_NOT_ADMITTED",
       "skewered_fish_54638": "EXISTING_IDENTITY_PROMOTION_VALIDATED_NOT_ADMITTED"
+    },
+    "current_main": "f80428d57660fce078ed4a4c37739d3383664c23",
+    "merged_architecture": {
+      "quest_trigger_cause_pr": 1886,
+      "magnolia_max_health_pr": 1891
     }
   }
 }
