@@ -19,14 +19,14 @@ class QuestTalkNpcCandidatesTest(unittest.TestCase):
     def test_population_is_exact_and_fail_closed(self):
         self.assertEqual(
             {
-                "talk_stages": 247,
+                "talk_stages": 250,
                 "statuses": {
                     "AMBIGUOUS_MULTIPLE_NPCS": 36,
                     "EXACT_NPC_NO_DIALOGUE": 23,
-                    "EXACT_NPC_WITH_DIALOGUE": 171,
+                    "EXACT_NPC_WITH_DIALOGUE": 174,
                     "NO_EXACT_NPC": 17,
                 },
-                "dialogue_candidates": 171,
+                "dialogue_candidates": 174,
                 "native_dispatch_bindings": 0,
                 "selected_dialogue_branches": 0,
             },
@@ -61,6 +61,19 @@ class QuestTalkNpcCandidatesTest(unittest.TestCase):
             ["oteryn:npc.rabaz"],
             [match["npc_ref"]["key"] for match in row["matches"]],
         )
+
+    def test_newly_lowered_terminal_quest_stages_resolve_exact_npcs_only(self):
+        cases = {
+            ("oteryn:quest.barbarian_arena_quest", "s1"): "oteryn:npc.halvar",
+            ("oteryn:quest.rift_warrior_outfits_quest", "s3"): "oteryn:npc.cledwyn",
+            ("oteryn:quest.rift_warrior_outfits_quest", "s5"): "oteryn:npc.cledwyn",
+        }
+        for stage, npc_key in cases.items():
+            row = self.by_stage[stage]
+            self.assertEqual("EXACT_NPC_WITH_DIALOGUE", row["status"])
+            self.assertEqual([npc_key], [match["npc_ref"]["key"] for match in row["matches"]])
+            self.assertIsNone(row["selected_NPC_branch"])
+            self.assertIsNone(row["native_dispatch_binding"])
 
     def test_multiple_exact_npcs_are_held_not_selected(self):
         row = self.by_stage[

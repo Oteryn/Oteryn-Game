@@ -36,9 +36,9 @@ Qualified source-derived Quest `talk` stages against existing canonical NPC and 
 
 Population at candidate freeze:
 
-- source-derived talk stages audited: **247**
-- `EXACT_NPC_WITH_DIALOGUE`: **171 stages**
-  - **93 quests**
+- source-derived talk stages audited: **250**
+- `EXACT_NPC_WITH_DIALOGUE`: **174 stages**
+  - **95 quests**
   - **129 unique canonical NPCs**
   - **129 unique canonical Dialogues**
 - `EXACT_NPC_NO_DIALOGUE`: **23**
@@ -46,6 +46,17 @@ Population at candidate freeze:
 - `NO_EXACT_NPC`: **17**
 - runtime bindings: **0**
 - selected dialogue branches: **0**
+
+
+
+### Current-main refresh
+
+After merging current main, three newly lowered talk stages entered the source-derived binding plan:
+Barbarian Arena s1 (Halvar) and Rift Warrior Outfits s3/s5 (Cledwyn).
+All three resolve to one exact canonical NPC+Dialogue while the other stage targets
+(Greenhorn, Silver Token) remain non-NPC targets. This moves the deterministic
+population from 247 to 250 and exact NPC+Dialogue candidates from 171 to 174;
+the other classification counts remain unchanged.
 
 ## Architecture and source of truth
 
@@ -121,12 +132,14 @@ Representative evidence:
 
 ### Focused
 
-- generator: PASS, **247** source-derived talk stages
-- exact NPC+Dialogue candidates: **171**
-- dedicated unittest: **7/7 PASS**
+- generator: PASS, **250** source-derived talk stages
+- exact NPC+Dialogue candidates: **174**
+- dedicated unittest: **8/8 PASS**
 - generator `--check`: PASS
 - committed packet byte-for-byte drift check: PASS
 - `git diff --check`: PASS
+- `python -m unittest discover -s tools/agents/tests`: **59/59 PASS**
+- `python tools/agents/validate_governance.py`: PASS (re-run after recording this validation evidence)
 
 ### Component/integration
 

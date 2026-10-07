@@ -163,11 +163,11 @@ def expected(root: Path):
 
     records.sort(key=lambda row: (row["quest"], row["stage_key"]))
     counts = Counter(row["status"] for row in records)
-    if len(records) != 247:
+    if len(records) != 250:
         raise ValueError("source-derived talk stage population changed")
     expected_counts = Counter(
         {
-            "EXACT_NPC_WITH_DIALOGUE": 171,
+            "EXACT_NPC_WITH_DIALOGUE": 174,
             "EXACT_NPC_NO_DIALOGUE": 23,
             "AMBIGUOUS_MULTIPLE_NPCS": 36,
             "NO_EXACT_NPC": 17,

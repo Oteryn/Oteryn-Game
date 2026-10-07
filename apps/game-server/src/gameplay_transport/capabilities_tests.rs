@@ -5,7 +5,9 @@ use super::super::connection::{
     FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS, ResumeAttempt,
     SessionContinuity, StepOutcome, admit_frame, serve_admitted,
 };
-use super::super::item_view::{InventoryItems, ItemKey, ItemTargetObservation, ViewItem};
+use super::super::item_view::{
+    InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity, SessionItemView, ViewItem,
+};
 use super::super::world_object::{
     SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
 };
@@ -116,24 +118,34 @@ fn the_production_offered_set_is_the_registry_offered_set_and_registered()
             offered.push((id, ids(&capability["requires"])?));
         }
     }
-    let production: Vec<(u32, Vec<u32>)> = PRODUCTION_OFFERED_CAPABILITIES
+    let pairs = |set: &[OfferedCapability]| -> Vec<(u32, Vec<u32>)> {
+        set.iter()
+            .map(|capability| (capability.id, capability.requires.to_vec()))
+            .collect()
+    };
+    // The registry offered set is the set a generation pinning a non-empty Item key set offers;
+    // without one, production falls back to that set without capability 4.
+    assert_eq!(pairs(ITEM_VIEW_OFFERED_CAPABILITIES), offered);
+    let fallback: Vec<(u32, Vec<u32>)> = offered
         .iter()
-        .map(|capability| (capability.id, capability.requires.to_vec()))
+        .filter(|(id, _)| *id != CAPABILITY_ITEM_VIEW_MOVE_V1)
+        .cloned()
         .collect();
-    assert_eq!(production, offered);
-    assert!(
-        PRODUCTION_OFFERED_CAPABILITIES
-            .windows(2)
-            .all(|pair| pair[0].id < pair[1].id)
-    );
-    assert!(PRODUCTION_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
-    for capability in PRODUCTION_OFFERED_CAPABILITIES {
-        assert!(
-            capability
-                .requires
-                .iter()
-                .all(|required| registered.contains(required))
-        );
+    assert_eq!(pairs(PRODUCTION_OFFERED_CAPABILITIES), fallback);
+    for set in [
+        PRODUCTION_OFFERED_CAPABILITIES,
+        ITEM_VIEW_OFFERED_CAPABILITIES,
+    ] {
+        assert!(set.windows(2).all(|pair| pair[0].id < pair[1].id));
+        assert!(set.len() <= SELECTED_CAPACITY);
+        for capability in set {
+            assert!(
+                capability
+                    .requires
+                    .iter()
+                    .all(|required| registered.contains(required))
+            );
+        }
     }
     // `REGISTERED_CAPABILITY_IDS_V1` is what the acceptance encoder checks a selected set
     // against: the whole offered set, selected at once, is accepted, and an unregistered ID is
@@ -257,6 +269,19 @@ fn the_production_set_selects_only_capabilities_6_13_and_17_whatever_the_client_
             .as_ref()
             .map(SelectedCapabilities::as_slice),
         Some(&[6, 13, 17][..])
+    );
+    // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
+    assert_eq!(
+        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
+            .as_ref()
+            .map(SelectedCapabilities::as_slice),
+        Some(&[4, 6, 13, 17][..])
+    );
+    assert_eq!(
+        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
+            .as_ref()
+            .map(SelectedCapabilities::as_slice),
+        Some(&[13][..])
     );
     Ok(())
 }
@@ -613,6 +638,48 @@ fn production_admission_selects_capabilities_6_13_and_17_and_nothing_else()
             admitted.continuity.selected_capabilities,
             SelectedCapabilities::NONE
         );
+        Ok(())
+    })
+}
+
+#[test]
+fn item_view_admission_selecting_4_sends_domain_9_and_without_4_none() -> Result<(), Box<dyn Error>>
+{
+    run(async {
+        // MAP-ITEM-REF-1: the Item view offered set selects 4 with its required 6, and the
+        // admitted session is sent domain 9; a session admitted without 4 is sent none. The
+        // fixture serves no combat state, so the client here does not support 17.
+        let authority = NegotiatingAuthority::new(Some(ITEM_VIEW_OFFERED_CAPABILITIES));
+        let inventory = authority
+            .observe_character_inventory(
+                ExactActorRef::transport_fixture(
+                    WorldId::decode(&WORLD)?,
+                    ChannelId::decode(&CHANNEL)?,
+                ),
+                GameSessionId::decode(&SESSION)?,
+            )
+            .await
+            .ok_or("inventory")?;
+        let [nine, _] = SessionItemView::resume(ItemViewContinuity::default())
+            .snapshot(inventory, None)
+            .map_err(|error| format!("{error:?}"))?;
+        let carries_nine = |frames: &[Vec<u8>]| {
+            frames
+                .concat()
+                .windows(nine.payload.len())
+                .any(|w| w == nine.payload)
+        };
+        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [4, 6, 13]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        let (_, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(carries_nine(&frames));
+        let (admitted, frames) = admit(&authority, &bootstrap(&[6, 13])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [6, 13]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        let (_, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(!frames.is_empty());
+        assert!(!carries_nine(&frames));
         Ok(())
     })
 }
