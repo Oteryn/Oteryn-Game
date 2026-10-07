@@ -3,6 +3,9 @@
 //! This crate owns orchestration only. It does not implement a second protocol, admission path,
 //! reconnect contract, gameplay authority, or privileged testing shortcut.
 
+#[cfg(test)]
+mod live_tests;
+
 use oteryn_dev_client::{DevClientSession, JoinRequest, connect_session};
 use oteryn_protocol_oteryn::CharacterId;
 use oteryn_protocol_oteryn::actor_spell::SpellTarget;
@@ -18,6 +21,7 @@ use std::net::SocketAddr;
 use std::num::{NonZeroU32, NonZeroUsize};
 use std::pin::Pin;
 use std::sync::Arc;
+use std::task::Poll;
 use std::time::{Duration, Instant};
 use tokio::sync::{Semaphore, watch};
 use tokio::task::JoinHandle;
@@ -302,7 +306,12 @@ impl BotRunner for LiveBotRunner {
                 return BotReport::shutdown(&spec, metrics);
             }
 
-            let mut session = match connect_session(spec.join_request()).await {
+            let Some(connection) =
+                unless_shutdown(&mut context.shutdown, connect_session(spec.join_request())).await
+            else {
+                return BotReport::shutdown(&spec, metrics);
+            };
+            let mut session = match connection {
                 Ok(session) => session,
                 Err(_) => {
                     metrics.connect_failures = metrics.connect_failures.saturating_add(1);
@@ -336,7 +345,11 @@ impl BotRunner for LiveBotRunner {
                     }
                     BotAction::Step(direction) => {
                         let started = Instant::now();
-                        let result = session.step(*direction).await;
+                        let Some(result) =
+                            unless_shutdown(&mut context.shutdown, session.step(*direction)).await
+                        else {
+                            return BotReport::shutdown(&spec, metrics);
+                        };
                         metrics.record_command(
                             BotCommandClass::Step,
                             started.elapsed(),
@@ -345,14 +358,20 @@ impl BotRunner for LiveBotRunner {
                         if result.is_err() {
                             return BotReport::failed(&spec, BotFailureKind::Command, metrics);
                         }
-                        metrics.drain_events(&mut session);
                     }
                     BotAction::UseObject {
                         placement,
                         expected_revision,
                     } => {
                         let started = Instant::now();
-                        let result = session.use_object(placement, *expected_revision).await;
+                        let Some(result) = unless_shutdown(
+                            &mut context.shutdown,
+                            session.use_object(placement, *expected_revision),
+                        )
+                        .await
+                        else {
+                            return BotReport::shutdown(&spec, metrics);
+                        };
                         metrics.record_command(
                             BotCommandClass::UseObject,
                             started.elapsed(),
@@ -361,7 +380,6 @@ impl BotRunner for LiveBotRunner {
                         if result.is_err() {
                             return BotReport::failed(&spec, BotFailureKind::Command, metrics);
                         }
-                        metrics.drain_events(&mut session);
                     }
                     BotAction::Cast {
                         spell,
@@ -369,7 +387,14 @@ impl BotRunner for LiveBotRunner {
                         aim_at_target,
                     } => {
                         let started = Instant::now();
-                        let result = session.cast_spell(*spell, *target, *aim_at_target).await;
+                        let Some(result) = unless_shutdown(
+                            &mut context.shutdown,
+                            session.cast_spell(*spell, *target, *aim_at_target),
+                        )
+                        .await
+                        else {
+                            return BotReport::shutdown(&spec, metrics);
+                        };
                         metrics.record_command(
                             BotCommandClass::Cast,
                             started.elapsed(),
@@ -378,11 +403,14 @@ impl BotRunner for LiveBotRunner {
                         if result.is_err() {
                             return BotReport::failed(&spec, BotFailureKind::Command, metrics);
                         }
-                        metrics.drain_events(&mut session);
                     }
                     BotAction::UseItem(handle) => {
                         let started = Instant::now();
-                        let result = session.use_item(*handle).await;
+                        let Some(result) =
+                            unless_shutdown(&mut context.shutdown, session.use_item(*handle)).await
+                        else {
+                            return BotReport::shutdown(&spec, metrics);
+                        };
                         metrics.record_command(
                             BotCommandClass::UseItem,
                             started.elapsed(),
@@ -391,11 +419,14 @@ impl BotRunner for LiveBotRunner {
                         if result.is_err() {
                             return BotReport::failed(&spec, BotFailureKind::Command, metrics);
                         }
-                        metrics.drain_events(&mut session);
                     }
                     BotAction::MoveItem(intent) => {
                         let started = Instant::now();
-                        let result = session.move_item(intent).await;
+                        let Some(result) =
+                            unless_shutdown(&mut context.shutdown, session.move_item(intent)).await
+                        else {
+                            return BotReport::shutdown(&spec, metrics);
+                        };
                         metrics.record_command(
                             BotCommandClass::MoveItem,
                             started.elapsed(),
@@ -404,11 +435,14 @@ impl BotRunner for LiveBotRunner {
                         if result.is_err() {
                             return BotReport::failed(&spec, BotFailureKind::Command, metrics);
                         }
-                        metrics.drain_events(&mut session);
                     }
                     BotAction::Chat(intent) => {
                         let started = Instant::now();
-                        let result = session.chat(intent).await;
+                        let Some(result) =
+                            unless_shutdown(&mut context.shutdown, session.chat(intent)).await
+                        else {
+                            return BotReport::shutdown(&spec, metrics);
+                        };
                         metrics.record_command(
                             BotCommandClass::Chat,
                             started.elapsed(),
@@ -417,14 +451,51 @@ impl BotRunner for LiveBotRunner {
                         if result.is_err() {
                             return BotReport::failed(&spec, BotFailureKind::Command, metrics);
                         }
-                        metrics.drain_events(&mut session);
                     }
+                }
+                // A command result may precede its pushed deltas. Give the real
+                // session one bounded read window before draining/completing.
+                if !matches!(action, BotAction::Idle(_))
+                    && !service_idle(
+                        &mut session,
+                        context.liveness_slice,
+                        context.liveness_slice,
+                        &mut context.shutdown,
+                        &mut metrics,
+                    )
+                    .await
+                {
+                    return if context.shutdown_requested() {
+                        BotReport::shutdown(&spec, metrics)
+                    } else {
+                        BotReport::failed(&spec, BotFailureKind::Liveness, metrics)
+                    };
                 }
             }
 
             BotReport::completed(&spec, metrics)
         })
     }
+}
+
+// Cancellation drops the in-flight exchange and the caller then drops the
+// session. Never reuse a session after cancelling a partially consumed frame.
+async fn unless_shutdown<F: Future>(
+    shutdown: &mut watch::Receiver<bool>,
+    operation: F,
+) -> Option<F::Output> {
+    if *shutdown.borrow() {
+        return None;
+    }
+    let mut changed = std::pin::pin!(shutdown.changed());
+    let mut operation = std::pin::pin!(operation);
+    std::future::poll_fn(|cx| {
+        if changed.as_mut().poll(cx).is_ready() {
+            return Poll::Ready(None);
+        }
+        operation.as_mut().poll(cx).map(Some)
+    })
+    .await
 }
 
 async fn service_idle(
@@ -440,7 +511,11 @@ async fn service_idle(
             return false;
         }
         let current = remaining.min(liveness_slice);
-        if session.service_liveness(current).await.is_err() {
+        let Some(result) = unless_shutdown(shutdown, session.service_liveness(current)).await
+        else {
+            return false;
+        };
+        if result.is_err() {
             metrics.liveness_failures = metrics.liveness_failures.saturating_add(1);
             return false;
         }

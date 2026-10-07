@@ -2042,8 +2042,10 @@ version = "0.1.0"
 dependencies = [
  "oteryn-dev-client",
  "oteryn-protocol-oteryn",
+ "rcgen",
  "rustls",
  "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]

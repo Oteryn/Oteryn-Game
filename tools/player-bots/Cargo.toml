@@ -17,5 +17,9 @@ oteryn-protocol-oteryn = { version = "=0.1.0", path = "../../crates/protocol-ote
 rustls.workspace = true
 tokio.workspace = true
 
+[dev-dependencies]
+rcgen.workspace = true
+tokio-rustls.workspace = true
+
 [lints]
 workspace = true
