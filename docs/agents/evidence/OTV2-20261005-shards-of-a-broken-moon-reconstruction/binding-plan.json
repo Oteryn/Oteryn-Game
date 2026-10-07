@@ -1591,7 +1591,7 @@
       ],
       "evidence": "FACT_SEMANTICS_RUNTIME_COMPOSITION_MISSING",
       "owner": "QuestGate + Achievement",
-      "blocker": "AccountHasAchievement predicate is still missing, and World/QUEST-GATE-1 owner must confirm candidate door 54613@33873,32620,8 as the active served placement_key before activation.",
+      "blocker": "AccountHasAchievement predicate is missing; World/QUEST-GATE-1 must bind/confirm the served placement_key for qualified door 54613@33873,32620,8 before activation.",
       "reward_evidence_ref": "terminal-reward-evidence.json",
       "source_reference": {
         "title": "Shards of a Broken Moon Quest",
@@ -1602,9 +1602,9 @@
         "y": 32620,
         "z": 8
       },
-      "placement_status": "HIGH_CONFIDENCE_CROSS_SOURCE_CANDIDATE_WORLD_OWNER_CONFIRMATION_REQUIRED",
+      "placement_status": "QUALIFIED_EXACT_CROSS_SOURCE_TOPOLOGY_ACTIVE_WORLD_CONFIRMATION_REQUIRED",
       "placement_owner": "World / QUEST-GATE-1 content binding",
-      "note": "Semantics are proven. Placement 33873,32620,8 is a high-confidence cross-source candidate, but activation must remain fail-closed until the World/QUEST-GATE-1 owner confirms the current served placement_key against the active world generation.",
+      "note": "Door coordinate is now qualified by exact pinned OTBM + independent porelease screenshot + current TibiaMaps topology at the same coordinate. Activation still requires the World/QUEST-GATE-1 owner to bind the served placement_key for the current world generation.",
       "door": {
         "donor_item_id": 54613,
         "donor_name": "closed door",
@@ -1627,7 +1627,30 @@
         "uniqueness": "Only northern closed-door placement in the active Asura Citadel sector; other Summer doors map to already-qualified quest interiors farther south.",
         "screenshot": "Post-release ItemLevel screenshot 'Door that leads to Forbidden Gardens in Tibia' shows a red/ornate door at the single narrow northern connector to the circular garden area.",
         "topology": "Candidate is on dirt/earth terrain inside a mountain-framed choke point, with vegetation/dry-grass decoration north of the door, matching the screenshot.",
-        "raw_tibiawiki_forbidden_gardens_oldid_438014": "mapa is empty and rotaLocal is empty; no exact coordinate is published there."
+        "raw_tibiawiki_forbidden_gardens_oldid_438014": "mapa is empty and rotaLocal is empty; no exact coordinate is published there.",
+        "current_tibiamaps_corroboration": {
+          "source": "github.com/tibiamaps/tibia-map-data main/data/floor-08-map.png",
+          "fetched": "2026-10-07",
+          "bounds_sha256": "2217fc32695d1302b6864d078b86247a93aa0cf673a4d9f7740947221c6d4414",
+          "floor08_map_sha256": "f23b0f5e8f58eb910eeec2c16108b77e80c6befb1d80bf13d86f9dabb64cc954",
+          "frame": {
+            "x_min": 31744,
+            "y_min": 30976,
+            "width": 2560,
+            "height": 2048
+          },
+          "candidate_pixel": {
+            "x": 2129,
+            "y": 1644
+          },
+          "observation": "A 220x220-tile crop centered on the candidate reproduces the ItemLevel minimap topology: large Asura Citadel complex south, narrow blue connector/gate at center, circular Forbidden Gardens north."
+        },
+        "itemlevel_screenshot": {
+          "source": "https://itemlevel.net/wp-content/uploads/2026/07/Door-that-leads-to-Forbidden-Gardens-in-Tibia-1920x946.jpg",
+          "sha256": "18e33d415b5f68aef866dda2042e068df6f3db229df9ede6724b3b9a0fcb242d",
+          "observation": "Screenshot labels the door as the Forbidden Gardens gate and its minimap geometry matches the TibiaMaps crop centered on 33873,32620,8."
+        },
+        "pinned_world_sha256": "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7"
       }
     }
   ],
@@ -1638,7 +1661,7 @@
     "Asura Citadel exact door 53380@33899,32666,8 and key i54262 are resolved; key Item admission is proof-complete but not merged; runtime still needs ITEM-USE-1 USE-WITH + identity-key Door/Key binding + QuestCompleted bypass",
     "Magnolia 60k phase-2 semantics are architect-resolved and merged by #1891 (`attribute max_health set 60000` -> queued `heal full` -> phase 2); current Rust ProjectV2/schema still needs the accepted max_health implementation and ENC-RT-1/ENC-COMBAT-1 -> ENC-OUTCOME-1 runtime",
     "Escape geometry/Rope Spot are resolved end-to-end; Lit Torch i54610 successor identity/admission is proof-complete (holds=[]), but the Item successor has not yet been admitted/materialized",
-    "Forbidden Gardens semantics are proven; door 54613@33873,32620,8 is a HIGH_CONFIDENCE cross-source candidate from pinned OTBM + porelease screenshot, but World/QUEST-GATE-1 must confirm the active served placement_key. AccountHasAchievement(forbidden_fruit) predicate is still unimplemented.",
+    "Forbidden Gardens door 54613@33873,32620,8 is qualified by pinned OTBM + porelease ItemLevel screenshot + TibiaMaps floor-08 topology. Remaining blockers: AccountHasAchievement(forbidden_fruit) predicate and World/QUEST-GATE-1 served placement_key binding for the active world generation.",
     "No full real-character start→reward→relog/restart E2E qualification",
     "Jaracal Mount exact donor identity is resolved; Skewered Fish i54638 already has an EXACT Crystal->A12 binding on main, but lacks active materializable Item admission. Mount successor + tame/account-unlock runtime remain; tame chance semantics UNKNOWN."
   ],
