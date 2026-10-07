@@ -103,10 +103,16 @@ impl Scene {
         };
         for row in 0..SCENE_ROWS as i32 + 2 {
             for column in 0..SCENE_COLUMNS as i32 + 2 {
-                let tile = TileCoord::new(origin.x + column, origin.y + row);
-                let map = self
-                    .world
-                    .tile(tile.x + self.anchor.x, tile.y + self.anchor.y);
+                // Past the edge of the coordinate space there is nothing to draw.
+                let (Some(x), Some(y)) = (origin.x.checked_add(column), origin.y.checked_add(row))
+                else {
+                    continue;
+                };
+                let tile = TileCoord::new(x, y);
+                let map = x
+                    .checked_add(self.anchor.x)
+                    .zip(y.checked_add(self.anchor.y))
+                    .and_then(|(x, y)| self.world.tile(x, y));
                 for draw in map.iter().flat_map(|map| &map.under) {
                     push(&mut sprites, tile, draw, 0)?;
                 }
@@ -238,6 +244,18 @@ mod tests {
         let world = Arc::new(World::builtin_with([reach(9, 0), reach(0, 7)])?);
         let scene = Scene::centered_on(world, TileCoord::new(0, 0), TileCoord::new(0, 0), &[])?;
         assert_eq!(scene.sprites().len(), 3);
+        Ok(())
+    }
+
+    #[test]
+    fn a_view_at_the_edge_of_the_coordinate_space_builds() -> Result<(), BatchError> {
+        let world = Arc::new(World::builtin()?);
+        let own = TileCoord::new(i32::MAX - 8, i32::MAX - 6);
+        let scene = Scene::centered_on(world, TileCoord::new(0, 0), own, &[])?;
+        assert_eq!(scene.sprites().len(), 1);
+        let world = Arc::new(World::builtin()?);
+        let scene = Scene::centered_on(world, TileCoord::new(i32::MAX, i32::MAX), own, &[])?;
+        assert_eq!(scene.sprites().len(), 1);
         Ok(())
     }
 
