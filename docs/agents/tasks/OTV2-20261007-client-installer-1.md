@@ -31,6 +31,8 @@ after Setup releases its mutex: `/RELAUNCH` plus `oteryn-launcher --after-setup`
   the `Cargo.lock` effect of that dependency, `apps/client/src/win_mutex.rs`
 - CP D907: `tools/repository/validate_pr_gate_pg_sim.py`, the
   `EXPECTED_EVIDENCE_JOB_SHA256["rust_windows"]` constant only (rotation, no logic change)
+- CP D909: `content/world/pins/oteryn.json`, the `inputs_digest` regenerated from
+  `oteryn-world-bundle-compiler pin-check` after the client crate and `Cargo.lock` changed
 - this record
 
 ## Decisions
