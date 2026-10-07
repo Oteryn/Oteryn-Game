@@ -75,6 +75,15 @@ class SourceLoweredBindingPlanTest(unittest.TestCase):
                 else:
                     self.fail("unexpected consumer lane " + row["consumer_lane"])
 
+    def test_action_or_movement_without_callback_is_rejected(self):
+        transition = {
+            "key": "oteryn:quest-transition/test/no-callback",
+            "requested_by": None,
+            "source": {"owner": "action", "callback": None},
+        }
+        with self.assertRaisesRegex(ValueError, "lacks callback evidence"):
+            plan.classify_transition(transition)
+
     def test_source_and_chosen_plans_are_disjoint_and_cover_310_candidate_owners(self):
         chosen = plan.read(self.root, plan.CHOSEN_PLAN)
         source_owners = {row["quest"] for row in self.packet["records"]}
