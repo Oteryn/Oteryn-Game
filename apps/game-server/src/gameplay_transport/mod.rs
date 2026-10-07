@@ -833,9 +833,11 @@ impl TerminalRelease {
 /// mismatch releases of one lost epoch join one `ControlLoss(epoch)` fence, so only the last
 /// holder to settle lifts it: a joiner settling early never lifts the fence while another
 /// release of the epoch is still saving or committing. Only changed while `runtime` is locked.
+/// A grace expiry that ends unknown keeps its hold here for the next expiry of the session.
 #[derive(Default)]
 pub(crate) struct FenceHolders(
     std::sync::Mutex<std::collections::HashMap<(GameSessionId, TransitionFence), u32>>,
+    std::sync::Mutex<std::collections::HashMap<GameSessionId, FenceHold>>,
 );
 
 /// One release's hold on its fence token, taken at its first fence and given back when it
@@ -927,6 +929,28 @@ impl FenceHolders {
     /// The session left the slot: its fences went with it.
     fn forget(&self, session: GameSessionId) {
         self.counts().retain(|(held, _), _| *held != session);
+        self.kept().remove(&session);
+    }
+
+    fn kept(
+        &self,
+    ) -> std::sync::MutexGuard<'_, std::collections::HashMap<GameSessionId, FenceHold>> {
+        self.1
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// A grace expiry ended unknown still holding `hold`: the next expiry of the session takes
+    /// it over instead of counting the same release again.
+    fn keep(&self, hold: FenceHold) {
+        if hold.held {
+            self.kept().insert(hold.session, hold);
+        }
+    }
+
+    /// The hold an unknown grace expiry of `session` kept, if any.
+    fn resume(&self, session: GameSessionId) -> Option<FenceHold> {
+        self.kept().remove(&session)
     }
 }
 
@@ -1381,8 +1405,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// CHARM-DESC-FENCE-LEASE: grace expiry fences the slot's damage writes under the runtime
     /// lock (step a), commits the durable release with the lock released (step b), then settles
     /// the slot by the durable outcome (step c). The fence token is the lost epoch, so a retry
-    /// joins its own fence and a resume of that epoch lifts it.
+    /// joins its own fence and a resume of that epoch lifts it. An unknown expiry keeps its hold
+    /// for the next one, so the lifecycle's retries count the release once.
     async fn release_after_grace(&self, admitted: AdmittedSession) -> GraceExpiryResult {
+        let mut held = self.fence_holders.resume(admitted.game_session_id);
+        let result = self.release_grace_attempts(admitted, &mut held).await;
+        if result == GraceExpiryResult::Unknown
+            && let Some(hold) = held
+        {
+            self.fence_holders.keep(hold);
+        }
+        result
+    }
+
+    async fn release_grace_attempts(
+        &self,
+        admitted: AdmittedSession,
+        held: &mut Option<FenceHold>,
+    ) -> GraceExpiryResult {
         let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
             return GraceExpiryResult::NotApplicable;
         };
@@ -1398,7 +1438,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             pause
         };
         // One hold across the attempts of an epoch, so a retry is counted once.
-        let mut held: Option<FenceHold> = None;
         let mut settled_death = None;
         for _ in 0..EXPIRY_ATTEMPTS {
             let mark = match self
@@ -1428,7 +1467,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if let Some(stale) = held.as_mut().filter(|hold| hold.token != token) {
                 self.fence_holders.release(stale);
             }
-            let hold = match &mut held {
+            let hold = match &mut *held {
                 Some(hold) if hold.token == token => hold,
                 slot => slot.insert(FenceHold::new(session, token)),
             };
@@ -5387,6 +5426,38 @@ mod tests {
         assert_eq!(holders.fence(&mut runtime, actor, &mut grace), Ok(()));
         holders.forget(session);
         assert!(holders.counts().is_empty());
+    }
+
+    /// KILL-REWARD-COMP-1 (#1908 Codex P1 4202367021): a grace expiry that ends unknown keeps
+    /// its hold for the lifecycle's retry, which counts the release once, so the retry's
+    /// non-terminal settle lifts the fence and leaves no count.
+    #[test]
+    fn a_retried_unknown_grace_expiry_counts_its_hold_once() {
+        let (mut runtime, actor, session) = lost_slot();
+        let holders = FenceHolders::default();
+        let token = TransitionFence::GraceExpiry(1);
+        let other = TransitionFence::Transition(9);
+        let mut first = FenceHold::new(session, token);
+        assert_eq!(holders.fence(&mut runtime, actor, &mut first), Ok(()));
+        // The expiry ends unknown holding the fence; the retry takes the hold over.
+        holders.keep(first);
+        let mut retry = holders.resume(session).expect("kept hold");
+        assert!(holders.resume(session).is_none());
+        assert_eq!(holders.fence(&mut runtime, actor, &mut retry), Ok(()));
+        assert_eq!(holders.counts().get(&(session, token)), Some(&1));
+        // The retry's non-terminal settle lifts the fence and no count is left.
+        assert_eq!(holders.lift(&mut runtime, actor, &mut retry), Ok(()));
+        assert!(holders.counts().is_empty());
+        assert_eq!(other.fence(&mut runtime, actor, session), Ok(()));
+        assert_eq!(other.lift(&mut runtime, actor, session), Ok(true));
+        // A hold that ended is not kept, and a retired session leaves none behind.
+        holders.keep(retry);
+        assert!(holders.resume(session).is_none());
+        let mut kept = FenceHold::new(session, token);
+        assert_eq!(holders.fence(&mut runtime, actor, &mut kept), Ok(()));
+        holders.keep(kept);
+        holders.forget(session);
+        assert!(holders.resume(session).is_none());
     }
 
     /// DEATH-2b: only a cell that is Walkable in the pinned generation's own movement cells of
