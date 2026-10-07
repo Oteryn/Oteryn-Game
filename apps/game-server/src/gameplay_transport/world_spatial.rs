@@ -75,12 +75,16 @@ pub(crate) const PLACEHOLDER_APPEARANCE_REF: u32 = 0;
 pub(crate) const PLACEHOLDER_HEALTH_PERCENT: u8 = 100;
 
 /// VIS-3: the kind of one Channel entity, as the Channel owner reads it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 ///
-/// Corpses are not shown yet: their item binding (`i00005801`, D3-7) waits on the Content revision.
+/// MAP-ITEM-REF-1: a corpse is shown only once its corpse Item is bound and its definition maps
+/// to an `item_definition_ref` of the session's generation; it is a D85 object of one item.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum VisibleKind {
     Player,
     Creature,
+    Corpse {
+        item_definition_ref: std::num::NonZeroU32,
+    },
 }
 
 /// VIS-3: one entity of the session's Channel, before the interest query.
@@ -105,21 +109,34 @@ pub(crate) struct ChannelEntities {
 }
 
 fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
+    let actor = EntityDetail::Actor {
+        direction: PLACEHOLDER_ACTOR_DIRECTION,
+        appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+        health_percent: PLACEHOLDER_HEALTH_PERCENT,
+    };
+    let (kind, detail) = match entity.kind {
+        VisibleKind::Player => (EntityKind::Player, actor),
+        VisibleKind::Creature => (EntityKind::Creature, actor),
+        // The handle is attached per session under capability 4 (`attach`).
+        VisibleKind::Corpse {
+            item_definition_ref,
+        } => (
+            EntityKind::Corpse,
+            EntityDetail::Object {
+                item_definition_ref: item_definition_ref.get(),
+                quantity: 1,
+                item_handle: None,
+            },
+        ),
+    };
     WorldSpatialEntity {
-        kind: match entity.kind {
-            VisibleKind::Player => EntityKind::Player,
-            VisibleKind::Creature => EntityKind::Creature,
-        },
+        kind,
         entity: EntityRef {
             identity: entity.identity,
             generation: entity.generation,
         },
         position: entity.position,
-        detail: EntityDetail::Actor {
-            direction: PLACEHOLDER_ACTOR_DIRECTION,
-            appearance_ref: PLACEHOLDER_APPEARANCE_REF,
-            health_percent: PLACEHOLDER_HEALTH_PERCENT,
-        },
+        detail,
     }
 }
 
