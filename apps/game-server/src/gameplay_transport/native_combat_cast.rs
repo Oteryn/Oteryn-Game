@@ -2600,7 +2600,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             parameter.as_ref(),
             parameter_output,
         ) {
-            Ok(Some(_)) => {
+            Ok(Some(replayed)) => {
+                self.record_spell_kills(&mut runtime, std::iter::once(&replayed))
+                    .await;
                 return NativeCastDispatch::Outcome(super::SpellCastOutcome {
                     disposition: parameter_output
                         .as_ref()
@@ -2910,7 +2912,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let current_owned=load_owned_cast_facts_in_transaction(&mut fresh,owner.root,owner.character,owner.holder,
                 &item_fence,command,runtime,actor,state,active,*access,owner.owner_now().get()).await
                 .map_err(|_|DurabilityError::Unavailable)?;
-            attempt.prepared.commit(runtime,states,&current_owned,receipt,committed.companion(),committed.direct_companion(),fresh_reconnect.as_ref()).map_err(|_|DurabilityError::Unavailable)?;
+            let batch=attempt.prepared.commit(runtime,states,&current_owned,receipt,committed.companion(),committed.direct_companion(),fresh_reconnect.as_ref()).map_err(|_|DurabilityError::Unavailable)?;
+            // §1.4: the committed batch's kills, under the same runtime turn.
+            owner.record_spell_kills(runtime,std::iter::once(&batch)).await;
             // No SQL write follows HP/player/timer installation. Rollback only releases the
             // current read locks; its outcome cannot retract the already observed source COMMIT.
             drop(fresh);

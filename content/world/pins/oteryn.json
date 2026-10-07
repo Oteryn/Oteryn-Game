@@ -1,14 +1,14 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "d51205c920ac9910c8e1741e9983bbe7d8374e603ffd3e44d7472f7a55e16276",
+  "digest": "7144467d54722dbeb421d9c8173e48aed94877b3d00b8450e5bed035e1bf9b37",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "monster-npc-reconciled-20261005-r1",
+  "content_revision": "item-bed-promotion-20261006-r1",
   "production": false,
   "entry_start": {
     "x": 10228,
     "y": 10032,
     "floor": 0
   },
-  "inputs_digest": "2522eccd96cb154d92a4489f75bbf01d513cfe89f439d327e60d10bef717eb3a"
+  "inputs_digest": "333ff96885dc8cbe60ca90abfbd0d4c5d1d380a1f944578601f21a0e72fded0f"
 }

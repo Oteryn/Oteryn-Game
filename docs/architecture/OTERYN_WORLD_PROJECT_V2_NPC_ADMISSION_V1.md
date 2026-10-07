@@ -106,6 +106,10 @@ zero worlds today. NPC placements are therefore not admitted in wave A; they sta
 candidates until a World and its map revision are admitted, and then enter as placements of the NPC
 definitions in one slice.
 
+**Amendment (pending on acceptance of NPC-PLACE-1; `reviews/OTERYN_GAME_NPC_PLACE1_NPC_PLACEMENTS_DECISION_2026-10-06.md` §4).**
+NPC placements enter as the `Npc.Placement` family under the World record `oteryn:world.oteryn`,
+not as `ProjectV2Placement`.
+
 ## 6. v2 extension (D7)
 
 - `ProjectV2ServiceOffer` gains optional `count` (units per trade row) and `sub_type` (fluid or charge

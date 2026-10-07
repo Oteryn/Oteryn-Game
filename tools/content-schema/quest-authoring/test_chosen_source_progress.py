@@ -85,7 +85,7 @@ class ChosenSourceProgressTest(unittest.TestCase):
 
         self.assertEqual(235, merged["counts"]["quests"])
         self.assertEqual(2734, merged["counts"]["tracks"])
-        self.assertEqual(4666, merged["counts"]["transitions"])
+        self.assertEqual(4669, merged["counts"]["transitions"])
         self.assertEqual(231, merged["counts"]["completes"])
         self.assertEqual(
             {

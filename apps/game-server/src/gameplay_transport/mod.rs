@@ -9,7 +9,9 @@ mod connection;
 mod container_view;
 pub(crate) mod fresh_evidence;
 mod item_move;
+mod item_ref_admission;
 mod item_view;
+mod kill_reward;
 mod monk_save;
 mod monster_ai_cycle;
 #[allow(
@@ -2032,6 +2034,22 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         Some(Self::observation(&runtime, snapshot.position()))
     }
 
+    /// MAP-ITEM-REF-1: capability 4 (once Part B sets its gate) only when the active generation
+    /// pins a non-empty Item key set.
+    fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
+        item_ref_admission::offered_capabilities(self.active_generation)
+    }
+
+    /// MAP-ITEM-REF-1: domain 9 from the durable backpack, each definition through the Channel
+    /// content pin's Item definition index.
+    async fn observe_character_inventory(
+        &self,
+        _actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<item_view::InventoryItems> {
+        item_ref_admission::observe_character_inventory(self, game_session_id).await
+    }
+
     /// VIS-3: the Channel's players and live creatures, read in one owner work item. Corpses are
     /// not shown until their item binding lands (D3-7).
     async fn observe_visible_entities(
@@ -2358,7 +2376,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .cast_native_combat(actor, game_session_id, command_id, &intent, &access)
             .await
         {
-            actor_spell::NativeCastDispatch::Outcome(outcome) => Some(outcome),
+            actor_spell::NativeCastDispatch::Outcome(outcome) => {
+                let _ = self.drain_kill_rewards(game_session_id).await;
+                Some(outcome)
+            }
             actor_spell::NativeCastDispatch::Pending => None,
             actor_spell::NativeCastDispatch::NotApplicable => {
                 let outcome = self
@@ -2424,6 +2445,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         self.drain_monster_melee().await;
         self.drain_auto_attacks().await;
+        let _ = self.drain_kill_rewards(game_session_id).await;
         self.drain_source_item_deadlines().await;
         self.drain_source_party_deadlines_bounded().await;
         // DEATH-2 §4.5: a dead player's cadence tick settles its death and respawns it.
@@ -2556,6 +2578,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         self.drain_auto_attacks().await;
+        let _ = self.drain_kill_rewards(game_session_id).await;
         self.observe_combat_state(actor, game_session_id).await
     }
 
