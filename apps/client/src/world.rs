@@ -171,7 +171,9 @@ impl World {
                             continue;
                         };
                         let mut placement = Placement::at(x, y, -i32::from(START_FLOOR));
+                        // The encoded value is a stack count or, for fluids, the subtype.
                         placement.count = u32::from(item.attrs.count.unwrap_or(1));
+                        placement.sub_type = u32::from(item.attrs.count.unwrap_or(0));
                         // An item the pinned appearances cannot draw is skipped, not fatal.
                         let Ok(resolved) =
                             index.resolve(&sheets, palette.source_item_id, placement)
