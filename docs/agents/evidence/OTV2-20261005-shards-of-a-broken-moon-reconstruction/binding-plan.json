@@ -1591,8 +1591,16 @@
       ],
       "evidence": "FACT_SEMANTICS_RUNTIME_COMPOSITION_MISSING",
       "owner": "QuestGate + Achievement",
-      "blocker": "QuestPredicate currently has no Achievement predicate and no production facts adapter.",
-      "reward_evidence_ref": "terminal-reward-evidence.json"
+      "blocker": "Needs both AccountHasAchievement predicate support and an exact current-world door placement_key; fail closed until World owner qualifies the placement.",
+      "reward_evidence_ref": "terminal-reward-evidence.json",
+      "source_reference": {
+        "title": "Shards of a Broken Moon Quest",
+        "oldid": 445614
+      },
+      "placement": null,
+      "placement_status": "UNRESOLVED_EXACT_PLACEMENT_KEY",
+      "placement_owner": "World / QUEST-GATE-1 content binding",
+      "note": "Reference proves the conjunction semantics (Shards completion + Forbidden Fruit achievement) but does not expose the exact Forbidden Gardens door coordinate/placement key in the quest article. Do not bind by Area name alone."
     }
   ],
   "blockers": [
@@ -1602,7 +1610,7 @@
     "Asura Citadel exact door 53380@33899,32666,8 and key i54262 are resolved; key Item admission is proof-complete but not merged; runtime still needs ITEM-USE-1 USE-WITH + identity-key Door/Key binding + QuestCompleted bypass",
     "Magnolia 60k phase-2 semantics are architect-resolved and merged by #1891 (`attribute max_health set 60000` -> queued `heal full` -> phase 2); current Rust ProjectV2/schema still needs the accepted max_health implementation and ENC-RT-1/ENC-COMBAT-1 -> ENC-OUTCOME-1 runtime",
     "Escape geometry/Rope Spot are resolved end-to-end; Lit Torch i54610 successor identity/admission is proof-complete (holds=[]), but the Item successor has not yet been admitted/materialized",
-    "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
+    "Forbidden Gardens requires one bounded QuestPredicate amendment (`account_has_achievement(forbidden_fruit)`) AND an exact current-world door placement_key; Reference oldid 445614 proves semantics but does not publish the door coordinate. Achievement owner read already exists.",
     "No full real-character start→reward→relog/restart E2E qualification",
     "Jaracal Mount exact donor identity is resolved; Skewered Fish i54638 already has an EXACT Crystal->A12 binding on main, but lacks active materializable Item admission. Mount successor + tame/account-unlock runtime remain; tame chance semantics UNKNOWN."
   ],
@@ -2003,6 +2011,19 @@
         "niral_post_rakesh": "seal -> moon",
         "niral_consecrate": "consecrate -> moon"
       }
+    },
+    "postrelease_reference_revision": {
+      "tibiawiki_shards_oldid": 445614,
+      "note": "Use this revision for Shards route/dialogue semantics instead of Crystal Summer callback labels when they differ."
+    }
+  },
+  "reference_witnesses": {
+    "tibiawiki_shards_postrelease": {
+      "title": "Shards of a Broken Moon Quest",
+      "oldid": 445614,
+      "url": "https://www.tibiawiki.com.br/index.php?title=Shards_of_a_Broken_Moon_Quest&oldid=445614",
+      "role": "post-release quest route/dialogue/access reference",
+      "captured_readback_date": "2026-10-07"
     }
   }
 }
