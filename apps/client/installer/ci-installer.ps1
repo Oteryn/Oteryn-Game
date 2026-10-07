@@ -80,16 +80,17 @@ function New-Installer([string] $Id, [string] $Payload) {
         "/DPayloadDir=$Payload" "/DLauncherPath=$launcher" "/DOutputDir=$OutputDir" `
         "/DClientExeSha256=$(Sha256 (Join-Path $Payload 'oteryn-client.exe'))" `
         "/DClientEnvSha256=$(Sha256 (Join-Path $Payload 'client.env'))" `
-        "/DPackagesSha256=$(Sha256 (Join-Path $Payload 'packages.json'))" $Installer
+        "/DPackagesSha256=$(Sha256 (Join-Path $Payload 'packages.json'))" $Installer | Out-Host
     Check ($LASTEXITCODE -eq 0) "ISCC failed for $Id with exit code $LASTEXITCODE"
     $setup = Join-Path $OutputDir "oteryn-client-$Id-x86_64-setup.exe"
     Check (Test-Path -LiteralPath $setup -PathType Leaf) "ISCC produced no $setup"
-    & pwsh -NoProfile -File $Sign $setup
+    & pwsh -NoProfile -File $Sign $setup | Out-Host
     Check ($LASTEXITCODE -eq 0) "sign.ps1 failed for $setup"
     $setup
 }
 
 function Invoke-Setup([string] $Setup, [string[]] $Extra = @()) {
+    Check (Test-Path -LiteralPath $Setup -PathType Leaf) "no setup executable at '$Setup'"
     $script:Run++
     $log = Join-Path $Logs "setup-$script:Run.log"
     $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$InstallDir`"", "/LOG=`"$log`"") + $Extra
