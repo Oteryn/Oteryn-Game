@@ -136,26 +136,26 @@ var
 
 function GetCurrentProcess: THandle;
   external 'GetCurrentProcess@kernel32.dll stdcall';
-function OpenProcessToken(ProcessHandle: THandle; DesiredAccess: DWORD; var TokenHandle: THandle): BOOL;
+function OpenProcessToken(ProcessHandle: THandle; DesiredAccess: DWORD; var TokenHandle: THandle): Boolean;
   external 'OpenProcessToken@advapi32.dll stdcall';
 function GetTokenInformation(TokenHandle: THandle; InformationClass: Integer; Information: AnsiString;
-  InformationLength: DWORD; var ReturnLength: DWORD): BOOL;
+  InformationLength: DWORD; var ReturnLength: DWORD): Boolean;
   external 'GetTokenInformation@advapi32.dll stdcall';
 function CreateMutexW(MutexAttributes: DWORD; InitialOwner: BOOL; Name: String): THandle;
   external 'CreateMutexW@kernel32.dll stdcall';
 function OpenMutexW(DesiredAccess: DWORD; InheritHandle: BOOL; Name: String): THandle;
   external 'OpenMutexW@kernel32.dll stdcall';
-function CloseHandle(Handle: THandle): BOOL;
+function CloseHandle(Handle: THandle): Boolean;
   external 'CloseHandle@kernel32.dll stdcall';
 function CreateFileW(FileName: String; DesiredAccess, ShareMode, SecurityAttributes,
   CreationDisposition, FlagsAndAttributes: DWORD; TemplateFile: THandle): THandle;
   external 'CreateFileW@kernel32.dll stdcall';
 function WriteFile(Handle: THandle; Buffer: AnsiString; BytesToWrite: DWORD;
-  var BytesWritten: DWORD; Overlapped: DWORD): BOOL;
+  var BytesWritten: DWORD; Overlapped: DWORD): Boolean;
   external 'WriteFile@kernel32.dll stdcall';
-function FlushFileBuffers(Handle: THandle): BOOL;
+function FlushFileBuffers(Handle: THandle): Boolean;
   external 'FlushFileBuffers@kernel32.dll stdcall';
-function MoveFileExW(ExistingFileName, NewFileName: String; Flags: DWORD): BOOL;
+function MoveFileExW(ExistingFileName, NewFileName: String; Flags: DWORD): Boolean;
   external 'MoveFileExW@kernel32.dll stdcall';
 
 procedure Fail(const Message: String);
