@@ -233,16 +233,16 @@ impl World {
         let mut tiles = HashMap::with_capacity(entries.len());
         for (position, items) in &entries {
             let mut tile = MapTile::default();
-            for (layer, elevation, item_cells) in items {
-                let lift = if *layer == 4 { 0 } else { tile.elevation };
+            let (lifts, elevation) = stack_lifts(items.iter().map(|(layer, e, _)| (*layer, *e)));
+            for ((layer, _, item_cells), lift) in items.iter().zip(lifts) {
                 let drawn = item_cells.iter().filter_map(|cell| draw(cell, lift));
                 if *layer == 4 {
                     tile.over.extend(drawn);
                 } else {
                     tile.under.extend(drawn);
-                    tile.elevation = (tile.elevation + elevation).min(MAX_ELEVATION);
                 }
             }
+            tile.elevation = elevation;
             tiles.insert(*position, tile);
         }
         let player = player.iter().filter_map(|cell| draw(cell, 0)).collect();
@@ -311,6 +311,25 @@ fn builtin_rgba() -> Vec<u8> {
         }
     }
     rgba
+}
+
+/// How far each item of a sorted stack is lifted, and the tile's elevation. An item is lifted by
+/// its own height (the appearance profile's displacement) on top of the heights below it; a top
+/// item does not stand on the stack.
+fn stack_lifts(items: impl IntoIterator<Item = (u8, i32)>) -> (Vec<i32>, i32) {
+    let mut below = 0;
+    let lifts = items
+        .into_iter()
+        .map(|(layer, height)| {
+            if layer == 4 {
+                return height;
+            }
+            let lift = (below + height).min(MAX_ELEVATION);
+            below = lift;
+            lift
+        })
+        .collect();
+    (lifts, below)
 }
 
 /// A start-floor placement; the encoded value is a stack count or, for fluids, the subtype.
@@ -476,6 +495,17 @@ mod tests {
         assert_ne!(resolved[0], resolved[1]);
         assert_eq!(resolved[1], resolved[2]);
         Ok(())
+    }
+
+    #[test]
+    fn an_item_is_lifted_by_its_own_height_and_the_heights_below_it() {
+        // Ground, a height-8 table, an item on it, another height-8 item, a top item of height 8.
+        let (lifts, elevation) = stack_lifts([(0, 0), (3, 8), (3, 0), (3, 8), (4, 8)]);
+        assert_eq!(lifts, [0, 8, 8, 16, 8]);
+        assert_eq!(elevation, 16);
+        let (lifts, elevation) = stack_lifts([(3, 16), (3, 16)]);
+        assert_eq!(lifts, [16, MAX_ELEVATION]);
+        assert_eq!(elevation, MAX_ELEVATION);
     }
 
     #[test]
