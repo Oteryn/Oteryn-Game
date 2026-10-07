@@ -41,7 +41,9 @@ impl Display for LaunchError {
     }
 }
 
-/// `<release_id>` or `<release_id>~<n>`, `n` a decimal integer from 1 without leading zeros.
+/// `<release_id>` of any client version, or `<release_id>~<n>`, `n` a decimal integer from 1
+/// without leading zeros. A failed upgrade to another version keeps the previous release active
+/// behind the new launcher, so the pointer is not bound to this launcher's version.
 fn is_release_directory_name(value: &str) -> bool {
     let (release_id, suffix) = match value.split_once('~') {
         Some((release_id, suffix)) => (release_id, Some(suffix)),
@@ -53,7 +55,7 @@ fn is_release_directory_name(value: &str) -> bool {
             && suffix.bytes().all(|digit| digit.is_ascii_digit())
             && suffix.parse::<u32>().is_ok()
     });
-    suffix_valid && oteryn_client::is_valid_release_id(release_id)
+    suffix_valid && oteryn_client::is_contract_release_id(release_id)
 }
 
 /// The release directory name `current.txt` holds; one trailing line ending is accepted.
@@ -235,6 +237,32 @@ mod tests {
             active_client(&directory),
             Err(LaunchError::DanglingPointer(_))
         ));
+    }
+
+    #[test]
+    fn pointers_to_another_client_version_start_that_release() {
+        // Release A is active; installing B of another client version failed to activate, so
+        // B's launcher runs with current.txt still naming A.
+        let directory = install_dir("other-version");
+        let previous = "9.9.9+dev.ci.g1a2b3c4d5e6f";
+        assert!(!previous.starts_with(env!("CARGO_PKG_VERSION")));
+        install_release(&directory, previous);
+        install_release(&directory, RELEASE);
+        for (contents, release) in [
+            (format!("{previous}\r\n"), previous.to_owned()),
+            (format!("{previous}~1"), format!("{previous}~1")),
+        ] {
+            install_release(&directory, &release);
+            assert!(std::fs::write(directory.join("current.txt"), &contents).is_ok());
+            let expected = directory
+                .join("releases")
+                .join(&release)
+                .join("oteryn-client.exe");
+            assert!(
+                matches!(active_client(&directory), Ok(client) if client == expected),
+                "{contents:?}"
+            );
+        }
     }
 
     #[test]

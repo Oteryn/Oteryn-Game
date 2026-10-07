@@ -63,14 +63,27 @@ pub const CLIENT_BUILD: &str = {
 /// all-zero commit of a developer build), lowercase hex, no `~`, at most 50 bytes.
 #[must_use]
 pub const fn is_valid_release_id(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    let version = env!("CARGO_PKG_VERSION").as_bytes();
+    starts_with_at(bytes, 0, version)
+        && starts_with_at(bytes, version.len(), b"+")
+        && is_contract_release_id(value)
+}
+
+/// Whether `value` is a `<release_id>` of any client version: as [`is_valid_release_id`], but
+/// `<client_version>` is any `<major>.<minor>.<patch>` of decimal numbers without leading zeros.
+/// The launcher accepts these, because `current.txt` may name a release of another version.
+#[must_use]
+pub const fn is_contract_release_id(value: &str) -> bool {
     const CHANNELS: [&[u8]; 3] = [b"dev", b"preproduction", b"stable"];
     const ROUTES: [&[u8]; 3] = [b"ci", b"rel", b"local"];
     let bytes = value.as_bytes();
-    let version = env!("CARGO_PKG_VERSION").as_bytes();
-    if bytes.len() > 50 || !starts_with_at(bytes, 0, version) {
+    if bytes.len() > 50 {
         return false;
     }
-    let mut at = version.len();
+    let Some(mut at) = version_end(bytes) else {
+        return false;
+    };
     if !starts_with_at(bytes, at, b"+") {
         return false;
     }
@@ -100,6 +113,29 @@ pub const fn is_valid_release_id(value: &str) -> bool {
         at += 1;
     }
     true
+}
+
+/// The end of a leading `<major>.<minor>.<patch>`, each a decimal number without leading zeros.
+const fn version_end(bytes: &[u8]) -> Option<usize> {
+    let mut at = 0;
+    let mut part = 0;
+    while part < 3 {
+        if part > 0 {
+            if !starts_with_at(bytes, at, b".") {
+                return None;
+            }
+            at += 1;
+        }
+        let start = at;
+        while at < bytes.len() && bytes[at].is_ascii_digit() {
+            at += 1;
+        }
+        if at == start || (at - start > 1 && bytes[start] == b'0') {
+            return None;
+        }
+        part += 1;
+    }
+    Some(at)
 }
 
 const fn starts_with_at(bytes: &[u8], at: usize, prefix: &[u8]) -> bool {
@@ -1062,6 +1098,25 @@ mod tests {
         }
         assert!(!is_valid_release_id("9.9.9+dev.ci.g1a2b3c4d5e6f"));
         assert!(!is_valid_release_id(""));
+        for other in [
+            "9.9.9+dev.ci.g1a2b3c4d5e6f",
+            "0.10.0+stable.rel.g0123456789ab",
+        ] {
+            assert!(is_contract_release_id(other), "{other}");
+        }
+        for invalid in [
+            "",
+            "01.0.0+dev.ci.g1a2b3c4d5e6f",
+            "1.0+dev.ci.g1a2b3c4d5e6f",
+            "1.0.0.0+dev.ci.g1a2b3c4d5e6f",
+            "1.0.x+dev.ci.g1a2b3c4d5e6f",
+            "1.0.0-rc1+dev.ci.g1a2b3c4d5e6f",
+            "9.9.9+dev.ci.g1A2B3C4D5E6F",
+            "9.9.9+dev.local.g1a2b3c4d5e6f",
+            "999999999999999999999999999999.0.0+dev.ci.g1a2b3c4d5e6f",
+        ] {
+            assert!(!is_contract_release_id(invalid), "{invalid}");
+        }
     }
 
     #[test]

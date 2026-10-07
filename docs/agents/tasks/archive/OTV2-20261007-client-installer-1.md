@@ -80,6 +80,7 @@ Deferred #1894 findings:
   - Inno predefines `FILE_ATTRIBUTE_*`, so the script no longer redeclares them.
   - Inno's `BOOL` is `LongBool`, so the kernel32 and advapi32 externals now return `Boolean`.
   - The declarations were checked against the 6.7.3 script sources.
+- **Launcher version binding (Codex P1, thread 4207951319):** when an upgrade to another `client_version` fails to activate, the new launcher runs with `current.txt` still naming the previous release. The launcher therefore validates the pointer with `is_contract_release_id`, which accepts any `<major>.<minor>.<patch>` client version; `is_valid_release_id` still binds the compiled-in `RELEASE_ID` to this crate's version. The unit test `pointers_to_another_client_version_start_that_release` covers a previous release of version 9.9.9. The CI fixtures A and B keep one `ClientVersion`, because both are built from one compiled client.
 - **Not verified locally:** ISCC and the Windows runtime behaviour (no Windows or Wine here). Both are covered by CI `rust_windows`. The Windows-target Clippy ran on a scratch copy of the client's Windows modules.
 
 ## Validation
