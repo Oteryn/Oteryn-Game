@@ -78,7 +78,7 @@ def build_area_index(root: Path):
             "area_kind": declaration.get("kind") or declaration.get("area_kind"),
             "source_file": source_file,
         }
-        tail = key.split(":", 1)[-1].split(".", 2)[-1]
+        tail = key.rsplit(".", 1)[-1]
         aliases[norm(tail)][key].add("CANONICAL_KEY_TAIL")
         if isinstance(name, str) and name.strip():
             aliases[norm(name)][key].add("CANONICAL_AREA_NAME")
@@ -200,12 +200,12 @@ def expected(root: Path):
     expected_counts = Counter(
         {
             "EXACT_SINGLE_AREA_ONLY_TARGET": 10,
-            "EXACT_SINGLE_AREA_WITH_OTHER_TARGETS": 11,
-            "AMBIGUOUS_MULTIPLE_AREAS": 34,
-            "NO_EXACT_AREA": 184,
+            "EXACT_SINGLE_AREA_WITH_OTHER_TARGETS": 10,
+            "AMBIGUOUS_MULTIPLE_AREAS": 36,
+            "NO_EXACT_AREA": 192,
         }
     )
-    if len(records) != 239 or counts != expected_counts:
+    if len(records) != 248 or counts != expected_counts:
         raise ValueError(
             f"explore Area candidate population changed: {len(records)} {dict(counts)}"
         )

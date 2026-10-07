@@ -19,15 +19,15 @@ class QuestExploreAreaCandidatesTest(unittest.TestCase):
     def test_population_is_exact_and_fail_closed(self):
         self.assertEqual(
             {
-                "explore_stages": 239,
+                "explore_stages": 248,
                 "canonical_areas": 970,
                 "statuses": {
-                    "AMBIGUOUS_MULTIPLE_AREAS": 34,
+                    "AMBIGUOUS_MULTIPLE_AREAS": 36,
                     "EXACT_SINGLE_AREA_ONLY_TARGET": 10,
-                    "EXACT_SINGLE_AREA_WITH_OTHER_TARGETS": 11,
-                    "NO_EXACT_AREA": 184,
+                    "EXACT_SINGLE_AREA_WITH_OTHER_TARGETS": 10,
+                    "NO_EXACT_AREA": 192,
                 },
-                "exact_area_candidates": 21,
+                "exact_area_candidates": 20,
                 "clean_single_target_candidates": 10,
                 "native_spatial_bindings": 0,
             },
@@ -64,6 +64,22 @@ class QuestExploreAreaCandidatesTest(unittest.TestCase):
         )
         self.assertEqual(["Barkless hideout"], row["unmatched_targets"])
         self.assertIn("OTHER_STAGE_TARGETS_UNRESOLVED", row["holds"])
+
+    def test_city_key_tail_uses_final_segment_and_preserves_ambiguity(self):
+        hive = self.by_stage[("oteryn:quest.authored.hive_outpost_mini_world_change", "s1")]
+        self.assertEqual("AMBIGUOUS_MULTIPLE_AREAS", hive["status"])
+        self.assertEqual(
+            {
+                "oteryn:content.area.city.liberty_bay",
+                "oteryn:content.area.subregion.vandura_hive_outpost",
+            },
+            {match["area_ref"]["key"] for match in hive["matches"]},
+        )
+        grave = self.by_stage[("oteryn:quest.grave_danger_quest", "s1")]
+        self.assertIn(
+            "oteryn:content.area.city.darashia",
+            {match["area_ref"]["key"] for match in grave["matches"]},
+        )
 
     def test_duplicate_area_names_are_held_as_ambiguous(self):
         row = self.by_stage[
