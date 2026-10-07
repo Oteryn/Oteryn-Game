@@ -1399,11 +1399,11 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
 mod kill_reward_live {
     use super::{
         Harness, TestResult, capture, configured_admin, death_fixture, debug, ground, id,
-        progression_binding, reward_principal, runtime, uuid_text,
+        progression_binding, reward_principal, runtime, settle_on_fresh_lane, uuid_text,
     };
     use crate::combat::{
         CreatureDeathRewardInput, DurabilitySession, LootDefinitionRef, LootSelectionAlgorithm,
-        LootTableDefinition, LootTableEntry, settle_creature_death_rewards,
+        LootTableDefinition, LootTableEntry,
     };
     use crate::domain::CharacterId;
     use crate::durability::character_progression::ExperienceCommitOutcome;
@@ -1563,14 +1563,10 @@ mod kill_reward_live {
                 xp_amount: ExactI64::new(pin.xp),
                 progression: Some(progression_binding()),
             };
-            let outcome = settle_creature_death_rewards(
-                capture(&mut fixture, actor)?,
-                &session,
-                &mut slot,
-                input,
-            )
-            .await
-            .map_err(debug)?;
+            let outcome =
+                settle_on_fresh_lane(capture(&mut fixture, actor)?, &session, &mut slot, input)
+                    .await
+                    .map_err(debug)?;
             let minted = outcome.loot.map_err(debug)?;
             assert_eq!(minted.entries.len(), 1);
             let ExperienceCommitOutcome::Committed(award) = outcome.xp.map_err(debug)? else {
