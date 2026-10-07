@@ -24,6 +24,7 @@ FAMILY_INDEXES = {
 REPOSITORY_PINS = {
     "item_keys": "tools/content-schema/native-gameplay/item-keys.json",
     "progression": "rulesets/character/experience/native-section.json",
+    "loot_tables": "tools/content-schema/native-gameplay/loot-tables.json",
 }
 NATIVE_MANIFEST = "content/spells.manifest.json"
 
