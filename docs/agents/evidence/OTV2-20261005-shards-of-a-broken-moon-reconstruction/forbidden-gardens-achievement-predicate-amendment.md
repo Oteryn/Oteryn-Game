@@ -7,7 +7,7 @@ Status: PROPOSED ARCHITECTURE AMENDMENT / NO RUNTIME MUTATION
 Forbidden Gardens requires:
 
 - Shards of a Broken Moon completed;
-- account achievement `oteryn:achievement/forbidden_fruit@1`.
+- account achievement `oteryn:achievement/forbidden_fruit` at revision `1`.
 
 Current `QuestPredicate` supports Track, Elapsed, QuestCompleted, AccountCompleted, LevelAtLeast and HoldsItem. It has no Achievement predicate.
 
@@ -42,7 +42,7 @@ No OR or expression-tree widening is needed. The existing conjunction is suffici
 ```text
 quest_completed(oteryn:quest.authored.shards_of_a_broken_moon_quest)
 AND
-account_has_achievement(oteryn:achievement/forbidden_fruit@1)
+account_has_achievement(oteryn:achievement/forbidden_fruit)
 ```
 
 ## Fail closed
@@ -115,3 +115,25 @@ It does not add:
 - QuestState copies of Achievement facts;
 - a new session state domain;
 - a background cache invalidation protocol.
+
+
+## Exact catalogue identity correction
+
+Current canonical catalogue readback:
+
+```text
+family: Achievement
+key: oteryn:achievement/forbidden_fruit
+revision: "1"
+name: Forbidden Fruit
+```
+
+The predicate carries the **key only**, matching the existing `QuestPredicate::*` key-bearing variants. The production Gate facts adapter/catalogue lookup is responsible for validating that the current compatible catalogue contains that key/revision. Do not concatenate revision syntax into the key string.
+
+The conjunction is therefore:
+
+```text
+quest_completed(oteryn:quest.authored.shards_of_a_broken_moon_quest)
+AND
+account_has_achievement(oteryn:achievement/forbidden_fruit)
+```
