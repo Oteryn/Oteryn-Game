@@ -235,6 +235,23 @@ fn scan(
     Ok((facts, blocked))
 }
 
+/// The one ground speed switch point of a bundle World (§2.4): the server paces every step with
+/// the Engineering 150 source until MAP-CLIENT-1, not the bundle's stored ground speed.
+fn ground_speed(pos: TilePos) -> u16 {
+    EngineeringGroundSpeed.ground_speed(LogicalCell {
+        x: i32::from(pos.x),
+        y: i32::from(pos.y),
+        z: -i32::from(pos.floor),
+    })
+}
+
+/// The ground speed domain 17 sends for `pos`, whose base ground stores `stored` (0 without a
+/// ground item): the speed the server paces with ([`ground_speed`]), so server and client stay
+/// on the Engineering 150 source until MAP-CLIENT-1; 0 without a ground item.
+pub(crate) fn view_ground_speed(pos: TilePos, stored: u16) -> u16 {
+    if stored == 0 { 0 } else { ground_speed(pos) }
+}
+
 /// A tile a player can enter: its ground is walkable and no entry blocks it.
 fn enterable(base: &WorldBase, blocked: &BTreeSet<TilePos>, pos: TilePos) -> bool {
     base.tile(pos.x, pos.y, pos.floor)
@@ -302,11 +319,7 @@ impl BundleWorld {
     /// The ground speed a step onto `pos` uses. This is the one switch point: Engineering 150
     /// until the map's own ground speed is served (MAP-CLIENT-1).
     pub fn ground_speed(&self, pos: TilePos) -> u16 {
-        EngineeringGroundSpeed.ground_speed(LogicalCell {
-            x: i32::from(pos.x),
-            y: i32::from(pos.y),
-            z: -i32::from(pos.floor),
-        })
+        ground_speed(pos)
     }
 
     /// The Channel's movement cells over this bundle: `entry`'s scope in the bundle's frame and

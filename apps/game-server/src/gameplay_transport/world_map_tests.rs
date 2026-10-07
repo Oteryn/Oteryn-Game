@@ -132,13 +132,17 @@ fn content(id: u32) -> Item {
 }
 
 /// A server bundle over `0..=127` holding `tiles`, loaded as a base.
-fn base(tiles: Vec<(TilePos, Vec<Item>)>) -> Arc<WorldBase> {
-    let (bytes, pins) = bundle_bytes(tiles);
+fn base(tiles: Vec<(TilePos, Vec<Item>)>, ground_speed: u16) -> Arc<WorldBase> {
+    let (bytes, pins) = bundle_bytes(tiles, ground_speed);
     Arc::new(crate::map::load(&bytes, &pins).expect("loaded base"))
 }
 
-/// The bytes and pins of a server bundle over `0..=127` holding `tiles`.
-fn bundle_bytes(tiles: Vec<(TilePos, Vec<Item>)>) -> (Vec<u8>, crate::map::BundlePins) {
+/// The bytes and pins of a server bundle over `0..=127` holding `tiles`, whose ground stores
+/// `ground_speed`.
+fn bundle_bytes(
+    tiles: Vec<(TilePos, Vec<Item>)>,
+    ground_speed: u16,
+) -> (Vec<u8>, crate::map::BundlePins) {
     let terrain = |key: &str, id, kind| PaletteEntry {
         key: key.into(),
         family: Family::Terrain,
@@ -147,7 +151,7 @@ fn bundle_bytes(tiles: Vec<(TilePos, Vec<Item>)>) -> (Vec<u8>, crate::map::Bundl
             TerrainKind::Ground => Terrain {
                 kind,
                 walkable: Some(true),
-                ground_speed: Some(150),
+                ground_speed: Some(ground_speed),
             },
             _ => Terrain {
                 kind,
@@ -265,8 +269,12 @@ struct Fixture {
 
 impl Fixture {
     fn new(tiles: Vec<(TilePos, Vec<Item>)>) -> Self {
+        Self::with_ground_speed(tiles, 150)
+    }
+
+    fn with_ground_speed(tiles: Vec<(TilePos, Vec<Item>)>, ground_speed: u16) -> Self {
         Self {
-            overlay: ChannelOverlay::new(base(tiles), world(), channel()),
+            overlay: ChannelOverlay::new(base(tiles, ground_speed), world(), channel()),
             facts: Facts::default(),
             reset_epoch: 1,
             items: SessionItemView::resume(ItemViewContinuity::default()).with_map_view(),
@@ -953,6 +961,24 @@ fn a_diagonal_step_sends_at_most_31_tiles_per_floor_and_matches_a_fresh_snapshot
     assert_eq!(fixture.step(tp(31, 31, -7)), None);
 }
 
+/// §2.4: until MAP-CLIENT-1 the view sends the Engineering 150 speed the server paces with,
+/// not the bundle's stored ground speed.
+#[test]
+fn the_view_sends_the_engineering_ground_speed_not_the_stored_one() {
+    let mut fixture = Fixture::with_ground_speed(vec![(ACTOR, vec![item(GRASS)])], 220);
+    assert_eq!(
+        fixture
+            .overlay
+            .base()
+            .tile(ACTOR.x, ACTOR.y, ACTOR.floor)
+            .expect("tile")
+            .stored_ground_speed(),
+        220
+    );
+    fixture.join(ACTOR);
+    assert_eq!(fixture.client_tile(ACTOR).expect("tile").ground_speed, 150);
+}
+
 #[test]
 fn a_step_onto_empty_tiles_sends_the_origin_alone() {
     let mut fixture = Fixture::new(vec![(ACTOR, vec![item(GRASS)])]);
@@ -1468,7 +1494,7 @@ fn booted(tiles: Vec<(TilePos, Vec<Item>)>) -> crate::map::boot::BundleWorld {
         .find(|(_, items)| items.len() == 1 && items[0].palette == GRASS - 1)
         .map(|(pos, _)| *pos)
         .expect("a grass tile");
-    let (bytes, bundle) = bundle_bytes(tiles);
+    let (bytes, bundle) = bundle_bytes(tiles, 150);
     let map_revision = map_revision(&crate::map::load(&bytes, &bundle).expect("loaded base"));
     let pins = crate::map::boot::BootPins {
         bundle,

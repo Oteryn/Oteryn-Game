@@ -289,8 +289,9 @@ fn plan_with<F: MapFacts>(
         };
         let overlay = overlays[index];
         let start = pool.len();
-        let ground_speed =
+        let stored =
             view::compose_into(source.overlay.base(), overlay, source.facts, pos, &mut pool)?;
+        let ground_speed = crate::map::boot::view_ground_speed(pos, stored);
         *slot = Slot {
             start,
             len: pool.len() - start,

@@ -145,6 +145,11 @@ git diff --check: pass
     digests. It now carries the bundle's: SHA-256 of the bundle `map_revision`, and a frame
     binding digest over the World, the bundle coordinate frame and the map revision. The
     real-boot test above asserts the pin identity.
+- Codex on c7eeb9ba, one P1, repaired in the next candidate:
+  - 4205878912: domain 17 sent the bundle's stored ground speed while the server paces with the
+    Engineering 150 source. The view speed now goes through the same switch point in
+    `map/boot.rs` (`view_ground_speed`); `the_view_sends_the_engineering_ground_speed_not_the_stored_one`
+    asserts 150 over a bundle ground storing 220.
 
 ## PR and closeout
 
