@@ -73,6 +73,28 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
 ];
 
+/// The offered set of a World booted from a bundle (MAP-CUTOVER-1b): the Item view set (which
+/// offers 4 `ITEM_VIEW_MOVE_V1`) plus capability 18 `WORLD_MAP_VIEW_V1`, which requires 4 and 6.
+/// A bundle World boots only against a generation whose Item key set names every bundle Item.
+/// Only a bundle World returns it; the registry entry stays `offered: false` and its `offer_gate`
+/// names this offer. 18 is above every offered ID, so appending it keeps the set ascending.
+pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
+    const WORLD_MAP_VIEW: OfferedCapability = OfferedCapability {
+        id: CAPABILITY_WORLD_MAP_VIEW_V1,
+        requires: &[
+            CAPABILITY_ITEM_VIEW_MOVE_V1,
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        ],
+    };
+    let mut set = [WORLD_MAP_VIEW; ITEM_VIEW_OFFERED_CAPABILITIES.len() + 1];
+    let mut index = 0;
+    while index < ITEM_VIEW_OFFERED_CAPABILITIES.len() {
+        set[index] = ITEM_VIEW_OFFERED_CAPABILITIES[index];
+        index += 1;
+    }
+    set
+};
+
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
 /// requires 6, for a generation that pins a non-empty Item key set: the registry's whole
 /// `offered: true` set. Part B offers it together with the composed corpse observation, item

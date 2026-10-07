@@ -14,6 +14,12 @@
 #            while LOGIN_LOCAL_HOLD=1 the operator writes text containing this run's id to the
 #            attestation file after the step (the walk has no machine-readable signal; see README).
 # A requested client run (LOGIN_LOCAL_RUN_CLIENT=1) that does not admit ends FAIL with exit 1.
+# LOGIN_LOCAL_HOST (default 127.0.0.1) is the address the client reaches the services at. A private LAN IPv4
+# (NAS server + PC client) publishes the Platform and gateway over TLS (per-run LAN test CA) and binds the game node
+# there; PostgreSQL and the Platform mTLS port stay on 127.0.0.1. Any other value is BLOCKED.
+# Proxy mode (LOGIN_LOCAL_PUBLIC_PLATFORM_URL + LOGIN_LOCAL_PUBLIC_GATEWAY_URL, both https://host[:port], LOGIN_LOCAL_HOST
+# required): an existing TLS reverse proxy (Synology DSM) fronts Platform 127.0.0.1:18564 and gateway 127.0.0.1:18565;
+# no LAN listener or CA is created, the Platform's external URL is the public one, only the game node is reached directly.
 # PHP snippets are deliberately single-quoted for the container shell; the identities are JSON text.
 # shellcheck disable=SC2016,SC2089,SC2090
 set -Eeuo pipefail
@@ -33,16 +39,33 @@ readonly COMPOSE_FILE=tools/qualification/wp5_s3a/compose.yml
 readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_NODE_BOOT=tools/qualification/node_boot/compose.override.yml
 readonly COMPOSE_LOCAL=tools/qualification/login_local/compose.override.yml
+readonly COMPOSE_LAN=tools/qualification/login_local/compose.lan.yml
+readonly COMPOSE_PROXY=tools/qualification/login_local/compose.proxy.yml
 readonly PG_IMAGE=postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
 readonly SERVICE_USER=oteryn-login-local
 readonly BASE=/srv/oteryn-login-local
 readonly RUNTIME_IDENTITY=oteryn-game-node-runtime-status
 readonly OPS_IDENTITY=oteryn-game-ops
 
-blocked() { echo "LOGIN_LOCAL_RESULT=BLOCKED reason=$1"; exit 2; }
+blocked() { echo "LOGIN_LOCAL_RESULT=BLOCKED reason=$1"; [[ -z "${WORK:-}" || "${LOGIN_LOCAL_KEEP:-0}" == 1 ]] || rm -rf "$WORK"; exit 2; }
 command -v docker >/dev/null 2>&1 || blocked docker_missing
 docker info >/dev/null 2>&1 || blocked docker_daemon_unreachable
 for tool in openssl cargo sudo git; do command -v "$tool" >/dev/null 2>&1 || blocked "${tool}_missing"; done
+
+# Client-facing host: loopback (default, unchanged) or one private IPv4 (10/8, 172.16/12, 192.168/16).
+LL_HOST="${LOGIN_LOCAL_HOST:-127.0.0.1}"
+LL_LAN=0
+if [[ "$LL_HOST" != 127.0.0.1 ]]; then
+  octet='(0|[1-9][0-9]{0,2})'
+  [[ "$LL_HOST" =~ ^$octet\.$octet\.$octet\.$octet$ ]] || blocked host_not_ipv4
+  IFS=. read -r h1 h2 h3 h4 <<< "$LL_HOST"
+  (( h1 < 256 && h2 < 256 && h3 < 256 && h4 < 256 )) || blocked host_not_ipv4
+  if (( h1 == 10 )) || (( h1 == 172 && h2 >= 16 && h2 <= 31 )) || (( h1 == 192 && h2 == 168 )); then
+    LL_LAN=1
+  else
+    blocked host_not_private_ipv4
+  fi
+fi
 
 GAME_SOURCE="$(git rev-parse --show-toplevel)"
 PLATFORM_SOURCE="${PLATFORM_SOURCE:-$GAME_SOURCE/_platform}"
@@ -68,6 +91,70 @@ WP5_PORT="${LOGIN_LOCAL_PLATFORM_MTLS_PORT:-18563}"
 LL_PLATFORM_HTTP_PORT="${LOGIN_LOCAL_PLATFORM_HTTP_PORT:-18564}"
 LL_GATEWAY_PORT="${LOGIN_LOCAL_GATEWAY_PORT:-18565}"
 GAME_PORT="${LOGIN_LOCAL_GAME_PORT:-17281}"
+# Compose publish specs: loopback plain HTTP by default; in LAN mode nginx publishes TLS on the LAN IP instead.
+LL_PLATFORM_PUBLISH="127.0.0.1:$LL_PLATFORM_HTTP_PORT:8080"
+LL_GATEWAY_PUBLISH="127.0.0.1:$LL_GATEWAY_PORT:8080"
+if [[ "$LL_LAN" == 1 ]]; then
+  LL_PLATFORM_PUBLISH="127.0.0.1::8080"
+  LL_GATEWAY_PUBLISH="127.0.0.1::8080"
+fi
+LL_PLATFORM_SCHEME=http
+LL_GATEWAY_SCHEME=http
+LL_TLS=$LL_LAN
+LL_PROXY=0
+LL_PUBLIC_PLATFORM_URL="${LOGIN_LOCAL_PUBLIC_PLATFORM_URL:-}"
+LL_PUBLIC_GATEWAY_URL="${LOGIN_LOCAL_PUBLIC_GATEWAY_URL:-}"
+if [[ -n "$LL_PUBLIC_PLATFORM_URL$LL_PUBLIC_GATEWAY_URL" ]]; then
+  [[ -n "$LL_PUBLIC_PLATFORM_URL" && -n "$LL_PUBLIC_GATEWAY_URL" ]] || blocked public_url_pair_required
+  [[ "$LL_LAN" == 1 ]] || blocked host_required_for_public_urls
+  for public_url in "$LL_PUBLIC_PLATFORM_URL" "$LL_PUBLIC_GATEWAY_URL"; do
+    [[ "$public_url" =~ ^https://[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?(:[0-9]{1,5})?$ ]] || blocked public_url_not_https
+  done
+  LL_PROXY=1
+  LL_TLS=0
+  LL_PLATFORM_PUBLISH="127.0.0.1:$LL_PLATFORM_HTTP_PORT:8447"
+  LL_GATEWAY_PUBLISH="127.0.0.1:$LL_GATEWAY_PORT:8080"
+  LL_PUBLIC_AUTHORITY="${LL_PUBLIC_PLATFORM_URL#https://}"
+  LL_PUBLIC_PORT=443
+  [[ "$LL_PUBLIC_AUTHORITY" != *:* ]] || LL_PUBLIC_PORT="${LL_PUBLIC_AUTHORITY##*:}"
+  # Platform behind the reverse proxy: a loopback listener that presents the public authority over https to PHP, so
+  # Laravel generates the public https URLs (issuer, authorize, redirect) without trusting any forwarded header.
+  LL_PROXY_CONF="$WORK/nginx-proxy"
+  mkdir -m 0755 "$LL_PROXY_CONF"
+  cat > "$LL_PROXY_CONF/proxy.conf" <<NGINX
+server {
+    listen 8447;
+    client_max_body_size 16k;
+    location ^~ /internal/ { return 404; }
+    location / {
+        include /etc/nginx/fastcgi_params;
+        fastcgi_pass platform:9000;
+        fastcgi_param SCRIPT_FILENAME /var/www/platform/public/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_param HTTPS on;
+        fastcgi_param HTTP_HOST "$LL_PUBLIC_AUTHORITY";
+        fastcgi_param SERVER_NAME "${LL_PUBLIC_AUTHORITY%%:*}";
+        fastcgi_param SERVER_PORT $LL_PUBLIC_PORT;
+        fastcgi_param HTTP_X_FORWARDED_PROTO "";
+        fastcgi_param HTTP_X_FORWARDED_HOST "";
+        fastcgi_param HTTP_X_FORWARDED_PORT "";
+        fastcgi_param HTTP_X_FORWARDED_FOR "";
+        fastcgi_param HTTP_FORWARDED "";
+        fastcgi_read_timeout 10s;
+    }
+}
+NGINX
+  export LL_PROXY_CONF LL_PUBLIC_PLATFORM_URL LL_PUBLIC_AUTHORITY
+fi
+LL_PLATFORM_URL="http://$LL_HOST:$LL_PLATFORM_HTTP_PORT"
+LL_GATEWAY_URL="http://$LL_HOST:$LL_GATEWAY_PORT"
+if [[ "$LL_TLS" == 1 ]]; then
+  LL_PLATFORM_URL="https://$LL_HOST:$LL_PLATFORM_HTTP_PORT"
+  LL_GATEWAY_URL="https://$LL_HOST:$LL_GATEWAY_PORT"
+elif [[ "$LL_PROXY" == 1 ]]; then
+  LL_PLATFORM_URL="$LL_PUBLIC_PLATFORM_URL"
+  LL_GATEWAY_URL="$LL_PUBLIC_GATEWAY_URL"
+fi
 PG_PORT="${LOGIN_LOCAL_PG_PORT:-15533}"
 WP5_PROJECT="loginlocal${GITHUB_RUN_ID:-local}${GITHUB_RUN_ATTEMPT:-1}"
 WP5_DB_PASSWORD="$(openssl rand -hex 24)"
@@ -89,14 +176,18 @@ LL_RUNTIME_STATUS_IDENTITIES='{}'
 LL_SCOPE_ASSIGNMENT_IDENTITIES='{}'
 export GAME_SOURCE PLATFORM_SOURCE WP5_PKI WP5_SCRATCH WP5_PORT WP5_PROJECT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
 export LL_TOPOLOGY_HEX LL_TOPOLOGY_DIR
-export WP5_APP_KEY WP5_TOPOLOGY_REVISION WP5_FSYNC_FAULT LL_PLATFORM_HTTP_PORT LL_GATEWAY_PORT
+export WP5_APP_KEY WP5_TOPOLOGY_REVISION WP5_FSYNC_FAULT LL_PLATFORM_HTTP_PORT LL_GATEWAY_PORT LL_PLATFORM_PUBLISH LL_GATEWAY_PUBLISH
+export LL_HOST LL_PROXY
 export LL_SERVICE_TOKEN LL_SERVICE_TOKEN_SHA256 LL_ADMISSION_KEY_ID LL_WORLD_ID LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
 NODE_PID=""
 result=FAIL
 
 compose() {
+  local lan=()
+  [[ "$LL_TLS" != 1 ]] || lan=(--file "$GAME_SOURCE/$COMPOSE_LAN")
+  [[ "$LL_PROXY" != 1 ]] || lan=(--file "$GAME_SOURCE/$COMPOSE_PROXY")
   docker compose --project-name "$WP5_PROJECT" --file "$GAME_SOURCE/$COMPOSE_FILE" --file "$GAME_SOURCE/$COMPOSE_S3B" \
-    --file "$GAME_SOURCE/$COMPOSE_NODE_BOOT" --file "$GAME_SOURCE/$COMPOSE_LOCAL" "$@"
+    --file "$GAME_SOURCE/$COMPOSE_NODE_BOOT" --file "$GAME_SOURCE/$COMPOSE_LOCAL" "${lan[@]}" "$@"
 }
 evidence() { printf 'LOGIN_LOCAL_EVIDENCE %s\n' "$*"; }
 cleanup() {
@@ -145,9 +236,25 @@ chmod 644 "$WP5_PKI/platform-upstream-ca.crt"
 LL_NO_SYSTEM_ROOTS="$WORK/no-system-roots"
 mkdir -m 0755 "$LL_NO_SYSTEM_ROOTS"
 export LL_NO_SYSTEM_ROOTS
+# LAN mode: nginx terminates TLS for the Platform and gateway on the LAN IP (the client refuses plain http for
+# non-loopback hosts, crates/platform-client). A per-run LAN test CA signs it; the PC imports only that CA.
+GAMEPLAY_SAN=DNS:localhost
+LL_LAN_PKI="$WORK/lan-pki"
+if [[ "$LL_LAN" == 1 ]]; then
+  GAMEPLAY_SAN="DNS:localhost,IP:$LL_HOST"
+fi
+if [[ "$LL_TLS" == 1 ]]; then
+  make_ca lan-ca login-local-lan-ca
+  make_leaf lan "$LL_HOST" lan-ca serverAuth "IP:$LL_HOST"
+  mkdir -m 0755 "$LL_LAN_PKI"
+  cp "$WP5_PKI/lan.crt" "$WP5_PKI/lan-ca.crt" "$LL_LAN_PKI/"
+  install -m 0644 "$WP5_PKI/lan.key" "$LL_LAN_PKI/lan.key"
+  chmod 644 "$WP5_PKI/lan-ca.crt"
+  export LL_LAN_PKI
+fi
 # Gameplay listener leaf: the dev root the client trusts is this self-signed end-entity certificate.
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 -subj "/CN=localhost" \
-  -addext "subjectAltName=DNS:localhost" -addext "basicConstraints=critical,CA:FALSE" \
+  -addext "subjectAltName=$GAMEPLAY_SAN" -addext "basicConstraints=critical,CA:FALSE" \
   -addext "keyUsage=critical,digitalSignature" -addext "extendedKeyUsage=serverAuth" \
   -keyout "$WP5_PKI/gameplay.key" -out "$WP5_PKI/gameplay.crt" >/dev/null 2>&1
 # Native admission issuer key: base64url Ed25519 seed file (Platform side) + public key published to Registry trust.
@@ -189,13 +296,13 @@ sqlite_exec() {
   compose exec --no-TTY --user www-data -e DB_CONNECTION=sqlite -e DB_DATABASE="$LL_TOPOLOGY_SQLITE" platform php -r \
     'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); '"$1"
 }
-ENSURE_WORLD='Illuminate\Support\Facades\Artisan::call("game-auth:world:ensure",["--id"=>"1","--slug"=>"login-local","--name"=>"Login Local","--region"=>"local","--host"=>"127.0.0.1","--port"=>"'"$GAME_PORT"'"]);'
+ENSURE_WORLD='Illuminate\Support\Facades\Artisan::call("game-auth:world:ensure",["--id"=>"1","--slug"=>"login-local","--name"=>"Login Local","--region"=>"local","--host"=>"'"$LL_HOST"'","--port"=>"'"$GAME_PORT"'"]);'
 php_exec "$ENSURE_WORLD"
 sqlite_exec 'Illuminate\Support\Facades\Artisan::call("migrate",["--force"=>true,"--no-interaction"=>true]); '"$ENSURE_WORLD"' $r=app(App\GameAuth\Worlds\NativeTopologyRegistry::class)->issueForPreproduction(1,"'"$CHANNEL_KEY"'"); echo $r->worldId," ",$r->channelId,"\n";' | tail -n 1 > "$WORK/topology"
 read -r WORLD_ID CHANNEL_ID < "$WORK/topology"
 [[ "$WORLD_ID" =~ ^[0-9a-f-]{36}$ && "$CHANNEL_ID" =~ ^[0-9a-f-]{36}$ ]] || { echo "registry topology issuance failed"; exit 1; }
 # Mode 34a: route record (tls_server_name must be in the gameplay certificate SAN) with native login enabled.
-ROUTE_REVISION="$(sqlite_exec 'echo app(App\GameAuth\Worlds\NativeTopologyRegistry::class)->publishRouteForPreproduction(1,"'"$CHANNEL_KEY"'","127.0.0.1",'"$GAME_PORT"',"localhost",true)->routeRevision;' | tail -n 1)"
+ROUTE_REVISION="$(sqlite_exec 'echo app(App\GameAuth\Worlds\NativeTopologyRegistry::class)->publishRouteForPreproduction(1,"'"$CHANNEL_KEY"'","'"$LL_HOST"'",'"$GAME_PORT"',"localhost",true)->routeRevision;' | tail -n 1)"
 TOPOLOGY_MIRROR="$(sqlite_exec 'echo base64_encode(json_encode(["world_id"=>Illuminate\Support\Facades\DB::table("game_worlds")->where("id",1)->value("world_id"),"channel"=>(array) Illuminate\Support\Facades\DB::table("game_channels")->where("game_world_id",1)->where("channel_key","'"$CHANNEL_KEY"'")->first()]));' | tail -n 1)"
 php_exec '$d=json_decode(base64_decode("'"$TOPOLOGY_MIRROR"'"),true); $c=$d["channel"]; unset($c["id"]); Illuminate\Support\Facades\DB::table("game_worlds")->where("id",1)->update(["world_id"=>$d["world_id"]]); Illuminate\Support\Facades\DB::table("game_channels")->updateOrInsert(["game_world_id"=>1,"channel_key"=>"'"$CHANNEL_KEY"'"],$c);'
 unset TOPOLOGY_MIRROR
@@ -295,7 +402,7 @@ DESCRIPTOR_INSTALLED_AT="$(date +%s)"
 write_node_config() {
   cat > "$WORK/node.toml" <<TOML
 [listener]
-address = "127.0.0.1:$GAME_PORT"
+address = "$LL_HOST:$GAME_PORT"
 entry_deadline_ms = 20000
 max_connections = 256
 max_handshake_units = 64
@@ -388,7 +495,9 @@ rm -f "$ATTEST_FILE"
 DEV_ROOT="$WP5_PKI/gameplay.crt"
 if [[ "${LOGIN_LOCAL_RUN_CLIENT:-1}" != 1 ]]; then
   chmod 644 "$DEV_ROOT"
-  if [[ -n "${LOGIN_LOCAL_DEV_ROOT_WINDOWS:-}" ]]; then
+  if [[ "$LL_LAN" == 1 ]]; then
+    : # the PC gets a copy next to client.env and sets OTERYN_DEV_ROOT itself (README, NAS server + PC client)
+  elif [[ -n "${LOGIN_LOCAL_DEV_ROOT_WINDOWS:-}" ]]; then
     cp "$DEV_ROOT" "$LOGIN_LOCAL_DEV_ROOT_WINDOWS" 2>/dev/null || blocked dev_root_windows_path_unwritable
     DEV_ROOT="${LOGIN_LOCAL_DEV_ROOT_WINDOWS_AS_SEEN:-$LOGIN_LOCAL_DEV_ROOT_WINDOWS}"
   elif command -v wslpath >/dev/null 2>&1; then
@@ -398,16 +507,27 @@ if [[ "${LOGIN_LOCAL_RUN_CLIENT:-1}" != 1 ]]; then
   fi
 fi
 {
-  echo "OTERYN_PLATFORM_URL=http://127.0.0.1:$LL_PLATFORM_HTTP_PORT"
-  echo "OTERYN_GATEWAY_URL=http://127.0.0.1:$LL_GATEWAY_PORT"
+  echo "OTERYN_PLATFORM_URL=$LL_PLATFORM_URL"
+  echo "OTERYN_GATEWAY_URL=$LL_GATEWAY_URL"
   echo "OTERYN_OAUTH_CLIENT_ID=$OAUTH_CLIENT_ID"
   echo "OTERYN_WORLD=$WORLD_ID"
   echo "OTERYN_CHARACTER_ID=$CHARACTER_ID"
   echo "OTERYN_DEV_ROOT=$DEV_ROOT"
   echo "# browser sign-in at /login: $ACCOUNT_EMAIL / $ACCOUNT_PASSWORD"
 } > "$CLIENT_ENV"
+if [[ "$LL_LAN" == 1 ]]; then
+  # The gameplay dev root is copied next to client.env; the PC sets OTERYN_DEV_ROOT to it.
+  cp "$WP5_PKI/gameplay.crt" "$(dirname "$CLIENT_ENV")/login-local-gameplay.crt"
+  evidence "lan host=$LL_HOST gameplay_root=$(dirname "$CLIENT_ENV")/login-local-gameplay.crt"
+fi
+if [[ "$LL_TLS" == 1 ]]; then
+  # The PC imports this CA into the Windows trust store (README).
+  LAN_CA_OUT="$(dirname "$CLIENT_ENV")/login-local-lan-ca.crt"
+  install -m 0644 "$WP5_PKI/lan-ca.crt" "$LAN_CA_OUT"
+  evidence "lan ca=$LAN_CA_OUT"
+fi
 result=READY
-evidence "ready client_env=$CLIENT_ENV platform=http://127.0.0.1:$LL_PLATFORM_HTTP_PORT gateway=http://127.0.0.1:$LL_GATEWAY_PORT"
+evidence "ready client_env=$CLIENT_ENV platform=$LL_PLATFORM_URL gateway=$LL_GATEWAY_URL"
 
 if [[ "${LOGIN_LOCAL_RUN_CLIENT:-1}" == 1 ]]; then
   # The client opens the system browser for the OAuth sign-in; this needs an operator and a display.
