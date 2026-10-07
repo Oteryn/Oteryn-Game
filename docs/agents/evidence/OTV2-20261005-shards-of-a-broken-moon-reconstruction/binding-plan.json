@@ -33,12 +33,20 @@
       "kind": "NPC_DIALOGUE",
       "trigger": {
         "npc": "oteryn:npc.saraki",
-        "dialogue": "oteryn:dialogue.npc.saraki",
-        "source_keyword": "moon"
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.saraki"
       },
       "outcome": "started",
-      "evidence": "FACT",
-      "owner": "NPC-QUEST-1"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ],
+      "route_fact": "start_route_saraki"
     },
     {
       "id": "start_nilavarna_alt",
@@ -46,13 +54,21 @@
       "kind": "NPC_DIALOGUE",
       "trigger": {
         "npc": "oteryn:npc.nilavarna",
-        "dialogue": "oteryn:dialogue.npc.nilavarna",
-        "source_keyword": "moon"
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.nilavarna"
       },
       "outcome": "started",
-      "evidence": "FACT",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
       "owner": "NPC-QUEST-1",
-      "note": "Source-parity alternate start; current authored summary chooses Saraki."
+      "note": "Source-parity alternate start; current authored summary chooses Saraki.",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ],
+      "route_fact": "start_route_nilavarna"
     },
     {
       "id": "clue_yukti_sundara",
@@ -60,15 +76,13 @@
       "kind": "NPC_DIALOGUE",
       "trigger": {
         "npc": "oteryn:npc.sundara",
-        "semantic_keyword": "yukti",
-        "greeting_required": true,
         "branch_sequence": [
           "hi",
           "yukti"
         ]
       },
       "outcome": "yukti_done",
-      "evidence": "FACT_POST_RELEASE_BRANCH",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
       "owner": "NPC-QUEST-1",
       "alternate_route": {
         "npc": "oteryn:npc.nipuna",
@@ -81,10 +95,10 @@
       },
       "completion_semantics": "Dialogue branch completion immediately yields yukti_done; no follow-up collection/use task.",
       "source_notes": [
-        "Post-release TibiaWiki: Sundara route Hi -> Yukti; alternate Nipuna route Hi -> Yukti.",
-        "Independent post-release ItemLevel/TibiaLife guides confirm the same no-extra-task clue flow.",
-        "Crystal Summer Sundara remains shop-only and is not an executable quest donor."
-      ]
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ],
+      "requires_route": "start_route_saraki"
     },
     {
       "id": "clue_yukti_nipuna_alt",
@@ -92,12 +106,21 @@
       "kind": "NPC_DIALOGUE",
       "trigger": {
         "npc": "oteryn:npc.nipuna",
-        "source_keyword": "yukti"
+        "branch_sequence": [
+          "hi",
+          "yukti"
+        ]
       },
       "outcome": "yukti_done",
-      "evidence": "FACT_REFERENCE_ONLY",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
       "owner": "NPC-QUEST-1",
-      "note": "Source-parity alternate Yukti route."
+      "note": "Source-parity alternate Yukti route.",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ],
+      "requires_route": "start_route_nilavarna",
+      "completion_semantics": "Dialogue branch completion immediately yields yukti_done; no follow-up task."
     },
     {
       "id": "tides_tarisu",
@@ -105,17 +128,24 @@
       "kind": "NPC_DIALOGUE_PLUS_ITEM_GRANT",
       "trigger": {
         "npc": "oteryn:npc.tarisu",
-        "dialogue": "oteryn:dialogue.npc.tarisu",
-        "source_keyword": "tides"
+        "branch_sequence": [
+          "hi",
+          "tides"
+        ],
+        "dialogue": "oteryn:dialogue.npc.tarisu"
       },
       "item": {
         "key": "oteryn:item.tibia.i53783",
         "name": "shell gauge"
       },
       "outcome": "tides_started",
-      "evidence": "FACT",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
       "owner": "NPC-QUEST-1 + Item/Durability",
-      "note": "Crystal prose says take the gauge but performs no addItem."
+      "note": "Crystal prose says take the gauge but performs no addItem.",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
     },
     {
       "id": "tide_marker_1",
@@ -178,15 +208,20 @@
       "kind": "NPC_DIALOGUE",
       "trigger": {
         "npc": "oteryn:npc.dhira",
-        "dialogue": "oteryn:dialogue.npc.dhira",
-        "source_keywords": [
+        "branch_sequence": [
+          "hi",
           "moon",
           "plants"
-        ]
+        ],
+        "dialogue": "oteryn:dialogue.npc.dhira"
       },
       "outcome": "plants_started",
-      "evidence": "FACT_REFERENCE_ONLY",
-      "owner": "NPC-QUEST-1"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
     },
     {
       "id": "plant_tide_veil",
@@ -286,15 +321,23 @@
       "kind": "NPC_DIALOGUE",
       "trigger": {
         "npc": "oteryn:npc.saraki",
-        "dialogue": "oteryn:dialogue.npc.saraki",
-        "source_keyword": "report"
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.saraki"
       },
       "requires": [
-        "three_clues_done"
+        "three_clues_done",
+        "start_route_saraki"
       ],
       "outcome": "report_done",
-      "evidence": "FACT",
-      "owner": "NPC-QUEST-1"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
     },
     {
       "id": "report_nilavarna_alt",
@@ -302,15 +345,23 @@
       "kind": "NPC_DIALOGUE",
       "trigger": {
         "npc": "oteryn:npc.nilavarna",
-        "dialogue": "oteryn:dialogue.npc.nilavarna",
-        "source_keyword": "moon"
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.nilavarna"
       },
       "requires": [
-        "three_clues_done"
+        "three_clues_done",
+        "start_route_nilavarna"
       ],
       "outcome": "report_done",
-      "evidence": "FACT_REFERENCE_ONLY",
-      "owner": "NPC-QUEST-1"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
     },
     {
       "id": "udu_moon",
@@ -318,15 +369,22 @@
       "kind": "NPC_DIALOGUE",
       "trigger": {
         "npc": "oteryn:npc.udu",
-        "dialogue": "oteryn:dialogue.npc.udu",
-        "source_keyword": "moon"
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.udu"
       },
       "requires": [
         "report_done"
       ],
       "outcome": "impact_location_known",
-      "evidence": "FACT",
-      "owner": "NPC-QUEST-1"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
     },
     {
       "id": "crater_discovery",
@@ -350,15 +408,22 @@
       "kind": "NPC_DIALOGUE",
       "trigger": {
         "npc": "oteryn:npc.sharai",
-        "dialogue": "oteryn:dialogue.npc.sharai",
-        "source_keyword": "moon"
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.sharai"
       },
       "requires": [
         "crater_discovered"
       ],
       "outcome": "sharai_route_known",
-      "evidence": "FACT",
-      "owner": "NPC-QUEST-1"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
     },
     {
       "id": "secret_entrance",
@@ -414,8 +479,11 @@
       "kind": "NPC_DIALOGUE_PLUS_ITEM_GRANT",
       "trigger": {
         "npc": "oteryn:npc.javala",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
         "dialogue": "oteryn:dialogue.npc.javala",
-        "source_keyword": "moon",
         "room": {
           "x": 33892,
           "y": 32666,
@@ -438,8 +506,12 @@
         "key_number": null,
         "key_number_status": "SOURCE_ABSENT_DO_NOT_INVENT"
       },
-      "evidence": "FACT_DIALOGUE_EXACT_ITEM_IDENTITY",
-      "owner": "NPC-QUEST-1 + Item/Durability + KEY-1"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1 + Item/Durability + KEY-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
     },
     {
       "id": "javala_lost_key_regrant",
@@ -588,15 +660,24 @@
       "kind": "NPC_DIALOGUE",
       "trigger": {
         "npc": "oteryn:npc.sharai",
-        "dialogue": "oteryn:dialogue.npc.sharai",
-        "source_keyword": "machines"
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.sharai"
       },
       "requires": [
         "laboratory_done"
       ],
       "outcome": "sharai_machines_reported",
-      "evidence": "FACT",
-      "owner": "NPC-QUEST-1"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ],
+      "semantic_name": "post_laboratory_sharai_report",
+      "note": "Post-release Reference uses Hi -> Moon here; donor Crystal branch label `machines` is not dispatch authority."
     },
     {
       "id": "niral_first",
@@ -1375,31 +1456,18 @@
       "visible_stage": "s16",
       "kind": "NPC_DIALOGUE_TERMINAL",
       "trigger": {
-        "routes": [
-          {
-            "npc": "oteryn:npc.saraki",
-            "dialogue": "oteryn:dialogue.npc.saraki",
-            "branch_sequence": [
-              "hi",
-              "moon"
-            ]
-          },
-          {
-            "npc": "oteryn:npc.nilavarna",
-            "dialogue": "oteryn:dialogue.npc.nilavarna",
-            "branch_sequence": [
-              "hi",
-              "moon"
-            ]
-          }
-        ],
-        "convergence": "same terminal transition + same reward claim"
+        "npc": "oteryn:npc.saraki",
+        "dialogue": "oteryn:dialogue.npc.saraki",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ]
       },
       "requires": [
         "prison_escaped"
       ],
       "outcome": "completed",
-      "evidence": "FACT_POST_RELEASE_TERMINAL_ROUTES",
+      "evidence": "FACT_POST_RELEASE_TERMINAL_ROUTE",
       "owner": "NPC-QUEST-1 + RewardClaim/Durability + QuestState",
       "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
       "reward_evidence_ref": "terminal-reward-evidence.json",
@@ -1434,7 +1502,8 @@
         "Post-release TibiaWiki explicitly permits Saraki or Nilavarna for quest completion with Hi -> Moon.",
         "Both completion routes grant the same quest completion, Amati's Echo and one Skewered Fish.",
         "Independent ItemLevel guide confirms Saraki completion and Skewered Fish reward."
-      ]
+      ],
+      "converges_with": "complete_nilavarna_alt"
     },
     {
       "id": "complete_nilavarna_alt",
@@ -1442,13 +1511,17 @@
       "kind": "NPC_DIALOGUE_TERMINAL",
       "trigger": {
         "npc": "oteryn:npc.nilavarna",
-        "dialogue": "oteryn:dialogue.npc.nilavarna"
+        "dialogue": "oteryn:dialogue.npc.nilavarna",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ]
       },
       "requires": [
         "prison_escaped"
       ],
       "outcome": "completed",
-      "evidence": "FACT_REFERENCE_ONLY",
+      "evidence": "FACT_POST_RELEASE_TERMINAL_ROUTE",
       "owner": "NPC-QUEST-1 + RewardClaim/Durability + QuestState",
       "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
       "reward_evidence_ref": "terminal-reward-evidence.json",
@@ -1466,7 +1539,8 @@
         "execution_owner": "NPC-QUEST-1 + RewardClaim/Durability",
         "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only."
       },
-      "note": "Both terminal NPC routes must use the same once-per-character claim identity."
+      "note": "Must use the same once-per-character terminal transition and reward claim as Saraki; route choice cannot create a second reward.",
+      "converges_with": "complete_saraki"
     },
     {
       "id": "reward_skewered_fish",
@@ -1903,6 +1977,19 @@
     "merged_architecture": {
       "quest_trigger_cause_pr": 1886,
       "magnolia_max_health_pr": 1891
+    },
+    "npc_dispatch_postrelease_pass": {
+      "source": "TibiaWiki post-release Shards express/story flow",
+      "route_pairing": {
+        "saraki": "Sundara Yukti",
+        "nilavarna": "Nipuna Yukti"
+      },
+      "corrected_legacy_labels": {
+        "report_saraki": "report -> moon",
+        "sharai_post_laboratory": "machines -> moon",
+        "niral_post_rakesh": "seal -> moon",
+        "niral_consecrate": "consecrate -> moon"
+      }
     }
   }
 }
