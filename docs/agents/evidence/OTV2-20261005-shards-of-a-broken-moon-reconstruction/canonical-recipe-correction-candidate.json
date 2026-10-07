@@ -1,0 +1,358 @@
+{
+  "schema": "OTERYN_SHARDS_CANONICAL_RECIPE_CORRECTION_CANDIDATE/v1",
+  "mode": "EVIDENCE_ONLY_NO_CANONICAL_MUTATION",
+  "quest": {
+    "key": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+    "revision": "authored-r1",
+    "display_name": "Shards of a Broken Moon Quest"
+  },
+  "fresh_read": {
+    "main": "3bacc59e6adbf138655e6f0c1cf0b4fdf9a36096",
+    "canonical_definition_path": "content/quests/definitions/quests-00300-00351.json",
+    "canonical_definition_file_sha": "a5ddb1358e35d26a513f9155b675be53d92bf42f",
+    "canonical_state": "WAITING_IMPLEMENTATION",
+    "runtime_enabled": false,
+    "canonical_progress_refs": 0,
+    "canonical_interaction_refs": 0,
+    "canonical_reward_refs": 0,
+    "current_recipe_classification": "OTERYN_AUTHORED_APPROXIMATION",
+    "current_recipe_completeness_scope": "CHOSEN_OTERYN_RECIPE_ONLY",
+    "current_recipe_runtime_safe_as_reference_graph": false
+  },
+  "reference_target": {
+    "postrelease_tibiawiki_revision": 445614,
+    "crystal_identity_pin": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "supplied_walkthrough": "https://www.youtube.com/watch?v=Zz-7UyufXbU&t=1295s",
+    "policy": "Post-release Reference route/mechanics decide executable semantics; Crystal supplies identity/map/static donor evidence where qualified."
+  },
+  "activation_fence": {
+    "must_not_activate_current_recipe_as_execution_graph": true,
+    "reason": [
+      "Current recipe serializes three source-parallel investigation branches.",
+      "Current recipe treats optional laboratory lore as a counted exploration target.",
+      "Current recipe omits source-significant hidden entrance / first sealed-door / second Sharai / prison escape micro-events.",
+      "Current recipe contains presentation targets that are not executable placement/action identities.",
+      "Runtime producers (Gate/Trigger/NPC/Encounter) remain shared-owner dependencies."
+    ],
+    "acceptable_strategy": "Keep the 16 visible mission stages for Quest Log presentation, but execute the qualified native micrograph/bindings. If canonical recipe schema must encode execution topology, revise/regenerate it under Quest content ownership before runtime_enabled may become true."
+  },
+  "corrections": [
+    {
+      "id": "C1_PARALLEL_INVESTIGATIONS",
+      "current": "s1 -> s2 -> s3 -> s4 -> s5",
+      "reference": "Yukti, Tides and Plants are independent investigation branches and may be completed in any order; report is available only after all three are complete.",
+      "required_native_shape": {
+        "branches": [
+          "yukti_done",
+          "tides_done",
+          "plants_done"
+        ],
+        "join": "all_of(yukti_done,tides_done,plants_done) -> three_clues_done -> report"
+      },
+      "disposition": "EXECUTION_GRAPH_CORRECTION_REQUIRED",
+      "forbidden": "Do not use the current serial next[] edges as Reference runtime order."
+    },
+    {
+      "id": "C2_ROUTE_ALTERNATIVES",
+      "current": "Chosen Saraki/Sundara route only; Nilavarna/Nipuna retained merely as notes.",
+      "reference": "Post-release route has qualified alternative NPC paths and terminal convergence.",
+      "required_native_shape": {
+        "starts": [
+          "Saraki route",
+          "Nilavarna route"
+        ],
+        "yukti_routes": [
+          "Sundara route",
+          "Nipuna route"
+        ],
+        "terminal_routes": [
+          "Saraki",
+          "Nilavarna"
+        ],
+        "convergence": "All qualified terminal routes resolve to the same s16 transition and once-per-character reward claim."
+      },
+      "disposition": "RUNTIME_BRANCH_BINDING_REQUIRED",
+      "forbidden": "Do not create separate quest completion/reward identities per NPC route."
+    },
+    {
+      "id": "C3_TIDES",
+      "visible_stage": "s3",
+      "current": "Single use stage count=3 with Tarisu/Shell Gauge/marker labels.",
+      "reference": "Tarisu conversation starts the task; three distinct placed tide markers must each be measured once.",
+      "required_native_shape": [
+        "talk Tarisu -> tides_started + Item-owner Shell Gauge grant/admission",
+        "distinct marker A -> tide_marker_1",
+        "distinct marker B -> tide_marker_2",
+        "distinct marker C -> tide_marker_3",
+        "all three -> tides_done"
+      ],
+      "disposition": "MICROTRANSITIONS_REQUIRED"
+    },
+    {
+      "id": "C4_PLANTS",
+      "visible_stage": "s4",
+      "current": "collect count=2 over two samples + Refiner label",
+      "reference": "Each source sample acquisition and each Refiner-of-Magic interaction is a separate executable fact; completion requires both refined samples.",
+      "required_native_shape": [
+        "sample A acquired",
+        "sample B acquired",
+        "sample A refined at WorldObject i34338",
+        "sample B refined at WorldObject i34338",
+        "both refined -> plants_done"
+      ],
+      "disposition": "MICROTRANSITIONS_REQUIRED"
+    },
+    {
+      "id": "C5_CRATER_AND_SECRET_ENTRANCE",
+      "visible_boundary": "s5 -> s6 -> s7",
+      "current": "talk-only compression",
+      "reference": "Impact/crater discovery, Sharai route, hidden entrance use, and first sealed-door observation are source-significant world events before Javala/key grant.",
+      "disposition": "HIDDEN_WORLD_EVENTS_REQUIRED"
+    },
+    {
+      "id": "C6_ASURA_KEY",
+      "visible_stage": "s7",
+      "current_target": "Stone door key",
+      "corrected_identity": "oteryn:item.tibia.i54262",
+      "donor_item_id": 54262,
+      "key_number": null,
+      "semantics": "identity-based quest key; no source numeric keyNumber; lost-key regrant is eligible; door becomes key-bypassed after quest completion.",
+      "disposition": "EXACT_IDENTITY_CORRECTION",
+      "forbidden": [
+        "invent numeric key number",
+        "model with generic numeric KEY-1 only",
+        "invent QuestGate OR"
+      ]
+    },
+    {
+      "id": "C7_LAB_NOTE_OPTIONAL",
+      "visible_stage": "s8",
+      "current": "Laboratory note participates in explore count=3.",
+      "corrected": {
+        "item_id": 6121,
+        "name": "note pinned on the wall",
+        "position": {
+          "x": 33881,
+          "y": 32684,
+          "z": 9
+        },
+        "required_for_progress": false
+      },
+      "video_observation": "Crystal Plinth progression succeeds without a required note-read event in the observed continuous route.",
+      "disposition": "REMOVE_FROM_REQUIRED_PROGRESS_COUNT_KEEP_AS_OPTIONAL_LORE"
+    },
+    {
+      "id": "C8_LAB_PLINTH_GATE",
+      "visible_stage": "s8",
+      "current": "Generic explore target Crystal Plinth",
+      "corrected": {
+        "plinth": "oteryn:item.tibia.i54515",
+        "outcome": "lab_access_sequence_learned",
+        "manual_colour_input": false,
+        "door_gate": "requires lab_access_sequence_learned"
+      },
+      "disposition": "USE_PLUS_READ_ONLY_GATE",
+      "forbidden": [
+        "invent per-character random colour code",
+        "invent manual panel sequence",
+        "invent reset/failure semantics not observed"
+      ]
+    },
+    {
+      "id": "C9_POST_LAB_SHARAI",
+      "visible_boundary": "s8 -> s9",
+      "current": "jumps directly to Niral",
+      "reference": "A second Sharai conversation after the laboratory is source-significant and motivates the Niral/Oskayaat route.",
+      "outcome": "sharai_machines_reported",
+      "disposition": "HIDDEN_NPC_MICROTRANSITION_REQUIRED"
+    },
+    {
+      "id": "C10_RAKESH",
+      "visible_stage": "s10",
+      "current": "kill Rakesh Moonfang and report in one visible objective",
+      "corrected": [
+        "qualified Rakesh encounter/death -> rakesh_defeated",
+        "Niral post-kill branch -> niral_seal_instructions"
+      ],
+      "disposition": "ENCOUNTER_OUTCOME_PLUS_NPC_MICROTRANSITION"
+    },
+    {
+      "id": "C11_BLUE_LAVA",
+      "visible_stage": "s11",
+      "current": "Empty Crystal Flask + Moon Mirror + night Blue Lava",
+      "corrected": {
+        "empty_flask": "oteryn:item.tibia.i53696",
+        "moon_mirror": "oteryn:item.tibia.i25975",
+        "output": "oteryn:item.tibia.i54564",
+        "night_time_required": true,
+        "evidence_class": "STRUCTURED_REFERENCE_CANDIDATE",
+        "controlled_global_day_vs_night_test": "NOT_VERIFIED"
+      },
+      "disposition": "KEEP_NIGHT_GUARD_AS_SELECTED_SOURCE_REQUIREMENT_UNTIL_STRONGER_OBSERVATION"
+    },
+    {
+      "id": "C12_NIRAL_CONSECRATION",
+      "visible_stage": "s12",
+      "corrected": {
+        "input": "oteryn:item.tibia.i54564",
+        "output": "oteryn:item.tibia.i54566",
+        "interaction": "NPC dialogue outcome + Item/Durability transform"
+      },
+      "disposition": "TYPED_NPC_PLUS_ITEM_TRANSFORM"
+    },
+    {
+      "id": "C13_RITUAL",
+      "visible_stage": "s13",
+      "current": "use count=4 on Large Crystal Apparatus label",
+      "corrected": {
+        "input": "oteryn:item.tibia.i54566",
+        "base_appearance_54637": "Terrain only, not a quest WorldObject",
+        "exact_positions": [
+          {
+            "x": 33868,
+            "y": 32664,
+            "z": 9
+          },
+          {
+            "x": 33880,
+            "y": 32664,
+            "z": 9
+          },
+          {
+            "x": 33868,
+            "y": 32676,
+            "z": 9
+          },
+          {
+            "x": 33880,
+            "y": 32676,
+            "z": 9
+          }
+        ],
+        "execution": "four distinct USE_ITEM_ON_POSITION facts -> ritual_done"
+      },
+      "disposition": "PLACEMENT_DRIVEN_TRIGGER_BINDINGS"
+    },
+    {
+      "id": "C14_MAGNOLIA",
+      "visible_stage": "s14",
+      "current": "kill stage; objective mentions portals and second phase generically",
+      "corrected": {
+        "boss": "oteryn:creature.the_moonsnow_magnolia",
+        "portal": {
+          "x": 33901,
+          "y": 32718,
+          "z": 9
+        },
+        "base_hp_current": 52000,
+        "phase_2_hp": 60000,
+        "first_lethal_terminal": false,
+        "bone_fiddle_phase_1_only": true,
+        "death_damage_heals_boss": true,
+        "moonsilver_drift_callbacks": true,
+        "permanent_second_lethal_outcome": "magnolia_defeated"
+      },
+      "official_balance_note": "Supplied July 13 video predates the official July 28 ~15% Magnolia HP reduction; video pacing/HP is not current-stat authority.",
+      "disposition": "DEDICATED_ENCOUNTER_OUTCOME_NOT_GENERIC_KILL"
+    },
+    {
+      "id": "C15_PRISON_ESCAPE",
+      "visible_stage": "s15",
+      "current": "use count=2: Torch + Icicle Chisel on Ice prison wall",
+      "corrected": {
+        "skeleton": {
+          "x": 31920,
+          "y": 31360,
+          "z": 9,
+          "item_id": 8606,
+          "grant": "oteryn:item.tibia.i54610 (successor admission pending)"
+        },
+        "icicles": {
+          "x": 31914,
+          "y": 31364,
+          "z": 9,
+          "item_id": 6966,
+          "grant": "oteryn:item.tibia.i39578"
+        },
+        "north_wall": {
+          "x": 31920,
+          "y": 31359,
+          "z": 9,
+          "wall_id": 6729,
+          "debris_id": 6374
+        },
+        "sequence": [
+          "skeleton -> Lit Torch",
+          "icicles -> Icicle Chisel",
+          "Torch on north wall -> prepared",
+          "Chisel on prepared wall -> open",
+          "cross passage",
+          "Rope Spot 31923,31377,9 -> generic destination 31923,31378,8"
+        ]
+      },
+      "disposition": "MULTI_EVENT_WORLD_INTERACTION_SEQUENCE"
+    },
+    {
+      "id": "C16_TERMINAL_REWARD",
+      "visible_stage": "s16",
+      "current": "Return to Saraki; reward names only.",
+      "corrected": {
+        "terminal_npcs": [
+          "Saraki",
+          "Nilavarna"
+        ],
+        "transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+        "reward_claim": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal",
+        "per": "character",
+        "repeat": "once",
+        "item": {
+          "key": "oteryn:item.tibia.i54638",
+          "count": 1
+        },
+        "achievement": "oteryn:achievement/amati_s_echo@1"
+      },
+      "disposition": "ONE_SHARED_TERMINAL_CLAIM"
+    }
+  ],
+  "downstream_access": [
+    {
+      "name": "Forbidden Gardens",
+      "required": [
+        "quest_completed(Shards)",
+        "account_has_achievement(oteryn:achievement/forbidden_fruit@1)"
+      ],
+      "candidate_door": {
+        "item_id": 54613,
+        "x": 33873,
+        "y": 32620,
+        "z": 8
+      },
+      "status": "QUALIFIED_CANDIDATE_REQUIRES_SERVED_PLACEMENT_KEY_CONFIRMATION"
+    }
+  ],
+  "non_terminal_followup": [
+    {
+      "name": "Jaracal taming",
+      "item": "oteryn:item.tibia.i54638",
+      "target": "oteryn:creature.jaracal",
+      "result": [
+        "Jaracal mount unlock",
+        "oteryn:achievement/six_steps_ahead@1"
+      ],
+      "direct_quest_reward": false,
+      "success_chance": "UNKNOWN_DO_NOT_INVENT",
+      "failure_item_consumed": false,
+      "failure_retry_same_item": true
+    }
+  ],
+  "required_owner_sequence": [
+    "Quest content owner: decide presentation-vs-execution encoding and regenerate canonical quest bytes if needed.",
+    "QUEST-GATE-1",
+    "QUEST-TRIGGER-1",
+    "MAP-CUTOVER-1b + NPC-PLACE-1b -> NPC-TALK-1 -> NPC-QUEST-1",
+    "Item admission/materialization and identity-key Door/Key",
+    "ENC-RT-1 / ENC-COMBAT-1 -> ENC-OUTCOME-1",
+    "Achievement predicate / World served placement binding",
+    "real-character E2E"
+  ]
+}
