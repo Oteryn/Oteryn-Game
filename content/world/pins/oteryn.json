@@ -1,14 +1,14 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "aed9aa7c706a4273a8a659957739d3ff2d14a67c6376f0ccba89cbb6c1c01606",
+  "digest": "f8b11ebcd96a4140f71dcbb5944519434d3a8e6b0b0f2ecf9fecb9c74f67b6c8",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "g4-npc-provisional-enrichment-r28",
+  "content_revision": "d3-7-corpse-admitted-20261006-r1",
   "production": false,
   "entry_start": {
     "x": 10228,
     "y": 10032,
     "floor": 0
   },
-  "inputs_digest": "ef437f41c1511db25c92ed2600156b5ebfdce1f1be47b7a67b3f14d37ad3dd9e"
+  "inputs_digest": "2ea68428fa30b0351421950b5e9266685104827ad19cb4e69f18b9fd7b9c5c90"
 }

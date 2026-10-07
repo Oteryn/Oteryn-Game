@@ -1,3 +1,4 @@
+use crate::durability::item_mint_audit::Type2Transaction;
 use crate::durability::{DurabilityError, SchemaCompatibility, schema};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use sqlx::pool::{PoolConnection, PoolConnectionReturnDisposition};
@@ -1132,6 +1133,25 @@ pub(crate) async fn begin_semantic_transaction<'a>(
     .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??;
 
     Ok(transaction)
+}
+
+/// The opener of every transaction that can insert a type-2 audit event (GOLD-FEE-ACT-PACKET-1
+/// §1.4): [`begin_semantic_transaction`], then the shared activation fence and the activation
+/// read as its first statements, bounded by the same deadline settings.
+pub(crate) async fn begin_type2_transaction<'a>(
+    holder: &'a mut PoolConnection<Postgres>,
+    deadline: Instant,
+) -> Result<Type2Transaction<'a>, DurabilityError> {
+    let transaction = begin_semantic_transaction(holder, deadline).await?;
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    if remaining.is_zero() {
+        return Err(DurabilityError::RootPassDeadlineExceeded);
+    }
+    Ok(
+        tokio::time::timeout(remaining, Type2Transaction::open(transaction))
+            .await
+            .map_err(|_| DurabilityError::RootPassDeadlineExceeded)??,
+    )
 }
 
 pub(crate) async fn commit_semantic_transaction(

@@ -1,0 +1,3058 @@
+{
+  "capture": "sealed11",
+  "source_count": 16,
+  "summoners": 199,
+  "entries": 257,
+  "distinct_children": 159,
+  "invalid": [],
+  "rows": [
+    {
+      "parent": "oteryn:creature.a_carved_stone_tile",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.dreadbeast",
+          "health": 795,
+          "count": 5,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.acid_blob",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.acid_blob",
+          "health": 250,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.acolyte_of_the_cult",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.skeleton",
+          "health": 50,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.adept_of_the_cult",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.ghoul",
+          "health": 100,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ancient_scarab",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.larva",
+          "health": 70,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.angry_demon",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.fire_elemental",
+          "health": 280,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.animated_ogre_shaman",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.dworc_fleshhunter",
+          "health": 85,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.terror_bird",
+          "health": 300,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.apprentice_sheng",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.hyaena",
+          "health": 60,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.arachir_the_ancient_one",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.lich",
+          "health": 880,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.arbaziloth",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.overcharged_demon",
+          "health": 21500,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.arthei",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.vampire",
+          "health": 475,
+          "count": 4,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.shadow_of_boreth",
+          "health": 600,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.shadow_of_lersatio",
+          "health": 600,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.shadow_of_marziel",
+          "health": 600,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ashmunrah",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.ancient_scarab",
+          "health": 1000,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.green_djinn",
+          "health": 330,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.azerus",
+      "total": 10,
+      "entries": [
+        {
+          "child": "oteryn:creature.rift_worm",
+          "health": 2800,
+          "count": 8,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.rift_brood",
+          "health": 2950,
+          "count": 8,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.rift_scythe",
+          "health": 3600,
+          "count": 8,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.war_golem",
+          "health": 4300,
+          "count": 5,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.azerus2",
+      "total": 10,
+      "entries": [
+        {
+          "child": "oteryn:creature.rift_worm",
+          "health": 2800,
+          "count": 8,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.rift_brood",
+          "health": 2950,
+          "count": 8,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.rift_scythe",
+          "health": 3600,
+          "count": 8,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.war_golem",
+          "health": 4300,
+          "count": 5,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.bakragore",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.elder_bloodjaw",
+          "health": 86000,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.barbaria",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.war_wolf",
+          "health": 140,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.barbarian_brutetamer",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.war_wolf",
+          "health": 140,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.bazir",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.bazir",
+          "health": 110000,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.big_boss_trolliver",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.troll_champion",
+          "health": 75,
+          "count": 5,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.black_sphinx_acolyte",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.skeleton_elite_warrior",
+          "health": 7800,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.black_vixen",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.werefox",
+          "health": 1500,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.bloodback",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.wereboar",
+          "health": 2200,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.bonelord",
+      "total": 6,
+      "entries": [
+        {
+          "child": "oteryn:creature.skeleton",
+          "health": 50,
+          "count": 6,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.boogey",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon_skeleton",
+          "health": 400,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.boreth",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.vampire",
+          "health": 475,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.braindeath",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.vampire",
+          "health": 475,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.brokul",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.neutral_deepling_warrior",
+          "health": 1600,
+          "count": 5,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.cave_spider",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.poison_spider",
+          "health": 26,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.chizzoron_the_distorter",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.lizard_dragon_priest",
+          "health": 1450,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.count_vlarkorth",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.soulless_minion",
+          "health": 10000,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.countess_sorrow",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.phantasm",
+          "health": 3950,
+          "count": 3,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.phantasm_summon",
+          "health": 65,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.darkfang",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.gloom_wolf",
+          "health": 200,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.death_blob",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.death_blob",
+          "health": 320,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.death_priest_shargon",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.lesser_death_minion",
+          "health": 550,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.superior_death_minion",
+          "health": 2500,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.greater_death_minion",
+          "health": 1500,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.demodras",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.dragon",
+          "health": 1000,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.demon",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.fire_elemental",
+          "health": 280,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.demon_outcast",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.energy_elemental",
+          "health": 500,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.demon_summoner",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon",
+          "health": 8200,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.destabilized_ferumbras",
+      "total": 6,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon",
+          "health": 8200,
+          "count": 6,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.dharalion",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon_skeleton",
+          "health": 400,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.diblis_the_fair",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.banshee",
+          "health": 1000,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.dipthrah",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.priestess",
+          "health": 390,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.dirtbeard",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.pirate_marauder",
+          "health": 210,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.doctor_perhaps",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.zombie",
+          "health": 500,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.draken_abomination",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.death_blob",
+          "health": 320,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.drume",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.preceptor_lazare",
+          "health": 15000,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.grand_commander_soeren",
+          "health": 17000,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.grand_chaplain_gaunder",
+          "health": 18000,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.duke_krule",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.soul_scourge",
+          "health": 6900,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.earl_osam",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.frozen_soul",
+          "health": 2000,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.efreet",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.green_djinn",
+          "health": 330,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.elder_bonelord",
+      "total": 6,
+      "entries": [
+        {
+          "child": "oteryn:creature.gazer",
+          "health": 120,
+          "count": 6,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.crypt_shambler",
+          "health": 330,
+          "count": 6,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.eldritch_dragon_lord",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.eruption",
+          "health": 10000,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.flame_totem",
+          "health": 15000,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.energized_raging_mage",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.golden_servant",
+          "health": 550,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.enlightened_of_the_cult",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.crypt_shambler",
+          "health": 330,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.ghost",
+          "health": 150,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.eshtaba_the_conjurer",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.dread_minion",
+          "health": 2500,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.dread_minion",
+          "health": 2500,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.dread_minion",
+          "health": 2500,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.dread_minion",
+          "health": 2500,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.dread_minion",
+          "health": 2500,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.eshtaba_the_conjurer_stop",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.dread_minion",
+          "health": 2500,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.dread_minion",
+          "health": 2500,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.dread_minion",
+          "health": 2500,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.dread_minion",
+          "health": 2500,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.dread_minion",
+          "health": 2500,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.evil_mastermind",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.vampire",
+          "health": 475,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.evil_sheep_lord",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.evil_sheep",
+          "health": 350,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.fahim_the_wise",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.blue_djinn",
+          "health": 330,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.fernfang",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.war_wolf",
+          "health": 140,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ferumbras",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon",
+          "health": 8200,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ferumbras_mortal_shell",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon",
+          "health": 8200,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ferumbras_soul_splinter",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon",
+          "health": 8200,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.fleshcrawler",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.larva",
+          "health": 70,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.floating_savant",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.lava_lurker_attendant",
+          "health": 3000,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.furious_troll",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.mechanical_fighter",
+          "health": 420,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.fury_of_the_emperor",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.draken_warmaster",
+          "health": 4150,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.furyosa",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.fury",
+          "health": 4100,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.gaffir",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.black_cobra",
+          "health": 10000,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.general_murius",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.minotaur_archer",
+          "health": 100,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.minotaur_guard",
+          "health": 185,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ghazbaran",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.deathslicer",
+          "health": 8200,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.giant_spider",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.poison_spider",
+          "health": 26,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.glooth_blob",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.glooth_blob",
+          "health": 750,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.grand_mother_foulscale",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.dragon_hatchling",
+          "health": 380,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.grandfather_tridian",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.crypt_shambler",
+          "health": 330,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.ghost",
+          "health": 150,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.gravelord_oshuran",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.bonebeast",
+          "health": 515,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.greater_canopic_jar",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.elder_mummy",
+          "health": 850,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.haunted_hunter",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.bone_bear",
+          "health": 600,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.hell_hole",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.deathspawn",
+          "health": 225,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.hemming",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.war_wolf",
+          "health": 140,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.hideous_fungus",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.humorless_fungus",
+          "health": 1600,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.hive_overseer",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.spidris_elite_summon",
+          "health": 5000,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.hive_pore",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.lesser_swarmer",
+          "health": 230,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.horadron",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.defiler",
+          "health": 3650,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.horestis",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.sandstone_scorpion",
+          "health": 900,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.horrible_dream",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.death_blob",
+          "health": 320,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ice_horror",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.ice_blockade",
+          "health": 600,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.ice_crawler",
+          "health": 12000,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ichgahal",
+      "total": 8,
+      "entries": [
+        {
+          "child": "oteryn:creature.mushroom",
+          "health": 10000,
+          "count": 8,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.infected_weeper",
+      "total": 6,
+      "entries": [
+        {
+          "child": "oteryn:creature.parasite",
+          "health": 550,
+          "count": 6,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.infernalist",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.fire_elemental",
+          "health": 280,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.infernatil",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.hellfire_fighter",
+          "health": 3800,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.inkwing",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.vicious_ink_splash",
+          "health": 1950,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.kalyassa",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.dragon_lord",
+          "health": 1900,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.katex_blood_tongue",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.werehyaena",
+          "health": 2700,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.killer_rabbit",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.killer_rabbit",
+          "health": 205,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.koshei_the_deathless",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.bonebeast",
+          "health": 515,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.kraknaknork",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.weakened_demon",
+          "health": 5,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.kreebosh_the_exile",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.green_djinn",
+          "health": 330,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.leiden",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.barkless_fanatic",
+          "health": 3200,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.barkless_fanatic",
+          "health": 3200,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.lersatio",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.vampire",
+          "health": 475,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.lethal_lissy",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.pirate_cutthroat",
+          "health": 325,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.lich",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.bonebeast",
+          "health": 515,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.lion_commander",
+      "total": 6,
+      "entries": [
+        {
+          "child": "oteryn:creature.lion_archer",
+          "health": 7300,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.lion_knight",
+          "health": 8200,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.lion_warlock",
+          "health": 7500,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.lizard_dragon_priest",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.dragon_hatchling",
+          "health": 380,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.lizard_snakecharmer",
+      "total": 6,
+      "entries": [
+        {
+          "child": "oteryn:creature.cobra",
+          "health": 65,
+          "count": 6,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.lokathmor",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon_blood",
+          "health": 3000,
+          "count": 5,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.lord_azaram",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.condensed_sins",
+          "health": 1500,
+          "count": 5,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.lord_of_the_elements",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.blistering_fire_elemental",
+          "health": 1500,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.jagged_earth_elemental",
+          "health": 1500,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.roaring_water_elemental",
+          "health": 1400,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.overcharged_energy_elemental",
+          "health": 1200,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.mad_mage",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.golden_servant",
+          "health": 550,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.magic_pillar",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon",
+          "health": 8200,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.mahrdis",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.fire_elemental",
+          "health": 280,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.maior_domus",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.moonsilver_guardian",
+          "health": 10600,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.man_in_the_cave",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.monk",
+          "health": 240,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.marid",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.blue_djinn",
+          "health": 330,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.marziel",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.vampire",
+          "health": 475,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.megasylvan_yselda",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.carnisylvan_sapling",
+          "health": 750,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.memory_of_a_scarab",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.larva",
+          "health": 70,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.mercury_blob",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.mercury_blob",
+          "health": 150,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.merikh_the_slaughterer",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.green_djinn",
+          "health": 330,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.minishabaal",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.diabolic_imp",
+          "health": 1950,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.monstor",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.acid_blob",
+          "health": 250,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.morgaroth",
+      "total": 6,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon",
+          "health": 8200,
+          "count": 6,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.morguthis",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.hero",
+          "health": 1400,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.morik_the_gladiator",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.gladiator",
+          "health": 185,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.munster",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.rat",
+          "health": 20,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.murcion",
+      "total": 8,
+      "entries": [
+        {
+          "child": "oteryn:creature.mushroom",
+          "health": 10000,
+          "count": 8,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.necromancer",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.ghoul",
+          "health": 100,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.ghost",
+          "health": 150,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.mummy",
+          "health": 240,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.necropharus",
+      "total": 6,
+      "entries": [
+        {
+          "child": "oteryn:creature.ghoul",
+          "health": 100,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.ghost",
+          "health": 150,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.mummy",
+          "health": 240,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.novice_of_the_cult",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.chicken",
+          "health": 15,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ogre_sage",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.young_goanna",
+          "health": 6950,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ogre_shaman",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.dworc_fleshhunter",
+          "health": 85,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.terror_bird",
+          "health": 300,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.old_beholder",
+      "total": 6,
+      "entries": [
+        {
+          "child": "oteryn:creature.skeleton",
+          "health": 50,
+          "count": 6,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.omruc",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.stalker",
+          "health": 120,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.orc_shaman",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.snake",
+          "health": 15,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.orshabaal",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon",
+          "health": 8200,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.phantasm",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.phantasm_summon",
+          "health": 65,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.pinata_dragon",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon",
+          "health": 8200,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.poisonous_carnisylvan",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.carnisylvan_sapling",
+          "health": 750,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.priestess",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.ghoul",
+          "health": 100,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.professor_maxxen",
+      "total": 8,
+      "entries": [
+        {
+          "child": "oteryn:creature.walker",
+          "health": 3000,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.glooth_trasher",
+          "health": 25000,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.glooth_slasher",
+          "health": 25000,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.pythius_the_rotten",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.undead_gladiator",
+          "health": 1000,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.raging_mage",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.golden_servant",
+          "health": 550,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.rahemos",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon",
+          "health": 8200,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ratmiral_blackwhiskers",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.elite_pirat",
+          "health": 20000,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.ravenous_hunger",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.mutated_bat",
+          "health": 900,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.mutated_bat",
+          "health": 900,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.mutated_bat",
+          "health": 900,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.mutated_bat",
+          "health": 900,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.razzagorn",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.eruption_of_destruction",
+          "health": 8500,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.scar_tribe_shaman",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.snake",
+          "health": 15,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.scorn_of_the_emperor",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.draken_warmaster",
+          "health": 4150,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.shadow_of_boreth",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.vampire",
+          "health": 475,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.shadow_of_lersatio",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.vampire",
+          "health": 475,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.shadow_of_marziel",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.vampire",
+          "health": 475,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.shadow_pupil",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.skeleton",
+          "health": 50,
+          "count": 4,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.ghost",
+          "health": 150,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.shadowpelt",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.werebear",
+          "health": 2400,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.sharpclaw",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.werebadger",
+          "health": 1700,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.sir_baeloc",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.retainer_of_baeloc",
+          "health": 5500,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.sir_leonard",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.crusader_guardian",
+          "health": 3400,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.sir_nictros",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.squire_of_nictros",
+          "health": 5500,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.sir_valorcrest",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.vampire",
+          "health": 475,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.slime",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.slime",
+          "health": 150,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.smuggler_baron_silvertoe",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.wild_warrior",
+          "health": 135,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.spite_of_the_emperor",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.draken_warmaster",
+          "health": 4150,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.squidgy_slime",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.squidgy_slime",
+          "health": 150,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.thalas",
+      "total": 8,
+      "entries": [
+        {
+          "child": "oteryn:creature.slime",
+          "health": 150,
+          "count": 8,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_blazing_time_guardian",
+      "total": 8,
+      "entries": [
+        {
+          "child": "oteryn:creature.time_waster",
+          "health": 1000,
+          "count": 8,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_brainstealer",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.brain_parasite",
+          "health": 7500,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_count",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.banshee",
+          "health": 1000,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_dark_dancer",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.ghoul",
+          "health": 100,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_evil_eye",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon_skeleton",
+          "health": 400,
+          "count": 5,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.ghost",
+          "health": 150,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_gravedigger",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.undead_minion",
+          "health": 850,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_hag",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.ghost",
+          "health": 150,
+          "count": 1,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.crypt_shambler",
+          "health": 330,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_horned_fox",
+      "total": 6,
+      "entries": [
+        {
+          "child": "oteryn:creature.minotaur_archer",
+          "health": 100,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.minotaur_guard",
+          "health": 185,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.minotaur_mage",
+          "health": 155,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_last_lore_keeper",
+      "total": 6,
+      "entries": [
+        {
+          "child": "oteryn:creature.sword_of_vengeance",
+          "health": 2000,
+          "count": 6,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_moonsnow_magnolia",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.frost_flower_asura",
+          "health": 3500,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.midnight_asura",
+          "health": 3100,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_obliverator",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.fire_elemental",
+          "health": 280,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_old_widow",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.giant_spider",
+          "health": 1300,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_pale_count",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.nightfiend",
+          "health": 2700,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_plasmother",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.defiler",
+          "health": 3650,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_ravager",
+      "total": 16,
+      "entries": [
+        {
+          "child": "oteryn:creature.elder_mummy",
+          "health": 850,
+          "count": 4,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.canopic_jar",
+          "health": 1000,
+          "count": 4,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.greater_canopic_jar",
+          "health": 7000,
+          "count": 8,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_scourge_of_oblivion",
+      "total": 8,
+      "entries": [
+        {
+          "child": "oteryn:creature.charger",
+          "health": 1600,
+          "count": 3,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.spark_of_destruction",
+          "health": 3900,
+          "count": 5,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_sinister_hermit",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.vermin_swarm",
+          "health": 5000,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_sinister_hermit_dirty",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.vermin_swarm",
+          "health": 5000,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_souldespoiler",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.freed_soul",
+          "health": 50000,
+          "count": 5,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_unwelcome",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.wormling",
+          "health": 5000,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.the_welter",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.spawn_of_the_welter",
+          "health": 1850,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.thul",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.massive_water_elemental",
+          "health": 1250,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.unbound_demon_outcast",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.energy_elemental",
+          "health": 500,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.usurper_commander",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.hardened_usurper_archer",
+          "health": 7300,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.hardened_usurper_warlock",
+          "health": 7500,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.hardened_usurper_knight",
+          "health": 8200,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.vashresamun",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.banshee",
+          "health": 1000,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.void",
+      "total": 10,
+      "entries": [
+        {
+          "child": "oteryn:creature.enthralled_demon",
+          "health": 8200,
+          "count": 10,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.warlock",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.stone_golem",
+          "health": 270,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.warlord_ruzad",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.orc_berserker",
+          "health": 210,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.werefox",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.fox",
+          "health": 22,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.werewolf",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.war_wolf",
+          "health": 140,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.wrath_of_the_emperor",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.draken_warmaster",
+          "health": 4150,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.yakchal",
+      "total": 4,
+      "entries": [
+        {
+          "child": "oteryn:creature.ice_golem",
+          "health": 385,
+          "count": 4,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.zamulosh",
+      "total": 1,
+      "entries": [
+        {
+          "child": "oteryn:creature.zamulosh2",
+          "health": 300000,
+          "count": 1,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.zarabustor",
+      "total": 5,
+      "entries": [
+        {
+          "child": "oteryn:creature.warlock",
+          "health": 3500,
+          "count": 2,
+          "valid": true
+        },
+        {
+          "child": "oteryn:creature.green_djinn",
+          "health": 330,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.zavarash",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.dark_torturer",
+          "health": 7350,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.zevelon_duskbringer",
+      "total": 3,
+      "entries": [
+        {
+          "child": "oteryn:creature.vampire",
+          "health": 475,
+          "count": 3,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "parent": "oteryn:creature.zoralurk",
+      "total": 2,
+      "entries": [
+        {
+          "child": "oteryn:creature.demon",
+          "health": 8200,
+          "count": 2,
+          "valid": true
+        }
+      ]
+    }
+  ],
+  "defense_inline_summons": [
+    {
+      "parent_behavior": "oteryn:behavior.creature.bullwark",
+      "index": 2,
+      "ability": "oteryn:ability.spell.bullwark_summon",
+      "children": [
+        "oteryn:creature.moohtant"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.feroxa",
+      "index": 1,
+      "ability": "oteryn:ability.spell.feroxa_summon",
+      "children": [
+        "oteryn:creature.werewolf"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.feroxa2",
+      "index": 2,
+      "ability": "oteryn:ability.spell.feroxa_summon",
+      "children": [
+        "oteryn:creature.werewolf"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.feroxa3",
+      "index": 1,
+      "ability": "oteryn:ability.spell.feroxa_summon",
+      "children": [
+        "oteryn:creature.werewolf"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.feroxa4",
+      "index": 1,
+      "ability": "oteryn:ability.spell.feroxa_summon",
+      "children": [
+        "oteryn:creature.werewolf"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.feroxa5",
+      "index": 1,
+      "ability": "oteryn:ability.spell.feroxa_summon",
+      "children": [
+        "oteryn:creature.werewolf"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.frost_servant",
+      "index": 0,
+      "ability": "oteryn:ability.spell.hirintror_summon",
+      "children": [
+        "oteryn:creature.ice_golem"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.glooth_anemone",
+      "index": 1,
+      "ability": "oteryn:ability.spell.glooth_anemone_summon",
+      "children": [
+        "oteryn:creature.glooth_blob"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.hirintror",
+      "index": 0,
+      "ability": "oteryn:ability.spell.hirintror_summon",
+      "children": [
+        "oteryn:creature.ice_golem"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.omrafir",
+      "index": 1,
+      "ability": "oteryn:ability.spell.omrafir_summon",
+      "children": [
+        "oteryn:creature.flame_of_omrafir"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.salamander_trainer",
+      "index": 1,
+      "ability": "oteryn:ability.spell.salamander_trainer_summon",
+      "children": [
+        "oteryn:creature.troll_trained_salamander"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.the_imperor",
+      "index": 1,
+      "ability": "oteryn:ability.spell.the_imperor_summon",
+      "children": [
+        "oteryn:creature.diabolic_imp"
+      ]
+    },
+    {
+      "parent_behavior": "oteryn:behavior.creature.white_pale",
+      "index": 0,
+      "ability": "oteryn:ability.spell.white_pale_summon",
+      "children": [
+        "oteryn:creature.carrion_worm"
+      ]
+    }
+  ],
+  "sha256": {
+    "definitions/reference.json": "cc8cde6c90d7a4f94e4c6b0b1219cbdb36b3d064d89fb3a3c72eceb79b36ecce",
+    "definitions/declarations.json": "1bbdcd9545157612d2381a8bd2cacb089ad96b5d334861348a5190fd24654aa0",
+    "provenance/sources.json": "af41b51b967d5ec51698d7ccb405ed2fe30d04f32c7036ea2b22979fa225a8e9"
+  },
+  "ordinary_distinct_children": 159,
+  "defense_distinct_children": 8,
+  "ordinary_and_defense_distinct_children": 164,
+  "callback_distinct_children": 16,
+  "callback_new_children": [
+    "oteryn:creature.corrupted_soul",
+    "oteryn:creature.damned_soul",
+    "oteryn:creature.disgusting_ooze",
+    "oteryn:creature.disruption",
+    "oteryn:creature.energy_pulse",
+    "oteryn:creature.frenzy",
+    "oteryn:creature.glooth_generator",
+    "oteryn:creature.greed",
+    "oteryn:creature.lost_time",
+    "oteryn:creature.minion_of_gaz_haragoth",
+    "oteryn:creature.rage_of_mazoran",
+    "oteryn:creature.shadow_fiend",
+    "oteryn:creature.sin_devourer",
+    "oteryn:creature.thorn_minion"
+  ],
+  "child_closure_distinct_children": 178,
+  "all_child_targets": [
+    "oteryn:creature.acid_blob",
+    "oteryn:creature.ancient_scarab",
+    "oteryn:creature.banshee",
+    "oteryn:creature.barkless_fanatic",
+    "oteryn:creature.bazir",
+    "oteryn:creature.black_cobra",
+    "oteryn:creature.blistering_fire_elemental",
+    "oteryn:creature.blue_djinn",
+    "oteryn:creature.bone_bear",
+    "oteryn:creature.bonebeast",
+    "oteryn:creature.brain_parasite",
+    "oteryn:creature.canopic_jar",
+    "oteryn:creature.carnisylvan_sapling",
+    "oteryn:creature.carrion_worm",
+    "oteryn:creature.charger",
+    "oteryn:creature.chicken",
+    "oteryn:creature.cobra",
+    "oteryn:creature.condensed_sins",
+    "oteryn:creature.corrupted_soul",
+    "oteryn:creature.crusader_guardian",
+    "oteryn:creature.crypt_shambler",
+    "oteryn:creature.damned_soul",
+    "oteryn:creature.dark_torturer",
+    "oteryn:creature.death_blob",
+    "oteryn:creature.deathslicer",
+    "oteryn:creature.deathspawn",
+    "oteryn:creature.defiler",
+    "oteryn:creature.demon",
+    "oteryn:creature.demon_blood",
+    "oteryn:creature.demon_skeleton",
+    "oteryn:creature.diabolic_imp",
+    "oteryn:creature.disgusting_ooze",
+    "oteryn:creature.disruption",
+    "oteryn:creature.dragon",
+    "oteryn:creature.dragon_hatchling",
+    "oteryn:creature.dragon_lord",
+    "oteryn:creature.draken_warmaster",
+    "oteryn:creature.dread_minion",
+    "oteryn:creature.dreadbeast",
+    "oteryn:creature.dworc_fleshhunter",
+    "oteryn:creature.elder_bloodjaw",
+    "oteryn:creature.elder_mummy",
+    "oteryn:creature.elite_pirat",
+    "oteryn:creature.energy_elemental",
+    "oteryn:creature.energy_pulse",
+    "oteryn:creature.enthralled_demon",
+    "oteryn:creature.eruption",
+    "oteryn:creature.eruption_of_destruction",
+    "oteryn:creature.evil_sheep",
+    "oteryn:creature.fire_elemental",
+    "oteryn:creature.flame_of_omrafir",
+    "oteryn:creature.flame_totem",
+    "oteryn:creature.fox",
+    "oteryn:creature.freed_soul",
+    "oteryn:creature.frenzy",
+    "oteryn:creature.frost_flower_asura",
+    "oteryn:creature.frozen_soul",
+    "oteryn:creature.fury",
+    "oteryn:creature.gazer",
+    "oteryn:creature.ghost",
+    "oteryn:creature.ghoul",
+    "oteryn:creature.giant_spider",
+    "oteryn:creature.gladiator",
+    "oteryn:creature.gloom_wolf",
+    "oteryn:creature.glooth_blob",
+    "oteryn:creature.glooth_generator",
+    "oteryn:creature.glooth_slasher",
+    "oteryn:creature.glooth_trasher",
+    "oteryn:creature.golden_servant",
+    "oteryn:creature.grand_chaplain_gaunder",
+    "oteryn:creature.grand_commander_soeren",
+    "oteryn:creature.greater_canopic_jar",
+    "oteryn:creature.greater_death_minion",
+    "oteryn:creature.greed",
+    "oteryn:creature.green_djinn",
+    "oteryn:creature.hardened_usurper_archer",
+    "oteryn:creature.hardened_usurper_knight",
+    "oteryn:creature.hardened_usurper_warlock",
+    "oteryn:creature.hellfire_fighter",
+    "oteryn:creature.hero",
+    "oteryn:creature.humorless_fungus",
+    "oteryn:creature.hyaena",
+    "oteryn:creature.ice_blockade",
+    "oteryn:creature.ice_crawler",
+    "oteryn:creature.ice_golem",
+    "oteryn:creature.jagged_earth_elemental",
+    "oteryn:creature.killer_rabbit",
+    "oteryn:creature.larva",
+    "oteryn:creature.lava_lurker_attendant",
+    "oteryn:creature.lesser_death_minion",
+    "oteryn:creature.lesser_swarmer",
+    "oteryn:creature.lich",
+    "oteryn:creature.lion_archer",
+    "oteryn:creature.lion_knight",
+    "oteryn:creature.lion_warlock",
+    "oteryn:creature.lizard_dragon_priest",
+    "oteryn:creature.lost_time",
+    "oteryn:creature.massive_water_elemental",
+    "oteryn:creature.mechanical_fighter",
+    "oteryn:creature.mercury_blob",
+    "oteryn:creature.midnight_asura",
+    "oteryn:creature.minion_of_gaz_haragoth",
+    "oteryn:creature.minotaur_archer",
+    "oteryn:creature.minotaur_guard",
+    "oteryn:creature.minotaur_mage",
+    "oteryn:creature.monk",
+    "oteryn:creature.moohtant",
+    "oteryn:creature.moonsilver_guardian",
+    "oteryn:creature.mummy",
+    "oteryn:creature.mushroom",
+    "oteryn:creature.mutated_bat",
+    "oteryn:creature.neutral_deepling_warrior",
+    "oteryn:creature.nightfiend",
+    "oteryn:creature.orc_berserker",
+    "oteryn:creature.overcharged_demon",
+    "oteryn:creature.overcharged_energy_elemental",
+    "oteryn:creature.parasite",
+    "oteryn:creature.phantasm",
+    "oteryn:creature.phantasm_summon",
+    "oteryn:creature.pirate_cutthroat",
+    "oteryn:creature.pirate_marauder",
+    "oteryn:creature.poison_spider",
+    "oteryn:creature.preceptor_lazare",
+    "oteryn:creature.priestess",
+    "oteryn:creature.rage_of_mazoran",
+    "oteryn:creature.rat",
+    "oteryn:creature.retainer_of_baeloc",
+    "oteryn:creature.rift_brood",
+    "oteryn:creature.rift_scythe",
+    "oteryn:creature.rift_worm",
+    "oteryn:creature.roaring_water_elemental",
+    "oteryn:creature.sandstone_scorpion",
+    "oteryn:creature.shadow_fiend",
+    "oteryn:creature.shadow_of_boreth",
+    "oteryn:creature.shadow_of_lersatio",
+    "oteryn:creature.shadow_of_marziel",
+    "oteryn:creature.sin_devourer",
+    "oteryn:creature.skeleton",
+    "oteryn:creature.skeleton_elite_warrior",
+    "oteryn:creature.slime",
+    "oteryn:creature.snake",
+    "oteryn:creature.soul_scourge",
+    "oteryn:creature.soulless_minion",
+    "oteryn:creature.spark_of_destruction",
+    "oteryn:creature.spawn_of_the_welter",
+    "oteryn:creature.spidris_elite_summon",
+    "oteryn:creature.squidgy_slime",
+    "oteryn:creature.squire_of_nictros",
+    "oteryn:creature.stalker",
+    "oteryn:creature.stone_golem",
+    "oteryn:creature.superior_death_minion",
+    "oteryn:creature.sword_of_vengeance",
+    "oteryn:creature.terror_bird",
+    "oteryn:creature.thorn_minion",
+    "oteryn:creature.time_waster",
+    "oteryn:creature.troll_champion",
+    "oteryn:creature.troll_trained_salamander",
+    "oteryn:creature.undead_gladiator",
+    "oteryn:creature.undead_minion",
+    "oteryn:creature.vampire",
+    "oteryn:creature.vermin_swarm",
+    "oteryn:creature.vicious_ink_splash",
+    "oteryn:creature.walker",
+    "oteryn:creature.war_golem",
+    "oteryn:creature.war_wolf",
+    "oteryn:creature.warlock",
+    "oteryn:creature.weakened_demon",
+    "oteryn:creature.werebadger",
+    "oteryn:creature.werebear",
+    "oteryn:creature.wereboar",
+    "oteryn:creature.werefox",
+    "oteryn:creature.werehyaena",
+    "oteryn:creature.werewolf",
+    "oteryn:creature.wild_warrior",
+    "oteryn:creature.wormling",
+    "oteryn:creature.young_goanna",
+    "oteryn:creature.zamulosh2",
+    "oteryn:creature.zombie"
+  ]
+}

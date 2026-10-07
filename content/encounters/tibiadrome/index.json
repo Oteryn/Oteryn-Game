@@ -1,10 +1,10 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/encounters/tibiadrome/",
-  "kind": "static_content",
-  "owner": "Encounter",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Tibiadrome encounter/catalog content; scoring/rules separate."
+  "kind": "static_content",
+  "notes": "Tibiadrome encounter/catalog content; scoring/rules separate.",
+  "owner": "Encounter",
+  "path": "content/encounters/tibiadrome/",
+  "population_state": "READY_UNPOPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

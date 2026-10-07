@@ -56,8 +56,24 @@
         "position": {"$ref": "#/$defs/position"},
         "appearance": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
         "reward": {"$ref": "#/$defs/reward"},
-        "achievement": {"$ref": "#/$defs/ref"}
+        "achievement": {"$ref": "#/$defs/ref"},
+        "quest_transition": {"type": "string", "pattern": "^oteryn:quest-transition/"}
       }
+    },
+    "progress_write": {
+      "description": "The storage write the shared chest script makes when the claim is taken (CHEST-QUEST-BIND-1); value is null, with a reason, when the script does not show exactly one integer.",
+      "type": "object", "additionalProperties": false, "required": ["marker", "expression", "value", "source"],
+      "properties": {
+        "marker": {"type": "string", "minLength": 1},
+        "expression": {"type": "string", "minLength": 1},
+        "value": {"type": ["integer", "null"]},
+        "reason": {"type": "string", "minLength": 1},
+        "source": {"type": "object", "additionalProperties": false, "required": ["script", "line"],
+                   "properties": {"script": {"type": "string", "minLength": 1}, "line": {"type": "integer", "minimum": 1}}}
+      },
+      "if": {"properties": {"value": {"type": "null"}}},
+      "then": {"required": ["reason"]},
+      "else": {"not": {"required": ["reason"]}}
     },
     "claim": {
       "type": "object", "additionalProperties": false,
@@ -83,7 +99,8 @@
           }
         },
         "placements": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/placement"}},
-        "source_divergence": {"type": "string", "minLength": 1}
+        "source_divergence": {"type": "string", "minLength": 1},
+        "progress_write": {"$ref": "#/$defs/progress_write"}
       }
     },
     "gate": {

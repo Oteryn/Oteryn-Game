@@ -197,7 +197,7 @@ def main():
     paths = [here / name for name in INPUTS] + [index_path] + [root / name for name in index['shards']]
     paths += [claim_index_path] + [root / name for name in claim_index['shards']] + proof_paths
     payload['input_provenance'] = [
-        {'path': str(path.relative_to(root)), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
+        {'path': path.relative_to(root).as_posix(), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
         for path in paths]
     Draft202012Validator(read(here / 'quest_rollout.schema.json')).validate(payload)
     content = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n'

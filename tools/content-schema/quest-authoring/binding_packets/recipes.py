@@ -43,7 +43,7 @@ for x in read('content/items/aliases.json')['entries']:
 npcs={}
 for f in (ROOT/'content/npcs/definitions').glob('npcs-*.json'):
  for x in json.loads(f.read_text())['records']:
-  ident=x['declaration']['identity'];npcs.setdefault(norm(ident['key'].split('.')[-1]),[]).append({'identity':ident,'path':str(f.relative_to(ROOT)),'source_bindings':x.get('source_bindings',[])})
+  ident=x['declaration']['identity'];npcs.setdefault(norm(ident['key'].split('.')[-1]),[]).append({'identity':ident,'path':f.relative_to(ROOT).as_posix(),'source_bindings':x.get('source_bindings',[])})
 
 def identity_candidates(t):
  n=norm(t);out=[]
@@ -67,7 +67,7 @@ for isauth,row in [(False,r) for r in refined]+[(True,r) for r in auth]:
  generic=[s['key'] for s in recipe['stages'] if re.search(r'\b(complete the quest|finish the quest|follow the quest|perform the quest|collect the reward)\b',s['objective'],re.I)]
  rows.append({'canonical_key':key,'wiki_title':title,'profile':'authored68' if isauth else 'completion242','recipe_sha256':hashlib.sha256(json.dumps(recipe,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest(),'requirements':dict(req,prerequisite_evidence=prereqs),'stages':stages,'rewards':rewards,'source_refs':recipe['source_refs'],'chosen_adaptations':recipe['adaptations'],'qualification':{'finite_connected_journey':True,'explicit_requirements_repeat_rewards':True,'entity_mentions_all_nonterminal_stages':all(s['has_entity_anchor'] for s in stages[:-1]),'generic_objective_stage_keys':generic,'source_action_equivalence':False,'native_binding_complete':False,'original_source_holds_preserved':True},'new_supplement':'PER_STAGE_PREREQUISITE_REWARD_CACHE_EVIDENCE_INDEX_NOT_NEW_SOURCE_LOGIC'})
 inputs=['tools/content-schema/quest-authoring/samples/completion242/recipes.json','tools/content-schema/quest-authoring/samples/refinements242/refinements.json','tools/content-schema/quest-authoring/samples/authored68/recipes.json','tools/content-schema/quest-authoring/samples/enrichment242/enrichment.json','tools/content-schema/quest-authoring/samples/wiki-source-all373/source-specs-373.json','content/items/aliases.json']
-inputs += idx['shards'] + [str(f.relative_to(ROOT)) for f in sorted((ROOT/'content/npcs/definitions').glob('npcs-*.json'))]
+inputs += idx['shards'] + [f.relative_to(ROOT).as_posix() for f in sorted((ROOT/'content/npcs/definitions').glob('npcs-*.json'))]
 summary={'recipes':len(rows),'stage_count':sum(len(r['stages']) for r in rows),'entity_anchored_stages':sum(s['has_entity_anchor'] for r in rows for s in r['stages']),'all_nonterminal_stage_entity_anchored':sum(r['qualification']['entity_mentions_all_nonterminal_stages'] for r in rows),'generic_objective_quests':sum(bool(r['qualification']['generic_objective_stage_keys']) for r in rows),'reward_count':sum(len(r['rewards']) for r in rows),'reward_entity_anchored':sum(x['status']=='MENTION_ANCHORED' for r in rows for x in r['rewards']),'stage_identity_candidates':sum(bool(t['identity_candidates']) for r in rows for s in r['stages'] for t in s['target_evidence']),'runtime_admitted':0,'source_fidelity_resolved':0}
 packet={'schema':'OTERYN_QUEST_RECIPE_CACHE_EVIDENCE_AUDIT/v1','classification':'RESEARCH_HANDOFF_NOT_CANONICAL_ADMISSION','inputs':[{'path':p,'sha256':sha(p)} for p in inputs],'summary':summary,'records':rows}
 (OUT/'qualification.json').write_text(json.dumps(packet,ensure_ascii=False,indent=2)+'\n');print(json.dumps(summary,indent=2))

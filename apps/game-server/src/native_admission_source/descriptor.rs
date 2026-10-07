@@ -32,6 +32,8 @@ pub enum Operation {
     PublishProjectionWatermarkV1,
     /// Ownership-authority assignment report (`oteryn-game-native-runtime-status-v1` §5).
     ReportScopeAssignmentV1,
+    /// Ownership-authority revocation report (same contract, §16.1).
+    ReportScopeRevocationV1,
 }
 impl Operation {
     pub const fn path(self) -> &'static str {
@@ -52,6 +54,7 @@ impl Operation {
                 "/internal/v1/game-auth/native-account-characters/watermark"
             }
             Self::ReportScopeAssignmentV1 => super::scope_assignment::PATH,
+            Self::ReportScopeRevocationV1 => super::scope_assignment::REVOCATION_PATH,
         }
     }
     /// Request body cap: `NSRC-HTTP-REQUEST-BODY-BYTES`, or `NRS-REPORT-BYTES`
@@ -63,7 +66,9 @@ impl Operation {
             Self::ReportRuntimeStatusV1 => super::runtime_status::REPORT_BYTES,
             Self::PublishAccountCharactersV1 => super::account_characters::SNAPSHOT_BYTES,
             Self::PublishProjectionWatermarkV1 => super::account_characters::WATERMARK_BYTES,
-            Self::ReportScopeAssignmentV1 => super::scope_assignment::REPORT_BYTES,
+            Self::ReportScopeAssignmentV1 | Self::ReportScopeRevocationV1 => {
+                super::scope_assignment::REPORT_BYTES
+            }
             Self::ReadAccountSecurityV1
             | Self::ReadFreshSigningTrustV1
             | Self::ReadRecoveryAccountSecurityV2

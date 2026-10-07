@@ -153,7 +153,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &candidates,
             |_| false,
         );
-        let runtime = &*runtime;
         let cursor = states.monster_ai_cursor % qualified.len();
         let count = qualified.len().min(ResourceLimit::EvaluationWork.maximum());
         for offset in 0..count {
@@ -244,7 +243,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // ATTACK-1b: the player this think resolved, for the incoming hooks below.
             let attacked = std::cell::Cell::new(None);
             let dispatch = melee_owner.think(
-                runtime,
+                &mut runtime,
                 &mut *states,
                 *actor,
                 sequence,
@@ -258,7 +257,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         return None;
                     }
                     attacked.set(Some((actor, session)));
-                    // The immutable runtime borrow and exact current protection
+                    // The held runtime owner and exact current protection
                     // read above remain live through the synchronous bite commit.
                     Some((
                         actor,
@@ -303,7 +302,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                 }
             }
-            attack.record_hit_taken(runtime, player, session, semantic_now);
+            attack.record_hit_taken(&runtime, player, session, semantic_now);
         }
         states.monster_melee = melee_owner;
         states.monster_ai_cursor = (cursor + count) % qualified.len();
@@ -538,7 +537,13 @@ mod tests {
                 .expect("actual current vitals owner");
         }
         let hit = states
-            .apply_creature_damage(&runtime, dead, dead_session, player::FACTS.max_health, now)
+            .apply_creature_damage(
+                &mut runtime,
+                dead,
+                dead_session,
+                player::FACTS.max_health,
+                now,
+            )
             .expect("actual lethal vitals write");
         assert_eq!(hit.damage.health_after, 0);
         assert!(hit.death.is_some());

@@ -779,15 +779,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| Error::StaleOwner)?;
             if let Some(report) = accepted {
+                self.record_spell_kills(&mut runtime, report.receipts.iter().map(|r| &r.batch))
+                    .await;
                 return Ok(report);
             }
         }
-        apply_due_under_current_owners(
+        let report = apply_due_under_current_owners(
             &mut runtime,
             &mut states,
             self.spells,
             &casters,
             self.owner_now(),
-        )
+        )?;
+        self.record_spell_kills(&mut runtime, report.receipts.iter().map(|r| &r.batch))
+            .await;
+        Ok(report)
     }
 }
+
+#[cfg(test)]
+#[path = "spell_timer_callbacks_tests.rs"]
+mod tests;

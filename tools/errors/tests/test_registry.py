@@ -31,7 +31,7 @@ class RegistryTests(unittest.TestCase):
         for expected in (2001, 2013, 3001, 3009, 5001, 5007, 6001, 6006):
             self.assertIn(expected, numbers)
         self.assertEqual(
-            [e["code"] for e in GAME["codes"] if 6000 <= e["code"] < 7000], list(range(6001, 6007))
+            [e["code"] for e in GAME["codes"] if 6000 <= e["code"] < 7000], list(range(6001, 6008))
         )
 
     def test_number_outside_game_block_is_refused(self):
@@ -168,8 +168,11 @@ class ExplainTests(unittest.TestCase):
             progression, retry = registry.DISPOSITION_PROGRESSION[raw["default_disposition"]]
             self.assertIn(f"progression: {progression} (derived from {raw['default_disposition']})", text)
             self.assertIn(retry, text)
+        blocks = [b for b in GAME["blocks"] if b["registry"] == "protocol"]
+        first = min(b["first"] for b in blocks)
+        last = max(b["last"] for b in blocks)
         self.assertEqual(
-            sum(1 for r in PROTOCOL["error_codes"] if 1001 <= r["code"] <= 1050),
+            sum(1 for r in PROTOCOL["error_codes"] if first <= r["code"] <= last),
             len(PROTOCOL["error_codes"]),
         )
 

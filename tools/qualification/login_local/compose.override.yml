@@ -1,0 +1,74 @@
+# RUNBOOK-1 overlay on wp5_s3a + wp5_s3b + node_boot: Platform in preproduction with the
+# native admission issuer, runtime-status and scope-assignment producers, plus the Go gateway.
+# Every value comes from the environment that run.sh exports; nothing is committed.
+services:
+  platform:
+    environment:
+      APP_ENV: preproduction
+      # wp5_s3a sets SESSION_DRIVER=array; the login flow needs sessions to persist across requests.
+      SESSION_DRIVER: file
+      GAME_AUTH_NATIVE_ADMISSION_ENABLED: "true"
+      GAME_AUTH_NATIVE_ADMISSION_SIGNING_KEY_FILE: /run/oteryn-admission/signing.seed
+      GAME_AUTH_NATIVE_ADMISSION_SIGNING_KEY_ID: ${LL_ADMISSION_KEY_ID:?set LL_ADMISSION_KEY_ID}
+      # Mode 33a off: the Character projection feed (PLATFORM-LCFA-1) verifies ownership.
+      GAME_AUTH_NATIVE_ADMISSION_UNVERIFIED_CHARACTER_OWNERSHIP: "false"
+      GAME_AUTH_NATIVE_ACCOUNT_CHARACTERS_ENABLED: "true"
+      GAME_AUTH_NATIVE_ACCOUNT_CHARACTERS_IDENTITIES: ${LL_ACCOUNT_CHARACTERS_IDENTITIES:?set LL_ACCOUNT_CHARACTERS_IDENTITIES}
+      GAME_AUTH_NATIVE_ACCOUNT_CHARACTERS_SOURCE_AUTHORITY: ${LL_ACCOUNT_CHARACTERS_SOURCE_AUTHORITY:?set LL_ACCOUNT_CHARACTERS_SOURCE_AUTHORITY}
+      GAME_AUTH_GATEWAY_SERVICE_TOKEN_SHA256: ${LL_SERVICE_TOKEN_SHA256:?set LL_SERVICE_TOKEN_SHA256}
+      GAME_AUTH_NATIVE_RUNTIME_STATUS_ENABLED: "true"
+      GAME_AUTH_NATIVE_RUNTIME_STATUS_IDENTITIES: ${LL_RUNTIME_STATUS_IDENTITIES:?set LL_RUNTIME_STATUS_IDENTITIES}
+      GAME_AUTH_NATIVE_SCOPE_ASSIGNMENT_ENABLED: "true"
+      GAME_AUTH_NATIVE_SCOPE_ASSIGNMENT_IDENTITIES: ${LL_SCOPE_ASSIGNMENT_IDENTITIES:?set LL_SCOPE_ASSIGNMENT_IDENTITIES}
+    # wp5_s3a runs `php artisan migrate` before PHP-FPM and allows about 2 minutes (2s x 60, no start_period);
+    # on a NAS single migrations take over a minute. Same socket test and final healthy requirement; failures
+    # inside start_period do not count, and `compose up --wait` and nginx's service_healthy wait for it.
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$s=@fsockopen('127.0.0.1',9000); exit(is_resource($$s)?0:1);"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: ${LOGIN_LOCAL_PLATFORM_START_PERIOD:-1800s}
+    tmpfs:
+      - /run/oteryn-admission:mode=0700,uid=33,gid=33
+    volumes:
+      # F7: retained per-run SQLite fixture for NativeTopologyRegistry::isolatedConnection(), which
+      # refuses MySQL outside APP_ENV=testing. Platform requires <tmp>/oteryn-native-topology-<hex>/.
+      - ${LL_TOPOLOGY_DIR:?set LL_TOPOLOGY_DIR}:/tmp/oteryn-native-topology-${LL_TOPOLOGY_HEX:?set LL_TOPOLOGY_HEX}
+  db:
+    # wp5_s3a gives first initialisation about 2 minutes (interval 2s x 60, no start_period); slow hosts
+    # (NAS, spinning disks) need longer. Same test command; failures inside start_period do not count.
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p$$MARIADB_ROOT_PASSWORD --silent"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: ${LOGIN_LOCAL_DB_START_PERIOD:-300s}
+  nginx:
+    ports:
+      - "${LL_PLATFORM_PUBLISH:?set LL_PLATFORM_PUBLISH}"
+    volumes:
+      - ${GAME_SOURCE}/tools/qualification/login_local/nginx.conf:/etc/nginx/nginx.conf:ro
+  gateway:
+    build:
+      context: ${PLATFORM_SOURCE:?set PLATFORM_SOURCE}/services/game-gateway
+    depends_on:
+      nginx:
+        condition: service_started
+    environment:
+      # The gateway accepts http only for loopback hosts: it reaches nginx over TLS (SAN nginx), trusting
+      # only the per-run test CA that run.sh generates.
+      OTERYN_PLATFORM_BASE_URL: https://nginx:8444
+      SSL_CERT_FILE: /run/login-local/platform-upstream-ca.crt
+      # Go on Linux still loads the default certificate directories next to SSL_CERT_FILE; an empty
+      # SSL_CERT_DIR makes the per-run CA the only trusted root.
+      SSL_CERT_DIR: /run/login-local/no-system-roots
+      OTERYN_PLATFORM_SERVICE_TOKEN: ${LL_SERVICE_TOKEN:?set LL_SERVICE_TOKEN}
+      GATEWAY_LISTEN_ADDR: ":8080"
+      GATEWAY_NATIVE_LOGIN_ENABLED: "true"
+    volumes:
+      - ${WP5_PKI:?set WP5_PKI}/platform-upstream-ca.crt:/run/login-local/platform-upstream-ca.crt:ro
+      - ${LL_NO_SYSTEM_ROOTS:?set LL_NO_SYSTEM_ROOTS}:/run/login-local/no-system-roots:ro
+    ports:
+      - "${LL_GATEWAY_PUBLISH:?set LL_GATEWAY_PUBLISH}"
+    networks: [qualification]

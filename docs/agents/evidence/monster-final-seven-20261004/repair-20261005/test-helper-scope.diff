@@ -1,0 +1,92 @@
+diff --git a/apps/game-server/src/crystal_death_composition.rs b/apps/game-server/src/crystal_death_composition.rs
+index d75256d5..ef8c42f8 100644
+--- a/apps/game-server/src/crystal_death_composition.rs
++++ b/apps/game-server/src/crystal_death_composition.rs
+@@ -263,8 +263,10 @@ mod retained_native_source_tests {
+         )?;
+         let world = project.lower_reference_source()?.world_id;
+         let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
+-        let mut runtime =
+-            crate::foundation::crystal_death_router_fixture_with_native(world, &native);
++        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
++            world,
++            native.source_digest(),
++        );
+         assert!(
+             QualifiedCrystalDeaths::qualify(
+                 &project,
+@@ -572,8 +574,10 @@ mod retained_projection_owner_tests {
+         )?;
+         let world = project.lower_reference_source()?.world_id;
+         let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
+-        let mut runtime =
+-            crate::foundation::crystal_death_router_fixture_with_native(world, &native);
++        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
++            world,
++            native.source_digest(),
++        );
+         let mut composition = CrystalDeathOwner::bind(&project, &runtime, &native).expect("crystal_death_composition.rs:retained_projection_owner_tests:552: qualified fixture operation must succeed");
+         let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
+         let (fence, stamp) =
+@@ -911,8 +915,10 @@ mod herald_actual_source_tests {
+         )?;
+         let world = project.lower_reference_source()?.world_id;
+         let native = crate::content::native_gameplay::retained_callback_native_fixture(world);
+-        let mut runtime =
+-            crate::foundation::crystal_death_router_fixture_with_native(world, &native);
++        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
++            world,
++            native.source_digest(),
++        );
+         let mut owner =
+             CrystalDeathOwner::bind(&project, &runtime, &native).map_err(|e| format!("{e:?}"))?;
+         let scope = RuntimeScopeRefV1::channel(world, runtime.binding().channel_id());
+diff --git a/apps/game-server/src/foundation/mod.rs b/apps/game-server/src/foundation/mod.rs
+index 246cb104..57361b74 100644
+--- a/apps/game-server/src/foundation/mod.rs
++++ b/apps/game-server/src/foundation/mod.rs
+@@ -1503,7 +1503,7 @@ pub mod fresh_admission_durability;
+ #[cfg(test)]
+ #[allow(unused_imports)]
+ pub(crate) use runtime_actor_carrier::{
+-    crystal_death_router_fixture, crystal_death_router_fixture_with_native,
++    crystal_death_router_fixture, crystal_death_router_fixture_with_artifact,
+ };
+ // Append inside Foundation module. Test builds only; no production grant API.
+ #[cfg(test)]
+diff --git a/apps/game-server/src/foundation/runtime_actor_carrier.rs b/apps/game-server/src/foundation/runtime_actor_carrier.rs
+index 6a0ae938..680630db 100644
+--- a/apps/game-server/src/foundation/runtime_actor_carrier.rs
++++ b/apps/game-server/src/foundation/runtime_actor_carrier.rs
+@@ -10760,11 +10760,11 @@ pub(crate) fn crystal_death_router_fixture(world: WorldId) -> ChannelRuntimeV1 {
+     crystal_death_router_fixture_digest(world, [1; 32])
+ }
+ #[cfg(test)]
+-pub(crate) fn crystal_death_router_fixture_with_native(
++pub(crate) fn crystal_death_router_fixture_with_artifact(
+     world: WorldId,
+-    native: &crate::content::native_gameplay::NativeGameplayState,
++    digest: [u8; 32],
+ ) -> ChannelRuntimeV1 {
+-    crystal_death_router_fixture_digest(world, native.source_digest())
++    crystal_death_router_fixture_digest(world, digest)
+ }
+ #[cfg(test)]
+ #[allow(clippy::expect_used)]
+diff --git a/apps/game-server/src/monster_combat_lane.rs b/apps/game-server/src/monster_combat_lane.rs
+index 4b843c45..7e637ca6 100644
+--- a/apps/game-server/src/monster_combat_lane.rs
++++ b/apps/game-server/src/monster_combat_lane.rs
+@@ -5571,8 +5571,10 @@ mod bone_map_admission_actual_tests {
+         let mut map = link_reference_playable(project.lower_reference_source().expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5397: qualified fixture operation must succeed")).expect("monster_combat_lane.rs:bone_map_admission_actual_tests:5397: qualified fixture operation must succeed");
+         let native =
+             crate::content::native_gameplay::retained_callback_native_fixture(map.world_id);
+-        let mut runtime =
+-            crate::foundation::crystal_death_router_fixture_with_native(map.world_id, &native);
++        let mut runtime = crate::foundation::crystal_death_router_fixture_with_artifact(
++            map.world_id,
++            native.source_digest(),
++        );
+         let keys = [
+             "oteryn:creature.elyrax_s_soulcage",
+             "oteryn:creature.myzareth_s_soulcage",

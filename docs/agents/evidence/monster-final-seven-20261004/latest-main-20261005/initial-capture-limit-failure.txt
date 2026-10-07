@@ -1,0 +1,11 @@
+
+running 1 test
+test bone_phase_registry::shared_hp_actual_source_tests::actual_source_shared_native_hp_generic_pin_phase_and_atomicity ... Error: LimitExceeded { resource: "directory entries per scan", actual: 33, limit: 32 }
+FAILED
+
+failures:
+
+failures:
+    bone_phase_registry::shared_hp_actual_source_tests::actual_source_shared_native_hp_generic_pin_phase_and_atomicity
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2437 filtered out; finished in 0.00s

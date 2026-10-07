@@ -49,6 +49,7 @@ fn rat_policy(digest: [u8; 32]) -> CompiledCreaturePolicies {
             mitigation: None,
             resistances: vec![],
             damage_immunities: vec![],
+            healing_from_damage: vec![],
             preferred_distance: Some(1),
             reward_boss: Some(false),
             flags: CreatureFlags {
@@ -92,6 +93,8 @@ fn source_world() -> QualifiedNativeEntryRoom {
         wheel_profile: None,
         source_world: None,
         progression: None,
+        item_keys: None,
+        loot_tables: None,
     };
     qualify_native_source_spell_world_with_gameplay(
         WorldId::decode(&uuid(1)).unwrap(),
@@ -599,7 +602,7 @@ fn a_disconnect_mid_fight_stays_a_creature_target_and_a_monster_hit_extends_the_
     impl CreatureBiteVitals for Vitals {
         fn apply_creature_damage(
             &mut self,
-            _: &ChannelRuntimeV1,
+            _: &mut ChannelRuntimeV1,
             _: ExactActorRef,
             _: GameSessionId,
             magnitude: u32,
@@ -696,8 +699,11 @@ fn a_disconnect_mid_fight_stays_a_creature_target_and_a_monster_hit_extends_the_
         "simulation:v1",
     )
     .unwrap();
-    let attack = &owner.attack;
-    let runtime = &owner.runtime;
+    let target_protection =
+        owner
+            .attack
+            .creature_target_protection(&owner.runtime, player, session, now);
+    let runtime = &mut owner.runtime;
     let dispatch = MonsterMeleeOwner::default()
         .think(
             runtime,
@@ -708,7 +714,7 @@ fn a_disconnect_mid_fight_stays_a_creature_target_and_a_monster_hit_extends_the_
             input,
             &perceived,
             |_| {
-                if attack.creature_target_protection(runtime, player, session, now)? {
+                if target_protection? {
                     return None;
                 }
                 Some((
@@ -976,7 +982,7 @@ fn a_held_actor_bitten_to_death_ends_the_hold_with_its_death_recorded_for_releas
     );
     let hit = states
         .apply_creature_damage(
-            &owner.runtime,
+            &mut owner.runtime,
             player,
             session,
             1_000,

@@ -1,11 +1,14 @@
-//! `ReportScopeAssignmentV1` producer (`oteryn-game-native-runtime-status-v1` §3, §5).
+//! `ReportScopeAssignmentV1` and `ReportScopeRevocationV1` producer
+//! (`oteryn-game-native-runtime-status-v1` §3, §5, §16.1).
 //!
 //! The scope ownership authority (`oteryn-game-ops`) reports a committed
-//! assignment to Platform over its own ownership-authority mTLS identity. The
-//! body is derived from the durable assignment row and the node identity bound
-//! to its holder, so a re-send is byte-identical. A failed report never
-//! changes the Game assignment, which stays authoritative. The epoch is a
-//! declared value here and is never raised by a report (§6, U16).
+//! assignment or revocation to Platform over its own ownership-authority mTLS
+//! identity. An assignment body is derived from the durable assignment row and
+//! the node identity bound to its holder; a revocation body from the durable
+//! revoked row alone and carries no node identity (§16.1). A re-send is
+//! therefore byte-identical. A failed report never changes the Game
+//! assignment, which stays authoritative. The epoch is a declared value here
+//! and is never raised by a report (§6, U16).
 
 use super::{
     SourceError, TransientCapacity,
@@ -21,10 +24,14 @@ use std::{collections::BTreeMap, net::SocketAddr, path::PathBuf, time::Duration}
 pub const REPORT_BYTES: usize = 2048;
 /// Response bound (§3, `NRS-RESPONSE-BYTES`).
 pub const RESPONSE_BYTES: usize = 256;
+/// Statuses of §4 whose body is read; any other status is final on its own.
+pub const RESPONSE_STATUSES: [u16; 6] = [200, 400, 401, 409, 429, 503];
 /// Compiled namespace of the ownership-authority descriptor.
 pub const PURPOSE: &str = "OTERYN_GAME_SCOPE_OWNERSHIP_AUTHORITY";
 /// Compiled `ReportScopeAssignmentV1` path (§3); not configurable.
 pub const PATH: &str = "/internal/v1/game-auth/native-scope-assignments";
+/// Compiled `ReportScopeRevocationV1` path (§3, §16.1); not configurable.
+pub const REVOCATION_PATH: &str = "/internal/v1/game-auth/native-scope-revocations";
 /// Longest accepted node-host identity.
 pub const NODE_IDENTITY_BYTES: usize = 256;
 /// Configuration bounds.
@@ -99,6 +106,68 @@ pub fn encode(a: &Assignment) -> Result<String, SourceError> {
     Ok(body)
 }
 
+/// One committed revocation as reported (§16.1). It has no node identity: a
+/// revoked row has no holder, and any identity could be matched by a host.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Revocation {
+    pub assignment_epoch: u64,
+    pub world_id: String,
+    pub channel_id: String,
+    /// The generation the revocation committed (the durable row's).
+    pub ownership_generation: u64,
+    /// The durable row's decision time.
+    pub revoked_at: i64,
+}
+
+#[derive(Serialize)]
+struct RevocationWire<'a> {
+    contract_version: u8,
+    operation: &'static str,
+    assignment_epoch: String,
+    world_id: &'a str,
+    channel_id: &'a str,
+    ownership_generation: String,
+    revoked_at: String,
+}
+
+/// Exact §16.1 wire body. Refuses anything outside the contract grammar.
+pub fn encode_revocation(r: &Revocation) -> Result<String, SourceError> {
+    let valid = r.assignment_epoch != 0
+        && canonical_uuid(&r.world_id, Some(b'7'))
+        && canonical_uuid(&r.channel_id, Some(b'7'))
+        && r.world_id != r.channel_id
+        && r.ownership_generation != 0
+        && r.revoked_at >= 0;
+    if !valid {
+        return Err(SourceError::InvalidInput);
+    }
+    let body = serde_json::to_string(&RevocationWire {
+        contract_version: 1,
+        operation: "ReportScopeRevocationV1",
+        assignment_epoch: r.assignment_epoch.to_string(),
+        world_id: &r.world_id,
+        channel_id: &r.channel_id,
+        ownership_generation: r.ownership_generation.to_string(),
+        revoked_at: r.revoked_at.to_string(),
+    })
+    .map_err(|_| SourceError::InvalidInput)?;
+    if body.len() > REPORT_BYTES {
+        return Err(SourceError::CapacityExceeded);
+    }
+    Ok(body)
+}
+
+/// Exact §16.1 success body, byte for byte: anything else (another member
+/// order, whitespace, trailing bytes) is "not delivered".
+pub fn decode_revocation_response(raw: &[u8]) -> Result<Delivery, SourceError> {
+    match raw {
+        br#"{"contract_version":1,"result":"accepted"}"# => Ok(Delivery::Accepted),
+        br#"{"contract_version":1,"result":"superseded"}"# => Ok(Delivery::Superseded),
+        _ if raw.len() > RESPONSE_BYTES => Err(SourceError::CapacityExceeded),
+        _ => Err(SourceError::InvalidInput),
+    }
+}
+
 /// Platform's definite acknowledgement.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -154,7 +223,11 @@ pub enum NotDelivered {
     /// A response outside the contract.
     InvalidResponse,
     /// `503`, any other status, or transport failure (including a timeout).
+    /// For a revocation only `503` and transport failure.
     Unavailable,
+    /// A revocation answered with a status outside §4's list, such as `404`
+    /// from a Platform without the endpoint (§16.1, definite).
+    UnexpectedStatus,
 }
 
 impl NotDelivered {
@@ -168,6 +241,7 @@ impl NotDelivered {
             Self::RateLimited => "rate_limited",
             Self::InvalidResponse => "invalid_response",
             Self::Unavailable => "unavailable",
+            Self::UnexpectedStatus => "unexpected_status",
         }
     }
 
@@ -176,7 +250,11 @@ impl NotDelivered {
     pub const fn definite(self) -> bool {
         matches!(
             self,
-            Self::InvalidReport | Self::Malformed | Self::Unauthenticated | Self::Conflict
+            Self::InvalidReport
+                | Self::Malformed
+                | Self::Unauthenticated
+                | Self::Conflict
+                | Self::UnexpectedStatus
         )
     }
 }
@@ -214,22 +292,54 @@ pub async fn deliver(
     capacity: &TransientCapacity,
     body: &str,
 ) -> Result<Delivery, NotDelivered> {
+    deliver_operation(
+        descriptor,
+        capacity,
+        Operation::ReportScopeAssignmentV1,
+        body,
+    )
+    .await
+}
+
+/// One bounded `ReportScopeRevocationV1` exchange of an encoded body.
+pub async fn deliver_revocation(
+    descriptor: &ScopeAssignmentDescriptor,
+    capacity: &TransientCapacity,
+    body: &str,
+) -> Result<Delivery, NotDelivered> {
+    deliver_operation(
+        descriptor,
+        capacity,
+        Operation::ReportScopeRevocationV1,
+        body,
+    )
+    .await
+}
+
+async fn deliver_operation(
+    descriptor: &ScopeAssignmentDescriptor,
+    capacity: &TransientCapacity,
+    operation: Operation,
+    body: &str,
+) -> Result<Delivery, NotDelivered> {
+    let revocation = operation == Operation::ReportScopeRevocationV1;
     let mut permit = capacity
         .try_queue()
         .map_err(|_| NotDelivered::Unavailable)?;
     permit
         .try_activate()
         .map_err(|_| NotDelivered::Unavailable)?;
-    let (status, raw) = http1_mtls::exchange_with_status(
-        &descriptor.0,
-        Operation::ReportScopeAssignmentV1,
-        body,
-        &mut permit,
-    )
-    .await
-    .map_err(|_| NotDelivered::Unavailable)?;
+    let (status, raw) =
+        http1_mtls::exchange_with_status(&descriptor.0, operation, body, &mut permit)
+            .await
+            .map_err(|_| NotDelivered::Unavailable)?;
     if status == 200 {
-        return decode_response(&raw).map_err(|_| NotDelivered::InvalidResponse);
+        let decoded = if revocation {
+            decode_revocation_response(&raw)
+        } else {
+            decode_response(&raw)
+        };
+        return decoded.map_err(|_| NotDelivered::InvalidResponse);
     }
     let refused = |class| {
         if raw.is_empty() {
@@ -243,6 +353,8 @@ pub async fn deliver(
         401 => refused(NotDelivered::Unauthenticated),
         409 => refused(NotDelivered::Conflict),
         429 => refused(NotDelivered::RateLimited),
+        503 if revocation => refused(NotDelivered::Unavailable),
+        _ if revocation => NotDelivered::UnexpectedStatus,
         _ => NotDelivered::Unavailable,
     })
 }
@@ -280,21 +392,59 @@ pub async fn report(
     assignment: &Assignment,
     policy: RetryPolicy,
 ) -> Report {
-    let body = match encode(assignment) {
-        Ok(body) => body,
-        Err(_) => {
-            return Report {
-                result: Err(NotDelivered::InvalidReport),
-                attempts: 0,
-            };
+    match encode(assignment) {
+        Ok(body) => {
+            send(
+                descriptor,
+                Operation::ReportScopeAssignmentV1,
+                &body,
+                policy,
+            )
+            .await
         }
-    };
+        Err(_) => Report {
+            result: Err(NotDelivered::InvalidReport),
+            attempts: 0,
+        },
+    }
+}
+
+/// [`report`] for a revocation (§16.1): the same retries over identical
+/// bytes; a status outside §4's list stops at once.
+pub async fn report_revocation(
+    descriptor: &ScopeAssignmentDescriptor,
+    revocation: &Revocation,
+    policy: RetryPolicy,
+) -> Report {
+    match encode_revocation(revocation) {
+        Ok(body) => {
+            send(
+                descriptor,
+                Operation::ReportScopeRevocationV1,
+                &body,
+                policy,
+            )
+            .await
+        }
+        Err(_) => Report {
+            result: Err(NotDelivered::InvalidReport),
+            attempts: 0,
+        },
+    }
+}
+
+async fn send(
+    descriptor: &ScopeAssignmentDescriptor,
+    operation: Operation,
+    body: &str,
+    policy: RetryPolicy,
+) -> Report {
     let capacity = TransientCapacity::new();
     let mut backoff = policy.first;
     let mut attempts = 0;
     loop {
         attempts += 1;
-        let result = deliver(descriptor, &capacity, &body).await;
+        let result = deliver_operation(descriptor, &capacity, operation, body).await;
         let stop = match result {
             Ok(_) => true,
             Err(not_delivered) => not_delivered.definite(),

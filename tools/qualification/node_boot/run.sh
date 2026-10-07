@@ -193,7 +193,8 @@ staged = pathlib.Path(sys.argv[3])
 fields = {
     "catalog", "source_selection", "creature_profiles", "presentation_profiles",
     "item_profiles", "spell_appearances", "build_training", "familiar_config",
-    "familiar_defenses", "wheel_profile", "source_world", "progression",
+    "familiar_defenses", "wheel_profile", "source_world", "progression", "item_keys",
+    "loot_tables",
 }
 manifest_bytes = manifest.read_bytes()
 document = json.loads(manifest_bytes)
@@ -377,7 +378,7 @@ stage() { # name prerequisite... -- function
   fi
 }
 node_field() { # log field
-  sed -n "s/.*awaiting_assignment.*$2=\([^ ]*\).*/\1/p" "$1" | tail -n 1
+  sed -n "s/.*awaiting_assignment.*$2=\([^ \"]*\).*/\1/p" "$1" | tail -n 1
 }
 
 operator_setup() { # §4.1 operator setup before the node starts
@@ -438,8 +439,8 @@ SQL
   [[ $code == 6 ]] || fail "stale content activation predecessor exit=$code"
   [[ "$(echo 'SELECT count(*) FROM game_content_activations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "content activation rows"
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
-  await_log "event=content_activated activation_sequence=1 " 60
-  await_log "readiness ready=true" 60
+  await_log "event=content_activated .*activation_sequence=1 " 60
+  await_log "event=readiness .*ready=true" 60
   [[ "$(sudo stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
   [[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "operator registered an incarnation"
   evidence "node registered=1 assignment=operator ungranted=refused content_activation=sequence_1 content_ungranted=refused content_replay=exact content_stale=refused readiness=true control_socket=uid${SERVICE_UID}_0600"
@@ -512,8 +513,8 @@ graceful_shutdown() { # ready=false first, socket removed
   wait "$NODE_PID" 2>/dev/null || code=$?
   # A process started by another stage's subshell is not our child; wait for it.
   for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
-  grep -q "readiness ready=false" "$node_log" || fail "no ready=false on shutdown"
-  grep -q "shutdown state=complete" "$node_log" || fail "no clean shutdown"
+  grep -q "event=readiness .*ready=false" "$node_log" || fail "no ready=false on shutdown"
+  grep -q "event=shutdown .*state=complete" "$node_log" || fail "no clean shutdown"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after graceful shutdown"
   [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard still ready"
   evidence "shutdown ready=false socket=removed"
@@ -545,11 +546,11 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   remember node_c "$node"
   ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
   # A new incarnation starts with no active Content and reactivates only the current issuance.
-  await_log "event=content_activated activation_sequence=1 " 60
-  await_log "readiness ready=true" 60
+  await_log "event=content_activated .*activation_sequence=1 " 60
+  await_log "event=readiness .*ready=true" 60
   sudo kill -TERM "$NODE_PID"
   for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
-  grep -q "shutdown state=complete" "$node_log" || fail "replacement did not shut down cleanly"
+  grep -q "event=shutdown .*state=complete" "$node_log" || fail "replacement did not shut down cleanly"
   evidence "replacement=superseding custody=claimed content=reactivated_current_issuance readiness=cas"
 }
 
@@ -564,8 +565,8 @@ signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never read
   wait "$NODE_PID" 2>/dev/null || code=$?
   cat "$node_log"
   [[ $code == 0 ]] || fail "signal in the assignment wait exit=$code"
-  grep -q 'reason="signal before ready"' "$node_log" || fail "no pre-ready shutdown event"
-  ! grep -q "readiness ready=true" "$node_log" || fail "ready published after the signal"
+  grep -q 'event=shutdown .*signal before ready' "$node_log" || fail "no pre-ready shutdown event"
+  ! grep -q "event=readiness .*ready=true" "$node_log" || fail "ready published after the signal"
   [[ ! -e "$BASE/run/control.sock" ]] || fail "socket left after a pre-ready signal"
   [[ "$(echo 'SELECT ready FROM game_durability_admission_runtime_guards' | psql_admin oteryn_node_boot)" == f ]] || fail "guard became ready"
   evidence "signal_in_assignment_wait exit=0 ready=never socket=absent"

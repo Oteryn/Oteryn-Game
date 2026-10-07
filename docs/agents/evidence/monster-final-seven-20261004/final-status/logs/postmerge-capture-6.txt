@@ -1,0 +1,6 @@
+Actual executed code head: 7a3711a95ce2f2be7fd38567998d86672a0b01f0
+Binary SHA256: d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059
+Original exact log SHA256: cfc16cd86a2452fe8239b6de84ba3d5208eed1e62531a3feadd2ff1490e3e2bf
+running 1 test
+test monster_combat_lane::pending_summon_failure_regression::two_real_children_first_registration_failure_keeps_later_child_and_receipts ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2393 filtered out; finished in 18.18s

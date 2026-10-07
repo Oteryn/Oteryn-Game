@@ -18,7 +18,7 @@
     "one_semantic_owner": "Every fact has one authoritative semantic owner. Directory placement cannot create authority.",
     "definition_rules_state_split": "Static definition, gameplay rule and current mutable state are distinct.",
     "reverse_relations": "Reverse discovery lists such as dropped-by or NPC price lists do not duplicate forward authoritative relationships.",
-    "source_ids": "Wiki/XML/client/server numeric IDs remain import/provenance coordinates and never become canonical gameplay identity.",
+    "source_ids": "Source IDs (wiki/XML/client/server numeric IDs) remain import/provenance coordinates and never become canonical gameplay identity.",
     "raw_wiki": "Long-form Wiki prose/artwork is not bulk-copied. Structured facts are normalized into typed Oteryn-owned schema.",
     "current_v2_compat": "Current content/world WorldProject/v2 remains readable until a separately qualified migration supersedes its physical authoring layout.",
     "platform_boundary": "Store/commercial catalogue, prices, purchases and entitlement grants remain Platform-owned."

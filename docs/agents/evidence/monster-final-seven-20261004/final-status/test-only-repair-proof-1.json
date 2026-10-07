@@ -1,0 +1,70 @@
+{
+  "original_receipt_sha256": "46c6eaddfa7ce252093a0c0574c69a50389289f8f4272e6d43d242194592bbdf",
+  "proof": {
+    "packet_sha256": "577a0912decf1f61fe101206671804fed4d9f87bf25d3aa795dba9cb7283201c",
+    "files": [
+      {
+        "path": "apps/game-server/src/monster_combat_lane.rs",
+        "non_test_source_bytes_identical": true,
+        "remaining_unwrap": 0,
+        "remaining_panic": 0
+      },
+      {
+        "path": "apps/game-server/src/monster_summon.rs",
+        "non_test_source_bytes_identical": true,
+        "remaining_unwrap": 0,
+        "remaining_panic": 0
+      },
+      {
+        "path": "apps/game-server/src/crystal_death_composition.rs",
+        "non_test_source_bytes_identical": true,
+        "remaining_unwrap": 0,
+        "remaining_panic": 0
+      },
+      {
+        "path": "apps/game-server/src/bone_phase_registry.rs",
+        "non_test_source_bytes_identical": true,
+        "remaining_unwrap": 0,
+        "remaining_panic": 0
+      },
+      {
+        "path": "apps/game-server/src/welter_consume.rs",
+        "non_test_source_bytes_identical": true,
+        "remaining_unwrap": 0,
+        "remaining_panic": 0
+      },
+      {
+        "path": "apps/game-server/src/monster_owner_cycle.rs",
+        "non_test_source_bytes_identical": true,
+        "remaining_unwrap": 0,
+        "remaining_panic": 0
+      },
+      {
+        "path": "apps/game-server/src/smelly_encounter_dispatch.rs",
+        "non_test_source_bytes_identical": true,
+        "remaining_unwrap": 0,
+        "remaining_panic": 0
+      },
+      {
+        "path": "apps/game-server/src/smelly_damage.rs",
+        "non_test_source_bytes_identical": true,
+        "remaining_unwrap": 0,
+        "remaining_panic": 0
+      },
+      {
+        "path": "apps/game-server/src/smelly_cheese.rs",
+        "non_test_source_bytes_identical": true,
+        "remaining_unwrap": 0,
+        "remaining_panic": 0
+      },
+      {
+        "path": "apps/game-server/src/weak_spot_speech.rs",
+        "non_test_source_bytes_identical": true,
+        "remaining_unwrap": 0,
+        "remaining_panic": 0
+      }
+    ],
+    "non_test_bytes_unchanged": true,
+    "validation": "Static exactmodule extraction; Rust compile parent only"
+  }
+}

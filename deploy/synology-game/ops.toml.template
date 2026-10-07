@@ -1,0 +1,27 @@
+# Root-owned, mode 0600, at <ROOT_BASE>/ops/ops.toml. Replace every <PLACEHOLDER>; no secrets inline.
+[operator]
+state_directory = "<BASE>/state"
+service_uid = <RUNNER_UID>
+[database]
+transport_ip = "<DB_IP>"
+port = <DB_PORT>
+tls_server_name = "<DB_TLS_SERVER_NAME>"
+database = "<DB_NAME>"
+username = "<CONTROL_ROLE>"
+password_file = "<ROOT_BASE>/ops/pg-password"
+root_ca_file = "<ROOT_BASE>/ops/db-ca.pem"
+[character]
+fence_directory = "<BASE>/fence-parent/fence"
+authority_scope_id = "character-primary"
+issuer_identity = "game-ops"
+[projection]
+# Operator-only `projection resync`; the same F file as node.toml [platform.account_characters].
+epoch_fence_file = "<BASE>/projection/epoch-fence"
+[projection.database]
+transport_ip = "<DB_IP>"
+port = <DB_PORT>
+tls_server_name = "<DB_TLS_SERVER_NAME>"
+database = "<DB_NAME>"
+username = "<MIGRATION_ROLE>"
+password_file = "<ROOT_BASE>/ops/projection-pg-password"
+root_ca_file = "<ROOT_BASE>/ops/db-ca.pem"

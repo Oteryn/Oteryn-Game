@@ -12,6 +12,11 @@ mod monster_lab;
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;
+// Native source combat requires the actual Channel/Condition owners; it is
+// intentionally outside the standalone generic Ability fixture facade.
+#[allow(dead_code)] // Preserve the original Ability module lint scope for this native-only adapter.
+#[path = "ability/player_lethal.rs"]
+mod player_lethal;
 // AI-3 (#162; GAME-AI-01-ACTION-INTEGRATION-FIRST-CREATURE-SLICE-V1 §4.4/§5): compiles the
 // bootstrap AI module into the server for the first time (previously only `tests/ai_bootstrap.rs`
 // built it standalone).
@@ -699,3 +704,136 @@ mod v2_reconciled_prepared_budget_regression_tests {
 
 pub mod admission_evidence;
 pub mod native_admission_source;
+
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod bone_phase_registry;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod creature_appearance_content;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod creature_area_heal;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod creature_attack_geometry;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod creature_auto_attack;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod creature_chain_attack;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod creature_condition_content;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod creature_damage_spell;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod creature_defense_presentation;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod crystal_callbacks;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod crystal_death_composition;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod crystal_herald_quest;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod self_heal_qualification;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod smelly_cheese;
+#[allow(dead_code)]
+mod smelly_encounter_dispatch;
+mod source_callback_intent;
+#[allow(dead_code)]
+mod source_callback_spawn;
+// Source-bound native library callbacks; shipping server activation remains separate.
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod smelly_damage;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod source_critical_baseline;
+#[allow(
+    dead_code,
+    reason = "Private native encounter owner ABI retained for source-qualified library dispatch; shipping AI loop is not activated"
+)]
+mod source_encounter_seven;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod source_threshold_heal;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod weak_spot_speech;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod welter_consume;
+
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod monster_combat_lane;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod monster_owner_cycle;
+#[allow(
+    dead_code,
+    reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
+)]
+mod monster_summon;
+
+#[cfg(test)]
+mod canonical_monster_successor_tests;
+
+#[allow(dead_code)]
+mod creature_icicle;
+
+// Full native Creature callbacks stay outside standalone Durability path loads.
+#[path = "durability/creature_source_items.rs"]
+mod creature_source_items;

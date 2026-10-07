@@ -1869,19 +1869,28 @@ dependencies = [
 name = "oteryn-client"
 version = "0.1.0"
 dependencies = [
+ "oteryn-client-assets",
  "oteryn-client-runtime",
  "oteryn-diagnostics",
  "oteryn-foundation",
  "oteryn-identity",
  "oteryn-input-actions",
  "oteryn-input-platform",
- "oteryn-placeholder-assets",
  "oteryn-platform-client",
  "oteryn-platform-contracts",
  "oteryn-renderer",
  "oteryn-session",
  "oteryn-session-tcp",
+ "oteryn-world-bundle",
+ "rcgen",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+ "tokio",
+ "tokio-rustls",
  "winit",
+ "zstd",
 ]
 
 [[package]]
@@ -1940,6 +1949,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-error-codes"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "oteryn-foundation"
 version = "0.1.0"
 dependencies = [
@@ -1955,6 +1971,7 @@ dependencies = [
  "cap-std",
  "ed25519-dalek",
  "oteryn-dev-client",
+ "oteryn-error-codes",
  "oteryn-foundation",
  "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
@@ -1999,10 +2016,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "oteryn-placeholder-assets"
-version = "0.1.0"
-
-[[package]]
 name = "oteryn-platform-client"
 version = "0.1.0"
 dependencies = [
@@ -2010,6 +2023,8 @@ dependencies = [
  "oteryn-foundation",
  "oteryn-platform-contracts",
  "reqwest",
+ "rustls",
+ "serde",
  "serde_json",
  "tokio",
 ]
@@ -2070,6 +2085,7 @@ name = "oteryn-session-tcp"
 version = "0.1.0"
 dependencies = [
  "oteryn-session",
+ "rcgen",
  "rustls",
  "tokio",
  "tokio-rustls",

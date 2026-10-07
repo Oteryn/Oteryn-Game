@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-10-04T00:00:00+00:00",
+  "updated_at": "2026-10-06T00:00:00+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -5329,6 +5329,219 @@
       ]
     },
     {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V3-CROSS-ITEM-TARGETS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V3.md",
+      "resource": "Typed cross-Item target values retained in one artifact v6 server Item record",
+      "unit": "target values",
+      "hard_maximum": 13,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 13
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use the protected native identity map; reject any extra target field or accepted dangling ordinal before retention.",
+      "client_visible": false,
+      "boundary_tests": [
+        "13 schema-defined target values accepted when each resolves or carries a non-known disposition",
+        "14th target field rejected",
+        "accepted dangling target rejected"
+      ],
+      "notes": "Correction (ITEM-SEM-BED-1): v6 added the potion empty flask as a thirteenth target slot; the V1 value 12 inherited by V3 undercounted it."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-SERVER-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+      "resource": "Present typed capability groups in one artifact v7 server-authoritative Item body",
+      "unit": "groups",
+      "hard_maximum": 19,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 19
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before group-vector allocation; reject duplicates, noncanonical order and unknown critical groups (ids 1-19).",
+      "client_visible": false,
+      "boundary_tests": [
+        "19 known ordered unique groups accepted",
+        "20 groups rejected before allocation",
+        "group id 20, duplicate or unsorted group rejected"
+      ],
+      "notes": "v6 keeps 18 under the V3 row and refuses group 19 (ITEM-SEM-BED-1)."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-CLIENT-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+      "resource": "Present typed capability groups in one artifact v7 client-safe Item body",
+      "unit": "groups",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before group-vector allocation; reject any group outside the client allowlist, including server-only groups 18 and 19.",
+      "client_visible": true,
+      "boundary_tests": [
+        "12 allowlisted ordered unique groups accepted",
+        "13 groups rejected before allocation",
+        "server-only group 19 rejected in a client record"
+      ],
+      "notes": "The client allowlist is unchanged from v6."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-SERVER-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+      "resource": "One artifact v7 typed server-authoritative Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3612,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3612
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": false,
+      "boundary_tests": [
+        "3,612-byte semantically valid record accepted",
+        "3,613 bytes rejected before record allocation",
+        "truncated record rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-CLIENT-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+      "resource": "One artifact v7 typed client-safe Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3454,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3454
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": true,
+      "boundary_tests": [
+        "3,454-byte semantically valid record accepted",
+        "3,455 bytes rejected before record allocation",
+        "truncated record rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-SERVER-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+      "resource": "Artifact v7 server-authoritative Item body section",
+      "unit": "bytes",
+      "hard_maximum": 137823084,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 137823084
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication and addition; reject the section length before body allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "137,823,084 bytes accepted",
+        "137,823,085 bytes rejected before allocation",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-CLIENT-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+      "resource": "Artifact v7 client-safe Item body section",
+      "unit": "bytes",
+      "hard_maximum": 131794278,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 131794278
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication and addition; reject the section length before body allocation.",
+      "client_visible": true,
+      "boundary_tests": [
+        "131,794,278 bytes accepted",
+        "131,794,279 bytes rejected before allocation",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-SERVER-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+      "resource": "One encoded artifact v7 server-authoritative Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 178620621,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 178620621
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the artifact length before section parsing, copying or digest work beyond the header.",
+      "client_visible": false,
+      "boundary_tests": [
+        "178,620,621 bytes accepted",
+        "178,620,622 bytes rejected before parsing",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-CLIENT-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+      "resource": "One encoded artifact v7 client-safe Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 172591815,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 172591815
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject the artifact length before section parsing, copying or digest work beyond the header.",
+      "client_visible": true,
+      "boundary_tests": [
+        "172,591,815 bytes accepted",
+        "172,591,816 bytes rejected before parsing",
+        "checked arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-GENERATION-PAIR-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+      "resource": "Combined encoded artifact v7 server and client-safe Reference Item artifacts in one generation",
+      "unit": "bytes",
+      "hard_maximum": 351212436,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 351212436
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked addition and validate both projection maxima before staging either artifact as a pair.",
+      "client_visible": false,
+      "boundary_tests": [
+        "351,212,436 cumulative bytes accepted only when both projection maxima pass",
+        "351,212,437 bytes rejected before pair staging",
+        "checked-add overflow rejects the generation without partial publication"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V4-CROSS-ITEM-TARGETS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V4.md",
+      "resource": "Typed cross-Item target values retained in one artifact v7 server Item record",
+      "unit": "target values",
+      "hard_maximum": 15,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 15
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use the protected native identity map; reject any extra target field or accepted dangling ordinal before retention.",
+      "client_visible": false,
+      "boundary_tests": [
+        "15 schema-defined target values accepted when each resolves or carries a non-known disposition",
+        "16th target field rejected",
+        "accepted dangling target rejected"
+      ],
+      "notes": "v7 adds the bed occupied male and female looks to the 13 v6 slots."
+    },
+    {
       "id": "MOVE-RL-03",
       "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
       "resource": "Attempted adjacent destination candidates in one isolated Movement local-step decision",
@@ -7058,9 +7271,31 @@
       "failure_category": "CAPACITY_EXCEEDED",
       "hard_maximum": 100,
       "id": "MAP01-VIEWPORT-US",
-      "notes": "Owner answer 8a; ADR-0021 \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map p99 72-83 us for 18x14 over native floors -7..=0 (20,000 seeded viewports); docs/agents/evidence/MAP-LOAD-1-base-budgets.md. MAP-VIEWPORT-PERF-1 (2026-10-05): domain-17 snapshot with state handles measured p99 2.9 ms, gate not met; docs/agents/evidence/MAP-VIEWPORT-PERF-1-viewport.md.",
+      "notes": "Owner answer 8a; ADR-0021 \u00a74.8. MAP-LOAD-1 (2026-10-04): confirmed; real-map p99 72-83 us for 18x14 over native floors -7..=0 (20,000 seeded viewports); docs/agents/evidence/MAP-LOAD-1-base-budgets.md. MAP-VIEWPORT-PERF-1 (2026-10-05): domain-17 snapshot with state handles measured p99 2.9 ms, gate not met; docs/agents/evidence/MAP-VIEWPORT-PERF-1-viewport.md. ARCH-MAP-VIEWPORT-BUDGET-V1 (owner answer 1a, 2026-10-06): this row stays the assembly budget; the whole domain-17 snapshot (compose, handles, encode) is MAP01-VIEWPORT-SNAPSHOT-US.",
       "owner_contract": "ADR-0021-world-map-runtime-loading.md",
       "resource": "Server cost of assembling one 18x14 viewport from base and overlay, over every floor the client sees",
+      "unit": "microseconds"
+    },
+    {
+      "allocation_impact": "Qualification budget at p99 for the capability 18 offer on a testing or preproduction bundle World; not a runtime cutoff. Temporary: a production offer needs the snapshot and delta limits derived from MAP-VIEWPORT-MEASURE-1 and D128.",
+      "boundary_tests": [
+        "release map_viewport_measure snapshot p99 at or under 2000 us passes",
+        "snapshot p99 over 2000 us fails qualification"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 2000,
+        "minimum": 2000
+      },
+      "consumers": [
+        "game server World runtime (capability 18 offer, MAP-CUTOVER-1b)"
+      ],
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 2000,
+      "id": "MAP01-VIEWPORT-SNAPSHOT-US",
+      "notes": "Owner answer 1a (2026-10-06); ARCH-MAP-VIEWPORT-BUDGET-V1. Testing and preproduction only. MAP-VIEWPORT-PERF-2 (#1859): p99 1.683 ms on the seeded harness, 4 vCPU; docs/agents/evidence/MAP-VIEWPORT-PERF-2-viewport.md. Production limits: MAP-VIEWPORT-MEASURE-1 and D128 (500 players per Channel).",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md",
+      "resource": "Server cost of one 18x14 domain-17 snapshot over every floor in view: compose, assign handles and encode",
       "unit": "microseconds"
     },
     {
@@ -9352,6 +9587,248 @@
         "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 17"
       ],
       "notes": "MAP-WIRE-1 \u00a73. Test: world_map::tests::encoded_sizes_stay_within_the_bounds. Registered by OTV2-20261004-map-wire-2."
+    },
+    {
+      "id": "NPC0-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Talk text of one NPC_TALK_INTENT (command type 7)",
+      "unit": "bytes",
+      "hard_maximum": 255,
+      "configurable_range": {
+        "minimum": 255,
+        "maximum": 255
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bounds the keyword scan and the command payload at 289 bytes; the text is never broadcast, persisted or logged verbatim. One byte more fails the decode before any matching.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=255: a text of exactly 255 bytes encodes and decodes",
+        "max+1=256: one more byte is refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_TALK_TEXT_BYTES"
+      ],
+      "notes": "NPC-0 \u00a74. Worker-set: keywords are whole tokens of a short phrase, and CHAT0 bounds a chat line at 1,020 bytes. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Reply lines of one NPC_CONVERSATION payload (domain 7)",
+      "unit": "lines",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most 32 lines of at most 2,048 bytes in one payload, 65,665 bytes in all, within the FND-02 chunk bound. A longer reply is split over several deltas by the server.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=32: a payload of 32 lines encodes and decodes",
+        "max+1=33: a 33rd line is refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_REPLY_LINES"
+      ],
+      "notes": "NPC-0 \u00a74. Worker-set; measured over content/world/definitions/declarations.json (836 dialogues, at most about 133 text strings in one dialogue). Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-02-LINE-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "One reply line of domain 7",
+      "unit": "bytes",
+      "hard_maximum": 2048,
+      "configurable_range": {
+        "minimum": 2048,
+        "maximum": 2048
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured longest dialogue reply line 1,919 bytes. The server splits a line that contains a newline and refuses a line over the bound before any byte is emitted.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=2048: a line of exactly 2,048 bytes encodes and decodes",
+        "max+1=2049: one more byte is refused by the encoder and the decoder"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_REPLY_LINE_BYTES"
+      ],
+      "notes": "NPC-0 \u00a74. Four content reply lines contain a newline, and a control character is refused on the wire. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-02-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "One encoded NpcConversationV1 (domain 7 snapshot and delta)",
+      "unit": "bytes",
+      "hard_maximum": 65665,
+      "configurable_range": {
+        "minimum": 65665,
+        "maximum": 65665
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The NPC 31, the state 2 and 32 line elements of 2,051 bytes: 65,665, within the FND-02 snapshot chunk bound of 524,288.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=65665: a payload of 32 lines of 2,048 bytes encodes within the bound and decodes",
+        "max+1: a 33rd line or one more line byte is refused"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_NPC_CONVERSATION_BYTES"
+      ],
+      "notes": "NPC-0 \u00a74. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Offers of one NPC_TRADE_WINDOW projection (domain 8)",
+      "unit": "offers",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measured 757 offers over the catalogue (the limit is at least 757). 1,024 offers of at most 22 bytes each, 22,570 bytes in all.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1024: a window of 1,024 offers encodes and decodes",
+        "max+1=1025: a 1,025th offer is refused; offer index 1,024 of a trade intent is refused"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_OFFERS"
+      ],
+      "notes": "NPC-0 \u00a74 (at least 757). Measured over content/world/definitions/declarations.json. A 757-offer window is tested within the bound. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-03-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "One encoded NpcTradeWindowV1 (domain 8 snapshot and delta)",
+      "unit": "bytes",
+      "hard_maximum": 22570,
+      "configurable_range": {
+        "minimum": 22570,
+        "maximum": 22570
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The NPC 31, the catalogue revision 11 and 1,024 offer elements of 22 bytes: 22,570, within the FND-02 snapshot chunk bound.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=22570: a window of 1,024 worst-case offers encodes within the bound and decodes",
+        "max+1: a 1,025th offer is refused"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_NPC_TRADE_WINDOW_BYTES"
+      ],
+      "notes": "NPC-0 \u00a74. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "NPC_TALK_INTENT commands (command type 7) of one GameSession",
+      "unit": "commands per second",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bounds keyword scans and conversation deltas per session; an over-rate command has no effect and is answered RATE_LIMITED. Enforced by NPC-TALK-1.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=4: four intents in one second are served",
+        "max+1=5: a fifth intent in the same second is answered RATE_LIMITED without effect"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_TALK_INTENTS_PER_SECOND"
+      ],
+      "notes": "NPC-0 \u00a74. Worker-set; the enforcing window is NPC-TALK-1's. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Open conversations of one NPC",
+      "unit": "conversations",
+      "hard_maximum": 8,
+      "configurable_range": {
+        "minimum": 8,
+        "maximum": 8
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bounds the customer queue and the domain 7 fan-out of one NPC. A further customer waits or is refused by NPC-TALK-1.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=8: eight customers are served",
+        "max+1=9: a ninth customer is not admitted"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs MAX_OPEN_CONVERSATIONS_PER_NPC"
+      ],
+      "notes": "NPC-0 \u00a74.1 and NPC-BEHAVIOUR-0 \u00a77. Worker-set; enforced by NPC-TALK-1. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-06",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Travel confirmation timeout of an NPC conversation",
+      "unit": "seconds",
+      "hard_maximum": 30,
+      "configurable_range": {
+        "minimum": 30,
+        "maximum": 30
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A pending travel confirmation holds one conversation state for at most 30 s; anything else or the timeout cancels it. No retained state after close.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=30: a yes at 30 s still confirms",
+        "max+1: a yes after 30 s cancels"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs TRAVEL_CONFIRMATION_TIMEOUT_SECONDS"
+      ],
+      "notes": "NPC-0 \u00a74. Worker-set; enforced by NPC-TALK-1. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "NPC0-RL-07",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+      "resource": "Talk range of an NPC conversation (Chebyshev distance, same floor)",
+      "unit": "tiles",
+      "hard_maximum": 4,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A customer beyond 4 tiles, or on another floor, has the conversation closed on every committed move of the customer or the NPC. CHAT0-RL-08 reads this limit.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=4: a customer at distance 4 stays in conversation",
+        "max+1=5: a customer at distance 5 has the conversation closed"
+      ],
+      "consumers": [
+        "crates/protocol-oteryn/src/npc_service.rs TALK_RANGE_TILES"
+      ],
+      "notes": "NPC-BEHAVIOUR-0 \u00a77; value fixed by the amendment of NPC-0 \u00a74.1. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "KILLRW-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md",
+      "resource": "Unsettled creature kill reward entries per Channel (queued plus in flight)",
+      "unit": "entries",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked when a lethal creature death is appended, under the Channel attack guard; the 65th unsettled entry is not queued, settles nothing and logs one kill_reward_refused reason=queue_full line. Each entry holds the projected death facts, an Arc of the immutable reward row and the death ground context; no entry is allocated past the bound.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=64: 63 queued plus 1 in flight are all held",
+        "max+1=65: the 65th unsettled death is refused with queue_full while one is in flight"
+      ],
+      "consumers": [
+        "apps/game-server/src/gameplay_transport/kill_reward.rs KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX"
+      ],
+      "notes": "ARCH-KILL-REWARD-LOGOUT-1 \u00a71.3. Registered by OTV2-20261004-kill-reward-comp-1 (KILL-REWARD-COMP-1)."
     }
   ]
 }

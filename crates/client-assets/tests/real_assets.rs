@@ -194,10 +194,7 @@ fn stackable_count_selects_the_pattern() -> TestResult {
         130,
         Placement {
             count: 5,
-            sub_type: 0,
-            x: 0,
-            y: 0,
-            floor: 0,
+            ..Placement::at(0, 0, 0)
         },
     )?;
     let hundred = index.resolve(
@@ -205,10 +202,7 @@ fn stackable_count_selects_the_pattern() -> TestResult {
         130,
         Placement {
             count: 100,
-            sub_type: 0,
-            x: 0,
-            y: 0,
-            floor: 0,
+            ..Placement::at(0, 0, 0)
         },
     )?;
     assert_ne!(one.cells, five.cells);
@@ -362,5 +356,33 @@ fn no_pinned_appearance_exceeds_the_cell_cap() -> TestResult {
     }
     println!("widest pinned entry: {widest} cells; cap {MAX_ENTRY_CELLS}");
     assert!(widest <= MAX_ENTRY_CELLS);
+    Ok(())
+}
+
+#[test]
+fn the_default_outfit_resolves_facing_each_direction() -> TestResult {
+    let (index, mut sheets) = load()?;
+    let outfit = index.outfit(128).ok_or("look type 128 missing")?;
+    assert!(outfit.pattern_width >= 4);
+    let mut seen = Vec::new();
+    for direction in 0..4 {
+        let entry = index.resolve_outfit(&sheets, 128, direction)?;
+        assert!(!entry.cells.is_empty());
+        for cell in &entry.cells {
+            assert_eq!(
+                sheets
+                    .cell_rgba(cell.sprite_id, cell.cell_x, cell.cell_y)?
+                    .len(),
+                32 * 32 * 4
+            );
+        }
+        seen.push(entry.cells[0].sprite_id);
+    }
+    seen.dedup();
+    assert_eq!(seen.len(), 4, "each direction has its own sprite");
+    assert!(matches!(
+        index.resolve_outfit(&sheets, 0, 2),
+        Err(AssetError::UnknownAppearance { id: 0 })
+    ));
     Ok(())
 }

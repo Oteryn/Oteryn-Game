@@ -12,21 +12,32 @@ category = "app"
 release-role = "production"
 
 [dependencies]
+oteryn-client-assets = { version = "=0.1.0", path = "../../crates/client-assets" }
 oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }
 oteryn-diagnostics = { version = "=0.1.0", path = "../../crates/diagnostics" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-identity = { version = "=0.1.0", path = "../../crates/identity" }
 oteryn-input-actions = { version = "=0.1.0", path = "../../crates/input-actions" }
 oteryn-input-platform = { version = "=0.1.0", path = "../../crates/input-platform" }
-oteryn-placeholder-assets = { version = "=0.1.0", path = "../../crates/placeholder-assets" }
 oteryn-platform-client = { version = "=0.1.0", path = "../../crates/platform-client" }
 oteryn-platform-contracts = { version = "=0.1.0", path = "../../crates/platform-contracts" }
 oteryn-renderer = { version = "=0.1.0", path = "../../crates/renderer" }
 oteryn-session = { version = "=0.1.0", path = "../../crates/session" }
 oteryn-session-tcp = { version = "=0.1.0", path = "../../crates/session-tcp" }
+oteryn-world-bundle = { version = "=0.1.0", path = "../../crates/world-bundle" }
+rustls.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+sha2.workspace = true
+tokio.workspace = true
+zstd.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 winit.workspace = true
+
+[dev-dependencies]
+rcgen.workspace = true
+tokio-rustls.workspace = true
 
 [lints]
 workspace = true

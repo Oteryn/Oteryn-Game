@@ -1,0 +1,106 @@
+{
+  "actors": 196,
+  "list_provenance": {
+    "WIKI_CONFIRMED": 172,
+    "SOURCE_ONLY": 21,
+    "UNKNOWN": 3
+  },
+  "element_provenance": {
+    "WIKI_CONFIRMED": 1360,
+    "UNKNOWN": 564,
+    "SOURCE_ONLY": 36
+  },
+  "wiki_changes_vs_canonical": [],
+  "non_resistance_wiki_findings": [
+    {
+      "actor": "security_golem",
+      "damage_type": "energy",
+      "field": "details.healing_from_damage",
+      "wiki_damage_taken": "-100%",
+      "wiki_healing_percent": {
+        "denominator": 1,
+        "numerator": 100
+      },
+      "canonical_healing_percent": null,
+      "canonical_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "revision_id": 440024,
+      "content_sha256": "c730cee210c3a83d4164ad7317c5bb8a5433986917c7226db8984b2f0cf2a3ed",
+      "field_line": 48,
+      "disposition": "PRESERVE_RESISTANCE_AND_HANDOFF_REAL_HEALING_RESPONSE_NO_PERCENT_ABOVE100"
+    },
+    {
+      "actor": "sir_baeloc",
+      "damage_type": "earth",
+      "field": "details.healing_from_damage",
+      "wiki_damage_taken": "-20%",
+      "wiki_healing_percent": {
+        "denominator": 1,
+        "numerator": 20
+      },
+      "canonical_healing_percent": null,
+      "canonical_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "revision_id": 445229,
+      "content_sha256": "6c3acd0c6479f5de995cfa77fed1fc450f25a340287a0e921c9ba89d0a2eed89",
+      "field_line": 45,
+      "disposition": "PRESERVE_RESISTANCE_AND_HANDOFF_REAL_HEALING_RESPONSE_NO_PERCENT_ABOVE100"
+    },
+    {
+      "actor": "sir_baeloc",
+      "damage_type": "death",
+      "field": "details.healing_from_damage",
+      "wiki_damage_taken": "-300%",
+      "wiki_healing_percent": {
+        "denominator": 1,
+        "numerator": 300
+      },
+      "canonical_healing_percent": null,
+      "canonical_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "revision_id": 445229,
+      "content_sha256": "6c3acd0c6479f5de995cfa77fed1fc450f25a340287a0e921c9ba89d0a2eed89",
+      "field_line": 47,
+      "disposition": "PRESERVE_RESISTANCE_AND_HANDOFF_REAL_HEALING_RESPONSE_NO_PERCENT_ABOVE100"
+    },
+    {
+      "actor": "sir_nictros",
+      "damage_type": "death",
+      "field": "details.healing_from_damage",
+      "wiki_damage_taken": "-300%",
+      "wiki_healing_percent": {
+        "denominator": 1,
+        "numerator": 300
+      },
+      "canonical_healing_percent": null,
+      "canonical_path": "content/creatures/definitions/creatures-01000-01499.json",
+      "revision_id": 445231,
+      "content_sha256": "ec4beb30b40db33e4ca01dcb8933cc89888ddc520a5dfc927f0ef289eca32e58",
+      "field_line": 47,
+      "disposition": "PRESERVE_RESISTANCE_AND_HANDOFF_REAL_HEALING_RESPONSE_NO_PERCENT_ABOVE100"
+    },
+    {
+      "actor": "the_percht_queen",
+      "damage_type": "ice",
+      "field": "details.healing_from_damage",
+      "wiki_damage_taken": "-100%",
+      "wiki_healing_percent": {
+        "denominator": 1,
+        "numerator": 100
+      },
+      "canonical_healing_percent": null,
+      "canonical_path": "content/creatures/definitions/creatures-01500-01862.json",
+      "revision_id": 445344,
+      "content_sha256": "f45dc868ae418a75ee6a02aa93c5ca4929de71f247238553699b525f971e6e3a",
+      "field_line": 50,
+      "disposition": "PRESERVE_RESISTANCE_AND_HANDOFF_REAL_HEALING_RESPONSE_NO_PERCENT_ABOVE100"
+    }
+  ],
+  "wiki_changes_count": 0,
+  "cache_paths": [
+    "/workspace/monster-field-audit-20261002/wiki/pages.json.gz",
+    "/workspace/monster-field-audit-20261002/wiki/actor-page-coverage.json.gz"
+  ],
+  "cache_sha256": "785509ec404bbd47b9e799711546cff8a2389168d419eae7f61927338863854a",
+  "source_verified": 194,
+  "neutral_canonical_lists": 115,
+  "network": false,
+  "product_edits": false
+}

@@ -36,9 +36,11 @@ use std::sync::Arc;
 mod runtime_actor_conditions;
 #[allow(unused_imports)] // The Foundation facade is composed by the owning consumer child.
 pub(crate) use runtime_actor_conditions::{
-    ActorConditionPlan, ActorConditionTransition, ApplicationFacts, ConditionDefinition,
-    ConditionOwnerError, ConditionSource, ConditionSourceKind, ConditionStore, ConditionType,
-    ConditionValues, SpeedRange,
+    ActorConditionPlan, ActorConditionTickPlan, ActorConditionTransition, ApplicationFacts,
+    AttributeModifier, AttributeModifiers, CombatSkill, ConditionDefinition, ConditionOwnerError,
+    ConditionRefusal, ConditionSource, ConditionSourceKind, ConditionStore, ConditionTick,
+    ConditionType, ConditionValues, DamageSchedule, DamageSegment, DotElement, ExactSpeedRatio,
+    RationalSpeedRange, SpeedRange, StatusKind, TickFacts, TickKind,
 };
 use runtime_actor_conditions::{CreatureCommitState, PlayerRuntimeState};
 #[path = "runtime_actor_death.rs"]
@@ -73,6 +75,7 @@ pub(crate) enum CarrierError {
     InvalidCreatureTarget,
     CreatureTargetMismatch,
     NotCreature,
+    SummonHasNoRewards,
     CreatureNotActionable,
     InvalidDamage,
     DamageOverflow,
@@ -349,8 +352,12 @@ pub(crate) struct CurrentOwnerExactActorLookup<'a> {
 /// capability: the carrier checks independent continuity and slot generation
 /// again at the sole write.
 pub(crate) struct CurrentOwnerExactActorCommit<'a> {
+    content: Option<&'a ChannelContentPin>,
     carrier: &'a mut ChannelActorCarrier,
     continuity: &'a NamespaceContinuityGuard,
+    /// The owner clock (ms) of this turn, recorded on each commit's receipt and contributor.
+    /// `None` records no time: such a hit never earns time-windowed credit.
+    now_ms: Option<u64>,
 }
 
 /// Short-lived current-owner authority for the fixed one-creature death
@@ -594,6 +601,9 @@ struct OwnerCommitRecord {
 struct DamageReceipts {
     entries: Vec<OwnerCommitRecord>,
     next_ordinal: u64,
+    /// The owner clock (ms) of the turn that committed the lethal receipt, when that turn
+    /// supplied one. Set once by the lethal commit; a replay never changes it.
+    lethal_at_ms: Option<u64>,
 }
 
 impl DamageReceipts {
@@ -650,6 +660,9 @@ struct DamageContributor {
     /// D141: this attacker's `(session, sequence, sub_ordinal)` high-water mark. A new current
     /// session replaces it outright; within one session it only ever rises.
     high_water: Option<HighWater>,
+    /// The latest owner clock (ms) at which this attacker's damage was recorded. A hit whose
+    /// turn supplied no clock leaves it unchanged, so it never moves later than a known hit.
+    last_damage_at_ms: Option<u64>,
 }
 
 /// D132/D3-3: bounded, ephemeral, per-creature-generation damage-contributor accumulation.
@@ -672,13 +685,15 @@ impl DamageContributors {
     ///
     /// `ordinal` is the owner damage-application ordinal (D142) the carrier assigned to this
     /// commit at the same mutation boundary; this accumulator keeps no counter of its own.
-    /// `high_water`, when supplied, replaces the attacker's mark (D141).
+    /// `high_water`, when supplied, replaces the attacker's mark (D141). `at_ms` is the
+    /// committing owner turn's clock.
     fn record(
         &mut self,
         character: CharacterId,
         damage: u64,
         ordinal: u64,
         high_water: Option<HighWater>,
+        at_ms: Option<u64>,
     ) {
         if let Some(existing) = self
             .entries
@@ -690,6 +705,7 @@ impl DamageContributors {
             if high_water.is_some() {
                 existing.high_water = high_water;
             }
+            existing.last_damage_at_ms = existing.last_damage_at_ms.max(at_ms);
             return;
         }
         if self.entries.len() >= COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX {
@@ -700,6 +716,7 @@ impl DamageContributors {
             total: damage,
             last_update_ordinal: ordinal,
             high_water,
+            last_damage_at_ms: at_ms,
         });
     }
 
@@ -745,17 +762,19 @@ impl DamageContributors {
     /// `foundation_uuid_v7_id!`). A pure function of already-recorded state, independent of
     /// insertion or iteration order.
     fn top_damage_character(&self) -> Option<CharacterId> {
-        self.entries
-            .iter()
-            .copied()
-            .reduce(|best, candidate| {
-                if is_more_preferred_contributor(&candidate, &best) {
-                    candidate
-                } else {
-                    best
-                }
-            })
+        self.top_contributor()
             .map(|contributor| contributor.character)
+    }
+
+    /// The whole winning entry under the same tie-break as [`Self::top_damage_character`].
+    fn top_contributor(&self) -> Option<DamageContributor> {
+        self.entries.iter().copied().reduce(|best, candidate| {
+            if is_more_preferred_contributor(&candidate, &best) {
+                candidate
+            } else {
+                best
+            }
+        })
     }
 }
 
@@ -778,6 +797,43 @@ fn is_more_preferred_contributor(
                 std::cmp::Ordering::Equal => candidate.character < current_best.character,
             }
         }
+    }
+}
+
+/// §1.3: the reward principal identity of a creature's top-damage contributor, read in the
+/// owner turn that projects its death.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct TopDamageContributor {
+    pub(crate) character: CharacterId,
+    /// The lease generation and session of the winner's D141 high-water mark.
+    pub(crate) lease_generation: u64,
+    pub(crate) session: GameSessionId,
+    /// The winner's committed player slot in this carrier, bound to that same session and lease.
+    pub(crate) actor: ExactActorRef,
+    pub(crate) last_damage_at_ms: Option<u64>,
+}
+
+/// §1.3: who the top-damage reward principal of a projected death is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TopDamagePrincipal {
+    /// No tracked contributor: the lethal attacker is the principal.
+    Untracked,
+    /// The winner's slot is gone, or it now holds another session or lease generation.
+    Gone,
+    Present(TopDamageContributor),
+}
+
+impl TopDamagePrincipal {
+    /// The tracked winner, if any; callers outside Foundation cannot name this enum.
+    pub(crate) const fn present(self) -> Option<TopDamageContributor> {
+        match self {
+            Self::Present(winner) => Some(winner),
+            Self::Untracked | Self::Gone => None,
+        }
+    }
+
+    pub(crate) const fn is_gone(self) -> bool {
+        matches!(self, Self::Gone)
     }
 }
 
@@ -855,6 +911,8 @@ impl CreatureDeathOccurrenceKey {
 pub(crate) struct RuntimeCorpseProjection {
     occurrence: CreatureDeathOccurrenceRef,
     position: VersionedPosition,
+    /// The lethal receipt's owner clock (ms), when its committing turn supplied one.
+    death_at_ms: Option<u64>,
 }
 
 impl RuntimeCorpseProjection {
@@ -917,8 +975,16 @@ impl CurrentOwnerExactActorCommit<'_> {
         actor: ExactActorRef,
         command: OwnerDamageCommand<'_>,
     ) -> Result<OwnerDamageResult, CarrierError> {
-        self.carrier
-            .commit_creature_damage_inner(self.continuity, actor.0, command, None, false)
+        self.carrier.commit_creature_damage_with_pin_inner(
+            self.continuity,
+            actor.0,
+            command,
+            None,
+            false,
+            self.content,
+            Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
+            self.now_ms,
+        )
     }
 
     /// D132/D3-3 + D141: the same owner-authoritative damage commit, additionally attributing the
@@ -937,12 +1003,15 @@ impl CurrentOwnerExactActorCommit<'_> {
         attacker: AttackerCommand,
         command: OwnerDamageCommand<'_>,
     ) -> Result<OwnerDamageResult, CarrierError> {
-        self.carrier.commit_creature_damage_inner(
+        self.carrier.commit_creature_damage_with_pin_inner(
             self.continuity,
             actor.0,
             command,
             Some(attacker),
             false,
+            self.content,
+            Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
+            self.now_ms,
         )
     }
 }
@@ -971,7 +1040,7 @@ impl CurrentOwnerExactActorCommit<'_> {
         damage: OwnerDamageCommand<'_>,
     ) -> Result<OwnerDamageResult, CarrierError> {
         let lease = self.bound_attacker_lease(attacker, command)?;
-        self.carrier.commit_creature_damage_inner(
+        self.carrier.commit_creature_damage_with_pin_inner(
             self.continuity,
             actor.0,
             damage,
@@ -982,6 +1051,9 @@ impl CurrentOwnerExactActorCommit<'_> {
                 sub_ordinal,
             )),
             false,
+            self.content,
+            Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
+            self.now_ms,
         )
     }
 
@@ -1009,14 +1081,17 @@ impl CurrentOwnerExactActorCommit<'_> {
         );
         self.carrier
             .swing_lineage_admission(self.continuity, actor.0, command)?;
-        self.carrier.commit_creature_damage_inner_bounded(
+        // Every u16 swing ordinal is admissible: the lineage's last ordinal (`u16::MAX`) still
+        // swings, and attack.rs ends the lineage after it.
+        self.carrier.commit_creature_damage_inner_limited(
             self.continuity,
             actor.0,
             damage,
             Some(command),
             false,
-            u16::MAX,
+            None,
             true,
+            self.now_ms,
         )
     }
 }
@@ -1060,12 +1135,42 @@ impl CurrentOwnerCombatDeath<'_> {
         actor: ExactActorRef,
     ) -> Result<(CreatureDeathOccurrenceKey, MovementLocalPosition), CarrierError> {
         self.carrier.validate_ref(self.continuity, actor.0)?;
+        if self.carrier.is_native_summon(actor) {
+            return Err(CarrierError::SummonHasNoRewards);
+        }
         self.carrier
             .corpse_projections
             .iter()
             .find(|projection| projection.occurrence.actor == actor)
             .map(|projection| (projection.occurrence.death_key(), projection.position()))
             .ok_or(CarrierError::CommittedLethalUnavailable)
+    }
+
+    /// P2 4180039074: the owner clock of the turn that committed `actor`'s lethal receipt, read
+    /// from the retained projection, so a replayed projection keeps its original death time.
+    /// `Ok(None)` when that turn supplied no clock.
+    pub(crate) fn projected_death_at_ms(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Option<u64>, CarrierError> {
+        self.carrier.validate_ref(self.continuity, actor.0)?;
+        self.carrier
+            .corpse_projections
+            .iter()
+            .find(|projection| projection.occurrence.actor == actor)
+            .map(|projection| projection.death_at_ms)
+            .ok_or(CarrierError::CommittedLethalUnavailable)
+    }
+
+    /// §1.3: the top-damage reward principal of `actor`'s still-live slot, under the D132
+    /// tie-break of [`Self::top_damage_character`], with the winner's session identity, slot and
+    /// last damage time. See [`ChannelActorCarrier::top_damage_contributor_inner`].
+    pub(crate) fn top_damage_contributor(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<TopDamagePrincipal, CarrierError> {
+        self.carrier
+            .top_damage_contributor_inner(self.continuity, actor.0)
     }
 
     /// D2b: the memoized XP `ExperienceRewardOccurrence` bytes of this
@@ -1305,6 +1410,10 @@ struct ChannelActorCarrier {
     /// AI-2 (§4.3, D116): realized spawn sources and their per-cell live/
     /// pending/retry state for this carrier's ownership generation.
     spawns: Vec<SpawnRealization>,
+    native_summons: Vec<NativeSummonLink>,
+    native_summon_deaths: [Option<NativeSummonDeath>; 64],
+    native_summon_death_cursor: usize,
+    bone_shared_groups: Vec<NativeBoneSharedGroup>,
     /// The last write-fence transition id this carrier minted (CHARM-DESC-FENCE-LEASE §3 item 2).
     fence_transitions: u64,
     /// A2: the bound lease and write fence of each committed player slot that has one, keyed by
@@ -1317,6 +1426,9 @@ struct ChannelActorCarrier {
     /// reserved at bootstrap for every slot, so taking a slot never reallocates it; `remove`, the
     /// companion rollback and the spawn rollbacks keep it equal to those slots (Codex 4178855592).
     occupied: Vec<u32>,
+    /// MAP-ITEM-REF-1 Part B: the corpse Item bound to each retained corpse projection, at most
+    /// one per projection; [`ChannelRuntimeV1::bind_corpse_item`] drops the evicted ones.
+    corpse_item_bindings: Vec<CorpseItemBinding>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -2120,9 +2232,29 @@ impl ChannelRuntimeV1 {
         self.carrier.current_owner_exact_lookup(&self.continuity)
     }
 
-    /// Borrow the existing generation-fenced creature HP owner; no second health store.
+    /// Borrow the existing generation-fenced creature HP owner with this runtime's
+    /// immutable current Content pin; registered source encounters revalidate it.
     pub(crate) fn borrow_exact_actor_commit(&mut self) -> CurrentOwnerExactActorCommit<'_> {
-        self.carrier.current_owner_exact_commit(&self.continuity)
+        CurrentOwnerExactActorCommit {
+            carrier: &mut self.carrier,
+            continuity: &self.continuity,
+            content: Some(&self.content),
+            now_ms: None,
+        }
+    }
+
+    /// [`Self::borrow_exact_actor_commit`] for an owner turn whose clock is `now_ms`: its
+    /// commits record that time as the damage and, for a lethal commit, the death time.
+    pub(crate) fn borrow_exact_actor_commit_at(
+        &mut self,
+        now_ms: u64,
+    ) -> CurrentOwnerExactActorCommit<'_> {
+        CurrentOwnerExactActorCommit {
+            carrier: &mut self.carrier,
+            continuity: &self.continuity,
+            content: Some(&self.content),
+            now_ms: Some(now_ms),
+        }
     }
 
     /// The compact position context of this runtime's fixed Content pin.
@@ -2721,9 +2853,19 @@ impl ChannelActorCarrier {
         &'a mut self,
         continuity: &'a NamespaceContinuityGuard,
     ) -> CurrentOwnerExactActorCommit<'a> {
+        self.current_owner_exact_commit_at(continuity, None)
+    }
+
+    fn current_owner_exact_commit_at<'a>(
+        &'a mut self,
+        continuity: &'a NamespaceContinuityGuard,
+        now_ms: Option<u64>,
+    ) -> CurrentOwnerExactActorCommit<'a> {
         CurrentOwnerExactActorCommit {
+            content: None,
             carrier: self,
             continuity,
+            now_ms,
         }
     }
 
@@ -2772,9 +2914,14 @@ impl ChannelActorCarrier {
             corpse_projections: Vec::new(),
             death_reward_occurrences: Vec::new(),
             spawns: Vec::new(),
+            native_summons: Vec::new(),
+            native_summon_deaths: [None; 64],
+            native_summon_death_cursor: 0,
+            bone_shared_groups: Vec::new(),
             fence_transitions: 0,
             attackers: Vec::new(),
             occupied,
+            corpse_item_bindings: Vec::new(),
         })
     }
 
@@ -3074,6 +3221,39 @@ impl ChannelActorCarrier {
             | Slot::VacantReusable { .. }
             | Slot::Exhausted { .. } => return Err(CarrierError::StaleActorGeneration),
         };
+        // Parent despawn removes children, without death/corpse/rewards. The relation never
+        // admits child masters, so this bounded cleanup cannot recurse into another family.
+        let mut children = [None; 16];
+        let mut child_count = 0;
+        for link in &self.native_summons {
+            if link.parent == ExactActorRef(actor_ref) {
+                if child_count == 16 {
+                    return Err(CarrierError::CapacityExceeded);
+                }
+                self.validate_summon_actor(continuity, link.child)?;
+                children[child_count] = Some(link.child);
+                child_count += 1;
+            }
+        }
+        for child in children.into_iter().flatten() {
+            self.remove(continuity, child.0)?;
+        }
+        if let Some(death) = self
+            .native_summons
+            .iter()
+            .find(|link| link.child == ExactActorRef(actor_ref))
+            .and_then(|link| link.death)
+            && !self
+                .native_summon_deaths
+                .iter()
+                .flatten()
+                .any(|d| d.child == death.child)
+        {
+            self.native_summon_deaths[self.native_summon_death_cursor] = Some(death);
+            self.native_summon_death_cursor = (self.native_summon_death_cursor + 1) % 64;
+        }
+        self.native_summons
+            .retain(|link| link.child != ExactActorRef(actor_ref));
         let free_index =
             u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
         self.slots[index] = Slot::VacantReusable {
@@ -3116,22 +3296,119 @@ impl ChannelActorCarrier {
     /// `(CharacterId, GameSessionId, sequence, sub_ordinal)`; `command.occurrence` is not read.
     /// An unattributed commit keeps the caller's opaque `occurrence` identity and is never
     /// evictable.
+    // Structural sibling supplies no current content authority; registered encounter actors refuse.
     fn commit_creature_damage_inner(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor: ActorRef,
+        command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
+        fail_before_write: bool,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        self.commit_creature_damage_with_pin_inner(
+            continuity,
+            actor,
+            command,
+            attacker,
+            fail_before_write,
+            None,
+            Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
+            None,
+        )
+    }
+
+    /// `max_sub_ordinal` and `now_ms` as in [`Self::commit_creature_damage_inner_limited`];
+    /// `current_pin` revalidates registered shared-HP encounter actors.
+    #[allow(clippy::too_many_arguments)]
+    fn commit_creature_damage_with_pin_inner(
         &mut self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
         command: OwnerDamageCommand<'_>,
         attacker: Option<AttackerCommand>,
         fail_before_write: bool,
+        current_pin: Option<&ChannelContentPin>,
+        max_sub_ordinal: Option<u16>,
+        now_ms: Option<u64>,
     ) -> Result<OwnerDamageResult, CarrierError> {
-        self.commit_creature_damage_inner_bounded(
+        if let Some(g) = self.bone_shared_groups.iter().find(|g| {
+            g.phylactery == ExactActorRef(actor_ref) || g.cages.contains(&ExactActorRef(actor_ref))
+        }) {
+            let pin = current_pin.ok_or(CarrierError::PositionContextMismatch)?;
+            if pin.world_id != g.world
+                || pin.activation_sequence != g.activation
+                || pin.server_artifact_digest != g.server
+                || pin.client_artifact_digest != g.client
+                || pin.frame_binding_digest != g.frame
+                || pin.map_revision_digest != g.map
+            {
+                return Err(CarrierError::PositionContextMismatch);
+            }
+            if self.world_id != g.world
+                || self.channel_id != g.channel
+                || self.scope_generation != g.generation
+            {
+                return Err(CarrierError::WrongScope);
+            }
+        }
+        if let Some(g) = self
+            .bone_shared_groups
+            .iter()
+            .find(|g| g.phylactery == ExactActorRef(actor_ref))
+            && g.cage_deaths.iter().any(Option::is_none)
+        {
+            return Err(CarrierError::CreatureNotActionable);
+        }
+        if let Some(g) = self
+            .bone_shared_groups
+            .iter()
+            .find(|g| g.cages.contains(&ExactActorRef(actor_ref)))
+            .cloned()
+        {
+            return self.commit_bone_shared_damage_inner(
+                continuity,
+                &g,
+                actor_ref,
+                command,
+                attacker,
+                fail_before_write,
+                max_sub_ordinal,
+                now_ms,
+            );
+        }
+        let (index, staged, result) = self.prepare_creature_damage_inner_bounded(
             continuity,
             actor_ref,
             command,
             attacker,
             fail_before_write,
-            ABILITY01_EFFECT_PLAN_ENTRIES_MAX,
+            max_sub_ordinal,
             false,
+            now_ms,
+        )?;
+        if let Some(staged) = staged {
+            self.slots[index] = staged;
+        }
+        Ok(result)
+    }
+
+    fn prepare_creature_damage_inner(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
+        fail_before_write: bool,
+    ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
+        self.prepare_creature_damage_inner_bounded(
+            continuity,
+            actor_ref,
+            command,
+            attacker,
+            fail_before_write,
+            Some(ABILITY01_EFFECT_PLAN_ENTRIES_MAX),
+            false,
+            None,
         )
     }
 
@@ -3173,8 +3450,8 @@ impl ChannelActorCarrier {
         }
     }
 
-    // Local SPELL-BATCH candidate: a sealed scheduler input can complete an older command;
-    // the existing Ability bridge above retains its accepted two-effect/high-water limits.
+    // Preserve main95 source batch limits/deferred high-water semantics. This entry
+    // has no current content pin, so registered shared-HP encounter actors refuse.
     #[allow(clippy::too_many_arguments)]
     fn commit_creature_damage_inner_bounded(
         &mut self,
@@ -3185,14 +3462,77 @@ impl ChannelActorCarrier {
         fail_before_write: bool,
         max_sub_ordinal: u16,
         deferred: bool,
+        now_ms: Option<u64>,
     ) -> Result<OwnerDamageResult, CarrierError> {
+        self.commit_creature_damage_inner_limited(
+            continuity,
+            actor_ref,
+            command,
+            attacker,
+            fail_before_write,
+            Some(max_sub_ordinal),
+            deferred,
+            now_ms,
+        )
+    }
+
+    /// `max_sub_ordinal` is the exclusive bound on an attributed `sub_ordinal`; `None` admits
+    /// the whole `u16` range (ATTACK-1b swing ordinals). `now_ms` is the committing owner
+    /// turn's clock, recorded on the receipt.
+    #[allow(clippy::too_many_arguments)]
+    fn commit_creature_damage_inner_limited(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
+        fail_before_write: bool,
+        max_sub_ordinal: Option<u16>,
+        deferred: bool,
+        now_ms: Option<u64>,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        if self.bone_shared_groups.iter().any(|g| {
+            g.phylactery == ExactActorRef(actor_ref) || g.cages.contains(&ExactActorRef(actor_ref))
+        }) {
+            return Err(CarrierError::PositionContextMismatch);
+        }
+        let (index, staged, result) = self.prepare_creature_damage_inner_bounded(
+            continuity,
+            actor_ref,
+            command,
+            attacker,
+            fail_before_write,
+            max_sub_ordinal,
+            deferred,
+            now_ms,
+        )?;
+        if let Some(staged) = staged {
+            self.slots[index] = staged;
+        }
+        Ok(result)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn prepare_creature_damage_inner_bounded(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
+        fail_before_write: bool,
+        max_sub_ordinal: Option<u16>,
+        deferred: bool,
+        now_ms: Option<u64>,
+    ) -> Result<(usize, Option<Slot>, OwnerDamageResult), CarrierError> {
         let OwnerDamageCommand {
             target,
             occurrence,
             binding,
             damage,
         } = command;
-        if attacker.is_some_and(|attacker| attacker.sub_ordinal >= max_sub_ordinal) {
+        if let (Some(attacker), Some(max)) = (attacker, max_sub_ordinal)
+            && attacker.sub_ordinal >= max
+        {
             return Err(CarrierError::SubOrdinalOutOfRange);
         }
         let index = self.validate_ref(continuity, actor_ref)?;
@@ -3247,10 +3587,14 @@ impl ChannelActorCarrier {
             if prior.binding.as_ref() != binding || prior.damage != damage {
                 return Err(CarrierError::PlanConflict);
             }
-            return Ok(OwnerDamageResult {
-                applied: false,
-                ..prior.result
-            });
+            return Ok((
+                index,
+                None,
+                OwnerDamageResult {
+                    applied: false,
+                    ..prior.result
+                },
+            ));
         }
         if *health == 0 {
             return Err(CarrierError::CreatureNotActionable);
@@ -3309,6 +3653,7 @@ impl ChannelActorCarrier {
         if write_index != index {
             return Err(CarrierError::StaleActorGeneration);
         }
+        let mut staged = self.slots[index].clone();
         let Slot::CreatureOccupied {
             generation,
             target_identity,
@@ -3317,7 +3662,7 @@ impl ChannelActorCarrier {
             damage_contributors,
             companion,
             ..
-        } = &mut self.slots[index]
+        } = &mut staged
         else {
             return Err(CarrierError::StaleActorGeneration);
         };
@@ -3349,6 +3694,9 @@ impl ChannelActorCarrier {
         }
         committed.entries.push(receipt);
         committed.next_ordinal = next_ordinal;
+        if next == 0 && *health > 0 {
+            committed.lethal_at_ms = now_ms;
+        }
         *health = next;
         // Frozen source Monster::drainHealth removes invisibility on an applied
         // health drain. This is the target's actual condition owner; players
@@ -3385,9 +3733,10 @@ impl ChannelActorCarrier {
                     }
                     _ => attacker.high_water(),
                 }),
+                now_ms,
             );
         }
-        Ok(result)
+        Ok((index, Some(staged), result))
     }
 
     /// D132/D3-3: read-only, non-mutating lookup of `actor`'s current
@@ -3413,6 +3762,71 @@ impl ChannelActorCarrier {
         Ok(damage_contributors.top_damage_character())
     }
 
+    /// The winner's identity is the lease generation and session of its D141 mark, and its
+    /// slot is the committed player slot bound to exactly that lease and session. A winner
+    /// without a mark, or whose slot is gone or rebound to a successor, is `Gone`: nothing
+    /// looks it up by `CharacterId` alone.
+    fn top_damage_contributor_inner(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+    ) -> Result<TopDamagePrincipal, CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        let Slot::CreatureOccupied {
+            generation,
+            damage_contributors,
+            ..
+        } = &self.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        if *generation != actor_ref.actor_local_generation.0 {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        let Some(winner) = damage_contributors.top_contributor() else {
+            return Ok(TopDamagePrincipal::Untracked);
+        };
+        let Some((lease_generation, session, _, _)) = winner.high_water else {
+            return Ok(TopDamagePrincipal::Gone);
+        };
+        let slot = self.attackers.iter().find_map(|entry| {
+            let lease = entry.authority.lease?;
+            if lease.character_id() != winner.character || lease.generation() != lease_generation {
+                return None;
+            }
+            match self.slots.get(entry.index)? {
+                Slot::Occupied {
+                    generation,
+                    game_session_id: Some(bound),
+                    committed: true,
+                    ..
+                } if *generation == entry.generation && *bound == session => {
+                    Some((entry.index, *generation))
+                }
+                _ => None,
+            }
+        });
+        let Some((slot_index, slot_generation)) = slot else {
+            return Ok(TopDamagePrincipal::Gone);
+        };
+        Ok(TopDamagePrincipal::Present(TopDamageContributor {
+            character: winner.character,
+            lease_generation,
+            session,
+            actor: ExactActorRef(ActorRef {
+                world_id: self.world_id,
+                channel_id: self.channel_id,
+                scope_generation: self.scope_generation,
+                actor_local_id: ActorLocalId(
+                    u32::try_from(slot_index + 1)
+                        .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
+                ),
+                actor_local_generation: ActorLocalGeneration(slot_generation),
+            }),
+            last_damage_at_ms: winner.last_damage_at_ms,
+        }))
+    }
+
     fn committed_lethal_receipt_inner(
         &self,
         continuity: &NamespaceContinuityGuard,
@@ -3433,6 +3847,7 @@ impl ChannelActorCarrier {
                         health_before: existing.occurrence.health_before,
                     },
                     position: existing.position,
+                    death_at_ms: existing.death_at_ms,
                 },
             });
         }
@@ -3449,6 +3864,7 @@ impl ChannelActorCarrier {
         if *generation != actor_ref.actor_local_generation.0 {
             return Err(CarrierError::StaleActorGeneration);
         }
+        let death_at_ms = committed.lethal_at_ms;
         // D144: the unique retained receipt whose commit drove health to zero.
         let Some(committed) = committed.lethal().filter(|_| *health == 0) else {
             return Err(CarrierError::CommittedLethalUnavailable);
@@ -3463,6 +3879,7 @@ impl ChannelActorCarrier {
                     health_before: committed.result.health_before,
                 },
                 position,
+                death_at_ms,
             },
         })
     }
@@ -3514,6 +3931,9 @@ impl ChannelActorCarrier {
     ) -> Result<&RuntimeCorpseProjection, CarrierError> {
         let actor = receipt.projection.occurrence.actor;
         self.validate_ref(continuity, actor.0)?;
+        if self.is_native_summon(actor) {
+            return Err(CarrierError::SummonHasNoRewards);
+        }
         if self
             .corpse_projections
             .iter()
@@ -3521,11 +3941,14 @@ impl ChannelActorCarrier {
         {
             return self.existing_corpse_projection(&receipt);
         }
+        self.validate_summon_actor(continuity, actor)?;
         self.validate_lethal_receipt(continuity, &receipt)?;
         if fail_before_write {
             return Err(CarrierError::InjectedCorpseProjectionFailure);
         }
+        self.cascade_native_summon_deaths(continuity, actor)?;
         let projected = receipt.projection;
+        let captured_sealed_key = projected.occurrence.death_key();
         // Bounded FIFO retention (`MAX_RETAINED_CORPSE_PROJECTIONS`): a retained projection
         // deliberately outlives its actor's slot (lost-response replay, above), so this Vec is
         // not otherwise pruned; evict the oldest entry rather than grow without bound. The
@@ -3533,6 +3956,7 @@ impl ChannelActorCarrier {
         // outlives, and is never evicted independently of, its projection, so a retained
         // projection can never re-mint a second occurrence for the same death.
         self.retain_corpse_projection(projected);
+        self.note_bone_shared_projection(actor, captured_sealed_key);
         if fail_after_write {
             return Err(CarrierError::InjectedCorpseResponseFailure);
         }
@@ -3587,6 +4011,9 @@ impl ChannelActorCarrier {
         character: [u8; 16],
     ) -> Result<([u8; 16], bool), CarrierError> {
         self.validate_ref(continuity, actor_ref)?;
+        if self.is_native_summon(ExactActorRef(actor_ref)) {
+            return Err(CarrierError::SummonHasNoRewards);
+        }
         let committed = self
             .corpse_projections
             .iter()
@@ -3747,6 +4174,22 @@ impl ChannelActorCarrier {
         next_context: PreProductionPositionContext,
         next_position: LocalPosition,
     ) -> Result<PositionSnapshot, CarrierError> {
+        self.compare_commit_position_with_summon_lifecycle(
+            continuity,
+            expected,
+            next_context,
+            next_position,
+            false,
+        )
+    }
+    fn compare_commit_position_with_summon_lifecycle(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        expected: PositionSnapshot,
+        next_context: PreProductionPositionContext,
+        next_position: LocalPosition,
+        allow_self_removal: bool,
+    ) -> Result<PositionSnapshot, CarrierError> {
         let index = self.validate_ref(continuity, expected.actor_ref)?;
         self.assert_slot_spell_unreserved(index)?;
         if matches!(
@@ -3784,6 +4227,31 @@ impl ChannelActorCarrier {
         {
             return Err(CarrierError::PositionSnapshotMismatch);
         }
+        let separated_summons =
+            self.summons_separated_by_move(continuity, expected.actor_ref, next_position)?;
+        if !allow_self_removal
+            && separated_summons
+                .iter()
+                .flatten()
+                .any(|child| child.0 == expected.actor_ref)
+        {
+            return Err(CarrierError::MovementCreatureUnavailable);
+        }
+        // Restore every store administrative removal touches, including current-main spawn and attacker ownership.
+        let summon_rollback = if separated_summons.iter().any(Option::is_some) {
+            Some((
+                self.slots.clone(),
+                self.free_head,
+                self.occupied.clone(),
+                self.native_summons.clone(),
+                self.native_summon_deaths,
+                self.native_summon_death_cursor,
+                self.spawns.clone(),
+                self.attackers.clone(),
+            ))
+        } else {
+            None
+        };
         let revision = current
             .revision
             .checked_add(1)
@@ -3811,6 +4279,21 @@ impl ChannelActorCarrier {
                 *position = Some(version)
             }
             _ => unreachable!("validated occupied slot"),
+        }
+        if let Err(error) = self.remove_separated_summons(continuity, separated_summons) {
+            if let Some((slots, free, occupied, links, deaths, cursor, spawns, attackers)) =
+                summon_rollback
+            {
+                self.slots = slots;
+                self.free_head = free;
+                self.occupied = occupied;
+                self.native_summons = links;
+                self.native_summon_deaths = deaths;
+                self.native_summon_death_cursor = cursor;
+                self.spawns = spawns;
+                self.attackers = attackers;
+            }
+            return Err(error);
         }
         Ok(PositionSnapshot {
             actor_ref: expected.actor_ref,
@@ -4409,6 +4892,182 @@ fn allocate_slots(explicit_capacity: usize) -> Result<Vec<Slot>, CarrierError> {
     Ok(slots)
 }
 
+/// MAP-ITEM-REF-1 Part B: the durable corpse Item a projected death materialized as. The Channel
+/// owner binds it once the corpse's MINT has committed: KILL-REWARD part B calls
+/// [`ChannelRuntimeV1::bind_corpse_item`] with the item instance id `commit_corpse_mint` returned
+/// and the corpse's typed definition. Not durable, like the projection it belongs to: an unbound
+/// corpse is neither shown nor usable, so nothing ever names a corpse Item by a made-up id.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct RuntimeCorpseItem {
+    pub(crate) item_instance_id: [u8; 16],
+    pub(crate) family: String,
+    pub(crate) production_key: String,
+    pub(crate) revision_ref: String,
+}
+
+/// MAP-ITEM-REF-1 Part B: one bound corpse of [`ChannelRuntimeV1::visible_corpses`], at its
+/// projected position. `identity` is [`ExactActorRef::corpse_identity`] of the dead actor.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct VisibleRuntimeCorpse {
+    pub(crate) identity: [u8; 16],
+    pub(crate) position: MovementLocalPosition,
+    pub(crate) revision: u64,
+    pub(crate) item: RuntimeCorpseItem,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CorpseItemBinding {
+    actor: ExactActorRef,
+    item: RuntimeCorpseItem,
+}
+
+impl ExactActorRef {
+    /// MAP-ITEM-REF-1 Part B: the stable opaque identity of this actor's corpse, separate from
+    /// [`Self::placement_identity`] so a corpse never shares an identity with the actor it was.
+    pub(crate) fn corpse_identity(self) -> [u8; 16] {
+        use sha2::{Digest, Sha256};
+        let ActorRef {
+            world_id,
+            channel_id,
+            scope_generation,
+            actor_local_id,
+            actor_local_generation,
+        } = self.0;
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:runtime-corpse-placement:v1")
+            .chain_update(world_id.as_bytes())
+            .chain_update(channel_id.as_bytes())
+            .chain_update(scope_generation.get().to_be_bytes())
+            .chain_update(actor_local_id.0.to_be_bytes())
+            .chain_update(actor_local_generation.0.to_be_bytes())
+            .finalize();
+        let mut identity = [0_u8; 16];
+        identity.copy_from_slice(&digest[..16]);
+        identity
+    }
+}
+
+impl ChannelActorCarrier {
+    fn bind_corpse_item_inner(
+        &mut self,
+        actor: ExactActorRef,
+        item: RuntimeCorpseItem,
+    ) -> Result<(), CarrierError> {
+        if actor.world_id() != self.world_id
+            || actor.channel_id() != self.channel_id
+            || actor.scope_generation() != self.scope_generation
+            || !self
+                .corpse_projections
+                .iter()
+                .any(|projection| projection.occurrence.actor == actor)
+        {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        }
+        if let Some(bound) = self
+            .corpse_item_bindings
+            .iter()
+            .find(|binding| binding.actor == actor)
+        {
+            return if bound.item == item {
+                Ok(())
+            } else {
+                Err(CarrierError::CorpseProjectionConflict)
+            };
+        }
+        if self
+            .corpse_item_bindings
+            .iter()
+            .any(|binding| binding.item.item_instance_id == item.item_instance_id)
+        {
+            return Err(CarrierError::CorpseProjectionConflict);
+        }
+        let projections = &self.corpse_projections;
+        self.corpse_item_bindings.retain(|binding| {
+            projections
+                .iter()
+                .any(|projection| projection.occurrence.actor == binding.actor)
+        });
+        self.corpse_item_bindings
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        self.corpse_item_bindings
+            .push(CorpseItemBinding { actor, item });
+        Ok(())
+    }
+
+    fn bound_corpses(
+        &self,
+        context: Option<PreProductionPositionContext>,
+    ) -> Vec<VisibleRuntimeCorpse> {
+        self.corpse_projections
+            .iter()
+            .filter(|projection| {
+                context.is_none_or(|context| projection.position.context == context)
+            })
+            .filter_map(|projection| {
+                let actor = projection.occurrence.actor;
+                let binding = self
+                    .corpse_item_bindings
+                    .iter()
+                    .find(|binding| binding.actor == actor)?;
+                Some(VisibleRuntimeCorpse {
+                    identity: actor.corpse_identity(),
+                    position: projection.position(),
+                    revision: projection.position_revision(),
+                    item: binding.item.clone(),
+                })
+            })
+            .collect()
+    }
+}
+
+impl ChannelRuntimeV1 {
+    /// MAP-ITEM-REF-1 Part B: bind `actor`'s projected corpse to the corpse Item its committed
+    /// MINT created (`item_instance_id` and the typed definition `commit_corpse_mint` was given).
+    /// The projection must be retained in this generation (`CommittedLethalUnavailable`
+    /// otherwise); binding the same Item again is a no-op and another Item, or an Item bound to
+    /// another corpse, is `CorpseProjectionConflict`. Bindings whose projection was evicted are
+    /// dropped here, so there is at most one per retained projection.
+    #[allow(
+        dead_code,
+        reason = "the interface KILL-REWARD part B calls after commit_corpse_mint"
+    )]
+    pub(crate) fn bind_corpse_item(
+        &mut self,
+        actor: ExactActorRef,
+        item_instance_id: [u8; 16],
+        family: &str,
+        production_key: &str,
+        revision_ref: &str,
+    ) -> Result<(), CarrierError> {
+        self.carrier.bind_corpse_item_inner(
+            actor,
+            RuntimeCorpseItem {
+                item_instance_id,
+                family: family.to_owned(),
+                production_key: production_key.to_owned(),
+                revision_ref: revision_ref.to_owned(),
+            },
+        )
+    }
+
+    /// MAP-ITEM-REF-1 Part B: every bound corpse of this generation under the pinned Movement
+    /// context, in projection order. A corpse without a binding, or whose projection is gone, is
+    /// left out. Read-only.
+    pub(crate) fn visible_corpses(&self) -> Vec<VisibleRuntimeCorpse> {
+        self.carrier
+            .bound_corpses(Some(self.pinned_position_context()))
+    }
+
+    /// MAP-ITEM-REF-1 Part B: the bound corpse whose [`ExactActorRef::corpse_identity`] is
+    /// `identity`, as [`Self::visible_corpses`] shows it. Read-only.
+    pub(crate) fn bound_corpse(&self, identity: [u8; 16]) -> Option<VisibleRuntimeCorpse> {
+        self.visible_corpses()
+            .into_iter()
+            .find(|corpse| corpse.identity == identity)
+    }
+}
+
 #[cfg(test)]
 const TEST_ALLOCATION_FAILURE_CAPACITY: usize = u32::MAX as usize;
 
@@ -4746,6 +5405,34 @@ impl CombatDeathFixture {
 
     /// Combat's idempotent projection of the committed lethal occurrence and
     /// the durable death key it names, with the corpse position.
+    /// MAP-ITEM-REF-1 Part B: [`ChannelRuntimeV1::bind_corpse_item`] for the fixture's corpse.
+    pub(crate) fn bind_corpse_item(
+        &mut self,
+        item_instance_id: [u8; 16],
+        family: &str,
+        production_key: &str,
+        revision_ref: &str,
+    ) -> Result<(), CarrierError> {
+        self.carrier.bind_corpse_item_inner(
+            self.actor,
+            RuntimeCorpseItem {
+                item_instance_id,
+                family: family.to_owned(),
+                production_key: production_key.to_owned(),
+                revision_ref: revision_ref.to_owned(),
+            },
+        )
+    }
+
+    /// MAP-ITEM-REF-1 Part B: the fixture's bound corpse Item, if bound.
+    pub(crate) fn bound_corpse_item_instance_id(&self) -> Option<[u8; 16]> {
+        self.carrier
+            .bound_corpses(None)
+            .into_iter()
+            .find(|corpse| corpse.identity == self.actor.corpse_identity())
+            .map(|corpse| corpse.item.item_instance_id)
+    }
+
     pub(crate) fn project_death(
         &mut self,
     ) -> Result<(CreatureDeathOccurrenceKey, MovementLocalPosition), CarrierError> {
@@ -5071,6 +5758,7 @@ mod tests {
             mitigation: None,
             resistances: vec![],
             damage_immunities: vec![],
+            healing_from_damage: vec![],
             preferred_distance: Some(1),
             reward_boss: Some(false),
             flags: CreatureFlags {
@@ -5628,6 +6316,7 @@ mod tests {
             actor_local_generation: ActorLocalGeneration(1),
         };
         let projection = |local: u32| RuntimeCorpseProjection {
+            death_at_ms: None,
             occurrence: CreatureDeathOccurrenceRef {
                 actor: ExactActorRef(actor(local)),
                 commit_binding: Box::new([]),
@@ -7030,6 +7719,20 @@ mod attacker_fence_tests {
         assert_eq!(f.swing(next, 3), SUPERSEDED);
     }
 
+    /// Codex P2 4180149935: the lineage's last swing ordinal (`u16::MAX`) is admitted, and a
+    /// replay of it stays idempotent.
+    #[test]
+    fn the_final_u16_swing_ordinal_commits() {
+        let mut f = fixture(40);
+        let lineage = command(1, 5);
+        assert!(f.swing(lineage, u16::MAX - 1).expect("penultimate").applied);
+        let last = f.swing(lineage, u16::MAX).expect("final ordinal commits");
+        assert!(last.applied);
+        assert_eq!(f.health(), 98);
+        assert!(!f.swing(lineage, u16::MAX).expect("replay").applied);
+        assert_eq!(f.health(), 98);
+    }
+
     #[test]
     fn fence_tokens_keep_their_kind() {
         assert_eq!(
@@ -7044,5 +7747,5141 @@ mod attacker_fence_tests {
             ChannelRuntimeV1::transition_fence(2),
             ChannelRuntimeV1::grace_expiry_fence(2)
         );
+    }
+
+    fn hit_at(
+        f: &mut Fixture,
+        command: CommandRef,
+        now_ms: u64,
+        damage: i64,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let binding = format!("hit:{}", command.command_id().get());
+        f.carrier
+            .current_owner_exact_commit_at(&f.continuity, Some(now_ms))
+            .commit_damage_for_bound_attacker(
+                f.creature,
+                f.attacker,
+                command,
+                0,
+                OwnerDamageCommand {
+                    target: b"target:one",
+                    occurrence: &[],
+                    binding: binding.as_bytes(),
+                    damage,
+                },
+            )
+    }
+
+    fn principal(f: &mut Fixture) -> TopDamagePrincipal {
+        CurrentOwnerCombatDeath {
+            carrier: &mut f.carrier,
+            continuity: &f.continuity,
+        }
+        .top_damage_contributor(f.creature)
+        .expect("live creature")
+    }
+
+    /// §1.3: no tracked contributor means the lethal-attacker fallback; a tracked winner whose
+    /// bound slot is still present carries its session, slot and latest damage clock; a winner
+    /// whose slot is gone is reported as gone.
+    #[test]
+    fn the_top_damage_principal_is_untracked_present_or_gone() {
+        let mut f = fixture(70);
+        assert_eq!(principal(&mut f), TopDamagePrincipal::Untracked);
+        assert!(hit_at(&mut f, command(1, 1), 1_000, 1).is_ok());
+        assert!(f.hit(f.attacker, command(1, 2)).is_ok());
+        assert!(hit_at(&mut f, command(1, 3), 900, 1).is_ok());
+        let character = CharacterId::decode(&id(1)).expect("character");
+        assert_eq!(
+            principal(&mut f),
+            TopDamagePrincipal::Present(TopDamageContributor {
+                character,
+                lease_generation: 1,
+                session: session(1),
+                actor: f.attacker,
+                last_damage_at_ms: Some(1_000),
+            })
+        );
+        f.carrier
+            .remove(&f.continuity, f.attacker.0)
+            .expect("attacker leaves");
+        assert_eq!(principal(&mut f), TopDamagePrincipal::Gone);
+    }
+
+    /// P2 4180039074: the projected death time is the lethal hit's owner clock and an
+    /// idempotent replay at a later clock does not move it.
+    #[test]
+    fn the_projected_death_time_is_the_lethal_hit_clock_and_survives_a_replay() {
+        let mut f = fixture(72);
+        let context = PreProductionPositionContext {
+            world_id: WorldId::decode(&id(72)).expect("world"),
+            channel_id: ChannelId::decode(&id(73)).expect("channel"),
+            scope_generation: ScopeOwnershipGeneration::new(1).expect("scope"),
+            coordinate_frame_marker: 41,
+            map_revision_marker: 42,
+            content_generation_marker: 43,
+        };
+        f.carrier
+            .initialize_position(
+                &f.continuity,
+                f.creature.0,
+                context,
+                CombatDeathFixture::POSITION,
+            )
+            .expect("position");
+        assert!(hit_at(&mut f, command(1, 1), 5_000, 100).is_ok());
+        assert_eq!(f.health(), 0);
+        assert!(hit_at(&mut f, command(1, 1), 9_000, 100).is_ok());
+        let mut death = CurrentOwnerCombatDeath {
+            carrier: &mut f.carrier,
+            continuity: &f.continuity,
+        };
+        super::super::exact_actor_test_combat::project_fixed_one_creature_death(
+            &mut death, f.creature,
+        )
+        .expect("projected death");
+        assert_eq!(death.projected_death_at_ms(f.creature), Ok(Some(5_000)));
+    }
+}
+
+// Main reconciliation packet Foundation-1: source heal only, no lifecycle takeover.
+// Append inside physical Foundation carrier. Loaded typed membership qualification is separate.
+#[derive(Debug, Clone)]
+pub(crate) struct CreatureSelfHealRegistration {
+    world: WorldId,
+    activation: u64,
+    server: [u8; 32],
+    client: [u8; 32],
+    frame: [u8; 32],
+    map: [u8; 32],
+    target: Box<str>,
+    ability: Box<str>,
+    max_health: i64,
+    minimum: i64,
+    maximum: i64,
+}
+#[derive(Debug, Default)]
+pub(crate) struct CreatureSelfHealLedger {
+    entries: Vec<CreatureSelfHealEntry>,
+}
+#[derive(Debug)]
+struct CreatureSelfHealEntry {
+    actor: ExactActorRef,
+    sequence: u64,
+    ability: Box<str>,
+    draw: i64,
+    result: OwnerDamageResult,
+}
+impl ChannelRuntimeV1 {
+    /// Composition loader supplies an exact current Creature->defense Ability->Heal Effect->Range
+    /// chain. Native registration fences the immutable definition facts to this activation.
+    /// Never call this from network input or infer membership merely from an artifact digest.
+    pub(crate) fn bind_creature_self_heal(
+        &self,
+        target: &str,
+        ability: &str,
+        max_health: u64,
+        minimum: u64,
+        maximum: u64,
+    ) -> Result<CreatureSelfHealRegistration, CarrierError> {
+        if !target.starts_with("oteryn:creature.")
+            || !ability.starts_with("oteryn:ability.")
+            || max_health == 0
+            || minimum > maximum
+            || maximum > i64::MAX as u64
+            || max_health > i64::MAX as u64
+        {
+            return Err(CarrierError::InvalidCreatureHealth);
+        }
+        Ok(CreatureSelfHealRegistration {
+            world: self.content.world_id,
+            activation: self.content.activation_sequence,
+            server: self.content.server_artifact_digest,
+            client: self.content.client_artifact_digest,
+            frame: self.content.frame_binding_digest,
+            map: self.content.map_revision_digest,
+            target: target.into(),
+            ability: ability.into(),
+            max_health: max_health as i64,
+            minimum: minimum as i64,
+            maximum: maximum as i64,
+        })
+    }
+    /// Actual native creature HP writer, no Effect fixture map. Ordered think/cast sequence per (caster, defense ability). Independent defenses may
+    /// execute in the same Think, including Think0; A+B+retryA cannot reapply A.
+    pub(crate) fn commit_creature_self_heal(
+        &mut self,
+        ledger: &mut CreatureSelfHealLedger,
+        registration: &CreatureSelfHealRegistration,
+        actor: ExactActorRef,
+        sequence: u64,
+        server_draw: i64,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        if registration.world != self.content.world_id
+            || registration.activation != self.content.activation_sequence
+            || registration.server != self.content.server_artifact_digest
+            || registration.client != self.content.client_artifact_digest
+            || registration.frame != self.content.frame_binding_digest
+            || registration.map != self.content.map_revision_digest
+        {
+            return Err(CarrierError::PositionContextMismatch);
+        }
+        if !(registration.minimum..=registration.maximum).contains(&server_draw) {
+            return Err(CarrierError::InvalidDamage);
+        }
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        self.carrier.assert_slot_spell_unreserved(index)?;
+        let before = match &self.carrier.slots[index] {
+            Slot::CreatureOccupied { generation, .. }
+                if *generation != actor.0.actor_local_generation.0 =>
+            {
+                return Err(CarrierError::StaleActorGeneration);
+            }
+            Slot::CreatureOccupied {
+                target_identity,
+                health,
+                ..
+            } if target_identity.as_ref() == registration.target.as_bytes() && *health > 0 => {
+                *health
+            }
+            Slot::CreatureOccupied {
+                target_identity, ..
+            } if target_identity.as_ref() != registration.target.as_bytes() => {
+                return Err(CarrierError::CreatureTargetMismatch);
+            }
+            _ => return Err(CarrierError::CreatureNotActionable),
+        };
+        if before > registration.max_health {
+            return Err(CarrierError::InvalidCreatureHealth);
+        }
+        ledger
+            .entries
+            .retain(|e| self.contains_live_creature(e.actor));
+        if let Some(entry) = ledger
+            .entries
+            .iter()
+            .find(|e| e.actor == actor && e.ability == registration.ability)
+        {
+            if sequence < entry.sequence {
+                return Err(CarrierError::StaleAttackerSequence);
+            }
+            if sequence == entry.sequence {
+                if entry.ability != registration.ability || entry.draw != server_draw {
+                    return Err(CarrierError::PlanConflict);
+                }
+                return Ok(OwnerDamageResult {
+                    applied: false,
+                    ..entry.result
+                });
+            }
+        }
+        if !ledger
+            .entries
+            .iter()
+            .any(|e| e.actor == actor && e.ability == registration.ability)
+        {
+            if ledger.entries.len() >= 64 * 8
+                || ledger.entries.iter().filter(|e| e.actor == actor).count() >= 8
+            {
+                return Err(CarrierError::AllocationFailed);
+            }
+            ledger
+                .entries
+                .try_reserve(1)
+                .map_err(|_| CarrierError::AllocationFailed)?;
+        }
+        // Existing native authoring admits at most8 defenses; AI active actors ceiling64.
+        // Aggregate current-owner ScopeRuntimeFence is required at the composition call.
+        // Allocate source binding before native HP write, including replay state replacement.
+        let ability = registration.ability.clone();
+        let after = before
+            .saturating_add(server_draw)
+            .min(registration.max_health);
+        let Slot::CreatureOccupied { health, .. } = &mut self.carrier.slots[index] else {
+            return Err(CarrierError::NotCreature);
+        };
+        *health = after;
+        let result = OwnerDamageResult {
+            applied: true,
+            health_before: before,
+            health_after: after,
+        };
+        let entry = CreatureSelfHealEntry {
+            actor,
+            sequence,
+            ability,
+            draw: server_draw,
+            result,
+        };
+        if let Some(old) = ledger
+            .entries
+            .iter_mut()
+            .find(|e| e.actor == actor && e.ability == registration.ability)
+        {
+            *old = entry
+        } else {
+            ledger.entries.push(entry)
+        }
+        Ok(result)
+    }
+}
+
+// Actual HP component fixture only. Loaded source-graph proof is separate.
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+mod creature_self_heal_owner_tests {
+    use super::*;
+    #[test]
+    fn independent_defenses_think0_a_b_retry_a_do_not_redamage_or_reheal() {
+        fn id(tag: u8) -> [u8; 16] {
+            let mut b = [0; 16];
+            b[6] = 0x70;
+            b[8] = 0x80;
+            b[15] = tag;
+            b
+        }
+        let world_id =
+            WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
+        let mut r = ChannelRuntimeV1::from_committed_assignment(
+            world_id,
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::from_activation(
+                world_id,
+                1,
+                [1; 32],
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (100, 100, 7),
+            ),
+        )
+        .expect("valid native fixture operation must succeed");
+        let registration = r
+            .bind_creature_self_heal(
+                "oteryn:creature.boreth",
+                "oteryn:ability.creature.boreth.defense-1",
+                1400,
+                100,
+                200,
+            )
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(
+            (
+                registration.max_health,
+                registration.minimum,
+                registration.maximum
+            ),
+            (1400, 100, 200)
+        );
+        let a = r
+            .carrier
+            .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.boreth", 1000)
+            .expect("valid native fixture operation must succeed");
+        let actor = ExactActorRef(a);
+        let mut ledger = CreatureSelfHealLedger::default();
+        assert!(
+            r.commit_creature_self_heal(&mut ledger, &registration, actor, 1, 99)
+                .is_err()
+        );
+        let first = r
+            .commit_creature_self_heal(&mut ledger, &registration, actor, 0, 200)
+            .expect("valid native fixture operation must succeed");
+        assert_eq!((first.health_before, first.health_after), (1000, 1200)); // Independent defense B is an explicit owner-component fixture, not a donor catalog claim.
+        let b = r
+            .bind_creature_self_heal(
+                "oteryn:creature.boreth",
+                "oteryn:ability.creature.boreth.fixture_second_heal",
+                1400,
+                100,
+                100,
+            )
+            .expect("valid native fixture operation must succeed");
+        let interleaved = r
+            .commit_creature_self_heal(&mut ledger, &b, actor, 0, 100)
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(interleaved.health_after, 1300);
+        assert!(
+            !r.commit_creature_self_heal(&mut ledger, &registration, actor, 0, 200)
+                .expect("valid native fixture operation must succeed")
+                .applied
+        );
+        let index = r
+            .carrier
+            .validate_ref(&r.continuity, actor.0)
+            .expect("valid native fixture operation must succeed");
+        assert!(matches!(
+            r.carrier.slots[index],
+            Slot::CreatureOccupied { health: 1300, .. }
+        ));
+        let second = r
+            .commit_creature_self_heal(&mut ledger, &registration, actor, 1, 200)
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(second.health_after, 1400);
+        let capped = r
+            .commit_creature_self_heal(&mut ledger, &registration, actor, 2, 200)
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(capped.health_after, 1400);
+        assert!(
+            !r.commit_creature_self_heal(&mut ledger, &registration, actor, 2, 200)
+                .expect("valid native fixture operation must succeed")
+                .applied
+        );
+        assert_eq!(
+            r.commit_creature_self_heal(&mut ledger, &registration, actor, 0, 200)
+                .expect_err("fixture must reject this invalid operation"),
+            CarrierError::StaleAttackerSequence
+        );
+        assert_eq!(
+            r.commit_creature_self_heal(&mut ledger, &registration, actor, 2, 100)
+                .expect_err("fixture must reject this invalid operation"),
+            CarrierError::PlanConflict
+        );
+        let mut bad = registration.clone();
+        bad.server[0] ^= 1;
+        assert!(
+            r.commit_creature_self_heal(&mut ledger, &bad, actor, 4, 100)
+                .is_err()
+        );
+        r.carrier
+            .current_owner_exact_commit(&r.continuity)
+            .commit_damage(
+                actor,
+                OwnerDamageCommand {
+                    target: b"oteryn:creature.boreth",
+                    occurrence: b"dead",
+                    binding: b"dead\0health1400",
+                    damage: 1400,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        assert!(
+            r.commit_creature_self_heal(&mut ledger, &registration, actor, 4, 100)
+                .is_err()
+        );
+    }
+}
+
+impl ChannelRuntimeV1 {
+    pub(crate) fn current_live_creature_identity(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<&[u8], CarrierError> {
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        match &self.carrier.slots[index] {
+            Slot::CreatureOccupied {
+                generation,
+                target_identity,
+                health,
+                ..
+            } if *generation == actor.0.actor_local_generation.0 && *health > 0 => {
+                Ok(target_identity.as_ref())
+            }
+            _ => Err(CarrierError::StaleActorGeneration),
+        }
+    }
+}
+
+impl ChannelRuntimeV1 {
+    /// Source-qualified bounded draws from this physical Channel owner; exact current pin,
+    /// all actor generations/identity/HP and output storage preflight before publication.
+    /// Existing CreatureCommitState including its canonical conditions is preserved intact.
+    pub(crate) fn commit_source_creature_heal_batch(
+        &mut self,
+        content: [u8; 32],
+        requests: &[(ExactActorRef, String, u64, u64)],
+    ) -> Result<Vec<OwnerDamageResult>, CarrierError> {
+        if content != self.content.server_artifact_digest {
+            return Err(CarrierError::PositionContextMismatch);
+        }
+        if requests.len() > 64 {
+            return Err(CarrierError::AllocationFailed);
+        }
+        let original_len = requests.len();
+        let (expanded, original_map) = self.expand_bone_shared_heals(requests)?;
+        let requests = expanded.as_slice();
+        let mut original_results = Vec::new();
+        original_results
+            .try_reserve(original_len)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let mut prepared = Vec::new();
+        prepared
+            .try_reserve(requests.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let mut results = Vec::new();
+        results
+            .try_reserve(requests.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for (actor, key, max, draw) in requests {
+            if *max == 0 || *max > i64::MAX as u64 || *draw > i64::MAX as u64 {
+                return Err(CarrierError::InvalidCreatureHealth);
+            }
+            let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+            self.carrier.assert_slot_spell_unreserved(index)?;
+            if prepared.iter().any(|(old, _)| *old == index) {
+                return Err(CarrierError::PlanConflict);
+            }
+            let mut next = self.carrier.slots[index].clone();
+            let Slot::CreatureOccupied {
+                generation,
+                target_identity,
+                health,
+                ..
+            } = &mut next
+            else {
+                return Err(CarrierError::NotCreature);
+            };
+            if *generation != actor.0.actor_local_generation.0 {
+                return Err(CarrierError::StaleActorGeneration);
+            }
+            if target_identity.as_ref() != key.as_bytes() || *health <= 0 {
+                return Err(CarrierError::CreatureTargetMismatch);
+            }
+            if *health > *max as i64 {
+                return Err(CarrierError::InvalidCreatureHealth);
+            }
+            let before = *health;
+            let after = before.saturating_add(*draw as i64).min(*max as i64);
+            *health = after;
+            prepared.push((index, next));
+            results.push(OwnerDamageResult {
+                applied: true,
+                health_before: before,
+                health_after: after,
+            });
+        }
+        for index in original_map {
+            original_results.push(*results.get(index).ok_or(CarrierError::PlanConflict)?);
+        }
+        // All fallible work, including original result projection and canonical condition clones, precedes HP publication.
+        for (index, next) in prepared {
+            self.carrier.slots[index] = next;
+        }
+        Ok(original_results)
+    }
+}
+
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+mod area_heal_batch_native_tests {
+    use super::*;
+    fn fixture() -> ChannelRuntimeV1 {
+        let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
+        let w = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
+        ChannelRuntimeV1::from_committed_assignment(
+            w,
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::test(w),
+        )
+        .expect("valid native fixture operation must succeed")
+    }
+    #[test]
+    fn all_target_preflight_rejects_second_before_first_hp_and_commits_caps() {
+        let mut r = fixture();
+        let a = ExactActorRef(
+            r.carrier
+                .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.rat", 5)
+                .expect("valid native fixture operation must succeed"),
+        );
+        let b = ExactActorRef(
+            r.carrier
+                .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.rat", 10)
+                .expect("valid native fixture operation must succeed"),
+        );
+        let mut q = vec![
+            (a, "oteryn:creature.rat".to_string(), 20, 10),
+            (b, "oteryn:creature.demon".to_string(), 20, 10),
+        ];
+        assert!(r.commit_source_creature_heal_batch([1; 32], &q).is_err());
+        let ai = r
+            .carrier
+            .validate_ref(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
+        assert!(matches!(
+            r.carrier.slots[ai],
+            Slot::CreatureOccupied { health: 5, .. }
+        ));
+        q[1].1 = "oteryn:creature.rat".into();
+        q[1].3 = 100;
+        let receipts = r
+            .commit_source_creature_heal_batch([1; 32], &q)
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(
+            (receipts[0].health_after, receipts[1].health_after),
+            (15, 20)
+        );
+        let after = receipts[0].health_after;
+        assert!(r.commit_source_creature_heal_batch([2; 32], &q).is_err());
+        assert!(matches!(r.carrier.slots[ai],Slot::CreatureOccupied{health,..}if health==after));
+    }
+    #[test]
+    fn stale_target_generation_and_duplicates_refuse_whole_batch() {
+        let mut r = fixture();
+        let a = ExactActorRef(
+            r.carrier
+                .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.rat", 5)
+                .expect("valid native fixture operation must succeed"),
+        );
+        let q = (a, "oteryn:creature.rat".to_string(), 20, 10);
+        assert_eq!(
+            r.commit_source_creature_heal_batch([1; 32], &[q.clone(), q.clone()])
+                .expect_err("fixture must reject this invalid operation"),
+            CarrierError::PlanConflict
+        );
+        let i = r
+            .carrier
+            .validate_ref(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
+        if let Slot::CreatureOccupied { generation, .. } = &mut r.carrier.slots[i] {
+            *generation += 1
+        } else {
+            assert!(
+                matches!(r.carrier.slots[i], Slot::CreatureOccupied { .. }),
+                "fixture must contain a native creature"
+            )
+        };
+        assert_eq!(
+            r.commit_source_creature_heal_batch([1; 32], &[q])
+                .expect_err("fixture must reject this invalid operation"),
+            CarrierError::StaleActorGeneration
+        );
+        assert!(matches!(
+            r.carrier.slots[i],
+            Slot::CreatureOccupied { health: 5, .. }
+        ));
+    }
+}
+
+impl ChannelRuntimeV1 {
+    /// Same native physical HP owner used by the subsequent source-qualified heal batch.
+    pub(crate) fn read_source_creature_health(
+        &self,
+        actor: ExactActorRef,
+        key: &str,
+        max: u64,
+    ) -> Result<u64, CarrierError> {
+        if max == 0 || max > i64::MAX as u64 {
+            return Err(CarrierError::InvalidCreatureHealth);
+        }
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        match &self.carrier.slots[index] {
+            Slot::CreatureOccupied { generation, .. }
+                if *generation != actor.0.actor_local_generation.0 =>
+            {
+                Err(CarrierError::StaleActorGeneration)
+            }
+            Slot::CreatureOccupied {
+                target_identity,
+                health,
+                ..
+            } if target_identity.as_ref() == key.as_bytes()
+                && *health > 0
+                && *health <= max as i64 =>
+            {
+                Ok(*health as u64)
+            }
+            _ => Err(CarrierError::CreatureTargetMismatch),
+        }
+    }
+}
+// Main reconciliation Foundation-2: intrinsic native summon lifecycle.
+impl ChannelRuntimeV1 {
+    pub(crate) fn matches_live_creature_identity(
+        &self,
+        actor: ExactActorRef,
+        target: &[u8],
+    ) -> bool {
+        self.current_live_creature_identity(actor)
+            .is_ok_and(|identity| identity == target)
+    }
+}
+// MONSTER-SUMMON-1 intrinsic ephemeral relation, owned by this physical Channel carrier.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NativeSummonLink {
+    parent: ExactActorRef,
+    child: ExactActorRef,
+    target: Box<[u8]>,
+    origin: NativeSummonOrigin,
+    death: Option<NativeSummonDeath>,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct NativeSummonDeath {
+    pub(crate) child: ExactActorRef,
+    pub(crate) death: CreatureDeathOccurrenceKey,
+    pub(crate) position: MovementLocalPosition,
+}
+impl ChannelRuntimeV1 {
+    pub(crate) fn native_summon_role(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Option<ExactActorRef>, CarrierError> {
+        self.carrier
+            .validate_summon_actor(&self.continuity, actor)?;
+        Ok(self
+            .carrier
+            .native_summons
+            .iter()
+            .find(|l| l.child == actor)
+            .map(|l| l.parent))
+    }
+    pub(crate) fn native_summon_master(&self, actor: ExactActorRef) -> Option<ExactActorRef> {
+        self.native_summon_role(actor).ok().flatten()
+    }
+    pub(crate) fn native_summon_count(&self, parent: ExactActorRef, target: Option<&str>) -> u32 {
+        self.carrier
+            .native_summons
+            .iter()
+            .filter(|l| {
+                l.parent == parent
+                    && self.contains_live_creature(l.child)
+                    && target.is_none_or(|t| l.target.as_ref() == t.as_bytes())
+            })
+            .count() as u32
+    }
+    pub(crate) fn native_summon_cell_free(&self, at: MovementLocalPosition) -> bool {
+        !self.carrier.cell_occupied(
+            self.pinned_position_context(),
+            LocalPosition {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            },
+        )
+    }
+    pub(crate) fn admit_native_summon(
+        &mut self,
+        current: &super::ScopeRuntimeFence,
+        stamp: super::RuntimeWorkStamp,
+        parent: ExactActorRef,
+        spec: &NativeSummonAdmissionSpec,
+        at: MovementLocalPosition,
+    ) -> Result<ExactActorRef, CarrierError> {
+        let b = self.binding();
+        if !current.is_current_for_scope(
+            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.scope_generation(),
+        ) || !current.accepts_stamp(stamp)
+        {
+            return Err(CarrierError::WrongScope);
+        }
+        self.retire_native_summons(current, stamp)?;
+        if spec.content() != self.content.server_artifact_digest
+            || !self.matches_live_creature_identity(parent, spec.parent_key().as_bytes())
+            || self.native_summon_master(parent).is_some()
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        if self.native_summon_count(parent, None) >= spec.total()
+            || self.native_summon_count(parent, Some(spec.child_key())) >= spec.count()
+        {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        if self
+            .carrier
+            .slots
+            .iter()
+            .filter(|s| matches!(s, Slot::CreatureOccupied { health: 1.., .. }))
+            .count()
+            >= 64
+            || !self.native_summon_cell_free(at)
+        {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        if self.carrier.native_summons.len() >= 64 {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        self.carrier
+            .native_summons
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let target = copy_bounded_binding(spec.child_key().as_bytes())?;
+        let origin = spec.origin.try_owned()?;
+        let context = self.pinned_position_context();
+        self.carrier.validate_position_context(context)?;
+        let slots = self.carrier.slots.clone();
+        let free = self.carrier.free_head;
+        let occupied = self.carrier.occupied.clone();
+        let actor = self.carrier.admit_creature(
+            &self.continuity,
+            ActorState(0),
+            spec.child_key(),
+            spec.health(),
+        )?;
+        if let Err(e) = self.carrier.initialize_position(
+            &self.continuity,
+            actor,
+            context,
+            LocalPosition {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            },
+        ) {
+            self.carrier.slots = slots;
+            self.carrier.free_head = free;
+            self.carrier.occupied = occupied;
+            return Err(e);
+        }
+        let child = ExactActorRef(actor);
+        self.carrier.native_summons.push(NativeSummonLink {
+            parent,
+            child,
+            target,
+            origin,
+            death: None,
+        });
+        Ok(child)
+    }
+    /// Summon death has its own sealed native key/position, never an ordinary corpse/reward.
+    pub(crate) fn project_native_summon_death(
+        &mut self,
+        actor: ExactActorRef,
+    ) -> Result<NativeSummonDeath, CarrierError> {
+        self.carrier
+            .project_native_summon_death_inner(&self.continuity, actor)
+    }
+}
+impl ChannelActorCarrier {
+    fn validate_summon_actor(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor: ExactActorRef,
+    ) -> Result<usize, CarrierError> {
+        let index = self.validate_ref(continuity, actor.0)?;
+        match &self.slots[index] {
+            Slot::CreatureOccupied { generation, .. }
+                if *generation == actor.0.actor_local_generation.0 =>
+            {
+                Ok(index)
+            }
+            Slot::Occupied { generation, .. }
+                if *generation == actor.0.actor_local_generation.0 =>
+            {
+                Err(CarrierError::NotCreature)
+            }
+            _ => Err(CarrierError::StaleActorGeneration),
+        }
+    }
+
+    fn is_native_summon(&self, actor: ExactActorRef) -> bool {
+        self.native_summons.iter().any(|l| l.child == actor)
+            || self
+                .native_summon_deaths
+                .iter()
+                .flatten()
+                .any(|d| d.child == actor)
+    }
+    fn project_native_summon_death_inner(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor: ExactActorRef,
+    ) -> Result<NativeSummonDeath, CarrierError> {
+        self.validate_ref(continuity, actor.0)?;
+        if let Some(death) = self
+            .native_summon_deaths
+            .iter()
+            .flatten()
+            .find(|d| d.child == actor)
+        {
+            return Ok(*death);
+        }
+        self.validate_summon_actor(continuity, actor)?;
+        let index = self
+            .native_summons
+            .iter()
+            .position(|l| l.child == actor)
+            .ok_or(CarrierError::NotCreature)?;
+        if let Some(death) = self.native_summons[index].death {
+            return Ok(death);
+        }
+        let receipt = self.committed_lethal_receipt_inner(continuity, actor.0)?;
+        self.validate_lethal_receipt(continuity, &receipt)?;
+        let p = receipt.projection.position.position;
+        let death = NativeSummonDeath {
+            child: actor,
+            death: receipt.projection.occurrence.death_key(),
+            position: MovementLocalPosition {
+                x: p.x,
+                y: p.y,
+                floor: p.floor,
+            },
+        };
+        self.native_summons[index].death = Some(death);
+        Ok(death)
+    }
+    /// Under the same exclusive physical owner turn as ordinary parent projection. A failure
+    /// restores child HP/receipts before returning; no corpse/XP or durable workflow is created.
+    fn cascade_native_summon_deaths(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        parent: ExactActorRef,
+    ) -> Result<(), CarrierError> {
+        let mut children = [None; 16];
+        let mut count = 0;
+        for link in &self.native_summons {
+            if link.parent == parent {
+                if count == 16 {
+                    return Err(CarrierError::CapacityExceeded);
+                }
+                children[count] = Some(link.child);
+                count += 1;
+            }
+        }
+        if count == 0 {
+            return Ok(());
+        }
+        let before = self.slots.clone();
+        let mut deaths = Vec::new();
+        deaths
+            .try_reserve(count)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let result = (|| {
+            for child in children.into_iter().flatten() {
+                let index = match self.validate_summon_actor(continuity, child) {
+                    Ok(i) => i,
+                    Err(CarrierError::StaleActorGeneration) => continue,
+                    Err(e) => return Err(e),
+                };
+                let Slot::CreatureOccupied {
+                    health,
+                    target_identity,
+                    ..
+                } = &self.slots[index]
+                else {
+                    return Err(CarrierError::NotCreature);
+                };
+                if *health > 0 {
+                    let health = *health;
+                    let target = copy_bounded_binding(target_identity)?;
+                    let occurrence = format!(
+                        "monster-master-death:{}:{}",
+                        parent.0.actor_local_id.0, parent.0.actor_local_generation.0
+                    );
+                    let mut binding = occurrence.as_bytes().to_vec();
+                    binding.extend_from_slice(b"\0MONSTER-SUMMON-1-master-lethal");
+                    self.commit_creature_damage_inner(
+                        continuity,
+                        child.0,
+                        OwnerDamageCommand {
+                            target: &target,
+                            occurrence: occurrence.as_bytes(),
+                            binding: &binding,
+                            damage: health,
+                        },
+                        None,
+                        false,
+                    )?;
+                }
+                let receipt = self.committed_lethal_receipt_inner(continuity, child.0)?;
+                self.validate_lethal_receipt(continuity, &receipt)?;
+                let p = receipt.projection.position.position;
+                deaths.push(NativeSummonDeath {
+                    child,
+                    death: receipt.projection.occurrence.death_key(),
+                    position: MovementLocalPosition {
+                        x: p.x,
+                        y: p.y,
+                        floor: p.floor,
+                    },
+                });
+            }
+            Ok(())
+        })();
+        if let Err(e) = result {
+            self.slots = before;
+            return Err(e);
+        }
+        for death in deaths {
+            if let Some(link) = self
+                .native_summons
+                .iter_mut()
+                .find(|l| l.child == death.child)
+            {
+                link.death = Some(death)
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Bounded immutable physical admission input. Root content qualifier supplies source proof;
+/// Foundation has no dependency on the project's loader or monster module.
+#[derive(Debug, Clone)]
+pub(crate) struct NativeSummonAdmissionSpec {
+    parent: Box<str>,
+    child: Box<str>,
+    health: i64,
+    index: usize,
+    origin: NativeSummonOrigin,
+    total: u32,
+    count: u32,
+    content: [u8; 32],
+}
+fn copy_native_summon_key(value: &str) -> Result<Box<str>, CarrierError> {
+    if value.is_empty() || value.len() > MAX_OWNER_COMMIT_BINDING_BYTES {
+        return Err(CarrierError::InvalidCreatureTarget);
+    }
+    let mut owned = String::new();
+    owned
+        .try_reserve_exact(value.len())
+        .map_err(|_| CarrierError::CommitAllocationFailed)?;
+    owned.push_str(value);
+    Ok(owned.into_boxed_str())
+}
+impl NativeSummonAdmissionSpec {
+    pub(crate) fn qualified(
+        parent: &str,
+        child: &str,
+        health: i64,
+        index: usize,
+        total: u32,
+        count: u32,
+        content: [u8; 32],
+    ) -> Result<Self, CarrierError> {
+        if parent.is_empty()
+            || child.is_empty()
+            || health <= 0
+            || index >= 8
+            || total == 0
+            || total > 16
+            || count == 0
+            || count > 16
+        {
+            return Err(CarrierError::InvalidCreatureTarget);
+        }
+        Ok(Self {
+            parent: copy_native_summon_key(parent)?,
+            child: copy_native_summon_key(child)?,
+            health,
+            index,
+            origin: NativeSummonOrigin::Behavior { index },
+            total,
+            count,
+            content,
+        })
+    }
+    pub(crate) fn parent_key(&self) -> &str {
+        &self.parent
+    }
+    pub(crate) fn child_key(&self) -> &str {
+        &self.child
+    }
+    pub(crate) fn health(&self) -> i64 {
+        self.health
+    }
+    pub(crate) fn index(&self) -> usize {
+        self.index
+    }
+    pub(crate) fn total(&self) -> u32 {
+        self.total
+    }
+    pub(crate) fn count(&self) -> u32 {
+        self.count
+    }
+    pub(crate) fn content(&self) -> [u8; 32] {
+        self.content
+    }
+}
+
+impl ChannelRuntimeV1 {
+    /// Bounded native owner cleanup; physical slot retirement follows sealed child death.
+    /// Retained history is a replay receipt, never authority to mutate a current slot.
+    pub(crate) fn retire_native_summons(
+        &mut self,
+        current: &super::ScopeRuntimeFence,
+        stamp: super::RuntimeWorkStamp,
+    ) -> Result<usize, CarrierError> {
+        let b = self.binding();
+        if !current.is_current_for_scope(
+            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.scope_generation(),
+        ) || !current.accepts_stamp(stamp)
+        {
+            return Err(CarrierError::WrongScope);
+        }
+        let mut dead = [None; 64];
+        let mut count = 0;
+        for link in &self.carrier.native_summons {
+            let index = self
+                .carrier
+                .validate_summon_actor(&self.continuity, link.child)?;
+            if matches!(
+                &self.carrier.slots[index],
+                Slot::CreatureOccupied { health: 0, .. }
+            ) {
+                if count == 64 {
+                    return Err(CarrierError::CapacityExceeded);
+                }
+                dead[count] = Some(link.child);
+                count += 1;
+            }
+        }
+        for child in dead.into_iter().flatten() {
+            self.carrier
+                .project_native_summon_death_inner(&self.continuity, child)?;
+            self.carrier.remove(&self.continuity, child.0)?;
+        }
+        Ok(count)
+    }
+}
+
+impl ChannelRuntimeV1 {
+    pub(crate) fn retire_native_summon_registration_failure(
+        &mut self,
+        current: &super::ScopeRuntimeFence,
+        stamp: super::RuntimeWorkStamp,
+        actor: ExactActorRef,
+    ) -> Result<(), CarrierError> {
+        let b = self.binding();
+        if !current.is_current_for_scope(
+            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.scope_generation(),
+        ) || !current.accepts_stamp(stamp)
+        {
+            return Err(CarrierError::WrongScope);
+        }
+        if self.native_summon_role(actor)?.is_none() {
+            return Err(CarrierError::NotCreature);
+        }
+        let index = self
+            .carrier
+            .validate_summon_actor(&self.continuity, actor)?;
+        if matches!(
+            &self.carrier.slots[index],
+            Slot::CreatureOccupied { health: 0, .. }
+        ) {
+            self.carrier
+                .project_native_summon_death_inner(&self.continuity, actor)?;
+        }
+        self.carrier.remove(&self.continuity, actor.0)?;
+        Ok(())
+    }
+}
+impl ChannelActorCarrier {
+    fn summons_separated_by_move(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor: ActorRef,
+        next: LocalPosition,
+    ) -> Result<[Option<ExactActorRef>; 64], CarrierError> {
+        let mut removed = [None; 64];
+        let mut count = 0;
+        for link in &self.native_summons {
+            if link.parent.0 != actor && link.child.0 != actor {
+                continue;
+            }
+            let child = self.validate_summon_actor(continuity, link.child)?;
+            let parent = match self.validate_summon_actor(continuity, link.parent) {
+                Ok(index) => index,
+                Err(CarrierError::StaleActorGeneration) => {
+                    removed[count] = Some(link.child);
+                    count += 1;
+                    continue;
+                }
+                Err(e) => return Err(e),
+            };
+            let position = |index: usize| match &self.slots[index] {
+                Slot::CreatureOccupied {
+                    position: Some(p), ..
+                } => Ok(p.position),
+                _ => Err(CarrierError::PositionUnavailable),
+            };
+            let child_at = if link.child.0 == actor {
+                next
+            } else {
+                position(child)?
+            };
+            let parent_at = if link.parent.0 == actor {
+                next
+            } else {
+                position(parent)?
+            };
+            if (i64::from(child_at.x) - i64::from(parent_at.x)).abs() > 30
+                || (i64::from(child_at.y) - i64::from(parent_at.y)).abs() > 30
+                || (i32::from(child_at.floor) - i32::from(parent_at.floor)).abs() > 2
+            {
+                if count == 64 {
+                    return Err(CarrierError::CapacityExceeded);
+                }
+                removed[count] = Some(link.child);
+                count += 1;
+            }
+        }
+        Ok(removed)
+    }
+    fn remove_separated_summons(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        removed: [Option<ExactActorRef>; 64],
+    ) -> Result<(), CarrierError> {
+        for child in removed.into_iter().flatten() {
+            let index = self.validate_summon_actor(continuity, child)?;
+            if matches!(&self.slots[index], Slot::CreatureOccupied { health: 0, .. }) {
+                self.project_native_summon_death_inner(continuity, child)?;
+            }
+            self.remove(continuity, child.0)?;
+        }
+        Ok(())
+    }
+}
+
+/// Private source lifecycle receipt: a removed moving child has no published stale position.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum NativeSummonMovementOutcome {
+    Moved(MovementPositionSnapshot),
+    Removed(ExactActorRef),
+}
+impl ChannelRuntimeV1 {
+    pub(crate) fn commit_native_summon_cardinal(
+        &mut self,
+        current: &super::ScopeRuntimeFence,
+        stamp: super::RuntimeWorkStamp,
+        actor: ExactActorRef,
+        expected: MovementPositionSnapshot,
+        next: MovementLocalPosition,
+    ) -> Result<NativeSummonMovementOutcome, CarrierError> {
+        let b = self.binding();
+        if !current.is_current_for_scope(
+            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.scope_generation(),
+        ) || !current.accepts_stamp(stamp)
+        {
+            return Err(CarrierError::WrongScope);
+        }
+        let parent = self
+            .native_summon_role(actor)?
+            .ok_or(CarrierError::NotCreature)?;
+        if !self.contains_live_creature(actor) || !self.contains_live_creature(parent) {
+            return Err(CarrierError::CreatureNotActionable);
+        }
+        if expected.0.actor_ref != actor.0
+            || self.read_actor_position(actor)? != expected
+            || expected.context() != self.pinned_movement_context()
+        {
+            return Err(CarrierError::PositionSnapshotMismatch);
+        }
+        let at = expected.position();
+        let dx = (i64::from(next.x) - i64::from(at.x)).abs();
+        let dy = (i64::from(next.y) - i64::from(at.y)).abs();
+        if next.floor != at.floor || dx + dy != 1 {
+            return Err(CarrierError::MovementNonCardinal);
+        }
+        if !self.native_summon_cell_free(next) {
+            return Err(CarrierError::CapacityExceeded);
+        }
+        let committed = self.carrier.compare_commit_position_with_summon_lifecycle(
+            &self.continuity,
+            expected.0,
+            expected.0.version.context,
+            LocalPosition {
+                x: next.x,
+                y: next.y,
+                floor: next.floor,
+            },
+            true,
+        )?;
+        if self.native_summon_role(actor).is_err() {
+            Ok(NativeSummonMovementOutcome::Removed(actor))
+        } else {
+            Ok(NativeSummonMovementOutcome::Moved(
+                MovementPositionSnapshot(committed),
+            ))
+        }
+    }
+}
+
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+mod native_summon_reconciliation_tests {
+    use super::*;
+    fn fixture() -> ChannelRuntimeV1 {
+        let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
+        let w = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
+        ChannelRuntimeV1::from_committed_assignment(
+            w,
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::test(w),
+        )
+        .expect("valid native fixture operation must succeed")
+    }
+    fn parent(r: &mut ChannelRuntimeV1) -> ExactActorRef {
+        let a = r
+            .carrier
+            .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.rat", 20)
+            .expect("valid native fixture operation must succeed");
+        r.carrier
+            .initialize_position(
+                &r.continuity,
+                a,
+                r.pinned_position_context(),
+                LocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        ExactActorRef(a)
+    }
+    fn child(r: &mut ChannelRuntimeV1, p: ExactActorRef) -> ExactActorRef {
+        let b = r.binding();
+        let scope = super::super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
+        let mut f = super::super::ScopeRuntimeFence::from_external_grant(b.scope_generation())
+            .with_scope(scope);
+        let n = f
+            .accept_input(b.scope_generation())
+            .expect("valid native fixture operation must succeed");
+        let stamp = f.stamp(n);
+        let spec = NativeSummonAdmissionSpec::qualified(
+            "oteryn:creature.rat",
+            "oteryn:creature.rat",
+            10,
+            0,
+            2,
+            2,
+            r.content.server_artifact_digest,
+        )
+        .expect("valid native fixture operation must succeed");
+        r.admit_native_summon(
+            &f,
+            stamp,
+            p,
+            &spec,
+            MovementLocalPosition {
+                x: 101,
+                y: 100,
+                floor: 7,
+            },
+        )
+        .expect("valid native fixture operation must succeed")
+    }
+    #[test]
+    fn separated_summon_late_reservation_failure_restores_occupied_index_and_visibility() {
+        use super::super::{SourceActorReservationProof, source_reservation_seal};
+        struct Proof {
+            owner: ExactActorRef,
+            session: GameSessionId,
+            position: MovementPositionSnapshot,
+            affected: [ExactActorRef; 1],
+        }
+        impl source_reservation_seal::Sealed for Proof {}
+        impl SourceActorReservationProof for Proof {
+            fn owner(&self) -> (ExactActorRef, GameSessionId) {
+                (self.owner, self.session)
+            }
+            fn event_identity(&self) -> [u8; 16] {
+                [7; 16]
+            }
+            fn source_binding_digest(&self) -> [u8; 32] {
+                [8; 32]
+            }
+            fn affected_actors(&self) -> &[ExactActorRef] {
+                &self.affected
+            }
+            fn current_for(&self, r: &ChannelRuntimeV1) -> bool {
+                r.owner_fence().is_ok()
+                    && r.read_actor_position(self.owner) == Ok(self.position)
+                    && r.player_control_facts(self.owner, self.session)
+                        .is_ok_and(|f| f.control_loss.is_none())
+            }
+        }
+        let mut r = fixture();
+        let p = parent(&mut r);
+        let a = child(&mut r, p);
+        let at = r
+            .carrier
+            .read_position(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
+        let context = r.pinned_position_context();
+        r.carrier
+            .compare_commit_position(
+                &r.continuity,
+                at,
+                context,
+                LocalPosition {
+                    x: 102,
+                    y: 100,
+                    floor: 7,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        let b = child(&mut r, p);
+        let session =
+            GameSessionId::decode(&[1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 4])
+                .expect("valid native fixture operation must succeed");
+        let reserved = r
+            .reserve_fresh_session(session)
+            .expect("valid native fixture operation must succeed");
+        let owner = r
+            .commit_fresh_session(reserved)
+            .expect("valid native fixture operation must succeed");
+        let position = match r
+            .initialize_first_entry_position(owner)
+            .expect("valid native fixture operation must succeed")
+        {
+            super::super::FirstEntryPosition::Initialized(p)
+            | super::super::FirstEntryPosition::Reconciled(p) => p,
+        };
+        let proof = Proof {
+            owner,
+            session,
+            position,
+            affected: [b],
+        };
+        let mut reserved = r
+            .prepare_source_actor_reservation(&proof)
+            .expect("valid native fixture operation must succeed");
+        r.reserve_source_actors(&mut reserved, &proof)
+            .expect("valid native fixture operation must succeed");
+        let slots = r.carrier.slots.clone();
+        let free = r.carrier.free_head;
+        let occupied = r.carrier.occupied.clone();
+        let visible = r.visible_entities();
+        let before = r
+            .carrier
+            .read_position(&r.continuity, p.0)
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(
+            r.carrier.compare_commit_position(
+                &r.continuity,
+                before,
+                context,
+                LocalPosition {
+                    x: 200,
+                    y: 100,
+                    floor: 7
+                }
+            ),
+            Err(CarrierError::PlanConflict)
+        );
+        assert_eq!(r.carrier.slots, slots);
+        assert_eq!(r.carrier.free_head, free);
+        assert_eq!(r.carrier.occupied, occupied);
+        assert_eq!(r.visible_entities(), visible);
+        assert!(r.contains_live_creature(a));
+        assert!(r.contains_live_creature(b));
+        // A later ordinary removal/re-admission uses a slot exactly once, with a new generation.
+        r.carrier
+            .remove(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
+        let reused = parent(&mut r);
+        assert_eq!(reused.0.actor_local_id, a.0.actor_local_id);
+        assert_ne!(reused.0.actor_local_generation, a.0.actor_local_generation);
+        let index = u32::try_from(
+            r.carrier
+                .validate_ref(&r.continuity, reused.0)
+                .expect("valid native fixture operation must succeed"),
+        )
+        .expect("valid native fixture operation must succeed");
+        assert_eq!(
+            r.carrier.occupied.iter().filter(|i| **i == index).count(),
+            1
+        );
+    }
+    #[test]
+    fn parent_projection_cascades_native_death_and_preserves_main_condition_death_hook() {
+        let mut r = fixture();
+        let p = parent(&mut r);
+        let a = child(&mut r, p);
+        let i = r
+            .carrier
+            .validate_ref(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
+        let before = match &r.carrier.slots[i] {
+            Slot::CreatureOccupied { committed, .. } => Some(committed.conditions.clone()),
+            _ => None,
+        }
+        .expect("fixture must contain a native creature");
+        r.carrier
+            .current_owner_exact_commit(&r.continuity)
+            .commit_damage(
+                p,
+                OwnerDamageCommand {
+                    target: b"oteryn:creature.rat",
+                    occurrence: b"master-lethal",
+                    binding: b"master-lethal\0fixture",
+                    damage: 20,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        let mut death = r.borrow_combat_death();
+        let receipt = death
+            .committed_lethal_receipt(p)
+            .expect("valid native fixture operation must succeed");
+        death
+            .project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
+        assert!(!r.contains_live_creature(a));
+        let after = match &r.carrier.slots[i] {
+            Slot::CreatureOccupied { committed, .. } => Some(&committed.conditions),
+            _ => None,
+        }
+        .expect("fixture must contain a native creature");
+        assert_ne!(before, *after);
+        let child_death = r
+            .project_native_summon_death(a)
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(child_death.child, a);
+        assert_eq!(r.carrier.corpse_projections.len(), 1);
+        assert_eq!(
+            r.borrow_combat_death()
+                .reward_occurrence(a, [0; 16])
+                .expect_err("fixture must reject this invalid operation"),
+            CarrierError::SummonHasNoRewards
+        );
+    }
+    #[test]
+    fn parent_administrative_remove_retires_child_without_corpse_and_generation_reuse_is_not_related()
+     {
+        let mut r = fixture();
+        let p = parent(&mut r);
+        let a = child(&mut r, p);
+        r.carrier
+            .remove(&r.continuity, p.0)
+            .expect("valid native fixture operation must succeed");
+        assert!(!r.contains_live_creature(a));
+        assert!(r.carrier.native_summons.is_empty());
+        assert!(r.carrier.corpse_projections.is_empty());
+        assert!(r.carrier.death_reward_occurrences.is_empty());
+        let replacement = parent(&mut r);
+        assert_ne!(replacement, p);
+        assert_eq!(r.native_summon_master(replacement), None);
+    }
+}
+
+// Main reconciliation Foundation-3: source-qualified native boss helpers.
+impl ExactActorRef {
+    /// Current native actor slot ordinal for private source chain selection, never a wire ID.
+    pub(crate) fn chain_local_actor_id(self) -> u64 {
+        u64::from(self.0.actor_local_id.0)
+    }
+}
+// Source-specific proposal appended inside foundation/runtime_actor_carrier.rs.
+// Canary47dfd51f the_welter_heal.lua SHAead257f505dfcd8c6f2cd80bbaaff2185c0bc6e4e164e2d28d815ad328145cc6.
+// No generic Encounter dispatcher. Owner lock/cast scheduling and emitted cues remain caller work.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WelterPrey {
+    Egg,
+    Spawn,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct WelterConsumeResult {
+    pub(crate) newly_committed: bool,
+    pub(crate) consumed: Option<(ExactActorRef, WelterPrey)>,
+    pub(crate) caster_position: MovementLocalPosition,
+    pub(crate) prey_position: Option<MovementLocalPosition>,
+    pub(crate) health_before: i64,
+    pub(crate) health_after: i64,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WelterConsumeError {
+    Carrier(CarrierError),
+    InvalidSequence,
+    SupersededOccurrence,
+    WrongBossDefinition,
+    InvalidBossHealth,
+    MissingPosition,
+    LedgerAllocation,
+    RegistrationContentPinMismatch,
+}
+impl From<CarrierError> for WelterConsumeError {
+    fn from(value: CarrierError) -> Self {
+        Self::Carrier(value)
+    }
+}
+#[derive(Debug, Clone, Copy)]
+struct WelterConsumeEntry {
+    caster: ExactActorRef,
+    sequence: u64,
+    result: WelterConsumeResult,
+}
+/// Beside ChannelRuntimeV1 under the same physical owner lock, exactly like CreatureBiteLedger.
+/// At most one last occurrence per live caster, bounded by that carrier's actual slots.len().
+#[derive(Debug, Default)]
+pub(crate) struct WelterConsumeLedger {
+    entries: Vec<WelterConsumeEntry>,
+}
+/// Constructed once by the native Content loader from current Creature profiles/bindings.
+/// No token obtained from network data; private fields forbid caller struct construction.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct WelterSourceRegistration {
+    world: WorldId,
+    activation_sequence: u64,
+    server_digest: [u8; 32],
+    client_digest: [u8; 32],
+    frame_digest: [u8; 32],
+    map_digest: [u8; 32],
+    max_health: i64,
+}
+impl ChannelRuntimeV1 {
+    /// Content-loader seam: caller supplies values resolved from the three typed active profiles.
+    /// The sourcebinding receipt is validated by that loader (Canary47dfd51f spell/monster SHA).
+    /// Foundation accepts no generic profile graph and introduces no Content dependency.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn bind_welter_pinned_definition(
+        &self,
+        boss_key: &str,
+        boss_name: &str,
+        max_health: u64,
+        egg_key: &str,
+        egg_name: &str,
+        spawn_key: &str,
+        spawn_name: &str,
+    ) -> Result<WelterSourceRegistration, WelterConsumeError> {
+        if boss_key != "oteryn:creature.the_welter"
+            || boss_name != "The Welter"
+            || max_health != 25000
+            || egg_key != "oteryn:creature.egg"
+            || egg_name != "Egg"
+            || spawn_key != "oteryn:creature.spawn_of_the_welter"
+            || spawn_name != "Spawn of the Welter"
+        {
+            return Err(WelterConsumeError::WrongBossDefinition);
+        }
+        Ok(WelterSourceRegistration {
+            world: self.content.world_id,
+            activation_sequence: self.content.activation_sequence,
+            server_digest: self.content.server_artifact_digest,
+            client_digest: self.content.client_artifact_digest,
+            frame_digest: self.content.frame_binding_digest,
+            map_digest: self.content.map_revision_digest,
+            max_health: max_health as i64,
+        })
+    }
+
+    /// Native PROJECT approximation: stable carrier-slot spectator census order. Canary's
+    /// supplied Game.getSpectators ordering is not specified by its spell. Explicit flag:
+    /// PROJECT_NATIVE_SPECTATOR_ORDER_GLOBAL_UNVERIFIED. Not a claim of identical order.
+    /// Exact source semantics otherwise: same floor ±10 square, first eligible live Monster,
+    /// Egg/Spawn of the Welter, administrative removal (no death reward), heal25000 capped25000.
+    pub(crate) fn commit_welter_consume(
+        &mut self,
+        ledger: &mut WelterConsumeLedger,
+        registration: &WelterSourceRegistration,
+        caster: ExactActorRef,
+        sequence: u64,
+    ) -> Result<WelterConsumeResult, WelterConsumeError> {
+        self.commit_welter_consume_inner(ledger, registration, caster, sequence, false)
+    }
+    fn commit_welter_consume_inner(
+        &mut self,
+        ledger: &mut WelterConsumeLedger,
+        registration: &WelterSourceRegistration,
+        caster: ExactActorRef,
+        sequence: u64,
+        fail_before_write: bool,
+    ) -> Result<WelterConsumeResult, WelterConsumeError> {
+        if registration.world != self.content.world_id
+            || registration.activation_sequence != self.content.activation_sequence
+            || registration.server_digest != self.content.server_artifact_digest
+            || registration.client_digest != self.content.client_artifact_digest
+            || registration.frame_digest != self.content.frame_binding_digest
+            || registration.map_digest != self.content.map_revision_digest
+        {
+            return Err(WelterConsumeError::RegistrationContentPinMismatch);
+        }
+        if sequence == 0 {
+            return Err(WelterConsumeError::InvalidSequence);
+        }
+        let boss = self.carrier.validate_ref(&self.continuity, caster.0)?;
+        self.carrier.assert_slot_spell_unreserved(boss)?;
+        if !matches!(&self.carrier.slots[boss],Slot::CreatureOccupied{generation,..} if *generation==caster.0.actor_local_generation.0)
+        {
+            return Err(WelterConsumeError::Carrier(
+                CarrierError::StaleActorGeneration,
+            ));
+        }
+        let context = self.pinned_position_context();
+        let (before, at) = match &self.carrier.slots[boss] {
+            Slot::CreatureOccupied {
+                target_identity,
+                health,
+                position: Some(p),
+                ..
+            } if target_identity.as_ref() == b"oteryn:creature.the_welter"
+                && *health > 0
+                && p.context == context =>
+            {
+                (*health, p.position)
+            }
+            Slot::CreatureOccupied {
+                target_identity, ..
+            } if target_identity.as_ref() != b"oteryn:creature.the_welter" => {
+                return Err(WelterConsumeError::WrongBossDefinition);
+            }
+            Slot::CreatureOccupied { health, .. } if *health <= 0 => {
+                return Err(WelterConsumeError::InvalidBossHealth);
+            }
+            _ => return Err(WelterConsumeError::MissingPosition),
+        };
+        // Source max health25000 is pinned to selected Creature data at registration.
+        if before > registration.max_health {
+            return Err(WelterConsumeError::InvalidBossHealth);
+        }
+        ledger
+            .entries
+            .retain(|e| self.contains_live_creature(e.caster));
+        if let Some(e) = ledger.entries.iter().find(|e| e.caster == caster) {
+            if sequence < e.sequence {
+                return Err(WelterConsumeError::SupersededOccurrence);
+            }
+            if sequence == e.sequence {
+                return Ok(WelterConsumeResult {
+                    newly_committed: false,
+                    ..e.result
+                });
+            }
+        }
+        let selected = self.carrier.slots.iter().enumerate().find_map(|(i, s)| {
+            if i == boss {
+                return None;
+            }
+            match s {
+                Slot::CreatureOccupied {
+                    generation,
+                    target_identity,
+                    health,
+                    position: Some(p),
+                    ..
+                } if *health > 0
+                    && p.context == context
+                    && p.position.floor == at.floor
+                    && i64::from(p.position.x).abs_diff(i64::from(at.x)) <= 10
+                    && i64::from(p.position.y).abs_diff(i64::from(at.y)) <= 10 =>
+                {
+                    let prey = match target_identity.as_ref() {
+                        b"oteryn:creature.egg" => WelterPrey::Egg,
+                        b"oteryn:creature.spawn_of_the_welter" => WelterPrey::Spawn,
+                        _ => return None,
+                    };
+                    Some((
+                        ExactActorRef(ActorRef {
+                            world_id: self.carrier.world_id,
+                            channel_id: self.carrier.channel_id,
+                            scope_generation: self.carrier.scope_generation,
+                            actor_local_id: ActorLocalId((i + 1) as u32),
+                            actor_local_generation: ActorLocalGeneration(*generation),
+                        }),
+                        prey,
+                        p.position,
+                    ))
+                }
+                _ => None,
+            }
+        });
+        // All fallible allocation precedes either actor write. No fixed guessed ledger ceiling.
+        if !ledger.entries.iter().any(|e| e.caster == caster) {
+            if ledger.entries.len() >= self.carrier.slots.len() {
+                return Err(WelterConsumeError::LedgerAllocation);
+            }
+            ledger
+                .entries
+                .try_reserve(1)
+                .map_err(|_| WelterConsumeError::LedgerAllocation)?;
+        }
+        if fail_before_write {
+            return Err(WelterConsumeError::Carrier(
+                CarrierError::InjectedCommitFailure,
+            ));
+        }
+        let after = if selected.is_some() {
+            before.saturating_add(25000).min(registration.max_health)
+        } else {
+            before
+        };
+        if let Some((prey, _, _)) = selected {
+            self.carrier.remove(&self.continuity, prey.0)?;
+            if let Slot::CreatureOccupied { health, .. } = &mut self.carrier.slots[boss] {
+                *health = after
+            } else {
+                unreachable!("same owner work item preserves boss slot")
+            }
+        }
+        let result = WelterConsumeResult {
+            newly_committed: true,
+            consumed: selected.map(|(actor, prey, _)| (actor, prey)),
+            caster_position: MovementLocalPosition {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            },
+            prey_position: selected.map(|(_, _, p)| MovementLocalPosition {
+                x: p.x,
+                y: p.y,
+                floor: p.floor,
+            }),
+            health_before: before,
+            health_after: after,
+        };
+        if let Some(e) = ledger.entries.iter_mut().find(|e| e.caster == caster) {
+            *e = WelterConsumeEntry {
+                caster,
+                sequence,
+                result,
+            }
+        } else {
+            ledger.entries.push(WelterConsumeEntry {
+                caster,
+                sequence,
+                result,
+            })
+        }
+        Ok(result)
+    }
+}
+
+impl CurrentOwnerCombatDeath<'_> {
+    // Insert inside existing impl CurrentOwnerCombatDeath<'_>.
+    // Actual carrier-owned data; neither method mints mutation authority or accepts caller facts.
+    pub(crate) fn creature_target_identity(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<&[u8], CarrierError> {
+        let index = self.carrier.validate_ref(self.continuity, actor.0)?;
+        match &self.carrier.slots[index] {
+            Slot::CreatureOccupied {
+                target_identity, ..
+            } => Ok(target_identity.as_ref()),
+            _ => Err(CarrierError::NotCreature),
+        }
+    }
+    pub(crate) fn damage_contributing_characters(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Vec<CharacterId>, CarrierError> {
+        let index = self.carrier.validate_ref(self.continuity, actor.0)?;
+        match &self.carrier.slots[index] {
+            Slot::CreatureOccupied {
+                damage_contributors,
+                ..
+            } => {
+                let mut result: Vec<CharacterId> = damage_contributors
+                    .entries
+                    .iter()
+                    .map(|entry| entry.character)
+                    .collect();
+                result.sort();
+                Ok(result)
+            }
+            _ => Err(CarrierError::NotCreature),
+        }
+    }
+}
+impl ChannelRuntimeV1 {
+    // Insert inside impl ChannelRuntimeV1. Conservative exact-native source subset:
+    // a unique player with no other live creature at its tile is unambiguously topCreature.
+    // Ambiguous stack order is deliberately not invented; skipped tiles stay a runtime gap.
+    pub(crate) fn smelly_unambiguous_targets(
+        &self,
+        caster: ExactActorRef,
+    ) -> Result<Vec<(ExactActorRef, GameSessionId)>, CarrierError> {
+        let caster_index = self.carrier.validate_ref(&self.continuity, caster.0)?;
+        match &self.carrier.slots[caster_index] {
+            Slot::CreatureOccupied {
+                target_identity,
+                health,
+                ..
+            } if target_identity.as_ref() == b"oteryn:creature.smelly_cheese" && *health > 0 => {}
+            _ => return Err(CarrierError::NotCreature),
+        }
+        let at = self.carrier.read_position(&self.continuity, caster.0)?;
+        let mut result = Vec::new();
+        for dx in -1i32..=1 {
+            for dy in -1i32..=1 {
+                let (Some(x), Some(y)) = (
+                    at.version.position.x.checked_add(dx),
+                    at.version.position.y.checked_add(dy),
+                ) else {
+                    continue;
+                };
+                let mut target = None;
+                let mut count = 0;
+                for (index, slot) in self.carrier.slots.iter().enumerate() {
+                    let (version, generation, player) = match slot {
+                        Slot::Occupied {
+                            generation,
+                            game_session_id: Some(session),
+                            committed: true,
+                            position: Some(version),
+                            lifecycle,
+                            ..
+                        } => (
+                            version,
+                            *generation,
+                            lifecycle.control_loss.is_none().then_some(*session),
+                        ),
+                        Slot::CreatureOccupied {
+                            generation,
+                            health,
+                            position: Some(version),
+                            ..
+                        } if *health > 0 => (version, *generation, None),
+                        _ => continue,
+                    };
+                    if version.context != at.version.context
+                        || version.position.x != x
+                        || version.position.y != y
+                        || version.position.floor != at.version.position.floor
+                    {
+                        continue;
+                    }
+                    count += 1;
+                    target = player.map(|session| {
+                        (
+                            ExactActorRef(ActorRef {
+                                world_id: self.carrier.world_id,
+                                channel_id: self.carrier.channel_id,
+                                scope_generation: self.carrier.scope_generation,
+                                actor_local_id: ActorLocalId((index + 1) as u32),
+                                actor_local_generation: ActorLocalGeneration(generation),
+                            }),
+                            session,
+                        )
+                    });
+                }
+                if count == 1
+                    && let Some(target) = target
+                {
+                    result.push(target);
+                }
+            }
+        }
+        Ok(result)
+    }
+}
+
+// Qualification entry point only: not included in product proposal.
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+#[test]
+fn welter_native_source_owner_proof() {
+    fn id(tag: u8) -> [u8; 16] {
+        let mut b = [0; 16];
+        b[6] = 0x70;
+        b[8] = 0x80;
+        b[15] = tag;
+        b
+    }
+    fn runtime() -> ChannelRuntimeV1 {
+        let w = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
+        ChannelRuntimeV1::from_committed_assignment(
+            w,
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::from_activation(
+                w,
+                1,
+                [1; 32],
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (100, 100, 7),
+            ),
+        )
+        .expect("valid native fixture operation must succeed")
+    }
+    fn actor(
+        r: &mut ChannelRuntimeV1,
+        target: &str,
+        hp: i64,
+        x: i32,
+        y: i32,
+        floor: i16,
+    ) -> ExactActorRef {
+        let a = r
+            .carrier
+            .admit_creature(&r.continuity, ActorState(1), target, hp)
+            .expect("valid native fixture operation must succeed");
+        let c = r.pinned_position_context();
+        r.carrier
+            .initialize_position(&r.continuity, a, c, LocalPosition { x, y, floor })
+            .expect("valid native fixture operation must succeed");
+        ExactActorRef(a)
+    }
+    let mut r = runtime();
+    let b = actor(&mut r, "oteryn:creature.the_welter", 25_000, 100, 100, 7);
+    let damage = r
+        .carrier
+        .current_owner_exact_commit(&r.continuity)
+        .commit_damage(
+            b,
+            OwnerDamageCommand {
+                target: b"oteryn:creature.the_welter",
+                occurrence: b"source-test-damage",
+                binding: b"source-test-damage\0hp-18000",
+                damage: 18000,
+            },
+        )
+        .expect("valid native fixture operation must succeed");
+    assert_eq!(damage.health_after, 7000);
+    let e = actor(&mut r, "oteryn:creature.egg", 100, 110, 110, 7);
+    let s = actor(
+        &mut r,
+        "oteryn:creature.spawn_of_the_welter",
+        100,
+        100,
+        100,
+        7,
+    );
+    let values:serde_json::Value=serde_json::from_str(include_str!("../../../../docs/agents/evidence/monster-full-mechanics-20261004/lanes/encounters/welter-native-profiles.json")).expect("valid native fixture operation must succeed");
+    let reg = r
+        .bind_welter_pinned_definition(
+            values[0]["target"]["key"]
+                .as_str()
+                .expect("valid native fixture operation must succeed"),
+            values[0]["data"]["profile"]["details"]["display_name"]
+                .as_str()
+                .expect("valid native fixture operation must succeed"),
+            values[0]["data"]["profile"]["health"]
+                .as_u64()
+                .expect("valid native fixture operation must succeed"),
+            values[1]["target"]["key"]
+                .as_str()
+                .expect("valid native fixture operation must succeed"),
+            values[1]["data"]["profile"]["details"]["display_name"]
+                .as_str()
+                .expect("valid native fixture operation must succeed"),
+            values[2]["target"]["key"]
+                .as_str()
+                .expect("valid native fixture operation must succeed"),
+            values[2]["data"]["profile"]["details"]["display_name"]
+                .as_str()
+                .expect("valid native fixture operation must succeed"),
+        )
+        .expect("valid native fixture operation must succeed");
+    assert!(
+        r.bind_welter_pinned_definition(
+            "oteryn:creature.the_welter",
+            "The Welter",
+            25001,
+            "oteryn:creature.egg",
+            "Egg",
+            "oteryn:creature.spawn_of_the_welter",
+            "Spawn of the Welter"
+        )
+        .is_err()
+    );
+    let mut wrong_reg = reg;
+    wrong_reg.server_digest[0] ^= 1;
+    let snapshot = r.carrier.slots.clone();
+    assert_eq!(
+        r.commit_welter_consume(&mut WelterConsumeLedger::default(), &wrong_reg, b, 1),
+        Err(WelterConsumeError::RegistrationContentPinMismatch)
+    );
+    assert_eq!(snapshot, r.carrier.slots);
+    let mut ledger = WelterConsumeLedger::default();
+    let before_failure = r.carrier.slots.clone();
+    assert_eq!(
+        r.commit_welter_consume_inner(&mut ledger, &reg, b, 1, true),
+        Err(WelterConsumeError::Carrier(
+            CarrierError::InjectedCommitFailure
+        ))
+    );
+    assert_eq!(before_failure, r.carrier.slots);
+    assert!(ledger.entries.is_empty());
+    let a = r
+        .commit_welter_consume(&mut ledger, &reg, b, 1)
+        .expect("valid native fixture operation must succeed");
+    assert_eq!(a.consumed, Some((e, WelterPrey::Egg)));
+    assert_eq!((a.health_before, a.health_after), (7000, 25000));
+    assert!(!r.contains_live_creature(e));
+    assert_eq!(
+        a.prey_position,
+        Some(MovementLocalPosition {
+            x: 110,
+            y: 110,
+            floor: 7
+        })
+    );
+    assert!(r.carrier.corpse_projections.is_empty());
+    assert!(r.carrier.death_reward_occurrences.is_empty());
+    assert!(r.contains_live_creature(s));
+    let replay = r
+        .commit_welter_consume(&mut ledger, &reg, b, 1)
+        .expect("valid native fixture operation must succeed");
+    assert!(!replay.newly_committed);
+    assert!(r.contains_live_creature(s));
+    assert_eq!(
+        r.commit_welter_consume(&mut ledger, &reg, b, 0),
+        Err(WelterConsumeError::InvalidSequence)
+    );
+    let second = r
+        .commit_welter_consume(&mut ledger, &reg, b, 2)
+        .expect("valid native fixture operation must succeed");
+    assert_eq!(second.consumed, Some((s, WelterPrey::Spawn)));
+    assert_eq!(second.health_after, 25000);
+    assert_eq!(
+        r.commit_welter_consume(&mut ledger, &reg, b, 1),
+        Err(WelterConsumeError::SupersededOccurrence)
+    );
+    let empty = r
+        .commit_welter_consume(&mut ledger, &reg, b, 3)
+        .expect("valid native fixture operation must succeed");
+    assert!(empty.consumed.is_none());
+    assert_eq!(empty.health_before, empty.health_after);
+    let far = actor(&mut r, "oteryn:creature.egg", 100, 111, 100, 7);
+    let upstairs = actor(&mut r, "oteryn:creature.egg", 100, 100, 100, 8);
+    let no = r
+        .commit_welter_consume(&mut ledger, &reg, b, 4)
+        .expect("valid native fixture operation must succeed");
+    assert!(no.consumed.is_none());
+    assert!(r.contains_live_creature(far));
+    assert!(r.contains_live_creature(upstairs));
+    let wrong = actor(&mut r, "oteryn:creature.rat", 10, 100, 100, 7);
+    let before = r.carrier.slots.clone();
+    assert_eq!(
+        r.commit_welter_consume(&mut ledger, &reg, wrong, 1),
+        Err(WelterConsumeError::WrongBossDefinition)
+    );
+    assert_eq!(before, r.carrier.slots);
+    let mut other = runtime();
+    let foreign = actor(&mut other, "oteryn:creature.the_welter", 1, 100, 100, 7); // distinct assignment below
+    other
+        .continuity
+        .advance(PreProductionContinuityGrant {
+            world_id: other.carrier.world_id,
+            channel_id: other.carrier.channel_id,
+            scope_generation: ScopeOwnershipGeneration::new(2)
+                .expect("valid native fixture operation must succeed"),
+        })
+        .expect("valid native fixture operation must succeed");
+    let state = other.carrier.slots.clone();
+    assert!(
+        other
+            .commit_welter_consume(&mut WelterConsumeLedger::default(), &reg, foreign, 1)
+            .is_err()
+    );
+    assert_eq!(state, other.carrier.slots);
+    r.carrier
+        .remove(&r.continuity, b.0)
+        .expect("valid native fixture operation must succeed");
+    let replacement = actor(&mut r, "oteryn:creature.the_welter", 500, 100, 100, 7);
+    assert_ne!(replacement, b);
+    let state = r.carrier.slots.clone();
+    assert!(r.commit_welter_consume(&mut ledger, &reg, b, 99).is_err());
+    assert_eq!(state, r.carrier.slots);
+    println!(
+        "PASS actual ChannelRuntimeV1: first eligible/cap/one removal/replay/older/empty/range/floor/wrongidentity/retiredowner/stalegeneration"
+    );
+}
+// Source-cue consumer reads the native committed table, never a caller-authored result.
+impl ChannelRuntimeV1 {
+    pub(crate) fn welter_committed_consume(
+        &self,
+        ledger: &WelterConsumeLedger,
+        registration: &WelterSourceRegistration,
+        caster: ExactActorRef,
+        sequence: u64,
+    ) -> Result<Option<(u64, WelterConsumeResult)>, WelterConsumeError> {
+        if registration.world != self.content.world_id
+            || registration.activation_sequence != self.content.activation_sequence
+            || registration.server_digest != self.content.server_artifact_digest
+            || registration.client_digest != self.content.client_artifact_digest
+            || registration.frame_digest != self.content.frame_binding_digest
+            || registration.map_digest != self.content.map_revision_digest
+        {
+            return Err(WelterConsumeError::RegistrationContentPinMismatch);
+        }
+        if !self.matches_live_creature_identity(caster, b"oteryn:creature.the_welter") {
+            return Err(WelterConsumeError::Carrier(
+                CarrierError::StaleActorGeneration,
+            ));
+        }
+        Ok(ledger
+            .entries
+            .iter()
+            .find(|e| e.caster == caster && e.sequence == sequence)
+            .map(|e| (caster.0.actor_local_generation.0, e.result)))
+    }
+}
+impl ChannelRuntimeV1 {
+    /// Test-only native damage writer for source-specific lab fixtures. Target identity is
+    /// read from the actual current slot; caller cannot supply an alternate target binding.
+    #[cfg(test)]
+    pub(crate) fn commit_monster_lab_damage(
+        &mut self,
+        actor: ExactActorRef,
+        occurrence: &[u8],
+        damage: i64,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let idx = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let target = match &self.carrier.slots[idx] {
+            Slot::CreatureOccupied {
+                generation,
+                target_identity,
+                ..
+            } if *generation == actor.0.actor_local_generation.0 => target_identity.to_vec(),
+            _ => return Err(CarrierError::StaleActorGeneration),
+        };
+        let mut binding = occurrence.to_vec();
+        binding.extend_from_slice(b"\0monster-lab-native-damage-v1\0");
+        binding.extend_from_slice(&damage.to_be_bytes());
+        self.carrier
+            .current_owner_exact_commit(&self.continuity)
+            .commit_damage(
+                actor,
+                OwnerDamageCommand {
+                    target: &target,
+                    occurrence,
+                    binding: &binding,
+                    damage,
+                },
+            )
+    }
+}
+impl ChannelRuntimeV1 {
+    /// Test-only player geometry under its independently selected current ContentPin.
+    /// Session identity and one-time initialization use the real carrier checks.
+    #[cfg(test)]
+    pub(crate) fn initialize_source_pinned_lab_player_position(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        at: MovementLocalPosition,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        self.carrier
+            .player_slot_index(&self.continuity, actor.0, session)?;
+        let context = self.pinned_position_context();
+        self.carrier
+            .initialize_position(
+                &self.continuity,
+                actor.0,
+                context,
+                LocalPosition {
+                    x: at.x,
+                    y: at.y,
+                    floor: at.floor,
+                },
+            )
+            .map(MovementPositionSnapshot)
+    }
+    /// Test-only admission through the REAL current ContentPin position context. Existing
+    /// movement-test fixture context is intentionally unchanged for its separate test contract.
+    #[cfg(test)]
+    pub(crate) fn admit_source_pinned_lab_creature(
+        &mut self,
+        at: MovementLocalPosition,
+        key: &str,
+        health: i64,
+    ) -> Result<ExactActorRef, CarrierError> {
+        let context = self.pinned_position_context();
+        let actor = self
+            .carrier
+            .admit_creature(&self.continuity, ActorState(0), key, health)?;
+        self.carrier.initialize_position(
+            &self.continuity,
+            actor,
+            context,
+            LocalPosition {
+                x: at.x,
+                y: at.y,
+                floor: at.floor,
+            },
+        )?;
+        Ok(ExactActorRef(actor))
+    }
+}
+
+// Source-specific approved authored Encounter state; NOT a Crystal Lua callback.
+// Exact participant bindings are verified by the owning native Content loader.
+const BONE_CAGE_KEYS: [&[u8]; 4] = [
+    b"oteryn:creature.elyrax_s_soulcage",
+    b"oteryn:creature.myzareth_s_soulcage",
+    b"oteryn:creature.scarith_s_soulcage",
+    b"oteryn:creature.zharvorin_s_soulcage",
+];
+const BONE_CASE_FINGERPRINT: &str =
+    "cc3143372125a5bd4bff66bbd1dc0b3cf2989e6892e3135901f5083f2cd689ef";
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum BoneOverlordPhase {
+    Soulcages,
+    Phylactery,
+    Completed,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum BonePhaseError {
+    Carrier(CarrierError),
+    InvalidSource,
+    WrongParticipant,
+    WrongPhase,
+    ContentChanged,
+}
+impl From<CarrierError> for BonePhaseError {
+    fn from(e: CarrierError) -> Self {
+        Self::Carrier(e)
+    }
+}
+/// Fixed-size one-instance owner state: five captured native generations, four-bit death mask.
+/// Does not implement shared HP, targetability, spawns, quest entry/exit or rewards.
+#[derive(Debug)]
+pub(crate) struct BoneOverlordCagePhase {
+    cages: [ExactActorRef; 4],
+    phylactery: ExactActorRef,
+    dead_mask: u8,
+    phase: BoneOverlordPhase,
+    world: WorldId,
+    channel: ChannelId,
+    generation: ScopeOwnershipGeneration,
+    activation: u64,
+    server: [u8; 32],
+    client: [u8; 32],
+    frame: [u8; 32],
+    map: [u8; 32],
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct BonePhaseTransition {
+    pub(crate) newly_committed: bool,
+    pub(crate) cages_destroyed: u8,
+    pub(crate) phase: BoneOverlordPhase,
+}
+impl ChannelRuntimeV1 {
+    /// Native loader seam: registry has verified five canonical typed profiles and exact Crystal
+    /// bindings. Fingerprint qualifies approved authored Encounter, not a donor callback claim.
+    pub(crate) fn bind_bone_overlord_cage_phase(
+        &self,
+        cages: [ExactActorRef; 4],
+        phylactery: ExactActorRef,
+        encounter_fingerprint: &str,
+        artifact_digest: [u8; 32],
+    ) -> Result<BoneOverlordCagePhase, BonePhaseError> {
+        if encounter_fingerprint != BONE_CASE_FINGERPRINT {
+            return Err(BonePhaseError::InvalidSource);
+        }
+        if artifact_digest != self.content.server_artifact_digest {
+            return Err(BonePhaseError::ContentChanged);
+        }
+        for (i, a) in cages.iter().enumerate() {
+            if !self.matches_live_creature_identity(*a, BONE_CAGE_KEYS[i]) {
+                return Err(BonePhaseError::WrongParticipant);
+            }
+            if cages[..i].contains(a) {
+                return Err(BonePhaseError::WrongParticipant);
+            }
+        }
+        if !self
+            .matches_live_creature_identity(phylactery, b"oteryn:creature.bonelord_s_phylactery")
+        {
+            return Err(BonePhaseError::WrongParticipant);
+        }
+        Ok(BoneOverlordCagePhase {
+            cages,
+            phylactery,
+            dead_mask: 0,
+            phase: BoneOverlordPhase::Soulcages,
+            world: self.content.world_id,
+            channel: self.continuity.channel_id,
+            generation: self.continuity.current_generation,
+            activation: self.content.activation_sequence,
+            server: self.content.server_artifact_digest,
+            client: self.content.client_artifact_digest,
+            frame: self.content.frame_binding_digest,
+            map: self.content.map_revision_digest,
+        })
+    }
+    /// Called after actual current-owner corpse projection, before despawn, under the same owner
+    /// borrow. No caller-authored death boolean/key. Validation completes before phase write.
+    pub(crate) fn commit_bone_overlord_projected_death(
+        &mut self,
+        state: &mut BoneOverlordCagePhase,
+        actor: ExactActorRef,
+    ) -> Result<BonePhaseTransition, BonePhaseError> {
+        if state.world != self.content.world_id
+            || state.channel != self.continuity.channel_id
+            || state.generation != self.continuity.current_generation
+            || state.activation != self.content.activation_sequence
+            || state.server != self.content.server_artifact_digest
+            || state.client != self.content.client_artifact_digest
+            || state.frame != self.content.frame_binding_digest
+            || state.map != self.content.map_revision_digest
+        {
+            return Err(BonePhaseError::ContentChanged);
+        }
+        let cage = state.cages.iter().position(|a| *a == actor);
+        if cage.is_none() && actor != state.phylactery {
+            return Err(BonePhaseError::WrongParticipant);
+        }
+        // validate_ref alone checks scope/index; explicitly reject a recycled actor generation.
+        let idx = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let expected = if let Some(i) = cage {
+            BONE_CAGE_KEYS[i]
+        } else {
+            b"oteryn:creature.bonelord_s_phylactery"
+        };
+        match &self.carrier.slots[idx] {
+            Slot::CreatureOccupied {
+                generation,
+                target_identity,
+                ..
+            } if *generation == actor.0.actor_local_generation.0
+                && target_identity.as_ref() == expected => {}
+            _ => return Err(BonePhaseError::Carrier(CarrierError::StaleActorGeneration)),
+        }
+        self.carrier
+            .current_owner_combat_death(&self.continuity)
+            .projected_death(actor)?;
+        let mut newly = false;
+        if let Some(i) = cage {
+            if state.dead_mask & (1 << i) == 0 {
+                if state.phase != BoneOverlordPhase::Soulcages {
+                    return Err(BonePhaseError::WrongPhase);
+                }
+                state.dead_mask |= 1 << i;
+                newly = true;
+                if state.dead_mask == 15 {
+                    state.phase = BoneOverlordPhase::Phylactery
+                }
+            }
+        } else if state.phase != BoneOverlordPhase::Completed {
+            if state.phase != BoneOverlordPhase::Phylactery {
+                return Err(BonePhaseError::WrongPhase);
+            }
+            state.phase = BoneOverlordPhase::Completed;
+            newly = true;
+        }
+        Ok(BonePhaseTransition {
+            newly_committed: newly,
+            cages_destroyed: state.dead_mask.count_ones() as u8,
+            phase: state.phase,
+        })
+    }
+}
+
+// Isolated proof: real current carrier, owner damage commits and corpse projections.
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+#[test]
+fn bone_phase_actual_sealed_owner_deaths_native_proof() {
+    fn id(tag: u8) -> [u8; 16] {
+        let mut b = [0; 16];
+        b[6] = 0x70;
+        b[8] = 0x80;
+        b[15] = tag;
+        b
+    }
+    let world = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
+    let mut r = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+        NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        16,
+        ChannelContentPin::from_activation(
+            world,
+            1,
+            [1; 32],
+            [2; 32],
+            [3; 32],
+            [4; 32],
+            (100, 100, 7),
+        ),
+    )
+    .expect("valid native fixture operation must succeed");
+    fn actor(r: &mut ChannelRuntimeV1, key: &[u8], hp: i64) -> ExactActorRef {
+        let a = r
+            .carrier
+            .admit_creature(
+                &r.continuity,
+                ActorState(1),
+                std::str::from_utf8(key).expect("valid native fixture operation must succeed"),
+                hp,
+            )
+            .expect("valid native fixture operation must succeed");
+        let c = r.pinned_position_context();
+        r.carrier
+            .initialize_position(
+                &r.continuity,
+                a,
+                c,
+                LocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        ExactActorRef(a)
+    }
+    fn kill(r: &mut ChannelRuntimeV1, a: ExactActorRef, key: &[u8]) {
+        r.carrier
+            .current_owner_exact_commit(&r.continuity)
+            .commit_damage(
+                a,
+                OwnerDamageCommand {
+                    target: key,
+                    occurrence: b"source-cage-death",
+                    binding: b"source-cage-death\0lethal",
+                    damage: 120000,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        let mut d = r.borrow_combat_death();
+        let receipt = d
+            .committed_lethal_receipt(a)
+            .expect("valid native fixture operation must succeed");
+        d.project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
+    }
+    let cages = BONE_CAGE_KEYS.map(|key| actor(&mut r, key, 120000));
+    let phylactery = actor(&mut r, b"oteryn:creature.bonelord_s_phylactery", 50000);
+    assert!(
+        r.bind_bone_overlord_cage_phase(cages, phylactery, "wrong", [1; 32])
+            .is_err()
+    );
+    assert!(
+        r.bind_bone_overlord_cage_phase(cages, phylactery, BONE_CASE_FINGERPRINT, [9; 32])
+            .is_err()
+    );
+    let mut bad = cages;
+    bad[0] = cages[1];
+    assert!(
+        r.bind_bone_overlord_cage_phase(bad, phylactery, BONE_CASE_FINGERPRINT, [1; 32])
+            .is_err()
+    );
+    let mut state = r
+        .bind_bone_overlord_cage_phase(cages, phylactery, BONE_CASE_FINGERPRINT, [1; 32])
+        .expect("valid native fixture operation must succeed");
+    assert!(
+        r.commit_bone_overlord_projected_death(&mut state, cages[0])
+            .is_err()
+    );
+    assert_eq!(state.dead_mask, 0);
+    let unrelated = actor(&mut r, b"oteryn:creature.cat", 10);
+    assert_eq!(
+        r.commit_bone_overlord_projected_death(&mut state, unrelated),
+        Err(BonePhaseError::WrongParticipant)
+    );
+    for i in 0..4 {
+        kill(&mut r, cages[i], BONE_CAGE_KEYS[i]);
+        let x = r
+            .commit_bone_overlord_projected_death(&mut state, cages[i])
+            .expect("valid native fixture operation must succeed");
+        assert!(x.newly_committed);
+        assert_eq!(x.cages_destroyed, (i + 1) as u8);
+        assert_eq!(
+            x.phase,
+            if i == 3 {
+                BoneOverlordPhase::Phylactery
+            } else {
+                BoneOverlordPhase::Soulcages
+            }
+        );
+        let duplicate = r
+            .commit_bone_overlord_projected_death(&mut state, cages[i])
+            .expect("valid native fixture operation must succeed");
+        assert!(!duplicate.newly_committed);
+        assert_eq!(duplicate.cages_destroyed, x.cages_destroyed);
+    }
+    kill(&mut r, phylactery, b"oteryn:creature.bonelord_s_phylactery");
+    let victory = r
+        .commit_bone_overlord_projected_death(&mut state, phylactery)
+        .expect("valid native fixture operation must succeed");
+    assert_eq!(victory.phase, BoneOverlordPhase::Completed);
+    assert!(victory.newly_committed);
+    assert!(
+        !r.commit_bone_overlord_projected_death(&mut state, phylactery)
+            .expect("valid native fixture operation must succeed")
+            .newly_committed
+    );
+    // An old exact member cannot advance a new instance after its slot is reused.
+    r.carrier
+        .remove(&r.continuity, cages[0].0)
+        .expect("valid native fixture operation must succeed");
+    let replacement = actor(&mut r, BONE_CAGE_KEYS[0], 120000);
+    assert_ne!(replacement, cages[0]);
+    assert!(
+        r.commit_bone_overlord_projected_death(&mut state, cages[0])
+            .is_err()
+    );
+    // A source token is fenced by native content even when actor references look plausible.
+    state.server = [9; 32];
+    assert_eq!(
+        r.commit_bone_overlord_projected_death(&mut state, cages[1]),
+        Err(BonePhaseError::ContentChanged)
+    );
+    println!(
+        "PASS Bone native4distinct sealed deaths/phase/duplicate/source/current-pin/stale-generation; full sharedHP/spawn/gates NOT CLAIMED"
+    );
+}
+
+// Append beside native physical runtime_actor_carrier owner. No generic interpreter.
+#[derive(Debug, Default)]
+pub(crate) struct BorethDeathLedger {
+    entries: Vec<CreatureDeathOccurrenceKey>,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct BorethDeathResult {
+    pub(crate) newly_committed: bool,
+    pub(crate) removed: Vec<ExactActorRef>,
+}
+impl ChannelRuntimeV1 {
+    /// Pinned Crystal 00ce02a5 BorethDeath: remove all exact Plaguethrower monsters in
+    /// x32936..32944,y31474..31482,floor1; no caller role/name/position or reward authority.
+    pub(crate) fn commit_boreth_death(
+        &mut self,
+        ledger: &mut BorethDeathLedger,
+        boreth: ExactActorRef,
+    ) -> Result<BorethDeathResult, CarrierError> {
+        let owner = self.borrow_combat_death();
+        if owner.creature_target_identity(boreth)? != b"oteryn:creature.boreth" {
+            return Err(CarrierError::NotCreature);
+        }
+        let (death, _) = owner.projected_death(boreth)?;
+        ledger.entries.retain(|key| {
+            self.carrier.validate_ref(&self.continuity, key.0).is_ok()
+                && self
+                    .carrier
+                    .corpse_projections
+                    .iter()
+                    .any(|p| p.occurrence.death_key() == *key)
+        });
+        if ledger.entries.contains(&death) {
+            return Ok(BorethDeathResult {
+                newly_committed: false,
+                removed: Vec::new(),
+            });
+        }
+        let context = self.pinned_position_context();
+        let mut removed = Vec::new();
+        removed
+            .try_reserve(self.carrier.slots.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for (i, slot) in self.carrier.slots.iter().enumerate() {
+            if let Slot::CreatureOccupied {
+                generation,
+                target_identity,
+                health,
+                position: Some(p),
+                ..
+            } = slot
+                && *health > 0
+                && target_identity.as_ref() == b"oteryn:creature.plaguethrower"
+                && p.context == context
+                && p.position.floor == 1
+                && (32936..=32944).contains(&p.position.x)
+                && (31474..=31482).contains(&p.position.y)
+            {
+                removed.push(ExactActorRef(ActorRef {
+                    world_id: self.carrier.world_id,
+                    channel_id: self.carrier.channel_id,
+                    scope_generation: self.carrier.scope_generation,
+                    actor_local_id: ActorLocalId(
+                        u32::try_from(i + 1)
+                            .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
+                    ),
+                    actor_local_generation: ActorLocalGeneration(*generation),
+                }));
+            }
+        }
+        // Preflight every fallible bound/ref/allocation before first physical owner mutation.
+        ledger
+            .entries
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for actor in &removed {
+            let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+            u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+        }
+        for actor in &removed {
+            self.carrier.remove(&self.continuity, actor.0)?;
+        }
+        ledger.entries.push(death);
+        Ok(BorethDeathResult {
+            newly_committed: true,
+            removed,
+        })
+    }
+}
+
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+#[test]
+fn crystal_boreth_native_proof() {
+    fn id(tag: u8) -> [u8; 16] {
+        let mut b = [0; 16];
+        b[6] = 0x70;
+        b[8] = 0x80;
+        b[15] = tag;
+        b
+    }
+    let world = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
+    let mut r = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+        NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        16,
+        ChannelContentPin::from_activation(
+            world,
+            1,
+            [1; 32],
+            [2; 32],
+            [3; 32],
+            [4; 32],
+            (100, 100, 7),
+        ),
+    )
+    .expect("valid native fixture operation must succeed");
+    fn actor(r: &mut ChannelRuntimeV1, key: &str, x: i32, y: i32, floor: u8) -> ExactActorRef {
+        let a = r
+            .carrier
+            .admit_creature(&r.continuity, ActorState(0), key, 10)
+            .expect("valid native fixture operation must succeed");
+        r.carrier
+            .initialize_position(
+                &r.continuity,
+                a,
+                r.pinned_position_context(),
+                LocalPosition {
+                    x,
+                    y,
+                    floor: i16::from(floor),
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        ExactActorRef(a)
+    }
+    let boss = actor(&mut r, "oteryn:creature.boreth", 1, 1, 7);
+    let a = actor(&mut r, "oteryn:creature.plaguethrower", 32936, 31474, 1);
+    let b = actor(&mut r, "oteryn:creature.plaguethrower", 32944, 31482, 1);
+    let outside = actor(&mut r, "oteryn:creature.plaguethrower", 32945, 31482, 1);
+    let upstairs = actor(&mut r, "oteryn:creature.plaguethrower", 32940, 31477, 2);
+    let rat = actor(&mut r, "oteryn:creature.rat", 32940, 31477, 1);
+    let mut ledger = BorethDeathLedger::default();
+    assert!(r.commit_boreth_death(&mut ledger, boss).is_err());
+    assert!(r.contains_live_creature(a));
+    r.carrier
+        .current_owner_exact_commit(&r.continuity)
+        .commit_damage(
+            boss,
+            OwnerDamageCommand {
+                target: b"oteryn:creature.boreth",
+                occurrence: b"boreth-death",
+                binding: b"boreth-death\0hp10",
+                damage: 10,
+            },
+        )
+        .expect("valid native fixture operation must succeed");
+    {
+        let mut o = r.borrow_combat_death();
+        let receipt = o
+            .committed_lethal_receipt(boss)
+            .expect("valid native fixture operation must succeed");
+        o.project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
+    }
+    let corpses = r.carrier.corpse_projections.len();
+    let rewards = r.carrier.death_reward_occurrences.len();
+    let result = r
+        .commit_boreth_death(&mut ledger, boss)
+        .expect("valid native fixture operation must succeed");
+    assert_eq!(result.removed, vec![a, b]);
+    assert!(result.newly_committed);
+    assert!(!r.contains_live_creature(a));
+    assert!(r.contains_live_creature(outside));
+    assert!(r.contains_live_creature(upstairs));
+    assert!(r.contains_live_creature(rat));
+    assert_eq!(r.carrier.corpse_projections.len(), corpses);
+    assert_eq!(r.carrier.death_reward_occurrences.len(), rewards);
+    let replacement = actor(&mut r, "oteryn:creature.plaguethrower", 32940, 31477, 1);
+    assert!(
+        !r.commit_boreth_death(&mut ledger, boss)
+            .expect("valid native fixture operation must succeed")
+            .newly_committed
+    );
+    assert!(r.contains_live_creature(replacement));
+    assert!(r.commit_boreth_death(&mut ledger, rat).is_err());
+    r.carrier
+        .remove(&r.continuity, boss.0)
+        .expect("valid native fixture operation must succeed");
+    assert!(r.commit_boreth_death(&mut ledger, boss).is_err());
+    assert!(r.contains_live_creature(replacement));
+    println!(
+        "PASS Boreth actual native committed death + administrative exact-rectangle removal; source guard, before-death guard, boundaries, floor, other species, no new corpses/rewards, retry replacement and stale generation"
+    );
+}
+
+// Append in native physical runtime_actor_carrier. Conservative unambiguous topCreature subset.
+#[derive(Debug, Default)]
+pub(crate) struct RumBarrelDeathLedger {
+    entries: Vec<RumBarrelDeathEntry>,
+}
+#[derive(Debug)]
+struct RumBarrelDeathEntry {
+    death: CreatureDeathOccurrenceKey,
+    draw: i64,
+    targets: Vec<(ExactActorRef, Option<OwnerDamageResult>)>,
+}
+#[derive(Debug, Clone)]
+pub(crate) struct RumBarrelDeathResult {
+    pub(crate) newly_committed: bool,
+    pub(crate) targets: Vec<(ExactActorRef, OwnerDamageResult)>,
+}
+impl ChannelRuntimeV1 {
+    /// Source Lua draws ONCE per death, shared across all 3x3 targets, 66666..88888 lifedrain.
+    /// `server_draw` must be supplied by the current server RNG owner, never network input.
+    /// Same-tile multi-actor stack authority is unavailable: ambiguous tiles are skipped and flagged.
+    pub(crate) fn commit_rum_barrel_death(
+        &mut self,
+        ledger: &mut RumBarrelDeathLedger,
+        barrel: ExactActorRef,
+        server_draw: i64,
+    ) -> Result<RumBarrelDeathResult, CarrierError> {
+        if !(66666..=88888).contains(&server_draw) {
+            return Err(CarrierError::InvalidDamage);
+        }
+        let owner = self.borrow_combat_death();
+        if owner.creature_target_identity(barrel)? != b"oteryn:creature.rum_barrel" {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        let (death, center) = owner.projected_death(barrel)?;
+        ledger.entries.retain(|e| {
+            self.carrier
+                .validate_ref(&self.continuity, e.death.0)
+                .is_ok()
+                && self
+                    .carrier
+                    .corpse_projections
+                    .iter()
+                    .any(|p| p.occurrence.death_key() == e.death)
+        });
+        let existed = ledger.entries.iter().any(|e| e.death == death);
+        let entry = if let Some(index) = ledger.entries.iter().position(|e| e.death == death) {
+            if ledger.entries[index].draw != server_draw {
+                return Err(CarrierError::PlanConflict);
+            }
+            index
+        } else {
+            let context = self.pinned_position_context();
+            let mut targets = Vec::new();
+            targets
+                .try_reserve(9)
+                .map_err(|_| CarrierError::AllocationFailed)?;
+            for dx in -1..=1 {
+                for dy in -1..=1 {
+                    let mut count = 0;
+                    let mut target = None;
+                    for (i, slot) in self.carrier.slots.iter().enumerate() {
+                        let position = match slot {
+                            Slot::Occupied {
+                                position: Some(p), ..
+                            }
+                            | Slot::CreatureOccupied {
+                                position: Some(p),
+                                health: 1..,
+                                ..
+                            } => p,
+                            _ => continue,
+                        };
+                        if position.context != context
+                            || position.position.floor != center.floor
+                            || i64::from(position.position.x) != i64::from(center.x) + dx
+                            || i64::from(position.position.y) != i64::from(center.y) + dy
+                        {
+                            continue;
+                        }
+                        count += 1;
+                        if let Slot::CreatureOccupied {
+                            generation,
+                            target_identity,
+                            ..
+                        } = slot
+                            && target_identity.as_ref() == b"oteryn:creature.weak_spot"
+                        {
+                            target = Some(ExactActorRef(ActorRef {
+                                world_id: self.carrier.world_id,
+                                channel_id: self.carrier.channel_id,
+                                scope_generation: self.carrier.scope_generation,
+                                actor_local_id: ActorLocalId(
+                                    u32::try_from(i + 1)
+                                        .map_err(|_| CarrierError::CapacityArithmeticOverflow)?,
+                                ),
+                                actor_local_generation: ActorLocalGeneration(*generation),
+                            }));
+                        }
+                    }
+                    if count == 1
+                        && let Some(target) = target
+                    {
+                        targets.push((target, None));
+                    }
+                }
+            }
+            ledger
+                .entries
+                .try_reserve(1)
+                .map_err(|_| CarrierError::AllocationFailed)?;
+            ledger.entries.push(RumBarrelDeathEntry {
+                death,
+                draw: server_draw,
+                targets,
+            });
+            ledger.entries.len() - 1
+        };
+        let newly_committed = !existed
+            || ledger.entries[entry]
+                .targets
+                .iter()
+                .any(|(_, result)| result.is_none());
+        // Once-per-death producer fixes the target census; retries cannot damage replacement actors.
+        // Native per-target receipt remains authoritative if a later allocation fails mid callback.
+        let mut completed = Vec::new();
+        completed
+            .try_reserve_exact(ledger.entries[entry].targets.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for (target, result) in &mut ledger.entries[entry].targets {
+            let committed = if let Some(committed) = *result {
+                committed
+            } else {
+                let occurrence = format!(
+                    "rum:{}:{}:{}",
+                    death.actor_local_id(),
+                    death.actor_local_generation(),
+                    target.0.actor_local_id.0
+                );
+                let binding = format!("{occurrence}\0crystal-rum-lifedrain:{server_draw}");
+                let committed = self
+                    .carrier
+                    .current_owner_exact_commit(&self.continuity)
+                    .commit_damage(
+                        *target,
+                        OwnerDamageCommand {
+                            target: b"oteryn:creature.weak_spot",
+                            occurrence: occurrence.as_bytes(),
+                            binding: binding.as_bytes(),
+                            damage: server_draw,
+                        },
+                    )?;
+                *result = Some(committed);
+                committed
+            };
+            // Result storage was reserved before the first target HP write.
+            completed.push((*target, committed));
+        }
+        Ok(RumBarrelDeathResult {
+            newly_committed,
+            targets: completed,
+        })
+    }
+}
+
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+#[test]
+fn crystal_rum_native_proof() {
+    fn id(tag: u8) -> [u8; 16] {
+        let mut b = [0; 16];
+        b[6] = 0x70;
+        b[8] = 0x80;
+        b[15] = tag;
+        b
+    }
+    let world = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
+    let mut r = ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+        NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        16,
+        ChannelContentPin::from_activation(
+            world,
+            1,
+            [1; 32],
+            [2; 32],
+            [3; 32],
+            [4; 32],
+            (100, 100, 7),
+        ),
+    )
+    .expect("valid native fixture operation must succeed");
+    fn actor(
+        r: &mut ChannelRuntimeV1,
+        key: &str,
+        health: i64,
+        x: i32,
+        y: i32,
+        floor: i16,
+    ) -> ExactActorRef {
+        let a = r
+            .carrier
+            .admit_creature(&r.continuity, ActorState(0), key, health)
+            .expect("valid native fixture operation must succeed");
+        r.carrier
+            .initialize_position(
+                &r.continuity,
+                a,
+                r.pinned_position_context(),
+                LocalPosition { x, y, floor },
+            )
+            .expect("valid native fixture operation must succeed");
+        ExactActorRef(a)
+    }
+    let boss = actor(&mut r, "oteryn:creature.rum_barrel", 10, 100, 100, 7);
+    let a = actor(&mut r, "oteryn:creature.weak_spot", 200000, 99, 99, 7);
+    let b = actor(&mut r, "oteryn:creature.weak_spot", 200000, 101, 101, 7);
+    let upstairs = actor(&mut r, "oteryn:creature.weak_spot", 200000, 101, 101, 8);
+    let outside = actor(&mut r, "oteryn:creature.weak_spot", 200000, 102, 100, 7);
+    let overlapped = actor(&mut r, "oteryn:creature.weak_spot", 200000, 99, 100, 7);
+    let rat = actor(&mut r, "oteryn:creature.rat", 10, 99, 100, 7);
+    let mut ledger = RumBarrelDeathLedger::default();
+    assert!(r.commit_rum_barrel_death(&mut ledger, boss, 70000).is_err());
+    r.carrier
+        .current_owner_exact_commit(&r.continuity)
+        .commit_damage(
+            boss,
+            OwnerDamageCommand {
+                target: b"oteryn:creature.rum_barrel",
+                occurrence: b"rum-death",
+                binding: b"rum-death\0hp10",
+                damage: 10,
+            },
+        )
+        .expect("valid native fixture operation must succeed");
+    {
+        let mut o = r.borrow_combat_death();
+        let receipt = o
+            .committed_lethal_receipt(boss)
+            .expect("valid native fixture operation must succeed");
+        o.project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
+    }
+    assert!(r.commit_rum_barrel_death(&mut ledger, boss, 66665).is_err());
+    assert!(ledger.entries.is_empty());
+    let result = r
+        .commit_rum_barrel_death(&mut ledger, boss, 70000)
+        .expect("valid native fixture operation must succeed");
+    assert!(result.newly_committed);
+    assert_eq!(result.targets.len(), 2);
+    for (_, damage) in result.targets {
+        assert_eq!(
+            (damage.health_before, damage.health_after),
+            (200000, 130000)
+        );
+    }
+    assert!(r.contains_live_creature(upstairs));
+    assert!(r.contains_live_creature(outside));
+    assert!(r.contains_live_creature(overlapped));
+    assert!(r.contains_live_creature(rat));
+    let repeat = r
+        .commit_rum_barrel_death(&mut ledger, boss, 70000)
+        .expect("valid native fixture operation must succeed");
+    assert!(!repeat.newly_committed);
+    assert_eq!(repeat.targets[0].1.health_after, 130000);
+    assert_eq!(
+        r.commit_rum_barrel_death(&mut ledger, boss, 70001)
+            .expect_err("fixture must reject this invalid operation"),
+        CarrierError::PlanConflict
+    );
+    r.carrier
+        .remove(&r.continuity, a.0)
+        .expect("valid native fixture operation must succeed");
+    let replacement = actor(&mut r, "oteryn:creature.weak_spot", 200000, 99, 99, 7);
+    assert!(
+        !r.commit_rum_barrel_death(&mut ledger, boss, 70000)
+            .expect("valid native fixture operation must succeed")
+            .newly_committed
+    );
+    let idx = r
+        .carrier
+        .validate_ref(&r.continuity, replacement.0)
+        .expect("valid native fixture operation must succeed");
+    assert!(matches!(
+        &r.carrier.slots[idx],
+        Slot::CreatureOccupied { health: 200000, .. }
+    ));
+    assert!(r.commit_rum_barrel_death(&mut ledger, b, 70000).is_err());
+    println!(
+        "PASS Rum real owner HP commit shared one source draw, death/definition/range/floor/ambiguous-stack guards, replay and changed draw conflict, replacement generation untouched"
+    );
+}
+
+// Append beside native physical carrier. Ten exact source callbacks, not an Encounter interpreter.
+#[derive(Debug, Default)]
+pub(crate) struct TentacleDeathLedger {
+    entries: Vec<(CreatureDeathOccurrenceKey, Option<ExactActorRef>)>,
+}
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct TentacleNextResult {
+    pub(crate) newly_committed: bool,
+    pub(crate) spawned: Option<ExactActorRef>,
+    pub(crate) position: Option<MovementLocalPosition>,
+}
+fn crystal_tentacle_line(key: &[u8]) -> Result<&'static [MovementLocalPosition], CarrierError> {
+    Ok(match key {
+        b"oteryn:creature.tentacle" => &[
+            MovementLocalPosition {
+                x: 33723,
+                y: 31180,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33724,
+                y: 31180,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33725,
+                y: 31180,
+                floor: 7,
+            },
+        ],
+        b"oteryn:creature.tentacle2" => &[
+            MovementLocalPosition {
+                x: 33723,
+                y: 31186,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33723,
+                y: 31187,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33723,
+                y: 31188,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33723,
+                y: 31189,
+                floor: 7,
+            },
+        ],
+        b"oteryn:creature.tentacle3" => &[
+            MovementLocalPosition {
+                x: 33727,
+                y: 31184,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33727,
+                y: 31185,
+                floor: 7,
+            },
+        ],
+        b"oteryn:creature.tentacle4" => &[
+            MovementLocalPosition {
+                x: 33731,
+                y: 31180,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33732,
+                y: 31180,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33733,
+                y: 31180,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33734,
+                y: 31180,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33735,
+                y: 31180,
+                floor: 7,
+            },
+        ],
+        b"oteryn:creature.tentacle5" => &[
+            MovementLocalPosition {
+                x: 33718,
+                y: 31180,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33718,
+                y: 31179,
+                floor: 7,
+            },
+            MovementLocalPosition {
+                x: 33718,
+                y: 31178,
+                floor: 7,
+            },
+        ],
+        b"oteryn:creature.tentacle6" => &[
+            MovementLocalPosition {
+                x: 33714,
+                y: 31180,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33714,
+                y: 31179,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33714,
+                y: 31178,
+                floor: 6,
+            },
+        ],
+        b"oteryn:creature.tentacle7" => &[
+            MovementLocalPosition {
+                x: 33726,
+                y: 31182,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33726,
+                y: 31181,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33726,
+                y: 31180,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33726,
+                y: 31179,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33726,
+                y: 31178,
+                floor: 6,
+            },
+        ],
+        b"oteryn:creature.tentacle8" => &[
+            MovementLocalPosition {
+                x: 33718,
+                y: 31187,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33718,
+                y: 31188,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33718,
+                y: 31189,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33718,
+                y: 31190,
+                floor: 6,
+            },
+        ],
+        b"oteryn:creature.tentacle9" => &[
+            MovementLocalPosition {
+                x: 33714,
+                y: 31185,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33713,
+                y: 31185,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33712,
+                y: 31185,
+                floor: 6,
+            },
+        ],
+        b"oteryn:creature.tentacle10" => &[
+            MovementLocalPosition {
+                x: 33716,
+                y: 31181,
+                floor: 6,
+            },
+            MovementLocalPosition {
+                x: 33716,
+                y: 31182,
+                floor: 6,
+            },
+        ],
+        _ => return Err(CarrierError::CreatureTargetMismatch),
+    })
+}
+impl ChannelRuntimeV1 {
+    /// Callable only after the root source-specific Map owner removes the line prop.
+    /// Data-loader caller must qualify current exact source profile health2500 and map frame.
+    /// Creates the existing same species through native admission+initialize; no synthetic identity.
+    /// Final-tile transform/removal and ENERGYHIT remain independent WorldObject/presentation work.
+    pub(crate) fn commit_tentacle_next(
+        &mut self,
+        ledger: &mut TentacleDeathLedger,
+        actor: ExactActorRef,
+    ) -> Result<TentacleNextResult, CarrierError> {
+        let owner = self.borrow_combat_death();
+        let key = owner.creature_target_identity(actor)?;
+        let line = crystal_tentacle_line(key)?;
+        let identity = std::str::from_utf8(key)
+            .map_err(|_| CarrierError::CreatureTargetMismatch)?
+            .to_owned();
+        let (death, position) = owner.projected_death(actor)?;
+        let next = line
+            .iter()
+            .position(|p| *p == position)
+            .map_or(0, |index| index + 1);
+        let at = line.get(next).copied();
+        ledger.entries.retain(|(key, _)| {
+            self.carrier.validate_ref(&self.continuity, key.0).is_ok()
+                && self
+                    .carrier
+                    .corpse_projections
+                    .iter()
+                    .any(|p| p.occurrence.death_key() == *key)
+        });
+        if let Some((_, spawned)) = ledger.entries.iter().find(|(key, _)| *key == death) {
+            return Ok(TentacleNextResult {
+                newly_committed: false,
+                spawned: *spawned,
+                position: at,
+            });
+        }
+        ledger
+            .entries
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let spawned = if let Some(at) = at {
+            let context = self.pinned_position_context();
+            let created =
+                self.carrier
+                    .admit_creature(&self.continuity, ActorState(0), &identity, 2500)?;
+            if let Err(error) = self.carrier.initialize_position(
+                &self.continuity,
+                created,
+                context,
+                LocalPosition {
+                    x: at.x,
+                    y: at.y,
+                    floor: at.floor,
+                },
+            ) {
+                self.carrier.remove(&self.continuity, created)?;
+                return Err(error);
+            }
+            Some(ExactActorRef(created))
+        } else {
+            None
+        };
+        ledger.entries.push((death, spawned));
+        Ok(TentacleNextResult {
+            newly_committed: true,
+            spawned,
+            position: at,
+        })
+    }
+}
+
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+#[test]
+fn crystal_tentacle_native_proof() {
+    fn id(tag: u8) -> [u8; 16] {
+        let mut b = [0; 16];
+        b[6] = 0x70;
+        b[8] = 0x80;
+        b[15] = tag;
+        b
+    }
+    fn runtime() -> ChannelRuntimeV1 {
+        let world = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
+        ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            16,
+            ChannelContentPin::from_activation(
+                world,
+                1,
+                [1; 32],
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (100, 100, 7),
+            ),
+        )
+        .expect("valid native fixture operation must succeed")
+    }
+    fn dead(r: &mut ChannelRuntimeV1, key: &str, at: MovementLocalPosition) -> ExactActorRef {
+        let a = r
+            .carrier
+            .admit_creature(&r.continuity, ActorState(0), key, 2500)
+            .expect("valid native fixture operation must succeed");
+        r.carrier
+            .initialize_position(
+                &r.continuity,
+                a,
+                r.pinned_position_context(),
+                LocalPosition {
+                    x: at.x,
+                    y: at.y,
+                    floor: at.floor,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        let a = ExactActorRef(a);
+        r.carrier
+            .current_owner_exact_commit(&r.continuity)
+            .commit_damage(
+                a,
+                OwnerDamageCommand {
+                    target: key.as_bytes(),
+                    occurrence: b"tentacle-death",
+                    binding: b"tentacle-death\0source2500",
+                    damage: 2500,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        let mut o = r.borrow_combat_death();
+        let receipt = o
+            .committed_lethal_receipt(a)
+            .expect("valid native fixture operation must succeed");
+        o.project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
+        a
+    }
+    for n in 1..=10 {
+        let key = if n == 1 {
+            "oteryn:creature.tentacle".to_owned()
+        } else {
+            format!("oteryn:creature.tentacle{n}")
+        };
+        let line = crystal_tentacle_line(key.as_bytes())
+            .expect("valid native fixture operation must succeed");
+        assert!(line.len() >= 2);
+        let mut r = runtime();
+        let a = dead(&mut r, &key, line[0]);
+        let mut ledger = TentacleDeathLedger::default();
+        let result = r
+            .commit_tentacle_next(&mut ledger, a)
+            .expect("valid native fixture operation must succeed");
+        assert!(result.newly_committed);
+        assert_eq!(result.position, Some(line[1]));
+        let created = result
+            .spawned
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(
+            r.read_actor_position(created)
+                .expect("valid native fixture operation must succeed")
+                .position(),
+            line[1]
+        );
+        let index = r
+            .carrier
+            .validate_ref(&r.continuity, created.0)
+            .expect("valid native fixture operation must succeed");
+        assert!(
+            matches!(&r.carrier.slots[index],Slot::CreatureOccupied{health:2500,target_identity,..} if target_identity.as_ref()==key.as_bytes())
+        );
+        assert!(
+            !r.commit_tentacle_next(&mut ledger, a)
+                .expect("valid native fixture operation must succeed")
+                .newly_committed
+        );
+        let final_actor = dead(
+            &mut r,
+            &key,
+            *line
+                .last()
+                .expect("valid native fixture operation must succeed"),
+        );
+        let result = r
+            .commit_tentacle_next(&mut ledger, final_actor)
+            .expect("valid native fixture operation must succeed");
+        assert!(result.newly_committed);
+        assert!(result.spawned.is_none());
+        assert!(result.position.is_none());
+        let fallback = dead(
+            &mut r,
+            &key,
+            MovementLocalPosition {
+                x: 1,
+                y: 1,
+                floor: 1,
+            },
+        );
+        let result = r
+            .commit_tentacle_next(&mut ledger, fallback)
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(result.position, Some(line[0]));
+        assert_eq!(
+            r.read_actor_position(
+                result
+                    .spawned
+                    .expect("valid native fixture operation must succeed")
+            )
+            .expect("valid native fixture operation must succeed")
+            .position(),
+            line[0]
+        );
+        r.carrier
+            .remove(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
+        assert!(r.commit_tentacle_next(&mut ledger, a).is_err());
+    }
+    assert!(crystal_tentacle_line(b"oteryn:creature.rat").is_err());
+    println!(
+        "PASS all10 Tentacle actual native sealed-death spawn-next fresh generation+HP2500, exact ordered/reversed lines, final no-spawn, outside-line first fallback, repeated death and retired source guard"
+    );
+}
+
+impl ChannelRuntimeV1 {
+    /// Read the existing current carrier, not timer enrollment. The explicit candidate budget
+    /// refuses a partial census; geometry/hostility qualification still belongs to perception.
+    pub(crate) fn current_live_creature_candidates(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<ExactActorRef>, CarrierError> {
+        let context = self.pinned_position_context();
+        let mut out = Vec::new();
+        for (i, slot) in self.carrier.slots.iter().enumerate() {
+            let Slot::CreatureOccupied {
+                generation,
+                health,
+                position: Some(position),
+                ..
+            } = slot
+            else {
+                continue;
+            };
+            if *health <= 0 {
+                continue;
+            }
+            if position.context != context {
+                return Err(CarrierError::PositionContextMismatch);
+            }
+            if out.len() >= limit {
+                return Err(CarrierError::AllocationFailed);
+            }
+            out.try_reserve(1)
+                .map_err(|_| CarrierError::AllocationFailed)?;
+            out.push(ExactActorRef(ActorRef {
+                world_id: self.carrier.world_id,
+                channel_id: self.carrier.channel_id,
+                scope_generation: self.carrier.scope_generation,
+                actor_local_id: ActorLocalId((i + 1) as u32),
+                actor_local_generation: ActorLocalGeneration(*generation),
+            }));
+        }
+        Ok(out)
+    }
+    /// Position Combat targets every creature on the tile. This bounded self subset is legal
+    /// only when the actual carrier proves no OTHER positioned actor occupies that cell.
+    /// Unqualified/dead/temporarily uncontrolled other actors conservatively veto, never vanish.
+    pub(crate) fn is_sole_current_actor_on_cell(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<bool, CarrierError> {
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let snapshot = self.read_actor_position(actor)?;
+        if snapshot.context() != self.pinned_movement_context() {
+            return Err(CarrierError::PositionContextMismatch);
+        }
+        let cell = snapshot.position();
+        for (i, slot) in self.carrier.slots.iter().enumerate() {
+            if i == index {
+                continue;
+            }
+            let p = match slot {
+                Slot::Occupied {
+                    position: Some(p), ..
+                }
+                | Slot::CreatureOccupied {
+                    position: Some(p), ..
+                } => p,
+                _ => continue,
+            };
+            if p.position.x == cell.x && p.position.y == cell.y && p.position.floor == cell.floor {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+}
+
+// Append in physical Foundation carrier. Pure test-only owner construction; no production grants.
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+pub(crate) fn crystal_death_router_fixture(world: WorldId) -> ChannelRuntimeV1 {
+    crystal_death_router_fixture_digest(world, [1; 32])
+}
+#[cfg(test)]
+pub(crate) fn crystal_death_router_fixture_with_artifact(
+    world: WorldId,
+    digest: [u8; 32],
+) -> ChannelRuntimeV1 {
+    crystal_death_router_fixture_digest(world, digest)
+}
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+fn crystal_death_router_fixture_digest(world: WorldId, digest: [u8; 32]) -> ChannelRuntimeV1 {
+    let mut channel = [0u8; 16];
+    channel[6] = 0x70;
+    channel[8] = 0x80;
+    channel[15] = 92;
+    let mut node = channel;
+    node[15] = 93;
+    ChannelRuntimeV1::from_committed_assignment(
+        world,
+        ChannelId::decode(&channel).expect("valid native fixture operation must succeed"),
+        NodeId::decode(&node).expect("valid native fixture operation must succeed"),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        16,
+        ChannelContentPin::from_activation(
+            world,
+            1,
+            digest,
+            [2; 32],
+            [3; 32],
+            [4; 32],
+            (100, 100, 7),
+        ),
+    )
+    .expect("valid native fixture operation must succeed")
+}
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+impl ChannelRuntimeV1 {
+    pub(crate) fn crystal_router_fixture_actor(
+        &mut self,
+        key: &str,
+        health: i64,
+        at: MovementLocalPosition,
+    ) -> ExactActorRef {
+        let actor = self
+            .carrier
+            .admit_creature(&self.continuity, ActorState(0), key, health)
+            .expect("valid native fixture operation must succeed");
+        self.carrier
+            .initialize_position(
+                &self.continuity,
+                actor,
+                self.pinned_position_context(),
+                LocalPosition {
+                    x: at.x,
+                    y: at.y,
+                    floor: at.floor,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        ExactActorRef(actor)
+    }
+    pub(crate) fn crystal_router_fixture_project_death(
+        &mut self,
+        actor: ExactActorRef,
+        key: &str,
+        health: i64,
+    ) {
+        self.carrier
+            .current_owner_exact_commit(&self.continuity)
+            .commit_damage(
+                actor,
+                OwnerDamageCommand {
+                    target: key.as_bytes(),
+                    occurrence: b"router-fixture-death",
+                    binding: b"router-fixture-death\0fixture",
+                    damage: health,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        let mut owner = self.borrow_combat_death();
+        let receipt = owner
+            .committed_lethal_receipt(actor)
+            .expect("valid native fixture operation must succeed");
+        owner
+            .project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
+    }
+    pub(crate) fn crystal_router_fixture_health(&self, actor: ExactActorRef) -> i64 {
+        let index = self
+            .carrier
+            .validate_ref(&self.continuity, actor.0)
+            .expect("valid native fixture operation must succeed");
+        match &self.carrier.slots[index] {
+            Slot::CreatureOccupied { health, .. } => Some(*health),
+            _ => None,
+        }
+        .expect("fixture requires native creature")
+    }
+}
+
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+impl ChannelRuntimeV1 {
+    pub(crate) fn crystal_router_fixture_commit_lethal(
+        &mut self,
+        actor: ExactActorRef,
+        key: &str,
+        health: i64,
+    ) {
+        self.carrier
+            .current_owner_exact_commit(&self.continuity)
+            .commit_damage(
+                actor,
+                OwnerDamageCommand {
+                    target: key.as_bytes(),
+                    occurrence: b"router-hook-fixture-death",
+                    binding: b"router-hook-fixture-death\0fixture",
+                    damage: health,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+    }
+}
+
+// PROJECT approximation only: wiki shared-life semantics + Crystal per-cage120000 baseline.
+// The physical creature slots are the only HP values; registration/phase state stores no pool HP.
+#[derive(Debug)]
+pub(crate) struct BoneSharedHpResult {
+    pub(crate) transitions: [OwnerDamageResult; 4],
+    pub(crate) approximation: &'static str,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NativeBoneSharedGroup {
+    cages: [ExactActorRef; 4],
+    phylactery: ExactActorRef,
+    world: WorldId,
+    channel: ChannelId,
+    generation: ScopeOwnershipGeneration,
+    activation: u64,
+    server: [u8; 32],
+    client: [u8; 32],
+    frame: [u8; 32],
+    map: [u8; 32],
+    cage_deaths: [Option<CreatureDeathOccurrenceKey>; 4],
+}
+impl ChannelRuntimeV1 {
+    /// Called only after existing actual five-profile Bone registry qualified the phase instance.
+    /// No health counter is stored: all shared health lives in the four physical creature slots.
+    pub(crate) fn register_bone_shared_hp(
+        &mut self,
+        state: &BoneOverlordCagePhase,
+        current: &super::ScopeRuntimeFence,
+        stamp: super::RuntimeWorkStamp,
+    ) -> Result<(), BonePhaseError> {
+        let indexes = self.bone_shared_owner_guard(state, current, stamp)?;
+        if indexes.iter().any(|i| {
+            !matches!(
+                self.carrier.slots[*i],
+                Slot::CreatureOccupied { health: 1.., .. }
+            )
+        }) {
+            return Err(BonePhaseError::WrongPhase);
+        }
+        if self
+            .carrier
+            .bone_shared_groups
+            .iter()
+            .any(|g| g.cages == state.cages && g.phylactery == state.phylactery)
+        {
+            return Ok(());
+        }
+        if self.carrier.bone_shared_groups.iter().any(|g| {
+            g.cages.iter().any(|a| state.cages.contains(a)) || g.phylactery == state.phylactery
+        }) {
+            return Err(BonePhaseError::WrongParticipant);
+        }
+        let keep: [bool; 16] = std::array::from_fn(|i| {
+            self.carrier.bone_shared_groups.get(i).is_some_and(|g|g.cages.iter().chain(std::iter::once(&g.phylactery)).any(|a|self.carrier.validate_ref(&self.continuity,a.0).ok().is_some_and(|index|matches!(&self.carrier.slots[index],Slot::CreatureOccupied{generation,..}if *generation==a.0.actor_local_generation.0))))
+        });
+        let mut n = 0;
+        self.carrier.bone_shared_groups.retain(|_| {
+            let retain = keep[n];
+            n += 1;
+            retain
+        });
+        if self.carrier.bone_shared_groups.len() >= 16 {
+            return Err(BonePhaseError::Carrier(CarrierError::CapacityExceeded));
+        }
+        self.carrier
+            .bone_shared_groups
+            .try_reserve(1)
+            .map_err(|_| BonePhaseError::Carrier(CarrierError::AllocationFailed))?;
+        self.carrier.bone_shared_groups.push(NativeBoneSharedGroup {
+            cages: state.cages,
+            phylactery: state.phylactery,
+            world: state.world,
+            channel: state.channel,
+            generation: state.generation,
+            activation: state.activation,
+            server: state.server,
+            client: state.client,
+            frame: state.frame,
+            map: state.map,
+            cage_deaths: [None; 4],
+        });
+        Ok(())
+    }
+    fn bone_shared_pin_matches(&self, g: &NativeBoneSharedGroup) -> bool {
+        g.world == self.content.world_id
+            && g.channel == self.continuity.channel_id
+            && g.generation == self.continuity.current_generation
+            && g.activation == self.content.activation_sequence
+            && g.server == self.content.server_artifact_digest
+            && g.client == self.content.client_artifact_digest
+            && g.frame == self.content.frame_binding_digest
+            && g.map == self.content.map_revision_digest
+    }
+}
+impl ChannelRuntimeV1 {
+    fn bone_shared_owner_guard(
+        &self,
+        state: &BoneOverlordCagePhase,
+        current: &super::ScopeRuntimeFence,
+        stamp: super::RuntimeWorkStamp,
+    ) -> Result<[usize; 4], BonePhaseError> {
+        let b = self.binding();
+        let scope = super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id());
+        if !current.is_current_for_scope(scope, b.scope_generation())
+            || !current.accepts_stamp(stamp)
+        {
+            return Err(BonePhaseError::Carrier(CarrierError::WrongScope));
+        }
+        if state.world != self.content.world_id
+            || state.channel != self.continuity.channel_id
+            || state.generation != self.continuity.current_generation
+            || state.activation != self.content.activation_sequence
+            || state.server != self.content.server_artifact_digest
+            || state.client != self.content.client_artifact_digest
+            || state.frame != self.content.frame_binding_digest
+            || state.map != self.content.map_revision_digest
+        {
+            return Err(BonePhaseError::ContentChanged);
+        }
+        if state.phase != BoneOverlordPhase::Soulcages || state.dead_mask != 0 {
+            return Err(BonePhaseError::WrongPhase);
+        }
+        let mut indexes = [0; 4];
+        let mut hp = None;
+        for (i, actor) in state.cages.iter().enumerate() {
+            let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+            let Slot::CreatureOccupied {
+                health,
+                target_identity,
+                ..
+            } = &self.carrier.slots[index]
+            else {
+                return Err(BonePhaseError::WrongParticipant);
+            };
+            if target_identity.as_ref() != BONE_CAGE_KEYS[i]
+                || self.native_summon_role(*actor)?.is_some()
+                || *health < 0
+                || *health > 120000
+                || indexes[..i].contains(&index)
+            {
+                return Err(BonePhaseError::WrongParticipant);
+            }
+            if hp.is_some_and(|prior| prior != *health) {
+                return Err(BonePhaseError::InvalidSource);
+            }
+            hp = Some(*health);
+            indexes[i] = index;
+        }
+        Ok(indexes)
+    }
+    /// Same generic native receipt/contributor preparation as ordinary damage, staged for four
+    /// actual actors before any physical HP write. One incoming occurrence, separate per-actor
+    /// receipts; replay/changed-plan refusals retain ordinary native semantics.
+    // Keep commit_bone_shared_damage ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn commit_bone_shared_damage(
+        &mut self,
+        state: &BoneOverlordCagePhase,
+        current: &super::ScopeRuntimeFence,
+        stamp: super::RuntimeWorkStamp,
+        target: ExactActorRef,
+        command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
+        fail_before_write: bool,
+    ) -> Result<BoneSharedHpResult, BonePhaseError> {
+        let indexes = self.bone_shared_owner_guard(state, current, stamp)?;
+        let target_index = state
+            .cages
+            .iter()
+            .position(|a| *a == target)
+            .ok_or(BonePhaseError::WrongParticipant)?;
+        if command.target != BONE_CAGE_KEYS[target_index] {
+            return Err(BonePhaseError::WrongParticipant);
+        }
+        let mut staged: [Option<Slot>; 4] = [None, None, None, None];
+        let mut results = [OwnerDamageResult {
+            applied: false,
+            health_before: 0,
+            health_after: 0,
+        }; 4];
+        for i in 0..4 {
+            let (index, next, result) = self.carrier.prepare_creature_damage_inner(
+                &self.continuity,
+                state.cages[i].0,
+                OwnerDamageCommand {
+                    target: BONE_CAGE_KEYS[i],
+                    occurrence: command.occurrence,
+                    binding: command.binding,
+                    damage: command.damage,
+                },
+                attacker,
+                fail_before_write,
+            )?;
+            if index != indexes[i] {
+                return Err(BonePhaseError::WrongParticipant);
+            }
+            staged[i] = next;
+            results[i] = result;
+        }
+        if results.iter().any(|r| {
+            r.applied != results[0].applied
+                || r.health_before != results[0].health_before
+                || r.health_after != results[0].health_after
+        }) {
+            return Err(BonePhaseError::InvalidSource);
+        }
+        if self.bone_shared_owner_guard(state, current, stamp)? != indexes {
+            return Err(BonePhaseError::WrongParticipant);
+        }
+        // All fallible work and guards completed. Exclusive current-owner publication, no callbacks.
+        for (index, next) in indexes.into_iter().zip(staged) {
+            if let Some(next) = next {
+                self.carrier.slots[index] = next
+            }
+        }
+        Ok(BoneSharedHpResult {
+            transitions: results,
+            approximation: "PROJECT_SHARED_POOL_FROM_CRYSTAL_CAGE_MAX_120000_NOT_GLOBAL",
+        })
+    }
+}
+
+impl ChannelActorCarrier {
+    fn note_bone_shared_projection(
+        &mut self,
+        actor: ExactActorRef,
+        death: CreatureDeathOccurrenceKey,
+    ) {
+        for g in &mut self.bone_shared_groups {
+            if let Some(i) = g.cages.iter().position(|a| *a == actor) {
+                g.cage_deaths[i] = Some(death)
+            }
+        }
+    }
+    fn bone_shared_indexes(
+        &self,
+        c: &NamespaceContinuityGuard,
+        g: &NativeBoneSharedGroup,
+    ) -> Result<[usize; 4], CarrierError> {
+        if self.world_id != g.world
+            || self.channel_id != g.channel
+            || self.scope_generation != g.generation
+        {
+            return Err(CarrierError::WrongScope);
+        }
+        let mut indexes = [0; 4];
+        let mut hp = None;
+        for i in 0..4 {
+            let index = self.validate_ref(c, g.cages[i].0)?;
+            let Slot::CreatureOccupied {
+                generation,
+                health,
+                target_identity,
+                ..
+            } = &self.slots[index]
+            else {
+                return Err(CarrierError::NotCreature);
+            };
+            if *generation != g.cages[i].0.actor_local_generation.0 {
+                return Err(CarrierError::StaleActorGeneration);
+            }
+            if target_identity.as_ref() != BONE_CAGE_KEYS[i]
+                || *health < 0
+                || *health > 120000
+                || indexes[..i].contains(&index)
+                || self.is_native_summon(g.cages[i])
+            {
+                return Err(CarrierError::CreatureTargetMismatch);
+            }
+            if hp.is_some_and(|old| old != *health) {
+                return Err(CarrierError::PlanConflict);
+            }
+            hp = Some(*health);
+            indexes[i] = index;
+        }
+        Ok(indexes)
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn commit_bone_shared_damage_inner(
+        &mut self,
+        c: &NamespaceContinuityGuard,
+        g: &NativeBoneSharedGroup,
+        target: ActorRef,
+        command: OwnerDamageCommand<'_>,
+        attacker: Option<AttackerCommand>,
+        fail: bool,
+        max_sub_ordinal: Option<u16>,
+        now_ms: Option<u64>,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let indexes = self.bone_shared_indexes(c, g)?;
+        let selected = g
+            .cages
+            .iter()
+            .position(|a| a.0 == target)
+            .ok_or(CarrierError::CreatureTargetMismatch)?;
+        if command.target != BONE_CAGE_KEYS[selected] {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        let mut slots: [Option<Slot>; 4] = [None, None, None, None];
+        let mut out = [OwnerDamageResult {
+            applied: false,
+            health_before: 0,
+            health_after: 0,
+        }; 4];
+        for i in 0..4 {
+            let (index, next, result) = self.prepare_creature_damage_inner_bounded(
+                c,
+                g.cages[i].0,
+                OwnerDamageCommand {
+                    target: BONE_CAGE_KEYS[i],
+                    occurrence: command.occurrence,
+                    binding: command.binding,
+                    damage: command.damage,
+                },
+                attacker,
+                fail,
+                max_sub_ordinal,
+                false,
+                now_ms,
+            )?;
+            if index != indexes[i] {
+                return Err(CarrierError::StaleActorGeneration);
+            }
+            slots[i] = next;
+            out[i] = result;
+        }
+        if out.iter().any(|r| {
+            r.applied != out[0].applied
+                || r.health_before != out[0].health_before
+                || r.health_after != out[0].health_after
+        }) {
+            return Err(CarrierError::PlanConflict);
+        }
+        if self.bone_shared_indexes(c, g)? != indexes {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        for (index, slot) in indexes.into_iter().zip(slots) {
+            if let Some(slot) = slot {
+                self.slots[index] = slot
+            }
+        }
+        Ok(out[selected])
+    }
+}
+impl ChannelRuntimeV1 {
+    /// Normalize inside existing source-qualified native heal sink, before its preflight/publication.
+    /// PROJECT coalescence: one source cast applies once per shared group; lowest source roster index
+    /// in requested targets supplies its qualified draw. No invented spirit spell/radius/threshold.
+    fn expand_bone_shared_heals(
+        &self,
+        requests: &[(ExactActorRef, String, u64, u64)],
+    ) -> Result<NativeSourceHealProjection, CarrierError> {
+        let mut expanded = Vec::new();
+        expanded
+            .try_reserve(64)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let mut map = Vec::new();
+        map.try_reserve(requests.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for (n, (actor, key, max, draw)) in requests.iter().enumerate() {
+            if *max == 0 || *max > i64::MAX as u64 || *draw > i64::MAX as u64 {
+                return Err(CarrierError::InvalidCreatureHealth);
+            }
+            if requests[..n].iter().any(|r| r.0 == *actor) {
+                return Err(CarrierError::PlanConflict);
+            }
+            if let Some(g) = self
+                .carrier
+                .bone_shared_groups
+                .iter()
+                .find(|g| g.cages.contains(actor))
+            {
+                if !self.bone_shared_pin_matches(g) {
+                    return Err(CarrierError::PositionContextMismatch);
+                }
+                let indexes = self.carrier.bone_shared_indexes(&self.continuity, g)?;
+                let selected = g
+                    .cages
+                    .iter()
+                    .position(|a| a == actor)
+                    .ok_or(CarrierError::CreatureTargetMismatch)?;
+                if key.as_bytes() != BONE_CAGE_KEYS[selected] || *max != 120000 {
+                    return Err(CarrierError::CreatureTargetMismatch);
+                }
+                let chosen = g
+                    .cages
+                    .iter()
+                    .find_map(|a| requests.iter().find(|r| r.0 == *a))
+                    .ok_or(CarrierError::PlanConflict)?;
+                if !expanded
+                    .iter()
+                    .any(|r: &(ExactActorRef, String, u64, u64)| g.cages.contains(&r.0))
+                {
+                    if expanded.len() + 4 > 64 {
+                        return Err(CarrierError::AllocationFailed);
+                    }
+                    for i in 0..4 {
+                        let Slot::CreatureOccupied { health, .. } = self.carrier.slots[indexes[i]]
+                        else {
+                            return Err(CarrierError::NotCreature);
+                        };
+                        if health <= 0 {
+                            return Err(CarrierError::CreatureNotActionable);
+                        }
+                        expanded.push((
+                            g.cages[i],
+                            std::str::from_utf8(BONE_CAGE_KEYS[i])
+                                .map_err(|_| CarrierError::InvalidCreatureTarget)?
+                                .to_owned(),
+                            120000,
+                            chosen.3,
+                        ));
+                    }
+                }
+                map.push(
+                    expanded
+                        .iter()
+                        .position(|r| r.0 == *actor)
+                        .ok_or(CarrierError::PlanConflict)?,
+                );
+            } else {
+                if expanded.len() >= 64 {
+                    return Err(CarrierError::AllocationFailed);
+                }
+                map.push(expanded.len());
+                expanded.push((*actor, key.clone(), *max, *draw));
+            }
+        }
+        Ok((expanded, map))
+    }
+}
+
+// Test-only native owner harness. Registration callback supplied by root test reads actual project.
+// No crate::content dependency is introduced into standalone Foundation path includes.
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+pub(crate) fn bone_shared_actual_owner_harness(
+    world: WorldId,
+    artifact_digest: [u8; 32],
+    mut register: impl FnMut(
+        &ChannelRuntimeV1,
+        [ExactActorRef; 4],
+        ExactActorRef,
+    ) -> BoneOverlordCagePhase,
+) {
+    fn id(t: u8) -> [u8; 16] {
+        let mut b = [0; 16];
+        b[6] = 0x70;
+        b[8] = 0x80;
+        b[15] = t;
+        b
+    }
+    fn runtime(world: super::WorldId, artifact_digest: [u8; 32]) -> ChannelRuntimeV1 {
+        ChannelRuntimeV1::from_committed_assignment(
+            world,
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            32,
+            ChannelContentPin::from_activation(
+                world,
+                1,
+                artifact_digest,
+                [2; 32],
+                [3; 32],
+                [4; 32],
+                (100, 100, 7),
+            ),
+        )
+        .expect("valid native fixture operation must succeed")
+    }
+    fn actor(r: &mut ChannelRuntimeV1, k: &[u8], hp: i64) -> ExactActorRef {
+        let a = r
+            .carrier
+            .admit_creature(
+                &r.continuity,
+                ActorState(0),
+                std::str::from_utf8(k).expect("valid native fixture operation must succeed"),
+                hp,
+            )
+            .expect("valid native fixture operation must succeed");
+        r.carrier
+            .initialize_position(
+                &r.continuity,
+                a,
+                r.pinned_position_context(),
+                LocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        ExactActorRef(a)
+    }
+    fn hp(r: &ChannelRuntimeV1, a: ExactActorRef) -> i64 {
+        let i = r
+            .carrier
+            .validate_ref(&r.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
+        match r.carrier.slots[i] {
+            Slot::CreatureOccupied { health, .. } => Some(health),
+            _ => None,
+        }
+        .expect("fixture must contain a native creature")
+    }
+    fn damage(
+        r: &mut ChannelRuntimeV1,
+        a: ExactActorRef,
+        key: &[u8],
+        occ: &[u8],
+        binding: &[u8],
+        n: i64,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        r.borrow_exact_actor_commit().commit_damage(
+            a,
+            OwnerDamageCommand {
+                target: key,
+                occurrence: occ,
+                binding,
+                damage: n,
+            },
+        )
+    }
+    let mut r = runtime(world, artifact_digest);
+    let cages = BONE_CAGE_KEYS.map(|k| actor(&mut r, k, 120000));
+    let phyl = actor(&mut r, b"oteryn:creature.bonelord_s_phylactery", 50000);
+    let mut state = register(&r, cages, phyl);
+    let scope = super::RuntimeScopeRefV1::channel(world, r.binding().channel_id());
+    let generation = r.binding().scope_generation();
+    let mut fence = super::ScopeRuntimeFence::from_external_grant(generation).with_scope(scope);
+    let ordinal = fence
+        .accept_input(generation)
+        .expect("valid native fixture operation must succeed");
+    let stamp = fence.stamp(ordinal);
+
+    let mut wrong = [0; 16];
+    wrong[6] = 0x70;
+    wrong[8] = 0x80;
+    wrong[15] = 99;
+    let wrong = super::ScopeRuntimeFence::from_external_grant(generation).with_scope(
+        super::RuntimeScopeRefV1::channel(
+            world,
+            ChannelId::decode(&wrong).expect("valid native fixture operation must succeed"),
+        ),
+    );
+    assert!(r.register_bone_shared_hp(&state, &wrong, stamp).is_err());
+    r.register_bone_shared_hp(&state, &fence, stamp)
+        .expect("valid native fixture operation must succeed");
+    assert_eq!(r.carrier.bone_shared_groups.len(), 1);
+    r.register_bone_shared_hp(&state, &fence, stamp)
+        .expect("valid native fixture operation must succeed");
+    assert_eq!(r.carrier.bone_shared_groups.len(), 1);
+    assert_eq!(
+        damage(
+            &mut r,
+            phyl,
+            b"oteryn:creature.bonelord_s_phylactery",
+            b"premature",
+            b"premature\0hit",
+            50000
+        ),
+        Err(CarrierError::CreatureNotActionable)
+    );
+    assert_eq!(hp(&r, phyl), 50000);
+    let first = damage(&mut r, cages[1], BONE_CAGE_KEYS[1], b"A", b"A\0hit400", 400)
+        .expect("valid native fixture operation must succeed");
+    assert!(first.applied);
+    for a in cages {
+        assert_eq!(hp(&r, a), 119600)
+    }
+    assert!(
+        !damage(&mut r, cages[1], BONE_CAGE_KEYS[1], b"A", b"A\0hit400", 400)
+            .expect("valid native fixture operation must succeed")
+            .applied
+    );
+    assert!(
+        damage(
+            &mut r,
+            cages[1],
+            BONE_CAGE_KEYS[1],
+            b"A",
+            b"A\0changed",
+            500
+        )
+        .is_err()
+    );
+    for a in cages {
+        assert_eq!(hp(&r, a), 119600)
+    }
+    let heals = vec![
+        (
+            cages[2],
+            std::str::from_utf8(BONE_CAGE_KEYS[2])
+                .expect("valid native fixture operation must succeed")
+                .to_owned(),
+            120000,
+            200,
+        ),
+        (
+            cages[0],
+            std::str::from_utf8(BONE_CAGE_KEYS[0])
+                .expect("valid native fixture operation must succeed")
+                .to_owned(),
+            120000,
+            100,
+        ),
+    ];
+    let healed = r
+        .commit_source_creature_heal_batch(artifact_digest, &heals)
+        .expect("valid native fixture operation must succeed");
+    assert_eq!(healed.len(), 2);
+    for a in cages {
+        assert_eq!(hp(&r, a), 119700)
+    } // source-roster lowest index chosen, oncecast
+    let duplicate = vec![heals[0].clone(), heals[0].clone()];
+    assert!(
+        r.commit_source_creature_heal_batch(artifact_digest, &duplicate)
+            .is_err()
+    );
+    for a in cages {
+        assert_eq!(hp(&r, a), 119700)
+    }
+    r.content.map_revision_digest[0] ^= 1;
+    assert!(
+        damage(
+            &mut r,
+            cages[0],
+            BONE_CAGE_KEYS[0],
+            b"generic-map",
+            b"generic-map\0hit",
+            100
+        )
+        .is_err()
+    );
+    assert!(
+        damage(
+            &mut r,
+            phyl,
+            b"oteryn:creature.bonelord_s_phylactery",
+            b"generic-phyl-map",
+            b"generic-phyl-map\0hit",
+            1
+        )
+        .is_err()
+    );
+    assert!(
+        r.commit_source_creature_heal_batch(artifact_digest, &heals)
+            .is_err()
+    );
+    assert!(
+        r.commit_bone_shared_damage(
+            &state,
+            &fence,
+            stamp,
+            cages[0],
+            OwnerDamageCommand {
+                target: BONE_CAGE_KEYS[0],
+                occurrence: b"map",
+                binding: b"map\0hit",
+                damage: 100
+            },
+            None,
+            false
+        )
+        .is_err()
+    );
+    for a in cages {
+        assert_eq!(hp(&r, a), 119700)
+    }
+    r.content.map_revision_digest[0] ^= 1;
+    damage(
+        &mut r,
+        cages[0],
+        BONE_CAGE_KEYS[0],
+        b"lethal",
+        b"lethal\0hp",
+        120000,
+    )
+    .expect("valid native fixture operation must succeed");
+    for a in cages {
+        assert_eq!(hp(&r, a), 0)
+    }
+    assert!(
+        r.commit_source_creature_heal_batch(artifact_digest, &heals)
+            .is_err()
+    );
+    for (i, a) in cages.into_iter().enumerate() {
+        let mut owner = r.borrow_combat_death();
+        let receipt = owner
+            .committed_lethal_receipt(a)
+            .expect("valid native fixture operation must succeed");
+        owner
+            .project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
+        let projected = owner
+            .projected_death(a)
+            .expect("valid native fixture operation must succeed")
+            .0;
+        assert_eq!(projected.actor_local_id(), a.0.actor_local_id.0);
+        let phase = r
+            .commit_bone_overlord_projected_death(&mut state, a)
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(phase.cages_destroyed, (i + 1) as u8);
+        if i < 3 {
+            assert!(
+                damage(
+                    &mut r,
+                    phyl,
+                    b"oteryn:creature.bonelord_s_phylactery",
+                    b"early",
+                    b"early\0hit",
+                    1
+                )
+                .is_err()
+            );
+        }
+    }
+    assert_eq!(state.phase, BoneOverlordPhase::Phylactery);
+    assert!(
+        r.carrier.bone_shared_groups[0]
+            .cage_deaths
+            .iter()
+            .all(Option::is_some)
+    );
+    damage(
+        &mut r,
+        phyl,
+        b"oteryn:creature.bonelord_s_phylactery",
+        b"victory",
+        b"victory\0hit",
+        50000,
+    )
+    .expect("valid native fixture operation must succeed");
+    {
+        let mut owner = r.borrow_combat_death();
+        let receipt = owner
+            .committed_lethal_receipt(phyl)
+            .expect("valid native fixture operation must succeed");
+        owner
+            .project_committed_lethal(receipt)
+            .expect("valid native fixture operation must succeed");
+    }
+    assert_eq!(
+        r.commit_bone_overlord_projected_death(&mut state, phyl)
+            .expect("valid native fixture operation must succeed")
+            .phase,
+        BoneOverlordPhase::Completed
+    );
+    assert_eq!(r.carrier.corpse_projections.len(), 5);
+    assert!(r.carrier.death_reward_occurrences.is_empty());
+    // Late fourth-slot conflict: three prepared native slots must remain unpublished.
+    let mut q = runtime(world, artifact_digest);
+    let c = BONE_CAGE_KEYS.map(|k| actor(&mut q, k, 120000));
+    let p = actor(&mut q, b"oteryn:creature.bonelord_s_phylactery", 50000);
+    let st = register(&q, c, p);
+    for i in 0..3 {
+        damage(&mut q, c[i], BONE_CAGE_KEYS[i], b"seed", b"seed\0hit", 400)
+            .expect("valid native fixture operation must succeed");
+    }
+    damage(
+        &mut q,
+        c[3],
+        BONE_CAGE_KEYS[3],
+        b"late",
+        b"late\0hit400",
+        400,
+    )
+    .expect("valid native fixture operation must succeed");
+    q.register_bone_shared_hp(&st, &fence, stamp)
+        .expect("valid native fixture operation must succeed");
+    let before = q.carrier.slots.clone();
+    assert_eq!(
+        damage(
+            &mut q,
+            c[0],
+            BONE_CAGE_KEYS[0],
+            b"late",
+            b"late\0hit200",
+            200
+        ),
+        Err(CarrierError::PlanConflict)
+    );
+    assert_eq!(q.carrier.slots, before);
+    q.carrier
+        .remove(&q.continuity, c[1].0)
+        .expect("valid native fixture operation must succeed");
+    let replacement = actor(&mut q, BONE_CAGE_KEYS[1], 120000);
+    let before = q.carrier.slots.clone();
+    assert!(
+        damage(
+            &mut q,
+            c[0],
+            BONE_CAGE_KEYS[0],
+            b"stale",
+            b"stale\0hit",
+            200
+        )
+        .is_err()
+    );
+    assert_eq!(q.carrier.slots, before);
+    assert_ne!(replacement, c[1]);
+    // Same source species and identical physical HP: only exact local generation can refuse fanout.
+    let mut replacement_case = runtime(world, artifact_digest);
+    let rc = BONE_CAGE_KEYS.map(|k| actor(&mut replacement_case, k, 120000));
+    let rp = actor(
+        &mut replacement_case,
+        b"oteryn:creature.bonelord_s_phylactery",
+        50000,
+    );
+    let rs = register(&replacement_case, rc, rp);
+    replacement_case
+        .register_bone_shared_hp(&rs, &fence, stamp)
+        .expect("valid native fixture operation must succeed");
+    damage(
+        &mut replacement_case,
+        rc[0],
+        BONE_CAGE_KEYS[0],
+        b"before-replacement",
+        b"before-replacement\0damage400",
+        400,
+    )
+    .expect("valid native fixture operation must succeed");
+    replacement_case
+        .carrier
+        .remove(&replacement_case.continuity, rc[1].0)
+        .expect("valid native fixture operation must succeed");
+    let reused = actor(&mut replacement_case, BONE_CAGE_KEYS[1], 119600);
+    assert_eq!(reused.0.actor_local_id, rc[1].0.actor_local_id);
+    assert_ne!(
+        reused.0.actor_local_generation,
+        rc[1].0.actor_local_generation
+    );
+    let before = replacement_case.carrier.slots.clone();
+    assert_eq!(
+        damage(
+            &mut replacement_case,
+            rc[0],
+            BONE_CAGE_KEYS[0],
+            b"replacement-fanout",
+            b"replacement-fanout\0damage200",
+            200
+        ),
+        Err(CarrierError::StaleActorGeneration)
+    );
+    assert_eq!(replacement_case.carrier.slots, before);
+    let heal = vec![(
+        rc[0],
+        std::str::from_utf8(BONE_CAGE_KEYS[0])
+            .expect("valid native fixture operation must succeed")
+            .to_owned(),
+        120000,
+        100,
+    )];
+    assert_eq!(
+        replacement_case.commit_source_creature_heal_batch(artifact_digest, &heal),
+        Err(CarrierError::StaleActorGeneration)
+    );
+    assert_eq!(replacement_case.carrier.slots, before);
+    assert_eq!(hp(&replacement_case, reused), 119600);
+    // Retired exact generations must not consume the16-group bound forever. New same-species
+    // occupants in reused indexes are not the retired group's members. Keep a partially live group.
+    let mut pruning = runtime(world, artifact_digest);
+    let live = BONE_CAGE_KEYS.map(|k| actor(&mut pruning, k, 120000));
+    let live_phyl = actor(
+        &mut pruning,
+        b"oteryn:creature.bonelord_s_phylactery",
+        50000,
+    );
+    let live_state = register(&pruning, live, live_phyl);
+    pruning
+        .register_bone_shared_hp(&live_state, &fence, stamp)
+        .expect("valid native fixture operation must succeed");
+    for turn in 0..20 {
+        let c = BONE_CAGE_KEYS.map(|k| actor(&mut pruning, k, 120000));
+        let p = actor(
+            &mut pruning,
+            b"oteryn:creature.bonelord_s_phylactery",
+            50000,
+        );
+        let state = register(&pruning, c, p);
+        pruning
+            .register_bone_shared_hp(&state, &fence, stamp)
+            .expect("valid native fixture operation must succeed");
+        assert_eq!(pruning.carrier.bone_shared_groups.len(), 2);
+        assert!(
+            pruning
+                .carrier
+                .bone_shared_groups
+                .iter()
+                .any(|g| g.cages == live)
+        );
+        for a in c.into_iter().chain(std::iter::once(p)) {
+            pruning
+                .carrier
+                .remove(&pruning.continuity, a.0)
+                .expect("valid native fixture operation must succeed");
+        }
+        assert_eq!(hp(&pruning, live[0]), 120000);
+        assert!(turn < 20);
+    }
+    // Remove four cages, retaining only the exact HP0/present or live Phyl member still holds group.
+    for a in live {
+        pruning
+            .carrier
+            .remove(&pruning.continuity, a.0)
+            .expect("valid native fixture operation must succeed");
+    }
+    let c = BONE_CAGE_KEYS.map(|k| actor(&mut pruning, k, 120000));
+    let p = actor(
+        &mut pruning,
+        b"oteryn:creature.bonelord_s_phylactery",
+        50000,
+    );
+    let state = register(&pruning, c, p);
+    pruning
+        .register_bone_shared_hp(&state, &fence, stamp)
+        .expect("valid native fixture operation must succeed");
+    assert!(
+        pruning
+            .carrier
+            .bone_shared_groups
+            .iter()
+            .any(|g| g.phylactery == live_phyl)
+    );
+    assert_eq!(pruning.carrier.bone_shared_groups.len(), 2);
+    println!(
+        "PASS actual5 source roster/bindings; native generic4slot shareddamage/heal coalescence; fullpin/map/fence guards; replay/conflict/late-fourth atomicity; real4sealed cage keys openPhyl only after4; distinct finaldeath; no reward mint; stale replacement untouched. PROJECT120000, no spirit/map Global claims."
+    );
+}
+
+#[cfg(test)]
+impl ChannelRuntimeV1 {
+    pub(crate) fn bone_shared_fixture_damage(
+        &mut self,
+        actor: ExactActorRef,
+        key: &str,
+        damage: i64,
+        occurrence: &str,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let binding = format!("{occurrence}\0{key}\0{damage}");
+        self.borrow_exact_actor_commit().commit_damage(
+            actor,
+            OwnerDamageCommand {
+                target: key.as_bytes(),
+                occurrence: occurrence.as_bytes(),
+                binding: binding.as_bytes(),
+                damage,
+            },
+        )
+    }
+}
+impl ChannelRuntimeV1 {
+    /// Native occupancy veto under the SAME owner turn. Conservatively include all positioned
+    /// actors (even dead/uncontrolled or differently pinned); never infer emptiness from timers.
+    pub(crate) fn current_cell_occupied_except(
+        &self,
+        cell: MovementLocalPosition,
+        except: ExactActorRef,
+    ) -> bool {
+        let Ok(excluded) = self.carrier.validate_ref(&self.continuity, except.0) else {
+            return true;
+        };
+        self.carrier.slots.iter().enumerate().any(|(i, slot)| {
+            if i == excluded {
+                return false;
+            }
+            let position = match slot {
+                Slot::Occupied {
+                    position: Some(p), ..
+                }
+                | Slot::CreatureOccupied {
+                    position: Some(p), ..
+                } => p.position,
+                _ => return false,
+            };
+            position.x == cell.x && position.y == cell.y && position.floor == cell.floor
+        })
+    }
+}
+
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+mod selfheal_generation_guard_tests {
+    use super::*;
+    #[test]
+    fn stale_generation_cannot_heal_replacement_or_prune_replay() {
+        let id = |t: u8| [1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, t];
+        let w = WorldId::decode(&id(1)).expect("valid native fixture operation must succeed");
+        let mut r = ChannelRuntimeV1::from_committed_assignment(
+            w,
+            ChannelId::decode(&id(2)).expect("valid native fixture operation must succeed"),
+            NodeId::decode(&id(3)).expect("valid native fixture operation must succeed"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::test(w),
+        )
+        .expect("valid native fixture operation must succeed");
+        let actor = ExactActorRef(
+            r.carrier
+                .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.boreth", 100)
+                .expect("valid native fixture operation must succeed"),
+        );
+        let reg = r
+            .bind_creature_self_heal(
+                "oteryn:creature.boreth",
+                "oteryn:ability.creature.boreth.fixture_heal",
+                1400,
+                100,
+                100,
+            )
+            .expect("valid native fixture operation must succeed");
+        let mut ledger = CreatureSelfHealLedger::default();
+        r.commit_creature_self_heal(&mut ledger, &reg, actor, 0, 100)
+            .expect("valid native fixture operation must succeed");
+        let index = r
+            .carrier
+            .validate_ref(&r.continuity, actor.0)
+            .expect("valid native fixture operation must succeed");
+        // Same occupied slot and same identity, different generation: stale token must refuse.
+        if let Slot::CreatureOccupied { generation, .. } = &mut r.carrier.slots[index] {
+            *generation += 1
+        } else {
+            assert!(
+                matches!(r.carrier.slots[index], Slot::CreatureOccupied { .. }),
+                "fixture must contain a native creature"
+            )
+        }
+        assert_eq!(
+            r.commit_creature_self_heal(&mut ledger, &reg, actor, 1, 100)
+                .expect_err("fixture must reject this invalid operation"),
+            CarrierError::StaleActorGeneration
+        );
+        assert!(matches!(
+            r.carrier.slots[index],
+            Slot::CreatureOccupied { health: 200, .. }
+        ));
+        assert_eq!(ledger.entries.len(), 1);
+        assert_eq!(ledger.entries[0].sequence, 0);
+    }
+}
+
+#[path = "runtime_actor_icicle.rs"]
+mod runtime_actor_icicle;
+
+type NativeSourceHealProjection = (Vec<(ExactActorRef, String, u64, u64)>, Vec<usize>);
+/// Immutable source-qualified admission description. It grants no scope or placement authority.
+/// The source adapter binds exact child revision; current physical owner reads its active policy.
+#[derive(Debug, Clone)]
+pub(crate) struct NativeEncounterSpawnSpec {
+    parent: Box<str>,
+    child: Box<str>,
+    child_revision: Box<str>,
+    content: [u8; 32],
+}
+impl NativeEncounterSpawnSpec {
+    pub(crate) fn qualified(
+        parent: &str,
+        child: &str,
+        child_revision: &str,
+        content: [u8; 32],
+    ) -> Result<Self, CarrierError> {
+        if content == [0; 32] {
+            return Err(CarrierError::ContentPinWorldMismatch);
+        }
+        Ok(Self {
+            parent: copy_native_summon_key(parent)?,
+            child: copy_native_summon_key(child)?,
+            child_revision: copy_native_summon_key(child_revision)?,
+            content,
+        })
+    }
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum EncounterSpawnError {
+    StaleOwner,
+    MissingMap,
+    RefusedMap,
+    Native(CarrierError),
+}
+impl ChannelRuntimeV1 {
+    /// Immediate masterless source spawn, through the same physical admission/position/policy
+    /// owner as native creatures. No static respawn source, master, intrinsic link or reward override.
+    /// Current map proof is independently resolved under this same exclusive owner turn.
+    pub(crate) fn admit_native_encounter_masterless(
+        &mut self,
+        current: &super::ScopeRuntimeFence,
+        stamp: super::RuntimeWorkStamp,
+        parent: ExactActorRef,
+        spec: &NativeEncounterSpawnSpec,
+        at: MovementLocalPosition,
+        map_admits: impl FnOnce(&ChannelRuntimeV1, MovementLocalPosition) -> Option<bool>,
+    ) -> Result<ExactActorRef, EncounterSpawnError> {
+        use EncounterSpawnError as E;
+        let b = self.binding();
+        if !current.is_current_for_scope(
+            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.scope_generation(),
+        ) || !current.accepts_stamp(stamp)
+        {
+            return Err(E::StaleOwner);
+        }
+        if spec.content != self.content.server_artifact_digest
+            || !self.matches_live_creature_identity(parent, spec.parent.as_bytes())
+        {
+            return Err(E::Native(CarrierError::CreatureTargetMismatch));
+        }
+        // This reads the active loader-installed qualified table. A matching display name
+        // cannot substitute for the exact child definition or revision.
+        let policy = self.companion_policy(&spec.child).map_err(E::Native)?;
+        if policy.definition_key.as_str() != spec.child.as_ref()
+            || policy.definition_revision.as_str() != spec.child_revision.as_ref()
+        {
+            return Err(E::Native(CarrierError::CreatureTargetMismatch));
+        }
+        match map_admits(self, at) {
+            None => return Err(E::MissingMap),
+            Some(false) => return Err(E::RefusedMap),
+            Some(true) => {}
+        }
+        if self
+            .carrier
+            .slots
+            .iter()
+            .filter(|s| matches!(s, Slot::CreatureOccupied { health: 1.., .. }))
+            .count()
+            >= 64
+            || !self.native_summon_cell_free(at)
+        {
+            return Err(E::Native(CarrierError::CapacityExceeded));
+        }
+        let context = self.pinned_position_context();
+        self.carrier
+            .validate_position_context(context)
+            .map_err(E::Native)?;
+        // Existing carrier compare-commit behavior: either all physical fields are installed,
+        // or every modified slot/free-list field is restored before returning a rejection.
+        let slots_before = self.carrier.slots.clone();
+        let free_before = self.carrier.free_head;
+        let occupied_before = self.carrier.occupied.clone();
+        let result = (|| {
+            let actor = self.carrier.admit_creature(
+                &self.continuity,
+                ActorState(0),
+                &spec.child,
+                policy.maximum_health,
+            )?;
+            self.carrier.initialize_position(
+                &self.continuity,
+                actor,
+                context,
+                LocalPosition {
+                    x: at.x,
+                    y: at.y,
+                    floor: at.floor,
+                },
+            )?;
+            let actor = ExactActorRef(actor);
+            self.install_creature_policy(actor, &spec.child)?;
+            Ok(actor)
+        })();
+        if result.is_err() {
+            self.carrier.slots = slots_before;
+            self.carrier.free_head = free_before;
+            self.carrier.occupied = occupied_before;
+        }
+        result.map_err(E::Native)
+    }
+}
+impl ChannelRuntimeV1 {
+    /// Source callback administrative removal: no lethal mint, corpse, loot or XP handoff.
+    /// Exact occupied generation + source policy are current; immutable source pins are not grants.
+    pub(crate) fn remove_native_encounter_subject(
+        &mut self,
+        current: &super::ScopeRuntimeFence,
+        stamp: super::RuntimeWorkStamp,
+        actor: ExactActorRef,
+        expected_key: &str,
+        expected_content: [u8; 32],
+    ) -> Result<(), CarrierError> {
+        let b = self.binding();
+        if !current.is_current_for_scope(
+            super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.scope_generation(),
+        ) || !current.accepts_stamp(stamp)
+        {
+            return Err(CarrierError::WrongScope);
+        }
+        if self.content_pin().server_artifact_digest() != expected_content
+            || !self.matches_live_creature_identity(actor, expected_key.as_bytes())
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        let index = self
+            .carrier
+            .validate_summon_actor(&self.continuity, actor)?;
+        self.carrier.assert_slot_spell_unreserved(index)?;
+        // Existing removal cascades intrinsic children. Preflight every fallible current-slot
+        // check before entering it; no mutation can occur between checks in this owner turn.
+        let mut count = 0;
+        for link in &self.carrier.native_summons {
+            if link.parent == actor {
+                count += 1;
+                if count > 16 {
+                    return Err(CarrierError::CapacityExceeded);
+                }
+                let child = self
+                    .carrier
+                    .validate_summon_actor(&self.continuity, link.child)?;
+                self.carrier.assert_slot_spell_unreserved(child)?;
+                if self
+                    .carrier
+                    .native_summons
+                    .iter()
+                    .any(|l| l.parent == link.child)
+                {
+                    return Err(CarrierError::CreatureTargetMismatch);
+                }
+            }
+        }
+        self.carrier.remove(&self.continuity, actor.0).map(|_| ())
+    }
+}
+/// Private intrinsic-link provenance; it cannot authorize a current owner mutation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum NativeSummonOrigin {
+    Behavior {
+        index: usize,
+    },
+    SourceCallback {
+        ability: Box<str>,
+        revision: Box<str>,
+        occurrence: Box<str>,
+    },
+}
+impl NativeSummonOrigin {
+    fn try_owned(&self) -> Result<Self, CarrierError> {
+        match self {
+            Self::Behavior { index } => Ok(Self::Behavior { index: *index }),
+            Self::SourceCallback {
+                ability,
+                revision,
+                occurrence,
+            } => Ok(Self::SourceCallback {
+                ability: copy_native_summon_key(ability)?,
+                revision: copy_native_summon_key(revision)?,
+                occurrence: copy_native_summon_key(occurrence)?,
+            }),
+        }
+    }
+}
+impl NativeSummonAdmissionSpec {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Owner ABI keeps independently qualified source, current fence, exact actor and commit facts explicit"
+    )]
+    pub(crate) fn qualified_callback(
+        parent: &str,
+        child: &str,
+        health: i64,
+        ability: &str,
+        revision: &str,
+        occurrence: &str,
+        total: u32,
+        count: u32,
+        content: [u8; 32],
+    ) -> Result<Self, CarrierError> {
+        let mut spec = Self::qualified(parent, child, health, 0, total, count, content)?;
+        spec.origin = NativeSummonOrigin::SourceCallback {
+            ability: copy_native_summon_key(ability)?,
+            revision: copy_native_summon_key(revision)?,
+            occurrence: copy_native_summon_key(occurrence)?,
+        };
+        Ok(spec)
+    }
+}
+impl ChannelRuntimeV1 {
+    pub(crate) fn native_summon_origin(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Option<NativeSummonOrigin>, CarrierError> {
+        self.carrier
+            .validate_summon_actor(&self.continuity, actor)?;
+        Ok(self
+            .carrier
+            .native_summons
+            .iter()
+            .find(|l| l.child == actor)
+            .map(|l| l.origin.clone()))
+    }
+}
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "test-only native fixture assertions retain descriptive failures"
+)]
+mod native_callback_origin_tests {
+    use super::*;
+    #[test]
+    fn source_callback_origin_is_not_behavior_index_and_current_fence_controls_admission() {
+        // Foundation is path-loaded by PostgreSQL integration targets; use its own
+        // actual carrier fixture, without depending on the unrelated transport test tree.
+        let mut r = super::tests::runtime(8);
+        let parent = r
+            .admit_monster_lab_creature(
+                MovementLocalPosition {
+                    x: 100,
+                    y: 100,
+                    floor: 7,
+                },
+                "oteryn:creature.gaz_haragoth",
+                10000,
+            )
+            .expect("valid native fixture operation must succeed");
+        let b = r.binding();
+        let (f, stamp) = super::super::crystal_timer_fixture(
+            super::super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.scope_generation(),
+        )
+        .expect("valid native fixture operation must succeed");
+        let spec = NativeSummonAdmissionSpec::qualified_callback(
+            "oteryn:creature.gaz_haragoth",
+            "oteryn:creature.minion_of_gaz_haragoth",
+            1000,
+            "oteryn:ability.spell.gaz_haragoth_summon",
+            "definition-r1",
+            "ai-profile:source-fixture:0:attack:11",
+            7,
+            7,
+            r.content_pin().server_artifact_digest(),
+        )
+        .expect("valid native fixture operation must succeed");
+        let child = r
+            .admit_native_summon(
+                &f,
+                stamp,
+                parent,
+                &spec,
+                MovementLocalPosition {
+                    x: 101,
+                    y: 100,
+                    floor: 7,
+                },
+            )
+            .expect("valid native fixture operation must succeed");
+        assert!(
+            matches!(r.native_summon_origin(child).expect("valid native fixture operation must succeed"),Some(NativeSummonOrigin::SourceCallback{ability,occurrence,..})if ability.as_ref()=="oteryn:ability.spell.gaz_haragoth_summon"&&occurrence.as_ref()=="ai-profile:source-fixture:0:attack:11")
+        );
+        let (wrong, wrong_stamp) = super::super::crystal_timer_fixture(
+            super::super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            super::super::ScopeOwnershipGeneration::new(2)
+                .expect("valid native fixture operation must succeed"),
+        )
+        .expect("valid native fixture operation must succeed");
+        assert_eq!(
+            r.admit_native_summon(
+                &wrong,
+                wrong_stamp,
+                parent,
+                &spec,
+                MovementLocalPosition {
+                    x: 102,
+                    y: 100,
+                    floor: 7
+                }
+            ),
+            Err(CarrierError::WrongScope)
+        );
+        r.remove_test_actor(parent)
+            .expect("valid native fixture operation must succeed");
+        assert!(r.native_summon_origin(child).is_err());
     }
 }

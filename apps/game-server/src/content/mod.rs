@@ -35,6 +35,7 @@ pub(crate) mod charm_source;
 pub(crate) mod charm_source_effect;
 pub(crate) mod charm_source_json;
 mod compiler;
+pub(crate) mod creature_reward;
 mod cw2_b1_import;
 mod cw2_b4_import;
 mod digest;
@@ -42,6 +43,7 @@ pub mod encounter_map_item;
 mod fixture;
 pub mod item_abilities;
 pub mod item_admission;
+pub mod item_bed_promotion;
 pub mod item_capacity_promotion;
 pub mod item_description_promotion;
 pub mod item_description_wiki_promotion;
@@ -58,6 +60,7 @@ pub mod item_name15_promotion;
 pub mod item_name_promotion;
 pub mod item_numeric_modifier_promotion;
 pub mod item_physical_promotion;
+pub(crate) mod item_ref;
 pub mod item_stack_default_promotion;
 pub mod item_stack_default_successor8_promotion;
 pub mod item_stack_false_promotion;
@@ -141,3 +144,27 @@ pub(crate) mod spell_familiar_config;
 pub(crate) mod spell_familiar_defenses;
 
 pub(crate) use project::SourceFloorChange;
+
+// Crate test composition may inspect an actually staged native pair; the Stage owner
+// and its complete runtime generation remain private to CONTENT and absent downstream.
+#[cfg(test)]
+pub(crate) fn native_gameplay_test_world_id() -> Result<crate::foundation::WorldId, ContentError> {
+    Ok(production::test_source(1)?.world_id)
+}
+#[cfg(test)]
+pub(crate) fn qualified_native_gameplay_test_state(
+    compiled: &CompiledFirstProductionContent,
+) -> Result<native_gameplay::NativeGameplayState, ContentError> {
+    let staged = production::StagedGeneration::stage(
+        &compiled.server_artifact,
+        &compiled.client_artifact,
+        compiled.expectation(),
+    )?;
+    staged
+        .runtime_state()
+        .native_gameplay()
+        .cloned()
+        .ok_or(ContentError::InvalidArtifact(
+            "explicit native gameplay fixture state absent",
+        ))
+}

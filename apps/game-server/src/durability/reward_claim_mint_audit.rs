@@ -185,6 +185,7 @@ pub struct RewardClaimMintEventIdentity<'a> {
 pub fn encode_reward_claim_mint_event(
     identity: RewardClaimMintEventIdentity<'_>,
     minted: OneItemRewardClaimMintV1,
+    tuple: mint::Type2EventTuple,
 ) -> Result<Vec<u8>, AuditError> {
     check_uuid_v7(&identity.event_id)?;
     check_uuid_v7(&identity.transaction_id)?;
@@ -220,10 +221,10 @@ pub fn encode_reward_claim_mint_event(
         envelope_revision: mint::ENVELOPE_REVISION,
         event_id: identity.event_id.to_vec(),
         event_type_id: mint::EVENT_TYPE_ID,
-        event_schema_revision: mint::EVENT_SCHEMA_REVISION,
+        event_schema_revision: tuple.schema_revision(),
         durability_class: mint::DURABLE_AUDIT,
         privacy_class: mint::RESTRICTED_PLAYER_LINKED,
-        retention_profile_id: mint::RETENTION_PROFILE_ID.into(),
+        retention_profile_id: tuple.retention_profile_id().into(),
         occurred_at_unix_ms: identity.occurred_at_unix_ms,
         world_id: Some(world_id),
         channel_id: Some(identity.channel_id.to_vec()),
@@ -333,7 +334,8 @@ mod tests {
 
     #[test]
     fn encodes_and_round_trips_through_the_registered_gates() {
-        let wire = encode_reward_claim_mint_event(identity(), minted()).unwrap();
+        let wire = encode_reward_claim_mint_event(identity(), minted(), mint::Type2EventTuple::V1)
+            .unwrap();
         let (envelope, decoded) = decode_reward_claim_mint_envelope(&wire).unwrap();
         assert_eq!(decoded, minted());
         assert_eq!(envelope.channel_id, Some(uuid(2)));
@@ -452,7 +454,8 @@ mod tests {
             mutate(&mut value);
             assert!(check_reward_claim_mint(&value).is_err(), "{label}");
             assert!(
-                encode_reward_claim_mint_event(identity(), value).is_err(),
+                encode_reward_claim_mint_event(identity(), value, mint::Type2EventTuple::V1)
+                    .is_err(),
                 "{label}"
             );
         }

@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 from pathlib import Path
 
 import import_spell_families as spell_import
@@ -17,6 +19,24 @@ FAMILY_INDEXES = {
     "Presentation": "content/presentations/definitions/index.json",
     "Item": "content/items/index.json",
 }
+# Production V7 pins (D879, D887): repository-owned files pinned by digest after the
+# overlay stages, whose base digests cover the manifest without them.
+REPOSITORY_PINS = {
+    "item_keys": "tools/content-schema/native-gameplay/item-keys.json",
+    "progression": "rulesets/character/experience/native-section.json",
+    "loot_tables": "tools/content-schema/native-gameplay/loot-tables.json",
+}
+NATIVE_MANIFEST = "content/spells.manifest.json"
+
+
+def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
+    manifest = json.loads(generated[NATIVE_MANIFEST])
+    for key, path in REPOSITORY_PINS.items():
+        manifest[key] = {
+            "path": Path(os.path.relpath(path, "content")).as_posix(),
+            "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
+        }
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
 
 def encoded(value: object, *, registry: bool = False) -> bytes:
@@ -30,13 +50,19 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     Legacy shard counts describe legacy definitions only. Imported collections have
     their own schema, identity and counts; they are not silently coerced into v2.
     """
-    generated = spell_import.outputs(root)
+    baseline = spell_import.baseline_outputs(root)
+    generated = baseline
     generated = current_sources.outputs(root, generated)
+    from compose_monster_current_sources import compose
+    generated = compose(root, baseline, generated)
+    pin_repository_inputs(root, generated)
     descriptors = spell_import.descriptors(root, generated)
     for family, path in FAMILY_INDEXES.items():
         index = json.loads((root / path).read_bytes())
         index["spell_imports"] = descriptors.get(family, [])
-        generated[path] = encoded(index)
+        # Registration is semantic metadata; retain the existing index's explicit
+        # pretty/compact convention instead of reformatting unchanged family data.
+        generated[path] = encoded(index, registry=b'\n  "' in (root / path).read_bytes())
     for path, prefix in (
         ("content/presentations/bindings/index.json", "content/presentations/bindings/"),
         ("rulesets/progression/wheel-of-destiny/index.json", "rulesets/progression/wheel-of-destiny/"),
@@ -46,7 +72,7 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
             entry for entries in descriptors.values() for entry in entries
             if entry["path"].startswith(prefix)
         ]
-        generated[path] = encoded(index, registry=True)
+        generated[path] = encoded(index, registry=b'\n  "' in (root / path).read_bytes())
     registration = {
         "native_manifest": "content/spells.manifest.json",
         "collections": descriptors,

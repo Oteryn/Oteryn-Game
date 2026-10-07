@@ -9,9 +9,9 @@
 //! walk never sends a step the server would hold or refuse.
 
 use oteryn_input_actions::{
-    ActionId, ActionPhase, Binding, BindingMap, ContextDefinition, ContextId, ContextKind,
-    InputAtom, InputChord, InputError, InputRouter, Modifiers, MouseButton, NormalizedInputEvent,
-    RepeatPolicy,
+    ActionId, ActionPhase, Binding, BindingMap, ButtonState, ContextDefinition, ContextId,
+    ContextKind, InputAtom, InputChord, InputError, InputRouter, KeyCode, Modifiers, MouseButton,
+    NormalizedInputEvent, RepeatPolicy,
 };
 use oteryn_renderer::{TileCoord, TileView};
 use std::sync::OnceLock;
@@ -23,6 +23,20 @@ pub enum StepDir {
     East,
     South,
     West,
+}
+
+impl StepDir {
+    /// The tile one step from `tile` in this direction.
+    #[must_use]
+    pub const fn from(self, tile: TileCoord) -> TileCoord {
+        let (dx, dy) = match self {
+            Self::North => (0, -1),
+            Self::East => (1, 0),
+            Self::South => (0, 1),
+            Self::West => (-1, 0),
+        };
+        TileCoord::new(tile.x.saturating_add(dx), tile.y.saturating_add(dy))
+    }
 }
 
 /// Tile under a physical mouse position, or `None` outside the drawn view.
@@ -225,6 +239,25 @@ pub fn pick_target(tile: TileCoord, visible: &[Targetable]) -> Option<Targetable
         .copied()
 }
 
+/// The step an arrow-key press asks for. Held keys repeat, so a held arrow keeps walking.
+#[must_use]
+pub fn arrow_step(events: &[NormalizedInputEvent]) -> Option<StepDir> {
+    events.iter().find_map(|event| match event {
+        NormalizedInputEvent::Key {
+            code,
+            state: ButtonState::Pressed,
+            ..
+        } => match *code {
+            KeyCode::ARROW_UP => Some(StepDir::North),
+            KeyCode::ARROW_RIGHT => Some(StepDir::East),
+            KeyCode::ARROW_DOWN => Some(StepDir::South),
+            KeyCode::ARROW_LEFT => Some(StepDir::West),
+            _ => None,
+        },
+        _ => None,
+    })
+}
+
 /// Action id of the primary-button click in the gameplay context.
 pub const CLICK_ACTION: &str = "client.click";
 
@@ -342,6 +375,14 @@ mod tests {
 
     fn view() -> Result<TileView, oteryn_renderer::BatchError> {
         TileView::new(t(-7, -5), 48, 15, 11)
+    }
+
+    #[test]
+    fn a_step_moves_one_tile_north_is_y_minus_one() {
+        assert_eq!(StepDir::North.from(t(5, 5)), t(5, 4));
+        assert_eq!(StepDir::East.from(t(5, 5)), t(6, 5));
+        assert_eq!(StepDir::South.from(t(5, 5)), t(5, 6));
+        assert_eq!(StepDir::West.from(t(i32::MIN, 0)), t(i32::MIN, 0));
     }
 
     #[test]
@@ -577,5 +618,31 @@ mod tests {
         actions.set_text_active(true)?;
         assert!(actions.route(&[primary(ButtonState::Pressed)]).is_empty());
         Ok(())
+    }
+
+    #[test]
+    fn arrow_keys_map_to_steps_and_other_keys_to_none() {
+        let key = |code, state| NormalizedInputEvent::Key {
+            code,
+            state,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        assert_eq!(
+            arrow_step(&[key(KeyCode::ARROW_LEFT, ButtonState::Pressed)]),
+            Some(StepDir::West)
+        );
+        assert_eq!(
+            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Pressed)]),
+            Some(StepDir::North)
+        );
+        assert_eq!(
+            arrow_step(&[key(KeyCode::ARROW_UP, ButtonState::Released)]),
+            None
+        );
+        assert_eq!(
+            arrow_step(&[key(KeyCode::KEY_W, ButtonState::Pressed)]),
+            None
+        );
     }
 }

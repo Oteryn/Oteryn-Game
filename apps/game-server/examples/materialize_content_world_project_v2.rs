@@ -24,7 +24,8 @@ use oteryn_game_server::content::{
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
     capture_world_project,
     item_abilities::apply_equip_abilities_v1,
-    item_admission::apply_item_admission_v1,
+    item_admission::{apply_item_admission_v1, apply_item_admission_v2},
+    item_bed_promotion::apply_item_bed_promotion_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
     item_description_promotion::apply_item_description_promotion_v1,
     item_description_wiki_promotion::apply_item_description_wiki_promotion_v1,
@@ -160,6 +161,7 @@ const NPC_BULK: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-bulk-first45/native-additions.json"
 );
 const NPC_BULK_SHA256: &str = "5f6305b658489c842a1fe46ba6deb6e1db254ef30b531c23c788ab99636100c7";
+const BED_PREDECESSOR: &str = "045776ffda71f9199431bd0ca02615d2e94a8956fda1d3ff2fcc81ad54b2ccde";
 const NPC_BULK_PREDECESSOR: &str =
     "e97a2e6126485c8333820d8472fa7cc55a0ff3be8d3b71510654c59899c25666";
 const NPC_BULK_COUNT: usize = 45;
@@ -425,6 +427,26 @@ fn limits() -> ProjectEvidenceLimits {
     }
 }
 
+/// DUR-04: the bed promotion changes accepted content, so it ships under its own project revision.
+const BED_PROJECT_REVISION: &str = "item-bed-promotion-20261006-r1";
+
+fn promote_beds(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error::Error>> {
+    apply_item_bed_promotion_v1(draft)?;
+    draft.core.project_revision = BED_PROJECT_REVISION.to_owned();
+    Ok(())
+}
+
+/// Bounds for main's committed world, which carries the monster and spell delta (#1807) that this
+/// example's own chain does not produce; the extra headroom is exactly that delta.
+fn main_world_limits() -> ProjectEvidenceLimits {
+    ProjectEvidenceLimits {
+        max_reference_records: 62_801,
+        max_reimport_states: 404,
+        max_import_records: 29,
+        ..limits()
+    }
+}
+
 fn authoring_roots() -> Result<(PathBuf, Option<PathBuf>), Box<dyn std::error::Error>> {
     let mut arguments = env::args_os().skip(1);
     let flag = arguments.next();
@@ -476,6 +498,51 @@ fn document_tree_digest(documents: &CanonicalProjectDocuments) -> String {
     value
 }
 
+// The bed-promoted package carries the monster/NPC-reconciled delta (#1807), which was authored
+// outside this materializer, so the D3-7 corpse admission is applied to exactly that captured package.
+const MONSTER_NPC_RECONCILED_PREDECESSOR: &str =
+    "41b10815e50ba785f297a066ca799c47dc393455d63b41c754095614184dd965";
+/// Revisions are immutable (DUR-04): the admitted package is a new project and package revision.
+const CORPSE_ADMITTED_PROJECT_REVISION: &str = "d3-7-corpse-admitted-20261006-r1";
+
+fn reconciled_limits() -> ProjectEvidenceLimits {
+    ProjectEvidenceLimits {
+        max_decoded_fields: 2_400_000,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + 26_194 + 2_564,
+        max_import_records: 29,
+        max_reimport_states: 404,
+        ..limits()
+    }
+}
+
+fn admit_corpse_on_reconciled(
+    parent: &Path,
+    name: &std::ffi::OsStr,
+    output: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let filesystem = ProjectFilesystemLimits {
+        project: reconciled_limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
+    };
+    let Ok(captured) = capture_world_project(parent, name, filesystem) else {
+        return Ok(false);
+    };
+    let mut draft = captured.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
+    if document_tree_digest(&before) != MONSTER_NPC_RECONCILED_PREDECESSOR {
+        return Ok(false);
+    }
+    let corpse_admitted = apply_item_admission_v2(&mut draft)?;
+    draft.core.project_revision = CORPSE_ADMITTED_PROJECT_REVISION.to_owned();
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!(
+        "corpse_admitted_items={corpse_admitted} tree_sha256={tree_sha256} predecessor_mode=true"
+    );
+    Ok(true)
+}
+
 fn materialize_from_predecessor(
     source: &Path,
     output: &Path,
@@ -483,13 +550,25 @@ fn materialize_from_predecessor(
     require_fresh_root(output)?;
     let parent = source.parent().ok_or("predecessor parent missing")?;
     let name = source.file_name().ok_or("predecessor basename missing")?;
+    if admit_corpse_on_reconciled(parent, name, output)? {
+        return Ok(());
+    }
     let filesystem = ProjectFilesystemLimits {
-        project: limits(),
+        project: main_world_limits(),
         max_entries_per_directory_scan: 32,
-        max_total_directory_entries_scanned: 144 + 56 + 1,
+        max_total_directory_entries_scanned: 144 + 56 + 32,
     };
     let mut draft = capture_world_project(parent, name, filesystem)?.migrate_to_v2();
-    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), main_world_limits())?;
+    // BED-DELTA-1: main's committed world has no repo-resident generator for its Creature and
+    // spell delta, so the Group 19 bed promotion applies directly to that exact tree.
+    if document_tree_digest(&before) == BED_PREDECESSOR {
+        promote_beds(&mut draft)?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, main_world_limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!("item_bed_promotion tree_sha256={tree_sha256} predecessor_mode=true");
+        return Ok(());
+    }
     if document_tree_digest(&before) == NPC_QUEST_DIALOGUE_PREDECESSOR {
         npc_bulk_enrichment::apply(
             &mut draft,
@@ -589,7 +668,11 @@ fn materialize_from_predecessor(
     }
     // Entire published 1149-NPC predecessor, including worlds, editor, assets and provenance.
     if document_tree_digest(&before) != NPC_BULK_PREDECESSOR {
-        return Err("qualified predecessor package drifted".into());
+        return Err(format!(
+            "qualified predecessor package drifted: {}",
+            document_tree_digest(&before)
+        )
+        .into());
     }
     let admitted = npc_bulk_provisional::apply(
         &mut draft,
@@ -2679,7 +2762,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         NPC_BULK_MORE_PREDECESSOR,
         NPC_BULK_MORE_COUNT,
     )?;
-    let draft = enrich_provisional(draft)?;
+    // D3-7 admits the corpse Item only on the bed-promoted package (`admit_corpse_on_reconciled`),
+    // under its own revision. This path keeps reproducing the unchanged bed-promoted package.
+    let mut draft = enrich_provisional(draft)?;
+    // BED-CONTENT-1: after the NPC chain, whose stages pin the complete reference.json digest of
+    // their predecessor; a bed group added earlier would drift every one of those pins.
+    promote_beds(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
@@ -2711,6 +2799,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "npc_provisional_first={npc_bulk_definitions} npc_provisional_remaining={npc_more_definitions} total_npcs=1282 total_dialogues=836"
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod corpse_admission_revision_tests {
+    /// DUR-04: changed content is never serialized under an existing revision. The admission runs
+    /// only in `admit_corpse_on_reconciled`, which mints `CORPSE_ADMITTED_PROJECT_REVISION`.
+    #[test]
+    fn corpse_admission_always_mints_the_admitted_revision() {
+        let source = include_str!("materialize_content_world_project_v2.rs");
+        let body = source
+            .split_once("\nfn admit_corpse_on_reconciled(")
+            .and_then(|(_, rest)| rest.split_once("\n}\n"))
+            .map(|(body, _)| body)
+            .expect("admit_corpse_on_reconciled body");
+        let call = ["apply_item_admission_v2", "(&mut draft)"].concat();
+        assert_eq!(source.matches(call.as_str()).count(), 1);
+        let (_, after) = body.split_once(call.as_str()).expect("admission call");
+        assert!(after.contains(
+            "draft.core.project_revision = CORPSE_ADMITTED_PROJECT_REVISION.to_owned();"
+        ));
+    }
 }
 
 #[cfg(test)]

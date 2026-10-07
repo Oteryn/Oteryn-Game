@@ -1,9 +1,13 @@
-use oteryn_client::input::{ClickWalk, MouseActions, click_tile};
+use oteryn_client::input::{MouseActions, StepDir, arrow_step, click_tile};
+use oteryn_client::play::{PlayLink, PlayView};
 use oteryn_client::pre_native_status;
-use oteryn_client::scene::PlaceholderScene;
+use oteryn_client::scene::Scene;
+use oteryn_client::world::{START, World};
+use oteryn_client::{AdmittedSession, ClientBootstrap, GameplayEntryError};
 use oteryn_foundation::ProcessGeneration;
 use oteryn_input_platform::InputPlatformAdapter;
-use oteryn_renderer::{SurfacePhase, WindowsRenderer};
+use oteryn_platform_client::native_login::PublicClass;
+use oteryn_renderer::{SurfacePhase, TileCoord, WindowsRenderer};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
@@ -49,25 +53,53 @@ struct Application {
     smoke: bool,
     window: Option<Arc<Window>>,
     renderer: Option<WindowsRenderer<Arc<Window>>>,
-    scene: Option<PlaceholderScene>,
+    /// The map, loaded once the window exists; the offline scene and the play view share it.
+    world: Option<Arc<World>>,
+    /// Without a session: the scene around `offline_own`, which the arrow keys move locally.
+    scene: Option<Scene>,
+    offline_own: TileCoord,
+    offline_facing: StepDir,
+    client: Option<ClientBootstrap>,
+    play: Option<Play>,
     generation: ProcessGeneration,
     input: InputPlatformAdapter,
     actions: MouseActions,
-    walk: ClickWalk,
     fatal_error: Option<ShellError>,
 }
 
+/// The view of an admitted session and the link to its task on the client runtime.
+struct Play {
+    view: PlayView,
+    link: PlayLink,
+}
+
 impl Application {
-    fn new(smoke: bool) -> Result<Self, ShellError> {
+    fn new(
+        smoke: bool,
+        play: Option<(ClientBootstrap, AdmittedSession)>,
+    ) -> Result<Self, ShellError> {
+        let (client, play) = match play {
+            Some((client, admitted)) => {
+                let (view, link) = client
+                    .start_play(admitted)
+                    .map_err(|_error| ShellError::RendererInitialization)?;
+                (Some(client), Some(Play { view, link }))
+            }
+            None => (None, None),
+        };
         Ok(Self {
             smoke,
             window: None,
             renderer: None,
+            world: None,
             scene: None,
+            offline_own: TileCoord::new(START.0, START.1),
+            offline_facing: StepDir::South,
+            client,
+            play,
             generation: ProcessGeneration::new(1),
             input: InputPlatformAdapter::new(),
             actions: MouseActions::new().map_err(|_error| ShellError::InputInitialization)?,
-            walk: ClickWalk::new(),
             fatal_error: None,
         })
     }
@@ -77,18 +109,67 @@ impl Application {
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
+        if let Some(play) = &mut self.play {
+            if let Some(direction) = arrow_step(events) {
+                play.view.arrow(direction);
+            }
+            let mut render_failed = false;
+            for click in self.actions.route(events) {
+                if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
+                    render_failed |= play.view.click(tile).is_err();
+                }
+            }
+            if render_failed {
+                self.fail(event_loop, ShellError::RendererRender);
+            }
+            return;
+        }
+        if let Some(direction) = arrow_step(events) {
+            self.offline_own = direction.from(self.offline_own);
+            self.offline_facing = direction;
+            if self.rebuild_offline().is_err() {
+                self.fail(event_loop, ShellError::RendererRender);
+                return;
+            }
+        }
         for click in self.actions.route(events) {
             let picked = self.scene.as_mut().and_then(|scene| {
                 let tile = click_tile(scene.view(), click.x, click.y)?;
                 Some((tile, scene.select_tile(tile)))
             });
-            // A visible entity or object becomes the target; any other tile becomes the walk
-            // goal. N4 drives `walk` through the session's `step`.
-            match picked {
-                Some((_, Ok(Some(_)))) | None => {}
-                Some((tile, Ok(None))) => self.walk.set_goal(tile),
-                Some((_, Err(_error))) => self.fail(event_loop, ShellError::RendererRender),
+            // Without a session a click only selects a visible entity or object.
+            if let Some((_, Err(_error))) = picked {
+                self.fail(event_loop, ShellError::RendererRender);
             }
+        }
+    }
+
+    /// The offline scene around `offline_own`, over the loaded world.
+    fn rebuild_offline(&mut self) -> Result<(), oteryn_renderer::BatchError> {
+        if let Some(world) = &self.world {
+            let origin = TileCoord::new(0, 0);
+            self.scene = Some(Scene::centered_on(
+                Arc::clone(world),
+                Some(origin),
+                self.offline_own,
+                self.offline_facing,
+                &[],
+            )?);
+        }
+        Ok(())
+    }
+
+    /// A session end returns to the pre-admission state: the offline scene, with the public
+    /// class in the title and on the console. The session task is gone with its link.
+    fn return_to_login(&mut self, class: PublicClass) {
+        self.play = None;
+        let message = GameplayEntryError::Rejected(class).to_string();
+        println!("Oteryn: {message}");
+        if let Some(window) = &self.window {
+            window.set_title(&format!("Oteryn — {message}"));
+        }
+        if self.rebuild_offline().is_err() {
+            self.scene = None;
         }
     }
 
@@ -137,10 +218,29 @@ impl ApplicationHandler for Application {
             return;
         }
         let size = window.inner_size();
-        let Ok(scene) = PlaceholderScene::new() else {
+        // The map is loaded on the first resume and kept across suspends.
+        let world = if let Some(world) = &self.world {
+            Arc::clone(world)
+        } else {
+            let (world, reason) = World::from_env();
+            if let Some(reason) = reason {
+                println!("Oteryn: drawing without map sprites: {reason}");
+            }
+            let Ok(world) = world.map(Arc::new) else {
+                self.fail(event_loop, ShellError::RendererInitialization);
+                return;
+            };
+            self.world = Some(Arc::clone(&world));
+            world
+        };
+        let shown = match &mut self.play {
+            Some(play) => play.view.set_world(Arc::clone(&world)),
+            None => self.rebuild_offline(),
+        };
+        if shown.is_err() {
             self.fail(event_loop, ShellError::RendererInitialization);
             return;
-        };
+        }
         let Ok(mut renderer) = WindowsRenderer::new(
             Arc::clone(&window),
             self.generation,
@@ -150,11 +250,11 @@ impl ApplicationHandler for Application {
             self.fail(event_loop, ShellError::RendererInitialization);
             return;
         };
-        renderer.set_atlas(scene.atlas().clone());
+        // One atlas for the offline scene and the play view, uploaded once.
+        renderer.set_atlas(world.atlas().clone());
         window.request_redraw();
         self.window = Some(window);
         self.renderer = Some(renderer);
-        self.scene = Some(scene);
     }
 
     fn suspended(&mut self, event_loop: &ActiveEventLoop) {
@@ -207,7 +307,12 @@ impl ApplicationHandler for Application {
                 }
             }
             WindowEvent::RedrawRequested => {
-                if let (Some(renderer), Some(scene)) = (&mut self.renderer, &self.scene)
+                let scene = self
+                    .play
+                    .as_ref()
+                    .map(|play| play.view.scene())
+                    .or(self.scene.as_ref());
+                if let (Some(renderer), Some(scene)) = (&mut self.renderer, scene)
                     && redraw_eligible(Some(renderer.state().phase()))
                     && renderer
                         .render_batches(self.generation, scene.tiles(), scene.sprites())
@@ -221,6 +326,11 @@ impl ApplicationHandler for Application {
     }
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(play) = &mut self.play
+            && let Err(class) = play.view.tick(&play.link)
+        {
+            self.return_to_login(class);
+        }
         if let Some(window) = &self.window
             && redraw_eligible(
                 self.renderer
@@ -233,13 +343,17 @@ impl ApplicationHandler for Application {
     }
 }
 
-pub fn run() -> Result<(), ShellError> {
+pub fn run(play: Option<(ClientBootstrap, AdmittedSession)>) -> Result<(), ShellError> {
     let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
     let smoke = std::env::args().any(|argument| argument == "--smoke");
-    let mut application = Application::new(smoke)?;
+    let mut application = Application::new(smoke, play)?;
     let run_result = event_loop
         .run_app(&mut application)
         .map_err(|_error| ShellError::EventLoopRun);
+    drop(application.play.take());
+    if let Some(client) = application.client.take() {
+        client.shutdown();
+    }
     if let Some(error) = application.fatal_error {
         return Err(error);
     }
