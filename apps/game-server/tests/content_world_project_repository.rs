@@ -16,8 +16,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        418,
-        "4b522b20db3a15fa0cea6fce7b29ea0e72ba5f410c1c20c98379a971bc71924a",
+        406,
+        "8161b8a361cd85a415bfd6ac7776a564a61a83d3ca59512f03b8fcf3dadbf539",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        27050744,
-        "d8680c42f767c29c977b0a3a00afde93f7a6f3eea28de5f549d30323bb0bfd2a",
+        27_237_347,
+        "467b014aa99532e812ce355acac862335b94dad420f4188a0eab9e52db3ca709",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1957,
-        "36208a79ae598db9a1b4c6a976303d5f3b9552bfb1b94ccf3b75811ccd85ee7c",
+        1953,
+        "be74376146d1b67f820b165cab198ffa36432c4e140622fc74f2c6264d617cfc",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        408,
-        "42edd1e97a3125787cdbbd8f156b8cbbbc10b88133b727427d4c50c20fb1e67d",
+        404,
+        "92fe9e1e9635a76baa4004457db0eabe70c2dd67e205190d793c07413631e58b",
     ),
     (
         "provenance/imports.json",
@@ -125,7 +125,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "045776ffda71f9199431bd0ca02615d2e94a8956fda1d3ff2fcc81ad54b2ccde";
+const TREE_SHA256: &str = "41b10815e50ba785f297a066ca799c47dc393455d63b41c754095614184dd965";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -339,6 +339,28 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
 }
 
 #[test]
+fn bed_promotion_is_idempotent_on_the_committed_world() {
+    let root = project_root();
+    let mut draft = capture_world_project(
+        root.parent().expect("package has content parent"),
+        OsStr::new("world"),
+        filesystem_limits(),
+    )
+    .expect("capture tracked canonical package")
+    .migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())
+        .expect("committed world documents");
+    item_bed_promotion::apply_item_bed_promotion_v1(&mut draft)
+        .expect("bed promotion re-applies to promoted world");
+    let after = CanonicalProjectDocuments::from_v2_draft(draft, limits())
+        .expect("re-promoted world documents");
+    assert!(
+        before == after,
+        "re-applying the bed promotion changed the committed world"
+    );
+}
+
+#[test]
 fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() {
     let root = project_root();
     let project = capture_world_project(
@@ -347,10 +369,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(
-        project.project_revision(),
-        "monster-npc-reconciled-20261005-r1"
-    );
+    assert_eq!(project.project_revision(), "item-bed-promotion-20261006-r1");
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project
         .imports()

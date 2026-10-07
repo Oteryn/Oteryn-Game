@@ -371,7 +371,7 @@ fn to_typed_definition(definition: &LootDefinitionRef) -> TypedDefinitionRef {
 /// The death-key seed `plan_creature_loot` plans from: the same
 /// `CREATURE-DEATH-OCCURRENCE-IDENTITY-V1` fields as the real death key,
 /// copied out (D2a's documented, deferred production wiring).
-fn loot_plan_seed(death: CreatureDeathOccurrenceKey) -> LootPlanDeathKey {
+pub(crate) fn loot_plan_seed(death: CreatureDeathOccurrenceKey) -> LootPlanDeathKey {
     LootPlanDeathKey::new(
         *death.world_id().as_bytes(),
         *death.channel_id().as_bytes(),

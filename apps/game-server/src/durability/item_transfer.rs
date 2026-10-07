@@ -1019,6 +1019,84 @@ impl DurabilityRoot {
             })
             .await?
     }
+
+    /// MAP-ITEM-REF-1 Part B: the live direct entries of the corpse
+    /// `corpse_item_instance_id` in loot order (ascending placement ordinal),
+    /// or `None` when it is not a live corpse on Ground (a corpse MINT
+    /// receipt, a Ground location and a live instance). Read-only; the
+    /// TRANSFER re-derives every source under its own lock.
+    pub async fn read_corpse_contents(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        corpse_item_instance_id: [u8; 16],
+    ) -> Result<Option<Vec<BackpackEntry>>> {
+        use super::item_mint::CORPSE_CONTAINER_ENTRIES_MAX;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemTransferError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let live_corpse: bool = sqlx::query_scalar(
+                        "SELECT EXISTS ( \
+                           SELECT 1 FROM game_item_mint_receipts r \
+                             JOIN game_item_ground_locations g \
+                               ON g.item_instance_id = r.item_instance_id \
+                             JOIN game_item_instances i \
+                               ON i.item_instance_id = r.item_instance_id \
+                            WHERE r.item_instance_id = encode($1,'hex')::uuid \
+                              AND r.loot_purpose_key = $2 \
+                              AND i.lifecycle = 1)",
+                    )
+                    .bind(corpse_item_instance_id.as_slice())
+                    .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    if !live_corpse {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(None));
+                    }
+                    let rows = sqlx::query(
+                        "SELECT e.item_instance_id::text, e.placement_ordinal::text, \
+                                i.definition_family, i.definition_production_key, \
+                                i.definition_revision_ref, i.quantity \
+                           FROM game_item_corpse_container_entries e \
+                           JOIN game_item_instances i USING (item_instance_id, world_id) \
+                          WHERE e.parent_item_instance_id = encode($1,'hex')::uuid \
+                            AND i.lifecycle = 1 \
+                          ORDER BY e.placement_ordinal ASC LIMIT $2",
+                    )
+                    .bind(corpse_item_instance_id.as_slice())
+                    .bind(i64::from(CORPSE_CONTAINER_ENTRIES_MAX) + 1)
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    if rows.len() > CORPSE_CONTAINER_ENTRIES_MAX as usize {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    let entries = rows
+                        .iter()
+                        .map(|row| {
+                            Ok(BackpackEntry {
+                                item: InventoryItem {
+                                    item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
+                                    definition: decode_definition(row)?,
+                                    quantity: decode_quantity(row)?,
+                                },
+                                placement_ordinal: row
+                                    .try_get::<String, _>("placement_ordinal")?
+                                    .parse()
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                            })
+                        })
+                        .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(Some(entries)))
+                })
+            })
+            .await?
+    }
 }
 
 /// The durable reservation row of one CommandRef.

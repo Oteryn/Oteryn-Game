@@ -25,6 +25,7 @@ use oteryn_game_server::content::{
     capture_world_project,
     item_abilities::apply_equip_abilities_v1,
     item_admission::apply_item_admission_v1,
+    item_bed_promotion::apply_item_bed_promotion_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
     item_description_promotion::apply_item_description_promotion_v1,
     item_description_wiki_promotion::apply_item_description_wiki_promotion_v1,
@@ -160,6 +161,7 @@ const NPC_BULK: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20261002-npc-bulk-first45/native-additions.json"
 );
 const NPC_BULK_SHA256: &str = "5f6305b658489c842a1fe46ba6deb6e1db254ef30b531c23c788ab99636100c7";
+const BED_PREDECESSOR: &str = "045776ffda71f9199431bd0ca02615d2e94a8956fda1d3ff2fcc81ad54b2ccde";
 const NPC_BULK_PREDECESSOR: &str =
     "e97a2e6126485c8333820d8472fa7cc55a0ff3be8d3b71510654c59899c25666";
 const NPC_BULK_COUNT: usize = 45;
@@ -425,6 +427,26 @@ fn limits() -> ProjectEvidenceLimits {
     }
 }
 
+/// DUR-04: the bed promotion changes accepted content, so it ships under its own project revision.
+const BED_PROJECT_REVISION: &str = "item-bed-promotion-20261006-r1";
+
+fn promote_beds(draft: &mut ProjectV2Draft) -> Result<(), Box<dyn std::error::Error>> {
+    apply_item_bed_promotion_v1(draft)?;
+    draft.core.project_revision = BED_PROJECT_REVISION.to_owned();
+    Ok(())
+}
+
+/// Bounds for main's committed world, which carries the monster and spell delta (#1807) that this
+/// example's own chain does not produce; the extra headroom is exactly that delta.
+fn main_world_limits() -> ProjectEvidenceLimits {
+    ProjectEvidenceLimits {
+        max_reference_records: 62_801,
+        max_reimport_states: 404,
+        max_import_records: 29,
+        ..limits()
+    }
+}
+
 fn authoring_roots() -> Result<(PathBuf, Option<PathBuf>), Box<dyn std::error::Error>> {
     let mut arguments = env::args_os().skip(1);
     let flag = arguments.next();
@@ -484,12 +506,21 @@ fn materialize_from_predecessor(
     let parent = source.parent().ok_or("predecessor parent missing")?;
     let name = source.file_name().ok_or("predecessor basename missing")?;
     let filesystem = ProjectFilesystemLimits {
-        project: limits(),
+        project: main_world_limits(),
         max_entries_per_directory_scan: 32,
-        max_total_directory_entries_scanned: 144 + 56 + 1,
+        max_total_directory_entries_scanned: 144 + 56 + 32,
     };
     let mut draft = capture_world_project(parent, name, filesystem)?.migrate_to_v2();
-    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())?;
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), main_world_limits())?;
+    // BED-DELTA-1: main's committed world has no repo-resident generator for its Creature and
+    // spell delta, so the Group 19 bed promotion applies directly to that exact tree.
+    if document_tree_digest(&before) == BED_PREDECESSOR {
+        promote_beds(&mut draft)?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, main_world_limits())?;
+        let tree_sha256 = write_documents(output, &documents)?;
+        println!("item_bed_promotion tree_sha256={tree_sha256} predecessor_mode=true");
+        return Ok(());
+    }
     if document_tree_digest(&before) == NPC_QUEST_DIALOGUE_PREDECESSOR {
         npc_bulk_enrichment::apply(
             &mut draft,
@@ -589,7 +620,11 @@ fn materialize_from_predecessor(
     }
     // Entire published 1149-NPC predecessor, including worlds, editor, assets and provenance.
     if document_tree_digest(&before) != NPC_BULK_PREDECESSOR {
-        return Err("qualified predecessor package drifted".into());
+        return Err(format!(
+            "qualified predecessor package drifted: {}",
+            document_tree_digest(&before)
+        )
+        .into());
     }
     let admitted = npc_bulk_provisional::apply(
         &mut draft,
@@ -2679,7 +2714,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         NPC_BULK_MORE_PREDECESSOR,
         NPC_BULK_MORE_COUNT,
     )?;
-    let draft = enrich_provisional(draft)?;
+    let mut draft = enrich_provisional(draft)?;
+    // BED-CONTENT-1: after the NPC chain, whose stages pin the complete reference.json digest of
+    // their predecessor; a bed group added earlier would drift every one of those pins.
+    promote_beds(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());

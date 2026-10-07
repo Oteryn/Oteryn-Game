@@ -2845,7 +2845,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             parameter.as_ref(),
             parameter_output,
         ) {
-            Ok(Some(_)) => {
+            Ok(Some(replayed)) => {
+                self.record_spell_kills(&mut runtime, std::iter::once(&replayed))
+                    .await;
                 return NativeCastDispatch::Outcome(super::SpellCastOutcome {
                     disposition: parameter_output
                         .as_ref()
@@ -3211,7 +3213,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             };
             // Phase 2: no awaited work, allocation, new random draw or fallible branch.
             let mut attempt=window.install();
-            attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+            let batch=attempt.prepared.install_commit(&mut runtime,&mut states,checked,committed.companion(),committed.direct_companion());
+            // §1.4: the committed batch's kills, under the same runtime turn, after installation.
+            owner.record_spell_kills(&mut runtime,std::iter::once(&batch)).await;
             let disposition=private_result.as_ref().map_or(SpellCastDisposition::Cast,|r|r.disposition);
             **parameter_output=private_result;
             Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,
