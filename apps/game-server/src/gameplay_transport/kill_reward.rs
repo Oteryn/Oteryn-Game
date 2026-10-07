@@ -5,7 +5,12 @@
 //!
 //! Lock order: `runtime → spell_states → attack`, then the queue's own mutex, which is never held
 //! across an await. No channel guard is held while a revision slot is acquired or any durable
-//! call runs.
+//! call runs, nor across a terminal release transaction.
+//!
+//! §1.3 release handshake: a terminal release drains its session's entries, seals its principal
+//! identity `(GameSessionId, lease generation)` as `releasing` once the queue holds none, and
+//! moves the mark to `committing` just before it sends the transaction. An append for a marked
+//! principal is parked under the mark with the mark's phase at that moment.
 
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -46,22 +51,108 @@ pub(crate) struct PendingKillSettlement {
     no_progression_logged: bool,
 }
 
+/// A principal identity: the captured session and its Character lease generation.
+type Principal = (GameSessionId, u64);
+
+fn principal_of(entry: &PendingKillSettlement) -> Principal {
+    (
+        entry.facts.principal.session,
+        entry.facts.principal.lease_generation,
+    )
+}
+
+/// The phase of a `releasing` mark (§1.3 steps 2 and 4).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ReleasePhase {
+    Sealed,
+    Committing,
+}
+
+#[derive(Debug)]
+struct ReleasingMark {
+    /// This mark's identity: a mark cleared and created again for the principal is another
+    /// mark, and a [`KillReleaseMark`] of the first one acts on nothing.
+    id: u64,
+    principal: Principal,
+    phase: ReleasePhase,
+    /// The hold slot of each release between its seal and its step 5. A grace expiry and a
+    /// mismatch release of one lost epoch may hold it together; one ending retryable leaves it to
+    /// the other. An unknown outcome gives up its hold and keeps the mark.
+    holders: Vec<u64>,
+    /// A holder's transaction ended the session.
+    committed: bool,
+    /// Entries appended for the marked principal, each with the phase at its park.
+    parked: Vec<(PendingKillSettlement, ReleasePhase)>,
+}
+
 #[derive(Debug, Default)]
 struct KillQueueState {
     queued: VecDeque<PendingKillSettlement>,
-    in_flight: Vec<CreatureDeathOccurrenceKey>,
+    in_flight: Vec<(CreatureDeathOccurrenceKey, Principal)>,
     reserved_loot_mints: usize,
+    releasing: Vec<ReleasingMark>,
+    /// The last mark id or hold slot given out.
+    last_id: u64,
 }
 
 impl KillQueueState {
     fn holds(&self, death: CreatureDeathOccurrenceKey) -> bool {
-        self.in_flight.contains(&death) || self.queued.iter().any(|e| e.facts.death == death)
+        self.in_flight.iter().any(|(held, _)| *held == death)
+            || self.queued.iter().any(|e| e.facts.death == death)
+            || self
+                .releasing
+                .iter()
+                .any(|mark| mark.parked.iter().any(|(e, _)| e.facts.death == death))
+    }
+
+    fn entries(&self) -> usize {
+        self.queued.len()
+            + self.in_flight.len()
+            + self
+                .releasing
+                .iter()
+                .map(|mark| mark.parked.len())
+                .sum::<usize>()
+    }
+
+    fn mark(&mut self, principal: Principal) -> Option<&mut ReleasingMark> {
+        self.releasing
+            .iter_mut()
+            .find(|mark| mark.principal == principal)
+    }
+
+    fn next_id(&mut self) -> u64 {
+        self.last_id += 1;
+        self.last_id
+    }
+
+    /// The mark `hold` was sealed under, if it still exists.
+    fn held_mark(&mut self, hold: KillReleaseMark) -> Option<&mut ReleasingMark> {
+        let mark = self
+            .releasing
+            .iter_mut()
+            .find(|mark| mark.id == hold.mark && mark.principal == hold.principal);
+        if mark.is_none() {
+            stale_hold(hold);
+        }
+        mark
+    }
+
+    /// Remove mark `id` and give back its parked entries.
+    fn unmark(&mut self, id: u64) -> Vec<PendingKillSettlement> {
+        let Some(index) = self.releasing.iter().position(|mark| mark.id == id) else {
+            return Vec::new();
+        };
+        let mark = self.releasing.swap_remove(index);
+        mark.parked.into_iter().map(|(entry, _)| entry).collect()
     }
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) enum AppendOutcome {
     Queued,
+    /// The principal is `releasing`: the entry is parked under its mark in this phase.
+    Parked(ReleasePhase),
     /// The death is already queued or in flight: nothing changed.
     Duplicate,
     /// KILLRW-RL-01 is reached: the death settles nothing.
@@ -92,13 +183,178 @@ impl KillSettlementQueue {
         if state.holds(entry.facts.death) {
             return AppendOutcome::Duplicate;
         }
-        if state.queued.len() + state.in_flight.len()
-            >= KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX
-        {
+        if state.entries() >= KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX {
             return AppendOutcome::Full;
+        }
+        if let Some(mark) = state.mark(principal_of(&entry)) {
+            let phase = mark.phase;
+            mark.parked.push((entry, phase));
+            return AppendOutcome::Parked(phase);
         }
         state.queued.push_back(entry);
         AppendOutcome::Queued
+    }
+
+    /// §1.3 step 2, one critical section: when the queue holds no queued or in-flight entry of
+    /// `principal`, mark it `releasing` (phase `sealed`) and give the caller a hold slot on the
+    /// mark. A mark kept from an unknown outcome keeps its phase and parked entries.
+    pub(crate) fn seal(&self, principal: Principal) -> Seal {
+        let mut state = self.state();
+        if state.in_flight.iter().any(|(_, held)| *held == principal) {
+            return Seal::InFlight;
+        }
+        if state.queued.iter().any(|e| principal_of(e) == principal) {
+            return Seal::Queued;
+        }
+        let slot = state.next_id();
+        let mark = if let Some(mark) = state.mark(principal) {
+            mark.holders.push(slot);
+            mark.id
+        } else {
+            let id = state.next_id();
+            state.releasing.push(ReleasingMark {
+                id,
+                principal,
+                phase: ReleasePhase::Sealed,
+                holders: vec![slot],
+                committed: false,
+                parked: Vec::new(),
+            });
+            id
+        };
+        Seal::Sealed(KillReleaseMark {
+            principal,
+            mark,
+            slot,
+        })
+    }
+
+    /// §1.3 step 4, one critical section just before the transaction is sent: an entry parked
+    /// in phase `sealed` aborts the release (the mark is cleared and the parked entries are
+    /// queued, `false`); otherwise the mark moves to `committing` (`true`). No holder has sent
+    /// its transaction while a `sealed` park exists, so an abort strands none of them. A hold
+    /// whose mark another holder's abort cleared commits nothing, even under a newer mark of
+    /// the principal.
+    pub(crate) fn commit_point(&self, hold: KillReleaseMark) -> bool {
+        let mut state = self.state();
+        let Some(mark) = state
+            .releasing
+            .iter_mut()
+            .find(|mark| mark.id == hold.mark && mark.holders.contains(&hold.slot))
+        else {
+            return false;
+        };
+        if mark
+            .parked
+            .iter()
+            .all(|(_, phase)| *phase == ReleasePhase::Committing)
+        {
+            mark.phase = ReleasePhase::Committing;
+            return true;
+        }
+        let parked = state.unmark(hold.mark);
+        state.queued.extend(parked);
+        false
+    }
+
+    /// §1.3 step 5, Committed: the session ended at the phase change, so every parked entry is
+    /// a kill after it ended and is freed with `principal_gone`. The mark stays until
+    /// [`KillSettlementQueue::forget_released`]. `held`: the caller gives up its hold.
+    fn release_committed(&self, hold: KillReleaseMark, held: bool) {
+        let parked = {
+            let mut state = self.state();
+            state
+                .held_mark(hold)
+                .map(|mark| {
+                    if held {
+                        give_back(mark, hold);
+                    }
+                    mark.committed = true;
+                    std::mem::take(&mut mark.parked)
+                })
+                .unwrap_or_default()
+        };
+        for (entry, _) in parked {
+            refuse("principal_gone", &entry.creature);
+        }
+    }
+
+    /// The released actor slot is removed: drop the mark, freeing any late park.
+    fn forget_released(&self, hold: KillReleaseMark) {
+        let parked = self.state().unmark(hold.mark);
+        for entry in parked {
+            refuse("principal_gone", &entry.creature);
+        }
+    }
+
+    /// §1.3 step 5, retryable failure: once no other release holds the mark and none ended the
+    /// session, clear it and queue the parked entries for the resumed session. `held`: the
+    /// caller gives up its hold.
+    fn release_failed(&self, hold: KillReleaseMark, held: bool) {
+        let mut state = self.state();
+        let Some(mark) = state.held_mark(hold) else {
+            return;
+        };
+        if held {
+            give_back(mark, hold);
+        }
+        if mark.holders.is_empty() && !mark.committed {
+            let parked = state.unmark(hold.mark);
+            state.queued.extend(parked);
+        }
+    }
+
+    /// §1.3 step 5, unknown outcome: give up the hold; the mark and its parked entries stay for
+    /// the retry.
+    fn release_unknown(&self, hold: KillReleaseMark) {
+        if let Some(mark) = self.state().held_mark(hold) {
+            give_back(mark, hold);
+        }
+    }
+
+    /// The lost epoch was resumed, so no release of `session` committed: a mark that an unknown
+    /// outcome left with no holder is cleared as retryable, and its parked entries are queued.
+    pub(crate) fn release_orphaned(&self, session: GameSessionId) {
+        let mut state = self.state();
+        let orphaned: Vec<u64> = state
+            .releasing
+            .iter()
+            .filter(|mark| {
+                mark.principal.0 == session && mark.holders.is_empty() && !mark.committed
+            })
+            .map(|mark| mark.id)
+            .collect();
+        for id in orphaned {
+            let parked = state.unmark(id);
+            state.queued.extend(parked);
+        }
+    }
+
+    /// Free `session`'s queued and parked entries whose principal has no live session: the
+    /// session is over (`live == None`), or the entry's lease generation is not the live one.
+    /// Their marks go with them.
+    pub(crate) fn discard_gone(&self, session: GameSessionId, live: Option<u64>) {
+        let gone_principal = |(owner, lease): Principal| owner == session && Some(lease) != live;
+        let gone = {
+            let mut state = self.state();
+            let (mut gone, kept) = std::mem::take(&mut state.queued)
+                .into_iter()
+                .partition::<Vec<_>, _>(|e| gone_principal(principal_of(e)));
+            state.queued = kept.into();
+            let (ended, marks) = std::mem::take(&mut state.releasing)
+                .into_iter()
+                .partition::<Vec<_>, _>(|mark| gone_principal(mark.principal));
+            state.releasing = marks;
+            gone.extend(
+                ended
+                    .into_iter()
+                    .flat_map(|mark| mark.parked.into_iter().map(|(entry, _)| entry)),
+            );
+            gone
+        };
+        for entry in gone {
+            refuse("principal_gone", &entry.creature);
+        }
     }
 
     pub(crate) fn has_session(&self, session: GameSessionId) -> bool {
@@ -134,7 +390,9 @@ impl KillSettlementQueue {
             return TakeOutcome::Empty;
         };
         state.reserved_loot_mints = inflight_before + loot_mints;
-        state.in_flight.push(entry.facts.death);
+        state
+            .in_flight
+            .push((entry.facts.death, principal_of(&entry)));
         TakeOutcome::Taken(Box::new(TakenKillSettlement {
             queue: self.clone(),
             death: entry.facts.death,
@@ -142,6 +400,37 @@ impl KillSettlementQueue {
             loot_mints,
             inflight_before,
         }))
+    }
+
+    /// The number of releases holding `principal`'s mark.
+    #[cfg(test)]
+    pub(crate) fn holders(&self, principal: Principal) -> Option<usize> {
+        self.state().mark(principal).map(|mark| mark.holders.len())
+    }
+
+    /// Every hold slot still counted on any mark.
+    #[cfg(test)]
+    pub(crate) fn hold_slots(&self) -> Vec<u64> {
+        let state = self.state();
+        let mut slots: Vec<u64> = state
+            .releasing
+            .iter()
+            .flat_map(|mark| mark.holders.iter().copied())
+            .collect();
+        slots.sort_unstable();
+        slots
+    }
+
+    /// The parked entries' phases under `principal`'s mark, and the mark's phase.
+    #[cfg(test)]
+    pub(crate) fn parked(&self, principal: Principal) -> Option<(ReleasePhase, Vec<ReleasePhase>)> {
+        let mut state = self.state();
+        state.mark(principal).map(|mark| {
+            (
+                mark.phase,
+                mark.parked.iter().map(|(_, phase)| *phase).collect(),
+            )
+        })
     }
 
     #[cfg(test)]
@@ -193,7 +482,7 @@ impl Drop for TakenKillSettlement {
     fn drop(&mut self) {
         let mut state = self.queue.state();
         state.reserved_loot_mints = state.reserved_loot_mints.saturating_sub(self.loot_mints);
-        state.in_flight.retain(|death| *death != self.death);
+        state.in_flight.retain(|(death, _)| *death != self.death);
         if let Some(entry) = self.entry.take() {
             state.queued.push_front(entry);
         }
@@ -205,6 +494,25 @@ impl Drop for TakenKillSettlement {
 pub(crate) struct KillSink<'a> {
     pub(crate) queue: &'a KillSettlementQueue,
     pub(crate) rewards: &'a CreatureRewardTable,
+}
+
+/// Give back `hold`'s slot on its mark; a slot already given back is not counted again.
+fn give_back(mark: &mut ReleasingMark, hold: KillReleaseMark) {
+    if let Some(index) = mark.holders.iter().position(|slot| *slot == hold.slot) {
+        mark.holders.swap_remove(index);
+    } else {
+        stale_hold(hold);
+    }
+}
+
+/// A hold acted on a mark it no longer holds: the mark was cleared (an abort, a resumed epoch,
+/// a gone principal) or the slot was given back. Nothing changes.
+fn stale_hold(hold: KillReleaseMark) {
+    debug_assert!(hold.mark != 0, "a hold always names a mark");
+    operator_event(&format!(
+        "kill_release_stale_hold mark={} slot={}",
+        hold.mark, hold.slot
+    ));
 }
 
 fn refuse(reason: &str, creature: &str) {
@@ -380,6 +688,104 @@ pub(crate) async fn drain_session_kills(
     }
 }
 
+/// The result of [`KillSettlementQueue::seal`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Seal {
+    /// The principal is marked `releasing`, and the caller holds the mark.
+    Sealed(KillReleaseMark),
+    /// An entry of the principal was appended after the drain's last take.
+    Queued,
+    /// Another drain is settling an entry of the principal.
+    InFlight,
+}
+
+/// The end of a release handshake's steps 1–4 (§1.3).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum KillRelease {
+    /// Send the transaction, then report its outcome with [`KillReleaseMark::settle`]. No mark
+    /// is held when the session is already terminal.
+    Send(Option<KillReleaseMark>),
+    /// Step 1 met an unknown outcome or a `capacity_wait`: nothing is marked and the
+    /// transaction must not be sent.
+    Deferred,
+}
+
+/// The terminal release transaction's outcome as step 5 reads it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ReleaseEnd {
+    /// `session_state = 3`.
+    Committed,
+    /// The session did not end.
+    Retryable,
+    /// The outcome is unknown: the mark and the parked entries stay for the next attempt.
+    Unknown,
+}
+
+/// One release's hold on a principal's mark: the mark's identity and the release's own slot,
+/// from [`KillSettlementQueue::seal`]. Every later step presents it, and acts only on that mark
+/// and slot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct KillReleaseMark {
+    principal: Principal,
+    mark: u64,
+    slot: u64,
+}
+
+impl KillReleaseMark {
+    /// §1.3 step 5 of the release holding the mark, in one `attack` critical section. Called
+    /// once per [`release_handshake`] that returned the mark.
+    pub(crate) fn settle(self, queue: &KillSettlementQueue, end: ReleaseEnd) {
+        match end {
+            ReleaseEnd::Committed => queue.release_committed(self, true),
+            ReleaseEnd::Retryable => queue.release_failed(self, true),
+            ReleaseEnd::Unknown => queue.release_unknown(self),
+        }
+    }
+
+    /// Step 5 from a durable reconcile after the hold was given up to an unknown outcome.
+    pub(crate) fn reconcile(self, queue: &KillSettlementQueue, end: ReleaseEnd) {
+        match end {
+            ReleaseEnd::Committed => queue.release_committed(self, false),
+            ReleaseEnd::Retryable => queue.release_failed(self, false),
+            ReleaseEnd::Unknown => {}
+        }
+    }
+
+    /// The released actor slot is removed.
+    pub(crate) fn forget(self, queue: &KillSettlementQueue) {
+        queue.forget_released(self);
+    }
+}
+
+/// §1.3 steps 1–4: drain, seal, then move the mark to `committing`, returning to the drain
+/// while the seal finds a queued entry or a park in phase `sealed` aborts the commit point.
+/// Each return needs a new kill for this principal, so the loop advances with the game. An
+/// entry another drain is settling defers the release, which the caller retries behind its
+/// backoff instead of waiting on that settle. No guard is held across a settle or on return.
+pub(crate) async fn release_handshake(
+    attack: &AsyncMutex<ChannelAttackStates>,
+    session: GameSessionId,
+    lease_generation: u64,
+    settler: &impl KillSettle,
+) -> KillRelease {
+    let principal = (session, lease_generation);
+    loop {
+        if drain_session_kills(attack, session, lease_generation, settler).await
+            == DrainOutcome::Deferred
+        {
+            return KillRelease::Deferred;
+        }
+        let hold = match attack.lock().await.kills().seal(principal) {
+            Seal::Sealed(hold) => hold,
+            Seal::Queued => continue,
+            Seal::InFlight => return KillRelease::Deferred,
+        };
+        if attack.lock().await.kills().commit_point(hold) {
+            return KillRelease::Send(Some(hold));
+        }
+    }
+}
+
 /// An unknown durable outcome: the write may or may not have committed, or capacity freed later
 /// may admit it.
 fn loot_unknown(error: &CombatDeathRewardLootError) -> bool {
@@ -482,16 +888,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
-    /// Settle `session`'s queued kills (§1.3), after every channel guard is released.
+    /// Settle `session`'s queued kills (§1.3), after every channel guard is released. An entry
+    /// whose principal has no live session is freed with `principal_gone`.
     pub(super) async fn drain_kill_rewards(&self, session: GameSessionId) -> DrainOutcome {
         if !self.attack.lock().await.kills().has_session(session) {
             return DrainOutcome::Drained;
         }
         let fence = match self.current_quest_fence(session).await {
             Ok(Some(fence)) => fence,
-            Ok(None) => return DrainOutcome::Drained,
+            Ok(None) => {
+                self.attack.lock().await.kills().discard_gone(session, None);
+                return DrainOutcome::Drained;
+            }
             Err(()) => return DrainOutcome::Deferred,
         };
+        self.attack
+            .lock()
+            .await
+            .kills()
+            .discard_gone(session, Some(fence.character_lease_generation));
         drain_session_kills(
             &self.attack,
             session,
@@ -502,6 +917,66 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         )
         .await
+    }
+
+    /// §1.3 release handshake of `session`, run after its monk save and before its terminal
+    /// release transaction.
+    pub(super) async fn seal_kill_rewards(&self, session: GameSessionId) -> KillRelease {
+        let fence = match self.current_quest_fence(session).await {
+            Ok(Some(fence)) => fence,
+            // Already terminal: the transaction only reconciles, and nothing settles any more.
+            Ok(None) => {
+                self.attack.lock().await.kills().discard_gone(session, None);
+                return KillRelease::Send(None);
+            }
+            Err(()) => return KillRelease::Deferred,
+        };
+        let lease_generation = fence.character_lease_generation;
+        self.attack
+            .lock()
+            .await
+            .kills()
+            .discard_gone(session, Some(lease_generation));
+        release_handshake(
+            &self.attack,
+            session,
+            lease_generation,
+            &DurableKillSettle {
+                admission: self,
+                fence,
+            },
+        )
+        .await
+    }
+
+    /// §1.3 step 5 for a release that sent its transaction.
+    pub(super) async fn settle_kill_release(&self, mark: Option<KillReleaseMark>, end: ReleaseEnd) {
+        if let Some(mark) = mark {
+            mark.settle(self.attack.lock().await.kills(), end);
+        }
+    }
+
+    /// Step 5 of a durable reconcile after an unknown outcome gave up the hold.
+    pub(super) async fn reconcile_kill_release(
+        &self,
+        mark: Option<KillReleaseMark>,
+        end: ReleaseEnd,
+    ) {
+        if let Some(mark) = mark {
+            mark.reconcile(self.attack.lock().await.kills(), end);
+        }
+    }
+
+    /// The lost epoch was resumed: clear `session`'s marks left by unknown outcomes.
+    pub(super) async fn release_orphaned_kills(&self, session: GameSessionId) {
+        self.attack.lock().await.kills().release_orphaned(session);
+    }
+
+    /// The released actor slot is removed: its mark goes.
+    pub(super) async fn forget_kill_release(&self, mark: Option<KillReleaseMark>) {
+        if let Some(mark) = mark {
+            mark.forget(self.attack.lock().await.kills());
+        }
     }
 }
 
