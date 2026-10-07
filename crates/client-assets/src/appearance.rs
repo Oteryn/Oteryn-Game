@@ -11,6 +11,10 @@ pub const MAX_APPEARANCE_ID: u32 = 65_535;
 /// 15.30 appearances (frame group 0, phase 0, all layers) is 16, the bound is at least 16.
 pub const MAX_ENTRY_CELLS: usize = 16;
 
+/// The largest displacement (in pixels, per axis) an appearance may carry; an entry beyond it is
+/// unusable, so draw-offset arithmetic stays in range.
+pub const MAX_DISPLACEMENT_PX: u32 = 1024;
+
 // Hand-written messages with the field numbers of Canary's `appearances.proto` at the 15.30
 // pin. They carry only the fields this crate reads; unknown fields are skipped.
 #[derive(Clone, PartialEq, Message)]
@@ -401,6 +405,10 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         return None;
     }
     let shift = flags.shift.unwrap_or_default();
+    let (displacement_x, displacement_y) = (shift.x.unwrap_or(0), shift.y.unwrap_or(0));
+    if displacement_x.max(displacement_y) > MAX_DISPLACEMENT_PX {
+        return None;
+    }
     Some(Appearance {
         id,
         pattern_width: width,
@@ -409,8 +417,8 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         layers,
         phases,
         sprite_ids: info.sprite_id,
-        displacement_x: shift.x.unwrap_or(0),
-        displacement_y: shift.y.unwrap_or(0),
+        displacement_x,
+        displacement_y,
         elevation: flags.height.unwrap_or_default().elevation.unwrap_or(0),
         ground: flags.bank.is_some(),
         ground_border: flags.clip.unwrap_or(false),
@@ -419,4 +427,39 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         stackable: flags.cumulative.unwrap_or(false),
         fluid: flags.liquidcontainer.unwrap_or(false) || flags.liquidpool.unwrap_or(false),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn shifted(x: u32, y: u32) -> AppearanceMsg {
+        AppearanceMsg {
+            id: Some(1),
+            frame_group: vec![FrameGroupMsg {
+                sprite_info: Some(SpriteInfoMsg {
+                    sprite_id: vec![1],
+                    ..SpriteInfoMsg::default()
+                }),
+            }],
+            flags: Some(FlagsMsg {
+                shift: Some(ShiftMsg {
+                    x: Some(x),
+                    y: Some(y),
+                }),
+                ..FlagsMsg::default()
+            }),
+        }
+    }
+
+    #[test]
+    fn an_oversized_displacement_makes_the_entry_unusable() {
+        let kept = convert(1, shifted(8, MAX_DISPLACEMENT_PX));
+        assert_eq!(
+            kept.map(|kept| (kept.displacement_x, kept.displacement_y)),
+            Some((8, MAX_DISPLACEMENT_PX))
+        );
+        assert!(convert(1, shifted(u32::MAX, 0)).is_none());
+        assert!(convert(1, shifted(0, MAX_DISPLACEMENT_PX + 1)).is_none());
+    }
 }

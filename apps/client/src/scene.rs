@@ -127,10 +127,9 @@ impl Scene {
                     continue;
                 };
                 let tile = TileCoord::new(x, y);
-                let map = x
-                    .checked_add(self.anchor.x)
-                    .zip(y.checked_add(self.anchor.y))
-                    .and_then(|(x, y)| self.world.tile(x, y));
+                let map = self
+                    .world
+                    .tile(x.wrapping_add(self.anchor.x), y.wrapping_add(self.anchor.y));
                 for draw in map.iter().flat_map(|map| &map.under) {
                     push(&mut sprites, tile, draw, 0)?;
                 }
@@ -317,6 +316,17 @@ mod tests {
             Arc::clone(&scene.world),
             TileCoord::new(start.x - 1, start.y + 1),
             TileCoord::new(1, -1),
+            StepDir::South,
+            &[],
+        )
+        .map_err(|error| error.to_string())?;
+        assert_eq!(anchored.sprites().len(), scene.sprites().len());
+        // A join position at the edge of the coordinate space still maps exactly onto the start.
+        let edge = TileCoord::new(i32::MIN + 20, i32::MAX - 20);
+        let anchored = Scene::centered_on(
+            Arc::clone(&scene.world),
+            TileCoord::new(start.x.wrapping_sub(edge.x), start.y.wrapping_sub(edge.y)),
+            edge,
             StepDir::South,
             &[],
         )

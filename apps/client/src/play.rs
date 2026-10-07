@@ -142,9 +142,10 @@ impl PlayView {
     /// Draws `world` with the current own position on the start tile.
     pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
         self.world = world;
+        // Wrapping keeps the offset exact for any join position: `own + anchor` wraps back to START.
         self.anchor = TileCoord::new(
-            START.0.saturating_sub(self.own.x),
-            START.1.saturating_sub(self.own.y),
+            START.0.wrapping_sub(self.own.x),
+            START.1.wrapping_sub(self.own.y),
         );
         self.rebuild()
     }
