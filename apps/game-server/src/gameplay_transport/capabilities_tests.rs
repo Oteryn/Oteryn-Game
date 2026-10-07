@@ -118,24 +118,34 @@ fn the_production_offered_set_is_the_registry_offered_set_and_registered()
             offered.push((id, ids(&capability["requires"])?));
         }
     }
-    let production: Vec<(u32, Vec<u32>)> = PRODUCTION_OFFERED_CAPABILITIES
+    let pairs = |set: &[OfferedCapability]| -> Vec<(u32, Vec<u32>)> {
+        set.iter()
+            .map(|capability| (capability.id, capability.requires.to_vec()))
+            .collect()
+    };
+    // The registry offered set is the set a generation pinning a non-empty Item key set offers;
+    // without one, production falls back to that set without capability 4.
+    assert_eq!(pairs(ITEM_VIEW_OFFERED_CAPABILITIES), offered);
+    let fallback: Vec<(u32, Vec<u32>)> = offered
         .iter()
-        .map(|capability| (capability.id, capability.requires.to_vec()))
+        .filter(|(id, _)| *id != CAPABILITY_ITEM_VIEW_MOVE_V1)
+        .cloned()
         .collect();
-    assert_eq!(production, offered);
-    assert!(
-        PRODUCTION_OFFERED_CAPABILITIES
-            .windows(2)
-            .all(|pair| pair[0].id < pair[1].id)
-    );
-    assert!(PRODUCTION_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
-    for capability in PRODUCTION_OFFERED_CAPABILITIES {
-        assert!(
-            capability
-                .requires
-                .iter()
-                .all(|required| registered.contains(required))
-        );
+    assert_eq!(pairs(PRODUCTION_OFFERED_CAPABILITIES), fallback);
+    for set in [
+        PRODUCTION_OFFERED_CAPABILITIES,
+        ITEM_VIEW_OFFERED_CAPABILITIES,
+    ] {
+        assert!(set.windows(2).all(|pair| pair[0].id < pair[1].id));
+        assert!(set.len() <= SELECTED_CAPACITY);
+        for capability in set {
+            assert!(
+                capability
+                    .requires
+                    .iter()
+                    .all(|required| registered.contains(required))
+            );
+        }
     }
     // `REGISTERED_CAPABILITY_IDS_V1` is what the acceptance encoder checks a selected set
     // against: the whole offered set, selected at once, is accepted, and an unregistered ID is
