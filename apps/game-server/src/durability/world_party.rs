@@ -517,6 +517,7 @@ impl super::DurabilityRoot {
     /// expired-row predicate; no command occurrence, artificial caster or user payment exists.
     pub(crate) async fn drain_world_party_expiry(
         &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
         recovery: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
         node: &super::runtime_scope_assignment::NodeIncarnationProof,
         scope: RuntimeScopeRefV1,
@@ -526,8 +527,9 @@ impl super::DurabilityRoot {
             .record_for(self)
             .map_err(|_| reject("party cleanup recovery authority"))?;
         let node = node.clone();
+        let mut context = permit;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
                     let mut tx = super::spell_item_transaction::begin_spell_owner_transaction(
                         holder, deadline,
@@ -535,7 +537,7 @@ impl super::DurabilityRoot {
                     .await?;
                     let authority =
                         super::spell_item_transaction::assert_spell_item_scope_with_recovery(
-                            &mut tx, &record, &node, scope, generation,
+                            &mut tx, permit, &record, &node, scope, generation,
                         )
                         .await
                         .map_err(|_| super::DurabilityError::Unavailable)?;
@@ -554,6 +556,7 @@ impl super::DurabilityRoot {
     /// Runtime remains borrowed from the real owner throughout the bounded SQL pass.
     pub(crate) async fn refresh_current_world_party_presence(
         &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
         recovery: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
         node: &super::runtime_scope_assignment::NodeIncarnationProof,
         runtime: &crate::foundation::ChannelRuntimeV1,
@@ -569,18 +572,18 @@ impl super::DurabilityRoot {
             runtime.binding().channel_id(),
         );
         let generation = runtime.binding().scope_generation().get();
-        let mut context = (self, runtime);
+        let mut context = (self, runtime, permit);
         self.try_issue_semantic_pass()?
             .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
-                    let (root, runtime) = context;
+                    let (root, runtime, permit) = context;
                     let mut tx = super::spell_item_transaction::begin_spell_owner_transaction(
                         holder, deadline,
                     )
                     .await?;
                     let authority =
                         super::spell_item_transaction::assert_spell_item_scope_with_recovery(
-                            &mut tx, &record, &node, scope, generation,
+                            &mut tx, permit, &record, &node, scope, generation,
                         )
                         .await
                         .map_err(|_| super::DurabilityError::Unavailable)?;
@@ -629,6 +632,7 @@ pub(crate) async fn cleanup_world_party_offline_presence_in_transaction(
 impl super::DurabilityRoot {
     pub(crate) async fn drain_world_party_offline_presence(
         &self,
+        permit: &super::spell_owner_commit::SpellLanePermit,
         recovery: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
         node: &super::runtime_scope_assignment::NodeIncarnationProof,
         scope: RuntimeScopeRefV1,
@@ -638,8 +642,9 @@ impl super::DurabilityRoot {
             .record_for(self)
             .map_err(|_| reject("party offline recovery authority"))?;
         let node = node.clone();
+        let mut context = permit;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
                     let mut tx = super::spell_item_transaction::begin_spell_owner_transaction(
                         holder, deadline,
@@ -647,7 +652,7 @@ impl super::DurabilityRoot {
                     .await?;
                     let authority =
                         super::spell_item_transaction::assert_spell_item_scope_with_recovery(
-                            &mut tx, &record, &node, scope, generation,
+                            &mut tx, permit, &record, &node, scope, generation,
                         )
                         .await
                         .map_err(|_| super::DurabilityError::Unavailable)?;

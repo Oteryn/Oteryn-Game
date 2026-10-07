@@ -53,6 +53,7 @@ use crate::durability::item_mint::{
     ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
 };
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{
     CarrierError, CharacterId, CreatureDeathOccurrenceKey, CurrentOwnerCombatDeath, ExactActorRef,
     GameSessionId, MovementLocalPosition,
@@ -421,6 +422,7 @@ fn ground_placement(
 /// corpse holding only the entries that did commit (D52).
 #[allow(clippy::too_many_arguments)]
 async fn settle_loot(
+    permit: &SpellLanePermit,
     session: &DurabilitySession<'_, '_, '_>,
     death: CreatureDeathOccurrenceKey,
     corpse: MovementLocalPosition,
@@ -464,6 +466,7 @@ async fn settle_loot(
     let corpse_outcome = session
         .root
         .commit_corpse_mint(
+            permit,
             session.authority,
             session.node,
             &mut corpse_candidate,
@@ -501,7 +504,7 @@ async fn settle_loot(
             .map_err(CombatDeathRewardLootError::Mint)?;
         let outcome = session
             .root
-            .commit_corpse_loot_mint(session.authority, session.node, &mut candidate)
+            .commit_corpse_loot_mint(permit, session.authority, session.node, &mut candidate)
             .await
             .map_err(CombatDeathRewardLootError::Mint)?;
         entries.push(committed(outcome));
@@ -639,6 +642,7 @@ pub(crate) struct DurabilitySession<'a, 'f, 's> {
 /// other fails. `slot` is the reward principal's revision slot, acquired
 /// after the guards were released.
 pub(crate) async fn settle_creature_death_rewards<const N: usize>(
+    permit: &SpellLanePermit,
     facts: ProjectedCreatureDeathFacts,
     session: &DurabilitySession<'_, '_, '_>,
     slot: &mut RevisionSlot,
@@ -646,6 +650,7 @@ pub(crate) async fn settle_creature_death_rewards<const N: usize>(
 ) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
     let principal = admit_principal(&facts, &input)?;
     let loot = settle_loot(
+        permit,
         session,
         facts.death,
         facts.corpse,
@@ -744,6 +749,7 @@ pub(crate) struct CreatureDeathRewardWithBestiaryOutcome {
 /// rolls back either of them; an admission refusal refuses all three. The
 /// same held `slot` covers XP and Bestiary.
 pub(crate) async fn settle_creature_death_rewards_with_bestiary<const N: usize>(
+    permit: &SpellLanePermit,
     facts: ProjectedCreatureDeathFacts,
     session: &DurabilitySession<'_, '_, '_>,
     slot: &mut RevisionSlot,
@@ -759,7 +765,7 @@ pub(crate) async fn settle_creature_death_rewards_with_bestiary<const N: usize>(
             reward_revision: progression.reward_revision.clone(),
         });
     let principal = admit_principal(&facts, &input)?;
-    let rewards = settle_creature_death_rewards(facts, session, slot, input).await?;
+    let rewards = settle_creature_death_rewards(permit, facts, session, slot, input).await?;
     let bestiary = match binding {
         Some(binding) => {
             settle_bestiary(session, slot, &facts, &principal, &binding, bestiary).await

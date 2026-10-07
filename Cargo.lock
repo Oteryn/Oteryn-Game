@@ -2038,6 +2038,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-player-bots"
+version = "0.1.0"
+dependencies = [
+ "oteryn-dev-client",
+ "oteryn-protocol-oteryn",
+ "rcgen",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
+]
+
+[[package]]
 name = "oteryn-pre-native-client-tests"
 version = "0.1.0"
 dependencies = [

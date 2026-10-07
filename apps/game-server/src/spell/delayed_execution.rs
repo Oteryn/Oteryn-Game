@@ -367,6 +367,16 @@ impl FamiliarTimerInstallPreflight {
         self,
         receipt: &super::companion_lifecycle::FamiliarApplyReceipt,
     ) -> Result<ValidatedFamiliarTimerInstall, Error> {
+        self.check_finalize(receipt)?;
+        Ok(self.install_finalized())
+    }
+
+    /// The borrowing check of [`Self::finalize`] (ARCH-SPELL-LOCK-2 §1.6), also against the
+    /// predicted receipt of a checked familiar apply before its first write.
+    pub(crate) fn check_finalize(
+        &self,
+        receipt: &super::companion_lifecycle::FamiliarApplyReceipt,
+    ) -> Result<(), Error> {
         for occurrence in &self.reservation.added {
             let pending = self
                 .reservation
@@ -381,9 +391,14 @@ impl FamiliarTimerInstallPreflight {
                 return Err(Error::SubstitutedBatch);
             }
         }
-        Ok(ValidatedFamiliarTimerInstall {
+        Ok(())
+    }
+
+    /// The infallible move, only after [`Self::check_finalize`] passed for the same receipt.
+    pub(crate) fn install_finalized(self) -> ValidatedFamiliarTimerInstall {
+        ValidatedFamiliarTimerInstall {
             reservation: self.reservation,
-        })
+        }
     }
 }
 /// A reservation qualified before the physical batch commits. The caller must
