@@ -9,6 +9,7 @@
 //! the installer ships no map or sprite files. Without it, [`World::builtin`] draws only the
 //! builtin cells.
 
+use crate::input::StepDir;
 use oteryn_client_assets::{
     AppearanceIndex, AssetStore, CELL_PX, Catalog, DrawCell, Placement, SpriteSheets,
 };
@@ -30,9 +31,10 @@ pub const START: (i32, i32) = (32369, 32241);
 pub const START_FLOOR: u8 = 7;
 /// Tiles decoded on each side of [`START`].
 pub const RADIUS: i32 = 64;
-/// The default outfit (citizen), drawn facing south.
+/// The default outfit (citizen).
 pub const PLAYER_LOOK_TYPE: u32 = 128;
-const SOUTH: u32 = 2;
+/// Outfit directions in pattern order.
+const FACINGS: [StepDir; 4] = [StepDir::North, StepDir::East, StepDir::South, StepDir::West];
 
 /// Builtin cells ahead of the sprite cells: opaque black under every tile, the target
 /// outline, and the marker glyph for overlay objects.
@@ -70,7 +72,8 @@ pub struct MapTile {
 pub struct World {
     atlas: AtlasImage,
     tiles: HashMap<(i32, i32), MapTile>,
-    player: Vec<Draw>,
+    /// The own player's cells per facing, in [`FACINGS`] order.
+    player: [Vec<Draw>; 4],
 }
 
 #[derive(Deserialize)]
@@ -97,10 +100,12 @@ impl World {
         Ok(Self {
             atlas,
             tiles: HashMap::new(),
-            player: vec![Draw {
-                cell: MARKER_CELL,
-                offset: [0, 0],
-            }],
+            player: FACINGS.map(|_| {
+                vec![Draw {
+                    cell: MARKER_CELL,
+                    offset: [0, 0],
+                }]
+            }),
         })
     }
 
@@ -196,17 +201,20 @@ impl World {
                 }
             }
         }
-        let player = index
-            .resolve_outfit(&sheets, PLAYER_LOOK_TYPE, SOUTH)
-            .map_err(|error| format!("outfit {PLAYER_LOOK_TYPE}: {error}"))?
-            .cells;
+        let mut player: [Vec<DrawCell>; 4] = Default::default();
+        for (direction, cells) in (0..).zip(&mut player) {
+            *cells = index
+                .resolve_outfit(&sheets, PLAYER_LOOK_TYPE, direction)
+                .map_err(|error| format!("outfit {PLAYER_LOOK_TYPE}: {error}"))?
+                .cells;
+        }
 
         // Cells in sprite order, so each sheet is decoded once; past the atlas cap they are dropped.
         let mut cells = BTreeMap::new();
         for cell in entries
             .iter()
             .flat_map(|(_, items)| items.iter().flat_map(|(_, _, cells)| cells))
-            .chain(&player)
+            .chain(player.iter().flatten())
         {
             cells.insert((cell.sprite_id, cell.cell_x, cell.cell_y), 0_u16);
         }
@@ -245,7 +253,7 @@ impl World {
             tile.elevation = elevation;
             tiles.insert(*position, tile);
         }
-        let player = player.iter().filter_map(|cell| draw(cell, 0)).collect();
+        let player = player.map(|cells| cells.iter().filter_map(|cell| draw(cell, 0)).collect());
         let atlas = atlas_from_cells(rgba, next).map_err(|error| format!("atlas: {error}"))?;
         Ok(Self {
             atlas,
@@ -270,10 +278,11 @@ impl World {
         self.tiles.len()
     }
 
-    /// The own player's cells, standing on a tile.
+    /// The own player's cells facing `facing`, standing on a tile.
     #[must_use]
-    pub fn player(&self) -> &[Draw] {
-        &self.player
+    pub fn player(&self, facing: StepDir) -> &[Draw] {
+        let index = FACINGS.iter().position(|f| *f == facing).unwrap_or(2);
+        &self.player[index]
     }
 }
 
@@ -438,7 +447,7 @@ mod tests {
         let world = World::builtin()?;
         assert_eq!(world.atlas().cell_count() as usize, BUILTIN_CELLS);
         assert_eq!(world.tile_count(), 0);
-        assert_eq!(world.player()[0].cell, MARKER_CELL);
+        assert_eq!(world.player(StepDir::South)[0].cell, MARKER_CELL);
         Ok(())
     }
 
@@ -459,13 +468,12 @@ mod tests {
                     .map_err(|e| e.to_string())?;
             }
         }
-        assert!(!world.player().is_empty());
-        assert!(
-            world
-                .player()
-                .iter()
-                .all(|draw| draw.cell >= BUILTIN_CELLS as u16)
-        );
+        for facing in FACINGS {
+            let player = world.player(facing);
+            assert!(!player.is_empty());
+            assert!(player.iter().all(|draw| draw.cell >= BUILTIN_CELLS as u16));
+        }
+        assert_ne!(world.player(StepDir::North), world.player(StepDir::South));
         Ok(())
     }
 

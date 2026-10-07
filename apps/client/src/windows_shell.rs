@@ -1,4 +1,4 @@
-use oteryn_client::input::{MouseActions, arrow_step, click_tile};
+use oteryn_client::input::{MouseActions, StepDir, arrow_step, click_tile};
 use oteryn_client::play::{PlayLink, PlayView};
 use oteryn_client::pre_native_status;
 use oteryn_client::scene::Scene;
@@ -58,6 +58,7 @@ struct Application {
     /// Without a session: the scene around `offline_own`, which the arrow keys move locally.
     scene: Option<Scene>,
     offline_own: TileCoord,
+    offline_facing: StepDir,
     client: Option<ClientBootstrap>,
     play: Option<Play>,
     generation: ProcessGeneration,
@@ -93,6 +94,7 @@ impl Application {
             world: None,
             scene: None,
             offline_own: TileCoord::new(START.0, START.1),
+            offline_facing: StepDir::South,
             client,
             play,
             generation: ProcessGeneration::new(1),
@@ -124,6 +126,7 @@ impl Application {
         }
         if let Some(direction) = arrow_step(events) {
             self.offline_own = direction.from(self.offline_own);
+            self.offline_facing = direction;
             if self.rebuild_offline().is_err() {
                 self.fail(event_loop, ShellError::RendererRender);
                 return;
@@ -149,6 +152,7 @@ impl Application {
                 Arc::clone(world),
                 origin,
                 self.offline_own,
+                self.offline_facing,
                 &[],
             )?);
         }

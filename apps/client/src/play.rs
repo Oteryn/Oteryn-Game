@@ -72,6 +72,8 @@ pub const fn public_class(_error: &SessionError) -> PublicClass {
 #[derive(Debug, Clone)]
 pub struct PlayView {
     own: TileCoord,
+    /// The direction of the latest step sent; the player is drawn facing it.
+    facing: StepDir,
     floor: i16,
     /// Every decodable overlay entry with its floor; the current floor selects what is drawn.
     markers: BTreeMap<Vec<u8>, (TileCoord, i16)>,
@@ -105,9 +107,10 @@ impl PlayView {
         let anchor = TileCoord::new(0, 0);
         let mut view = Self {
             own,
+            facing: StepDir::South,
             floor,
             markers: BTreeMap::new(),
-            scene: Scene::centered_on(Arc::clone(&world), anchor, own, &[])?,
+            scene: Scene::centered_on(Arc::clone(&world), anchor, own, StepDir::South, &[])?,
             world,
             anchor,
             walk: ClickWalk::new(),
@@ -124,6 +127,11 @@ impl PlayView {
     #[must_use]
     pub const fn own(&self) -> TileCoord {
         self.own
+    }
+
+    #[must_use]
+    pub const fn facing(&self) -> StepDir {
+        self.facing
     }
 
     #[must_use]
@@ -173,6 +181,9 @@ impl PlayView {
         }
         let direction = self.pending_step();
         self.in_flight = direction.is_some();
+        if let Some(facing) = direction {
+            self.facing = facing;
+        }
         direction
     }
 
@@ -232,7 +243,13 @@ impl PlayView {
 
     fn rebuild(&mut self) -> Result<(), BatchError> {
         let markers = self.drawn_markers().collect::<Vec<_>>();
-        self.scene = Scene::centered_on(Arc::clone(&self.world), self.anchor, self.own, &markers)?;
+        self.scene = Scene::centered_on(
+            Arc::clone(&self.world),
+            self.anchor,
+            self.own,
+            self.facing,
+            &markers,
+        )?;
         Ok(())
     }
 
@@ -555,9 +572,12 @@ mod tests {
     #[test]
     fn arrow_key_steps_without_a_goal() -> Result<(), BatchError> {
         let mut view = view()?;
+        assert_eq!(view.facing(), StepDir::South);
         view.arrow(StepDir::North);
         assert_eq!(view.next_step(), Some(StepDir::North));
         assert_eq!(view.next_step(), None);
+        // The player turns to the step sent, moved or not.
+        assert_eq!(view.facing(), StepDir::North);
         Ok(())
     }
 

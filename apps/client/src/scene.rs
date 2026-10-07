@@ -4,7 +4,7 @@
 //! View coordinates are the session's; `anchor` is added to reach map coordinates, so a session
 //! whose positions are not map positions still draws the start area around its actor.
 
-use crate::input::{TargetKind, Targetable, pick_target};
+use crate::input::{StepDir, TargetKind, Targetable, pick_target};
 use crate::world::{BLACK_CELL, Draw, MARKER_CELL, TARGET_CELL, World};
 use oteryn_client_assets::CELL_PX;
 use oteryn_renderer::{AtlasImage, BatchError, SpriteBatch, TileBatch, TileCoord, TileView};
@@ -20,6 +20,7 @@ pub struct Scene {
     world: Arc<World>,
     anchor: TileCoord,
     own: TileCoord,
+    facing: StepDir,
     view: TileView,
     tiles: TileBatch,
     sprites: SpriteBatch,
@@ -28,11 +29,13 @@ pub struct Scene {
 }
 
 impl Scene {
-    /// The view centred on `own`, with one marker per overlay object tile.
+    /// The view centred on `own`, the player facing `facing`, with one marker per overlay
+    /// object tile.
     pub fn centered_on(
         world: Arc<World>,
         anchor: TileCoord,
         own: TileCoord,
+        facing: StepDir,
         markers: &[TileCoord],
     ) -> Result<Self, BatchError> {
         let origin = TileCoord::new(
@@ -59,6 +62,7 @@ impl Scene {
             world,
             anchor,
             own,
+            facing,
             view,
             tiles,
             sprites: SpriteBatch::new(),
@@ -127,7 +131,7 @@ impl Scene {
                     }
                 }
                 if tile == self.own {
-                    for draw in self.world.player() {
+                    for draw in self.world.player(self.facing) {
                         push(&mut sprites, tile, draw, lift)?;
                     }
                 }
@@ -171,7 +175,13 @@ mod tests {
     fn scene() -> Result<Scene, BatchError> {
         let world = Arc::new(World::builtin()?);
         let markers = [TileCoord::new(3, -1), TileCoord::new(-2, -2)];
-        Scene::centered_on(world, TileCoord::new(0, 0), TileCoord::new(0, 0), &markers)
+        Scene::centered_on(
+            world,
+            TileCoord::new(0, 0),
+            TileCoord::new(0, 0),
+            StepDir::South,
+            &markers,
+        )
     }
 
     #[test]
@@ -242,7 +252,13 @@ mod tests {
             ((x, y), tile)
         };
         let world = Arc::new(World::builtin_with([reach(9, 0), reach(0, 7)])?);
-        let scene = Scene::centered_on(world, TileCoord::new(0, 0), TileCoord::new(0, 0), &[])?;
+        let scene = Scene::centered_on(
+            world,
+            TileCoord::new(0, 0),
+            TileCoord::new(0, 0),
+            StepDir::South,
+            &[],
+        )?;
         assert_eq!(scene.sprites().len(), 3);
         Ok(())
     }
@@ -251,10 +267,16 @@ mod tests {
     fn a_view_at_the_edge_of_the_coordinate_space_builds() -> Result<(), BatchError> {
         let world = Arc::new(World::builtin()?);
         let own = TileCoord::new(i32::MAX - 8, i32::MAX - 6);
-        let scene = Scene::centered_on(world, TileCoord::new(0, 0), own, &[])?;
+        let scene = Scene::centered_on(world, TileCoord::new(0, 0), own, StepDir::South, &[])?;
         assert_eq!(scene.sprites().len(), 1);
         let world = Arc::new(World::builtin()?);
-        let scene = Scene::centered_on(world, TileCoord::new(i32::MAX, i32::MAX), own, &[])?;
+        let scene = Scene::centered_on(
+            world,
+            TileCoord::new(i32::MAX, i32::MAX),
+            own,
+            StepDir::South,
+            &[],
+        )?;
         assert_eq!(scene.sprites().len(), 1);
         Ok(())
     }
@@ -264,7 +286,7 @@ mod tests {
         let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let world = Arc::new(World::load(&root)?);
         let start = TileCoord::new(crate::world::START.0, crate::world::START.1);
-        let scene = Scene::centered_on(world, TileCoord::new(0, 0), start, &[])
+        let scene = Scene::centered_on(world, TileCoord::new(0, 0), start, StepDir::South, &[])
             .map_err(|error| error.to_string())?;
         // Far more than a quad per tile, all inside the atlas and the batch cap.
         assert!(scene.sprites().len() > (SCENE_COLUMNS * SCENE_ROWS) as usize);
@@ -276,6 +298,7 @@ mod tests {
             Arc::clone(&scene.world),
             TileCoord::new(start.x - 1, start.y + 1),
             TileCoord::new(1, -1),
+            StepDir::South,
             &[],
         )
         .map_err(|error| error.to_string())?;
