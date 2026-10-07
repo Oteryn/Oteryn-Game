@@ -214,7 +214,7 @@ impl World {
                         } else {
                             3
                         };
-                        items.push((layer, resolved.elevation as i32, resolved.cells));
+                        items.push((layer, item_height(resolved.elevation), resolved.cells));
                     }
                     // Stable: items of one layer keep their stack order.
                     items.sort_by_key(|(layer, _, _)| *layer);
@@ -366,6 +366,12 @@ fn stack_lifts(items: impl IntoIterator<Item = (u8, i32)>) -> (Vec<i32>, i32) {
         })
         .collect();
     (lifts, below)
+}
+
+/// An appearance's elevation as a stack height, capped like the stack itself so an oversized
+/// profile value can neither wrap negative nor overflow the sum below it.
+fn item_height(elevation: u32) -> i32 {
+    i32::try_from(elevation).map_or(MAX_ELEVATION, |height| height.min(MAX_ELEVATION))
 }
 
 /// A start-floor placement; the encoded value is a stack count or, for fluids, the subtype.
@@ -558,6 +564,9 @@ mod tests {
         let (lifts, elevation) = stack_lifts([(0, 0), (3, 8), (3, 0), (3, 8), (4, 8)]);
         assert_eq!(lifts, [0, 8, 8, 16, 8]);
         assert_eq!(elevation, 16);
+        assert_eq!(item_height(8), 8);
+        assert_eq!(item_height(u32::MAX), MAX_ELEVATION);
+        assert_eq!(item_height(i32::MAX as u32 + 1), MAX_ELEVATION);
         let (lifts, elevation) = stack_lifts([(3, 16), (3, 16)]);
         assert_eq!(lifts, [16, MAX_ELEVATION]);
         assert_eq!(elevation, MAX_ELEVATION);
