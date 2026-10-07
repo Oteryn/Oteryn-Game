@@ -154,6 +154,11 @@ in-process concurrency invariant of the Channel owner (decision §1.7).
   `assert_actor_spell_unreserved` before any HP or condition write, so a cure-only actor whose
   slot a pending batch reserves refuses retryably.
 - Test: `cure_only_actor_on_a_reserved_slot_refuses_heal_and_cure`.
+- Merge queue (runs 37649633608, 37653994913): the stale instance-scope fence of
+  `every_fence_operator_rejects_at_freeze_and_at_commit` (item transfer and map item mint) hit
+  the lane's `InvalidStoredState` before the fence check. `commit_item_transfer` and
+  `commit_map_item_mint` refuse a non-Channel fence as `AuthorityRejected` before the lane
+  check, as before SPELL-LOCK-2; the cases commit such a fence under the fenced Channel's lane.
 
 ## Validation
 

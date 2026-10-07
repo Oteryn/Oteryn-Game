@@ -504,6 +504,14 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         candidate: &mut MapItemMintCandidate,
     ) -> Result<MapItemMintOutcome> {
+        // A non-Channel scope owns no Ground, so its fence is refused as stale authority
+        // before the lane check, as the transaction refused it before SPELL-LOCK-2.
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) {
+            return Err(MapItemMintError::AuthorityRejected);
+        }
         permit.check_scope(fence.runtime_scope)?;
         let recovery = authority
             .record_for(self)

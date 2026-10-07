@@ -1241,9 +1241,7 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
                 harness
                     .root
                     .commit_item_transfer(
-                        &SpellLanePermit::of_fresh_scope((stale).runtime_scope)
-                            .await
-                            .map_err(debug)?,
+                        &stale_fence_lane(stale).await.map_err(debug)?,
                         &authority,
                         &harness.node,
                         stale,
@@ -2854,4 +2852,16 @@ fn transfer_audit_event_must_start_pending() -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+/// The lane a stale-fence commit runs under: the stale Channel's own lane, or the fenced
+/// Channel's lane when the stale scope is no Channel (the writer refuses that fence first).
+async fn stale_fence_lane(stale: CurrentCharacterItemFence) -> TestResult<SpellLanePermit> {
+    let scope = match stale.runtime_scope {
+        RuntimeScopeRefV1::Channel { .. } => stale.runtime_scope,
+        _ => fence()?.runtime_scope,
+    };
+    Ok(SpellLanePermit::of_fresh_scope(scope)
+        .await
+        .map_err(debug)?)
 }
