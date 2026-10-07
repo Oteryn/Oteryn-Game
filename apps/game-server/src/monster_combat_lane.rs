@@ -2842,6 +2842,7 @@ mod tests {
             source_world: None,
             progression: None,
             item_keys: None,
+            loot_tables: None,
         };
         let room = crate::content::qualify_selected_native_gameplay_room(world, &native_input)
             .expect("monster_combat_lane.rs:tests:2724: qualified fixture operation must succeed");
@@ -3207,6 +3208,7 @@ mod tests {
             source_world: None,
             progression: None,
             item_keys: None,
+            loot_tables: None,
         };
         let room = crate::content::qualify_selected_native_gameplay_room(world, &native_input)
             .expect("monster_combat_lane.rs:tests:3041: qualified fixture operation must succeed");
