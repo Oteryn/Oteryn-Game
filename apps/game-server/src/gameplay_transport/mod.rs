@@ -833,11 +833,12 @@ impl TerminalRelease {
 /// mismatch releases of one lost epoch join one `ControlLoss(epoch)` fence, so only the last
 /// holder to settle lifts it: a joiner settling early never lifts the fence while another
 /// release of the epoch is still saving or committing. Only changed while `runtime` is locked.
-/// A grace expiry that ends unknown keeps its hold here for the next expiry of the session.
+/// A grace expiry that ends unknown keeps its hold here for the next expiry of the session;
+/// concurrent lifecycles of the session each keep their own.
 #[derive(Default)]
 pub(crate) struct FenceHolders(
     std::sync::Mutex<std::collections::HashMap<(GameSessionId, TransitionFence), u32>>,
-    std::sync::Mutex<std::collections::HashMap<GameSessionId, FenceHold>>,
+    std::sync::Mutex<std::collections::HashMap<GameSessionId, Vec<FenceHold>>>,
 );
 
 /// One release's hold on its fence token, taken at its first fence and given back when it
@@ -934,23 +935,30 @@ impl FenceHolders {
 
     fn kept(
         &self,
-    ) -> std::sync::MutexGuard<'_, std::collections::HashMap<GameSessionId, FenceHold>> {
+    ) -> std::sync::MutexGuard<'_, std::collections::HashMap<GameSessionId, Vec<FenceHold>>> {
         self.1
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// A grace expiry ended unknown still holding `hold`: the next expiry of the session takes
-    /// it over instead of counting the same release again.
+    /// it over instead of counting the same release again. A hold another lifecycle of the
+    /// session kept stays beside it, each counted once.
     fn keep(&self, hold: FenceHold) {
         if hold.held {
-            self.kept().insert(hold.session, hold);
+            self.kept().entry(hold.session).or_default().push(hold);
         }
     }
 
-    /// The hold an unknown grace expiry of `session` kept, if any.
+    /// One hold an unknown grace expiry of `session` kept, if any.
     fn resume(&self, session: GameSessionId) -> Option<FenceHold> {
-        self.kept().remove(&session)
+        let mut kept = self.kept();
+        let holds = kept.get_mut(&session)?;
+        let hold = holds.pop();
+        if holds.is_empty() {
+            kept.remove(&session);
+        }
+        hold
     }
 }
 
@@ -1458,6 +1466,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some(hold) = held.as_mut() {
                     self.fence_holders.release(hold);
                 }
+                // Every hold kept on the session is of a lost epoch that is over.
+                while let Some(mut stale) = self.fence_holders.resume(session) {
+                    self.fence_holders.release(&mut stale);
+                }
                 // KILL-REWARD-COMP-1 §1.3: no release of the resumed epoch committed, so a kill
                 // mark an unknown outcome kept is cleared as retryable.
                 self.release_orphaned_kills(session).await;
@@ -1760,7 +1772,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
         let mut kills = None;
-        let mut kill_unknown = false;
         let abandoned = matches!(release, TerminalRelease::Abandoned(_));
         let mut backoff = RECONCILE_BACKOFF;
         let mut next_backoff = || {
@@ -1769,7 +1780,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             pause
         };
         let mut attempt = 0;
-        while retries_release(attempt, abandoned, kill_unknown) {
+        while retries_release(attempt, abandoned) {
             attempt = attempt.saturating_add(1);
             if !self
                 .settle_released_death(actor, session, &mut settled_death)
@@ -1847,7 +1858,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     UnendedSettle::Unknown => {
                         self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
-                        kill_unknown = true;
                         next_backoff()
                     }
                 },
@@ -1861,7 +1871,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // the durable row.
                 Err(_) => {
                     self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
-                    kill_unknown = true;
                     next_backoff()
                 }
             };
@@ -1888,7 +1897,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .await;
                     GraceExpiryResult::Unknown
                 }
-                UnendedSettle::Unknown => GraceExpiryResult::Unknown,
+                // The fence stays: the epoch's grace expiry, which joins the same token, takes
+                // the hold over instead of counting it again.
+                UnendedSettle::Unknown => {
+                    self.fence_holders.keep(hold);
+                    GraceExpiryResult::Unknown
+                }
             };
         }
         GraceExpiryResult::Unknown
@@ -3069,10 +3083,11 @@ const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
 const EXPIRY_ATTEMPTS: u32 = 32;
 
 /// Whether a terminal release makes another attempt. KILL-REWARD-COMP-1 §1.3: an abandoned
-/// release whose kill mark an unknown outcome kept runs on behind the backoff, unbounded in
-/// count, since its callers cannot retry it.
-const fn retries_release(attempt: u32, abandoned: bool, kill_unknown: bool) -> bool {
-    attempt < EXPIRY_ATTEMPTS || (abandoned && kill_unknown)
+/// release runs on behind the backoff, unbounded in count, until it ends, since its callers
+/// cannot retry it: a kill drain deferred on every attempt, or a kill mark an unknown outcome
+/// kept, never strands the session ACTIVE on its dead transport with its fence held.
+const fn retries_release(attempt: u32, abandoned: bool) -> bool {
+    attempt < EXPIRY_ATTEMPTS || abandoned
 }
 
 /// Cap of the grace-expiry store retry backoff.
@@ -4591,15 +4606,16 @@ mod tests {
         }
     }
 
-    /// KILL-REWARD-COMP-1 §1.3: an abandoned release whose kill mark an unknown outcome kept runs
-    /// past the attempt bound; any other release stops at it.
+    /// KILL-REWARD-COMP-1 §1.3 (#1908 Codex P1 4202825538): an abandoned release, whose kill
+    /// drain may stay deferred or whose kill mark an unknown outcome kept on every attempt, runs
+    /// past the attempt bound until it ends; a mismatch release stops at it.
     #[test]
-    fn an_abandoned_release_with_an_unknown_kill_mark_retries_past_the_bound() {
-        assert!(retries_release(0, true, false));
-        assert!(!retries_release(EXPIRY_ATTEMPTS, true, false));
-        assert!(!retries_release(EXPIRY_ATTEMPTS, false, true));
-        assert!(retries_release(EXPIRY_ATTEMPTS, true, true));
-        assert!(retries_release(u32::MAX, true, true));
+    fn an_abandoned_release_retries_past_the_bound() {
+        assert!(retries_release(0, true));
+        assert!(retries_release(0, false));
+        assert!(!retries_release(EXPIRY_ATTEMPTS, false));
+        assert!(retries_release(EXPIRY_ATTEMPTS, true));
+        assert!(retries_release(u32::MAX, true));
     }
 
     /// Records the loss; the first two grace expiries end unknown.
@@ -5458,6 +5474,45 @@ mod tests {
         holders.keep(kept);
         holders.forget(session);
         assert!(holders.resume(session).is_none());
+    }
+
+    /// KILL-REWARD-COMP-1 (#1908 Codex P1 4202825532): two grace-expiry lifecycles of one
+    /// session that both end unknown keep both holds; their retries settle each once, so the
+    /// fence is lifted and no count is left.
+    #[test]
+    fn concurrent_unknown_grace_expiries_keep_every_hold() {
+        let (mut runtime, actor, session) = lost_slot();
+        let holders = FenceHolders::default();
+        let token = TransitionFence::GraceExpiry(1);
+        let other = TransitionFence::Transition(9);
+        let mut first = FenceHold::new(session, token);
+        let mut second = FenceHold::new(session, token);
+        assert_eq!(holders.fence(&mut runtime, actor, &mut first), Ok(()));
+        assert_eq!(holders.fence(&mut runtime, actor, &mut second), Ok(()));
+        // Both end unknown: neither kept hold replaces the other.
+        holders.keep(first);
+        holders.keep(second);
+        let mut retries = [
+            holders.resume(session).expect("kept hold"),
+            holders.resume(session).expect("kept hold"),
+        ];
+        assert!(holders.resume(session).is_none());
+        assert_eq!(holders.counts().get(&(session, token)), Some(&2));
+        // Each retry joins the fence without counting again, and settles its own hold once.
+        for retry in &mut retries {
+            assert_eq!(holders.fence(&mut runtime, actor, retry), Ok(()));
+        }
+        assert_eq!(holders.counts().get(&(session, token)), Some(&2));
+        let [early, last] = &mut retries;
+        assert_eq!(holders.lift(&mut runtime, actor, early), Ok(()));
+        assert_eq!(
+            other.fence(&mut runtime, actor, session),
+            Err(CarrierError::WriteFenceBusy)
+        );
+        assert_eq!(holders.lift(&mut runtime, actor, last), Ok(()));
+        assert!(holders.counts().is_empty());
+        assert_eq!(other.fence(&mut runtime, actor, session), Ok(()));
+        assert_eq!(other.lift(&mut runtime, actor, session), Ok(true));
     }
 
     /// DEATH-2b: only a cell that is Walkable in the pinned generation's own movement cells of
