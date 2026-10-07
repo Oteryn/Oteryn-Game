@@ -11,6 +11,64 @@
   },
   "items": [
     {
+      "item_id": 54262,
+      "item_key": "oteryn:item.tibia.i54262",
+      "role": "Shards Asura Citadel identity-key granted/re-granted by Javala",
+      "identity_state": "CURRENT_CANONICAL_IDENTITY_PRESENT",
+      "current_record": {
+        "path": "content/items/definitions/items-28500-28999.json",
+        "materializable": false,
+        "stack_class": "Unknown",
+        "physical": {
+          "movable": true,
+          "pickupable": true,
+          "weight": 100
+        }
+      },
+      "client_name": "key",
+      "client_flags": {
+        "flags.usable": true,
+        "flags.multiuse": true,
+        "flags.take": true,
+        "flags.cyclopediaitem": true,
+        "cyclopediaitem.cyclopedia_type": 54262
+      },
+      "xml": {
+        "crystal-summer": {
+          "article": "a",
+          "attrs": {
+            "primarytype": "others",
+            "weight": "100"
+          },
+          "item_id": 54262,
+          "name": "key",
+          "plural": null
+        }
+      },
+      "wiki": [],
+      "owning_donors": [
+        "crystal-summer"
+      ],
+      "derived_item_facts": {
+        "stackable": false,
+        "capacity": null,
+        "charges": null,
+        "holds": []
+      },
+      "exact_quest_identity": {
+        "source_name": "Key (Asura Citadel)",
+        "source_binding": "cross-source Shards key identity already resolved in key-identity-addendum.md",
+        "key_number": null,
+        "key_number_status": "SOURCE_ABSENT_DO_NOT_INVENT"
+      },
+      "required_sequence": [
+        "keep existing canonical A12 identity",
+        "run quest interaction Item admission successor on existing canonical record",
+        "bind Javala grant/regrant through NPC/Item owner",
+        "bind use-with against exact identity-based door through ITEM-USE + Door/Key owner"
+      ]
+    },
+    {
       "item_id": 54610,
       "item_key": "oteryn:item.tibia.i54610",
       "role": "Shards prison Lit Torch",
@@ -163,6 +221,13 @@
   "local_validation": {
     "module": "tools/content-migration/quest_reward_item_semantics.py",
     "result": {
+      "54262": {
+        "holds": [],
+        "stackable": false,
+        "capacity": null,
+        "charges": null,
+        "existing_identity": true
+      },
       "54610": {
         "holds": [],
         "stackable": false,
