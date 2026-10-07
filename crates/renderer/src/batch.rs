@@ -396,6 +396,47 @@ impl SpriteBatch {
         Ok(true)
     }
 
+    /// Adds a sprite cell shifted from a tile's top-left by `offset` source pixels, where a
+    /// tile is `source_px` source pixels wide; the shift scales with the view's tile size.
+    /// Returns `Ok(false)` when the quad lies wholly outside the view and was culled.
+    pub fn push_offset(
+        &mut self,
+        view: &TileView,
+        atlas: &AtlasImage,
+        tile: TileCoord,
+        cell: u16,
+        offset: [i32; 2],
+        source_px: u32,
+    ) -> Result<bool, BatchError> {
+        let uv = atlas.uv_rect(cell)?;
+        if source_px == 0 {
+            return Err(BatchError::InvalidView);
+        }
+        let tile_px = view.tile_px() as f32;
+        let scale = tile_px / source_px as f32;
+        let [x, y] = view.tile_to_screen(tile);
+        let position = [x + offset[0] as f32 * scale, y + offset[1] as f32 * scale];
+        let (width, height) = view.viewport_px();
+        if position[0] + tile_px <= 0.0
+            || position[1] + tile_px <= 0.0
+            || position[0] >= width as f32
+            || position[1] >= height as f32
+        {
+            return Ok(false);
+        }
+        if self.instances.len() >= MAX_BATCH_QUADS {
+            return Err(BatchError::CapacityExceeded {
+                max: MAX_BATCH_QUADS,
+            });
+        }
+        self.instances.push(QuadInstance {
+            position,
+            size: [tile_px, tile_px],
+            uv,
+        });
+        Ok(true)
+    }
+
     pub fn clear(&mut self) {
         self.instances.clear();
     }
@@ -913,6 +954,43 @@ mod tests {
         assert_eq!(sprites.instances()[1].position, [0.0, 0.0]);
         sprites.clear();
         assert!(sprites.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn offset_sprites_scale_their_shift_and_cull_only_when_wholly_outside() -> Result<(), BatchError>
+    {
+        // 5 x 4 tiles of 32 px over 16 px source tiles: the shift doubles.
+        let (atlas, view) = (atlas()?, view()?);
+        let mut sprites = SpriteBatch::new();
+        let push = |sprites: &mut SpriteBatch, tile, offset| {
+            sprites.push_offset(&view, &atlas, tile, 3, offset, 16)
+        };
+        assert_eq!(
+            push(&mut sprites, TileCoord::new(0, 12), [-16, -16]),
+            Ok(true)
+        );
+        assert_eq!(sprites.instances()[0].position, [64.0, 32.0]);
+        // Just outside the view, but shifted up-left into it.
+        assert_eq!(
+            push(&mut sprites, TileCoord::new(2, 14), [-1, -1]),
+            Ok(true)
+        );
+        // Wholly outside to the left, and to the bottom.
+        assert_eq!(
+            push(&mut sprites, TileCoord::new(-4, 10), [0, 0]),
+            Ok(false)
+        );
+        assert_eq!(push(&mut sprites, TileCoord::new(0, 14), [0, 0]), Ok(false));
+        assert_eq!(sprites.len(), 2);
+        assert_eq!(
+            sprites.push_offset(&view, &atlas, TileCoord::new(0, 12), 8, [0, 0], 16),
+            Err(BatchError::CellOutOfRange { cell: 8 })
+        );
+        assert_eq!(
+            sprites.push_offset(&view, &atlas, TileCoord::new(0, 12), 3, [0, 0], 0),
+            Err(BatchError::InvalidView)
+        );
         Ok(())
     }
 

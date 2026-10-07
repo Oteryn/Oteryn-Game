@@ -8,6 +8,7 @@ pub mod scene;
 pub mod spell;
 #[cfg(windows)]
 pub mod win_mutex;
+pub mod world;
 
 use oteryn_client_runtime::{ClientRuntime, RuntimeError};
 use oteryn_foundation::ProcessGeneration;

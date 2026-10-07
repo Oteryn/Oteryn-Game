@@ -186,7 +186,6 @@ pub fn vitals_bars(
 mod tests {
     use super::*;
     use oteryn_input_actions::ButtonState;
-    use oteryn_placeholder_assets::{PlaceholderCell, placeholder_atlas};
 
     fn key(code: u16, state: ButtonState) -> Result<NormalizedInputEvent, InputError> {
         Ok(NormalizedInputEvent::Key {
@@ -230,13 +229,8 @@ mod tests {
 
     #[test]
     fn bars_draw_track_and_fill_per_vital_and_nothing_without_vitals() -> Result<(), BatchError> {
-        let source = placeholder_atlas();
-        let atlas = AtlasImage::new(source.cell_px, source.columns, source.rows, source.rgba)?;
-        let cells = (
-            PlaceholderCell::Stone.index(),
-            PlaceholderCell::Grass.index(),
-            PlaceholderCell::Water.index(),
-        );
+        let atlas = AtlasImage::new(2, 3, 1, vec![0; 3 * 2 * 2 * 4])?;
+        let cells = (0, 1, 2);
         assert!(vitals_bars(&atlas, None, [0.0, 0.0], cells)?.is_empty());
         let vitals = ActorVitals {
             health: 75,
