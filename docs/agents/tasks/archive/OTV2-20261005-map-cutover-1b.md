@@ -140,6 +140,11 @@ git diff --check: pass
   - 4204574356: domain 17 was composed and encoded under the Channel runtime lock. Only the
     actor position and content generation are now read under the lock; the update runs after
     release.
+- Codex on da4ce13d, one P1, repaired in the next candidate:
+  - 4205186657: the bundle Channel pin copied the entry room's frame binding and map-revision
+    digests. It now carries the bundle's: SHA-256 of the bundle `map_revision`, and a frame
+    binding digest over the World, the bundle coordinate frame and the map revision. The
+    real-boot test above asserts the pin identity.
 
 ## PR and closeout
 

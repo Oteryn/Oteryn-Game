@@ -1461,11 +1461,13 @@ fn boot_bundle_world(
 }
 
 /// The Channel content pin of a bundle World: the activated generation's pin with the bundle's
-/// start (native floor `-z`) as its first-entry start.
+/// frame binding and map-revision identities and its start (native floor `-z`) as the
+/// first-entry start.
 fn bundle_channel_pin(
     pin: &crate::foundation::ChannelContentPin,
-    start: crate::map::overlay::TilePos,
+    world: &crate::map::boot::BundleWorld,
 ) -> Result<crate::foundation::ChannelContentPin, BootError> {
+    let start = world.start();
     let floor = start
         .floor
         .checked_neg()
@@ -1475,8 +1477,8 @@ fn bundle_channel_pin(
         pin.activation_sequence(),
         pin.server_artifact_digest(),
         pin.client_artifact_digest(),
-        pin.frame_binding_digest(),
-        pin.map_revision_digest(),
+        world.frame_binding_digest(pin.world_id()),
+        world.map_revision_digest(),
         (i32::from(start.x), i32::from(start.y), i16::from(floor)),
     ))
 }
@@ -1548,7 +1550,7 @@ async fn boot_and_serve(
         .transpose()?;
     let (channel_pin, movement_cells) = match &bundle {
         Some(world) => (
-            bundle_channel_pin(&channel_pin, world.start())?,
+            bundle_channel_pin(&channel_pin, world)?,
             world
                 .movement_cells(&movement_cells)
                 .map_err(|_| BootError::ContentActivation("world bundle movement cells"))?,
@@ -1976,33 +1978,9 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn map_cutover_b_a_bundle_channel_pin_starts_at_the_bundle_start() {
-        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
-            .expect("world");
-        let pin = crate::foundation::ChannelContentPin::test(world);
-        let start = crate::map::overlay::TilePos {
-            x: 2,
-            y: 0,
-            floor: -7,
-        };
-        let bundle = bundle_channel_pin(&pin, start).expect("pin");
-        assert_eq!(
-            bundle,
-            crate::foundation::ChannelContentPin::from_activation(
-                world,
-                pin.activation_sequence(),
-                pin.server_artifact_digest(),
-                pin.client_artifact_digest(),
-                pin.frame_binding_digest(),
-                pin.map_revision_digest(),
-                (2, 0, 7),
-            )
-        );
-    }
-
     /// #1916: a bundle whose palette names Items boots on the real path, from the active
-    /// generation's Item key set and profiles, not from the entry room's content.
+    /// generation's Item key set and profiles, not from the entry room's content, and its
+    /// Channel pin carries the bundle's identities.
     #[test]
     fn map_cutover_b_a_bundle_with_items_boots_from_the_active_generation() {
         const KEYS: &[u8] =
@@ -2048,6 +2026,33 @@ mod tests {
                 oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference)
             );
         }
+        // #1916: the Channel pin of the booted World carries the bundle's map-revision and frame
+        // identities, never the entry room's, and starts at the bundle start (legacy `z` 7).
+        let entry = crate::foundation::ChannelContentPin::test(world);
+        let pin = bundle_channel_pin(&entry, &booted).expect("pin");
+        let map_revision: [u8; 32] =
+            <sha2::Sha256 as sha2::Digest>::digest(boot_pins.map_revision.as_bytes()).into();
+        assert_eq!(booted.map_revision_digest(), map_revision);
+        assert_eq!(
+            pin,
+            crate::foundation::ChannelContentPin::from_activation(
+                world,
+                entry.activation_sequence(),
+                entry.server_artifact_digest(),
+                entry.client_artifact_digest(),
+                booted.frame_binding_digest(world),
+                map_revision,
+                (2, 0, 7),
+            )
+        );
+        assert_ne!(pin.map_revision_digest(), entry.map_revision_digest());
+        assert_ne!(pin.frame_binding_digest(), entry.frame_binding_digest());
+        let other = WorldId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3])
+            .expect("other world");
+        assert_ne!(
+            booted.frame_binding_digest(other),
+            booted.frame_binding_digest(world)
+        );
         // A generation without an Item key set names no Item: the same bundle fails closed.
         let without = crate::content::native_gameplay::tests::activated_with_item_keys(None);
         let gameplay = without.active().expect("active").native_gameplay();

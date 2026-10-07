@@ -19,6 +19,7 @@ use crate::content::{
 use crate::foundation::{ChannelId, WorldId};
 use crate::movement::speed::{EngineeringGroundSpeed, GroundSpeedSource};
 use oteryn_world_bundle::bundle;
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::fmt;
 use std::sync::Arc;
@@ -26,6 +27,8 @@ use std::sync::Arc;
 /// The coordinate frame of a Channel's movement cells over a world bundle: native `x`, `y` and
 /// legacy `z` (native floor `-z`).
 const BUNDLE_FRAME: &str = "oteryn:frame/world-bundle-v3";
+
+const BUNDLE_FRAME_BINDING_DOMAIN: &[u8] = b"OTERYN_WORLD_BUNDLE_FRAME_BINDING/v1\0";
 
 /// What a World's configuration pins for its bundle: the load pins, the `map_revision` the
 /// World's readiness names and the start tile.
@@ -265,6 +268,26 @@ impl BundleWorld {
 
     pub fn map_revision(&self) -> &str {
         &self.map_revision
+    }
+
+    /// The Channel pin's map-revision identity of this bundle: SHA-256 over its
+    /// `sha256:<digest>` map revision, the form a qualified entry room's pin carries.
+    pub fn map_revision_digest(&self) -> [u8; 32] {
+        Sha256::digest(self.map_revision.as_bytes()).into()
+    }
+
+    /// The Channel pin's frame identity of this bundle in `world`: SHA-256 over the World, the
+    /// bundle coordinate frame and the map revision, so no bundle position shares an entry
+    /// room's frame binding.
+    pub fn frame_binding_digest(&self, world: WorldId) -> [u8; 32] {
+        let mut bytes = Vec::with_capacity(160);
+        bytes.extend_from_slice(BUNDLE_FRAME_BINDING_DOMAIN);
+        bytes.extend_from_slice(world.as_bytes());
+        for part in [BUNDLE_FRAME, self.map_revision.as_str()] {
+            bytes.extend_from_slice(&(part.len() as u64).to_be_bytes());
+            bytes.extend_from_slice(part.as_bytes());
+        }
+        Sha256::digest(&bytes).into()
     }
 
     pub fn start(&self) -> TilePos {
