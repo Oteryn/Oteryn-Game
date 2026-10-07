@@ -2727,10 +2727,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         NPC_BULK_MORE_PREDECESSOR,
         NPC_BULK_MORE_COUNT,
     )?;
-    let mut draft = enrich_provisional(draft)?;
-    // D3-7: the decision-backed rat corpse Item `oteryn:item.tibia.i5964`. It runs after the NPC
-    // chain, whose steps pin the complete reference digest of their predecessor.
-    let corpse_admitted = apply_item_admission_v2(&mut draft)?;
+    // D3-7 admits the corpse Item only on the reconciled package (`admit_corpse_on_reconciled`),
+    // under its own revision. This path keeps reproducing the unchanged r28 package.
+    let draft = enrich_provisional(draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
@@ -2746,7 +2745,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stats.replaced,
         admitted
     );
-    println!("corpse_admitted_items={corpse_admitted}");
     println!("npc_r7_repairs={npc_r7_repairs}");
     println!("npc_r8_dialogues={npc_r8_dialogues}");
     println!("npc_r12_held_offers={npc_r12_held_offers}");
@@ -2763,6 +2761,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "npc_provisional_first={npc_bulk_definitions} npc_provisional_remaining={npc_more_definitions} total_npcs=1282 total_dialogues=836"
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod corpse_admission_revision_tests {
+    /// DUR-04: changed content is never serialized under an existing revision. The admission runs
+    /// only in `admit_corpse_on_reconciled`, which mints `CORPSE_ADMITTED_PROJECT_REVISION`.
+    #[test]
+    fn corpse_admission_always_mints_the_admitted_revision() {
+        let source = include_str!("materialize_content_world_project_v2.rs");
+        let body = source
+            .split_once("\nfn admit_corpse_on_reconciled(")
+            .and_then(|(_, rest)| rest.split_once("\n}\n"))
+            .map(|(body, _)| body)
+            .expect("admit_corpse_on_reconciled body");
+        let call = ["apply_item_admission_v2", "(&mut draft)"].concat();
+        assert_eq!(source.matches(call.as_str()).count(), 1);
+        let (_, after) = body.split_once(call.as_str()).expect("admission call");
+        assert!(after.contains(
+            "draft.core.project_revision = CORPSE_ADMITTED_PROJECT_REVISION.to_owned();"
+        ));
+    }
 }
 
 #[cfg(test)]
