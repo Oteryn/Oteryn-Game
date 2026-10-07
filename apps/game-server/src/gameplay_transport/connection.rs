@@ -270,7 +270,13 @@ pub(crate) enum AdmissionRefusal {
     Rejected,
     /// The owning authority could not decide; nothing was admitted.
     Unavailable,
+    /// Refused with an N8 admission refusal code (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); nothing
+    /// was admitted. The client receives the code in one `ProtocolError` before the close.
+    Classified(FoundationProtocolError),
 }
+
+/// N8: the one pre-admission refusal frame is written and flushed within this bound, or dropped.
+const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
@@ -294,6 +300,13 @@ pub(crate) trait FreshAdmissionAuthority {
     /// the registry's offered set; tests inject theirs.
     fn offered_capabilities(&self) -> &'static [OfferedCapability] {
         PRODUCTION_OFFERED_CAPABILITIES
+    }
+
+    /// A capability every fresh admission must select, or `None`. A bundle World requires 18
+    /// `WORLD_MAP_VIEW_V1` (MAP-CUTOVER-1b): it serves its map only as domain 17, so a client
+    /// without it is refused with `CAPABILITY_MISMATCH` before the owner admits anything.
+    fn required_capability(&self) -> Option<u32> {
+        None
     }
 
     /// The admitted actor's current own-actor observation for the initial snapshot, or `None`
@@ -902,16 +915,37 @@ where
             AdmissionRefusal::Unavailable,
         ));
     };
+    if let Some(required) = authority.required_capability()
+        && !selected.contains(required)
+    {
+        let error = FoundationProtocolError::CapabilityMismatch;
+        let _ =
+            tokio::time::timeout(ADMISSION_REFUSAL_WRITE_BOUND, send_error(stream, error, 0)).await;
+        return Err(ConnectionEnd::AdmissionRefused(
+            AdmissionRefusal::Classified(error),
+        ));
+    }
     let attempt = FreshAdmissionAttempt {
         character_id: bootstrap.character_id,
         admission_material: bootstrap.admission_material,
         game_session_id,
         transport,
     };
-    let mut admitted = authority
-        .admit(attempt)
-        .await
-        .map_err(ConnectionEnd::AdmissionRefused)?;
+    let mut admitted = match authority.admit(attempt).await {
+        Ok(admitted) => admitted,
+        Err(refusal) => {
+            if let AdmissionRefusal::Classified(error) = refusal {
+                // N8: exactly one ProtocolError at generation 0, then close. A slow or
+                // failed peer write changes nothing: the refusal already stands.
+                let _ = tokio::time::timeout(
+                    ADMISSION_REFUSAL_WRITE_BOUND,
+                    send_error(stream, error, 0),
+                )
+                .await;
+            }
+            return Err(ConnectionEnd::AdmissionRefused(refusal));
+        }
+    };
     admitted.continuity.selected_capabilities = selected;
     // ACHIEVEMENT-0 §5: a session that selected capability 8 starts domain 13 at revision 0.
     admitted.continuity.achievement_notice_revision = selected
@@ -1179,7 +1213,7 @@ where
         let Some(channel) = authority.observe_visible_entities(actor).await else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
-        let mut view = SessionVisibility::default();
+        let mut view = SessionVisibility::with_objects(item_view.is_some());
         let snapshot = view.snapshot(&channel, &mut |entities| {
             attach_spatial_handles(item_view.as_mut(), entities)
         });
@@ -3723,6 +3757,60 @@ mod tests {
                 assert_eq!(end, ConnectionEnd::AdmissionRefused(refusal));
                 assert_eq!(authority.calls.get(), 1);
                 assert!(frames.is_empty());
+            }
+            Ok(())
+        })
+    }
+
+    /// N8: a classified refusal writes exactly one `ProtocolError` (generation 0,
+    /// `TRANSPORT_FATAL`, the code, nothing else) and no acceptance.
+    #[test]
+    fn classified_admission_refusal_writes_one_protocol_error() -> Result<(), Box<dyn Error>> {
+        run(async {
+            use FoundationProtocolError as E;
+            for error in [
+                E::AdmissionGrantMalformed,
+                E::AdmissionGrantAuthenticationFailed,
+                E::AdmissionGrantBindingMismatch,
+                E::AdmissionGrantNotYetValid,
+                E::AdmissionGrantExpired,
+                E::AdmissionGrantReplayed,
+                E::AdmissionAttemptReconciliationRequired,
+                E::AdmissionGrantSecurityStateRevoked,
+                E::AdmissionGrantSecurityEvidenceStale,
+                E::AdmissionGrantRouteStale,
+                E::AdmissionGrantRuntimeGenerationStale,
+                E::AdmissionGrantWorldStale,
+                E::AdmissionGrantRevisionUnsupported,
+                E::AdmissionAccountCharacterConflict,
+                E::AdmissionIncumbentProtected,
+                E::AdmissionCapacityExceeded,
+                E::AdmissionCapabilityRequired,
+            ] {
+                let code = error.code();
+                let refusal = AdmissionRefusal::Classified(error);
+                let authority = Authority::new(Err(refusal));
+                let (end, frames) = drive(&authority, &[bootstrap(1, 1, b"grant")]).await?;
+                assert_eq!(end, ConnectionEnd::AdmissionRefused(refusal));
+                assert_eq!(authority.calls.get(), 1);
+                assert_eq!(frames, vec![error_frame(error, 0)]);
+                let envelope = decode_wire_envelope(&frames[0])?;
+                assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+                assert_eq!(envelope.connection_generation(), 0);
+                let view = oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())?;
+                assert_eq!(view.error_code, code);
+                assert_eq!(
+                    view.disposition,
+                    crate::foundation::ProtocolDisposition::TransportFatal
+                );
+                assert_eq!(
+                    (
+                        view.related_command_id,
+                        view.expected_command_id,
+                        view.expected_server_sequence
+                    ),
+                    (0, 0, 0)
+                );
             }
             Ok(())
         })

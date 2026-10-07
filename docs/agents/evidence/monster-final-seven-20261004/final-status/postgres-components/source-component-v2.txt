@@ -1,0 +1,23 @@
+CREATE FUNCTION
+    fixture_creature_source_field
+--------------------------------------
+ 01a10932-f233-74dc-985a-7de7cad6aa68
+(1 row)
+
+    fixture_creature_source_field
+--------------------------------------
+ 01a10932-f24b-75bc-aa0e-c0d74e260482
+(1 row)
+
+DO
+    fixture_creature_source_field
+--------------------------------------
+ 01a10932-f256-7666-ac30-13dc4902cd89
+(1 row)
+
+    fixture_creature_source_field
+--------------------------------------
+ 01a10932-f25d-7dea-baab-c9b1504f0985
+(1 row)
+
+DO

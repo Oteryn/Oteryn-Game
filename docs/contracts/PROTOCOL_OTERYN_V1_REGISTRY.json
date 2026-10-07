@@ -53,6 +53,16 @@
       "offer_gate": "D170: the server does not offer this capability before CHARM-6 (unassign and reset) ships. Without it selected, domains 4 and 5 are never sent and command types 4 and 5 are refused as unsupported."
     },
     {
+      "id": 3,
+      "name": "NPC_SERVICE_V1",
+      "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
+      "owner": "current ChannelRuntime (the NPC conversations and trade windows of the channel)",
+      "command_types": [7, 8],
+      "state_domains": [7, 8],
+      "offered": false,
+      "offer_gate": "NPC-TALK-1: the server does not offer this capability before the NPC conversation owner, the domain 7 and 8 send path and the revision stream are composed. Without it selected, domains 7 and 8 are never sent and command types 7 and 8 are refused as unsupported."
+    },
+    {
       "id": 4,
       "name": "ITEM_VIEW_MOVE_V1",
       "owner_decision": "ITEM-MOVE-WIRE-0 ITEM-MOVE-WIRE0-ITEM-VIEW-AND-MOVE-V1 §4 and §5 (docs/architecture/reviews/OTERYN_GAME_ITEM_MOVE_WIRE0_ITEM_VIEW_AND_MOVE_DECISION_2026-09-30.md, owner D212); numbers assigned by D212 and registered by ITEM-VIEW-1a (#1622 control plane)",
@@ -60,8 +70,8 @@
       "requires": [6],
       "command_types": [9],
       "state_domains": [9, 11],
-      "offered": false,
-      "offer_gate": "ITEM-MOVE-1 implements command type 9 looting a corpse entry; the server does not offer this capability before production reads domain 9 (a TypedDefinitionRef to item_definition_ref mapping, MAP-CUTOVER line; CP D738). Without it selected, domains 9 and 11 are never sent, command type 9 is refused as unsupported, a USE intent with the item target (field 2) fails closed and the D85 entry carries no item handle (field 10)."
+      "offered": true,
+      "offer_gate": "MAP-ITEM-REF-1 (ARCH-MAP-TRACK-PACKETS-V1 §2.7, ruling §1.6; CP D862): production reads domain 9 through the active generation's pinned Item key set (item_definition_ref = 1 + the Item compact id, ascending by key bytes). Offered since MAP-ITEM-REF-1 Part B composed corpse observation, the item target and the corpse take, and only by a generation pinning a non-empty Item key set; any other generation offers the registry set without this capability. Without it selected, domains 9 and 11 are never sent, command type 9 is refused as unsupported, a USE intent with the item target (field 2) fails closed and the D85 entry carries no item handle (field 10)."
     },
     {
       "id": 6,
@@ -178,7 +188,7 @@
       "command_types": [],
       "state_domains": [17],
       "offered": false,
-      "offer_gate": "MAP-CUTOVER-1: the server does not offer this capability before a live node boots a World from a bundle and the composition plus encode p99 of an 18x14 viewport over 8 floors is within MAP01-VIEWPORT-US. It requires 4 ITEM_VIEW_MOVE_V1 (the handles of its entries) and 6 WORLD_SPATIAL_ENTITIES. Without it selected, domain 17 is never sent, a bundle World refuses admission with CAPABILITY_MISMATCH and a fixture World keeps domain 2."
+      "offer_gate": "MAP-CUTOVER-1b: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. A World offers it only while the snapshot p99 of an 18x14 viewport over 8 floors (compose, handles and encode) is within MAP01-VIEWPORT-SNAPSHOT-US, which holds on a testing or preproduction World only; a production World does not offer it before the snapshot and delta limits of MAP-VIEWPORT-MEASURE-1 are registered and met (ARCH-MAP-VIEWPORT-BUDGET-V1). MAP01-VIEWPORT-US stays the assembly budget. It requires 4 ITEM_VIEW_MOVE_V1 (the handles of its entries) and 6 WORLD_SPATIAL_ENTITIES. Without it selected, domain 17 is never sent, a bundle World refuses admission with CAPABILITY_MISMATCH and a fixture World keeps domain 2."
     }
   ],
   "command_types": [
@@ -228,6 +238,26 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmAssignResultV1",
       "max_payload_bytes": 8,
       "max_result_payload_bytes": 4
+    },
+    {
+      "id": 7,
+      "name": "NPC_TALK_INTENT",
+      "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
+      "capability": 3,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcTalkIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcIntentResultV1",
+      "max_payload_bytes": 289,
+      "max_result_payload_bytes": 2
+    },
+    {
+      "id": 8,
+      "name": "NPC_TRADE_INTENT",
+      "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
+      "capability": 3,
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcTradeIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcIntentResultV1",
+      "max_payload_bytes": 62,
+      "max_result_payload_bytes": 2
     },
     {
       "id": 9,
@@ -425,6 +455,54 @@
           "name": "CHARACTER_CHARMS_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/charm_bestiary_v1.proto#CharmViewV1",
           "max_payload_bytes": 554
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "NPC_CONVERSATION",
+      "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
+      "owner": "current ChannelRuntime",
+      "capability": 3,
+      "revision": "per GameSessionId, monotonic and never reused (FND-02 §15) across reconnect, resume and channel transfer; every admission, reconnect and channel transfer sends a snapshot above any revision the session has seen, and reconnect or transfer closes the conversation so that snapshot is empty (NPC-0 §4); a delta carries the whole domain after each change",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "NPC_CONVERSATION_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcConversationV1",
+          "max_payload_bytes": 65665
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "NPC_CONVERSATION_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcConversationV1",
+          "max_payload_bytes": 65665
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "NPC_TRADE_WINDOW",
+      "owner_decision": "NPC-0 §4 (docs/architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md) with ARCH-NPC-PACKETS §1.3 and §2.3 (docs/architecture/reviews/OTERYN_GAME_ARCH_NPC_PACKETS_2026-10-05.md); numbers fixed by NPC-0 §4 and registered by NPC-WIRE-1",
+      "owner": "current ChannelRuntime",
+      "capability": 3,
+      "revision": "per GameSessionId, monotonic and never reused (FND-02 §15) across reconnect, resume and channel transfer; every admission, reconnect and channel transfer sends a snapshot above any revision the session has seen, and reconnect or transfer closes the conversation so that snapshot is empty (NPC-0 §4); a delta carries the whole domain after each change",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "NPC_TRADE_WINDOW_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcTradeWindowV1",
+          "max_payload_bytes": 22570
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "NPC_TRADE_WINDOW_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/npc_service_v1.proto#NpcTradeWindowV1",
+          "max_payload_bytes": 22570
         }
       ]
     },
@@ -671,7 +749,24 @@
     {"code": 1033, "name": "SNAPSHOT_LIMIT_EXCEEDED", "category": "CAPACITY_EXCEEDED", "default_disposition": "SESSION_FATAL"},
     {"code": 1040, "name": "BOOTSTRAP_LIMIT_EXCEEDED", "category": "CAPACITY_EXCEEDED", "default_disposition": "SESSION_FATAL"},
     {"code": 1041, "name": "INVALID_CAPABILITY_SET", "category": "INVALID_INPUT", "default_disposition": "SESSION_FATAL"},
-    {"code": 1050, "name": "ACCOUNT_DATA_INTEGRITY", "category": "INTERNAL_UNAVAILABLE", "default_disposition": "OPERATION_TERMINAL"}
+    {"code": 1050, "name": "ACCOUNT_DATA_INTEGRITY", "category": "INTERNAL_UNAVAILABLE", "default_disposition": "OPERATION_TERMINAL"},
+    {"code": 1100, "name": "ADMISSION_GRANT_MALFORMED", "category": "INVALID_INPUT", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "RETRY_LOGIN"},
+    {"code": 1101, "name": "ADMISSION_GRANT_AUTHENTICATION_FAILED", "category": "AUTHENTICATION_FAILED", "default_disposition": "TRANSPORT_FATAL", "progression": "SECURITY_TERMINAL", "public_class": "AUTHENTICATION_REQUIRED"},
+    {"code": 1102, "name": "ADMISSION_GRANT_BINDING_MISMATCH", "category": "SESSION_REJECTED", "default_disposition": "TRANSPORT_FATAL", "progression": "SECURITY_TERMINAL", "public_class": "RETRY_LOGIN"},
+    {"code": 1103, "name": "ADMISSION_GRANT_NOT_YET_VALID", "category": "SESSION_REJECTED", "default_disposition": "TRANSPORT_FATAL", "progression": "RETRYABLE", "public_class": "TEMPORARILY_UNAVAILABLE"},
+    {"code": 1104, "name": "ADMISSION_GRANT_EXPIRED", "category": "SESSION_REJECTED", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "RETRY_LOGIN"},
+    {"code": 1105, "name": "ADMISSION_GRANT_REPLAYED", "category": "SESSION_REJECTED", "default_disposition": "TRANSPORT_FATAL", "progression": "SECURITY_TERMINAL", "public_class": "SESSION_UNAVAILABLE"},
+    {"code": 1106, "name": "ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED", "category": "DEPENDENCY_UNAVAILABLE", "default_disposition": "TRANSPORT_FATAL", "progression": "RETRYABLE", "public_class": "TEMPORARILY_UNAVAILABLE"},
+    {"code": 1107, "name": "ADMISSION_GRANT_SECURITY_STATE_REVOKED", "category": "SESSION_REJECTED", "default_disposition": "TRANSPORT_FATAL", "progression": "SECURITY_TERMINAL", "public_class": "AUTHENTICATION_REQUIRED"},
+    {"code": 1108, "name": "ADMISSION_GRANT_SECURITY_EVIDENCE_STALE", "category": "DEPENDENCY_UNAVAILABLE", "default_disposition": "TRANSPORT_FATAL", "progression": "RETRYABLE", "public_class": "TEMPORARILY_UNAVAILABLE"},
+    {"code": 1109, "name": "ADMISSION_GRANT_ROUTE_STALE", "category": "STALE_GENERATION", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "RETRY_LOGIN"},
+    {"code": 1110, "name": "ADMISSION_GRANT_RUNTIME_GENERATION_STALE", "category": "STALE_GENERATION", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "RETRY_LOGIN"},
+    {"code": 1111, "name": "ADMISSION_GRANT_WORLD_STALE", "category": "STALE_GENERATION", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "RETRY_LOGIN"},
+    {"code": 1112, "name": "ADMISSION_GRANT_REVISION_UNSUPPORTED", "category": "UNSUPPORTED_REVISION", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "CLIENT_UPDATE_REQUIRED"},
+    {"code": 1113, "name": "ADMISSION_ACCOUNT_CHARACTER_CONFLICT", "category": "CONFLICT", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "SESSION_UNAVAILABLE"},
+    {"code": 1114, "name": "ADMISSION_INCUMBENT_PROTECTED", "category": "CONFLICT", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "CHARACTER_ALREADY_ACTIVE"},
+    {"code": 1115, "name": "ADMISSION_CAPACITY_EXCEEDED", "category": "CAPACITY_EXCEEDED", "default_disposition": "TRANSPORT_FATAL", "progression": "RETRYABLE", "public_class": "TEMPORARILY_UNAVAILABLE"},
+    {"code": 1116, "name": "ADMISSION_CAPABILITY_REQUIRED", "category": "UNSUPPORTED_REVISION", "default_disposition": "TRANSPORT_FATAL", "progression": "TERMINAL", "public_class": "CLIENT_UPDATE_REQUIRED"}
   ],
   "allocation_ranges": {
     "message_type": {"invalid": 0, "foundation_reserved": [1, 255], "future_extension": [256, 2147483647]},

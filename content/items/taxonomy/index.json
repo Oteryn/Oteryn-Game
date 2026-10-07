@@ -1,10 +1,10 @@
 {
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/items/taxonomy/",
-  "kind": "editor_content",
-  "owner": "Item authoring",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Item categories/tags/family profiles; never gameplay identity. items.json retains Wave 1 and extends source-bound Items with unambiguous primarytype observations from the pinned wiki stats snapshot. Existing Terrain/WorldObject owners, appearance-only Items and conflicting or unknown categories remain excluded from the supplement."
+  "kind": "editor_content",
+  "notes": "Item categories/tags/family profiles; never gameplay identity. items.json retains Wave 1 and extends source-bound Items with unambiguous primarytype observations from the pinned wiki stats snapshot. Existing Terrain/WorldObject owners, appearance-only Items and conflicting or unknown categories remain excluded from the supplement.",
+  "owner": "Item authoring",
+  "path": "content/items/taxonomy/",
+  "population_state": "POPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
 }

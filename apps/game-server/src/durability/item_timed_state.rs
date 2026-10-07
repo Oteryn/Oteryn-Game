@@ -30,11 +30,13 @@ use super::character_progression::{
     uuid_text,
 };
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use super::item_mint::TypedDefinitionRef;
 use super::item_mint_audit::{
-    self as mint_audit, ITEM_LIFECYCLE_LIVE, OneItemStateV1, check_technical_text, check_uuid_v7,
+    self as mint_audit, ITEM_LIFECYCLE_LIVE, OneItemStateV1, SelectedType2Tuple,
+    check_technical_text, check_uuid_v7,
 };
 use super::item_timed_state_audit::{
     OneItemTimedExpiryV1, OneItemTimedRowV1, TIMED_EXPIRY_REASON_CHARGES_EXHAUSTED,
@@ -563,12 +565,12 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     match replay_expiry(&mut tx, &request).await {
                         Ok(Some(outcome)) => {
-                            commit_semantic_transaction(tx, deadline).await?;
+                            tx.commit(deadline).await?;
                             return Ok(Ok(outcome));
                         }
                         Ok(None) => {}
@@ -583,9 +585,10 @@ impl DurabilityRoot {
                         Err(CharacterProgressionError::Unavailable(error)) => return Err(error),
                         Err(_) => return Ok(Err(TimedWriteError::AuthorityRejected)),
                     }
-                    match write_expiry(&mut tx, &fence, &request).await {
+                    let tuple = tx.tuple();
+                    match write_expiry(&mut tx, &fence, &request, tuple).await {
                         Ok(outcome) => {
-                            commit_semantic_transaction(tx, deadline).await?;
+                            tx.commit(deadline).await?;
                             Ok(Ok(outcome))
                         }
                         Err(TimedWriteError::Unavailable(error)) => Err(error),
@@ -664,6 +667,7 @@ async fn write_expiry(
     connection: &mut PgConnection,
     fence: &CurrentCharacterGameplayFence,
     request: &TimedExpiryRequest,
+    tuple: SelectedType2Tuple,
 ) -> Result<TimedWriteOutcome> {
     let RuntimeScopeRefV1::Channel {
         world_id,
@@ -811,6 +815,7 @@ async fn write_expiry(
             row_before: Some(timed_row(Some(before), revision)),
             row_after: Some(row_after),
         },
+        tuple.tuple(),
     )
     .map_err(|_| TimedWriteError::InvalidInput)?;
 
@@ -935,8 +940,8 @@ async fn write_expiry(
     .bind(request.event_id.as_slice())
     .bind(request.transaction_id.as_slice())
     .bind(i64::from(mint_audit::EVENT_TYPE_ID))
-    .bind(i64::from(mint_audit::EVENT_SCHEMA_REVISION))
-    .bind(mint_audit::RETENTION_PROFILE_ID)
+    .bind(i64::from(tuple.schema_revision()))
+    .bind(tuple.retention_profile_id())
     .bind(request.item_instance_id.as_slice())
     .bind(request.occurred_at_unix_ms)
     .bind(mint_audit::AUDIT_RETENTION_P90D_MS)

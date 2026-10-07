@@ -35,11 +35,12 @@ pub use oteryn_protocol_oteryn::item_view::{
     CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
 };
-use oteryn_protocol_oteryn::world_object::{
-    self, UseDisposition, WorldObjectOverlayEntry, WorldObjectTarget,
-};
-use oteryn_protocol_oteryn::world_spatial::{
-    self, CAPABILITY_PACED_MOVEMENT_V1, StepDirection, StepDisposition, WorldSpatialObservation,
+pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
+use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
+use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
+/// The step types a client names when it walks and reads the outcome (ADR-0020 section 1).
+pub use oteryn_protocol_oteryn::world_spatial::{
+    ActorPosition, StepDirection, StepDisposition, WorldSpatialObservation,
 };
 use oteryn_protocol_oteryn::world_spatial_entities::{
     self, CAPABILITY_WORLD_SPATIAL_ENTITIES, MAX_SNAPSHOT_ENTITIES,
@@ -49,10 +50,16 @@ use oteryn_protocol_oteryn::world_spatial_entities::{
 pub use oteryn_protocol_oteryn::world_spatial_entities::{
     EntityDetail, EntityKind, EntityRef, WorldSpatialEntitiesDelta, WorldSpatialEntity,
 };
+/// N8 admission refusal classes, re-exported so the client maps a refused code to its FND-04A
+/// public class without a direct `protocol-oteryn` edge (ADR-0020 section 1).
+pub use oteryn_protocol_oteryn::{
+    ADMISSION_REFUSAL_CODES, AdmissionProgression, AdmissionPublicClass, admission_refusal_class,
+};
+pub use oteryn_protocol_oteryn::{CharacterId, CommandStatus};
 use oteryn_protocol_oteryn::{
-    CharacterId, ClientBootstrapValue, ClientCommandValue, CommandStatus, Direction,
-    FoundationProtocolError, FrameLength, GameSessionId, MessageType, decode_command_result,
-    decode_liveness_probe, decode_server_accepted, decode_snapshot_begin, decode_snapshot_body,
+    ClientBootstrapValue, ClientCommandValue, Direction, FoundationProtocolError, FrameLength,
+    GameSessionId, MessageType, ProtocolDisposition, decode_command_result, decode_liveness_probe,
+    decode_protocol_error, decode_server_accepted, decode_snapshot_begin, decode_snapshot_body,
     decode_snapshot_chunk_framing, decode_snapshot_id, decode_state_delta, decode_wire_envelope,
     encode_client_bootstrap, encode_client_command, encode_liveness_ack,
 };
@@ -252,6 +259,11 @@ pub enum SessionError {
     /// The server closed, or replied with something other than `ServerAccepted`, before
     /// admission completed.
     NotAdmitted(MessageType),
+    /// The server refused admission with an N8 code (1100..=1199) in one `ProtocolError`
+    /// (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); `admission_refusal_class` gives its public class.
+    AdmissionRefused {
+        code: u32,
+    },
     /// A later frame's message type did not match what the join sequence expects next.
     UnexpectedMessage {
         expected: MessageType,
@@ -402,6 +414,9 @@ impl fmt::Display for SessionError {
             Self::ItemView(error) => write!(formatter, "ITEM payload refused: {error:?}"),
             Self::NotAdmitted(message_type) => {
                 write!(formatter, "admission refused: server sent {message_type:?}")
+            }
+            Self::AdmissionRefused { code } => {
+                write!(formatter, "admission refused with code {code}")
             }
             Self::UnexpectedMessage { expected, actual } => write!(
                 formatter,
@@ -924,6 +939,19 @@ impl<S: SessionStream> Session<S> {
         // zero envelope `connection_generation` (FND-02 §8/§11/§12/§14) are checked before this
         // frame's payload is consumed at all.
         accepted_envelope.validate(Direction::ServerToClient, false)?;
+        if accepted_envelope.message_type() == MessageType::ProtocolError
+            && let Ok(refusal) = decode_protocol_error(accepted_envelope.payload())
+            && ADMISSION_REFUSAL_CODES.contains(&refusal.error_code)
+            // N8 fixes the refusal shape; any other disposition or correlation fails closed below.
+            && refusal.disposition == ProtocolDisposition::TransportFatal
+            && refusal.related_command_id == 0
+            && refusal.expected_command_id == 0
+            && refusal.expected_server_sequence == 0
+        {
+            return Err(SessionError::AdmissionRefused {
+                code: refusal.error_code,
+            });
+        }
         if accepted_envelope.message_type() != MessageType::ServerAccepted {
             return Err(SessionError::NotAdmitted(accepted_envelope.message_type()));
         }
@@ -2864,6 +2892,134 @@ mod tests {
             Ok(())
         })?
     }
+    /// Reads the bootstrap, answers with one `ProtocolError` at generation 0, then closes.
+    async fn refuse_admission(
+        error: FoundationProtocolError,
+    ) -> Result<Result<Session<DuplexStream>, SessionError>, BoxError> {
+        let (client, mut server) = tokio::io::duplex(1024);
+        let peer = tokio::spawn(async move {
+            read_frame(&mut server).await?;
+            write_frame(
+                &mut server,
+                &oteryn_protocol_oteryn::encode_protocol_error(error, 0)?,
+            )
+            .await?;
+            Ok::<_, BoxError>(())
+        });
+        let result = Session::admit(client, admission()?).await;
+        peer.await??;
+        Ok(result)
+    }
+
+    /// N8: a refusal frame with a code in 1100..=1199 surfaces the code, and the code maps to
+    /// its FND-04A class; any other `ProtocolError` stays `NotAdmitted`.
+    #[test]
+    fn an_admission_refusal_frame_surfaces_its_code() -> Result<(), BoxError> {
+        block_on(async {
+            for (error, class) in [
+                (
+                    FoundationProtocolError::AdmissionGrantExpired,
+                    (
+                        AdmissionProgression::Terminal,
+                        AdmissionPublicClass::RetryLogin,
+                    ),
+                ),
+                (
+                    FoundationProtocolError::AdmissionGrantSecurityEvidenceStale,
+                    (
+                        AdmissionProgression::Retryable,
+                        AdmissionPublicClass::TemporarilyUnavailable,
+                    ),
+                ),
+                (
+                    FoundationProtocolError::AdmissionIncumbentProtected,
+                    (
+                        AdmissionProgression::Terminal,
+                        AdmissionPublicClass::CharacterAlreadyActive,
+                    ),
+                ),
+            ] {
+                let result = refuse_admission(error).await?;
+                let Err(SessionError::AdmissionRefused { code }) = result else {
+                    return Err(format!("{error:?}: {:?}", result.err()).into());
+                };
+                assert_eq!(code, error.code());
+                assert_eq!(admission_refusal_class(code), Some(class));
+            }
+            let result = refuse_admission(FoundationProtocolError::ProtocolMajorMismatch).await?;
+            assert!(matches!(
+                result,
+                Err(SessionError::NotAdmitted(MessageType::ProtocolError))
+            ));
+            Ok(())
+        })?
+    }
+
+    /// An unassigned code in the admission range is still a refusal; the client reads it as
+    /// generic `TEMPORARILY_UNAVAILABLE` with no retry.
+    #[test]
+    fn an_unknown_admission_code_is_generic_and_terminal() -> Result<(), BoxError> {
+        block_on(async {
+            let (client, mut server) = tokio::io::duplex(1024);
+            let peer = tokio::spawn(async move {
+                read_frame(&mut server).await?;
+                // Type 14, generation 0; payload: code 1150 (varint fe 08), TRANSPORT_FATAL.
+                let frame = [0x08, 0x0e, 0x22, 0x05, 0x08, 0xfe, 0x08, 0x10, 0x04];
+                write_frame(&mut server, &frame).await?;
+                Ok::<_, BoxError>(())
+            });
+            let result = Session::admit(client, admission()?).await;
+            peer.await??;
+            let Err(SessionError::AdmissionRefused { code }) = result else {
+                return Err(format!("{:?}", result.err()).into());
+            };
+            assert_eq!(code, 1150);
+            assert_eq!(
+                admission_refusal_class(code),
+                Some((
+                    AdmissionProgression::Terminal,
+                    AdmissionPublicClass::TemporarilyUnavailable
+                ))
+            );
+            Ok(())
+        })?
+    }
+
+    /// N8 fixes the refusal shape: a refusal-range code with any other disposition or with a
+    /// correlation field is not an admission refusal and fails closed as `NotAdmitted`.
+    #[test]
+    fn a_misshapen_admission_refusal_fails_closed() -> Result<(), BoxError> {
+        block_on(async {
+            // Type 14, generation 0; code 1103 (varint cf 08) plus the listed fields.
+            for payload in [
+                &[0x08, 0xcf, 0x08, 0x10, 0x01][..],
+                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x18, 0x01],
+                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x20, 0x01],
+                &[0x08, 0xcf, 0x08, 0x10, 0x04, 0x28, 0x01],
+            ] {
+                let mut frame = vec![0x08, 0x0e, 0x22, u8::try_from(payload.len())?];
+                frame.extend_from_slice(payload);
+                let (client, mut server) = tokio::io::duplex(1024);
+                let peer = tokio::spawn(async move {
+                    read_frame(&mut server).await?;
+                    write_frame(&mut server, &frame).await?;
+                    Ok::<_, BoxError>(())
+                });
+                let result = Session::admit(client, admission()?).await;
+                peer.await??;
+                assert!(
+                    matches!(
+                        result,
+                        Err(SessionError::NotAdmitted(MessageType::ProtocolError))
+                    ),
+                    "{payload:02x?}: {:?}",
+                    result.err()
+                );
+            }
+            Ok(())
+        })?
+    }
+
     const GATED_DOMAIN: u32 = STATE_DOMAIN_CHARACTER_CHARMS;
     const GATED_COMMAND: u32 = COMMAND_TYPE_CHARM_ASSIGN_INTENT;
     const GATED_CAPABILITY: u32 = CAPABILITY_BESTIARY_CHARMS_V1;

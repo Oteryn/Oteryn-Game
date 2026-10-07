@@ -162,6 +162,14 @@ impl ActorAttack {
 #[derive(Debug, Default)]
 pub(crate) struct ChannelAttackStates {
     entries: Vec<ActorAttack>,
+    /// The Channel's unsettled creature kills (ARCH-KILL-REWARD-LOGOUT-1 §1.3).
+    kills: super::kill_reward::KillSettlementQueue,
+}
+
+impl ChannelAttackStates {
+    pub(crate) const fn kills(&self) -> &super::kill_reward::KillSettlementQueue {
+        &self.kills
+    }
 }
 
 /// Why an `ATTACK_TARGET` intent was refused before any owner state changed.
@@ -621,8 +629,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let states = self.spell_states.lock().await;
         let mut attack = self.attack.lock().await;
         attack.prune(&runtime);
+        let ChannelAttackStates { entries, kills } = &mut *attack;
+        let sink = super::kill_reward::KillSink {
+            queue: kills,
+            rewards: self.reward_table(),
+        };
         let root = GameplayDecisionRoot::from_bytes(digest);
-        for entry in &mut attack.entries {
+        for entry in entries.iter_mut() {
             let Some(target) = entry.state.target() else {
                 continue;
             };
@@ -733,8 +746,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 entry.clear_target();
                 continue;
             };
+            // The owner clock of this turn, in ms, stamps the hit's contributor and, for a lethal
+            // hit, the death time the kill reward reads (§1.2).
             let committed = crate::ability::commit::commit_exact_owner_swing_damage(
-                &mut runtime.borrow_exact_actor_commit(),
+                &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
                 &resolved,
                 &plan,
                 entry.actor,
@@ -763,9 +778,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ),
             );
             if result.health_after <= 0 {
-                let _ = crate::combat::project_fixed_one_creature_death(
-                    &mut runtime.borrow_combat_death(),
+                let lethal = crate::combat::CapturedRewardPrincipal {
+                    character: lease.character_id(),
+                    lease_generation: lease.generation(),
+                    session: entry.session,
+                    actor: entry.actor,
+                };
+                super::kill_reward::record_creature_kill(
+                    &mut runtime,
+                    sink,
                     target,
+                    lethal,
+                    now.get() / 1_000,
                 );
                 entry.clear_target();
             }

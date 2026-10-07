@@ -1,0 +1,5 @@
+Original log SHA256: 5a7a15510ef07737fba18328135604fac90bf7b0d6a952094189457650cefe26
+
+running 1 test
+test monster_combat_lane::time_profile_aggregate_tests::actual_schedule_source_profile_phase_and_return_preserve_registered_owner_lineage ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2366 filtered out; finished in 0.12s

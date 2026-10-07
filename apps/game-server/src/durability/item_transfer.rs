@@ -61,12 +61,13 @@ use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
 };
 use super::item_mint::{CORPSE_MATERIALIZATION_PURPOSE_KEY, TypedDefinitionRef, uuid_text};
 use super::item_mint_audit::{
     self as mint_audit, AuditError, ITEM_LIFECYCLE_LIVE, OneItemGroundV1, OneItemStateV1,
-    OneItemTypedDefinitionRevisionV1, RL08_RETRY_WORK_UNITS_MAX,
+    OneItemTypedDefinitionRevisionV1, RL08_RETRY_WORK_UNITS_MAX, SelectedType2Tuple,
 };
 use super::item_transfer_audit::{
     self as audit, GROUND_PICKUP_TYPED_CAUSE, ITEM_LIFECYCLE_RETIRED, OneItemCommandRefV1,
@@ -90,7 +91,6 @@ type Result<T> = std::result::Result<T, ItemTransferError>;
 type Pass<T> = std::result::Result<std::result::Result<T, ItemTransferError>, DurabilityError>;
 const INTENT_BINDING_VERSION: u8 = 1;
 const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
-const EVENT_SCHEMA_REVISION: i64 = mint_audit::EVENT_SCHEMA_REVISION as i64;
 
 /// GAMEITEM01-STACK-QUANTITY-MAX (D82).
 pub const GAMEITEM01_STACK_QUANTITY_MAX: u32 = audit::GAMEITEM01_STACK_QUANTITY_MAX;
@@ -771,7 +771,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
                     let command = frozen.request.command;
@@ -783,7 +783,7 @@ impl DurabilityRoot {
                             return Ok(Err(ItemTransferError::ConflictingCause));
                         }
                         let committed = decode_receipt(&row)?;
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                         return Ok(Ok(ItemTransferOutcome::AlreadyCommitted(committed)));
                     }
 
@@ -812,7 +812,7 @@ impl DurabilityRoot {
                     )
                     .bind(frozen.transaction_id.as_slice())
                     .bind(frozen.event_id.as_slice())
-                    .fetch_one(&mut *tx)
+                    .fetch_one(&mut **tx)
                     .await?;
                     if identity_reused {
                         return Ok(Err(ItemTransferError::ConflictingCandidate));
@@ -824,6 +824,7 @@ impl DurabilityRoot {
                             Err(error) => return Ok(Err(error)),
                         };
                     let message = transfer_message(&frozen.request, &fence, &admitted);
+                    let tuple = tx.tuple();
                     let envelope = match audit::encode_transfer_event(
                         TransferEventIdentity {
                             event_id: frozen.event_id,
@@ -832,12 +833,14 @@ impl DurabilityRoot {
                             server_build_id: SERVER_BUILD_ID,
                         },
                         message,
+                        tuple.tuple(),
                     ) {
                         Ok(envelope) => envelope,
                         Err(error) => return Ok(Err(error.into())),
                     };
-                    let committed = apply_transfer(&mut tx, &frozen, &admitted, &envelope).await?;
-                    commit_semantic_transaction(tx, deadline).await?;
+                    let committed =
+                        apply_transfer(&mut tx, &frozen, &admitted, &envelope, tuple).await?;
+                    tx.commit(deadline).await?;
                     Ok(Ok(ItemTransferOutcome::Committed(committed)))
                 })
             })
@@ -1002,6 +1005,84 @@ impl DurabilityRoot {
                     };
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(location))
+                })
+            })
+            .await?
+    }
+
+    /// MAP-ITEM-REF-1 Part B: the live direct entries of the corpse
+    /// `corpse_item_instance_id` in loot order (ascending placement ordinal),
+    /// or `None` when it is not a live corpse on Ground (a corpse MINT
+    /// receipt, a Ground location and a live instance). Read-only; the
+    /// TRANSFER re-derives every source under its own lock.
+    pub async fn read_corpse_contents(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        corpse_item_instance_id: [u8; 16],
+    ) -> Result<Option<Vec<BackpackEntry>>> {
+        use super::item_mint::CORPSE_CONTAINER_ENTRIES_MAX;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemTransferError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let live_corpse: bool = sqlx::query_scalar(
+                        "SELECT EXISTS ( \
+                           SELECT 1 FROM game_item_mint_receipts r \
+                             JOIN game_item_ground_locations g \
+                               ON g.item_instance_id = r.item_instance_id \
+                             JOIN game_item_instances i \
+                               ON i.item_instance_id = r.item_instance_id \
+                            WHERE r.item_instance_id = encode($1,'hex')::uuid \
+                              AND r.loot_purpose_key = $2 \
+                              AND i.lifecycle = 1)",
+                    )
+                    .bind(corpse_item_instance_id.as_slice())
+                    .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    if !live_corpse {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(None));
+                    }
+                    let rows = sqlx::query(
+                        "SELECT e.item_instance_id::text, e.placement_ordinal::text, \
+                                i.definition_family, i.definition_production_key, \
+                                i.definition_revision_ref, i.quantity \
+                           FROM game_item_corpse_container_entries e \
+                           JOIN game_item_instances i USING (item_instance_id, world_id) \
+                          WHERE e.parent_item_instance_id = encode($1,'hex')::uuid \
+                            AND i.lifecycle = 1 \
+                          ORDER BY e.placement_ordinal ASC LIMIT $2",
+                    )
+                    .bind(corpse_item_instance_id.as_slice())
+                    .bind(i64::from(CORPSE_CONTAINER_ENTRIES_MAX) + 1)
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    if rows.len() > CORPSE_CONTAINER_ENTRIES_MAX as usize {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    let entries = rows
+                        .iter()
+                        .map(|row| {
+                            Ok(BackpackEntry {
+                                item: InventoryItem {
+                                    item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
+                                    definition: decode_definition(row)?,
+                                    quantity: decode_quantity(row)?,
+                                },
+                                placement_ordinal: row
+                                    .try_get::<String, _>("placement_ordinal")?
+                                    .parse()
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                            })
+                        })
+                        .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(Some(entries)))
                 })
             })
             .await?
@@ -1586,6 +1667,7 @@ async fn apply_transfer(
     frozen: &FrozenTransfer,
     admitted: &Admitted,
     envelope: &[u8],
+    tuple: SelectedType2Tuple,
 ) -> std::result::Result<CommittedItemTransfer, DurabilityError> {
     let source = &admitted.source;
     let source_id = source.item.item_instance_id;
@@ -1713,8 +1795,8 @@ async fn apply_transfer(
     .bind(frozen.event_id.as_slice())
     .bind(tx_id)
     .bind(EVENT_TYPE_ID)
-    .bind(EVENT_SCHEMA_REVISION)
-    .bind(mint_audit::RETENTION_PROFILE_ID)
+    .bind(i64::from(tuple.schema_revision()))
+    .bind(tuple.retention_profile_id())
     .bind(source_id.as_slice())
     .bind(frozen.occurred_at_unix_ms)
     .bind(mint_audit::AUDIT_RETENTION_P90D_MS)

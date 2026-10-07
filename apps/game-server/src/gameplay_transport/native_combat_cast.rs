@@ -1279,59 +1279,26 @@ async fn read_tile(
 /// Canary 99902524 map.cpp 845–949: endpoint-exclusive u16 Wu accumulator.
 /// The third tuple member is the source last-diagonal-step obstruction exemption.
 fn sight_steps(
-    mut a: TilePosition,
-    mut b: TilePosition,
+    a: TilePosition,
+    b: TilePosition,
 ) -> Result<Vec<(TilePosition, bool)>, SpellCastDisposition> {
-    if a.floor != b.floor {
-        return reject();
-    }
-    let dx = a.x.abs_diff(b.x);
-    let dy = a.y.abs_diff(b.y);
-    if dx.max(dy) > MAX_SIGHT_DISTANCE {
-        return reject();
-    }
-    let mut out = Vec::new();
-    if dx.max(dy) <= 1 {
-        return Ok(out);
-    }
-    if dx == 0 || dy == 0 {
-        let (sx, sy) = ((b.x - a.x).signum(), (b.y - a.y).signum());
-        for _ in 1..dx.max(dy) {
-            a = offset(a, sx, sy)?;
-            out.push((a, false));
-        }
-        return Ok(out);
-    }
-    let y_major = dy > dx;
-    if (y_major && a.y > b.y) || (!y_major && a.x > b.x) {
-        std::mem::swap(&mut a, &mut b);
-    }
-    let minor_sign = if y_major {
-        (b.x - a.x).signum()
-    } else {
-        (b.y - a.y).signum()
-    };
-    let adj =
-        (((if y_major { dx } else { dy }) as u64) << 16) / (if y_major { dy } else { dx }) as u64;
-    let adj = adj as u16;
-    let mut acc = if minor_sign < 0 {
-        0u16.wrapping_sub(adj)
-    } else {
-        0
-    };
-    for _ in 1..dx.max(dy) {
-        let before = acc;
-        acc = acc.wrapping_add(adj);
-        let minor = if acc <= before { minor_sign } else { 0 };
-        let near = a.x.abs_diff(b.x) <= 1 && a.y.abs_diff(b.y) <= 1;
-        a = if y_major {
-            offset(a, minor, 1)?
-        } else {
-            offset(a, 1, minor)?
-        };
-        out.push((a, near));
-    }
-    Ok(out)
+    crate::spell::world_execution::source_sight_steps(cell(a), cell(b))
+        .map(|steps| {
+            steps
+                .into_iter()
+                .map(|(p, near)| {
+                    (
+                        TilePosition {
+                            x: p.x,
+                            y: p.y,
+                            floor: p.floor,
+                        },
+                        near,
+                    )
+                })
+                .collect()
+        })
+        .map_err(|_| SpellCastDisposition::Rejected)
 }
 
 /// Geometry is read from the already closed native recipe, independent of tile permission.
@@ -1838,7 +1805,7 @@ pub(crate) async fn prepare_from_owners(
             preview_magnitude
                 .as_mut()
                 .ok_or(Error::InvalidBatch)?
-                .finish(plan, hit, target, &mut |minimum, _| minimum)
+                .finish_with_damage_healing(plan, hit, target, &mut |minimum, _| minimum)
         },
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
@@ -1969,7 +1936,7 @@ pub(crate) async fn prepare_from_owners(
             magnitude
                 .as_mut()
                 .ok_or(Error::InvalidBatch)?
-                .finish(plan, hit, target, draw)
+                .finish_with_damage_healing(plan, hit, target, draw)
         },
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
@@ -2633,7 +2600,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             parameter.as_ref(),
             parameter_output,
         ) {
-            Ok(Some(_)) => {
+            Ok(Some(replayed)) => {
+                self.record_spell_kills(&mut runtime, std::iter::once(&replayed))
+                    .await;
                 return NativeCastDispatch::Outcome(super::SpellCastOutcome {
                     disposition: parameter_output
                         .as_ref()
@@ -2943,7 +2912,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let current_owned=load_owned_cast_facts_in_transaction(&mut fresh,owner.root,owner.character,owner.holder,
                 &item_fence,command,runtime,actor,state,active,*access,owner.owner_now().get()).await
                 .map_err(|_|DurabilityError::Unavailable)?;
-            attempt.prepared.commit(runtime,states,&current_owned,receipt,committed.companion(),committed.direct_companion(),fresh_reconnect.as_ref()).map_err(|_|DurabilityError::Unavailable)?;
+            let batch=attempt.prepared.commit(runtime,states,&current_owned,receipt,committed.companion(),committed.direct_companion(),fresh_reconnect.as_ref()).map_err(|_|DurabilityError::Unavailable)?;
+            // §1.4: the committed batch's kills, under the same runtime turn.
+            owner.record_spell_kills(runtime,std::iter::once(&batch)).await;
             // No SQL write follows HP/player/timer installation. Rollback only releases the
             // current read locks; its outcome cannot retract the already observed source COMMIT.
             drop(fresh);

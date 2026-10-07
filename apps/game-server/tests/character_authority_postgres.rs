@@ -2284,6 +2284,10 @@ mod reward_claim_mint_postgres_cases;
 #[path = "support/map_item_mint_postgres_cases.rs"]
 mod map_item_mint_postgres_cases;
 
+// GOLD-FEE-ACT-1 type-2 audit activation (migration 0079).
+#[path = "support/type2_audit_activation_postgres_cases.rs"]
+mod type2_audit_activation_postgres_cases;
+
 // CHARM-2 Bestiary kill progress (migration 0019) shares its cases and their
 // harness with the focused standalone target through the same protected lane.
 #[allow(dead_code)]
@@ -3091,3 +3095,5 @@ fn proficiency_read_public_consumers_reject_current_recovery_provenance_substitu
 
 #[path = "support/character_proficiency_postgres_cases.rs"]
 mod character_proficiency_postgres_cases;
+#[path = "support/item_ref_production_postgres_cases.rs"]
+mod item_ref_production_postgres_cases;

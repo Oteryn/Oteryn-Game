@@ -104,6 +104,32 @@ pub(crate) async fn exchange_with_status(
 ) -> Result<(u16, Vec<u8>), SourceError> {
     exchange_status(desc, operation, body, permit, false).await
 }
+/// Request head bound: the fixed request line and fields, the longest
+/// operation path, a 253-byte host and a 20-digit `Content-Length`.
+const REQUEST_HEAD_BYTES: usize = 512;
+/// Request envelope (head and body) for every other operation.
+const REQUEST_ENVELOPE_BYTES: usize = 10_240;
+/// Per-operation envelope cap: the projection snapshot (`LCA-REQUEST-BYTES`)
+/// gets its own head allowance; every other operation keeps the shared cap.
+const fn request_envelope_max(operation: Operation) -> usize {
+    match operation {
+        Operation::PublishAccountCharactersV1 => {
+            super::account_characters::SNAPSHOT_BYTES + REQUEST_HEAD_BYTES
+        }
+        _ => REQUEST_ENVELOPE_BYTES,
+    }
+}
+const _: () = assert!(
+    super::account_characters::WATERMARK_BYTES + REQUEST_HEAD_BYTES <= REQUEST_ENVELOPE_BYTES
+);
+fn request_head(operation: Operation, host_header: &str, body_len: usize) -> String {
+    format!(
+        "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        operation.path(),
+        host_header,
+        body_len
+    )
+}
 async fn exchange_status(
     desc: &ProducerDescriptor,
     operation: Operation,
@@ -131,26 +157,39 @@ async fn exchange_status(
         .await
         .map_err(|_| SourceError::Unavailable)??;
         tls.get_mut().0.finish_handshake();
-        let request = format!(
-            "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-            operation.path(),
-            desc.host_header,
-            body.len(),
-            body
-        );
-        if request.len() > 10_240 {
+        let mut request = request_head(operation, &desc.host_header, body.len());
+        request.push_str(body);
+        if request.len() > request_envelope_max(operation) {
             return Err(SourceError::CapacityExceeded);
         }
         tls.write_all(request.as_bytes()).await?;
         if operation == Operation::ReadPremiumSnapshotV1 {
-            read_response_bounded(&mut tls, require_ok, 1024, true).await
-        } else if operation == Operation::ReportScopeAssignmentV1 {
+            read_response_bounded(&mut tls, require_ok, 1024, true, &[]).await
+        } else if matches!(
+            operation,
+            Operation::ReportScopeAssignmentV1 | Operation::ReportScopeRevocationV1
+        ) {
             // `NRS-RESPONSE-BYTES` bounds the body of every status, not only 200.
+            // A status outside the §4 list is final without its body.
             read_response_bounded(
                 &mut tls,
                 require_ok,
                 super::scope_assignment::RESPONSE_BYTES,
                 false,
+                &super::scope_assignment::RESPONSE_STATUSES,
+            )
+            .await
+        } else if matches!(
+            operation,
+            Operation::PublishAccountCharactersV1 | Operation::PublishProjectionWatermarkV1
+        ) {
+            // §3: every projection response, success or empty failure, fits 256 bytes.
+            read_response_bounded(
+                &mut tls,
+                require_ok,
+                super::account_characters::RESPONSE_BYTES,
+                false,
+                &[],
             )
             .await
         } else if require_ok {
@@ -195,13 +234,14 @@ async fn read_response_status<S: AsyncRead + Unpin>(
     stream: &mut S,
     require_ok: bool,
 ) -> Result<(u16, Vec<u8>), SourceError> {
-    read_response_bounded(stream, require_ok, 8192, false).await
+    read_response_bounded(stream, require_ok, 8192, false, &[]).await
 }
 pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
     stream: &mut S,
     require_ok: bool,
     body_max: usize,
     require_json: bool,
+    body_statuses: &[u16],
 ) -> Result<(u16, Vec<u8>), SourceError> {
     if body_max == 0 || body_max > 8192 {
         return Err(SourceError::InvalidInput);
@@ -209,7 +249,7 @@ pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
     let mut head = Vec::with_capacity(1024);
     let mut one = [0_u8; 1];
     let mut line_bytes = 0usize;
-    let mut first_line = true;
+    let mut code = None;
     while !head.ends_with(b"\r\n\r\n") {
         if head.len() == 8192 {
             return Err(SourceError::CapacityExceeded);
@@ -218,25 +258,36 @@ pub(crate) async fn read_response_bounded<S: AsyncRead + Unpin>(
             return Err(SourceError::InvalidInput);
         }
         line_bytes += 1;
-        if line_bytes > if first_line { 256 } else { 2048 } {
+        if line_bytes > if code.is_none() { 256 } else { 2048 } {
             return Err(SourceError::CapacityExceeded);
         }
         head.push(one[0]);
         if head.ends_with(b"\r\n") {
             line_bytes = 0;
-            first_line = false;
+            if code.is_none() {
+                // The status is classified before any field is buffered.
+                let status = std::str::from_utf8(&head[..head.len() - 2])
+                    .map_err(|_| SourceError::InvalidInput)?;
+                let status = if status == "HTTP/1.1 200 OK" {
+                    200
+                } else if require_ok {
+                    return Err(SourceError::Unavailable);
+                } else {
+                    final_status(status)?
+                };
+                // With a status list, an unlisted status is returned without
+                // its fields or body, so no head or body bound can mask it.
+                if !body_statuses.is_empty() && !body_statuses.contains(&status) {
+                    return Ok((status, Vec::new()));
+                }
+                code = Some(status);
+            }
         }
     }
+    let code = code.ok_or(SourceError::InvalidInput)?;
     let text = std::str::from_utf8(&head).map_err(|_| SourceError::InvalidInput)?;
     let mut lines = text.split("\r\n");
-    let status = lines.next().ok_or(SourceError::InvalidInput)?;
-    let code = if status == "HTTP/1.1 200 OK" {
-        200
-    } else if require_ok || status.len() > 256 {
-        return Err(SourceError::Unavailable);
-    } else {
-        final_status(status)?
-    };
+    lines.next();
     let mut fields = 0_usize;
     let mut length = None;
     let mut chunked = false;
@@ -432,12 +483,49 @@ mod tests {
 }
 
 #[cfg(test)]
+mod envelope_tests {
+    use super::*;
+    const OPERATIONS: [Operation; 11] = [
+        Operation::ReadAccountSecurityV1,
+        Operation::ReadFreshSigningTrustV1,
+        Operation::ReadRecoveryAccountSecurityV2,
+        Operation::ReadRecoverySigningTrustV2,
+        Operation::ReadCharacterBootstrapIntentV1,
+        Operation::ReadPremiumSnapshotV1,
+        Operation::ReportRuntimeStatusV1,
+        Operation::PublishAccountCharactersV1,
+        Operation::PublishProjectionWatermarkV1,
+        Operation::ReportScopeAssignmentV1,
+        Operation::ReportScopeRevocationV1,
+    ];
+    #[test]
+    fn every_maximum_body_fits_its_envelope_and_only_the_snapshot_widens_it() {
+        let host = "h".repeat(253);
+        for operation in OPERATIONS {
+            let head = request_head(operation, &host, usize::MAX).len();
+            assert!(head <= REQUEST_HEAD_BYTES, "{operation:?} {head}");
+            assert!(
+                head + operation.request_bytes_max() <= request_envelope_max(operation),
+                "{operation:?}"
+            );
+            if operation != Operation::PublishAccountCharactersV1 {
+                assert_eq!(request_envelope_max(operation), REQUEST_ENVELOPE_BYTES);
+            }
+        }
+        assert_eq!(
+            request_envelope_max(Operation::PublishAccountCharactersV1),
+            super::super::account_characters::SNAPSHOT_BYTES + REQUEST_HEAD_BYTES
+        );
+    }
+}
+
+#[cfg(test)]
 mod premium_response_tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
     async fn read(bytes: &[u8]) -> Result<(u16, Vec<u8>), SourceError> {
         let mut stream = bytes;
-        read_response_bounded(&mut stream, true, 1024, true).await
+        read_response_bounded(&mut stream, true, 1024, true, &[]).await
     }
     #[test]
     fn premium_transport_enforces_actual_bound_and_framing() {

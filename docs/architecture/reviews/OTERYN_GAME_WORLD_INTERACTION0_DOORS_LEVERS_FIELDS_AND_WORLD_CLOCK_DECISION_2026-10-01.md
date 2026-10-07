@@ -39,7 +39,7 @@
 | KEY-1 | hard, persistence review | the key capability on ItemInstance (`key_number`), its MINT through a RewardClaim, a key on a key door (§4.4) | DOOR-1; CHEST-1 (merged) |
 | LEVER-1 | hard | levers, switches and pressure plates as `USE`, `ON_ENTER` and `ON_LEAVE` triggers with the closed child set (§5) | QUEST-TRIGGER-1; WORLDINT-USE-1 |
 | FLOOR-1 | impl, movement review | walk-on floor changes, ladders and grates, rope, shovel, pick and machete targets, climbing, teleports, the landing rule (§6) | MAP-LOAD-1; WORLDINT-USE-1 |
-| PUSH-1 | impl, movement and combat review | pushing creatures and players (§7.1) | WORLDINT-WIRE-1; the VSL-MOVE-01 movement owner; ATTACK-1 |
+| PUSH-1 | impl, movement and combat review | pushing creatures and players (§7.1); a push root requests no quest or `RewardClaim` child (QUEST-GATE-0 §16.3) | WORLDINT-WIRE-1; the VSL-MOVE-01 movement owner; ATTACK-1 |
 | GROUND-MOVE-1 | hard, persistence review | Ground to Ground moves of durable items and overlay moves of movable base items (§7.2) | ITEM-MOVE-2b; BAGS-GROUND-1 for trees |
 | WORLDINT-ADMIT-1 | hard, protocol and security review with the FND-04 owner | the FND-04 admission rule that `RUNEUSE0-C7` asks for (§8.6) | FIELD-WIRE-1 |
 | FIELD-2 | hard (combat), combat review | fields that affect players (map-authored, player-made by world type, creature-made), Magic Wall and Wild Growth in movement, pathing and the projectile query, their destruction (§8) | FIELD-1; WORLDINT-ADMIT-1; PVP-RT-1 |
@@ -247,10 +247,18 @@ how it resets, what limits it, which commands carry it; and what time it is in t
 - Replay: an act carries its CommandRef; a replay in the same overlay incarnation returns the first
   outcome; after a channel restart the old handle is `STALE` and no volatile child (overlay,
   relocation, presentation) repeats.
-- Durable trigger children are the exception. A lever, switch or plate firing whose root plan
-  admitted a durable child (a quest transition, QUEST-GATE-0 §4) keeps that plan's occurrence-based
-  recovery: after a crash or channel restart the unstarted durable children are recovered and
-  committed exactly once from the occurrence, even though the overlay children are not repeated.
+- Durable trigger children (a quest transition or a `RewardClaim`, QUEST-GATE-0 §4) are not
+  recovered from the occurrence. **Amendment (2026-10-06; QUEST-GATE-0 §16.2.5), pending on
+  acceptance of QUEST-GATE-0.** Trigger plans are not durable (QUEST-GATE-0 §16.4):
+  - while the plan is retained, an `UNSTARTED` durable child runs once if its fences authorize it,
+    else it is `REJECTED`; a `PENDING` one is resolved through its receipt (QUEST-GATE-0 §16.2.5);
+  - after a process loss or channel restart, recovery is QUEST-GATE-0 §16.2.5's explicit
+    reconciliation of the root: a child with a durable record keyed by the root CommandRef is
+    settled by that record, a committed claim's quest obligation stays a durable row, and every
+    other durable child is `REJECTED` and never runs; a root with no such record left no durable
+    effect and nothing of it runs again;
+  - the overlay, relocation and presentation children are not repeated in either case. A fresh
+    `USE` or step is a new root.
 
 ## 4. Doors (DOOR-1, KEY-1)
 
@@ -422,6 +430,11 @@ quest doors, quest format §3.1) stays sealed.
   open hole or a teleport on `to` applies (pushing down a hole is Tibia), and its `ON_ENTER` and
   `ON_LEAVE` triggers fire with the push command as root (QUEST-GATE-0 §4). Gated tiles push back
   an unqualified target.
+  **Amendment (2026-10-06; QUEST-GATE-0 §16.3).** In v1 a push root requests no quest transition
+  child and no `RewardClaim` child (so no claim obligation or reservation), and its `after_quest`
+  children do not run; its relocation, overlay and presentation children run as declared. This is
+  a declared v1 difference until the push command's own decision admits a cross-character quest or
+  claim cause.
 - A push by a character in combat delays its next auto-attack by one attack interval (the manual;
   ATTACK-1 applies it).
 - Monsters that push creatures or items (content flags) stay with GAME-AI-01.

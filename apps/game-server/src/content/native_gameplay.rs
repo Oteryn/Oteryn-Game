@@ -4,6 +4,9 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+use super::character_progression_content::{
+    CharacterProgressionContent, MAX_PROGRESSION_SECTION_BYTES,
+};
 use super::digest::sha256;
 use super::model::ContentError;
 use super::production::CompiledFirstProductionContent;
@@ -26,6 +29,12 @@ pub(crate) const MAGIC_V2: &[u8; 8] = b"OTNGP02\0";
 pub(crate) const MAGIC_V3: &[u8; 8] = b"OTNGP03\0";
 pub(crate) const MAGIC_V4: &[u8; 8] = b"OTNGP04\0";
 pub(crate) const MAGIC_V5: &[u8; 8] = b"OTNGP05\0";
+/// V5 plus the tenth `progression` section (PROGRESSION-CONTENT-1).
+pub(crate) const MAGIC_V6: &[u8; 8] = b"OTNGP06\0";
+/// V6 plus the eleventh Item key set section (MAP-ITEM-REF-1, D879).
+pub(crate) const MAGIC_V7: &[u8; 8] = b"OTNGP07\0";
+/// V7 plus the twelfth `loot_tables` section (ARCH-KILL-REWARD-LOGOUT-1 §1.1).
+pub(crate) const MAGIC_V8: &[u8; 8] = b"OTNGP08\0";
 pub(crate) const MAX_ARTIFACT_BYTES: usize = 88 * 1024 * 1024;
 pub(crate) fn is_envelope(bytes: &[u8]) -> bool {
     bytes.starts_with(MAGIC)
@@ -33,6 +42,9 @@ pub(crate) fn is_envelope(bytes: &[u8]) -> bool {
         || bytes.starts_with(MAGIC_V3)
         || bytes.starts_with(MAGIC_V4)
         || bytes.starts_with(MAGIC_V5)
+        || bytes.starts_with(MAGIC_V6)
+        || bytes.starts_with(MAGIC_V7)
+        || bytes.starts_with(MAGIC_V8)
 }
 const MAX_CATALOG: usize = 32 * 1024 * 1024;
 const MAX_SELECTION: usize = 256 * 1024;
@@ -74,6 +86,14 @@ pub(crate) struct NativeGameplayInput {
     pub(crate) wheel_profile: Option<PinnedGameplayBytes>,
     /// Separate outer server/client source-world compositor consumes this exact pinned input.
     pub(crate) source_world: Option<PinnedGameplayBytes>,
+    /// Canonical Character progression section; selects the V6 envelope.
+    pub(crate) progression: Option<PinnedGameplayBytes>,
+    /// The Item key set (`OTERYN_NATIVE_ITEM_KEYS/v1`); requires progression and selects the V7
+    /// envelope.
+    pub(crate) item_keys: Option<PinnedGameplayBytes>,
+    /// The loot section (`OTERYN_NATIVE_LOOT_TABLES/v1`); requires the Item key set and selects
+    /// the V8 envelope.
+    pub(crate) loot_tables: Option<PinnedGameplayBytes>,
 }
 #[derive(Debug, Clone)]
 pub(crate) struct NativeTrainingInput {
@@ -146,6 +166,12 @@ struct ProvisioningManifest {
     wheel_profile: Option<FilePin>,
     #[serde(default)]
     source_world: Option<FilePin>,
+    #[serde(default)]
+    progression: Option<FilePin>,
+    #[serde(default)]
+    item_keys: Option<FilePin>,
+    #[serde(default)]
+    loot_tables: Option<FilePin>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -157,6 +183,8 @@ pub(crate) struct CreatureProfileRecord {
     /// Explicit source-qualified approximation; absence disables wild melee.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) monster_melee: Option<NativeMonsterMeleeProfile>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) source_item_abilities: Vec<ProjectV2AuthoringProfile>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -225,6 +253,10 @@ impl NativeMonsterMeleeProfile {
 pub(crate) struct CreatureProfilesDocument {
     pub(crate) schema: String,
     pub(crate) records: Vec<CreatureProfileRecord>,
+    /// Exact canonical definition/provenance closure, independently pinned in this artifact.
+    /// This is not the caller-supplied outer artifact digest or an actor identity claim.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) source_definitions_sha256: Option<String>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -328,6 +360,9 @@ pub(crate) struct NativeGameplayState {
     familiar_config: Option<super::spell_familiar_config::CompiledFamiliarConfig>,
     familiar_defenses: Option<super::spell_familiar_defenses::CompiledFamiliarDefenses>,
     wheel_profile: Option<super::spell_wheel_profile::CompiledWheelProfile>,
+    progression: Option<Arc<CharacterProgressionContent>>,
+    item_index: Option<Arc<super::item_ref::ItemDefinitionIndex>>,
+    reward_table: Arc<super::creature_reward::CreatureRewardTable>,
 }
 impl PartialEq for NativeGameplayState {
     fn eq(&self, other: &Self) -> bool {
@@ -336,6 +371,20 @@ impl PartialEq for NativeGameplayState {
 }
 impl Eq for NativeGameplayState {}
 impl NativeGameplayState {
+    /// The Item definition index of the pinned Item key set (MAP-ITEM-REF-1); `None` when the
+    /// artifact carries no key set, which leaves capability 4 unoffered.
+    pub(crate) fn item_index(&self) -> Option<&Arc<super::item_ref::ItemDefinitionIndex>> {
+        self.item_index.as_ref()
+    }
+    /// The creature kill-reward rows of this generation (KILL-REWARD-COMP-1); empty for a pin
+    /// without the loot section.
+    pub(crate) fn reward_table(&self) -> &Arc<super::creature_reward::CreatureRewardTable> {
+        &self.reward_table
+    }
+    /// Decoded Character progression content; `None` for V1-V5 pins.
+    pub(crate) fn progression(&self) -> Option<&CharacterProgressionContent> {
+        self.progression.as_deref()
+    }
     pub(crate) fn native_map_profile(&self) -> NativeGameplayMapProfile {
         self.native_map_profile
     }
@@ -347,6 +396,53 @@ impl NativeGameplayState {
     }
     pub(crate) fn catalog(&self) -> &executable_catalog::CompiledCatalog {
         &self.catalog
+    }
+    /// Only loader-decoded profiles under the current outer artifact may authorize source actors.
+    /// A caller's detached WorldProject or digest cannot supply this membership.
+    pub(crate) fn qualifies_current_creature_profile(
+        &self,
+        server_digest: [u8; 32],
+        profile: &ProjectV2AuthoringProfile,
+    ) -> bool {
+        self.source_digest == server_digest
+            && self
+                .creatures
+                .records
+                .iter()
+                .filter(|r| r.profile.target == profile.target)
+                .count()
+                == 1
+            && self.creatures.records.iter().any(|r| &r.profile == profile)
+    }
+    /// The decoded artifact, not the caller, supplies the expected source-membership digest.
+    /// Bind the entire consumed closure, including children, heals, callbacks and provenance.
+    pub(crate) fn qualifies_current_project_definitions(
+        &self,
+        server_digest: [u8; 32],
+        draft: &super::ProjectV2Draft,
+    ) -> bool {
+        if self.source_digest != server_digest {
+            return false;
+        }
+        let Some(expected) = &self.creatures.source_definitions_sha256 else {
+            return false;
+        };
+        let value = serde_json::json!({
+            "schema": "OTERYN_NATIVE_MONSTER_DEFINITIONS/v1",
+            "records": draft.core.records,
+            "authoring_profiles": draft.state.authoring_profiles,
+            "declarations": draft.state.declarations,
+            "sources": draft.state.sources,
+            "source_identity_bindings": draft.state.source_identity_bindings,
+        });
+        let Ok(bytes) = serde_json::to_vec(&value) else {
+            return false;
+        };
+        let actual: String = sha256(&bytes)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
+        &actual == expected
     }
     pub(crate) fn creature_profiles(&self) -> &CreatureProfilesDocument {
         &self.creatures
@@ -408,7 +504,7 @@ impl NativeGameplayState {
     }
     /// Stage invokes this only after the complete outer artifact matches independent issuance.
     /// Rebinds already validated immutable data; creates no active-generation authority.
-    pub(crate) fn bind_qualified_outer_artifact(
+    pub(super) fn bind_qualified_outer_artifact(
         &mut self,
         digest: [u8; 32],
     ) -> Result<(), ContentError> {
@@ -509,6 +605,9 @@ impl NativeGameplayInput {
                 != manifest.build_training.is_some())
             || (manifest.schema.ends_with("/v5") != manifest.familiar_config.is_some())
             || (manifest.wheel_profile.is_some() && !manifest.schema.ends_with("/v5"))
+            || (manifest.progression.is_some() && !manifest.schema.ends_with("/v5"))
+            || (manifest.item_keys.is_some() && manifest.progression.is_none())
+            || (manifest.loot_tables.is_some() && manifest.item_keys.is_none())
             || (manifest.native_map_profile != NativeGameplayMapProfile::AcceptedEntryR1
                 && !manifest.schema.ends_with("/v5"))
             || (manifest.native_map_profile != NativeGameplayMapProfile::AcceptedEntryR1
@@ -544,6 +643,18 @@ impl NativeGameplayInput {
                 .transpose()?,
             source_world: manifest
                 .source_world
+                .map(|pin| load(pin, MAX_PROFILES))
+                .transpose()?,
+            progression: manifest
+                .progression
+                .map(|pin| load(pin, MAX_PROGRESSION_SECTION_BYTES))
+                .transpose()?,
+            item_keys: manifest
+                .item_keys
+                .map(|pin| load(pin, MAX_PROFILES))
+                .transpose()?,
+            loot_tables: manifest
+                .loot_tables
                 .map(|pin| load(pin, MAX_PROFILES))
                 .transpose()?,
             catalog: load(manifest.catalog, MAX_CATALOG)?,
@@ -658,7 +769,33 @@ pub(crate) fn compile_native_gameplay(
         }
         qualify(wheel, 64 * 1024)?;
     }
-    let mut bytes = if input.familiar_config.is_some() {
+    if let Some(progression) = &input.progression {
+        if input.familiar_config.is_none() {
+            return Err(invalid("native gameplay progression requires explicit v5"));
+        }
+        qualify(progression, MAX_PROGRESSION_SECTION_BYTES)?;
+    }
+    if let Some(keys) = &input.item_keys {
+        if input.progression.is_none() {
+            return Err(invalid("native gameplay Item key set requires progression"));
+        }
+        qualify(keys, MAX_PROFILES)?;
+    }
+    if let Some(loot) = &input.loot_tables {
+        if input.item_keys.is_none() {
+            return Err(invalid(
+                "native gameplay loot section requires the Item key set",
+            ));
+        }
+        qualify(loot, MAX_PROFILES)?;
+    }
+    let mut bytes = if input.loot_tables.is_some() {
+        MAGIC_V8
+    } else if input.item_keys.is_some() {
+        MAGIC_V7
+    } else if input.progression.is_some() {
+        MAGIC_V6
+    } else if input.familiar_config.is_some() {
         MAGIC_V5
     } else if training_section.is_some() {
         MAGIC_V4
@@ -721,6 +858,21 @@ pub(crate) fn compile_native_gameplay(
         bytes.extend_from_slice(&sha256(&section));
         bytes.extend_from_slice(&section);
     }
+    if let Some(progression) = &input.progression {
+        bytes.extend_from_slice(&(progression.bytes.len() as u32).to_be_bytes());
+        bytes.extend_from_slice(&sha256(&progression.bytes));
+        bytes.extend_from_slice(&progression.bytes);
+    }
+    if let Some(keys) = &input.item_keys {
+        bytes.extend_from_slice(&(keys.bytes.len() as u32).to_be_bytes());
+        bytes.extend_from_slice(&sha256(&keys.bytes));
+        bytes.extend_from_slice(&keys.bytes);
+    }
+    if let Some(loot) = &input.loot_tables {
+        bytes.extend_from_slice(&(loot.bytes.len() as u32).to_be_bytes());
+        bytes.extend_from_slice(&sha256(&loot.bytes));
+        bytes.extend_from_slice(&loot.bytes);
+    }
     bounded(&bytes, MAX_ARTIFACT_BYTES)?;
     decode(&bytes)?; // validate the full source policy, book and decoded creature policies now
     Ok(base.with_native_server_artifact(bytes))
@@ -736,7 +888,10 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
         return Err(invalid("native gameplay discriminator"));
     }
     let mut cursor = MAGIC.len();
-    let is_v5 = bytes.starts_with(MAGIC_V5);
+    let is_v8 = bytes.starts_with(MAGIC_V8);
+    let is_v7 = bytes.starts_with(MAGIC_V7) || is_v8;
+    let is_v6 = bytes.starts_with(MAGIC_V6) || is_v7;
+    let is_v5 = bytes.starts_with(MAGIC_V5) || is_v6;
     if !is_v5 && bytes.len() > 80 * 1024 * 1024 {
         return Err(invalid("native gameplay v4 bounds"));
     }
@@ -752,7 +907,13 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
     if !is_v2 && bytes.len() > 56 * 1024 * 1024 {
         return Err(invalid("native gameplay v1 bounds"));
     }
-    let mut sections = Vec::with_capacity(if is_v5 {
+    let mut sections = Vec::with_capacity(if is_v8 {
+        12
+    } else if is_v7 {
+        11
+    } else if is_v6 {
+        10
+    } else if is_v5 {
         9
     } else if is_v4 {
         8
@@ -769,6 +930,9 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
         .chain(is_v3.then_some(MAX_PROFILES))
         .chain(is_v4.then_some(MAX_PROFILES))
         .chain(is_v5.then_some(128 * 1024))
+        .chain(is_v6.then_some(MAX_PROGRESSION_SECTION_BYTES))
+        .chain(is_v7.then_some(MAX_PROFILES))
+        .chain(is_v8.then_some(MAX_PROFILES))
     {
         let header_end = cursor
             .checked_add(36)
@@ -989,6 +1153,7 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
         }
         for policy in &records {
             if policy.flags.illusionable
+                && policy.outfit_appearance().is_some()
                 && compiled
                     .for_creature(&policy.definition_key, &policy.definition_revision)
                     .is_none()
@@ -1056,11 +1221,34 @@ pub(crate) fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentE
     } else {
         (None, None, None, NativeGameplayMapProfile::AcceptedEntryR1)
     };
+    let progression = if is_v6 {
+        Some(Arc::new(CharacterProgressionContent::decode(sections[9])?))
+    } else {
+        None
+    };
+    let item_index = if is_v7 {
+        Some(Arc::new(super::item_ref::ItemDefinitionIndex::decode(
+            sections[10],
+        )?))
+    } else {
+        None
+    };
+    // An older pin carries no loot section: every creature then has no loot binding.
+    let loot = is_v8
+        .then(|| super::creature_reward::LootTablesSection::decode(sections[11], &creatures))
+        .transpose()?;
+    let reward_table = Arc::new(super::creature_reward::CreatureRewardTable::from_pin(
+        &creatures,
+        loot.as_ref(),
+    ));
     let policies = CompiledCreaturePolicies::from_active_artifact(source_digest, records)
         .map_err(|_| invalid("native gameplay creature policy table"))?;
     Ok(DecodedNativeGameplay {
         baseline: sections[0],
         state: NativeGameplayState {
+            progression,
+            item_index,
+            reward_table,
             native_map_profile,
             source_digest,
             encoded: Arc::from(bytes),
@@ -1118,6 +1306,20 @@ fn creature_policies(
     creatures: &CreatureProfilesDocument,
     presentations: &PresentationProfilesDocument,
 ) -> Result<Vec<CompiledCreaturePolicy>, ContentError> {
+    if creatures
+        .source_definitions_sha256
+        .as_ref()
+        .is_some_and(|value| {
+            value.len() != 64
+                || !value
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        })
+    {
+        return Err(invalid(
+            "native gameplay source definition membership digest",
+        ));
+    }
     let mut appearance = BTreeMap::new();
     for profile in &presentations.records {
         super::project::validate_native_gameplay_profile(profile)
@@ -1164,6 +1366,7 @@ fn creature_policies(
     let mut seen = BTreeSet::new();
     let mut records = Vec::new();
     for record in &creatures.records {
+        validate_source_item_abilities(record)?;
         super::project::validate_native_gameplay_profile(&record.profile)
             .map_err(|_| invalid("native gameplay invalid V2 creature authoring"))?;
         exact(&record.profile.target, ProjectV2Family::Creature)?;
@@ -1205,9 +1408,7 @@ fn creature_policies(
         let (outfit_look_type, object_look_type) = *appearance.get(&record.presentation).ok_or(
             invalid("native gameplay exact creature presentation missing"),
         )?;
-        if object_look_type.is_some()
-            && (details.flags.illusionable || details.summoning.is_familiar)
-        {
+        if object_look_type.is_some() && details.summoning.is_familiar {
             return Err(invalid(
                 "native gameplay object appearance incompatible creature flags",
             ));
@@ -1251,6 +1452,17 @@ fn creature_policies(
                 })
                 .collect(),
             damage_immunities: value.immunities.clone(),
+            healing_from_damage: details
+                .healing_from_damage
+                .iter()
+                .map(|v| crate::foundation::CreatureResistance {
+                    damage_type: v.damage_type.clone(),
+                    percent: crate::foundation::CreatureExactRatio {
+                        numerator: v.percent.numerator,
+                        denominator: v.percent.denominator,
+                    },
+                })
+                .collect(),
             flags: crate::foundation::CreatureFlags {
                 attackable: details.flags.attackable,
                 illusionable: details.flags.illusionable,
@@ -1274,7 +1486,7 @@ fn creature_policies(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
     use super::*;
     use crate::content::production::{StagedGeneration, test_source};
@@ -1290,7 +1502,7 @@ mod tests {
             sha256: hex(sha256(bytes)),
         }
     }
-    fn input() -> NativeGameplayInput {
+    pub(super) fn input() -> NativeGameplayInput {
         NativeGameplayInput {
             native_map_profile: NativeGameplayMapProfile::AcceptedEntryR1,
             catalog: pinned(include_bytes!(
@@ -1312,6 +1524,9 @@ mod tests {
             familiar_defenses: None,
             wheel_profile: None,
             source_world: None,
+            progression: None,
+            item_keys: None,
+            loot_tables: None,
         }
     }
     /// Explicit local qualification of the real composed input, without runtime activation.
@@ -1631,7 +1846,15 @@ mod tests {
             } else {
                 details.summoning.is_familiar = true;
             }
-            assert!(creature_policies(&creatures, &presentations).is_err());
+            if change == 0 {
+                let policies = creature_policies(&creatures, &presentations).unwrap();
+                assert!(policies[0].flags.illusionable);
+                assert_eq!(policies[0].object_look_type, Some(2122));
+                assert_eq!(policies[0].outfit_appearance(), None);
+                CompiledCreaturePolicies::from_active_artifact([1; 32], policies).unwrap();
+            } else {
+                assert!(creature_policies(&creatures, &presentations).is_err());
+            }
         }
     }
     #[test]
@@ -1936,6 +2159,264 @@ mod tests {
             .is_err()
         );
     }
+    fn v6_input() -> NativeGameplayInput {
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(
+            br#"{"schema":"OTERYN_NATIVE_ITEM_PROFILES/v1","records":[]}"#,
+        ));
+        supplied.spell_appearances = Some(pinned(include_bytes!(
+            "../../../../tools/content-schema/native-gameplay/spell_appearances.json"
+        )));
+        supplied.build_training = Some(NativeTrainingInput {
+            profile: pinned(include_bytes!(
+                "../../../../tools/content-schema/native-gameplay/build-training.json"
+            )),
+            content_revision: "build-content-r1".into(),
+            magnitude_policy: crate::spell::magnitude_owner::MagnitudePolicy::Strict,
+        });
+        supplied.familiar_config = Some(pinned(include_bytes!(
+            "../../../../tools/content-schema/native-gameplay/familiar-config.json"
+        )));
+        supplied.wheel_profile = Some(pinned(include_bytes!(
+            "../../../../tools/content-schema/native-gameplay/wheel-profile.json"
+        )));
+        supplied
+    }
+    #[test]
+    fn v6_progression_section_is_pinned_strict_and_older_pins_carry_none() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let section = super::super::character_progression_content::tests::section_bytes();
+        let v5 = compile_native_gameplay(baseline.compiled(), &v6_input()).unwrap();
+        assert!(
+            decode(&v5.server_artifact)
+                .unwrap()
+                .state
+                .progression()
+                .is_none()
+        );
+        let mut supplied = v6_input();
+        supplied.progression = Some(pinned(&section));
+        let v6 = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        assert!(v6.server_artifact.starts_with(MAGIC_V6));
+        assert_ne!(v5.server_digest(), v6.server_digest());
+        let state = decode(&v6.server_artifact).unwrap().state;
+        let content = state.progression().unwrap();
+        assert_eq!(
+            content.simulation(),
+            "oteryn-simulation-determinism-exact-i64-v1"
+        );
+        assert_eq!(
+            content,
+            &CharacterProgressionContent::decode(&section).unwrap()
+        );
+        // Tampered section bytes fail the section digest.
+        let mut tampered = v6.server_artifact.clone();
+        let last = tampered.len() - 1;
+        tampered[last] ^= 1;
+        assert!(decode(&tampered).is_err());
+        // A V6 artifact without the section, or with bytes after it, is refused.
+        let cut = tampered.len() - section.len() - 36;
+        let mut missing = v6.server_artifact[..cut].to_vec();
+        assert!(decode(&missing).is_err());
+        missing = v6.server_artifact.clone();
+        missing.push(0);
+        assert!(decode(&missing).is_err());
+        // Progression requires the explicit V5 inputs.
+        let mut bare = input();
+        bare.progression = Some(pinned(&section));
+        assert!(compile_native_gameplay(baseline.compiled(), &bare).is_err());
+        // A section above 256 KiB is refused before it is framed.
+        let mut oversized = v6_input();
+        oversized.progression = Some(pinned(&vec![b' '; MAX_PROGRESSION_SECTION_BYTES + 1]));
+        assert!(compile_native_gameplay(baseline.compiled(), &oversized).is_err());
+        // Section bytes that are not a valid canonical progression document are refused.
+        let mut invalid_section = v6_input();
+        invalid_section.progression = Some(pinned(b"{}"));
+        assert!(compile_native_gameplay(baseline.compiled(), &invalid_section).is_err());
+    }
+    /// The V6 input (with progression), plus `item_keys` as its Item key set, which selects V7.
+    fn v7_input(item_keys: Option<&[u8]>) -> NativeGameplayInput {
+        let mut supplied = v6_input();
+        supplied.progression = Some(pinned(
+            &super::super::character_progression_content::tests::section_bytes(),
+        ));
+        supplied.item_keys = item_keys.map(pinned);
+        supplied
+    }
+    /// A controller with the native gameplay generation activated at node boot: V7 with
+    /// `item_keys` as its pinned Item key set section, or V6 without one.
+    pub(crate) fn activated_with_item_keys(
+        item_keys: Option<&[u8]>,
+    ) -> ContentActivationController {
+        let world = test_source(1).unwrap().world_id;
+        let supplied = v7_input(item_keys);
+        let room = qualify_native_entry_room_with_gameplay(world, &supplied).unwrap();
+        let issuance = NativeEntryActivationIssuance {
+            world_id: world,
+            activation_sequence: 1,
+            server_artifact_digest: room.compiled().server_digest(),
+            client_artifact_digest: room.compiled().client_digest(),
+            frame_binding_digest: room.frame_binding().digest(),
+        };
+        let mut controller = ContentActivationController::new();
+        activate_native_entry_room_with_gameplay(
+            &mut controller,
+            &NodeBootQuiescence::before_channel_runtime(),
+            world,
+            &issuance,
+            &supplied,
+        )
+        .unwrap();
+        controller
+    }
+    #[test]
+    fn item_key_set_section_is_pinned_digest_bound_and_absent_or_empty_offers_no_index() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let keys: &[u8] =
+            include_bytes!("../../../../tools/content-schema/native-gameplay/item-keys.json");
+        let v6 = compile_native_gameplay(baseline.compiled(), &v7_input(None)).unwrap();
+        assert!(v6.server_artifact.starts_with(MAGIC_V6));
+        assert!(
+            decode(&v6.server_artifact)
+                .unwrap()
+                .state
+                .item_index()
+                .is_none()
+        );
+        let compiled = compile_native_gameplay(baseline.compiled(), &v7_input(Some(keys))).unwrap();
+        // V7 is the unchanged V6 layout plus exactly one framed eleventh section.
+        let mut framed = (keys.len() as u32).to_be_bytes().to_vec();
+        framed.extend_from_slice(&sha256(keys));
+        framed.extend_from_slice(keys);
+        let mut expected = MAGIC_V7.to_vec();
+        expected.extend_from_slice(&v6.server_artifact[MAGIC.len()..]);
+        expected.extend_from_slice(&framed);
+        assert_eq!(compiled.server_artifact, expected);
+        let state = decode(&compiled.server_artifact).unwrap().state;
+        assert_eq!(
+            **state.item_index().unwrap(),
+            super::super::item_ref::ItemDefinitionIndex::decode(keys).unwrap()
+        );
+        assert!(state.progression().is_some());
+        // Older decoders' layouts stay closed: the section after a V5 or V6 artifact is
+        // trailing bytes, and a V7 artifact without it is truncated.
+        let v5 = compile_native_gameplay(baseline.compiled(), &v6_input()).unwrap();
+        for older in [&v5.server_artifact, &v6.server_artifact] {
+            let mut trailing = older.clone();
+            trailing.extend_from_slice(&framed);
+            assert!(decode(&trailing).is_err());
+        }
+        let mut truncated = MAGIC_V7.to_vec();
+        truncated.extend_from_slice(&v6.server_artifact[MAGIC.len()..]);
+        assert!(decode(&truncated).is_err());
+        // A tampered section fails the section digest; a pin of other bytes fails qualification.
+        let mut tampered = compiled.server_artifact.clone();
+        let last = tampered.len() - 2;
+        tampered[last] ^= 1;
+        assert!(decode(&tampered).is_err());
+        let mut mispinned = v7_input(Some(keys));
+        let mut pin = pinned(keys);
+        pin.sha256 = hex(sha256(b"other bytes"));
+        mispinned.item_keys = Some(pin);
+        assert!(compile_native_gameplay(baseline.compiled(), &mispinned).is_err());
+        // An empty key set decodes to an empty index (capability 4 stays unoffered).
+        let empty = compile_native_gameplay(
+            baseline.compiled(),
+            &v7_input(Some(
+                br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[]}"#,
+            )),
+        )
+        .unwrap();
+        assert!(
+            decode(&empty.server_artifact)
+                .unwrap()
+                .state
+                .item_index()
+                .unwrap()
+                .is_empty()
+        );
+        // The key set requires progression, and an invalid set is refused.
+        for mut without_progression in [input(), v6_input()] {
+            without_progression.item_keys = Some(pinned(keys));
+            assert!(compile_native_gameplay(baseline.compiled(), &without_progression).is_err());
+        }
+        assert!(
+            compile_native_gameplay(
+                baseline.compiled(),
+                &v7_input(Some(
+                    br#"{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[["oteryn:item.b","definition-r1"],["oteryn:item.a","definition-r1"]]}"#,
+                )),
+            )
+            .is_err()
+        );
+    }
+    /// A loot section binding the sample rat to a gold-only table and the familiar to no loot.
+    const SAMPLE_LOOT_TABLES: &[u8] = br#"{"schema":"OTERYN_NATIVE_LOOT_TABLES/v1","creature_loot":[{"creature":{"family":"Creature","key":"canary:creature/knight_familiar","revision":"canary-47dfd51f"},"loot":null},{"creature":{"family":"Creature","key":"canary:creature/rat","revision":"canary-47dfd51f"},"loot":{"family":"Loot","key":"oteryn:loot/rat","revision":"r1"}}],"tables":[{"identity":{"family":"Loot","key":"oteryn:loot/rat","revision":"r1"},"algorithm":"IndependentBernoulliPpm","entries":[{"item":{"family":"Item","key":"oteryn:item/i3031","revision":"r1"},"min_count":1,"max_count":3,"probability_ppm":500000}]}],"items":[{"item":{"family":"Item","key":"canary:item/5964","revision":"canary-47dfd51f"},"materializable":true,"container_capacity":16},{"item":{"family":"Item","key":"oteryn:item/i3031","revision":"r1"},"materializable":true,"container_capacity":null}]}"#;
+    #[test]
+    fn loot_section_selects_v8_and_builds_the_reward_table() {
+        use super::super::creature_reward::NoSettlementReason;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let keys: &[u8] =
+            include_bytes!("../../../../tools/content-schema/native-gameplay/item-keys.json");
+        let v7 = compile_native_gameplay(baseline.compiled(), &v7_input(Some(keys))).unwrap();
+        let v7_state = decode(&v7.server_artifact).unwrap().state;
+        assert_eq!(
+            v7_state
+                .reward_table()
+                .row("canary:creature/rat")
+                .unwrap_err(),
+            NoSettlementReason::NoLootBinding
+        );
+        let mut supplied = v7_input(Some(keys));
+        supplied.loot_tables = Some(pinned(SAMPLE_LOOT_TABLES));
+        let compiled = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        // V8 is the unchanged V7 layout plus exactly one framed twelfth section.
+        let mut framed = (SAMPLE_LOOT_TABLES.len() as u32).to_be_bytes().to_vec();
+        framed.extend_from_slice(&sha256(SAMPLE_LOOT_TABLES));
+        framed.extend_from_slice(SAMPLE_LOOT_TABLES);
+        let mut expected = MAGIC_V8.to_vec();
+        expected.extend_from_slice(&v7.server_artifact[MAGIC.len()..]);
+        expected.extend_from_slice(&framed);
+        assert_eq!(compiled.server_artifact, expected);
+        let state = decode(&compiled.server_artifact).unwrap().state;
+        assert!(state.item_index().is_some());
+        let rat = state.reward_table().row("canary:creature/rat").unwrap();
+        assert_eq!(
+            rat.xp_amount,
+            oteryn_simulation_determinism::ExactI64::new(5)
+        );
+        assert_eq!(rat.loot_table.entries.len(), 1);
+        assert_eq!(
+            state
+                .reward_table()
+                .row("canary:creature/knight_familiar")
+                .unwrap_err(),
+            NoSettlementReason::CorpseItemMissing
+        );
+        // The section after a V7 artifact is trailing bytes; a V8 artifact without it is
+        // truncated.
+        let mut trailing = v7.server_artifact.clone();
+        trailing.extend_from_slice(&framed);
+        assert!(decode(&trailing).is_err());
+        let mut truncated = MAGIC_V8.to_vec();
+        truncated.extend_from_slice(&v7.server_artifact[MAGIC.len()..]);
+        assert!(decode(&truncated).is_err());
+        // The section requires the Item key set, and a section that omits a pinned creature is
+        // refused at qualification.
+        let mut without_keys = v6_input();
+        without_keys.loot_tables = Some(pinned(SAMPLE_LOOT_TABLES));
+        assert!(compile_native_gameplay(baseline.compiled(), &without_keys).is_err());
+        let unbound = String::from_utf8(SAMPLE_LOOT_TABLES.to_vec()).unwrap().replace(
+            r#"{"creature":{"family":"Creature","key":"canary:creature/knight_familiar","revision":"canary-47dfd51f"},"loot":null},"#,
+            "",
+        );
+        let mut refused = v7_input(Some(keys));
+        refused.loot_tables = Some(pinned(unbound.as_bytes()));
+        assert!(compile_native_gameplay(baseline.compiled(), &refused).is_err());
+    }
     #[test]
     fn explicit_v5_familiar_config_is_qualified_and_every_table_binds_outer_digest() {
         let world = test_source(1).unwrap().world_id;
@@ -2201,5 +2682,225 @@ mod equipment_projection_tests {
             projected_equipment_claims(&semantics, 5).err(),
             Some("equipment ambiguous source pattern")
         );
+    }
+}
+
+/// Return only a compiler-qualified, immutable source Item effect body.
+/// This never accepts caller-supplied authoring bytes or a body digest.
+impl NativeGameplayState {
+    pub(crate) fn source_item_ability(
+        &self,
+        creature: &ProjectV2DefinitionRef,
+        ability: &ProjectV2DefinitionRef,
+    ) -> Option<&ProjectV2AuthoringProfile> {
+        self.creatures
+            .records
+            .iter()
+            .find(|r| &r.profile.target == creature)?
+            .source_item_abilities
+            .iter()
+            .find(|p| &p.target == ability)
+    }
+}
+fn validate_source_item_abilities(record: &CreatureProfileRecord) -> Result<(), ContentError> {
+    use super::project::{ProjectV2AbilityEffect, ProjectV2InlineEffectOperation};
+    let ProjectV2AuthoringProfileData::Creature(creature) = &record.profile.data else {
+        return Err(invalid("source Item creature kind"));
+    };
+    if record.source_item_abilities.is_empty() {
+        return Ok(());
+    }
+    let Some(profile) = &record.behavior else {
+        return Err(invalid("source Item Behavior absent"));
+    };
+    let ProjectV2AuthoringProfileData::Behavior(behavior) = &profile.data else {
+        return Err(invalid("source Item Behavior kind"));
+    };
+    let mut seen = BTreeSet::new();
+    for profile in &record.source_item_abilities {
+        super::project::validate_native_gameplay_profile(profile)
+            .map_err(|_| invalid("source Item Ability invalid"))?;
+        exact(&profile.target, ProjectV2Family::Ability)?;
+        if !seen.insert(profile.target.clone())
+            || !creature.abilities.contains(&profile.target)
+            || !behavior
+                .attacks
+                .iter()
+                .chain(&behavior.defenses)
+                .any(|s| s.ability == profile.target)
+        {
+            return Err(invalid("source Item exact Creature schedule membership"));
+        }
+        let ProjectV2AuthoringProfileData::Ability(ability) = &profile.data else {
+            return Err(invalid("source Item Ability kind"));
+        };
+        let Some(details) = &ability.details else {
+            return Err(invalid("source Item details absent"));
+        };
+        // Unsupported multi-owner or variant semantics remain explicitly refused.
+        if !details.variants.is_empty() || details.encounter.is_some() || details.chain.is_some()
+            || details.effects.is_empty() || !details.effects.iter().any(|e|matches!(e,
+                ProjectV2AbilityEffect::Inline(effect) if matches!(effect.operation,
+                    ProjectV2InlineEffectOperation::CreateItem{..}|ProjectV2InlineEffectOperation::RemoveItems{..}))) {
+            return Err(invalid("source Item supported body shape"));
+        }
+    }
+    Ok(())
+}
+#[cfg(test)]
+mod source_item_closure_tests {
+    use super::*;
+    fn actual() -> Result<CreatureProfilesDocument, serde_json::Error> {
+        serde_json::from_slice(include_bytes!(
+            "../../../../content/creatures/definitions/spell-native-profiles.json"
+        ))
+    }
+    #[test]
+    fn source_item_closure_actual82_requires_exact_creature_schedule_membership()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let doc = actual()?;
+        let mut create = 0;
+        let mut remove = 0;
+        for row in &doc.records {
+            validate_source_item_abilities(row).map_err(|_| "source Item member qualification")?;
+            for profile in &row.source_item_abilities {
+                let ProjectV2AuthoringProfileData::Ability(ability) = &profile.data else {
+                    return Err("source Ability kind".into());
+                };
+                for effect in &ability.details.as_ref().ok_or("actual body")?.effects {
+                    if let super::super::project::ProjectV2AbilityEffect::Inline(effect) = effect {
+                        match effect.operation {
+                            super::super::project::ProjectV2InlineEffectOperation::CreateItem{..}=>create+=1,
+                            super::super::project::ProjectV2InlineEffectOperation::RemoveItems{..}=>remove+=1,
+                            _=>{}
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!((create, remove), (62, 20));
+        Ok(())
+    }
+    #[test]
+    fn source_item_closure_foreign_exact_ability_and_removed_schedule_refuse()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let doc = actual()?;
+        let source = doc
+            .records
+            .iter()
+            .find(|r| !r.source_item_abilities.is_empty())
+            .ok_or("real source member")?;
+        let mut changed = source.clone();
+        changed.source_item_abilities[0]
+            .target
+            .key
+            .push_str(".foreign");
+        assert!(validate_source_item_abilities(&changed).is_err());
+        let mut changed = source.clone();
+        let target = changed.source_item_abilities[0].target.clone();
+        let ProjectV2AuthoringProfileData::Behavior(behavior) =
+            &mut changed.behavior.as_mut().ok_or("actual Behavior")?.data
+        else {
+            return Err("Behavior kind".into());
+        };
+        behavior.attacks.retain(|s| s.ability != target);
+        behavior.defenses.retain(|s| s.ability != target);
+        assert!(validate_source_item_abilities(&changed).is_err());
+        Ok(())
+    }
+    #[test]
+    fn source_item_closure_presentation_only_cannot_become_ground_item_writer()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let doc = actual()?;
+        let mut row = doc
+            .records
+            .into_iter()
+            .find(|r| !r.source_item_abilities.is_empty())
+            .ok_or("real source member")?;
+        let ProjectV2AuthoringProfileData::Ability(ability) =
+            &mut row.source_item_abilities[0].data
+        else {
+            return Err("Ability kind".into());
+        };
+        let details = ability.details.as_mut().ok_or("actual body")?;
+        let super::super::project::ProjectV2AbilityEffect::Inline(effect) = &mut details.effects[0]
+        else {
+            return Err("inline body".into());
+        };
+        effect.operation = super::super::project::ProjectV2InlineEffectOperation::PresentationOnly;
+        assert!(validate_source_item_abilities(&row).is_err());
+        Ok(())
+    }
+}
+/// Test-only use of the actual active native policy decoder, not manually forged stats/appearance.
+#[cfg(test)]
+pub(crate) fn callback_source_native_test_policies(
+    creature_bytes: &[u8],
+    presentation_bytes: &[u8],
+    digest: [u8; 32],
+) -> Result<CompiledCreaturePolicies, ContentError> {
+    let creatures: CreatureProfilesDocument = serde_json::from_slice(creature_bytes)
+        .map_err(|_| invalid("callback source Creature fixture"))?;
+    let presentations: PresentationProfilesDocument = serde_json::from_slice(presentation_bytes)
+        .map_err(|_| invalid("callback source Presentation fixture"))?;
+    CompiledCreaturePolicies::from_active_artifact(
+        digest,
+        creature_policies(&creatures, &presentations)?,
+    )
+    .map_err(|_| invalid("callback native source fixture policy pin"))
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+pub(crate) fn retained_callback_native_fixture(
+    world: crate::foundation::WorldId,
+) -> NativeGameplayState {
+    let path = std::env::var_os("OTERYN_FULL_SPELL_TEST_MANIFEST")
+        .expect("explicit actual native manifest required for callback authority test");
+    let input = NativeGameplayInput::from_manifest(Path::new(&path))
+        .expect("qualified native callback test fixture");
+    let room = super::qualify_selected_native_gameplay_room(world, &input)
+        .expect("qualified native callback test fixture");
+    let staged = super::production::StagedGeneration::stage(
+        &room.compiled().server_artifact,
+        &room.compiled().client_artifact,
+        room.compiled().expectation(),
+    )
+    .expect("qualified native callback test fixture");
+    staged
+        .runtime_state()
+        .native_gameplay()
+        .expect("qualified native callback test fixture")
+        .clone()
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod callback_membership_tests {
+    use super::*;
+    #[test]
+    fn callback_membership_requires_current_digest_and_exact_loaded_profile() {
+        let input = super::tests::input();
+        let world = crate::foundation::WorldId::decode(&[
+            1, 144, 0, 0, 0, 8, 112, 0, 128, 0, 0, 0, 0, 0, 0, 8,
+        ])
+        .expect("qualified native callback test fixture");
+        let room = super::super::qualify_selected_native_gameplay_room(world, &input)
+            .expect("qualified native callback test fixture");
+        let native = decode(&room.compiled().server_artifact)
+            .expect("qualified native callback test fixture")
+            .state;
+        let profile = &native.creature_profiles().records[0].profile;
+        let digest = native.source_digest();
+        assert!(native.qualifies_current_creature_profile(digest, profile));
+        assert!(!native.qualifies_current_creature_profile([0; 32], profile));
+        let mut altered = profile.clone();
+        if let ProjectV2AuthoringProfileData::Creature(c) = &mut altered.data {
+            c.health = Some(999_999);
+        }
+        assert!(!native.qualifies_current_creature_profile(digest, &altered));
+        let mut missing = profile.clone();
+        missing.target.key = "oteryn:creature.absent_source_actor".into();
+        assert!(!native.qualifies_current_creature_profile(digest, &missing));
     }
 }

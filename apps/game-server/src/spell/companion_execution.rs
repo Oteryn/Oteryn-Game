@@ -507,6 +507,7 @@ mod tests {
             mitigation: None,
             resistances: vec![],
             damage_immunities: vec![],
+            healing_from_damage: vec![],
             flags: CreatureFlags {
                 attackable: true,
                 illusionable: false,

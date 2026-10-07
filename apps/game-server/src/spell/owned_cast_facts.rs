@@ -535,6 +535,9 @@ mod tests {
             familiar_defenses: None,
             wheel_profile: None,
             source_world: None,
+            progression: None,
+            item_keys: None,
+            loot_tables: None,
         };
         let (runtime, _, _) =
             crate::gameplay_transport::actor_spell::tests::runtime_with_player(87);

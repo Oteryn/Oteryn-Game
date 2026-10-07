@@ -1,0 +1,5412 @@
+{
+  "oteryn:encounter.field_fill_lisa": {
+    "kind": "Encounter",
+    "profile": {
+      "encounter_type": "Boss",
+      "scope": "Instance",
+      "details": {
+        "display_name": "Source core: lisa",
+        "participants": [
+          {
+            "role": "lisa",
+            "creatures": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.lisa",
+                "revision": "definition-r1"
+              }
+            ]
+          }
+        ],
+        "covers": [
+          {
+            "family": "Creature",
+            "key": "oteryn:creature.lisa",
+            "revision": "definition-r1"
+          }
+        ],
+        "state": {
+          "flags": [
+            {
+              "name": "healing_locked",
+              "initial": false
+            }
+          ],
+          "timers": [
+            {
+              "name": "healing_reset",
+              "duration_ms": {
+                "min": 6000,
+                "max": 6000
+              },
+              "repeat": false
+            }
+          ]
+        },
+        "rules": [
+          {
+            "key": "begin_heal",
+            "trigger": {
+              "kind": "ability_cast",
+              "role": "lisa",
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.lisa.field-fill-lisa_heal",
+                "revision": "definition-r1"
+              }
+            },
+            "conditions": [
+              {
+                "kind": "health_percent",
+                "role": "lisa",
+                "op": "<",
+                "value_ppm": 70000
+              },
+              {
+                "kind": "flag",
+                "flag": "healing_locked",
+                "value": false
+              }
+            ],
+            "actions": [
+              {
+                "kind": "flag",
+                "flag": "healing_locked",
+                "value": true
+              },
+              {
+                "kind": "timer",
+                "timer": "healing_reset",
+                "operation": "start"
+              }
+            ]
+          },
+          {
+            "key": "finish_heal",
+            "trigger": {
+              "kind": "timer_elapsed",
+              "timer": "healing_reset",
+              "each": "lisa"
+            },
+            "actions": [
+              {
+                "kind": "flag",
+                "flag": "healing_locked",
+                "value": false
+              },
+              {
+                "kind": "heal",
+                "subject": {
+                  "kind": "role",
+                  "role": "lisa"
+                },
+                "amount": {
+                  "kind": "range",
+                  "min": 18000,
+                  "max": 23000
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "oteryn:encounter.professor_maxxen": {
+    "kind": "Encounter",
+    "profile": {
+      "encounter_type": "Boss",
+      "scope": "Instance",
+      "details": {
+        "display_name": "Hero of Rathleton: Professor Maxxen",
+        "participants": [
+          {
+            "role": "professor_maxxen",
+            "creatures": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.professor_maxxen",
+                "revision": "definition-r1"
+              }
+            ]
+          }
+        ],
+        "covers": [
+          {
+            "family": "Creature",
+            "key": "oteryn:creature.professor_maxxen",
+            "revision": "definition-r1"
+          }
+        ],
+        "anchors": [
+          {
+            "key": "exit_teleporter",
+            "description": "Boss-room teleporter; Canary (33718, 32047, 15).",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "next_destination",
+            "description": "Destination while open; Canary (33707, 32107, 15).",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32107,
+              "floor": 15
+            }
+          },
+          {
+            "key": "generator_landing_0",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "generator_landing_1",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "generator_landing_2",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "generator_landing_3",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_0",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_1",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_2",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_3",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_4",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_5",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_6",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_7",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_8",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_9",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_10",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_11",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_12",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_13",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33704,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_14",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_15",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_16",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_17",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_18",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_19",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_20",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_21",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_22",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_23",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_24",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_25",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_26",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_27",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33705,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_28",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_29",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_30",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_31",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_32",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_33",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_34",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_35",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_36",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_37",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_38",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_39",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_40",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_41",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33706,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_42",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_43",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_44",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_45",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_46",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_47",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_48",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_49",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_50",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_51",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_52",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_53",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_54",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_55",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33707,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_56",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_57",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_58",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_59",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_60",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_61",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_62",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_63",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_64",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_65",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_66",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_67",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_68",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_69",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33708,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_70",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_71",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_72",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_73",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_74",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_75",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_76",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_77",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_78",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_79",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_80",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_81",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_82",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_83",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33709,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_84",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_85",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_86",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_87",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_88",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_89",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_90",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_91",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_92",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_93",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_94",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_95",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_96",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_97",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33710,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_98",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_99",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_100",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_101",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_102",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_103",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_104",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_105",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_106",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_107",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_108",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_109",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_110",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_111",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33711,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_112",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_113",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_114",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_115",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_116",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_117",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_118",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_119",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_120",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_121",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_122",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_123",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_124",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_125",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33712,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_126",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_127",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_128",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_129",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_130",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_131",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_132",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_133",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_134",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_135",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_136",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_137",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_138",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_139",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33713,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_140",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_141",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_142",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_143",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_144",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_145",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_146",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_147",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_148",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_149",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_150",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_151",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_152",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_153",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33714,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_154",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_155",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_156",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_157",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_158",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_159",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_160",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_161",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_162",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_163",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_164",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_165",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_166",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_167",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33715,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_168",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_169",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_170",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_171",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_172",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_173",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_174",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_175",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_176",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_177",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_178",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_179",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_180",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_181",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33716,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_182",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_183",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_184",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_185",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_186",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_187",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_188",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_189",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_190",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_191",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_192",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_193",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_194",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_195",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33717,
+              "y": 32053,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_196",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32040,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_197",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32041,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_198",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32042,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_199",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32043,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_200",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32044,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_201",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32045,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_202",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32046,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_203",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32047,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_204",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32048,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_205",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32049,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_206",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32050,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_207",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32051,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_208",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32052,
+              "floor": 15
+            }
+          },
+          {
+            "key": "maxxenteleport_landing_209",
+            "description": "Literal pinned spell destination.",
+            "location": {
+              "kind": "point",
+              "x": 33718,
+              "y": 32053,
+              "floor": 15
+            }
+          }
+        ],
+        "state": {
+          "flags": [
+            {
+              "name": "fairy_regeneration_cooldown",
+              "initial": false
+            }
+          ],
+          "timers": [
+            {
+              "name": "fairy_regeneration_reset",
+              "duration_ms": {
+                "min": 30000,
+                "max": 30000
+              },
+              "repeat": false
+            },
+            {
+              "name": "fairy_delayed_heal",
+              "duration_ms": {
+                "min": 10000,
+                "max": 10000
+              },
+              "repeat": false
+            }
+          ]
+        },
+        "rules": [
+          {
+            "key": "professor_maxxen_death",
+            "trigger": {
+              "kind": "creature_died",
+              "role": "professor_maxxen"
+            },
+            "actions": [
+              {
+                "kind": "map_item",
+                "operation": "transform",
+                "item": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i1949",
+                  "revision": "definition-r1"
+                },
+                "into": {
+                  "family": "Item",
+                  "key": "oteryn:item.tibia.i22761",
+                  "revision": "definition-r1"
+                },
+                "anchor": "exit_teleporter",
+                "revert_after_ms": 120000,
+                "destination": "next_destination"
+              }
+            ]
+          },
+          {
+            "key": "round3_generator",
+            "trigger": {
+              "kind": "ability_cast",
+              "role": "professor_maxxen",
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.generator",
+                "revision": "definition-r1"
+              }
+            },
+            "actions": [
+              {
+                "kind": "one_of",
+                "branches": [
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "creature": {
+                          "family": "Creature",
+                          "key": "oteryn:creature.glooth_generator",
+                          "revision": "definition-r1"
+                        },
+                        "count": {
+                          "min": 1,
+                          "max": 1
+                        },
+                        "at": {
+                          "kind": "anchor",
+                          "anchor": "generator_landing_0"
+                        },
+                        "owner": "none",
+                        "health": {
+                          "kind": "full"
+                        }
+                      },
+                      {
+                        "kind": "say",
+                        "subject": {
+                          "kind": "spawned"
+                        },
+                        "text": "THE GLOOTH GENERATOR CHARGES UP FOR A LETHAL EXPLOSION!",
+                        "mode": "yell"
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "creature": {
+                          "family": "Creature",
+                          "key": "oteryn:creature.glooth_generator",
+                          "revision": "definition-r1"
+                        },
+                        "count": {
+                          "min": 1,
+                          "max": 1
+                        },
+                        "at": {
+                          "kind": "anchor",
+                          "anchor": "generator_landing_1"
+                        },
+                        "owner": "none",
+                        "health": {
+                          "kind": "full"
+                        }
+                      },
+                      {
+                        "kind": "say",
+                        "subject": {
+                          "kind": "spawned"
+                        },
+                        "text": "THE GLOOTH GENERATOR CHARGES UP FOR A LETHAL EXPLOSION!",
+                        "mode": "yell"
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "creature": {
+                          "family": "Creature",
+                          "key": "oteryn:creature.glooth_generator",
+                          "revision": "definition-r1"
+                        },
+                        "count": {
+                          "min": 1,
+                          "max": 1
+                        },
+                        "at": {
+                          "kind": "anchor",
+                          "anchor": "generator_landing_2"
+                        },
+                        "owner": "none",
+                        "health": {
+                          "kind": "full"
+                        }
+                      },
+                      {
+                        "kind": "say",
+                        "subject": {
+                          "kind": "spawned"
+                        },
+                        "text": "THE GLOOTH GENERATOR CHARGES UP FOR A LETHAL EXPLOSION!",
+                        "mode": "yell"
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "spawn",
+                        "creature": {
+                          "family": "Creature",
+                          "key": "oteryn:creature.glooth_generator",
+                          "revision": "definition-r1"
+                        },
+                        "count": {
+                          "min": 1,
+                          "max": 1
+                        },
+                        "at": {
+                          "kind": "anchor",
+                          "anchor": "generator_landing_3"
+                        },
+                        "owner": "none",
+                        "health": {
+                          "kind": "full"
+                        }
+                      },
+                      {
+                        "kind": "say",
+                        "subject": {
+                          "kind": "spawned"
+                        },
+                        "text": "THE GLOOTH GENERATOR CHARGES UP FOR A LETHAL EXPLOSION!",
+                        "mode": "yell"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "round3_maxxenteleport",
+            "trigger": {
+              "kind": "ability_cast",
+              "role": "professor_maxxen",
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.maxxenteleport",
+                "revision": "definition-r1"
+              }
+            },
+            "actions": [
+              {
+                "kind": "cast",
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.maxxenteleport.poff",
+                  "revision": "definition-r1"
+                },
+                "at": {
+                  "kind": "subject_position"
+                }
+              },
+              {
+                "kind": "one_of",
+                "branches": [
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_0"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_1"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_2"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_3"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_4"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_5"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_6"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_7"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_8"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_9"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_10"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_11"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_12"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_13"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_14"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_15"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_16"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_17"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_18"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_19"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_20"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_21"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_22"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_23"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_24"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_25"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_26"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_27"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_28"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_29"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_30"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_31"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_32"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_33"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_34"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_35"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_36"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_37"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_38"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_39"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_40"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_41"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_42"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_43"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_44"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_45"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_46"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_47"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_48"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_49"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_50"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_51"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_52"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_53"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_54"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_55"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_56"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_57"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_58"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_59"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_60"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_61"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_62"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_63"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_64"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_65"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_66"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_67"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_68"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_69"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_70"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_71"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_72"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_73"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_74"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_75"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_76"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_77"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_78"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_79"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_80"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_81"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_82"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_83"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_84"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_85"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_86"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_87"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_88"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_89"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_90"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_91"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_92"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_93"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_94"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_95"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_96"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_97"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_98"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_99"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_100"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_101"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_102"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_103"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_104"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_105"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_106"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_107"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_108"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_109"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_110"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_111"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_112"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_113"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_114"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_115"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_116"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_117"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_118"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_119"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_120"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_121"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_122"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_123"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_124"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_125"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_126"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_127"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_128"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_129"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_130"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_131"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_132"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_133"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_134"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_135"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_136"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_137"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_138"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_139"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_140"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_141"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_142"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_143"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_144"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_145"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_146"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_147"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_148"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_149"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_150"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_151"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_152"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_153"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_154"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_155"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_156"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_157"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_158"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_159"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_160"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_161"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_162"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_163"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_164"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_165"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_166"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_167"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_168"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_169"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_170"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_171"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_172"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_173"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_174"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_175"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_176"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_177"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_178"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_179"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_180"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_181"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_182"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_183"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_184"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_185"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_186"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_187"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_188"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_189"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_190"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_191"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_192"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_193"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_194"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_195"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "weight": 1,
+                    "actions": [
+                      {
+                        "kind": "one_of",
+                        "branches": [
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_196"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_197"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_198"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_199"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_200"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_201"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_202"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_203"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_204"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_205"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_206"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_207"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_208"
+                              }
+                            ]
+                          },
+                          {
+                            "weight": 1,
+                            "actions": [
+                              {
+                                "kind": "teleport",
+                                "who": {
+                                  "kind": "triggering"
+                                },
+                                "to": "maxxenteleport_landing_209"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "cast",
+                "ability": {
+                  "family": "Ability",
+                  "key": "oteryn:ability.spell.maxxenteleport.teleport",
+                  "revision": "definition-r1"
+                },
+                "at": {
+                  "kind": "subject_position"
+                }
+              }
+            ]
+          },
+          {
+            "key": "fairy_heal_starts",
+            "trigger": {
+              "kind": "ability_cast",
+              "role": "professor_maxxen",
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.spell.glooth_fairy_healing",
+                "revision": "definition-r1"
+              }
+            },
+            "conditions": [
+              {
+                "kind": "health_percent",
+                "role": "professor_maxxen",
+                "op": "<",
+                "value_ppm": 100000
+              },
+              {
+                "kind": "flag",
+                "flag": "fairy_regeneration_cooldown",
+                "value": false
+              }
+            ],
+            "actions": [
+              {
+                "kind": "flag",
+                "flag": "fairy_regeneration_cooldown",
+                "value": true
+              },
+              {
+                "kind": "timer",
+                "timer": "fairy_regeneration_reset",
+                "operation": "start"
+              },
+              {
+                "kind": "timer",
+                "timer": "fairy_delayed_heal",
+                "operation": "start"
+              }
+            ]
+          },
+          {
+            "key": "fairy_heal_finishes",
+            "trigger": {
+              "kind": "timer_elapsed",
+              "timer": "fairy_delayed_heal"
+            },
+            "actions": [
+              {
+                "kind": "heal",
+                "subject": {
+                  "kind": "role",
+                  "role": "professor_maxxen"
+                },
+                "amount": {
+                  "kind": "range",
+                  "min": 7500,
+                  "max": 8000
+                }
+              }
+            ]
+          },
+          {
+            "key": "fairy_cooldown_ends",
+            "trigger": {
+              "kind": "timer_elapsed",
+              "timer": "fairy_regeneration_reset"
+            },
+            "actions": [
+              {
+                "kind": "flag",
+                "flag": "fairy_regeneration_cooldown",
+                "value": false
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "oteryn:encounter.field_fill_tyrn": {
+    "kind": "Encounter",
+    "profile": {
+      "encounter_type": "Boss",
+      "scope": "Instance",
+      "details": {
+        "display_name": "Source core: tyrn",
+        "participants": [
+          {
+            "role": "tyrn",
+            "creatures": [
+              {
+                "family": "Creature",
+                "key": "oteryn:creature.tyrn",
+                "revision": "definition-r1"
+              }
+            ]
+          }
+        ],
+        "covers": [
+          {
+            "family": "Creature",
+            "key": "oteryn:creature.tyrn",
+            "revision": "definition-r1"
+          }
+        ],
+        "state": {
+          "flags": [
+            {
+              "name": "healing_locked",
+              "initial": false
+            }
+          ],
+          "timers": [
+            {
+              "name": "healing_reset",
+              "duration_ms": {
+                "min": 900000,
+                "max": 900000
+              },
+              "repeat": false
+            }
+          ]
+        },
+        "rules": [
+          {
+            "key": "begin_heal",
+            "trigger": {
+              "kind": "ability_cast",
+              "role": "tyrn",
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability.creature.tyrn.field-fill-tyrn_heal",
+                "revision": "definition-r1"
+              }
+            },
+            "conditions": [
+              {
+                "kind": "health_percent",
+                "role": "tyrn",
+                "op": "<",
+                "value_ppm": 200000
+              },
+              {
+                "kind": "flag",
+                "flag": "healing_locked",
+                "value": false
+              }
+            ],
+            "actions": [
+              {
+                "kind": "flag",
+                "flag": "healing_locked",
+                "value": true
+              },
+              {
+                "kind": "timer",
+                "timer": "healing_reset",
+                "operation": "start"
+              },
+              {
+                "kind": "heal",
+                "subject": {
+                  "kind": "role",
+                  "role": "tyrn"
+                },
+                "amount": {
+                  "kind": "range",
+                  "min": 5000,
+                  "max": 7500
+                }
+              }
+            ]
+          },
+          {
+            "key": "finish_heal",
+            "trigger": {
+              "kind": "timer_elapsed",
+              "timer": "healing_reset",
+              "each": "tyrn"
+            },
+            "actions": [
+              {
+                "kind": "flag",
+                "flag": "healing_locked",
+                "value": false
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

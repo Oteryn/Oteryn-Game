@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -26,7 +27,15 @@ LIMITS = {'catalog': 32 * 1024**2, 'source_selection': 256 * 1024,
           'item_profiles': 8 * 1024**2, 'spell_appearances': 8 * 1024**2,
           'build_training': 8 * 1024**2, 'familiar_config': 4096,
           'familiar_defenses': 32 * 1024, 'wheel_profile': 64 * 1024,
-          'source_world': 8 * 1024**2}
+          'source_world': 8 * 1024**2, 'progression': 256 * 1024,
+          'item_keys': 8 * 1024**2, 'loot_tables': 8 * 1024**2}
+ITEM_DEFINITIONS = ROOT / 'content/items/definitions'
+ITEM_KEYS = NATIVE / 'item-keys.json'
+CREATURE_DEFINITIONS = ROOT / 'content/creatures/definitions'
+CREATURE_PROFILES = CREATURE_DEFINITIONS / 'spell-native-profiles.json'
+LOOT_DEFINITIONS = ROOT / 'content/loot'
+LOOT_TABLES = NATIVE / 'loot-tables.json'
+LOOT_RECORDS_MAX = 4096
 
 
 def digest(raw: bytes) -> str:
@@ -40,6 +49,33 @@ def encoded(document: dict) -> bytes:
 def read(path: Path) -> tuple[bytes, dict]:
     raw = path.read_bytes()
     return raw, json.loads(raw.decode('utf-8'))
+
+
+def item_keys(definitions: Path = ITEM_DEFINITIONS) -> bytes:
+    """The Item key set of the definition shards (MAP-ITEM-REF-1): one [key, revision] per Item,
+    ascending by the key's UTF-8 bytes, so a key's index is its Item compact id."""
+    revisions = {}
+    for path in sorted(definitions.glob('items-*.json')):
+        _, shard = read(path)
+        if shard['family'] != 'Item':
+            raise ValueError(f'{path.name} is not an Item shard')
+        for record in shard['records']:
+            ref = record['definition']['identity']
+            if ref['family'] != 'Item' or ref['key'] in revisions:
+                raise ValueError(f"Item record family, or an Item key given twice: {ref['key']}")
+            revisions[ref['key']] = ref['revision']
+    keys = sorted(revisions, key=lambda key: key.encode('utf-8'))
+    rows = ',\n'.join(json.dumps([key, revisions[key]], ensure_ascii=False) for key in keys)
+    return ('{"schema":"OTERYN_NATIVE_ITEM_KEYS/v1","records":[\n' + rows + '\n]}\n').encode('utf-8')
+
+
+def refresh_item_keys(output: Path = ITEM_KEYS) -> str:
+    """Writes the Item key set. It is pinned only beside a progression pin (OTNGP07, D879)."""
+    raw = item_keys()
+    if len(raw) > LIMITS['item_keys']:
+        raise ValueError('Native input exceeds bounded provider size: item_keys')
+    output.write_bytes(raw)
+    return digest(raw)
 
 
 def identity(ref: dict) -> tuple[str, str, str]:
@@ -315,6 +351,94 @@ def dependency_report(creatures: dict, presentations: dict, familiars: Path, pro
             'runtime_qualification': 'Native loader qualifies Creature/Behavior/Presentation and optional owner profiles; dependency carrier is a separate source sidecar and does not authorize monster AI.'}
 
 
+def item_facts(definitions: Path = ITEM_DEFINITIONS) -> dict:
+    """Admission facts of every Item definition, by key: the only source of the loot section's
+    `items` list (ARCH-KILL-REWARD-LOGOUT-1 §1.1, CP D929)."""
+    facts = {}
+    for path in sorted(definitions.glob('items-*.json')):
+        _, shard = read(path)
+        for record in shard['records']:
+            definition = record['definition']
+            container = definition.get('semantics', {}).get('container', {})
+            capacity = container.get('value', {}).get('capacity', {}) if container.get('state') == 'KNOWN' else {}
+            facts[definition['identity']['key']] = {
+                'item': definition['identity'], 'materializable': definition['materializable'] is True,
+                'container_capacity': capacity['value'] if capacity.get('state') == 'KNOWN' else None}
+    return facts
+
+
+def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIONS,
+                loot_definitions: Path = LOOT_DEFINITIONS, item_definitions: Path = ITEM_DEFINITIONS) -> bytes:
+    """The `loot_tables` section (OTERYN_NATIVE_LOOT_TABLES/v1, OTNGP08): one `creature_loot` row per
+    pinned Creature profile with its definition's `loot` reference copied as is (`null` for a
+    profile with no Creature definition), exactly the referenced loot tables, and the admission
+    facts of every Item those tables and the pinned corpses name. A named Item missing from the
+    Item definitions refuses the section."""
+    definitions = {}
+    for path in sorted(creature_definitions.glob('creatures-*.json')):
+        _, shard = read(path)
+        for record in shard['records']:
+            definitions[record['definition']['identity']['key']] = record['definition']
+    tables = {}
+    for path in sorted(loot_definitions.glob('loot-*.json')):
+        _, shard = read(path)
+        for record in shard['records']:
+            definition = record['definition']
+            if definition['identity']['key'] in tables:
+                raise ValueError(f"Loot table given twice: {definition['identity']['key']}")
+            tables[definition['identity']['key']] = definition
+    facts = item_facts(item_definitions)
+    bindings, named, used = {}, {}, {}
+
+    def name(ref):
+        fact = facts.get(ref['key'])
+        if ref['family'] != 'Item' or fact is None or fact['item'] != ref:
+            raise ValueError(f"Item named by the loot section is not an exact Item definition: {ref['key']}")
+        named[ref['key']] = fact
+
+    for record in creatures['records']:
+        target = record['profile']['target']
+        if target['key'] in bindings:
+            raise ValueError(f"Creature profile given twice: {target['key']}")
+        definition = definitions.get(target['key'])
+        loot = None
+        if definition is not None:
+            if definition['identity'] != target:
+                raise ValueError(f"Creature profile differs from its definition: {target['key']}")
+            corpse = record['profile']['data']['profile']['details'].get('corpse_item')
+            if corpse is not None:
+                name(corpse)
+            loot = definition['loot']
+            if loot is not None:
+                table = tables.get(loot['key'])
+                if table is None or table['identity'] != loot:
+                    raise ValueError(f"Creature loot reference has no exact loot table: {loot['key']}")
+                used[loot['key']] = table
+                for entry in table['entries']:
+                    name(entry['item'])
+        bindings[target['key']] = {'creature': target, 'loot': loot}
+    if max(len(bindings), len(used), len(named)) > LOOT_RECORDS_MAX:
+        raise ValueError('Loot section exceeds its record bound')
+    order = lambda rows: [rows[key] for key in sorted(rows, key=lambda key: key.encode('utf-8'))]
+    line = lambda value: json.dumps(value, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+    lists = {'creature_loot': order(bindings),
+             'tables': [{key: table[key] for key in ('identity', 'algorithm', 'entries')} for table in order(used)],
+             'items': order(named)}
+    body = ',\n'.join(f'"{key}":[\n' + ',\n'.join(line(row) for row in rows) + '\n]' for key, rows in lists.items())
+    return ('{"schema":"OTERYN_NATIVE_LOOT_TABLES/v1",\n' + body + '}\n').encode('utf-8')
+
+
+def refresh_loot_tables(output: Path = LOOT_TABLES) -> str:
+    """Writes the loot section of the production Creature profiles. It is pinned only beside the
+    Item key set (OTNGP08)."""
+    _, creatures = read(CREATURE_PROFILES)
+    raw = loot_tables(creatures)
+    if len(raw) > LIMITS['loot_tables']:
+        raise ValueError('Native input exceeds bounded provider size: loot_tables')
+    output.write_bytes(raw)
+    return digest(raw)
+
+
 def build(args) -> dict:
     output = args.out
     output.mkdir(parents=True, exist_ok=True)
@@ -353,11 +477,15 @@ def build(args) -> dict:
     providers = {'item_profiles': args.items, 'spell_appearances': args.appearances,
                  'build_training': args.training, 'familiar_config': args.familiar_config,
                  'familiar_defenses': args.familiar_defenses, 'wheel_profile': args.wheel,
-                 'source_world': args.source_world}
+                 'source_world': args.source_world,
+                 'progression': getattr(args, 'progression', None)}
     for key, path in providers.items():
         if path:
             raw, _ = read(path)
             payloads[key] = raw
+    if 'progression' in payloads:
+        payloads['item_keys'] = item_keys()  # OTNGP07: the Item key set rides only with progression
+        payloads['loot_tables'] = loot_tables(creatures)  # OTNGP08: the loot section rides with the key set
     appearance_source = getattr(args, 'appearance_source', None)
     if appearance_source:
         import build_spell_appearances
@@ -435,7 +563,15 @@ def build(args) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    if sys.argv[1:] == ['--refresh-item-keys']:
+        print(json.dumps({'item_keys_sha256': refresh_item_keys()}))
+        return
+    if sys.argv[1:] == ['--refresh-loot-tables']:
+        print(json.dumps({'loot_tables_sha256': refresh_loot_tables()}))
+        return
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     epilog='--refresh-item-keys alone regenerates item-keys.json; '
+                                            '--refresh-loot-tables alone regenerates loot-tables.json')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--catalog', type=Path, default=SAMPLES / 'executable-spell-catalog.json')
     parser.add_argument('--selection', type=Path, default=SAMPLES / 'executable-spell-source-selection.json')
@@ -455,6 +591,8 @@ def main():
     parser.add_argument('--familiar-defenses', type=Path, default=NATIVE / 'familiar-defenses.json')
     parser.add_argument('--wheel', type=Path, default=NATIVE / 'wheel-profile.json')
     parser.add_argument('--source-world', type=Path)
+    parser.add_argument('--progression', type=Path,
+                        help='canonical progression section (build_progression.py --section-out); selects OTNGP06')
     parser.add_argument('--native-map-profile', choices=('accepted-entry-r1', 'source-qualified-spell-entry-r2'), default='accepted-entry-r1')
     args = parser.parse_args()
     if args.source_world and args.native_map_profile != 'accepted-entry-r1':

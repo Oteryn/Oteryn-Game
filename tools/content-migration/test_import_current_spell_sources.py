@@ -14,7 +14,7 @@ import import_spell_families as baseline
 class CurrentSourceImportTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.generated = baseline.outputs()
+        cls.generated = baseline.baseline_outputs()
         cls.config = json.loads((current.ROOT / current.INPUT).read_bytes())
 
     def test_import_preserves_identities_native_profiles_and_alias_selection(self):
@@ -73,7 +73,7 @@ class CurrentSourceImportTests(unittest.TestCase):
         self.assertEqual(manifest['catalog']['sha256'], current.digest(actual[current.CATALOG]))
         self.assertEqual(manifest['source_selection']['sha256'], current.digest(actual[current.SELECTION]))
         self.assertEqual(manifest['creature_profiles']['sha256'], current.digest(actual[current.CREATURE_PROFILES]))
-        self.assertEqual(self.generated, baseline.outputs())
+        self.assertEqual(self.generated, baseline.baseline_outputs())
 
     def test_source_formulas_preserve_magnitudes_and_reach_formula_collection(self):
         actual = current.outputs(current.ROOT, self.generated)

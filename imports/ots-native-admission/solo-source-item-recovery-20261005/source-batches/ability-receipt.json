@@ -1,0 +1,22 @@
+{
+  "status": "DECLARATION_ONLY_FULL_LITERAL_CENSUS_NOT_NATIVE_ADMISSION",
+  "targets": 33975,
+  "own_rows": 45721,
+  "maxima": {
+    "events": 17,
+    "direct_assignments": 18,
+    "lexeme_UTF8_bytes": 209,
+    "serialized_bytes": 15839
+  },
+  "inputs": {
+    "source-flag-read-write-registry.json": "f9b0cae9b18722142c8afad2abb50ea7c453c604d6ec561b4265388d50fe5c2c",
+    "source-binding-phase-proof.json": "63a2fb3f3f11418e4dde261bf99c28b82f1b5537ff781563de17bc853fb5f670",
+    "/tmp/oteryn-imbuement-proposal/imports/ots-source-evidence/upstream-items-source-first/xml/canary-47df.observations.jsonl.gz": "78495ce25c8b9dbf95e2ce8d0c2c9252aef0a306e859d361d9f1d237fa604fb3",
+    "/tmp/oteryn-imbuement-proposal/imports/ots-source-evidence/upstream-items-source-first/xml/crystal-ff7.observations.jsonl.gz": "8ef46731476f5ea6f908c127599ede180f270278fe9395e2da23676325c42856",
+    "/tmp/oteryn-imbuement-proposal/imports/ots-source-evidence/upstream-items-source-first/xml/crystal-00ce.observations.jsonl.gz": "6ce326ada6a4e8ea0880761822f835b59b381544db612b1f5ad7c2212e106861"
+  },
+  "output_sha256": "8b30828e38643f41059eff8e1c3cd419f20e67c3ba64b2575c713b20cd17dd7c",
+  "actual_CPP_execution": "UNKNOWN",
+  "final_sparse_members": "UNKNOWN",
+  "Native_promotions": 0
+}

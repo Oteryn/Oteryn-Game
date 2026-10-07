@@ -31,6 +31,10 @@ use oteryn_protocol_oteryn::item_view::{
     CAPABILITY_ITEM_EQUIP_DROP_V1, CAPABILITY_ITEM_VIEW_MOVE_V1, COMMAND_TYPE_ITEM_MOVE_INTENT,
     STATE_DOMAIN_CHARACTER_INVENTORY, STATE_DOMAIN_OPEN_CONTAINER,
 };
+use oteryn_protocol_oteryn::npc_service::{
+    CAPABILITY_NPC_SERVICE_V1, COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT,
+    STATE_DOMAIN_NPC_CONVERSATION, STATE_DOMAIN_NPC_TRADE_WINDOW,
+};
 use oteryn_protocol_oteryn::quest_log::{
     CAPABILITY_QUEST_LOG_V1, COMMAND_TYPE_QUEST_LOG_QUERY, STATE_DOMAIN_QUEST_LOG,
 };
@@ -49,11 +53,57 @@ pub(crate) struct OfferedCapability {
     pub(crate) requires: &'static [u32],
 }
 
-/// The production offered set: the registry's `offered: true` entries, ascending by ID. VIS-3
-/// offers capability 6 `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and
-/// ATTACK-1b capability 17 `ATTACK_V1`, which requires 6. A
-/// test keeps it equal to the registry and within `REGISTERED_CAPABILITY_IDS_V1`.
+/// The production offered set for a generation without a non-empty Item key set: the registry's
+/// `offered: true` entries except capability 4, ascending by ID. VIS-3 offers capability 6
+/// `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and ATTACK-1b capability
+/// 17 `ATTACK_V1`, which requires 6. A test keeps it equal to the registry and within
+/// `REGISTERED_CAPABILITY_IDS_V1`.
 pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_PACED_MOVEMENT_V1,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_ATTACK_V1,
+        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
+    },
+];
+
+/// The offered set of a World booted from a bundle (MAP-CUTOVER-1b): the Item view set (which
+/// offers 4 `ITEM_VIEW_MOVE_V1`) plus capability 18 `WORLD_MAP_VIEW_V1`, which requires 4 and 6.
+/// A bundle World boots only against a generation whose Item key set names every bundle Item.
+/// Only a bundle World returns it; the registry entry stays `offered: false` and its `offer_gate`
+/// names this offer. 18 is above every offered ID, so appending it keeps the set ascending.
+pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
+    const WORLD_MAP_VIEW: OfferedCapability = OfferedCapability {
+        id: CAPABILITY_WORLD_MAP_VIEW_V1,
+        requires: &[
+            CAPABILITY_ITEM_VIEW_MOVE_V1,
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        ],
+    };
+    let mut set = [WORLD_MAP_VIEW; ITEM_VIEW_OFFERED_CAPABILITIES.len() + 1];
+    let mut index = 0;
+    while index < ITEM_VIEW_OFFERED_CAPABILITIES.len() {
+        set[index] = ITEM_VIEW_OFFERED_CAPABILITIES[index];
+        index += 1;
+    }
+    set
+};
+
+/// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
+/// requires 6, for a generation that pins a non-empty Item key set: the registry's whole
+/// `offered: true` set. Part B offers it together with the composed corpse observation, item
+/// target and corpse take.
+pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
+    OfferedCapability {
+        id: CAPABILITY_ITEM_VIEW_MOVE_V1,
+        requires: &[CAPABILITY_WORLD_SPATIAL_ENTITIES],
+    },
     OfferedCapability {
         id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
         requires: &[],
@@ -88,6 +138,11 @@ const GATED: &[(u32, &[u32], &[u32])] = &[
             STATE_DOMAIN_CHARACTER_BESTIARY,
             STATE_DOMAIN_CHARACTER_CHARMS,
         ],
+    ),
+    (
+        CAPABILITY_NPC_SERVICE_V1,
+        &[COMMAND_TYPE_NPC_TALK_INTENT, COMMAND_TYPE_NPC_TRADE_INTENT],
+        &[STATE_DOMAIN_NPC_CONVERSATION, STATE_DOMAIN_NPC_TRADE_WINDOW],
     ),
     (
         CAPABILITY_ITEM_VIEW_MOVE_V1,

@@ -4,7 +4,7 @@
   "kind": "ruleset",
   "owner": "Character progression",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Level/experience progression rules."
+  "notes": "experience-table.json (levels 1..=2000 and the terminal threshold, from the public formula in exact integers), reward-policy.json, declared-differences.json; produced by tools/content-schema/character-progression/; evidence in docs/reference/experience-table-20261005/. Level/experience progression rules."
 }

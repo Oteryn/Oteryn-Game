@@ -4,6 +4,9 @@
 - Date: 2026-08-06
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
 - Applies to: product vision, gameplay, client, content, creator tooling, operations, security, production process, community and long-term sustainability
+- Reconciled: 2026-10-06 (owner ruling of 2026-10-06)
+
+**Reconciled 2026-10-06.** Coverage statuses were reconciled against accepted or merged decisions only; a decision whose status line is `CANDIDATE` does not count, and partial coverage stays open with a note of what remains. Every changed entry carries a "Reconciled 2026-10-06" note with its locator (path, plus PR where available); previous statuses are kept in the status line, and no entry was removed. Pointers to `ARCH-ALPHA-OPS-0`, `ARCH-LIVE-READINESS-0` and `ARCH-I18N-A11Y-CREATIVE-0` name owner decisions that are not yet on `main` (open PRs Oteryn/Oteryn-Game#1878, #1879 and #1880; each pointer below is marked pending); a pointer is not acceptance, and each decision's contract amendments to this file apply only through its own packets. `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` is a historical 2026-08-24 snapshot, not current lifecycle authority. Live programme order is issue #162 and its `STATE` comment, not this register.
 
 ## Purpose
 
@@ -19,6 +22,8 @@ This document distinguishes three states:
 This register does not select technologies, formulas, schemas, algorithms, service boundaries, monetization, art direction or final gameplay rules. It does not authorize implementation. Accepted decisions remain in ADRs and dedicated contracts.
 
 The immediate programme action is the source-only historical marker in `blakinio/otclient` for the completed destination cutover. After that closeout, `FND-ID-01` is the next architecture gate. Product and creative analysis may proceed in parallel when it does not redefine accepted foundation boundaries or delay that ordered foundation sequence.
+
+Reconciled 2026-10-06: the paragraph above is historical. The `blakinio/otclient` source-only marker and lifecycle closeout are complete (`blakinio/otclient#274`, #275) and `FND-ID-01` is accepted and merged (`2c584543cd1e3758958755478a6cc6ed3d39a8a9`), both recorded in `docs/architecture/FOUNDATION_DECISION_BACKLOG.md`. The current next action is derived from issue #162, not from this paragraph.
 
 ## Already accepted foundation coverage
 
@@ -62,11 +67,13 @@ Still unresolved:
 - explicit design pillars and anti-pillars used to reject technically attractive but product-incoherent features;
 - observable product-success criteria beyond technical correctness.
 
+Reconciled 2026-10-06: status unchanged (PARTIALLY_ACCEPTED). `GAME-VISION-01` is accepted at minimum gate scope by `docs/architecture/GAME-VISION-01_MINIMUM_OWNER_BASELINE.md` (2026-08-11) and the further `docs/architecture/GAME-VISION-01_*_OWNER_BASELINE.md` files (historical snapshot `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97): ACCEPTED / LIFECYCLE_CLOSED). That baseline explicitly defers the exact Reference revision baseline, the revision naming scheme, the pillars/anti-pillars catalogue, the first Evolved feature inventory and branding, so this entry stays open for those items.
+
 Risk if omitted: the project can produce a strong generic engine without a coherent game identity, causing incompatible mechanics, content workflows and client UX to be designed independently.
 
 ## 2. Creative, visual, audio and readability direction
 
-- Coverage status: **NEWLY_IDENTIFIED**
+- Coverage status: **NEWLY_IDENTIFIED** — owner decision in progress: `ARCH-I18N-A11Y-CREATIVE-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_I18N_A11Y_CREATIVE_DIRECTION_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1880, not yet on main))
 - Recommended candidate gate: `CREATIVE-DIRECTION-01`
 - Priority: before renderer, asset pipeline and large-scale content production are frozen
 
@@ -83,13 +90,15 @@ Still unresolved:
 - asset provenance, licensing and replacement strategy for all reference content;
 - which presentation choices are shared by the game client and Oteryn Studio.
 
+Reconciled 2026-10-06: status unchanged; no accepted decision covers this gate. Pointer to `ARCH-I18N-A11Y-CREATIVE-0` added per the owner ruling of 2026-10-06; the pointer is not acceptance.
+
 Risk if omitted: renderer, asset format, authoring tools and content budgets may be frozen before the intended presentation is known.
 
 # B. Foundation state and unresolved contracts
 
 ## 3. Workspace, migration and dependency structure
 
-- Coverage status: **ACCEPTED / CROSS_REPOSITORY_CLOSEOUT_PENDING**
+- Coverage status: **ACCEPTED** (reconciled 2026-10-06; was **ACCEPTED / CROSS_REPOSITORY_CLOSEOUT_PENDING**)
 - Completed gates: `FND-01`, `VSL-02` and the atomic destination cutover
 - Canonical destination merge: `78988f72a80cc904aa9176ae850c50d4efa0b0f0`
 - Remaining action: source-only historical marker in `blakinio/otclient`
@@ -106,9 +115,11 @@ Still unresolved only as cross-repository closeout:
 
 - merge a source-only `blakinio/otclient` marker pointing to the exact destination merge and preventing the old path from becoming a second canonical product line.
 
+Reconciled 2026-10-06: the cross-repository closeout above is complete. `blakinio/otclient#274` and #275 delivered the source-only marker and lifecycle closeout (`docs/architecture/FOUNDATION_DECISION_BACKLOG.md`, "Already accepted" item 2 and item 12). The remaining-action lines in this entry are historical.
+
 ## 4. Identifier, protocol, runtime and admission contracts
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gates: `FND-ID-01`, `FND-02`, `FND-03`, `FND-04`
 
 Still unresolved:
@@ -120,9 +131,11 @@ Still unresolved:
 - session issuance, admission, character lease, generation fencing and duplicate-login behavior;
 - deterministic execution and failure scenarios at transport/runtime boundaries.
 
+Reconciled 2026-10-06: all four gates are accepted. `FND-ID-01`: `docs/architecture/FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md`, merge `2c584543cd1e3758958755478a6cc6ed3d39a8a9`, lifecycle PR #87. `FND-02`, `FND-03`, `FND-04`: accepted and lifecycle-closed per `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303) and historical snapshot `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97); contracts `docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md`, `docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md` and `docs/architecture/FND-04_IDENTITY_GAME_SESSION_ADMISSION_CHARACTER_LEASE_CONTRACT.md` (canonical-on-merge headers); bounded runtime primitives merged in PR #59. The question list above is historical. Adjacent, not absorbed: the measured tick and performance budget is owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main)); hard numeric limits stay with registry, `PERF-01` and DUR evidence.
+
 ## 5. Durable gameplay and content foundations
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **PARTIALLY_ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gates: `DUR-01` through `DUR-04`
 
 Still unresolved:
@@ -134,9 +147,11 @@ Still unresolved:
 - scripting/capability boundary, deterministic execution and resource limits;
 - content revision compatibility and safe migration of live durable state.
 
+Reconciled 2026-10-06: `DUR-01`, `DUR-02` and `DUR-03` are accepted and lifecycle-closed per `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303) and historical snapshot `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97); `docs/architecture/DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md` is OWNER_ACCEPTED. ADR-0021 world-map runtime loading is accepted by `docs/architecture/reviews/OTERYN_GAME_ACCEPT_SOCIAL_MAP0_ACCEPTANCE_DECISION_2026-10-04.md` (PR #1771). Still open: the exact World Project and World Bundle encoding (`docs/architecture/OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md` (PR #311) leaves it to the `DUR-04` format spike); backup/restore and safe migration of live durable state, now owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main)). CONFLICT: the snapshot records `DUR-04` as ACCEPTED / LIFECYCLE_CLOSED, while `docs/architecture/DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md` still reads `PROPOSED / IN_REVIEW / NOT_STARTED`; this entry does not count `DUR-04` as accepted until the owner resolves the conflict.
+
 ## 6. Analytics event contracts
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **PARTIALLY_ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gates: `ANL-01` through `ANL-04`
 
 Still unresolved:
@@ -147,11 +162,13 @@ Still unresolved:
 - anomaly/economy/integrity projections and evidence quality;
 - investigation access, retention, pseudonymization and human-review workflows.
 
+Reconciled 2026-10-06: `ANL-01` is accepted per `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); `ANL-02` and `ANL-03` are accepted by `docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309). Still open: `ANL-04` (read-only investigation access and human-review workflow; expansion gate, not accepted); the `ANL-03` retention ceilings and enforcement/GM contract left open by PR #309. Retention and pseudonymization lifecycle is owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1879, not yet on main)) (`DATA-PRIVACY-01`).
+
 # C. Core gameplay domain
 
 ## 7. Character lifecycle and progression
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gate: `GAME-CHAR-01`
 - Must precede: final durable character schema in `DUR-02`
 
@@ -166,9 +183,11 @@ Still unresolved:
 - rename, transfer and ruleset-version migrations;
 - deterministic formulas and progression fixtures.
 
+Reconciled 2026-10-06: `GAME-CHAR-01` is accepted (`docs/architecture/GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md`, `docs/architecture/GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md`; `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); historical snapshot `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97)). Adjacent questions preserved: exact formulas and values stay profile/ruleset content; the death refinement `docs/architecture/reviews/OTERYN_GAME_DEATH0_CHARACTER_DEATH_RECEIPT_DECISION_2026-09-28.md` and the stamina/offline-training decision `docs/architecture/reviews/OTERYN_GAME_OFFLINE0_STAMINA_AND_OFFLINE_TRAINING_DECISION_2026-10-01.md` are CANDIDATE and do not count.
+
 ## 8. Item model, equipment and transformations
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gate: `GAME-ITEM-01`
 - Must precede: final item transaction model in `DUR-03`
 
@@ -184,9 +203,11 @@ Still unresolved:
 - content-revision migration and deterministic derived-stat ordering;
 - integration with loot, trade, market, bank, depot, mail, rewards and houses.
 
+Reconciled 2026-10-06: `GAME-ITEM-01` is accepted per `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303) and historical snapshot `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97). Adjacent consumers stay with their own entries: item use (`ITEM-USE-0`) and bank (`BANK-0`) are accepted by `docs/architecture/reviews/OTERYN_GAME_ACCEPT_ITEMUSE_BANK0_ACCEPTANCE_DECISION_2026-10-04.md` (PR #1750); houses by `docs/architecture/reviews/OTERYN_GAME_ACCEPT_SOCIAL_MAP0_ACCEPTANCE_DECISION_2026-10-04.md` (PR #1771); market, direct trade, mail and depot remain CANDIDATE (entry 17).
+
 ## 9. Movement, collision and visibility
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **PARTIALLY_ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gate: `VSL-MOVE-01`; later refined by runtime and client contracts
 
 Still unresolved:
@@ -201,9 +222,11 @@ Still unresolved:
 - chunk/region boundary behavior during movement;
 - deterministic legality and acceptance fixtures.
 
+Reconciled 2026-10-06: `VSL-MOVE-01` is accepted as a bounded minimal gate by `docs/architecture/OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md` (PR #311). Still open: exact movement, LOS and timing values (evidence-gated by that acceptance); the visibility refinement `MOVE-RL-11` (D84-D87, `docs/architecture/reviews/OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md`, PR #1141) is CANDIDATE and does not count; bounded prediction stays with `ALPHA-CLIENT-01`. Bounded adjacent input: `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md` (PR #1864).
+
 ## 10. Combat, abilities, spells and conditions
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **PARTIALLY_ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gates: `VSL-COMBAT-01`, `GAME-ABILITY-01`, `ALPHA-RULESET-01`
 
 Still unresolved:
@@ -219,9 +242,11 @@ Still unresolved:
 - PvP, friendly fire, protection zones, skull/frag and ruleset boundaries;
 - server authority versus client prediction/presentation.
 
+Reconciled 2026-10-06: `GAME-ABILITY-01` is accepted (`docs/architecture/GAME-ABILITY-01_WHOLE_GATE_OWNER_ACCEPTANCE_BASELINE.md`; `docs/architecture/OTERYN_V2_POST_GAME_ABILITY_ACCEPTANCE_RECONCILIATION_20260816.md`, PR #306) and `VSL-COMBAT-01` is accepted as a bounded minimal gate by `docs/architecture/OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md` (PR #311). Parties and PvP (`PARTY-PVP-0`) are accepted by `docs/architecture/reviews/OTERYN_GAME_ACCEPT_SOCIAL_MAP0_ACCEPTANCE_DECISION_2026-10-04.md` (PR #1771). Still open: `ALPHA-RULESET-01` is not accepted; auto-attack `docs/architecture/reviews/OTERYN_GAME_ATTACK0_ATTACK_TARGET_AND_AUTO_ATTACK_DECISION_2026-09-30.md`, conditions `docs/architecture/reviews/OTERYN_GAME_CONDITIONS0_ACTOR_CONDITIONS_DECISION_2026-09-30.md` and multi-hit damage `docs/architecture/reviews/OTERYN_GAME_D4_MULTI_HIT_DAMAGE_RECEIPT_DECISION_2026-09-29.md` (PR #1218) are CANDIDATE and do not count.
+
 ## 11. Creature AI, spawn, NPC and pathfinding
 
-- Coverage status: **REGISTERED_UNRESOLVED** with an NPC-specific precision gap
+- Coverage status: **PARTIALLY_ACCEPTED** with an NPC-specific precision gap (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gate: `GAME-AI-01`; NPC content also intersects `ALPHA-CONTENT-01`
 
 Still unresolved:
@@ -243,9 +268,11 @@ rejection, spawns, respawn and occupancy, channel-local spawn scope, summon owne
 and despawn, and overload items above. Boss phases and encounter recovery go to BOSS-RAID-0; NPC
 behaviour stays unresolved.
 
+Reconciled 2026-10-06: `GAME-AI-01` is accepted by `docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309), which leaves open the FSM/framework choice, the pathfinding algorithm, numeric ceilings, the event/encounter durable owner, controlled-actor reward attribution and exact Reference values. NPC presence, walking, voices and focus are accepted by `NPC-BEHAVIOUR-0` (`docs/architecture/reviews/OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md`, accepted via `ARCH-BATCH-ROOT-PACKETS-V1`, PR #1733); NPC service and conversation runtime (`NPC-0`) stays CANDIDATE. The `CREATURE-AI-0` amendment above stays pending: its decision header is CANDIDATE and `docs/architecture/reviews/OTERYN_GAME_ARCH_BATCH_CORE_LOOP_PACKETS_2026-10-04.md` (PR #1735) keeps it a candidate. CONFLICT: `docs/architecture/reviews/OTERYN_GAME_SPAWN1A_FIXTURE_SPAWN_ROOM_R2_DECISION_2026-10-04.md` calls `CREATURE-AI-0` accepted. Boss phases go to `BOSS-RAID-0` (CANDIDATE).
+
 ## 12. World interaction and environmental mechanics
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **PARTIALLY_ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gate: `GAME-INTERACTION-01`
 
 Still unresolved:
@@ -258,6 +285,8 @@ Still unresolved:
 - reset, persistence, recovery and content-revision migration;
 - script capabilities, typed actions and abuse limits;
 - deterministic authoring and tests.
+
+Reconciled 2026-10-06: `GAME-INTERACTION-01` is accepted by `docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309), which leaves open the movement/relocation owner, the durable writable-text owner, the payload registry and numeric ceilings. Item use on self, target, tile, creature and item is accepted by `ITEM-USE-0` (`docs/architecture/reviews/OTERYN_GAME_ITEM_USE0_USING_ITEMS_DECISION_2026-09-30.md`, accepted by `docs/architecture/reviews/OTERYN_GAME_ACCEPT_ITEMUSE_BANK0_ACCEPTANCE_DECISION_2026-10-04.md` (PR #1750)). Doors, levers, fields and the world clock (`docs/architecture/reviews/OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION_2026-10-01.md`) remain CANDIDATE.
 
 ## 13. Quests, narrative and dialogue runtime
 
@@ -278,6 +307,8 @@ Still unresolved:
 - deterministic headless tests for complex quest mechanics;
 - graphical authoring, debugging and simulation support in Oteryn Studio.
 
+Reconciled 2026-10-06: status unchanged. `docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md`, `docs/architecture/reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` and `docs/architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md` are CANDIDATE and do not count. CONFLICT: the archived task record `docs/agents/tasks/archive/OTV2-2026100x-quest-state-1.md` states "QUEST-STATE-0 accepted (#1661)" while the decision header still reads CANDIDATE.
+
 Risk if left only inside a broad content gate: quests may become an unbounded scripting subsystem with weak state ownership and poor migration/testability.
 
 ## 14. Dynamic events, raids, bosses and living-world state
@@ -297,11 +328,13 @@ Still unresolved:
 - crash recovery and reward reconciliation;
 - use of `EncounterZone`, `RaidCell` and `RaidAnchor` geometry.
 
+Reconciled 2026-10-06: status unchanged. `docs/architecture/reviews/OTERYN_GAME_BOSS_RAID0_BOSSES_RAIDS_AND_BOSSTIARY_DECISION_2026-09-30.md` and `docs/architecture/reviews/OTERYN_GAME_ENCOUNTER_RT0_ENCOUNTER_RUNTIME_AND_BOSS_LEVERS_DECISION_2026-10-01.md` are CANDIDATE and do not count; `GAME-AI-01` (PR #309) leaves the event/encounter durable owner open.
+
 # D. Client and player experience
 
 ## 15. Native client architecture
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **PARTIALLY_ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gate: `ALPHA-CLIENT-01`
 
 Still unresolved:
@@ -318,9 +351,11 @@ Still unresolved:
 - supported operating systems, hardware and graphics backends;
 - reusable low-level components shared with Oteryn Studio.
 
+Reconciled 2026-10-06: `ALPHA-CLIENT-01` is accepted by `docs/architecture/OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md` (PR #309), which leaves open the UI, render, network, audio, updater and installer library choices, transport/runtime, Tier evidence and numeric ceilings. `docs/architecture/ADR-0020-native-client-gameplay-entry.md` has a Candidate header and does not count. Crash reporting has an owner-accepted pre-contract baseline only (`docs/architecture/CLIENT_CRASH_DIAGNOSTICS_PRIVACY_OWNER_BASELINE.md`). Client version and update is owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main)).
+
 ## 16. Localization, onboarding and accessibility
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **REGISTERED_UNRESOLVED** — owner decision in progress: `ARCH-I18N-A11Y-CREATIVE-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_I18N_A11Y_CREATIVE_DIRECTION_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1880, not yet on main))
 - Existing gate: `UX-I18N-A11Y-01`
 
 Still unresolved:
@@ -334,11 +369,13 @@ Still unresolved:
 - synchronization and persistence of accessibility settings;
 - automated and manual test strategy.
 
+Reconciled 2026-10-06: status unchanged; no accepted decision covers this gate. Pointer to `ARCH-I18N-A11Y-CREATIVE-0` added per the owner ruling of 2026-10-06; the pointer is not acceptance.
+
 # E. Economy, social systems and world topology
 
 ## 17. Economy, trade and value stability
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **PARTIALLY_ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gates: `EXP-ECONOMY-01`, `GAME-ITEM-01`, `DUR-03`
 
 Still unresolved:
@@ -351,9 +388,11 @@ Still unresolved:
 - concurrency, reconciliation, fraud and duplication resistance;
 - rollback and support correction without violating conservation.
 
+Reconciled 2026-10-06: `GAME-ITEM-01` and `DUR-03` are accepted per `docs/architecture/OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md` (PR #303); the account bank balance (`BANK-0`) is accepted by `docs/architecture/reviews/OTERYN_GAME_ACCEPT_ITEMUSE_BANK0_ACCEPTANCE_DECISION_2026-10-04.md` (PR #1750); the character gold fee boundary is accepted (`docs/architecture/reviews/OTERYN_GAME_CHARACTER_GOLD_FEE_BOUNDARY_DECISION_2026-09-30.md`, PR #1313). `EXP-ECONOMY-01` itself is not accepted. Still open: market, direct trade, mail and depot (`docs/architecture/reviews/OTERYN_GAME_MARKET0_WORLD_MARKET_DECISION_2026-09-30.md`, `docs/architecture/reviews/OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md`, `docs/architecture/reviews/OTERYN_GAME_MAIL0_PARCELS_AND_LETTERS_DECISION_2026-09-30.md`, `docs/architecture/reviews/OTERYN_GAME_DEPOT0_CHARACTER_DEPOT_DECISION_2026-09-30.md`: all CANDIDATE); sources, sinks and economy-health targets. Economy rollback and support correction is owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1879, not yet on main)).
+
 ## 18. Party, guild, chat, friends and presence
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **PARTIALLY_ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED**)
 - Existing gate: `EXP-SOCIAL-01`
 
 Still unresolved:
@@ -366,9 +405,11 @@ Still unresolved:
 - consistency during reconnect, channel switch and world transfer;
 - social abuse limits and audit needs.
 
+Reconciled 2026-10-06: parties and shared experience (`PARTY-PVP-0`) and guilds (`GUILD-0`) are accepted by `docs/architecture/reviews/OTERYN_GAME_ACCEPT_SOCIAL_MAP0_ACCEPTANCE_DECISION_2026-10-04.md` (PR #1771). Still open: chat (`docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md`) and VIP/friends (`docs/architecture/reviews/OTERYN_GAME_VIP0_VIP_LIST_DECISION_2026-09-30.md`) are CANDIDATE; presence and contact consent have an owner-accepted pre-contract baseline only (`docs/architecture/SOCIAL_PRESENCE_AND_CONTACT_CONSENT_OWNER_BASELINE.md`); cross-world scope and moderation remain open.
+
 ## 19. Houses
 
-- Coverage status: **REGISTERED_UNRESOLVED / DEFERRED**
+- Coverage status: **PARTIALLY_ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED / DEFERRED**)
 - Existing gate: `EXP-HOUSES-01`
 
 Still unresolved:
@@ -379,6 +420,8 @@ Still unresolved:
 - doors, guest lists, beds and persistence;
 - crash recovery and anti-duplication;
 - relationship to instances, channels and world lifecycle.
+
+Reconciled 2026-10-06: `EXP-HOUSES-01` whole-gate semantic architecture is owner-accepted (`docs/architecture/EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md`, DecisionStatus ACCEPTED, 2026-09-08, issue #220); house ownership, item custody and interior runtime (`HOUSE-OWN-0`, `HOUSE-CUSTODY-0`, `HOUSE-RUNTIME-0`) are accepted by `docs/architecture/reviews/OTERYN_GAME_ACCEPT_SOCIAL_MAP0_ACCEPTANCE_DECISION_2026-10-04.md` (PR #1771). Still open: beds (`docs/architecture/reviews/OTERYN_GAME_BED0_HOUSE_BEDS_DECISION_2026-10-01.md`, PR #1621) are CANDIDATE; numeric rent, auction and grace values, physical schema and the `ResidenceId` representation stay deferred by that baseline.
 
 ## 20. Instances, matchmaking, arenas and spectating
 
@@ -394,6 +437,8 @@ Still unresolved:
 - spectators, replay/event streams and privacy;
 - origin-channel return and duplicate-session prevention.
 
+Reconciled 2026-10-06: status unchanged. `docs/architecture/INSTANCE_SCOPE_AND_RUNTIME_OWNER_BASELINE.md` is an owner-accepted pre-contract baseline (2026-08-06) that states it does not complete any named gate.
+
 ## 21. World creation, transfer, merge and archival
 
 - Coverage status: **REGISTERED_UNRESOLVED / EXPANSION**
@@ -408,11 +453,13 @@ Still unresolved:
 - staged migration, rollback and verification;
 - backup/restore and channel-topology changes without changing logical world identity.
 
+Reconciled 2026-10-06: status unchanged; no accepted decision covers this gate. Backup/restore is owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main)); the rest stays EXPANSION.
+
 # F. Live operation, release and infrastructure
 
 ## 22. LiveOps and runtime configuration
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **REGISTERED_UNRESOLVED** — owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1879, not yet on main))
 - Existing gate: `PROD-LIVEOPS-01`
 
 Still unresolved:
@@ -425,9 +472,11 @@ Still unresolved:
 - safe defaults and fail-closed behavior;
 - separation from content bundles and executable deployment.
 
+Reconciled 2026-10-06: status unchanged; no accepted decision covers this gate. Pointer added per the owner ruling of 2026-10-06; the pointer is not acceptance.
+
 ## 23. GM, support and moderation operations
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **REGISTERED_UNRESOLVED** — owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1879, not yet on main))
 - Existing gate: `OPS-GM-01`
 
 Still unresolved:
@@ -440,9 +489,11 @@ Still unresolved:
 - dual control for high-risk mutations;
 - immutable administrative audit and emergency rollback.
 
+Reconciled 2026-10-06: status unchanged; no accepted decision covers this gate. `ARCH-LIVE-READINESS-0` also takes bug reporting and player support. The pointer is not acceptance.
+
 ## 24. Compatibility, release train, launcher and updater
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **REGISTERED_UNRESOLVED** — owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main))
 - Existing gates: `PROD-COMPAT-01`, `EXP-UPDATE-01`
 
 Still unresolved:
@@ -454,9 +505,11 @@ Still unresolved:
 - signed manifests, delta updates, CDN/mirror behavior and archive safety;
 - immutable release evidence and cross-repository contract locks.
 
+Reconciled 2026-10-06: status unchanged; no accepted decision covers these gates. `ARCH-ALPHA-OPS-0` takes client version and update; the pointer is not acceptance.
+
 ## 25. Performance, capacity and overload behavior
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **REGISTERED_UNRESOLVED** — owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main))
 - Existing gate: `PERF-01`
 
 Still unresolved:
@@ -472,9 +525,11 @@ Still unresolved:
 
 The cost dimension must be included in `PERF-01` evidence or later refined by a dedicated FinOps decision; no separate implementation gate is accepted here.
 
+Reconciled 2026-10-06: status unchanged; `PERF-01` is PLANNED in historical snapshot `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97). `ARCH-ALPHA-OPS-0` takes time/tick and the performance budget; the pointer is not acceptance. Bounded adjacent input only: `docs/architecture/reviews/OTERYN_GAME_ARCH_MAP_VIEWPORT_BUDGET_2026-10-06.md` (PR #1864).
+
 ## 26. Deployment, orchestration, recovery and observability
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **REGISTERED_UNRESOLVED** — owner decision in progress: `ARCH-ALPHA-OPS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1878, not yet on main))
 - Existing gates: `OPS-CHANNEL-01`, `EXP-OPS-01`, `EXP-OBS-01`
 
 Still unresolved:
@@ -488,6 +543,8 @@ Still unresolved:
 - structured logs, metrics, traces, correlation and alerts;
 - privacy and cardinality limits;
 - operational cost and ownership.
+
+Reconciled 2026-10-06: status unchanged; `OPS-CHANNEL-01` is PLANNED in historical snapshot `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97). `ARCH-ALPHA-OPS-0` takes observability, logging, metrics and SLOs, schema migration, and backup and DR; the pointer is not acceptance. Owner-accepted partial inputs only: GameNode boot composition (`docs/architecture/reviews/OTERYN_GAME_NODE_BOOT_COMPOSITION_DECISION_2026-09-24.md`, PR #830) and process registration/bootstrap auth (`docs/architecture/reviews/OTERYN_GAME_NODE_PROCESS_REGISTRATION_BOOTSTRAP_AUTH_DECISION_2026-09-22.md`).
 
 # G. Security, privacy and trust
 
@@ -507,9 +564,11 @@ Still unresolved:
 - privacy, false positives, sanctions and human review;
 - update/rollback behavior for compromised clients.
 
+Reconciled 2026-10-06: status unchanged. `docs/architecture/reviews/OTERYN_GAME_SEC_CLIENT01_CLIENT_INTEGRITY_AND_ANTI_BOT_DECISION_2026-10-01.md` is CANDIDATE and does not count. The threat model is owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1879, not yet on main)).
+
 ## 28. Product privacy and data lifecycle
 
-- Coverage status: **REGISTERED_UNRESOLVED**
+- Coverage status: **REGISTERED_UNRESOLVED** — owner decision in progress: `ARCH-LIVE-READINESS-0` (`docs/architecture/reviews/OTERYN_GAME_ARCH_LIVE_READINESS_2026-10-06.md` (pending in Oteryn/Oteryn-Game#1879, not yet on main))
 - Existing gate: `DATA-PRIVACY-01`
 
 Still unresolved:
@@ -521,6 +580,8 @@ Still unresolved:
 - consent and optional telemetry;
 - pseudonymous analytics and re-identification controls;
 - backup/audit exceptions and privacy-safe diagnostics.
+
+Reconciled 2026-10-06: status unchanged; no accepted decision covers this gate, and the pointer is not acceptance. Fragments only: `docs/architecture/reviews/OTERYN_CHARACTER_DURABLE_AUDIT_RETENTION_DECISION_2026-09-22.md` (owner-accepted), `docs/architecture/reviews/OTERYN_DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_DECISION_2026-09-27.md` (owner-selected, canonical acceptance pending) and `docs/architecture/CLIENT_CRASH_DIAGNOSTICS_PRIVACY_OWNER_BASELINE.md` (pre-contract).
 
 ## 29. Broader security and supply chain
 
@@ -583,7 +644,7 @@ Risk if omitted: technical CI can be mature while actual game production remains
 
 ## 32. Entitlements and commerce mechanics
 
-- Coverage status: **REGISTERED_UNRESOLVED / DEFERRED**
+- Coverage status: **PARTIALLY_ACCEPTED** (reconciled 2026-10-06; was **REGISTERED_UNRESOLVED / DEFERRED**)
 - Existing gate: `PROD-ENTITLEMENTS-01`
 
 Still unresolved:
@@ -607,6 +668,8 @@ D49) — see `docs/architecture/reviews/OTERYN_GAME_ACCOUNT_PROGRESS_AND_QUEST_7
 entitlement is usable. A purchased item is claimable on any compatible world of the profile family
 it was bought for. Delivery ownership, entitlement identity, expiry, revocation and refunds remain
 open here.
+
+Reconciled 2026-10-06: the game-side `PROD-ENTITLEMENTS-01` consumer contract is accepted (merge PR #20, `d40a225e`; closeout PR #27; recorded in historical snapshot `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` (issue #97) §8), which also ends the DEFERRED state. Still open: payment, the runtime product catalogue, refunds, chargebacks, fraud and delivery activation, which remain separately governed; Premium activation (`docs/architecture/reviews/OTERYN_GAME_PREMIUM_ACTIVATION_DECISION_2026-09-28.md`, PR #1118, and the later `OTERYN_GAME_PREMIUM_ACTIVATION*` files) is CANDIDATE and does not count.
 
 ## 33. Business and sustainability model
 
@@ -675,6 +738,8 @@ Still unresolved:
 1. Complete the source-only `blakinio/otclient` marker for the merged destination cutover.
 2. `FND-ID-01` — foundation identifier vocabulary.
 3. `GAME-VISION-01` — refine ADR-0010 into measurable parity scope, product pillars and launch strategy in parallel without blocking identifier analysis.
+
+Reconciled 2026-10-06: Track 0 is historical. Items 1 and 2 are complete (`blakinio/otclient#274`, #275; `FND-ID-01` merge `2c584543cd1e3758958755478a6cc6ed3d39a8a9`), and item 3 is accepted at minimum scope (entry 1). For the state of Tracks 1-3, see the reconciled entries above; current order is issue #162.
 
 ## Track 1 — before durable gameplay schemas freeze
 

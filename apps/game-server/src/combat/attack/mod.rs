@@ -21,15 +21,14 @@ mod target;
 #[cfg(test)]
 mod tests;
 
-#[cfg(test)]
-use block::BlockBudget;
+pub(crate) use block::BlockBudget;
 pub(crate) use constants::{AttackConstants, FightMode};
-pub(crate) use formulas::player_fist_formula;
 #[cfg(test)]
 use formulas::{
-    DefenceSource, armor_reduction_bounds, creature_melee_formula, defence_formula,
-    defence_mode_factor, player_melee_formula, zero_skill_defence_bounds,
+    DefenceSource, defence_formula, defence_mode_factor, player_melee_formula,
+    zero_skill_defence_bounds,
 };
+pub(crate) use formulas::{armor_reduction_bounds, creature_melee_formula, player_fist_formula};
 pub(crate) use target::{AttackState, SwingPoll, TargetFacts, TargetRefusal};
 #[cfg(test)]
 use target::{SwingWait, TargetCleared, TargetValidity};

@@ -1,0 +1,6 @@
+Actual executed code head: 7a3711a95ce2f2be7fd38567998d86672a0b01f0
+Binary SHA256: d67b785ab4193d8ddb9d0e641bf46047277c8921bb5f826a3a3b729f3dc24059
+Original exact log SHA256: bd52cb73a2be484d50f6f8ec5d8ac038886ba83629d8fa877df35e5f2d30d4ce
+running 1 test
+test monster_combat_lane::bone_map_admission_actual_tests::actual_source_map_association_admits_native_shared_hp_and_phase ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2393 filtered out; finished in 32.66s

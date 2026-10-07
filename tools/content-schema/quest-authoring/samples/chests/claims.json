@@ -45,7 +45,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "halls_of_hope/reward1",
+        "expression": "Storage.HallsOfHope.Reward1",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -92,7 +101,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "halls_of_hope/reward2",
+        "expression": "Storage.HallsOfHope.Reward2",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -139,7 +157,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "halls_of_hope/reward3",
+        "expression": "Storage.HallsOfHope.Reward3",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -186,7 +213,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "halls_of_hope/reward4",
+        "expression": "Storage.HallsOfHope.Reward4",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -233,7 +269,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "halls_of_hope/reward5",
+        "expression": "Storage.HallsOfHope.Reward5",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -7696,7 +7741,16 @@
             "key_binding": "canary:door-key/0010"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id0010",
+        "expression": "Storage.Quest.Key.ID0010",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -7744,7 +7798,16 @@
             "key_binding": "canary:door-key/0909"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id0909",
+        "expression": "Storage.Quest.Key.ID0909",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -7792,7 +7855,16 @@
             "key_binding": "crystalserver:door-key/3002"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3002",
+        "expression": "Storage.Quest.Key.ID3002",
+        "value": 1,
+        "source": {
+          "script": "data-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 224
+        }
+      }
     },
     {
       "identity": {
@@ -7840,7 +7912,16 @@
             "key_binding": "canary:door-key/3008"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3008",
+        "expression": "Storage.Quest.Key.ID3008",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -7888,7 +7969,16 @@
             "key_binding": "canary:door-key/3301"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3301",
+        "expression": "Storage.Quest.Key.ID3301",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -7936,7 +8026,16 @@
             "key_binding": "canary:door-key/3302"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3302",
+        "expression": "Storage.Quest.Key.ID3302",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -7984,7 +8083,16 @@
             "key_binding": "canary:door-key/3303"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3303",
+        "expression": "Storage.Quest.Key.ID3303",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8032,7 +8140,16 @@
             "key_binding": "canary:door-key/3304"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3304",
+        "expression": "Storage.Quest.Key.ID3304",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8080,7 +8197,16 @@
             "key_binding": "canary:door-key/3520"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3520",
+        "expression": "Storage.Quest.Key.ID3520",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8128,7 +8254,16 @@
             "key_binding": "canary:door-key/3600"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3600",
+        "expression": "Storage.Quest.Key.ID3600",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8176,7 +8311,16 @@
             "key_binding": "canary:door-key/3610"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3610",
+        "expression": "Storage.Quest.Key.ID3610",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8224,7 +8368,16 @@
             "key_binding": "canary:door-key/3620"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3620",
+        "expression": "Storage.Quest.Key.ID3620",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8272,7 +8425,16 @@
             "key_binding": "canary:door-key/3667"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3667",
+        "expression": "Storage.Quest.Key.ID3667",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8320,7 +8482,16 @@
             "key_binding": "canary:door-key/3700"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3700",
+        "expression": "Storage.Quest.Key.ID3700",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8368,7 +8539,16 @@
             "key_binding": "canary:door-key/3800"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3800",
+        "expression": "Storage.Quest.Key.ID3800",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8416,7 +8596,16 @@
             "key_binding": "canary:door-key/3802"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3802",
+        "expression": "Storage.Quest.Key.ID3802",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8464,7 +8653,16 @@
             "key_binding": "canary:door-key/3899"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3899",
+        "expression": "Storage.Quest.Key.ID3899",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8512,7 +8710,16 @@
             "key_binding": "canary:door-key/3980"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id3980",
+        "expression": "Storage.Quest.Key.ID3980",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8560,7 +8767,16 @@
             "key_binding": "canary:door-key/4055"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id4055",
+        "expression": "Storage.Quest.Key.ID4055",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8645,7 +8861,16 @@
             "key_binding": "canary:door-key/4502"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id4502",
+        "expression": "Storage.Quest.Key.ID4502",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -8693,7 +8918,16 @@
             "key_binding": "canary:door-key/4601"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id4601",
+        "expression": "Storage.Quest.Key.ID4601",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8741,7 +8975,16 @@
             "key_binding": "canary:door-key/4603"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id4603",
+        "expression": "Storage.Quest.Key.ID4603",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8814,7 +9057,16 @@
             "key_binding": "canary:door-key/5010"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/key/id5010",
+        "expression": "Storage.Quest.Key.ID5010",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -8923,7 +9175,16 @@
             "key_binding": "canary:door-key/3702"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/pre_u6_0/ornamented_shield/rewards/ornamented_shield",
+        "expression": "Storage.Quest.PreU6_0.OrnamentedShield.Rewards.OrnamentedShield",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -8983,7 +9244,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u10_50/dark_trails/reward05_gloth_and_belongings",
+        "expression": "Storage.Quest.U10_50.DarkTrails.Reward05GlothAndBelongings",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -9043,7 +9313,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u10_50/dark_trails/reward10_gloth_and_belongings",
+        "expression": "Storage.Quest.U10_50.DarkTrails.Reward10GlothAndBelongings",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -9090,7 +9369,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u10_50/dark_trails/reward_small_notebook",
+        "expression": "Storage.Quest.U10_50.DarkTrails.RewardSmallNotebook",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9137,7 +9425,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u10_55/dawnport/torn_log_book",
+        "expression": "Storage.Quest.U10_55.Dawnport.TornLogBook",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9184,7 +9481,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u10_90/ferumbras_ascension/stone_coffins_bones",
+        "expression": "Storage.Quest.U10_90.FerumbrasAscension.StoneCoffinsBones",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9231,7 +9537,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u10_90/ferumbras_ascension/the_rite_of_eternal_night",
+        "expression": "Storage.Quest.U10_90.FerumbrasAscension.TheRiteOfEternalNight",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9278,7 +9593,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u10_90/ferumbras_ascension/vampire_teeth",
+        "expression": "Storage.Quest.U10_90.FerumbrasAscension.VampireTeeth",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9325,7 +9649,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_40/threatened_dreams/mission01/poacher_chest",
+        "expression": "Storage.Quest.U11_40.ThreatenedDreams.Mission01.PoacherChest",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9372,7 +9705,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_40/threatened_dreams/mission02/dark_moon_mirror",
+        "expression": "Storage.Quest.U11_40.ThreatenedDreams.Mission02.DarkMoonMirror",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9419,7 +9761,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_50/hidden_threats/rewards/key_fragment01",
+        "expression": "Storage.Quest.U11_50.HiddenThreats.Rewards.keyFragment01",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9466,7 +9817,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_50/hidden_threats/rewards/key_fragment02",
+        "expression": "Storage.Quest.U11_50.HiddenThreats.Rewards.keyFragment02",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9513,7 +9873,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_50/hidden_threats/rewards/metal_file",
+        "expression": "Storage.Quest.U11_50.HiddenThreats.Rewards.metalFile",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9560,7 +9929,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/asuras/black_skull",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.Asuras.BlackSkull",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9607,7 +9985,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/asuras/ebony_piece",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.Asuras.EbonyPiece",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9654,7 +10041,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/asuras/eye_key",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.Asuras.EyeKey",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9701,7 +10097,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/asuras/lotus_key",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.Asuras.LotusKey",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9748,7 +10153,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/asuras/peacock_ballad",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.Asuras.PeacockBallad",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9795,7 +10209,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/asuras/scribbled_notes",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.Asuras.ScribbledNotes",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9842,7 +10265,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/asuras/silver_chimes",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.Asuras.SilverChimes",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9889,7 +10321,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/asuras/skeleton_notes",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.Asuras.SkeletonNotes",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -9936,7 +10377,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/asuras/strand_hair",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.Asuras.StrandHair",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -10034,6 +10484,15 @@
           }
         }
       ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/falcon_bastion/chests_timer/coast",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.FalconBastion.ChestsTimer.Coast",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      },
       "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
@@ -10132,6 +10591,15 @@
           }
         }
       ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/falcon_bastion/chests_timer/island",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.FalconBastion.ChestsTimer.Island",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      },
       "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
@@ -10230,6 +10698,15 @@
           }
         }
       ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/falcon_bastion/chests_timer/lower_bastion",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.FalconBastion.ChestsTimer.LowerBastion",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      },
       "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
@@ -10328,6 +10805,15 @@
           }
         }
       ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/falcon_bastion/chests_timer/shortcut",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.FalconBastion.ChestsTimer.Shortcut",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      },
       "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
@@ -10426,6 +10912,15 @@
           }
         }
       ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/falcon_bastion/chests_timer/throne_hall",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.FalconBastion.ChestsTimer.ThroneHall",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      },
       "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
@@ -10524,6 +11019,15 @@
           }
         }
       ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/falcon_bastion/chests_timer/underground_bastion",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.FalconBastion.ChestsTimer.UndergroundBastion",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      },
       "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
@@ -10571,7 +11075,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/mo_ta/bony_rod",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.MoTA.BonyRod",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -10618,7 +11131,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/mo_ta/broken_compass",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.MoTA.BrokenCompass",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -10665,7 +11187,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/mo_ta/sample_blood",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.MoTA.SampleBlood",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -10712,7 +11243,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/small_islands/fishing",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.SmallIslands.Fishing",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -10759,7 +11299,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/small_islands/hawser",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.SmallIslands.Hawser",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -10806,7 +11355,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/small_islands/parchment",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.SmallIslands.Parchment",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -10853,7 +11411,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/small_islands/sapphire",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.SmallIslands.Sapphire",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -10900,7 +11467,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u11_80/the_secret_library/small_islands/shovel",
+        "expression": "Storage.Quest.U11_80.TheSecretLibrary.SmallIslands.Shovel",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -10947,7 +11523,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u15_24/targuna/mana_potions_chest",
+        "expression": "Storage.Quest.U15_24.Targuna.ManaPotionsChest",
+        "value": 1,
+        "source": {
+          "script": "data-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 224
+        }
+      }
     },
     {
       "identity": {
@@ -10994,7 +11579,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u15_24/targuna/silver_amulet_chest",
+        "expression": "Storage.Quest.U15_24.Targuna.SilverAmuletChest",
+        "value": 1,
+        "source": {
+          "script": "data-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 224
+        }
+      }
     },
     {
       "identity": {
@@ -11055,7 +11649,16 @@
             "key_binding": "canary:door-key/3801"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u6_1/emperors_cookies/rewards/cookies",
+        "expression": "Storage.Quest.U6_1.EmperorsCookies.Rewards.Cookies",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -11123,7 +11726,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u6_4/berserker_treasure/rewards/white_pearls",
+        "expression": "Storage.Quest.U6_4.BerserkerTreasure.Rewards.WhitePearls",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -11170,7 +11782,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u6_4/demon_helmet/rewards/demon_helmet",
+        "expression": "Storage.Quest.U6_4.DemonHelmet.Rewards.DemonHelmet",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -11217,7 +11838,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u6_4/demon_helmet/rewards/demon_shield",
+        "expression": "Storage.Quest.U6_4.DemonHelmet.Rewards.DemonShield",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -11264,7 +11894,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u6_4/demon_helmet/rewards/steel_boots",
+        "expression": "Storage.Quest.U6_4.DemonHelmet.Rewards.SteelBoots",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -11340,7 +11979,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_1/dragon_tower/rewards/backpack1",
+        "expression": "Storage.Quest.U7_1.DragonTower.Rewards.Backpack1",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -11400,7 +12048,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_1/dragon_tower/rewards/backpack2",
+        "expression": "Storage.Quest.U7_1.DragonTower.Rewards.Backpack2",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -11485,7 +12142,16 @@
             "key_binding": "canary:door-key/6010"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_2/parchment_room/bag",
+        "expression": "Storage.Quest.U7_2.ParchmentRoom.Bag",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -11532,7 +12198,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_2/the_queen_of_the_banshees/reward/boots_of_haste",
+        "expression": "Storage.Quest.U7_2.TheQueenOfTheBanshees.Reward.BootsOfHaste",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -11579,7 +12254,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_2/the_queen_of_the_banshees/reward/giant_sword",
+        "expression": "Storage.Quest.U7_2.TheQueenOfTheBanshees.Reward.GiantSword",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -11626,7 +12310,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_2/the_queen_of_the_banshees/reward/platinum_coin",
+        "expression": "Storage.Quest.U7_2.TheQueenOfTheBanshees.Reward.PlatinumCoin",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -11673,7 +12366,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_2/the_queen_of_the_banshees/reward/stealth_ring",
+        "expression": "Storage.Quest.U7_2.TheQueenOfTheBanshees.Reward.StealthRing",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -11720,7 +12422,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_2/the_queen_of_the_banshees/reward/stone_skin_amulet",
+        "expression": "Storage.Quest.U7_2.TheQueenOfTheBanshees.Reward.StoneSkinAmulet",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -11767,7 +12478,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_2/the_queen_of_the_banshees/reward/tower_shield",
+        "expression": "Storage.Quest.U7_2.TheQueenOfTheBanshees.Reward.TowerShield",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -11814,7 +12534,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_24/family_brooch/brooch",
+        "expression": "Storage.Quest.U7_24.FamilyBrooch.Brooch",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -11958,7 +12687,16 @@
             "revision": "canary-04b83b51+crystalserver-9f5a72c6"
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_24/the_annihilator/reward",
+        "expression": "Storage.Quest.U7_24.TheAnnihilator.Reward",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12005,7 +12743,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_24/the_paradox_tower/reward/egg",
+        "expression": "Storage.Quest.U7_24.TheParadoxTower.Reward.Egg",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12052,7 +12799,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_24/the_paradox_tower/reward/gold",
+        "expression": "Storage.Quest.U7_24.TheParadoxTower.Reward.Gold",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12099,7 +12855,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_24/the_paradox_tower/reward/talon",
+        "expression": "Storage.Quest.U7_24.TheParadoxTower.Reward.Talon",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12146,7 +12911,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_24/the_paradox_tower/reward/wand",
+        "expression": "Storage.Quest.U7_24.TheParadoxTower.Reward.Wand",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12193,7 +12967,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_3/serpentine_tower/white_pearl",
+        "expression": "Storage.Quest.U7_3.SerpentineTower.WhitePearl",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12269,7 +13052,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_3/the_medusa_quest",
+        "expression": "Storage.Quest.U7_3.TheMedusaQuest",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -12316,7 +13108,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_5/elephant_tusk",
+        "expression": "Storage.Quest.U7_5.ElephantTusk",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12363,7 +13164,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_6/explorer_society/books/cyclops",
+        "expression": "Storage.Quest.U7_6.ExplorerSociety.Books.Cyclops",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12422,7 +13232,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_6/explorer_society/books/hengis",
+        "expression": "Storage.Quest.U7_6.ExplorerSociety.Books.Hengis",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12469,7 +13288,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_6/explorer_society/giant_smith_hammer/gold_coin",
+        "expression": "Storage.Quest.U7_6.ExplorerSociety.GiantSmithHammer.GoldCoin",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12516,7 +13344,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_6/explorer_society/giant_smith_hammer/hammer",
+        "expression": "Storage.Quest.U7_6.ExplorerSociety.GiantSmithHammer.Hammer",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12563,7 +13400,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_6/explorer_society/giant_smith_hammer/talon",
+        "expression": "Storage.Quest.U7_6.ExplorerSociety.GiantSmithHammer.Talon",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12623,7 +13469,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_6/explorer_society/skull_of_ratha/bag1",
+        "expression": "Storage.Quest.U7_6.ExplorerSociety.SkullOfRatha.Bag1",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -12683,7 +13538,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_6/explorer_society/skull_of_ratha/bag2",
+        "expression": "Storage.Quest.U7_6.ExplorerSociety.SkullOfRatha.Bag2",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -12730,7 +13594,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_6/old_parchment",
+        "expression": "Storage.Quest.U7_6.OldParchment",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12777,7 +13650,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_6/whisper_moss",
+        "expression": "Storage.Quest.U7_6.WhisperMoss",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12824,7 +13706,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_8/druid_outfits/wolf_tooth_chain",
+        "expression": "Storage.Quest.U7_8.DruidOutfits.WolfToothChain",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12871,7 +13762,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_8/hunter_outfits/elane_crossbow",
+        "expression": "Storage.Quest.U7_8.HunterOutfits.ElaneCrossbow",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12918,7 +13818,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_8/knight_outfits/ramsays_helmet_chest",
+        "expression": "Storage.Quest.U7_8.KnightOutfits.RamsaysHelmetChest",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -12965,7 +13874,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_8/oriental_outfits/coral_comb",
+        "expression": "Storage.Quest.U7_8.OrientalOutfits.CoralComb",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -13012,7 +13930,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_8/the_shattered_isles/dragahs_spellbook",
+        "expression": "Storage.Quest.U7_8.TheShatteredIsles.DragahsSpellbook",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -13100,7 +14027,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/dreamers_challenge/bplong_sword",
+        "expression": "Storage.Quest.U7_9.DreamersChallenge.BPLongSword",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -13159,7 +14095,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/dreamers_challenge/chest_book",
+        "expression": "Storage.Quest.U7_9.DreamersChallenge.ChestBook",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -13206,7 +14151,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/dreamers_challenge/chests3_small_diamond",
+        "expression": "Storage.Quest.U7_9.DreamersChallenge.Chests3SmallDiamond",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -13409,7 +14363,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/dreamers_challenge/chests_wine",
+        "expression": "Storage.Quest.U7_9.DreamersChallenge.ChestsWine",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -13468,7 +14431,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/the_pits_of_inferno/chest_tible",
+        "expression": "Storage.Quest.U7_9.ThePitsOfInferno.ChestTible",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -13527,7 +14499,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/the_pits_of_inferno/corpse_book",
+        "expression": "Storage.Quest.U7_9.ThePitsOfInferno.CorpseBook",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -13659,7 +14640,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/the_pits_of_inferno/corpse_pirate_bp",
+        "expression": "Storage.Quest.U7_9.ThePitsOfInferno.CorpsePirateBP",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -13735,7 +14725,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/the_pits_of_inferno/reward_chest_bp",
+        "expression": "Storage.Quest.U7_9.ThePitsOfInferno.RewardChestBP",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -13782,7 +14781,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/the_pits_of_inferno/reward_chest_frozen_starlight",
+        "expression": "Storage.Quest.U7_9.ThePitsOfInferno.RewardChestFrozenStarlight",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -13829,7 +14837,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/the_pits_of_inferno/reward_chest_platinum_coins",
+        "expression": "Storage.Quest.U7_9.ThePitsOfInferno.RewardChestPlatinumCoins",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -13876,7 +14893,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/the_pits_of_inferno/reward_chest_soft_boots",
+        "expression": "Storage.Quest.U7_9.ThePitsOfInferno.RewardChestSoftBoots",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -13971,7 +14997,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/the_pits_of_inferno/reward_chest_staff_avenger_arbalest",
+        "expression": "Storage.Quest.U7_9.ThePitsOfInferno.RewardChestStaffAvengerArbalest",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -14018,7 +15053,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u7_9/the_pits_of_inferno/reward_chest_stuffed",
+        "expression": "Storage.Quest.U7_9.ThePitsOfInferno.RewardChestStuffed",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -14078,7 +15122,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/barbarian_arena/reward_greenhorn_bp",
+        "expression": "Storage.Quest.U8_0.BarbarianArena.RewardGreenhornBP",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -14162,7 +15215,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/barbarian_arena/reward_greenhorn_present",
+        "expression": "Storage.Quest.U8_0.BarbarianArena.RewardGreenhornPresent",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -14257,7 +15319,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/barbarian_arena/reward_greenhorn_weapons",
+        "expression": "Storage.Quest.U8_0.BarbarianArena.RewardGreenhornWeapons",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -14333,7 +15404,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/barbarian_arena/reward_scrapper_bp",
+        "expression": "Storage.Quest.U8_0.BarbarianArena.RewardScrapperBP",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -14409,7 +15489,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/barbarian_arena/reward_scrapper_present",
+        "expression": "Storage.Quest.U8_0.BarbarianArena.RewardScrapperPresent",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -14504,7 +15593,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/barbarian_arena/reward_scrapper_weapons",
+        "expression": "Storage.Quest.U8_0.BarbarianArena.RewardScrapperWeapons",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -14588,7 +15686,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/barbarian_arena/reward_warlord_bp",
+        "expression": "Storage.Quest.U8_0.BarbarianArena.RewardWarlordBP",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -14664,7 +15771,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/barbarian_arena/reward_warlord_present",
+        "expression": "Storage.Quest.U8_0.BarbarianArena.RewardWarlordPresent",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -14759,7 +15875,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/barbarian_arena/reward_warlord_weapons",
+        "expression": "Storage.Quest.U8_0.BarbarianArena.RewardWarlordWeapons",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -14827,7 +15952,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/fishing_box",
+        "expression": "Storage.Quest.U8_0.FishingBox",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -14895,7 +16029,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/shardsof_ancient_winters/formorgar_mines",
+        "expression": "Storage.Quest.U8_0.ShardsofAncientWinters.FormorgarMines",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -14971,7 +16114,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/shardsof_ancient_winters/helheim",
+        "expression": "Storage.Quest.U8_0.ShardsofAncientWinters.Helheim",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -15039,7 +16191,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/shardsof_ancient_winters/inukaya",
+        "expression": "Storage.Quest.U8_0.ShardsofAncientWinters.Inukaya",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -15107,7 +16268,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/shardsof_ancient_winters/okolnir",
+        "expression": "Storage.Quest.U8_0.ShardsofAncientWinters.Okolnir",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -15175,7 +16345,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/shardsof_ancient_winters/tyrsung",
+        "expression": "Storage.Quest.U8_0.ShardsofAncientWinters.Tyrsung",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -15234,7 +16413,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/the_ice_islands/formorgar_glacier_chest",
+        "expression": "Storage.Quest.U8_0.TheIceIslands.FormorgarGlacierChest",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15318,7 +16506,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_0/the_ice_islands/formorgar_glacier_skeleton",
+        "expression": "Storage.Quest.U8_0.TheIceIslands.FormorgarGlacierSkeleton",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -15365,7 +16562,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/koshei_the_deathless/koshei_amulet_part1",
+        "expression": "Storage.Quest.U8_1.KosheiTheDeathless.KosheiAmuletPart1",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15412,7 +16618,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/koshei_the_deathless/koshei_amulet_part2",
+        "expression": "Storage.Quest.U8_1.KosheiTheDeathless.KosheiAmuletPart2",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15459,7 +16674,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/koshei_the_deathless/koshei_amulet_part3",
+        "expression": "Storage.Quest.U8_1.KosheiTheDeathless.KosheiAmuletPart3",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15506,7 +16730,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/koshei_the_deathless/koshei_amulet_part4",
+        "expression": "Storage.Quest.U8_1.KosheiTheDeathless.KosheiAmuletPart4",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15553,7 +16786,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/koshei_the_deathless/koshei_the_deathless_gold",
+        "expression": "Storage.Quest.U8_1.KosheiTheDeathless.KosheiTheDeathlessGold",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15600,7 +16842,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs",
+        "expression": "Storage.Quest.U8_1.KosheiTheDeathless.KosheiTheDeathlessLegs",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15647,7 +16898,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum",
+        "expression": "Storage.Quest.U8_1.KosheiTheDeathless.KosheiTheDeathlessPlatinum",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15694,7 +16954,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/secret_service/ahx17_l89",
+        "expression": "Storage.Quest.U8_1.SecretService.AHX17L89",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15741,7 +17010,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/secret_service/book",
+        "expression": "Storage.Quest.U8_1.SecretService.Book",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15788,7 +17066,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/secret_service/building_plans",
+        "expression": "Storage.Quest.U8_1.SecretService.BuildingPlans",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15835,7 +17122,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/secret_service/family_signet_ring",
+        "expression": "Storage.Quest.U8_1.SecretService.FamilySignetRing",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15882,7 +17178,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/secret_service/intelligence_reports",
+        "expression": "Storage.Quest.U8_1.SecretService.IntelligenceReports",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15941,7 +17246,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/secret_service/lottery_ticket",
+        "expression": "Storage.Quest.U8_1.SecretService.LotteryTicket",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -15988,7 +17302,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/secret_service/magic_spellbook",
+        "expression": "Storage.Quest.U8_1.SecretService.MagicSpellbook",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -16035,7 +17358,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/secret_service/poem_scroll",
+        "expression": "Storage.Quest.U8_1.SecretService.PoemScroll",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -16082,7 +17414,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/secret_service/rotten_heart_of_tree",
+        "expression": "Storage.Quest.U8_1.SecretService.RottenHeartOfTree",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -16129,7 +17470,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/secret_service/suspicious_documents",
+        "expression": "Storage.Quest.U8_1.SecretService.SuspiciousDocuments",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -16181,7 +17531,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/strong_potions/reward",
+        "expression": "Storage.Quest.U8_1.StrongPotions.Reward",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -16249,7 +17608,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/to_blind_the_enemy/bp1",
+        "expression": "Storage.Quest.U8_1.ToBlindTheEnemy.BP1",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -16309,7 +17677,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/to_blind_the_enemy/bp2",
+        "expression": "Storage.Quest.U8_1.ToBlindTheEnemy.BP2",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -16356,7 +17733,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/to_blind_the_enemy/dwarven_shield",
+        "expression": "Storage.Quest.U8_1.ToBlindTheEnemy.DwarvenShield",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -16403,7 +17789,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/to_blind_the_enemy/morning_star",
+        "expression": "Storage.Quest.U8_1.ToBlindTheEnemy.MorningStar",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -16450,7 +17845,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/to_outfox_afox_quest/mining_helmet",
+        "expression": "Storage.Quest.U8_1.ToOutfoxAFoxQuest.MiningHelmet",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -16510,7 +17914,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/waterfall_quest",
+        "expression": "Storage.Quest.U8_1.WaterfallQuest",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -16570,7 +17983,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/what_afoolish_quest/bag_book_knife",
+        "expression": "Storage.Quest.U8_1.WhatAFoolishQuest.BagBookKnife",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -16617,7 +18039,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_1/what_afoolish_quest/magical_watch",
+        "expression": "Storage.Quest.U8_1.WhatAFoolishQuest.MagicalWatch",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -16676,7 +18107,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_2/the_inquisition_quest/reward_room_text",
+        "expression": "Storage.Quest.U8_2.TheInquisitionQuest.RewardRoomText",
+        "value": 1,
+        "source": {
+          "script": "data-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 224
+        }
+      }
     },
     {
       "identity": {
@@ -16723,7 +18163,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_2/the_inquisition_quest/witches_grimoire",
+        "expression": "Storage.Quest.U8_2.TheInquisitionQuest.WitchesGrimoire",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -16770,7 +18219,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_2/the_thieves_guild_quest/compromising_letter",
+        "expression": "Storage.Quest.U8_2.TheThievesGuildQuest.CompromisingLetter",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -16817,7 +18275,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_2/the_thieves_guild_quest/golden_goblet",
+        "expression": "Storage.Quest.U8_2.TheThievesGuildQuest.GoldenGoblet",
+        "value": 1,
+        "source": {
+          "script": "data-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 224
+        }
+      }
     },
     {
       "identity": {
@@ -16876,7 +18343,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_2/the_thieves_guild_quest/reward_book",
+        "expression": "Storage.Quest.U8_2.TheThievesGuildQuest.RewardBook",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -16971,7 +18447,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_2/the_thieves_guild_quest/reward_end",
+        "expression": "Storage.Quest.U8_2.TheThievesGuildQuest.RewardEnd",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17018,7 +18503,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_2/the_thieves_guild_quest/reward_oasis",
+        "expression": "Storage.Quest.U8_2.TheThievesGuildQuest.RewardOasis",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17065,7 +18559,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_2/vampire_hunter_quest/blood_skull",
+        "expression": "Storage.Quest.U8_2.VampireHunterQuest.BloodSkull",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17149,7 +18652,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_4/the_hidden_city_of_beregar/bpthe_undeath_stare",
+        "expression": "Storage.Quest.U8_4.TheHiddenCityOfBeregar.BPTheUndeathStare",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -17196,7 +18708,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_4/the_hidden_city_of_beregar/corpse_gold_ingot",
+        "expression": "Storage.Quest.U8_4.TheHiddenCityOfBeregar.CorpseGoldIngot",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17243,7 +18764,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_4/the_hidden_city_of_beregar/corpse_rusted_armor",
+        "expression": "Storage.Quest.U8_4.TheHiddenCityOfBeregar.CorpseRustedArmor",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17290,7 +18820,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_4/the_hidden_city_of_beregar/corpse_small_topazes",
+        "expression": "Storage.Quest.U8_4.TheHiddenCityOfBeregar.CorpseSmallTopazes",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17337,7 +18876,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_4/the_hidden_city_of_beregar/firewalker_boots",
+        "expression": "Storage.Quest.U8_4.TheHiddenCityOfBeregar.FirewalkerBoots",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17384,7 +18932,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_4/the_hidden_city_of_beregar/prison_cell_key",
+        "expression": "Storage.Quest.U8_4.TheHiddenCityOfBeregar.PrisonCellKey",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17431,7 +18988,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_5/darashia_dragon",
+        "expression": "Storage.Quest.U8_5.DarashiaDragon",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17478,7 +19044,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_5/lone_medusa",
+        "expression": "Storage.Quest.U8_5.LoneMedusa",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17525,7 +19100,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/children_of_the_revolution/chest_tome_of_knowledge1",
+        "expression": "Storage.Quest.U8_54.ChildrenOfTheRevolution.ChestTomeOfKnowledge1",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17572,7 +19156,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/children_of_the_revolution/chest_tome_of_knowledge2",
+        "expression": "Storage.Quest.U8_54.ChildrenOfTheRevolution.ChestTomeOfKnowledge2",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17619,7 +19212,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/children_of_the_revolution/flask_of_extra_greasy_oil",
+        "expression": "Storage.Quest.U8_54.ChildrenOfTheRevolution.FlaskOfExtraGreasyOil",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17666,7 +19268,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/the_new_frontier/chest_tome_of_knowledge1",
+        "expression": "Storage.Quest.U8_54.TheNewFrontier.ChestTomeOfKnowledge1",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17713,7 +19324,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/the_new_frontier/chest_tome_of_knowledge2",
+        "expression": "Storage.Quest.U8_54.TheNewFrontier.ChestTomeOfKnowledge2",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17760,7 +19380,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/the_new_frontier/reward/gold_ingot",
+        "expression": "Storage.Quest.U8_54.TheNewFrontier.Reward.GoldIngot",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17807,7 +19436,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/the_new_frontier/reward/pig_bank",
+        "expression": "Storage.Quest.U8_54.TheNewFrontier.Reward.PigBank",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17875,7 +19513,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/the_new_frontier/reward/potions",
+        "expression": "Storage.Quest.U8_54.TheNewFrontier.Reward.Potions",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -17922,7 +19569,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge1",
+        "expression": "Storage.Quest.U8_54.TomesOfKnowledge.ChestTomeOfKnowledge1",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -17969,7 +19625,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge2",
+        "expression": "Storage.Quest.U8_54.TomesOfKnowledge.ChestTomeOfKnowledge2",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -18016,7 +19681,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge3",
+        "expression": "Storage.Quest.U8_54.TomesOfKnowledge.ChestTomeOfKnowledge3",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -18063,7 +19737,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge4",
+        "expression": "Storage.Quest.U8_54.TomesOfKnowledge.ChestTomeOfKnowledge4",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -18110,7 +19793,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_54/tomes_of_knowledge/top_tower",
+        "expression": "Storage.Quest.U8_54.TomesOfKnowledge.TopTower",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -18169,7 +19861,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_6/an_interest_in_botany/botany_almanach",
+        "expression": "Storage.Quest.U8_6.AnInterestInBotany.BotanyAlmanach",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -18216,7 +19917,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_6/wrath_of_the_emperor/chest100_platinum_coins",
+        "expression": "Storage.Quest.U8_6.WrathOfTheEmperor.Chest100PlatinumCoins",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     },
     {
       "identity": {
@@ -18324,7 +20034,16 @@
             }
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_6/wrath_of_the_emperor/chest_bag",
+        "expression": "Storage.Quest.U8_6.WrathOfTheEmperor.ChestBag",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 143
+        }
+      }
     },
     {
       "identity": {
@@ -18467,7 +20186,16 @@
             ]
           }
         }
-      ]
+      ],
+      "progress_write": {
+        "marker": "quest/u8_6/wrath_of_the_emperor/chest_items",
+        "expression": "Storage.Quest.U8_6.WrathOfTheEmperor.ChestItems",
+        "value": 1,
+        "source": {
+          "script": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
+          "line": 100
+        }
+      }
     }
   ]
 }

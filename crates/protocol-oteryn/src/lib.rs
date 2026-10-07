@@ -41,6 +41,26 @@ pub enum FoundationProtocolError {
     /// key the catalogue lacks): an internal integrity fault. The client learns only that its
     /// account data needs support; the diagnostic stays in the operator event.
     AccountDataIntegrity = 1050,
+    // FND-04A §11 fresh-admission refusal rows (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2, N8): written
+    // once before admission with generation 0, then the server closes. `admission_refusal_class`
+    // gives each its progression and public class.
+    AdmissionGrantMalformed = 1100,
+    AdmissionGrantAuthenticationFailed = 1101,
+    AdmissionGrantBindingMismatch = 1102,
+    AdmissionGrantNotYetValid = 1103,
+    AdmissionGrantExpired = 1104,
+    AdmissionGrantReplayed = 1105,
+    AdmissionAttemptReconciliationRequired = 1106,
+    AdmissionGrantSecurityStateRevoked = 1107,
+    AdmissionGrantSecurityEvidenceStale = 1108,
+    AdmissionGrantRouteStale = 1109,
+    AdmissionGrantRuntimeGenerationStale = 1110,
+    AdmissionGrantWorldStale = 1111,
+    AdmissionGrantRevisionUnsupported = 1112,
+    AdmissionAccountCharacterConflict = 1113,
+    AdmissionIncumbentProtected = 1114,
+    AdmissionCapacityExceeded = 1115,
+    AdmissionCapabilityRequired = 1116,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,7 +84,24 @@ impl FoundationProtocolError {
             Self::MalformedFrame
             | Self::FrameTooLarge
             | Self::MalformedEnvelope
-            | Self::StaleConnectionGeneration => ProtocolDisposition::TransportFatal,
+            | Self::StaleConnectionGeneration
+            | Self::AdmissionGrantMalformed
+            | Self::AdmissionGrantAuthenticationFailed
+            | Self::AdmissionGrantBindingMismatch
+            | Self::AdmissionGrantNotYetValid
+            | Self::AdmissionGrantExpired
+            | Self::AdmissionGrantReplayed
+            | Self::AdmissionAttemptReconciliationRequired
+            | Self::AdmissionGrantSecurityStateRevoked
+            | Self::AdmissionGrantSecurityEvidenceStale
+            | Self::AdmissionGrantRouteStale
+            | Self::AdmissionGrantRuntimeGenerationStale
+            | Self::AdmissionGrantWorldStale
+            | Self::AdmissionGrantRevisionUnsupported
+            | Self::AdmissionAccountCharacterConflict
+            | Self::AdmissionIncumbentProtected
+            | Self::AdmissionCapacityExceeded
+            | Self::AdmissionCapabilityRequired => ProtocolDisposition::TransportFatal,
             Self::UnknownMessageType
             | Self::ProtocolMajorMismatch
             | Self::TransportProfileMismatch
@@ -108,11 +145,167 @@ impl Display for FoundationProtocolError {
             Self::BootstrapLimitExceeded => "bootstrap payload exceeds hard limit",
             Self::InvalidCapabilitySet => "invalid capability set",
             Self::AccountDataIntegrity => "account data needs support",
+            Self::AdmissionGrantMalformed => "admission grant is malformed",
+            Self::AdmissionGrantAuthenticationFailed => "admission grant authentication failed",
+            Self::AdmissionGrantBindingMismatch => "admission grant binding mismatch",
+            Self::AdmissionGrantNotYetValid => "admission grant is not yet valid",
+            Self::AdmissionGrantExpired => "admission grant expired",
+            Self::AdmissionGrantReplayed => "admission grant was already used",
+            Self::AdmissionAttemptReconciliationRequired => {
+                "admission attempt needs reconciliation"
+            }
+            Self::AdmissionGrantSecurityStateRevoked => "admission grant security state revoked",
+            Self::AdmissionGrantSecurityEvidenceStale => {
+                "admission grant security evidence is stale"
+            }
+            Self::AdmissionGrantRouteStale => "admission grant route is stale",
+            Self::AdmissionGrantRuntimeGenerationStale => {
+                "admission grant runtime generation is stale"
+            }
+            Self::AdmissionGrantWorldStale => "admission grant world is stale",
+            Self::AdmissionGrantRevisionUnsupported => "admission grant revision is unsupported",
+            Self::AdmissionAccountCharacterConflict => "account and character conflict",
+            Self::AdmissionIncumbentProtected => "character is already active",
+            Self::AdmissionCapacityExceeded => "admission capacity exceeded",
+            Self::AdmissionCapabilityRequired => "a required capability is missing",
         })
     }
 }
 
 impl Error for FoundationProtocolError {}
+
+/// The codes FND-04A §11 fresh-admission refusals use (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2); 1117..
+/// 1199 are reserved for later admission rows and never reused.
+pub const ADMISSION_REFUSAL_CODES: std::ops::RangeInclusive<u32> = 1100..=1199;
+
+/// FND-04A §11 progression of one admission refusal: what the client may do next on its own.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AdmissionProgression {
+    /// The same attempt may be retried within the bounded budget of ADR-0020 §3.
+    Retryable,
+    /// No automatic retry.
+    Terminal,
+    /// No automatic retry; the grant is treated as compromised.
+    SecurityTerminal,
+}
+
+/// FND-04A §11 public class of one admission refusal: what the client tells the player.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AdmissionPublicClass {
+    RetryLogin,
+    AuthenticationRequired,
+    TemporarilyUnavailable,
+    SessionUnavailable,
+    ClientUpdateRequired,
+    CharacterAlreadyActive,
+}
+
+/// The registry's `progression` and `public_class` of each admission refusal code.
+const ADMISSION_REFUSAL_ROWS: [(
+    FoundationProtocolError,
+    AdmissionProgression,
+    AdmissionPublicClass,
+); 17] = {
+    use AdmissionProgression::{Retryable, SecurityTerminal, Terminal};
+    use AdmissionPublicClass::{
+        AuthenticationRequired, CharacterAlreadyActive, ClientUpdateRequired, RetryLogin,
+        SessionUnavailable, TemporarilyUnavailable,
+    };
+    use FoundationProtocolError as E;
+    [
+        (E::AdmissionGrantMalformed, Terminal, RetryLogin),
+        (
+            E::AdmissionGrantAuthenticationFailed,
+            SecurityTerminal,
+            AuthenticationRequired,
+        ),
+        (
+            E::AdmissionGrantBindingMismatch,
+            SecurityTerminal,
+            RetryLogin,
+        ),
+        (
+            E::AdmissionGrantNotYetValid,
+            Retryable,
+            TemporarilyUnavailable,
+        ),
+        (E::AdmissionGrantExpired, Terminal, RetryLogin),
+        (
+            E::AdmissionGrantReplayed,
+            SecurityTerminal,
+            SessionUnavailable,
+        ),
+        (
+            E::AdmissionAttemptReconciliationRequired,
+            Retryable,
+            TemporarilyUnavailable,
+        ),
+        (
+            E::AdmissionGrantSecurityStateRevoked,
+            SecurityTerminal,
+            AuthenticationRequired,
+        ),
+        (
+            E::AdmissionGrantSecurityEvidenceStale,
+            Retryable,
+            TemporarilyUnavailable,
+        ),
+        (E::AdmissionGrantRouteStale, Terminal, RetryLogin),
+        (
+            E::AdmissionGrantRuntimeGenerationStale,
+            Terminal,
+            RetryLogin,
+        ),
+        (E::AdmissionGrantWorldStale, Terminal, RetryLogin),
+        (
+            E::AdmissionGrantRevisionUnsupported,
+            Terminal,
+            ClientUpdateRequired,
+        ),
+        (
+            E::AdmissionAccountCharacterConflict,
+            Terminal,
+            SessionUnavailable,
+        ),
+        (
+            E::AdmissionIncumbentProtected,
+            Terminal,
+            CharacterAlreadyActive,
+        ),
+        (
+            E::AdmissionCapacityExceeded,
+            Retryable,
+            TemporarilyUnavailable,
+        ),
+        (
+            E::AdmissionCapabilityRequired,
+            Terminal,
+            ClientUpdateRequired,
+        ),
+    ]
+};
+
+/// The progression and public class of an admission refusal `code`, or `None` outside
+/// `ADMISSION_REFUSAL_CODES`. A code in the range this table does not know (a later row) is
+/// `TEMPORARILY_UNAVAILABLE` with no automatic retry.
+#[must_use]
+pub fn admission_refusal_class(code: u32) -> Option<(AdmissionProgression, AdmissionPublicClass)> {
+    if !ADMISSION_REFUSAL_CODES.contains(&code) {
+        return None;
+    }
+    Some(
+        ADMISSION_REFUSAL_ROWS
+            .iter()
+            .find(|(error, _, _)| error.code() == code)
+            .map_or(
+                (
+                    AdmissionProgression::Terminal,
+                    AdmissionPublicClass::TemporarilyUnavailable,
+                ),
+                |&(_, progression, class)| (progression, class),
+            ),
+    )
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FrameLength(u32);
@@ -174,10 +367,11 @@ pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 // offered before BAGS-1) and 15 ITEM_USE_V1 (ITEM-USE-WIRE-1, not offered before ITEM-USE-1) and
 // 16 QUEST_LOG_V1 (QUEST-LOG-WIRE-1, not offered before the quest log
 // content and the production session copy are composed) and 17 ATTACK_V1 (ATTACK-WIRE-1, not
-// offered before ATTACK-1b). Registered is not offered. 13
+// offered before ATTACK-1b) and 3 NPC_SERVICE_V1 (NPC-WIRE-1, not offered before NPC-TALK-1).
+// Registered is not offered. 13
 // PACED_MOVEMENT_V1 (SPEED-1) is offered: it adds the step result TOO_EARLY.
 // Keep this sorted when a later owning gate allocates an additive capability ID.
-const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18];
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[1, 3, 4, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 18];
 
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
@@ -869,6 +1063,59 @@ pub fn decode_liveness_probe(payload: &[u8]) -> Result<u64, FoundationProtocolEr
     probe_id
         .filter(|id| *id != 0)
         .ok_or(FoundationProtocolError::MalformedEnvelope)
+}
+
+/// Decoded `ProtocolError` (FND-02 §18): the client-direction counterpart of
+/// `encode_command_protocol_error`. Zero correlation values mean not applicable.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProtocolErrorView {
+    pub error_code: u32,
+    pub disposition: ProtocolDisposition,
+    pub related_command_id: u64,
+    pub expected_command_id: u64,
+    pub expected_server_sequence: u64,
+}
+
+/// Decodes one `ProtocolError` message payload. A zero or absent `error_code`, or an absent or
+/// unregistered `disposition`, fails closed; unknown fields are skipped.
+pub fn decode_protocol_error(payload: &[u8]) -> Result<ProtocolErrorView, FoundationProtocolError> {
+    let mut cursor = 0usize;
+    let mut fields = [None; 5];
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match field {
+            1..=5 => {
+                read_singular_varint(payload, &mut cursor, wire, &mut fields[field as usize - 1])?
+            }
+            _ => skip_field(payload, &mut cursor, wire)?,
+        }
+    }
+    let [
+        code,
+        disposition,
+        related,
+        expected_command,
+        expected_sequence,
+    ] = fields;
+    let disposition = match disposition {
+        Some(1) => ProtocolDisposition::OperationTerminal,
+        Some(2) => ProtocolDisposition::ResyncRequired,
+        Some(3) => ProtocolDisposition::SessionFatal,
+        Some(4) => ProtocolDisposition::TransportFatal,
+        _ => return Err(FoundationProtocolError::MalformedEnvelope),
+    };
+    Ok(ProtocolErrorView {
+        error_code: code
+            .filter(|code| *code != 0)
+            .and_then(|code| u32::try_from(code).ok())
+            .ok_or(FoundationProtocolError::MalformedEnvelope)?,
+        disposition,
+        related_command_id: related.unwrap_or(0),
+        expected_command_id: expected_command.unwrap_or(0),
+        expected_server_sequence: expected_sequence.unwrap_or(0),
+    })
 }
 
 /// Decoded `CommandResult` (FND-02 §13): the client-direction counterpart of
@@ -2286,6 +2533,7 @@ pub mod chat;
 pub mod container_tree;
 pub mod damage_element;
 pub mod item_view;
+pub mod npc_service;
 pub mod quest_log;
 pub mod spell_presentation_candidate;
 pub mod world_map;
@@ -3779,6 +4027,56 @@ mod tests {
             (E::BootstrapLimitExceeded, "BOOTSTRAP_LIMIT_EXCEEDED"),
             (E::InvalidCapabilitySet, "INVALID_CAPABILITY_SET"),
             (E::AccountDataIntegrity, "ACCOUNT_DATA_INTEGRITY"),
+            (E::AdmissionGrantMalformed, "ADMISSION_GRANT_MALFORMED"),
+            (
+                E::AdmissionGrantAuthenticationFailed,
+                "ADMISSION_GRANT_AUTHENTICATION_FAILED",
+            ),
+            (
+                E::AdmissionGrantBindingMismatch,
+                "ADMISSION_GRANT_BINDING_MISMATCH",
+            ),
+            (
+                E::AdmissionGrantNotYetValid,
+                "ADMISSION_GRANT_NOT_YET_VALID",
+            ),
+            (E::AdmissionGrantExpired, "ADMISSION_GRANT_EXPIRED"),
+            (E::AdmissionGrantReplayed, "ADMISSION_GRANT_REPLAYED"),
+            (
+                E::AdmissionAttemptReconciliationRequired,
+                "ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED",
+            ),
+            (
+                E::AdmissionGrantSecurityStateRevoked,
+                "ADMISSION_GRANT_SECURITY_STATE_REVOKED",
+            ),
+            (
+                E::AdmissionGrantSecurityEvidenceStale,
+                "ADMISSION_GRANT_SECURITY_EVIDENCE_STALE",
+            ),
+            (E::AdmissionGrantRouteStale, "ADMISSION_GRANT_ROUTE_STALE"),
+            (
+                E::AdmissionGrantRuntimeGenerationStale,
+                "ADMISSION_GRANT_RUNTIME_GENERATION_STALE",
+            ),
+            (E::AdmissionGrantWorldStale, "ADMISSION_GRANT_WORLD_STALE"),
+            (
+                E::AdmissionGrantRevisionUnsupported,
+                "ADMISSION_GRANT_REVISION_UNSUPPORTED",
+            ),
+            (
+                E::AdmissionAccountCharacterConflict,
+                "ADMISSION_ACCOUNT_CHARACTER_CONFLICT",
+            ),
+            (
+                E::AdmissionIncumbentProtected,
+                "ADMISSION_INCUMBENT_PROTECTED",
+            ),
+            (E::AdmissionCapacityExceeded, "ADMISSION_CAPACITY_EXCEEDED"),
+            (
+                E::AdmissionCapabilityRequired,
+                "ADMISSION_CAPABILITY_REQUIRED",
+            ),
         ]
         .into_iter()
         .map(|(error, name)| {
@@ -3792,6 +4090,141 @@ mod tests {
         })
         .collect();
         assert_eq!(crate_codes, registered);
+    }
+
+    /// N8 (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2): exactly the admission refusal codes carry a
+    /// `progression` and `public_class`, and `admission_refusal_class` returns the registry's.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn admission_refusal_classes_match_the_registry() {
+        let registry: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json"
+        ))
+        .expect("protocol registry");
+        let mut admission = Vec::new();
+        for entry in registry["error_codes"].as_array().expect("error_codes") {
+            let code = u32::try_from(entry["code"].as_u64().expect("code")).expect("u32 code");
+            let progression = entry.get("progression").and_then(|value| value.as_str());
+            let class = entry.get("public_class").and_then(|value| value.as_str());
+            if !ADMISSION_REFUSAL_CODES.contains(&code) {
+                assert_eq!((progression, class), (None, None), "{code}");
+                assert_eq!(admission_refusal_class(code), None, "{code}");
+                continue;
+            }
+            assert_eq!(entry["default_disposition"], "TRANSPORT_FATAL");
+            let (crate_progression, crate_class) =
+                admission_refusal_class(code).expect("admission code");
+            let crate_progression = match crate_progression {
+                AdmissionProgression::Retryable => "RETRYABLE",
+                AdmissionProgression::Terminal => "TERMINAL",
+                AdmissionProgression::SecurityTerminal => "SECURITY_TERMINAL",
+            };
+            let crate_class = match crate_class {
+                AdmissionPublicClass::RetryLogin => "RETRY_LOGIN",
+                AdmissionPublicClass::AuthenticationRequired => "AUTHENTICATION_REQUIRED",
+                AdmissionPublicClass::TemporarilyUnavailable => "TEMPORARILY_UNAVAILABLE",
+                AdmissionPublicClass::SessionUnavailable => "SESSION_UNAVAILABLE",
+                AdmissionPublicClass::ClientUpdateRequired => "CLIENT_UPDATE_REQUIRED",
+                AdmissionPublicClass::CharacterAlreadyActive => "CHARACTER_ALREADY_ACTIVE",
+            };
+            assert_eq!(
+                (progression, class),
+                (Some(crate_progression), Some(crate_class)),
+                "{code}"
+            );
+            admission.push(code);
+        }
+        assert_eq!(admission, (1100..=1116).collect::<Vec<_>>());
+        assert_eq!(
+            ADMISSION_REFUSAL_ROWS
+                .map(|(error, _, _)| error.code())
+                .to_vec(),
+            admission
+        );
+    }
+
+    /// The 17 rows of §1.2, written out once more so a table edit cannot pass unnoticed.
+    #[test]
+    fn admission_refusal_class_table() {
+        use AdmissionProgression::{Retryable as R, SecurityTerminal as S, Terminal as T};
+        use AdmissionPublicClass::*;
+        let rows = [
+            (1100, T, RetryLogin),
+            (1101, S, AuthenticationRequired),
+            (1102, S, RetryLogin),
+            (1103, R, TemporarilyUnavailable),
+            (1104, T, RetryLogin),
+            (1105, S, SessionUnavailable),
+            (1106, R, TemporarilyUnavailable),
+            (1107, S, AuthenticationRequired),
+            (1108, R, TemporarilyUnavailable),
+            (1109, T, RetryLogin),
+            (1110, T, RetryLogin),
+            (1111, T, RetryLogin),
+            (1112, T, ClientUpdateRequired),
+            (1113, T, SessionUnavailable),
+            (1114, T, CharacterAlreadyActive),
+            (1115, R, TemporarilyUnavailable),
+            (1116, T, ClientUpdateRequired),
+        ];
+        for (code, progression, class) in rows {
+            assert_eq!(admission_refusal_class(code), Some((progression, class)));
+        }
+        // Unassigned in range: generic, no retry. Outside the range: not an admission refusal.
+        for code in [1117, 1150, 1199] {
+            assert_eq!(
+                admission_refusal_class(code),
+                Some((T, TemporarilyUnavailable))
+            );
+        }
+        for code in [0, 1050, 1099, 1200, u32::MAX] {
+            assert_eq!(admission_refusal_class(code), None);
+        }
+    }
+
+    /// The N8 frame: type 14, generation 0, no sequence, and a payload of exactly the code and
+    /// `TRANSPORT_FATAL`; the zero correlation fields are absent.
+    #[test]
+    fn admission_refusal_frame_carries_only_code_and_disposition()
+    -> Result<(), FoundationProtocolError> {
+        let frame = encode_protocol_error(FoundationProtocolError::AdmissionGrantExpired, 0)?;
+        // 08 0e (type 14), 22 05 (payload, 5 bytes): 08 d0 08 (code 1104), 10 04 (TRANSPORT_FATAL).
+        assert_eq!(
+            frame,
+            [0x08, 0x0e, 0x22, 0x05, 0x08, 0xd0, 0x08, 0x10, 0x04]
+        );
+        let envelope = decode_wire_envelope(&frame)?;
+        assert_eq!(envelope.message_type(), MessageType::ProtocolError);
+        assert_eq!(envelope.connection_generation(), 0);
+        assert_eq!(
+            decode_protocol_error(envelope.payload())?,
+            ProtocolErrorView {
+                error_code: 1104,
+                disposition: ProtocolDisposition::TransportFatal,
+                related_command_id: 0,
+                expected_command_id: 0,
+                expected_server_sequence: 0,
+            }
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn protocol_error_decode_fails_closed() {
+        for payload in [
+            &[][..],
+            &[0x10, 0x04][..],                                     // no code
+            &[0x08, 0xd0, 0x08][..],                               // no disposition
+            &[0x08, 0xd0, 0x08, 0x10, 0x05][..],                   // unregistered disposition
+            &[0x08, 0x00, 0x10, 0x04][..],                         // zero code
+            &[0x08, 0xd0, 0x08, 0x08, 0xd0, 0x08, 0x10, 0x04][..], // repeated code
+        ] {
+            assert_eq!(
+                decode_protocol_error(payload),
+                Err(FoundationProtocolError::MalformedEnvelope),
+                "{payload:02x?}"
+            );
+        }
     }
 
     #[test]
