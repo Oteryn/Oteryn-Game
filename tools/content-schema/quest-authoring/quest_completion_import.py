@@ -259,7 +259,7 @@ def main():
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(raw)
-    print('Completion import: 310 quests; 3219 tracks; 5154 transitions; 382 unsupported; 0 chosen-source holds; activation=false')
+    print('Completion import: 310 quests; 3221 tracks; 5154 transitions; 382 unsupported; 0 chosen-source holds; activation=false')
 
 
 if __name__ == '__main__':

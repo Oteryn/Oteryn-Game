@@ -60,20 +60,17 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(
             {
                 "DEFINITION_READY_RUNTIME_UNKNOWN": 42,
-                "NATIVE_BINDINGS_PENDING": 322,
-                "NATIVE_LOWERING_PENDING": 9,
+                "NATIVE_BINDINGS_PENDING": 331,
             },
             self.result["summary"]["implementation_state"],
         )
         self.assertEqual(
             {
-                "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 139,
+                "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 146,
                 "CHOSEN_TYPED_PROGRESS_ONLY": 68,
                 "LOWERED": 7,
-                "NOT_LOWERED_MULTI_TRACK": 1,
-                "NOT_LOWERED_NO_MISSIONS": 1,
-                "NO_CANDIDATE": 49,
-                "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY": 108,
+                "NO_CANDIDATE": 42,
+                "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY": 110,
             },
             self.result["summary"]["typed_progress_state"],
         )
