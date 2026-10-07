@@ -480,6 +480,9 @@ impl BotSupervisor {
         scenario: BotScenario,
         config: BotRunConfig,
     ) -> Result<BotRun, SupervisorError> {
+        if config.liveness_slice.is_zero() {
+            return Err(SupervisorError::ZeroLivenessSlice);
+        }
         let mut ids = BTreeSet::new();
         for spec in &specs {
             if !ids.insert(spec.bot_id) {
@@ -559,23 +562,23 @@ impl BotRun {
     }
 
     pub async fn finish(mut self) -> Vec<BotReport> {
-        let handles = std::mem::take(&mut self.handles);
-        collect_reports(handles).await
+        // Keep handles owned by self while awaiting: cancelling collection must
+        // still let Drop abort every worker rather than detach its JoinHandle.
+        collect_reports(&mut self.handles).await
     }
 
     pub async fn shutdown(mut self) -> Vec<BotReport> {
         let _ = self.shutdown.send(true);
-        let handles = std::mem::take(&mut self.handles);
-        collect_reports(handles).await
+        collect_reports(&mut self.handles).await
     }
 }
 
-async fn collect_reports(handles: Vec<((u64, String), JoinHandle<BotReport>)>) -> Vec<BotReport> {
+async fn collect_reports(handles: &mut [((u64, String), JoinHandle<BotReport>)]) -> Vec<BotReport> {
     let mut reports = Vec::with_capacity(handles.len());
     for ((bot_id, profile), handle) in handles {
         match handle.await {
             Ok(report) => reports.push(report),
-            Err(_) => reports.push(BotReport::task_failed(bot_id, profile)),
+            Err(_) => reports.push(BotReport::task_failed(*bot_id, profile.clone())),
         }
     }
     reports.sort_by_key(|report| report.bot_id);
@@ -841,5 +844,117 @@ mod tests {
             concurrency.and_then(|value| BotRunConfig::new(value, Duration::ZERO).ok()),
             None
         );
+    }
+
+    #[test]
+    fn supervisor_rejects_zero_slice_in_a_direct_config() -> Result<(), Box<dyn Error>> {
+        let runtime = runtime()?;
+        runtime.block_on(async {
+            let runner = Arc::new(MockRunner::new(None, None, false));
+            let supervisor = BotSupervisor::with_runner(runner.clone());
+            let config = BotRunConfig {
+                concurrency: NonZeroUsize::new(1).ok_or_else(|| io::Error::other("nonzero"))?,
+                liveness_slice: Duration::ZERO,
+            };
+            assert_eq!(
+                supervisor
+                    .start(specs(1)?, BotScenario::default(), config)
+                    .err(),
+                Some(SupervisorError::ZeroLivenessSlice)
+            );
+            assert_eq!(runner.active.load(Ordering::SeqCst), 0);
+            Ok::<(), Box<dyn Error>>(())
+        })
+    }
+
+    struct PendingRunner {
+        started: tokio::sync::mpsc::UnboundedSender<u64>,
+        stopped: tokio::sync::mpsc::UnboundedSender<u64>,
+    }
+
+    struct WorkerDrop {
+        bot_id: u64,
+        stopped: tokio::sync::mpsc::UnboundedSender<u64>,
+    }
+
+    impl Drop for WorkerDrop {
+        fn drop(&mut self) {
+            let _ = self.stopped.send(self.bot_id);
+        }
+    }
+
+    impl BotRunner for PendingRunner {
+        fn run<'a>(
+            &'a self,
+            spec: BotSpec,
+            _scenario: Arc<BotScenario>,
+            _context: BotRunContext,
+        ) -> BotFuture<'a> {
+            Box::pin(async move {
+                let _guard = WorkerDrop {
+                    bot_id: spec.bot_id,
+                    stopped: self.stopped.clone(),
+                };
+                let _ = self.started.send(spec.bot_id);
+                std::future::pending().await
+            })
+        }
+    }
+
+    #[test]
+    fn cancelling_finish_or_shutdown_aborts_every_worker() -> Result<(), Box<dyn Error>> {
+        let runtime = runtime()?;
+        runtime.block_on(async {
+            for shutdown in [false, true] {
+                let (started, mut starts) = tokio::sync::mpsc::unbounded_channel();
+                let (stopped, mut stops) = tokio::sync::mpsc::unbounded_channel();
+                let supervisor =
+                    BotSupervisor::with_runner(Arc::new(PendingRunner { started, stopped }));
+                let config = BotRunConfig::new(
+                    NonZeroUsize::new(2).ok_or_else(|| io::Error::other("nonzero"))?,
+                    Duration::from_millis(25),
+                )?;
+                let run = supervisor.start(specs(2)?, BotScenario::default(), config)?;
+                for _ in 0..2 {
+                    assert!(
+                        tokio::time::timeout(Duration::from_secs(2), starts.recv())
+                            .await?
+                            .is_some()
+                    );
+                }
+                let (polled, first_poll) = tokio::sync::oneshot::channel();
+                let joining = tokio::spawn(async move {
+                    let collecting = async move {
+                        if shutdown {
+                            run.shutdown().await
+                        } else {
+                            run.finish().await
+                        }
+                    };
+                    let mut collecting = std::pin::pin!(collecting);
+                    let mut polled = Some(polled);
+                    std::future::poll_fn(move |cx| {
+                        let result = collecting.as_mut().poll(cx);
+                        if let Some(sender) = polled.take() {
+                            let _ = sender.send(());
+                        }
+                        result
+                    })
+                    .await
+                });
+                tokio::time::timeout(Duration::from_secs(2), first_poll).await??;
+                joining.abort();
+                assert!(joining.await.is_err());
+                let mut stopped_ids = BTreeSet::new();
+                for _ in 0..2 {
+                    let id = tokio::time::timeout(Duration::from_secs(2), stops.recv())
+                        .await?
+                        .ok_or_else(|| io::Error::other("worker drop channel closed"))?;
+                    stopped_ids.insert(id);
+                }
+                assert_eq!(stopped_ids, BTreeSet::from([0, 1]));
+            }
+            Ok::<(), Box<dyn Error>>(())
+        })
     }
 }
