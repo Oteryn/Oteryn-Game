@@ -502,10 +502,15 @@ fn decode_region(
         };
         let payload = zstd::bulk::decompress(frame, capacity)
             .map_err(|error| format!("sector {local}: {error}"))?;
-        tiles.extend(
-            sector::decode(&payload, (sx, sy), limits, budget)
-                .map_err(|error| format!("sector {local}: {error:?}"))?,
-        );
+        let mut decoded = sector::decode(&payload, (sx, sy), limits, budget)
+            .map_err(|error| format!("sector {local}: {error:?}"))?;
+        // Zones are not drawn and not charged to the budget. Each zone id takes at least one
+        // payload byte, so dropping them per sector keeps a region's retained memory to the
+        // charged tiles and entries.
+        for tile in &mut decoded {
+            tile.zones = Vec::new();
+        }
+        tiles.extend(decoded);
     }
     if expected != data.len() {
         return Err("bytes after the last sector payload".into());
