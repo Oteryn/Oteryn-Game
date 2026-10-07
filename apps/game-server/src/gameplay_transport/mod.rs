@@ -85,6 +85,7 @@ use connection::{
     UseOutcome, admit_frame, serve_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
+use kill_reward::{KillRelease, ReleaseEnd};
 use oteryn_foundation::CancellationToken;
 mod condition_snapshots;
 use std::future::{Future, poll_fn};
@@ -314,7 +315,14 @@ async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
         loop {
             match authority.lose_control(lost.session, wait).await {
                 ControlLossResult::Recorded => {
-                    let _ = authority.expire_control_loss(lost.session).await;
+                    // KILL-REWARD-COMP-1 §1.3: an unknown expiry keeps its fence, kill mark and
+                    // parked kills, and runs again behind the backoff, unbounded in count.
+                    while authority.expire_control_loss(lost.session).await
+                        == GraceExpiryResult::Unknown
+                    {
+                        tokio::time::sleep(backoff).await;
+                        backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                    }
                     break;
                 }
                 ControlLossResult::ResumedHistory => {
@@ -826,9 +834,12 @@ impl TerminalRelease {
 /// mismatch releases of one lost epoch join one `ControlLoss(epoch)` fence, so only the last
 /// holder to settle lifts it: a joiner settling early never lifts the fence while another
 /// release of the epoch is still saving or committing. Only changed while `runtime` is locked.
+/// A grace expiry that ends unknown keeps its hold here for the next expiry of the session;
+/// concurrent lifecycles of the session each keep their own.
 #[derive(Default)]
 pub(crate) struct FenceHolders(
     std::sync::Mutex<std::collections::HashMap<(GameSessionId, TransitionFence), u32>>,
+    std::sync::Mutex<std::collections::HashMap<GameSessionId, Vec<FenceHold>>>,
 );
 
 /// One release's hold on its fence token, taken at its first fence and given back when it
@@ -920,6 +931,35 @@ impl FenceHolders {
     /// The session left the slot: its fences went with it.
     fn forget(&self, session: GameSessionId) {
         self.counts().retain(|(held, _), _| *held != session);
+        self.kept().remove(&session);
+    }
+
+    fn kept(
+        &self,
+    ) -> std::sync::MutexGuard<'_, std::collections::HashMap<GameSessionId, Vec<FenceHold>>> {
+        self.1
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// A grace expiry ended unknown still holding `hold`: the next expiry of the session takes
+    /// it over instead of counting the same release again. A hold another lifecycle of the
+    /// session kept stays beside it, each counted once.
+    fn keep(&self, hold: FenceHold) {
+        if hold.held {
+            self.kept().entry(hold.session).or_default().push(hold);
+        }
+    }
+
+    /// One hold an unknown grace expiry of `session` kept, if any.
+    fn resume(&self, session: GameSessionId) -> Option<FenceHold> {
+        let mut kept = self.kept();
+        let holds = kept.get_mut(&session)?;
+        let hold = holds.pop();
+        if holds.is_empty() {
+            kept.remove(&session);
+        }
+        hold
     }
 }
 
@@ -1374,8 +1414,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// CHARM-DESC-FENCE-LEASE: grace expiry fences the slot's damage writes under the runtime
     /// lock (step a), commits the durable release with the lock released (step b), then settles
     /// the slot by the durable outcome (step c). The fence token is the lost epoch, so a retry
-    /// joins its own fence and a resume of that epoch lifts it.
+    /// joins its own fence and a resume of that epoch lifts it. An unknown expiry keeps its hold
+    /// for the next one, so the lifecycle's retries count the release once.
     async fn release_after_grace(&self, admitted: AdmittedSession) -> GraceExpiryResult {
+        let mut held = self.fence_holders.resume(admitted.game_session_id);
+        let result = self.release_grace_attempts(admitted, &mut held).await;
+        if result == GraceExpiryResult::Unknown
+            && let Some(hold) = held
+        {
+            self.fence_holders.keep(hold);
+        }
+        result
+    }
+
+    async fn release_grace_attempts(
+        &self,
+        admitted: AdmittedSession,
+        held: &mut Option<FenceHold>,
+    ) -> GraceExpiryResult {
         let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
             return GraceExpiryResult::NotApplicable;
         };
@@ -1391,7 +1447,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             pause
         };
         // One hold across the attempts of an epoch, so a retry is counted once.
-        let mut held: Option<FenceHold> = None;
         let mut settled_death = None;
         for _ in 0..EXPIRY_ATTEMPTS {
             let mark = match self
@@ -1412,13 +1467,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some(hold) = held.as_mut() {
                     self.fence_holders.release(hold);
                 }
+                // Every hold kept on the session is of a lost epoch that is over.
+                while let Some(mut stale) = self.fence_holders.resume(session) {
+                    self.fence_holders.release(&mut stale);
+                }
+                // KILL-REWARD-COMP-1 §1.3: no release of the resumed epoch committed, so a kill
+                // mark an unknown outcome kept is cleared as retryable.
+                self.release_orphaned_kills(session).await;
                 return GraceExpiryResult::NotApplicable;
             };
             let token = TransitionFence::GraceExpiry(epoch);
             if let Some(stale) = held.as_mut().filter(|hold| hold.token != token) {
                 self.fence_holders.release(stale);
             }
-            let hold = match &mut held {
+            let hold = match &mut *held {
                 Some(hold) if hold.token == token => hold,
                 slot => slot.insert(FenceHold::new(session, token)),
             };
@@ -1456,6 +1518,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // The mark moved: the epoch was resumed before the fence.
                 FenceStep::Refused(CarrierError::ControlLossConflict) => {
+                    self.release_orphaned_kills(session).await;
                     return GraceExpiryResult::NotApplicable;
                 }
                 FenceStep::Refused(_) => return GraceExpiryResult::Unknown,
@@ -1474,39 +1537,68 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
+            // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends; a deferred
+            // drain sends nothing, and the lifecycle retries the expiry behind its backoff.
+            let kills = match self.seal_kill_rewards(session).await {
+                KillRelease::Send(mark) => mark,
+                KillRelease::Deferred => return GraceExpiryResult::Unknown,
+            };
             let pause = match store.release_expired_loss(session, &account_id).await {
                 Ok(ExpiredLossReleaseV1::NotApplicable) => {
                     match self.settle_unended(&store, actor, hold).await {
-                        UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
+                        UnendedSettle::Lifted => {
+                            self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
+                            return GraceExpiryResult::NotApplicable;
+                        }
                         UnendedSettle::Terminal => {
-                            return self
+                            self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                            let result = self
                                 .retire_reconciled(controller.account_id, session, actor)
                                 .await;
+                            self.forget_kill_release(kills).await;
+                            return result;
                         }
-                        UnendedSettle::Unknown => next_backoff(),
+                        UnendedSettle::Unknown => {
+                            self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                            next_backoff()
+                        }
                     }
                 }
                 Ok(ExpiredLossReleaseV1::NotExpired { deadline, now }) => {
                     match self.settle_unended(&store, actor, hold).await {
                         UnendedSettle::Lifted => {
+                            self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
                             Duration::from_secs(u64::try_from(deadline - now).unwrap_or(0))
                                 .saturating_add(EXPIRY_SLACK)
                         }
                         UnendedSettle::Terminal => {
-                            return self
+                            self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                            let result = self
                                 .retire_reconciled(controller.account_id, session, actor)
                                 .await;
+                            self.forget_kill_release(kills).await;
+                            return result;
                         }
-                        UnendedSettle::Unknown => next_backoff(),
+                        UnendedSettle::Unknown => {
+                            self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                            next_backoff()
+                        }
                     }
                 }
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
+                    self.settle_kill_release(kills, ReleaseEnd::Committed).await;
                     // PREM-1b: the session is over; its Premium pulls stop.
                     self.release_premium(controller.account_id, session);
-                    return self.retire(session, actor).await;
+                    let result = self.retire(session, actor).await;
+                    self.forget_kill_release(kills).await;
+                    return result;
                 }
-                // Unknown outcome: keep the fence; the retry reconciles from the durable row.
-                Err(_) => next_backoff(),
+                // Unknown outcome: keep the fence and the kill mark; the retry reconciles from
+                // the durable row.
+                Err(_) => {
+                    self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                    next_backoff()
+                }
             };
             tokio::time::sleep(pause).await;
         }
@@ -1680,13 +1772,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
+        let mut kills = None;
+        let abandoned = matches!(release, TerminalRelease::Abandoned(_));
         let mut backoff = RECONCILE_BACKOFF;
         let mut next_backoff = || {
             let pause = backoff;
             backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
             pause
         };
-        for _ in 0..EXPIRY_ATTEMPTS {
+        let mut attempt = 0;
+        while retries_release(attempt, abandoned) {
+            attempt = attempt.saturating_add(1);
             if !self
                 .settle_released_death(actor, session, &mut settled_death)
                 .await
@@ -1720,6 +1816,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
+            // KILL-REWARD-COMP-1 §1.3: the session's own kills settle before it ends.
+            kills = match self.seal_kill_rewards(session).await {
+                KillRelease::Send(mark) => mark,
+                KillRelease::Deferred => {
+                    tokio::time::sleep(next_backoff()).await;
+                    continue;
+                }
+            };
             let outcome = match release {
                 TerminalRelease::Abandoned(transport) => {
                     store
@@ -1741,19 +1845,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(
                     ExpiredLossReleaseV1::NotApplicable | ExpiredLossReleaseV1::NotExpired { .. },
                 ) => match self.settle_unended(&store, actor, &mut hold).await {
-                    UnendedSettle::Lifted => return GraceExpiryResult::NotApplicable,
+                    UnendedSettle::Lifted => {
+                        self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
+                        return GraceExpiryResult::NotApplicable;
+                    }
                     UnendedSettle::Terminal => {
-                        return self
+                        self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                        let result = self
                             .retire_reconciled(controller.account_id, session, actor)
                             .await;
+                        self.forget_kill_release(kills).await;
+                        return result;
                     }
-                    UnendedSettle::Unknown => next_backoff(),
+                    UnendedSettle::Unknown => {
+                        self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                        next_backoff()
+                    }
                 },
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
-                    return self.retire(session, actor).await;
+                    self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                    let result = self.retire(session, actor).await;
+                    self.forget_kill_release(kills).await;
+                    return result;
                 }
-                // Unknown outcome: keep the fence; the retry reconciles from the durable row.
-                Err(_) => next_backoff(),
+                // Unknown outcome: keep the fence and the kill mark; the retry reconciles from
+                // the durable row.
+                Err(_) => {
+                    self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                    next_backoff()
+                }
             };
             tokio::time::sleep(pause).await;
         }
@@ -1762,12 +1882,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // settles as released; a session still holding the lease gives back this release's
             // hold, and the epoch fence is lifted once no other release holds it, so the client's
             // retry can repeat the release.
+            // Every attempt gave up its kill hold, so the kill mark is reconciled, not settled.
             return match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Terminal => {
-                    self.retire_reconciled(controller.account_id, session, actor)
-                        .await
+                    self.reconcile_kill_release(kills, ReleaseEnd::Committed)
+                        .await;
+                    let result = self
+                        .retire_reconciled(controller.account_id, session, actor)
+                        .await;
+                    self.forget_kill_release(kills).await;
+                    result
                 }
-                UnendedSettle::Lifted | UnendedSettle::Unknown => GraceExpiryResult::Unknown,
+                UnendedSettle::Lifted => {
+                    self.reconcile_kill_release(kills, ReleaseEnd::Retryable)
+                        .await;
+                    GraceExpiryResult::Unknown
+                }
+                // The fence stays: the epoch's grace expiry, which joins the same token, takes
+                // the hold over instead of counting it again.
+                UnendedSettle::Unknown => {
+                    self.fence_holders.keep(hold);
+                    GraceExpiryResult::Unknown
+                }
             };
         }
         GraceExpiryResult::Unknown
@@ -2119,8 +2255,8 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         item_ref_admission::observe_character_inventory(self, game_session_id).await
     }
 
-    /// VIS-3: the Channel's players and live creatures, read in one owner work item. Corpses are
-    /// not shown until their item binding lands (D3-7).
+    /// VIS-3: the Channel's players and live creatures, read in one owner work item, and
+    /// (MAP-ITEM-REF-1 Part B) its bound corpses as objects in the same read.
     async fn observe_visible_entities(
         &self,
         actor: ExactActorRef,
@@ -2149,6 +2285,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             },
             revision: entry.revision,
         })
+        .chain(item_ref_admission::visible_corpses(
+            &runtime,
+            self.active_generation,
+        ))
         .collect();
         Some(world_spatial::ChannelEntities {
             content_generation: runtime.content_pin().client_artifact_digest(),
@@ -2731,11 +2871,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {
         let result = self.release_after_grace(admitted).await;
-        // Resumed, released or unprovable: this lost connection can no longer be resumed.
-        self.forget_lost(
-            admitted.game_session_id,
-            admitted.continuity.connection_generation,
-        );
+        // Resumed or released: this lost connection can no longer be resumed. An unknown result
+        // keeps it; the lifecycle runs the expiry again.
+        if result != GraceExpiryResult::Unknown {
+            self.forget_lost(
+                admitted.game_session_id,
+                admitted.continuity.connection_generation,
+            );
+        }
         result
     }
 
@@ -3013,6 +3156,29 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
     }
+
+    /// MAP-ITEM-REF-1 Part B: a bound corpse's durable contents for `USE` (domain 11).
+    async fn observe_item_target(
+        &self,
+        actor: ExactActorRef,
+        target: item_view::ItemKey,
+    ) -> Option<item_view::ItemTargetObservation> {
+        item_ref_admission::observe_item_target(self, actor, target).await
+    }
+
+    /// MAP-ITEM-REF-1 Part B: command 9's corpse-entry TRANSFER into the main backpack.
+    async fn take_corpse_entry(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        corpse: item_view::ItemKey,
+        entry: item_view::ItemKey,
+    ) -> Result<
+        crate::durability::item_transfer::ItemTransferOutcome,
+        crate::combat_pickup::GroundPickupError,
+    > {
+        item_ref_admission::take_corpse_entry(self, actor, command, corpse, entry).await
+    }
 }
 
 /// Same-session grace from the authoritative `ControlLossEpoch` boundary: registry row
@@ -3047,6 +3213,15 @@ const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
 /// Bound on grace-expiry release attempts (waits for the deadline and store
 /// retries): with the capped backoff, about two minutes of owner unavailability.
 const EXPIRY_ATTEMPTS: u32 = 32;
+
+/// Whether a terminal release makes another attempt. KILL-REWARD-COMP-1 §1.3: an abandoned
+/// release runs on behind the backoff, unbounded in count, until it ends, since its callers
+/// cannot retry it: a kill drain deferred on every attempt, or a kill mark an unknown outcome
+/// kept, never strands the session ACTIVE on its dead transport with its fence held.
+const fn retries_release(attempt: u32, abandoned: bool) -> bool {
+    attempt < EXPIRY_ATTEMPTS || abandoned
+}
+
 /// Cap of the grace-expiry store retry backoff.
 const EXPIRY_MAX_BACKOFF: Duration = Duration::from_secs(5);
 /// Whole-second durable clock: wait just past the deadline second.
@@ -4563,6 +4738,72 @@ mod tests {
         }
     }
 
+    /// KILL-REWARD-COMP-1 §1.3 (#1908 Codex P1 4202825538): an abandoned release, whose kill
+    /// drain may stay deferred or whose kill mark an unknown outcome kept on every attempt, runs
+    /// past the attempt bound until it ends; a mismatch release stops at it.
+    #[test]
+    fn an_abandoned_release_retries_past_the_bound() {
+        assert!(retries_release(0, true));
+        assert!(retries_release(0, false));
+        assert!(!retries_release(EXPIRY_ATTEMPTS, false));
+        assert!(retries_release(EXPIRY_ATTEMPTS, true));
+        assert!(retries_release(u32::MAX, true));
+    }
+
+    /// Records the loss; the first two grace expiries end unknown.
+    struct UnknownExpiryAuthority {
+        inner: GatedAuthority,
+        expiries: AtomicUsize,
+    }
+
+    impl FreshAdmissionAuthority for UnknownExpiryAuthority {
+        async fn admit(
+            &self,
+            attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            self.inner.admit(attempt).await
+        }
+        async fn lose_control(&self, _: AdmittedSession, _: Duration) -> ControlLossResult {
+            ControlLossResult::Recorded
+        }
+        async fn expire_control_loss(&self, _: AdmittedSession) -> GraceExpiryResult {
+            if self.expiries.fetch_add(1, Ordering::SeqCst) < 2 {
+                GraceExpiryResult::Unknown
+            } else {
+                GraceExpiryResult::Released
+            }
+        }
+    }
+
+    /// KILL-REWARD-COMP-1 §1.3: an unknown grace expiry runs again behind the backoff until it
+    /// reaches a final result.
+    #[test]
+    fn an_unknown_grace_expiry_is_retried_until_final() -> Result<(), Box<dyn Error>> {
+        runtime()?.block_on(async {
+            let authority = UnknownExpiryAuthority {
+                inner: GatedAuthority::new(true),
+                expiries: AtomicUsize::new(0),
+            };
+            let session = AdmittedSession {
+                game_session_id: GameSessionId::decode(&CHARACTER)?,
+                world_id: crate::foundation::WorldId::decode(&CHARACTER)?,
+                channel_id: crate::foundation::ChannelId::decode(&CHARACTER)?,
+                runtime_actor: None,
+                first_entry: FirstEntryOutcome::NotApplicable,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            };
+            let lost = LostControl {
+                session,
+                wait: Duration::ZERO,
+            };
+            control_loss_lifecycle(&authority, lost, &CancellationToken::new()).await;
+            assert_eq!(authority.expiries.load(Ordering::SeqCst), 3);
+            Ok(())
+        })
+    }
+
     #[test]
     fn resource_loss_lifecycle_holds_no_connection_slot() -> Result<(), Box<dyn Error>> {
         runtime()?.block_on(async {
@@ -5333,6 +5574,77 @@ mod tests {
         assert_eq!(holders.fence(&mut runtime, actor, &mut grace), Ok(()));
         holders.forget(session);
         assert!(holders.counts().is_empty());
+    }
+
+    /// KILL-REWARD-COMP-1 (#1908 Codex P1 4202367021): a grace expiry that ends unknown keeps
+    /// its hold for the lifecycle's retry, which counts the release once, so the retry's
+    /// non-terminal settle lifts the fence and leaves no count.
+    #[test]
+    fn a_retried_unknown_grace_expiry_counts_its_hold_once() {
+        let (mut runtime, actor, session) = lost_slot();
+        let holders = FenceHolders::default();
+        let token = TransitionFence::GraceExpiry(1);
+        let other = TransitionFence::Transition(9);
+        let mut first = FenceHold::new(session, token);
+        assert_eq!(holders.fence(&mut runtime, actor, &mut first), Ok(()));
+        // The expiry ends unknown holding the fence; the retry takes the hold over.
+        holders.keep(first);
+        let mut retry = holders.resume(session).expect("kept hold");
+        assert!(holders.resume(session).is_none());
+        assert_eq!(holders.fence(&mut runtime, actor, &mut retry), Ok(()));
+        assert_eq!(holders.counts().get(&(session, token)), Some(&1));
+        // The retry's non-terminal settle lifts the fence and no count is left.
+        assert_eq!(holders.lift(&mut runtime, actor, &mut retry), Ok(()));
+        assert!(holders.counts().is_empty());
+        assert_eq!(other.fence(&mut runtime, actor, session), Ok(()));
+        assert_eq!(other.lift(&mut runtime, actor, session), Ok(true));
+        // A hold that ended is not kept, and a retired session leaves none behind.
+        holders.keep(retry);
+        assert!(holders.resume(session).is_none());
+        let mut kept = FenceHold::new(session, token);
+        assert_eq!(holders.fence(&mut runtime, actor, &mut kept), Ok(()));
+        holders.keep(kept);
+        holders.forget(session);
+        assert!(holders.resume(session).is_none());
+    }
+
+    /// KILL-REWARD-COMP-1 (#1908 Codex P1 4202825532): two grace-expiry lifecycles of one
+    /// session that both end unknown keep both holds; their retries settle each once, so the
+    /// fence is lifted and no count is left.
+    #[test]
+    fn concurrent_unknown_grace_expiries_keep_every_hold() {
+        let (mut runtime, actor, session) = lost_slot();
+        let holders = FenceHolders::default();
+        let token = TransitionFence::GraceExpiry(1);
+        let other = TransitionFence::Transition(9);
+        let mut first = FenceHold::new(session, token);
+        let mut second = FenceHold::new(session, token);
+        assert_eq!(holders.fence(&mut runtime, actor, &mut first), Ok(()));
+        assert_eq!(holders.fence(&mut runtime, actor, &mut second), Ok(()));
+        // Both end unknown: neither kept hold replaces the other.
+        holders.keep(first);
+        holders.keep(second);
+        let mut retries = [
+            holders.resume(session).expect("kept hold"),
+            holders.resume(session).expect("kept hold"),
+        ];
+        assert!(holders.resume(session).is_none());
+        assert_eq!(holders.counts().get(&(session, token)), Some(&2));
+        // Each retry joins the fence without counting again, and settles its own hold once.
+        for retry in &mut retries {
+            assert_eq!(holders.fence(&mut runtime, actor, retry), Ok(()));
+        }
+        assert_eq!(holders.counts().get(&(session, token)), Some(&2));
+        let [early, last] = &mut retries;
+        assert_eq!(holders.lift(&mut runtime, actor, early), Ok(()));
+        assert_eq!(
+            other.fence(&mut runtime, actor, session),
+            Err(CarrierError::WriteFenceBusy)
+        );
+        assert_eq!(holders.lift(&mut runtime, actor, last), Ok(()));
+        assert!(holders.counts().is_empty());
+        assert_eq!(other.fence(&mut runtime, actor, session), Ok(()));
+        assert_eq!(other.lift(&mut runtime, actor, session), Ok(true));
     }
 
     /// DEATH-2b: only a cell that is Walkable in the pinned generation's own movement cells of

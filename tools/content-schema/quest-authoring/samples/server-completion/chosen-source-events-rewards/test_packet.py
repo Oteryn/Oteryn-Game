@@ -1,3 +1,4 @@
+import collections
 import json
 import pathlib
 import unittest
@@ -14,22 +15,22 @@ class ChosenSourceEventsRewardsTest(unittest.TestCase):
         cls.packet = json.loads(PACKET.read_text(encoding="utf-8"))
 
     def test_population_and_epoch(self):
-        self.assertEqual("OTERYN_CHOSEN_SOURCE_EVENT_REWARD_ASSOCIATIONS/v2", self.packet["schema"])
+        self.assertEqual("OTERYN_CHOSEN_SOURCE_EVENT_REWARD_ASSOCIATIONS/v4", self.packet["schema"])
         self.assertEqual(PIN, self.packet["epoch"])
         self.assertEqual(WORLD_SHA, self.packet["input_refs"]["qualified_world_sha256"])
-        self.assertEqual(227, self.packet["counts"]["quests"])
-        self.assertEqual(1406, self.packet["counts"]["stages"])
-        self.assertEqual(1159, self.packet["counts"]["non_dialogue_stages"])
-        self.assertEqual(485, self.packet["counts"]["reward_intents"])
-        self.assertEqual(599, self.packet["counts"]["exact_stage_target_refs"])
-        self.assertEqual(353, self.packet["counts"]["exact_reward_refs"])
+        self.assertEqual(236, self.packet["counts"]["quests"])
+        self.assertEqual(1475, self.packet["counts"]["stages"])
+        self.assertEqual(1225, self.packet["counts"]["non_dialogue_stages"])
+        self.assertEqual(508, self.packet["counts"]["reward_intents"])
+        self.assertEqual(617, self.packet["counts"]["exact_stage_target_refs"])
+        self.assertEqual(372, self.packet["counts"]["exact_reward_refs"])
         self.assertEqual(25, self.packet["counts"]["encounter_outcome_seams"])
 
     def test_no_runtime_promotion(self):
         self.assertFalse(self.packet["runtime_admitted"])
-        self.assertEqual(227, len(self.packet["records"]))
+        self.assertEqual(236, len(self.packet["records"]))
         self.assertEqual(
-            227,
+            236,
             len({row["quest_ref"]["key"] for row in self.packet["records"]}),
         )
         for quest in self.packet["records"]:
@@ -91,6 +92,31 @@ class ChosenSourceEventsRewardsTest(unittest.TestCase):
             self.assertIsNone(row["native_dispatch_binding"])
             self.assertFalse(row["runtime_admitted"])
 
+
+    def test_completion_stages_preserve_raw_terminal_intent(self):
+        completion = [
+            stage
+            for quest in self.packet["records"]
+            for stage in quest["stages"]
+            if stage["kind"] == "complete"
+        ]
+        self.assertEqual(236, len(completion))
+        distribution = collections.Counter(
+            len(stage["terminal_intent"]["raw_targets"]) for stage in completion
+        )
+        self.assertEqual({0: 9, 1: 203, 2: 21, 3: 3}, dict(distribution))
+        self.assertEqual(
+            227,
+            sum(bool(stage["terminal_intent"]["raw_targets"]) for stage in completion),
+        )
+        for stage in completion:
+            intent = stage["terminal_intent"]
+            self.assertIsInstance(intent["raw_targets"], list)
+            self.assertTrue(intent["objective"])
+            self.assertFalse(intent["canonical_mapping_attempted"])
+            self.assertFalse(intent["runtime_admitted"])
+            self.assertFalse(stage["runtime_admitted"])
+
     def test_all_completion_stages_remain_unbound(self):
         completion = [
             stage
@@ -98,7 +124,7 @@ class ChosenSourceEventsRewardsTest(unittest.TestCase):
             for stage in quest["stages"]
             if stage["kind"] == "complete"
         ]
-        self.assertEqual(227, len(completion))
+        self.assertEqual(236, len(completion))
         self.assertTrue(
             all("NATIVE_COMPLETION_REDUCER_BINDING_PENDING" in stage["unresolved"]
                 for stage in completion)

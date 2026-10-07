@@ -1213,7 +1213,7 @@ where
         let Some(channel) = authority.observe_visible_entities(actor).await else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
-        let mut view = SessionVisibility::default();
+        let mut view = SessionVisibility::with_objects(item_view.is_some());
         let snapshot = view.snapshot(&channel, &mut |entities| {
             attach_spatial_handles(item_view.as_mut(), entities)
         });
