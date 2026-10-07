@@ -118,6 +118,19 @@ in-process concurrency invariant of the Channel owner (decision §1.7).
   (semantic and unavailable failure) and the source pin
   `familiar_history_marks_the_window_before_any_fallible_reconciliation`.
 
+## Fix round 3
+
+- 4205657485: a resolution cancelled at an await keeps the lane fenced on the marker
+  (`ResolutionFence`).
+- 4205974117: the native, world-item and parameter writers open and mark the window as soon as
+  the item outcome is `AlreadyCommitted`, before the parameter-result and training follow-ups,
+  so their failure parks the attempt; a new write's follow-up failure reclaims it into the
+  marker. Familiar was already ordered so (round 2).
+- The stacked -kr branch (D905) is merged so `kill_reward.rs` and `item_ref_admission.rs` take
+  the permit and #1907 compiles against `main`.
+- Tests: `lane_tests` cancellation/fence cases and the source pin
+  `guarded_cast_writers_mark_history_before_any_fallible_follow_up`.
+
 ## Validation
 
 - `cargo fmt --all -- --check`: pass

@@ -1155,7 +1155,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let training=match training{
                 Ok(training)=>training,
                 Err(error)=>{
-                    if !historical{if let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}}
+                    if !historical && let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}
                     return Err(error);
                 },
             };

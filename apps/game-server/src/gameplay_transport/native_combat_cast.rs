@@ -3265,7 +3265,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let (private_result,training)=match follow_ups{
                 Ok(follow_ups)=>follow_ups,
                 Err(error)=>{
-                    if !historical{if let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}}
+                    if !historical && let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}
                     return Err(error);
                 }
             };

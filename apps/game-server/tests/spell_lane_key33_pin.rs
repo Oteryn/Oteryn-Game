@@ -459,7 +459,7 @@ fn guarded_cast_writers_mark_history_before_any_fallible_follow_up() {
             "{file} marks history once"
         );
         assert!(
-            body.contains("if!historical{ifletOk(attempt)=window.reclaim_uncommitted()"),
+            body.contains("if!historical&&letOk(attempt)=window.reclaim_uncommitted()"),
             "{file} reclaims only a new write's follow-up failure"
         );
     }
