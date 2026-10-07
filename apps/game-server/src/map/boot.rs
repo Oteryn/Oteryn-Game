@@ -381,6 +381,11 @@ pub(crate) mod tests {
     /// One row at native floor -7 (legacy `z` 7): grass at x 1..=3, lava (not walkable) at x 4,
     /// grass under a wall at x 5, grass under a solid box at x 6 and under a loose coin at x 7.
     pub(crate) fn bundle() -> (Vec<u8>, BundlePins) {
+        bundle_with_items("item:box", "item:coin")
+    }
+
+    /// [`bundle`] with `boxed` as palette Item id 0 (the solid box) and `coin` as Item id 1.
+    pub(crate) fn bundle_with_items(boxed: &str, coin: &str) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle_compiler::bundle::{
             self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
             TerrainKind,
@@ -425,8 +430,8 @@ pub(crate) mod tests {
                 terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
                 terrain("terrain:lava", 1, TerrainKind::Ground, Some(false)),
                 terrain("terrain:wall", 2, TerrainKind::Wall, None),
-                item("item:box", 0),
-                item("item:coin", 1),
+                item(boxed, 0),
+                item(coin, 1),
             ],
             draft_areas: Vec::new(),
             skipped_provisional_keys: Vec::new(),

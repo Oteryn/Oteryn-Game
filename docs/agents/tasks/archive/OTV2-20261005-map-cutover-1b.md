@@ -31,6 +31,7 @@ owned_paths:
   - apps/game-server/src/gameplay_transport/capabilities_tests.rs
   - apps/game-server/tests/map_cutover_boot.rs
   - apps/game-server/tests/map_cutover_view.rs
+  - apps/game-server/src/content/item_ref.rs
   - crates/protocol-oteryn/src/world_map.rs
   - docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json
   - docs/contracts/OTERYN_GAME_ERROR_CODE_REGISTRY.json
@@ -81,6 +82,8 @@ no domain 17. The registry entry of capability 18 stays `offered: false`.
   so the MAP-CUTOVER-1a boot tests pass one.
 - `OTERYN_GAME_ERROR_CODE_REGISTRY.json`: 2013 (the bundle World refusal `WorldBundleUnserved`)
   moves from ACTIVE to RETIRED because a configured bundle is now served; the code is not reused.
+- `content/item_ref.rs` (#1916 review repair): `ItemDefinitionIndex::revision` returns a key's
+  pinned revision, so the bundle boot resolves an Item from the active generation's index.
 
 ## High-risk authority/recovery qualification
 
@@ -129,6 +132,14 @@ git diff --check: pass
 
 - required: determined by the bound review policy and the control plane
 - verdict: pending; the control plane runs the review on the frozen head
+- Codex on 112ff2e9, two P1s, both repaired in the review repair candidate:
+  - 4204574347: the bundle Item lookup read the entry room content, which has no Item
+    definitions. It now resolves the revision and reference from the generation's Item key set
+    and the facts from its Item profile. `map_cutover_b_a_bundle_with_items_boots_from_the_active_generation`
+    boots an item-bearing bundle on the real boot path.
+  - 4204574356: domain 17 was composed and encoded under the Channel runtime lock. Only the
+    actor position and content generation are now read under the lock; the update runs after
+    release.
 
 ## PR and closeout
 

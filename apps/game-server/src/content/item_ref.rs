@@ -56,6 +56,15 @@ impl ItemDefinitionIndex {
         self.records.is_empty()
     }
 
+    /// The definition revision of `key` when it is an Item of this generation.
+    pub(crate) fn revision(&self, key: &str) -> Option<&str> {
+        let index = self
+            .records
+            .binary_search_by(|(candidate, _)| candidate.as_bytes().cmp(key.as_bytes()))
+            .ok()?;
+        Some(&self.records[index].1)
+    }
+
     /// The wire reference of a typed Item definition: 1 + the key's index, only when `family`
     /// is Item and the key is an Item of this generation at exactly `revision`. Anything else is
     /// `None`, and the caller fails closed.

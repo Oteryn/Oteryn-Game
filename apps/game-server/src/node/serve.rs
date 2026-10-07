@@ -1413,42 +1413,34 @@ fn world_bundle_gate(
 }
 
 /// MAP-CUTOVER-1b: boots the checked bundle's World against the active generation's Item
-/// definitions (§1.6): a palette Item key's reference is the generation's pinned Item definition
-/// index entry for that key at its content revision (MAP-ITEM-REF-1), and its solidity,
-/// `blocks_projectile` and pickup eligibility are the generation's own; a fact the generation
-/// does not state blocks and is not pickupable. A generation without an Item key set names no
-/// Item, so a bundle with any Item fails closed at boot.
+/// definitions (§1.6): a palette Item key's revision and reference are the generation's pinned
+/// Item definition index entry for that key (MAP-ITEM-REF-1), and its solidity,
+/// `blocks_projectile` and pickup eligibility are the generation's Item profile for that key and
+/// revision; a fact the generation does not state blocks and is not pickupable. A generation
+/// without an Item key set names no Item, so a bundle with any Item fails closed at boot.
 fn boot_bundle_world(
     checked: crate::map::boot::CheckedBundle,
     world: WorldId,
     channel: ChannelId,
-    content: &crate::content::CanonicalReferencePlayableContent,
     gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> Result<crate::map::boot::BundleWorld, BootError> {
-    use crate::content::{DefinitionFamily, ReferenceDefinitionKind, ReferenceItemField};
+    use crate::content::ReferenceItemField;
     let index = gameplay.and_then(|state| state.item_index());
-    let definitions: std::collections::HashMap<&str, &crate::content::ReferenceDefinition> =
-        content
-            .definitions
-            .iter()
-            .filter(|definition| definition.definition.family() == DefinitionFamily::Item)
-            .map(|definition| (definition.definition.key().as_str(), definition))
-            .collect();
     let item = |key: &str| {
-        let definition = *definitions.get(key)?;
-        let revision = definition.definition.revision().as_str();
-        let reference = index?.definition_ref("Item", key, revision)?;
-        let pickupable = match &definition.kind {
-            ReferenceDefinitionKind::Item(item) => matches!(
-                &item.semantics.physical,
+        let index = index?;
+        let revision = index.revision(key)?;
+        let reference = index.definition_ref("Item", key, revision)?;
+        let profile = gameplay
+            .and_then(|state| state.item_policy(key, revision))
+            .map(|policy| policy.record());
+        let pickupable = profile.is_some_and(|profile| {
+            matches!(
+                &profile.semantics.physical,
                 ReferenceItemField::Known(physical)
                     if physical.pickupable == ReferenceItemField::Known(true)
-            ),
-            _ => false,
-        };
-        let attributes = gameplay
-            .and_then(|state| state.item_policy(key, revision))
-            .map(|policy| &policy.record().attributes);
+            )
+        });
+        let attributes = profile.map(|profile| &profile.attributes);
         Some(crate::map::facts::ItemDefinition {
             reference,
             solid: attributes.and_then(|attributes| attributes.blocks_movement),
@@ -1552,15 +1544,7 @@ async fn boot_and_serve(
     // carries its map view in the movement cells and has no entry room: no door, chest, spell
     // or field qualification of the fixture room applies to it (§1.2).
     let bundle = bundle
-        .map(|checked| {
-            boot_bundle_world(
-                checked,
-                material.world,
-                material.channel,
-                &door_content,
-                gameplay,
-            )
-        })
+        .map(|checked| boot_bundle_world(checked, material.world, material.channel, gameplay))
         .transpose()?;
     let (channel_pin, movement_cells) = match &bundle {
         Some(world) => (
@@ -2015,6 +1999,62 @@ mod tests {
                 (2, 0, 7),
             )
         );
+    }
+
+    /// #1916: a bundle whose palette names Items boots on the real path, from the active
+    /// generation's Item key set and profiles, not from the entry room's content.
+    #[test]
+    fn map_cutover_b_a_bundle_with_items_boots_from_the_active_generation() {
+        const KEYS: &[u8] =
+            include_bytes!("../../../../tools/content-schema/native-gameplay/item-keys.json");
+        let (boxed, coin) = ("oteryn:item.tibia.i100", "oteryn:item.tibia.i1000");
+        let (bytes, pins) = crate::map::boot::tests::bundle_with_items(boxed, coin);
+        let mut revision = String::from("sha256:");
+        for byte in pins.digest {
+            revision.push_str(&format!("{byte:02x}"));
+        }
+        let boot_pins = crate::map::boot::BootPins {
+            bundle: pins,
+            map_revision: revision,
+            start: crate::map::overlay::TilePos {
+                x: 2,
+                y: 0,
+                floor: -7,
+            },
+        };
+        let checked = || crate::map::boot::check(bytes.clone(), boot_pins.clone()).expect("check");
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let with = crate::content::native_gameplay::tests::activated_with_item_keys(Some(KEYS));
+        let gameplay = with.active().expect("active").native_gameplay();
+        let index = gameplay
+            .and_then(|state| state.item_index())
+            .expect("index");
+        let booted = boot_bundle_world(checked(), world, channel, gameplay).expect("booted");
+        for (key, x, compact) in [(boxed, 6, 0), (coin, 7, 1)] {
+            use crate::map::view::MapFacts;
+            let reference = index
+                .definition_ref("Item", key, index.revision(key).expect("revision"))
+                .expect("reference");
+            let at = crate::map::overlay::TilePos { x, y: 0, floor: -7 };
+            let entry = booted
+                .facts()
+                .base_entry(at, 1, compact)
+                .expect("item facts");
+            assert_eq!(
+                entry.definition,
+                oteryn_protocol_oteryn::world_map::MapDefinition::Item(reference)
+            );
+        }
+        // A generation without an Item key set names no Item: the same bundle fails closed.
+        let without = crate::content::native_gameplay::tests::activated_with_item_keys(None);
+        let gameplay = without.active().expect("active").native_gameplay();
+        assert!(matches!(
+            boot_bundle_world(checked(), world, channel, gameplay),
+            Err(BootError::WorldBundle(_))
+        ));
     }
 
     #[test]
