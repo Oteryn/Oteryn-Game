@@ -63,6 +63,9 @@ No migration, wire change or Platform change.
 - Codex P1 4200340107: a busy or re-establishing durability holder at startup is no answer, not a
   privilege refusal; the publisher retries the privilege check with bounded backoff and stops only
   on a definite refusal.
+- Codex P1 4204083252 (D742): a fence rename not followed by a successful directory sync leaves F
+  unusable (every read refused, so `admit` refuses even at the same epoch) until a directory sync
+  succeeds; every fence handle also syncs the directory before its first read.
 - Follow-up GAME-LCFA-RESYNC-DEADLINE-1 (Codex P2 4200478837): `ops projection resync` runs inside
   the ordinary 2 s root pass (`DB_PASS_DEADLINE`); a bounded maintenance deadline needs a
   durability-root change outside this packet's paths.
@@ -72,7 +75,7 @@ No migration, wire change or Platform change.
 ## Validation
 
 `cargo fmt --check`; `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`;
-`cargo test --locked -p oteryn-game-server --lib account_characters` (20), `--lib node::config`
+`cargo test --locked -p oteryn-game-server --lib account_characters` (21), `--lib node::config`
 (7), `--bin oteryn-game-ops`; `bash -n` and `shellcheck -x` on `run.sh`; `git diff --check`; all pass.
 
 - `python tools/agents/validate_governance.py`: pass

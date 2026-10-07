@@ -21,6 +21,7 @@ use std::{
     fs::File,
     future::Future,
     io::{Read, Write},
+    os::fd::OwnedFd,
     path::{Path, PathBuf},
     pin::pin,
     sync::atomic::{self, AtomicU64},
@@ -339,15 +340,53 @@ pub trait EpochFence: Send {
     fn persist(&mut self, epoch: u64) -> Result<(), FenceUnusable>;
 }
 
+/// Durably record the fence directory's entries.
+pub type DirectorySync = fn(&OwnedFd) -> rustix::io::Result<()>;
+
 /// F as one file: the decimal value with an optional trailing newline.
-pub struct EpochFenceFile(pub PathBuf);
+/// Its directory is synced before the first read and after any write whose
+/// rename was not followed by a successful directory sync, so F is never
+/// used at a value a crash could still roll back.
+pub struct EpochFenceFile {
+    path: PathBuf,
+    unsynced: bool,
+    sync: DirectorySync,
+}
+
+impl EpochFenceFile {
+    #[must_use]
+    pub fn new(path: PathBuf) -> Self {
+        Self::with_sync(path, |directory| rustix::fs::fsync(directory))
+    }
+
+    #[must_use]
+    pub fn with_sync(path: PathBuf, sync: DirectorySync) -> Self {
+        Self {
+            path,
+            unsynced: true,
+            sync,
+        }
+    }
+}
 
 impl EpochFence for EpochFenceFile {
     fn read(&mut self) -> Result<u64, FenceUnusable> {
-        read_fence(&self.0)
+        if self.unsynced {
+            let (parent, _) = split(&self.path)?;
+            (self.sync)(&open_directory(parent)?).map_err(|_| FenceUnusable)?;
+            self.unsynced = false;
+        }
+        read_fence(&self.path)
     }
     fn persist(&mut self, epoch: u64) -> Result<(), FenceUnusable> {
-        write_fence(&self.0, epoch)
+        match write_fence_with(&self.path, epoch, self.sync) {
+            Ok(()) => Ok(()),
+            Err(FenceWrite::Unsynced) => {
+                self.unsynced = true;
+                Err(FenceUnusable)
+            }
+            Err(FenceWrite::Failed) => Err(FenceUnusable),
+        }
     }
 }
 
@@ -412,16 +451,39 @@ pub fn read_fence(path: &Path) -> Result<u64, FenceUnusable> {
 /// file keeps the existing fence's owner and is mode 0600, so a fence the
 /// operator raises stays the service user's. A missing fence is not created.
 pub fn write_fence(path: &Path, value: u64) -> Result<(), FenceUnusable> {
-    let current = open_fence(path)?;
-    let stat = fence_file(&current)?;
-    let (parent, name) = split(path)?;
-    let directory = rustix::fs::openat(
+    write_fence_with(path, value, |directory| rustix::fs::fsync(directory))
+        .map_err(|_| FenceUnusable)
+}
+
+/// A failed fence write: `Unsynced` once the rename replaced the fence but
+/// the directory sync did not succeed, so the new value may not survive a crash.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FenceWrite {
+    Failed,
+    Unsynced,
+}
+
+impl From<FenceUnusable> for FenceWrite {
+    fn from(FenceUnusable: FenceUnusable) -> Self {
+        Self::Failed
+    }
+}
+
+fn open_directory(parent: &Path) -> Result<OwnedFd, FenceUnusable> {
+    rustix::fs::openat(
         rustix::fs::CWD,
         parent,
         OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC,
         Mode::empty(),
     )
-    .map_err(|_| FenceUnusable)?;
+    .map_err(|_| FenceUnusable)
+}
+
+fn write_fence_with(path: &Path, value: u64, sync: DirectorySync) -> Result<(), FenceWrite> {
+    let current = open_fence(path)?;
+    let stat = fence_file(&current)?;
+    let (parent, name) = split(path)?;
+    let directory = open_directory(parent)?;
     let temp = format!(
         ".epoch-fence-{}-{}.tmp",
         std::process::id(),
@@ -433,9 +495,9 @@ pub fn write_fence(path: &Path, value: u64) -> Result<(), FenceUnusable> {
         OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC,
         Mode::RUSR | Mode::WUSR,
     )
-    .map_err(|_| FenceUnusable)?;
+    .map_err(|_| FenceWrite::Failed)?;
     let mut file = File::from(fd);
-    let result = (|| {
+    let written = (|| {
         if rustix::process::geteuid().as_raw() != stat.st_uid {
             rustix::fs::fchown(
                 &file,
@@ -447,14 +509,13 @@ pub fn write_fence(path: &Path, value: u64) -> Result<(), FenceUnusable> {
         file.write_all(format!("{value}\n").as_bytes())
             .map_err(|_| FenceUnusable)?;
         file.sync_all().map_err(|_| FenceUnusable)?;
-        rustix::fs::renameat(&directory, temp.as_str(), &directory, name)
-            .map_err(|_| FenceUnusable)?;
-        rustix::fs::fsync(&directory).map_err(|_| FenceUnusable)
+        rustix::fs::renameat(&directory, temp.as_str(), &directory, name).map_err(|_| FenceUnusable)
     })();
-    if result.is_err() {
+    if written.is_err() {
         let _ = rustix::fs::unlinkat(&directory, temp.as_str(), AtFlags::empty());
+        return Err(FenceWrite::Failed);
     }
-    result
+    sync(&directory).map_err(|_| FenceWrite::Unsynced)
 }
 
 /// The epoch an operator raise produces, exactly as

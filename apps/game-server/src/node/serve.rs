@@ -796,7 +796,7 @@ async fn account_characters_loop(
             authority,
         },
         MtlsSink::new(descriptor),
-        EpochFenceFile(fence),
+        EpochFenceFile::new(fence),
         source_authority,
         crate::durability::account_characters_projection::MAX_CHARACTER_TRANSACTION,
     );

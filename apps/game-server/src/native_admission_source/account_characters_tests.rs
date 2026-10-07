@@ -620,7 +620,7 @@ fn the_fence_file_round_trips_and_refuses_anything_else() {
     assert_eq!(read_fence(&path), Ok(0));
     write_fence(&path, 1_790_000_000).unwrap();
     assert_eq!(std::fs::read(&path).unwrap(), b"1790000000\n");
-    assert_eq!(EpochFenceFile(path.clone()).read(), Ok(1_790_000_000));
+    assert_eq!(EpochFenceFile::new(path.clone()).read(), Ok(1_790_000_000));
     let mode = std::fs::metadata(&path).unwrap().permissions().mode();
     assert_eq!(mode & 0o777, 0o600);
     // No temporary file is left behind.
@@ -636,6 +636,58 @@ fn the_fence_file_round_trips_and_refuses_anything_else() {
     assert!(read_fence(&path).is_err());
     std::fs::write(&path, vec![b'1'; FENCE_BYTES + 1]).unwrap();
     assert!(read_fence(&path).is_err());
+    std::fs::remove_dir_all(&directory).unwrap();
+}
+
+#[test]
+fn a_rename_without_a_directory_sync_leaves_the_fence_unusable_until_synced() {
+    use std::os::unix::fs::PermissionsExt;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    static SYNC_FAILS: AtomicBool = AtomicBool::new(false);
+    fn sync(directory: &std::os::fd::OwnedFd) -> rustix::io::Result<()> {
+        if SYNC_FAILS.load(Ordering::SeqCst) {
+            Err(rustix::io::Errno::IO)
+        } else {
+            rustix::fs::fsync(directory)
+        }
+    }
+    let directory = std::env::temp_dir().join(format!(
+        "oteryn-epoch-fence-unsynced-{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    let _ = std::fs::remove_dir_all(&directory);
+    std::fs::create_dir(&directory).unwrap();
+    let path = directory.join("epoch.fence");
+    std::fs::write(&path, b"5\n").unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+    let mut fence = EpochFenceFile::with_sync(path.clone(), sync);
+    assert_eq!(fence.read(), Ok(5));
+    SYNC_FAILS.store(true, Ordering::SeqCst);
+    // The rename lands but the directory sync fails: the write is refused,
+    // and F stays unusable at that same epoch until a sync succeeds.
+    assert_eq!(fence.persist(9), Err(FenceUnusable));
+    assert_eq!(std::fs::read(&path).unwrap(), b"9\n");
+    let mut publisher = Publisher::new(
+        Clock::default(),
+        Arc::new(Mutex::new(Store::default())),
+        Sink(vec![], vec![], Events::default()),
+        fence,
+        AUTHORITY.into(),
+        MAX_TX,
+    );
+    assert_eq!(publisher.admit(9), Err("fence_invalid"));
+    assert_eq!(publisher.admit(9), Err("fence_invalid"));
+    SYNC_FAILS.store(false, Ordering::SeqCst);
+    assert_eq!(publisher.admit(9), Ok(()));
+    assert_eq!(publisher.fence.read(), Ok(9));
+    // A fresh handle syncs before its first read even if never written.
+    SYNC_FAILS.store(true, Ordering::SeqCst);
+    assert_eq!(
+        EpochFenceFile::with_sync(path.clone(), sync).read(),
+        Err(FenceUnusable)
+    );
+    SYNC_FAILS.store(false, Ordering::SeqCst);
     std::fs::remove_dir_all(&directory).unwrap();
 }
 

@@ -1362,7 +1362,7 @@ async fn projection(operator: &Operator, mut arguments: Arguments) -> Outcome {
         "projection resync requires the [projection] section",
     ))?;
     let root = connect_root(&config.database, secure_file::effective_uid()).await?;
-    let mut fence = EpochFenceFile(config.epoch_fence_file.clone());
+    let mut fence = EpochFenceFile::new(config.epoch_fence_file.clone());
     match resync(&root, raise, &mut fence).await {
         Ok(epoch) => {
             println!("{epoch}");
