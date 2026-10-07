@@ -68,6 +68,9 @@ fn nonce(
     result[8] = (result[8] & 63) | 0x80;
     result
 }
+/// The verdict refusal of a new grant; the guarded writer returns it only without a receipt.
+const WORLD_ITEM_NEW_GRANT_REFUSED: &str = "current new grant access";
+
 fn denied<T>() -> Result<T, SpellCastDisposition> {
     Err(SpellCastDisposition::Rejected)
 }
@@ -1003,7 +1006,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     if invalid_draw{return Err(DurabilityError::Unavailable);}
                     *pending=Some(prepared);
                 }
-                let attempt=pending.as_ref().ok_or(DurabilityError::Unavailable)?;
+                let attempt=pending.as_mut().ok_or(DurabilityError::Unavailable)?;
                 let reconnect=crate::durability::admission_journal::spell_reconnect::prove_pending_spell_reconnect(
                     &mut tx,&authority,&attempt.fence,&item_fence).await?;
                 if states.get(runtime,actor,session)!=Some(&attempt.before)
@@ -1019,14 +1022,33 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     .validate_prepared(runtime,&attempt.presentation,&attempt.batch)
                     .map_err(|_|DurabilityError::Unavailable)?;
                 attempt.player.validate_current(runtime,states).map_err(|_|DurabilityError::Unavailable)?;
+                runtime.reserve_spell_batch(&mut attempt.physical).map_err(|_|DurabilityError::Unavailable)?;
                 owned.check_current_access(spell,owner.owner_now().get())
-                    .map_err(|_|items::SpellItemError::Rejected("current new grant access"))
+                    .map_err(|_|items::SpellItemError::Rejected(WORLD_ITEM_NEW_GRANT_REFUSED))
             };
             // Release after S: the COMMIT and the post-commit transaction hold only the lane.
             *guards=None;
             let attempt=pending.as_ref().ok_or(DurabilityError::Unavailable)?;
-            let outcome=items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,verdict)
-                .await.map_err(|_|DurabilityError::Unavailable)?;
+            let outcome=match items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,verdict).await{
+                Ok(outcome)=>outcome,
+                Err(items::SpellItemError::Rejected(WORLD_ITEM_NEW_GRANT_REFUSED))=>{
+                    // The writer holds the exact-command lock and found no historical receipt.
+                    // Only a successful rollback proves this attempt cannot later COMMIT.
+                    tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
+                    let mut runtime=owner.runtime.lock().await;
+                    let mut states=owner.spell_states.lock().await;
+                    if attempt.physical.will_apply(){
+                        runtime.release_definitely_uncommitted_spell_batch(&attempt.physical)
+                            .map_err(|_|DurabilityError::Unavailable)?;
+                    }
+                    states.presentations.as_mut().ok_or(DurabilityError::Unavailable)?
+                        .release_definitely_uncommitted(&attempt.presentation);
+                    *pending=None;
+                    return Ok(NativeCastDispatch::Outcome(SpellCastOutcome{disposition:SpellCastDisposition::Rejected,
+                        vitals:super::observe_vitals(&runtime,&states,actor,session)}));
+                }
+                Err(_)=>return Err(DurabilityError::Unavailable),
+            };
             let formula=content.training_formula().ok_or(DurabilityError::Unavailable)?;
             let training=match attempt.training.request(){
                 Some(request)=>Some(crate::durability::character_build::prepare_character_build_in_transaction(

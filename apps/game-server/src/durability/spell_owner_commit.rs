@@ -292,6 +292,15 @@ impl<T: Send + 'static> SpellCommitWindow<'_, T> {
         self.commit_called = true;
     }
 
+    /// A definite `COMMIT` rejection proves the transaction rolled back, so the attempt is
+    /// reclaimable again. Every other error after the call keeps the ambiguity and parks.
+    fn observe_commit_error(&mut self, error: DurabilityError) -> DurabilityError {
+        if matches!(error, DurabilityError::CommitRejected) {
+            self.commit_called = false;
+        }
+        error
+    }
+
     /// Parks the attempt in the lane's `unresolved` record.
     pub(crate) fn park(self) {}
 }
@@ -523,7 +532,9 @@ pub(crate) async fn commit_spell_owner_transaction<T: Send + 'static>(
         return Err(DurabilityError::InvalidStoredState);
     }
     window.commit_called = true;
-    db::commit_semantic_transaction(tx, pending.deadline).await?;
+    db::commit_semantic_transaction(tx, pending.deadline)
+        .await
+        .map_err(|error| window.observe_commit_error(error))?;
     // The private token constructor is reached only after an observed
     // successful real COMMIT. Unknown outcome produces no install capability.
     Ok(CommittedSpellOwnerTransaction {
@@ -631,6 +642,37 @@ mod lane_tests {
             assert!(!window.commit_called());
             assert!(matches!(window.reclaim_uncommitted(), Ok(3)));
             assert!(!permit.has_unresolved());
+        });
+    }
+
+    #[test]
+    fn a_definite_commit_rejection_is_reclaimable_and_an_unknown_outcome_is_not() {
+        block_on(async {
+            let lane = lane(41);
+            let mut permit = permit(&lane).await;
+            let mut window = permit.open_commit_window(4_u32, park);
+            window.commit_called = true;
+            let error = window.observe_commit_error(DurabilityError::CommitRejected);
+            assert!(matches!(error, DurabilityError::CommitRejected));
+            assert!(matches!(window.reclaim_uncommitted(), Ok(4)));
+            for unknown in [
+                DurabilityError::CommitOutcomeUnknown,
+                DurabilityError::RootPassDeadlineExceeded,
+            ] {
+                let mut window = permit.open_commit_window(6_u32, park);
+                window.commit_called = true;
+                let _ = window.observe_commit_error(unknown);
+                let Err(window) = window.reclaim_uncommitted() else {
+                    panic!("an unknown COMMIT outcome is never reclaimed")
+                };
+                window.park();
+                assert!(permit.has_unresolved());
+                drop(permit);
+                let Err(unresolved) = lane.acquire().await else {
+                    panic!("the ambiguous attempt stays parked")
+                };
+                permit = unresolved.into_resolution().0;
+            }
         });
     }
 

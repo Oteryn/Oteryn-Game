@@ -242,6 +242,9 @@ struct ParameterInstallation {
     physical: StagedSpellBatch,
     player: PlayerBatchPreflight,
 }
+/// The verdict refusal of a new grant; the guarded writer returns it only without a receipt.
+const PARAMETER_NEW_GRANT_REFUSED: &str = "current new grant access";
+
 fn nonce(
     tag: &[u8],
     actor: ExactActorRef,
@@ -1076,7 +1079,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         }
                     }
                 owned.check_current_access(spell,owner.owner_now().get())
-                    .map_err(|_|items::SpellItemError::Rejected("current new grant access"))
+                    .map_err(|_|items::SpellItemError::Rejected(PARAMETER_NEW_GRANT_REFUSED))
             };
             // Release after S: the COMMIT and the post-commit transaction hold only the lane.
             *guards=None;
@@ -1100,8 +1103,25 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 let _=window.install();
                 return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{disposition:private_result.disposition,vitals:None}),result:Some(private_result)})
             };
-            let outcome=items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&installation.request,verdict)
-                .await.map_err(|_|DurabilityError::Unavailable)?;
+            let outcome=match items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&installation.request,verdict).await{
+                Ok(outcome)=>outcome,
+                Err(items::SpellItemError::Rejected(PARAMETER_NEW_GRANT_REFUSED))=>{
+                    // The writer holds the exact-command lock and found no historical receipt.
+                    // Only a successful rollback proves this attempt cannot later COMMIT.
+                    tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
+                    let mut runtime=owner.runtime.lock().await;
+                    let states=owner.spell_states.lock().await;
+                    if installation.physical.will_apply(){
+                        runtime.release_definitely_uncommitted_spell_batch(&installation.physical)
+                            .map_err(|_|DurabilityError::Unavailable)?;
+                    }
+                    *pending=None;
+                    return Ok(ParameterCastDispatch{cast:NativeCastDispatch::Outcome(SpellCastOutcome{
+                        disposition:SpellCastDisposition::Rejected,
+                        vitals:super::observe_vitals(&runtime,&states,actor,session)}),result:None});
+                }
+                Err(_)=>return Err(DurabilityError::Unavailable),
+            };
             crate::durability::spell_parameter_result::write_parameter_result_in_transaction(&mut tx,&authority,&attempt.definition,&attempt.intent,&attempt.result,Some(installation.request.transaction_id)).await.map_err(|_|DurabilityError::Unavailable)?;
             let formula=content.training_formula().ok_or(DurabilityError::Unavailable)?;
             let training=match installation.training.request(){

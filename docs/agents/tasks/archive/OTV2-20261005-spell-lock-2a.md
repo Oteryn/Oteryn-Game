@@ -92,6 +92,21 @@ post-commit transaction; no end-to-end test of the attack deferral under a pendi
 `NOT_APPLICABLE`: no durable value, wire format, identity or authority changes; the change is an
 in-process concurrency invariant of the Channel owner (decision §1.7).
 
+## Fix round 1 (review of c0cb285f, checked against d29a8457)
+
+- 4201415652: the world-item writer now reserves its physical batch in S
+  (`reserve_spell_batch`), like the native, parameter and familiar writers.
+- 4201415659: the world-item writer matches its verdict refusal after S. A rollback proves
+  there was no COMMIT, then the physical reservation and the presentation hold are released and
+  the attempt is dropped with `Rejected`. The parked resolver goes through the same path, so a
+  rejection is kept instead of being re-parked as unavailable.
+- 4201415665: the same for the parameter writer and `resolve_parked_parameter`.
+- 4201415655: `commit_spell_owner_transaction` clears `commit_called` on a definite
+  `CommitRejected` only, so the attempt is reclaimable. An unknown outcome and every other error
+  after the call keep the ambiguity and park.
+- Tests: `lane_tests::a_definite_commit_rejection_is_reclaimable_and_an_unknown_outcome_is_not`
+  and the source pin `guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection`.
+
 ## Validation
 
 - `cargo fmt --all -- --check`: pass

@@ -301,3 +301,68 @@ fn lane_proof_authorities_are_minted_only_behind_a_permit() {
         }
     }
 }
+
+/// Fix round 1 (#1907): every committing cast writer reserves its physical batch inside S and
+/// turns a receipt-free verdict rejection into a proven rollback that releases its reservations
+/// and keeps the rejection, instead of parking or retrying the attempt as unavailable.
+#[test]
+fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
+    for (file, refusal, releases) in [
+        (
+            "src/gameplay_transport/native_combat_cast.rs",
+            "Rejected(NATIVE_NEW_WRITE_REFUSED))=>{",
+            &[
+                "release_definitely_uncommitted_spell_batch(&installation.physical)",
+                ".release_definitely_uncommitted(presentation)",
+            ][..],
+        ),
+        (
+            "src/gameplay_transport/world_item_cast.rs",
+            "Rejected(WORLD_ITEM_NEW_GRANT_REFUSED))=>{",
+            &[
+                "release_definitely_uncommitted_spell_batch(&attempt.physical)",
+                ".release_definitely_uncommitted(&attempt.presentation)",
+            ][..],
+        ),
+        (
+            "src/gameplay_transport/parameter_cast.rs",
+            "Rejected(PARAMETER_NEW_GRANT_REFUSED))=>{",
+            &["release_definitely_uncommitted_spell_batch(&installation.physical)"][..],
+        ),
+    ] {
+        let raw = fs::read_to_string(root().join(file)).expect("source");
+        // The whole file: `native_combat_cast.rs` keeps a test module above its writer.
+        let text = collapse(&raw).replace(' ', "");
+        let refusal = refusal.replace(' ', "");
+        let release_guards = text.find("*guards=None;").expect("guards released after S");
+        let span = &text[..release_guards];
+        assert!(
+            span.contains("reserve_spell_batch(") || file.ends_with("native_combat_cast.rs"),
+            "{file} reserves its physical batch inside S"
+        );
+        let at = text
+            .find(&refusal)
+            .unwrap_or_else(|| panic!("{file} matches its refusal"));
+        assert!(at > release_guards, "{file} matches the refusal after S");
+        let arm = &text[at..at + text[at..].find("Err(_)=>return").expect("arm end")];
+        let rollback = arm
+            .find("tx.rollback().await")
+            .expect("rollback proves no COMMIT");
+        for release in releases {
+            let release = release.replace(' ', "");
+            let found = arm
+                .find(&release)
+                .unwrap_or_else(|| panic!("{file} runs {release}"));
+            assert!(found > rollback, "{file} releases only after the rollback");
+        }
+        assert!(arm.contains("*pending=None;"), "{file} drops the attempt");
+        assert!(
+            arm.contains("SpellCastDisposition::Rejected"),
+            "{file} keeps the rejection"
+        );
+        assert!(
+            !arm.contains("open_commit_window"),
+            "{file} never parks a rejection"
+        );
+    }
+}
