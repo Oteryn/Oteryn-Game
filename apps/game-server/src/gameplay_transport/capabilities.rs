@@ -73,10 +73,11 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
 ];
 
-/// The offered set of a World booted from a bundle (MAP-CUTOVER-1b): the production set plus
-/// capability 18 `WORLD_MAP_VIEW_V1`, which requires 4 `ITEM_VIEW_MOVE_V1` and 6. Only a bundle
-/// World returns it; the registry entry stays `offered: false` and its `offer_gate` names this
-/// offer. 18 is above every production ID, so appending it keeps the set ascending.
+/// The offered set of a World booted from a bundle (MAP-CUTOVER-1b): the Item view set (which
+/// offers 4 `ITEM_VIEW_MOVE_V1`) plus capability 18 `WORLD_MAP_VIEW_V1`, which requires 4 and 6.
+/// A bundle World boots only against a generation whose Item key set names every bundle Item.
+/// Only a bundle World returns it; the registry entry stays `offered: false` and its `offer_gate`
+/// names this offer. 18 is above every offered ID, so appending it keeps the set ascending.
 pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
     const WORLD_MAP_VIEW: OfferedCapability = OfferedCapability {
         id: CAPABILITY_WORLD_MAP_VIEW_V1,
@@ -85,10 +86,10 @@ pub(crate) const BUNDLE_WORLD_OFFERED_CAPABILITIES: &[OfferedCapability] = &{
             CAPABILITY_WORLD_SPATIAL_ENTITIES,
         ],
     };
-    let mut set = [WORLD_MAP_VIEW; PRODUCTION_OFFERED_CAPABILITIES.len() + 1];
+    let mut set = [WORLD_MAP_VIEW; ITEM_VIEW_OFFERED_CAPABILITIES.len() + 1];
     let mut index = 0;
-    while index < PRODUCTION_OFFERED_CAPABILITIES.len() {
-        set[index] = PRODUCTION_OFFERED_CAPABILITIES[index];
+    while index < ITEM_VIEW_OFFERED_CAPABILITIES.len() {
+        set[index] = ITEM_VIEW_OFFERED_CAPABILITIES[index];
         index += 1;
     }
     set

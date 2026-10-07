@@ -4,7 +4,7 @@
 task_id: OTV2-20261005-map-cutover-1b
 title: Bundle World domain 17 cutover (MAP-CUTOVER-1b, capability 18)
 mode: IMPLEMENT
-status: waiting
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/map-cutover-1b-20261005
@@ -38,7 +38,7 @@ owned_paths:
   - docs/agents/tasks/archive/OTV2-20261005-map-cutover-1b.md
 public_contracts:
   - protocol-oteryn v1 capability 18 WORLD_MAP_VIEW_V1 offer gate, state domain 17
-depends_on: ["#1622", "MAP-ITEM-REF-1 part A (#1906)", "MAP-ITEM-REF-1 part B"]
+depends_on: ["#1622", "MAP-ITEM-REF-1 part A (#1906)", "MAP-ITEM-REF-1 part B (#1909)"]
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -67,10 +67,10 @@ no domain 17. The registry entry of capability 18 stays `offered: false`.
 
 ## Dependencies
 
-- MAP-ITEM-REF-1 part B (CP decision on #1906): capability 4 is offered in the production set only
-  with part B. `a_bundle_world_admits_only_a_client_that_selects_18` needs capability 4 in the
-  production set and fails until part B merges; it is the only test that depends on part B.
-- The candidate is frozen only after part B merges and `main` is merged into this branch.
+- MAP-ITEM-REF-1 part B (#1909, merged): capability 4 is offered in the Item view set
+  `ITEM_VIEW_OFFERED_CAPABILITIES`. A bundle World offers that set plus 18, so
+  `a_bundle_world_admits_only_a_client_that_selects_18` passes.
+- `main` with part B is merged into this branch before freeze.
 
 ## Out-of-path edits (accepted by the control plane)
 
@@ -99,13 +99,14 @@ production `bundle_world_map` against a `ChannelRuntimeV1` and a real movement s
 - [x] A bundle World walk uses the bundle collision index.
 - [x] Domain 17 at join equals a fresh snapshot at the native position, and a step sends the delta
       a fresh view's move sends.
-- [x] A fixture World offers exactly the production set; a bundle World offers it plus 18.
-- [ ] A bundle World admits only a client that selects 18 (needs part B).
+- [x] A fixture World offers exactly the production set; a bundle World offers the Item view set
+      plus 18.
+- [x] A bundle World admits only a client that selects 18.
 
 ## Excluded scope
 
 The Channel overlay stays empty and the reset epoch is 0 until MAP-CUTOVER-1c. Capability 4 is
-not offered by this task.
+offered by part B (#1909), not by this task.
 
 ## Validation
 
@@ -129,8 +130,8 @@ Pending on the frozen candidate.
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation and tests complete; waiting on MAP-ITEM-REF-1 part B
-status: waiting
+last_progress: part B merged from main; full validation green; frozen for the control plane PR (pr binds then)
+status: implementing
 branch: agent/map-cutover-1b-20261005
 head_sha: null
 pr: null

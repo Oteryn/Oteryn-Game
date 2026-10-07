@@ -651,14 +651,14 @@ fn production_admission_selects_capabilities_6_13_and_17_and_nothing_else()
 }
 
 #[test]
-fn the_bundle_world_offered_set_is_the_production_set_plus_18_requiring_4_and_6()
+fn the_bundle_world_offered_set_is_the_item_view_set_plus_18_requiring_4_and_6()
 -> Result<(), Box<dyn Error>> {
-    // MAP-CUTOVER-1b: the bundle set is the production set plus 18, whose crate and registry
-    // `requires` stay [4, 6]; the registry keeps 18 `offered: false`.
-    let (last, production) = BUNDLE_WORLD_OFFERED_CAPABILITIES
+    // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) plus 18, whose crate
+    // and registry `requires` stay [4, 6]; the registry keeps 18 `offered: false`.
+    let (last, item_view) = BUNDLE_WORLD_OFFERED_CAPABILITIES
         .split_last()
         .ok_or("empty bundle set")?;
-    assert_eq!(production, PRODUCTION_OFFERED_CAPABILITIES);
+    assert_eq!(item_view, ITEM_VIEW_OFFERED_CAPABILITIES);
     assert_eq!(last.id, CAPABILITY_WORLD_MAP_VIEW_V1);
     assert_eq!(last.requires, [4, 6]);
     assert!(

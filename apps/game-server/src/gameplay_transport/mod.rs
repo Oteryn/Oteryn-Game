@@ -2208,7 +2208,7 @@ fn bundle_world_map(
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
-    /// MAP-CUTOVER-1b: a bundle World offers the production set plus capability 18 and admits
+    /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18 and admits
     /// only a client that selects 18. MAP-ITEM-REF-1: any other World offers capability 4 (once
     /// Part B sets its gate) only when the active generation pins a non-empty Item key set.
     fn offered_capabilities(&self) -> &'static [capabilities::OfferedCapability] {
