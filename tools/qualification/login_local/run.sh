@@ -20,6 +20,9 @@
 # Proxy mode (LOGIN_LOCAL_PUBLIC_PLATFORM_URL + LOGIN_LOCAL_PUBLIC_GATEWAY_URL, both https://host[:port], LOGIN_LOCAL_HOST
 # required): an existing TLS reverse proxy (Synology DSM) fronts Platform 127.0.0.1:18564 and gateway 127.0.0.1:18565;
 # no LAN listener or CA is created, the Platform's external URL is the public one, only the game node is reached directly.
+# Rust stages (LOGIN_LOCAL_RUST=auto|host|container, default auto): on the host with cargo, cc and useradd; where any is
+# missing (Synology DSM) the server binaries are built and run inside a pinned rust:bookworm container on the host network,
+# as a numeric non-root uid (LOGIN_LOCAL_SERVICE_UID, default 64990) without a host user. Container mode has no client run.
 # PHP snippets are deliberately single-quoted for the container shell; the identities are JSON text.
 # shellcheck disable=SC2016,SC2089,SC2090
 set -Eeuo pipefail
@@ -41,6 +44,7 @@ readonly COMPOSE_NODE_BOOT=tools/qualification/node_boot/compose.override.yml
 readonly COMPOSE_LOCAL=tools/qualification/login_local/compose.override.yml
 readonly COMPOSE_LAN=tools/qualification/login_local/compose.lan.yml
 readonly COMPOSE_PROXY=tools/qualification/login_local/compose.proxy.yml
+readonly RUST_IMAGE=rust:1.94.0-bookworm@sha256:365468470075493dc4583f47387001854321c5a8583ea9604b297e67f01c5a4f
 readonly PG_IMAGE=postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
 readonly SERVICE_USER=oteryn-login-local
 readonly BASE=/srv/oteryn-login-local
@@ -50,7 +54,25 @@ readonly OPS_IDENTITY=oteryn-game-ops
 blocked() { echo "LOGIN_LOCAL_RESULT=BLOCKED reason=$1"; [[ -z "${WORK:-}" || "${LOGIN_LOCAL_KEEP:-0}" == 1 ]] || rm -rf "$WORK"; exit 2; }
 command -v docker >/dev/null 2>&1 || blocked docker_missing
 docker info >/dev/null 2>&1 || blocked docker_daemon_unreachable
-for tool in openssl cargo sudo git; do command -v "$tool" >/dev/null 2>&1 || blocked "${tool}_missing"; done
+for tool in openssl sudo git; do command -v "$tool" >/dev/null 2>&1 || blocked "${tool}_missing"; done
+# useradd lives in sbin, which is often not on a non-root PATH.
+have() { command -v "$1" >/dev/null 2>&1 || [[ -x "/usr/sbin/$1" || -x "/sbin/$1" ]]; }
+LL_RUST="${LOGIN_LOCAL_RUST:-auto}"
+case "$LL_RUST" in
+  auto)
+    LL_RUST=host
+    for tool in cargo cc useradd; do have "$tool" || LL_RUST=container; done
+    ;;
+  host) for tool in cargo cc useradd; do have "$tool" || blocked "${tool}_missing"; done ;;
+  container) ;;
+  *) blocked rust_mode_invalid ;;
+esac
+if [[ "$LL_RUST" == container ]]; then
+  # The client run needs a host client binary and a browser.
+  [[ "${LOGIN_LOCAL_RUN_CLIENT:-1}" != 1 ]] || blocked client_run_needs_host_rust
+  SERVICE_UID="${LOGIN_LOCAL_SERVICE_UID:-64990}"
+  if ! [[ "$SERVICE_UID" =~ ^[1-9][0-9]{0,9}$ ]] || (( SERVICE_UID >= 4294967295 )); then blocked service_uid_invalid; fi
+fi
 
 # Client-facing host: loopback (default, unchanged) or one private IPv4 (10/8, 172.16/12, 192.168/16).
 LL_HOST="${LOGIN_LOCAL_HOST:-127.0.0.1}"
@@ -109,6 +131,12 @@ if [[ -n "$LL_PUBLIC_PLATFORM_URL$LL_PUBLIC_GATEWAY_URL" ]]; then
   [[ "$LL_LAN" == 1 ]] || blocked host_required_for_public_urls
   for public_url in "$LL_PUBLIC_PLATFORM_URL" "$LL_PUBLIC_GATEWAY_URL"; do
     [[ "$public_url" =~ ^https://[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?(:[0-9]{1,5})?$ ]] || blocked public_url_not_https
+    # The client's Url::parse rejects ports outside 1..65535; refuse them before any service starts.
+    public_port="${public_url#https://}"
+    if [[ "$public_port" == *:* ]]; then
+      public_port="${public_port##*:}"
+      if ! [[ "$public_port" =~ ^[1-9][0-9]*$ ]] || (( public_port > 65535 )); then blocked public_url_port_out_of_range; fi
+    fi
   done
   LL_PROXY=1
   LL_TLS=0
@@ -163,6 +191,7 @@ WP5_APP_KEY="base64:$(openssl rand -base64 32 | tr -d '\n')"
 WP5_TOPOLOGY_REVISION="$TOPOLOGY_REVISION"
 WP5_FSYNC_FAULT=none
 PG_CONTAINER="${WP5_PROJECT}-postgres"
+RUST_CONTAINER="${WP5_PROJECT}-rust"
 PG_ADMIN_PASSWORD="$(openssl rand -hex 24)"
 CONTROL_PASSWORD="$(openssl rand -hex 24)"
 RUNTIME_PASSWORD="$(openssl rand -hex 24)"
@@ -190,11 +219,40 @@ compose() {
     --file "$GAME_SOURCE/$COMPOSE_NODE_BOOT" --file "$GAME_SOURCE/$COMPOSE_LOCAL" "${lan[@]}" "$@"
 }
 evidence() { printf 'LOGIN_LOCAL_EVIDENCE %s\n' "$*"; }
+# Writes a command's output to $1 only when it succeeds, and never replaces an earlier successful capture.
+capture() {
+  local out=$1
+  shift
+  [[ ! -s "$out" ]] || return 0
+  if "$@" > "$out.partial" 2>&1; then mv "$out.partial" "$out"; else rm -f "$out.partial"; fi
+}
+# Failure evidence for KEEP=1, taken before anything is torn down: per-service logs and state.
+capture_failure_evidence() {
+  local dir="$WORK/evidence" service id
+  mkdir -p "$dir"
+  capture "$dir/compose-ps.txt" compose ps --all
+  for service in $(compose ps --all --services 2>/dev/null); do
+    capture "$dir/compose-$service.log" compose logs --no-color --timestamps "$service"
+    id="$(compose ps --all --quiet "$service" 2>/dev/null | head -n 1)"
+    [[ -z "$id" ]] || capture "$dir/compose-$service.state.json" docker inspect --format '{{json .State}}' "$id"
+  done
+  capture "$dir/postgres.log" docker logs --timestamps "$PG_CONTAINER"
+  capture "$dir/postgres.state.json" docker inspect --format '{{json .State}}' "$PG_CONTAINER"
+  evidence "failure_logs=$dir"
+}
 cleanup() {
   local rc=$?
+  # A signal exits non-zero even if the interrupted command had succeeded.
+  [[ -z "${1:-}" ]] || rc=$1
+  # One teardown and one result line, also when a signal is followed by the EXIT trap.
+  trap - EXIT INT TERM
+  if [[ "${LOGIN_LOCAL_KEEP:-0}" == 1 && "$rc" != 0 && -n "${WORK:-}" ]]; then
+    capture_failure_evidence || true
+  fi
   if [[ "${LOGIN_LOCAL_KEEP:-0}" != 1 ]]; then
     [[ -z "$NODE_PID" ]] || sudo kill -TERM "$NODE_PID" 2>/dev/null || true
-    sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
+    [[ "$LL_RUST" != host ]] || sudo pkill -TERM -u "$SERVICE_USER" 2>/dev/null || true
+    docker rm --force "$RUST_CONTAINER" >/dev/null 2>&1 || true
     compose down --volumes --remove-orphans --timeout 15 >/dev/null 2>&1 || true
     docker rm --force --volumes "$PG_CONTAINER" >/dev/null 2>&1 || true
     sudo rm -rf "$BASE" || true
@@ -206,7 +264,9 @@ cleanup() {
   echo "LOGIN_LOCAL_RESULT=$result"
   exit "$rc"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'cleanup 130' INT
+trap 'cleanup 143' TERM
 
 make_ca() { openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 -subj "/CN=$2" -keyout "$WP5_PKI/$1.key" -out "$WP5_PKI/$1.crt" >/dev/null 2>&1; }
 make_leaf() {
@@ -274,10 +334,19 @@ docker run --detach --name "$PG_CONTAINER" --publish "127.0.0.1:$PG_PORT:5432" \
   --volume "$WP5_PKI/db.crt:/tls/db.crt:ro" --volume "$WP5_PKI/db.key:/tls/db.key:ro" --entrypoint bash "$PG_IMAGE" -c \
   'install -o postgres -m 0600 /tls/db.key /tmp/db.key && install -o postgres -m 0644 /tls/db.crt /tmp/db.crt && exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key' >/dev/null
 chmod 600 "$WP5_PKI/db.key"
-for _ in $(seq 1 60); do
-  docker exec "$PG_CONTAINER" pg_isready -U oteryn_login_local_admin -d postgres >/dev/null 2>&1 && break
+# The image's init phase runs a temporary server on the Unix socket only (listen_addresses=''), stops it and starts the
+# final server; a socket probe can pass against the temporary one. Only the final server listens on TCP, so readiness is
+# pg_isready plus a real query over TCP 127.0.0.1 (trusted inside the container by initdb's default pg_hba).
+pg_ready=0
+for _ in $(seq 1 "${LOGIN_LOCAL_PG_READY_SECONDS:-300}"); do
+  if docker exec --env PGCONNECT_TIMEOUT=5 "$PG_CONTAINER" pg_isready -h 127.0.0.1 -p 5432 -U oteryn_login_local_admin -d postgres >/dev/null 2>&1 \
+    && [[ "$(docker exec --env PGCONNECT_TIMEOUT=5 "$PG_CONTAINER" psql -w -h 127.0.0.1 -p 5432 -U oteryn_login_local_admin -d postgres -qAtc 'SELECT 1' 2>/dev/null)" == 1 ]]; then
+    pg_ready=1
+    break
+  fi
   sleep 1
 done
+[[ "$pg_ready" == 1 ]] || { echo "postgres did not accept a TCP query"; docker logs --tail 40 "$PG_CONTAINER" 2>&1; exit 1; }
 psql_admin() { docker exec -i "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 -qAt -U oteryn_login_local_admin -d "$1"; }
 echo "CREATE DATABASE oteryn_login_local" | psql_admin postgres
 [[ "$(echo 'SHOW server_version_num' | psql_admin oteryn_login_local)" == 170006 ]] || blocked postgres_version
@@ -329,16 +398,33 @@ OAUTH_CLIENT_ID="$(php_exec 'Illuminate\Support\Facades\Artisan::call("game-auth
 evidence "platform_seed=account=1 admission_trust=published_public_key_only oauth_client=ensured mode=33a"
 
 # Shipped binaries, service user, roles, migration (as node_boot).
-cargo +1.94.0 build --locked -p oteryn-game-server -p oteryn-client --bins
-TARGET="$GAME_SOURCE/target/debug"
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
-SERVICE_UID="$(id -u "$SERVICE_USER")"
+if [[ "$LL_RUST" == host ]]; then
+  cargo +1.94.0 build --locked -p oteryn-game-server -p oteryn-client --bins
+  TARGET="$GAME_SOURCE/target/debug"
+  sudo useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
+  SERVICE_UID="$(id -u "$SERVICE_USER")"
+else
+  # Own target and cargo home under the ignored target/, owned by the invoking user; the binaries run in the same image.
+  mkdir -p "$GAME_SOURCE/target/login-local-container/cargo-home"
+  docker run --rm --user "$(id -u):$(id -g)" --volume "$GAME_SOURCE:/src" --workdir /src \
+    --env CARGO_HOME=/src/target/login-local-container/cargo-home --env CARGO_TARGET_DIR=/src/target/login-local-container \
+    --env RUSTUP_TOOLCHAIN=1.94.0 "$RUST_IMAGE" cargo build --locked -p oteryn-game-server --bins
+  TARGET="$GAME_SOURCE/target/login-local-container/debug"
+fi
+evidence "rust mode=$LL_RUST service_uid=$SERVICE_UID"
 sudo install -d -o root -g root -m 0755 "$BASE" "$BASE/bin" "$BASE/state" "$BASE/node"
 sudo install -d -o root -g root -m 0700 "$BASE/ops"
 sudo install -d -o "$SERVICE_UID" -m 0700 "$BASE/fence-parent/fence" "$BASE/run"
 sudo install -d -o "$SERVICE_UID" -m 0755 "$BASE/node/secrets"
 sudo install -o root -m 0755 "$TARGET/oteryn-game-server" "$TARGET/oteryn-game-ops" "$TARGET/oteryn-game-migrate" "$BASE/bin/"
-OTERYN_GAME_MIGRATION_DATABASE_URL="$ADMIN_URL" "$BASE/bin/oteryn-game-migrate"
+if [[ "$LL_RUST" == host ]]; then
+  OTERYN_GAME_MIGRATION_DATABASE_URL="$ADMIN_URL" "$BASE/bin/oteryn-game-migrate"
+else
+  # Host network: PostgreSQL, the Platform mTLS port and the LAN listener are the same addresses as on the host.
+  docker run --detach --name "$RUST_CONTAINER" --network host --volume "$BASE:$BASE" --entrypoint sleep "$RUST_IMAGE" infinity >/dev/null
+  # --env NAME passes the value from this environment, not on the command line.
+  OTERYN_GAME_MIGRATION_DATABASE_URL="$ADMIN_URL" docker exec --env OTERYN_GAME_MIGRATION_DATABASE_URL "$RUST_CONTAINER" "$BASE/bin/oteryn-game-migrate"
+fi
 psql_admin oteryn_login_local <<SQL
 CREATE ROLE ll_control LOGIN PASSWORD '$CONTROL_PASSWORD' IN ROLE oteryn_game_control;
 CREATE ROLE ll_runtime LOGIN PASSWORD '$RUNTIME_PASSWORD' IN ROLE oteryn_game_runtime;
@@ -455,7 +541,13 @@ s2_authorization_file = "$BASE/state/s2-fresh-store.json"
 TOML
   sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
-ops() { sudo "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"; }
+ops() {
+  if [[ "$LL_RUST" == host ]]; then
+    sudo "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"
+  else
+    docker exec "$RUST_CONTAINER" "$BASE/bin/oteryn-game-ops" --config "$BASE/ops/ops.toml" "$@"
+  fi
+}
 node_log="$WORK/node.log"
 await_log() { for _ in $(seq 1 "$2"); do grep -q "$1" "$node_log" && return 0; sleep 1; done; echo "missing node event: $1"; tail -n 40 "$node_log"; exit 1; }
 
@@ -465,7 +557,12 @@ ops s2 issue --node-config "$BASE/node/node.toml" --file s2-fresh-store.json --n
 ops character fresh-store --request fresh-store.json
 ops character interpretation --profile "${INTERPRETATION[0]}" --ruleset "${INTERPRETATION[1]}" --content "${INTERPRETATION[2]}" --starter "${INTERPRETATION[3]}"
 
-sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" < /dev/null > /dev/null 2> "$node_log" &
+if [[ "$LL_RUST" == host ]]; then
+  sudo -u "$SERVICE_USER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" < /dev/null > /dev/null 2> "$node_log" &
+else
+  docker exec --user "$SERVICE_UID:$SERVICE_UID" "$RUST_CONTAINER" "$BASE/bin/oteryn-game-server" serve --config "$BASE/node/node.toml" \
+    < /dev/null > /dev/null 2> "$node_log" &
+fi
 NODE_PID=$!
 await_log awaiting_assignment 120
 node="$(sed -n 's/.*awaiting_assignment.*node_id=\([^ ]*\).*/\1/p' "$node_log" | tail -n 1)"

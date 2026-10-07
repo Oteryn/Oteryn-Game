@@ -435,6 +435,7 @@ mod tests {
             source_world: None,
             progression: None,
             item_keys: None,
+            loot_tables: None,
         };
         let room = crate::content::qualify_native_source_spell_world_with_gameplay(
             world,

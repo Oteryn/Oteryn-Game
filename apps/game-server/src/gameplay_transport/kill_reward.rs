@@ -862,12 +862,14 @@ fn classify(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// The active generation's reward rows. Empty until the loot pin is composed, so every kill
-    /// refuses `no_loot_binding`.
+    /// The active generation's reward rows; empty without an active native gameplay pin, so
+    /// every kill then refuses `no_loot_binding`.
     pub(super) fn reward_table(&self) -> &CreatureRewardTable {
         static EMPTY: std::sync::LazyLock<CreatureRewardTable> =
             std::sync::LazyLock::new(CreatureRewardTable::default);
-        &EMPTY
+        self.active_generation
+            .and_then(|generation| generation.native_gameplay())
+            .map_or(&EMPTY, |gameplay| gameplay.reward_table())
     }
 
     /// §1.4: record the kills of committed or replayed spell batches, under the caller's
