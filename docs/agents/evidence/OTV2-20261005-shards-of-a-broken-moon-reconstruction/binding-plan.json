@@ -794,7 +794,7 @@
         "holds:oteryn:item.tibia.i53696"
       ],
       "outcome": "blue_lava_obtained",
-      "evidence": "STRUCTURED_REFERENCE_EXPLICIT_WITH_CONTINUITY_SUPPORT",
+      "evidence": "STRUCTURED_REFERENCE_CANDIDATE",
       "owner": "QUEST-TRIGGER-1 + Item/Durability",
       "night_guard": false,
       "source_arbitration": {
@@ -847,6 +847,14 @@
         ],
         "confidence": "STRUCTURED_REFERENCE_CANDIDATE",
         "controlled_global_observation": false
+      },
+      "requirements": [
+        "night_time"
+      ],
+      "source_disposition": {
+        "night_time_required": true,
+        "pinned_fandom_revision": 1202455,
+        "controlled_global_day_vs_night_test": "NOT_VERIFIED"
       }
     },
     {
@@ -1965,9 +1973,21 @@
     "blue_lava_runtime_disposition": {
       "moon_mirror_required": true,
       "empty_crystal_flask_required": true,
-      "night_required": false,
-      "status": "RESOLVED_CURRENT_REFERENCE",
-      "note": "Historical/Fandom night-only claim retained as provenance, not executable predicate."
+      "night_required": true,
+      "status": "STRUCTURED_REFERENCE_CANDIDATE",
+      "source": {
+        "fandom_pinned_revision": 1202455,
+        "fandom_date": "2026-08-20",
+        "explicit_requirement": "during the night time with a Moon Mirror"
+      },
+      "corroboration": {
+        "current_fandom": "same explicit night-time instruction",
+        "tibiawiki_br": "Moon Mirror + Empty Crystal Flask; no affirmative daytime-success statement",
+        "postrelease_guides": "Moon Mirror + Empty Crystal Flask; omission of time-of-day is not an atomic contradiction",
+        "supplied_video": "Narrator states wiki says night-only, is unsure, believes it is currently night, then fills successfully."
+      },
+      "controlled_global_day_vs_night_test": "NOT_VERIFIED",
+      "note": "Do not classify omission as conflict. Preserve night-time guard as the selected structured Reference candidate until a stronger controlled observation disproves it."
     },
     "terminal_reward_execution": {
       "status": "ARCHITECTURE_ACCEPTED_IMPLEMENTATION_PENDING",
@@ -2011,8 +2031,10 @@
     },
     "blue_lava_night_disposition": {
       "state": "SELECTED_SOURCE_REQUIREMENT",
-      "reason": "Explicit post-release Fandom mechanic; lower-ranked sources only omit time-of-day and do not negate it. Source registry §10 requires same atomic-field disagreement for CONFLICT.",
-      "target_observation": "NOT_CONTROLLED_GLOBAL_VERIFIED"
+      "required": true,
+      "evidence_class": "STRUCTURED_REFERENCE_CANDIDATE",
+      "target_observation": "NOT_CONTROLLED_GLOBAL_VERIFIED",
+      "reason": "Pinned post-release Fandom explicitly states night time; lower-ranked sources omit time-of-day but do not positively demonstrate daytime success."
     },
     "item_binding_refresh": {
       "lit_torch_54610": {
