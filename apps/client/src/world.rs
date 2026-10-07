@@ -49,6 +49,11 @@ const MAX_INDEX_BYTES: u64 = 8 * 1024 * 1024;
 const MAX_REGION_BYTES: u64 = 32 * 1024 * 1024;
 const MAX_SECTOR_BYTES: usize = 16 * 1024 * 1024;
 const REGION_TILES: i32 = 256;
+/// The side of one sector: a region is 8 x 8 sectors.
+const SECTOR_TILES: i32 = REGION_TILES / 8;
+/// The most tiles in the sectors the bounded window can overlap.
+#[allow(clippy::cast_sign_loss)]
+const WINDOW_TILES: usize = (((2 * RADIUS + 1) / SECTOR_TILES + 2) * SECTOR_TILES).pow(2) as usize;
 /// The client's cap on how far elevation lifts what is drawn above it.
 const MAX_ELEVATION: i32 = 24;
 
@@ -146,6 +151,12 @@ impl World {
         );
         // Every tile's resolved items, then the cells they use.
         let mut entries: Vec<((i32, i32), Vec<Item>)> = Vec::new();
+        // One budget for the whole window, so the asset directory cannot make the regions
+        // together decode more than the bounded region needs.
+        let mut budget = Budget {
+            tiles: WINDOW_TILES,
+            entries: 1024 * 1024,
+        };
         for ry in lo_y / REGION_TILES..=hi_y / REGION_TILES {
             for rx in lo_x / REGION_TILES..=hi_x / REGION_TILES {
                 let name = format!("region-z{START_FLOOR:02}-x{rx:03}-y{ry:03}.b3");
@@ -165,7 +176,9 @@ impl World {
                 if hex != entry.sha256 {
                     return Err(format!("{name}: sha256 does not match the placement index"));
                 }
-                for tile in decode_region(&data).map_err(|error| format!("{name}: {error}"))? {
+                for tile in decode_region(&data, (lo_x, hi_x, lo_y, hi_y), &mut budget)
+                    .map_err(|error| format!("{name}: {error}"))?
+                {
                     let (x, y) = (i32::from(tile.x), i32::from(tile.y));
                     if !(lo_x..=hi_x).contains(&x) || !(lo_y..=hi_y).contains(&y) {
                         continue;
@@ -375,7 +388,12 @@ fn read_capped(path: &Path, max: u64) -> Result<Vec<u8>, String> {
 
 /// Decodes an `OTERYN_WORLD_REGION_B3/v1` file the way `world-bundle-compiler`'s `b3` reader
 /// does: a 12-byte header, `local u8 | offset u32 | length u32` rows, one zstd frame per sector.
-fn decode_region(data: &[u8]) -> Result<Vec<sector::Tile>, String> {
+/// Only sectors that overlap `window` (`lo_x, hi_x, lo_y, hi_y`, inclusive) are decompressed.
+fn decode_region(
+    data: &[u8],
+    window: (i32, i32, i32, i32),
+    budget: &mut Budget,
+) -> Result<Vec<sector::Tile>, String> {
     const HEADER: usize = 12;
     const ROW: usize = 9;
     let le16 = |at: usize| u16::from_le_bytes([data[at], data[at + 1]]);
@@ -397,10 +415,6 @@ fn decode_region(data: &[u8]) -> Result<Vec<sector::Tile>, String> {
         max_entries: 4096,
         max_text_bytes: 4096,
     };
-    let mut budget = Budget {
-        tiles: 65_536,
-        entries: 4 * 1024 * 1024,
-    };
     let mut tiles = Vec::new();
     let mut previous = -1;
     for row in 0..count {
@@ -414,6 +428,12 @@ fn decode_region(data: &[u8]) -> Result<Vec<sector::Tile>, String> {
         }
         previous = i32::from(local);
         expected += length;
+        let (sx, sy) = (rx * 8 + u16::from(local) % 8, ry * 8 + u16::from(local) / 8);
+        let (x0, y0) = (i32::from(sx) * SECTOR_TILES, i32::from(sy) * SECTOR_TILES);
+        let (lo_x, hi_x, lo_y, hi_y) = window;
+        if x0 > hi_x || x0 + SECTOR_TILES <= lo_x || y0 > hi_y || y0 + SECTOR_TILES <= lo_y {
+            continue;
+        }
         let frame = &data[offset..offset + length];
         let capacity = match zstd::zstd_safe::get_frame_content_size(frame) {
             Ok(Some(size)) if size <= MAX_SECTOR_BYTES as u64 => size as usize,
@@ -422,9 +442,8 @@ fn decode_region(data: &[u8]) -> Result<Vec<sector::Tile>, String> {
         };
         let payload = zstd::bulk::decompress(frame, capacity)
             .map_err(|error| format!("sector {local}: {error}"))?;
-        let (sx, sy) = (rx * 8 + u16::from(local) % 8, ry * 8 + u16::from(local) / 8);
         tiles.extend(
-            sector::decode(&payload, (sx, sy), limits, &mut budget)
+            sector::decode(&payload, (sx, sy), limits, budget)
                 .map_err(|error| format!("sector {local}: {error:?}"))?,
         );
     }
@@ -518,7 +537,14 @@ mod tests {
 
     #[test]
     fn a_region_that_does_not_match_its_digest_is_refused() -> Result<(), String> {
-        let bad = decode_region(b"OTRB\x02\x07\x7e\x00\x7d\x00\x01\x00");
+        let bad = decode_region(
+            b"OTRB\x02\x07\x7e\x00\x7d\x00\x01\x00",
+            (0, 0, 0, 0),
+            &mut Budget {
+                tiles: 1,
+                entries: 1,
+            },
+        );
         assert!(bad.is_err());
         let missing = World::load(&repo().join("no-such-root"));
         assert!(missing.is_err());

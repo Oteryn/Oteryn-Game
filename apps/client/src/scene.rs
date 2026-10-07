@@ -148,6 +148,11 @@ impl Scene {
     }
 
     #[must_use]
+    pub const fn facing(&self) -> StepDir {
+        self.facing
+    }
+
+    #[must_use]
     pub fn atlas(&self) -> &AtlasImage {
         self.world.atlas()
     }

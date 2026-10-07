@@ -268,10 +268,24 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(class),
             }
         }
-        if let Some(direction) = self.next_step() {
+        if let Some(direction) = self
+            .send_step()
+            .map_err(|_error| PublicClass::SessionUnavailable)?
+        {
             link.request(direction);
         }
         Ok(())
+    }
+
+    /// [`Self::next_step`], redrawing at once when the player turns, so the new facing shows
+    /// before the outcome arrives.
+    fn send_step(&mut self) -> Result<Option<StepDir>, BatchError> {
+        let before = self.facing;
+        let direction = self.next_step();
+        if self.facing != before {
+            self.rebuild()?;
+        }
+        Ok(direction)
     }
 }
 
@@ -578,6 +592,15 @@ mod tests {
         assert_eq!(view.next_step(), None);
         // The player turns to the step sent, moved or not.
         assert_eq!(view.facing(), StepDir::North);
+        Ok(())
+    }
+
+    #[test]
+    fn sending_a_step_redraws_the_new_facing() -> Result<(), BatchError> {
+        let mut view = view()?;
+        view.arrow(StepDir::North);
+        assert_eq!(view.send_step()?, Some(StepDir::North));
+        assert_eq!(view.scene().facing(), StepDir::North);
         Ok(())
     }
 
