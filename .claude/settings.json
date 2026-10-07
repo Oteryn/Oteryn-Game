@@ -2,7 +2,8 @@
   "fastMode": false,
   "permissions": {
     "allow": [
-      "mcp__claude-code-remote__create_session"
+      "mcp__claude-code-remote__create_session",
+      "mcp__github__resolve_review_thread"
     ]
   }
 }
