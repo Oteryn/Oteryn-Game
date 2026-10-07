@@ -366,3 +366,37 @@ fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
         );
     }
 }
+
+#[test]
+fn familiar_history_marks_the_window_before_any_fallible_reconciliation() {
+    let raw =
+        fs::read_to_string(root().join("src/durability/character_familiar.rs")).expect("source");
+    // The whole file: `character_familiar.rs` keeps a test module above its writer.
+    let text = collapse(&raw).replace(' ', "");
+    let start = text
+        .find("asyncfncommit_familiar_spell_inner<")
+        .expect("the familiar writer");
+    let body = &text[start..];
+    let pair = body
+        .find("PendingFamiliarStateOutcome::AlreadyCommitted(value),")
+        .expect("the historical pair arm");
+    let mark = body
+        .find("window.mark_already_committed();")
+        .expect("history marks the window");
+    assert!(
+        mark > pair,
+        "the mark follows the matched historical receipts"
+    );
+    for later in [
+        "prepare_character_build_with_recovery(",
+        "letsame_transaction:bool",
+        "historical_outcome()",
+        "commit_semantic_transaction(tx,deadline).await?;returnOk(Ok(FamiliarSpellCommit::Reconciled",
+    ] {
+        let at = body[pair..]
+            .find(later)
+            .unwrap_or_else(|| panic!("the familiar writer runs {later}"))
+            + pair;
+        assert!(mark < at, "the window is marked before {later}");
+    }
+}

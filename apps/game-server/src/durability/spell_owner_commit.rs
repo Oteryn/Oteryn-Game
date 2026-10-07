@@ -677,6 +677,42 @@ mod lane_tests {
     }
 
     #[test]
+    fn a_failure_after_history_is_established_parks_and_keeps_the_lane() {
+        // A writer that matched historical receipts and then failed: semantically (training or
+        // join validation) or as unavailable (the read-only COMMIT).
+        async fn reconcile_then_fail(
+            window: &mut SpellCommitWindow<'_, u32>,
+            failure: DurabilityError,
+        ) -> Result<(), DurabilityError> {
+            window.mark_already_committed();
+            Err(failure)
+        }
+        block_on(async {
+            let lane = lane(43);
+            for failure in [
+                DurabilityError::InvalidStoredState,
+                DurabilityError::Unavailable,
+            ] {
+                let mut permit = permit(&lane).await;
+                let mut window = permit.open_commit_window(8_u32, park);
+                assert!(reconcile_then_fail(&mut window, failure).await.is_err());
+                let Err(window) = window.reclaim_uncommitted() else {
+                    panic!("a durable historical cast is never reclaimed")
+                };
+                window.park();
+                assert!(permit.has_unresolved());
+                drop(permit);
+                let Err(unresolved) = lane.acquire().await else {
+                    panic!("the lane stays blocked by the parked durable cast")
+                };
+                let (permit, attempt) = unresolved.into_resolution();
+                assert_eq!(attempt.downcast_ref::<u32>(), Some(&8));
+                drop(permit);
+            }
+        });
+    }
+
+    #[test]
     fn a_permit_for_another_channel_is_refused() {
         block_on(async {
             let own = lane(41);

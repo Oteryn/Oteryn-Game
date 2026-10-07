@@ -107,6 +107,17 @@ in-process concurrency invariant of the Channel owner (decision §1.7).
 - Tests: `lane_tests::a_definite_commit_rejection_is_reclaimable_and_an_unknown_outcome_is_not`
   and the source pin `guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection`.
 
+## Fix round 2 (review of 612e1c91)
+
+- 4201790135: `commit_familiar_spell_inner` marks the window already committed as soon as the
+  familiar and cost receipts match as history, before training/join validation and the
+  read-only COMMIT, so every later failure parks the attempt and keeps the lane blocked. Sibling
+  sweep: native, world-item and parameter writers mark history on opening the window; their
+  earlier fallible steps keep the attempt in the marker with its reservations, releasing nothing.
+- Tests: `lane_tests::a_failure_after_history_is_established_parks_and_keeps_the_lane`
+  (semantic and unavailable failure) and the source pin
+  `familiar_history_marks_the_window_before_any_fallible_reconciliation`.
+
 ## Validation
 
 - `cargo fmt --all -- --check`: pass

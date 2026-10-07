@@ -1073,7 +1073,13 @@ impl DurabilityRoot {
                             super::spell_items_abi::SpellItemTransactionOutcome::AlreadyCommitted(
                                 cost,
                             ),
-                        ) => (None, Some(value), cost),
+                        ) => {
+                            // Matching historical receipts prove the cast is durable: from here
+                            // every failure, training/join validation or the read-only COMMIT
+                            // included, parks the attempt instead of reclaiming it.
+                            window.mark_already_committed();
+                            (None, Some(value), cost)
+                        }
                         _ => return Err(DurabilityError::InvalidStoredState),
                     };
                     let next_revision = pending
