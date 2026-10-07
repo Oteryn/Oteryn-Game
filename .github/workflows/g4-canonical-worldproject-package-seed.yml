@@ -39,11 +39,29 @@ jobs:
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
 
+      - name: Export pinned predecessor package
+        run: |
+          set -euo pipefail
+          # The #1807 monster/spell delta was authored outside the materializer, so the package is
+          # reproduced from the pinned parent of #1830 (the materializer digest-verifies it) plus
+          # the D3-7 corpse admission. The tracked content/world is never its own input.
+          pin=d78f0c80e6efe7b5d2fea6dae010eaf236ccd7a1
+          git fetch --no-tags --depth=1 origin "$pin"
+          mkdir -p "$RUNNER_TEMP/predecessor/world"
+          git ls-tree -r --name-only "$pin" content/world \
+            | grep -E '^content/world/(project|manifest|content\.lock)\.json$|^content/world/(assets|definitions|editor|presentations|provenance|worlds)/' \
+            | while IFS= read -r f; do
+                dest="$RUNNER_TEMP/predecessor/world/${f#content/world/}"
+                mkdir -p "$(dirname "$dest")"
+                git show "$pin:$f" > "$dest"
+              done
+          test "$(find "$RUNNER_TEMP/predecessor/world" -type f | wc -l)" -eq 11
+
       - name: Materialize twice
         run: |
           set -euo pipefail
-          cargo +1.94.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-a"
-          cargo +1.94.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-b"
+          cargo +1.94.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-a" --predecessor-root "$RUNNER_TEMP/predecessor/world"
+          cargo +1.94.0 run --locked -p oteryn-game-server --example materialize_content_world_project_v2 -- --output-root "$RUNNER_TEMP/world-b" --predecessor-root "$RUNNER_TEMP/predecessor/world"
           diff --no-dereference --recursive "$RUNNER_TEMP/world-a" "$RUNNER_TEMP/world-b"
           test "$(find "$RUNNER_TEMP/world-a" -type f | wc -l)" -eq 11
           test -z "$(find "$RUNNER_TEMP/world-a" -type l -print -quit)"
