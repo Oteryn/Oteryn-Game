@@ -4,19 +4,19 @@
 task_id: OTV2-20261005-map-cutover-1b
 title: Bundle World domain 17 cutover (MAP-CUTOVER-1b, capability 18)
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/map-cutover-1b-20261005
 issue: 1622
-pr: null
+pr: 1916
 base_sha: f6894e793c162d9d8a43578332f3a6f77d2936a3
-head_sha: null
-final_head_sha: null
+head_sha: "exact frozen head in the control-plane FREEZE_SHA entry"
+final_head_sha: "exact frozen head in the control-plane FREEZE_SHA entry"
 final_head_frozen_at: null
 owner: writer session_018jwcjAQqagaVVh5pYjw3yG
 created_at: 2026-10-05T00:00:00Z
-updated_at: 2026-10-06T00:00:00Z
+updated_at: 2026-10-07T00:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/map/facts.rs
@@ -110,29 +110,37 @@ offered by part B (#1909), not by this task.
 
 ## Validation
 
-Pending on the frozen candidate.
+cargo fmt --all -- --check: pass
+cargo clippy --locked --workspace --all-targets -- -D warnings: pass
+cargo test --locked -p oteryn-protocol-oteryn world_map: pass
+cargo test --locked -p oteryn-game-server: pass
+cargo run --locked -p oteryn-architecture-check -- workspace .: pass
+python tools/agents/validate_governance.py: pass
+python -m unittest discover -s tools/agents/tests: OK
+python tools/repository/validate_repository_policy.py: pass
+git diff --check: pass
 
 ## Self-review
 
-- exact head: pending freeze
-- verdict: pending
+- exact head: the FREEZE_SHA entry
+- verdict: pass; the diff since part B changes only the bundle offer set and its test
 
 ## Independent review
 
 - required: determined by the bound review policy and the control plane
-- verdict: pending
+- verdict: pending; the control plane runs the review on the frozen head
 
 ## PR and closeout
 
-- merge commit/result: pending
+- merge commit/result: squash merge of #1916, with CI, review and the Merge Queue pending at authoring
 - ownership release: on merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: part B merged from main; full validation green; frozen for the control plane PR (pr binds then)
-status: implementing
+last_progress: record archived with pr 1916; frozen for review
+status: completed
 branch: agent/map-cutover-1b-20261005
-head_sha: null
-pr: null
+head_sha: "exact frozen head in the control-plane FREEZE_SHA entry"
+pr: 1916
 ```
