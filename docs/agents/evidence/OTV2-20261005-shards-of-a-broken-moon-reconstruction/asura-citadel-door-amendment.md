@@ -220,3 +220,74 @@ ITEM-USE-1 accepted USE-WITH occurrence
 The Door/Key amendment must not add a private parser/dispatcher for USE-WITH and must not special-case the raw wire command.
 
 This is an execution dependency only. It does not change the source model: the key remains exact Item identity `oteryn:item.tibia.i54262`, non-consumed on use, with no synthetic numeric key number.
+
+
+## Exact placement/object readback
+
+Pinned Summer world:
+`zimbadev/crystalserver@00ce02a5:data-global/world/world.otbm`
+
+Exact tile:
+
+```text
+33899,32666,8
+  ground/base: item 53254
+  door:        item 53380 "closed door"
+               type=door
+               blockProjectile=1
+```
+
+Therefore the Door/Key binding is not a free-text/coordinate-only target. It can bind the exact placed door object:
+
+```text
+placement = (33899,32666,8)
+door_source_item = 53380
+required_item = oteryn:item.tibia.i54262
+```
+
+## Key admission readback
+
+Current canonical `oteryn:item.tibia.i54262@definition-r1` already exists but is still:
+
+```text
+materializable = false
+stack_class = Unknown
+physical.movable = true
+physical.pickupable = true
+physical.weight = 100
+```
+
+Exact 15.30 client facts:
+
+```text
+flags.usable = true
+flags.multiuse = true
+flags.take = true
+flags.cyclopediaitem = true
+cyclopediaitem.cyclopedia_type = 54262
+```
+
+Exact Crystal Summer `items.xml`:
+
+```text
+id=54262
+name=key
+article=a
+primarytype=others
+weight=100
+keyNumber absent
+```
+
+Running this row through the existing `quest_reward_item_semantics.py::item_facts`
+logic yields:
+
+```text
+stackable=false
+capacity=null
+charges=null
+holds=[]
+```
+
+So key identity is resolved and admission is proof-complete, but runtime cannot mint/regrant it until the Item successor promotion makes the existing canonical record materializable.
+
+This is an Item-admission dependency only; do not fold it into the Door/Key amendment itself.
