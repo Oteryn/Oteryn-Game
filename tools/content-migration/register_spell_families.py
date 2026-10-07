@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 from pathlib import Path
 
 import import_spell_families as spell_import
@@ -17,6 +19,23 @@ FAMILY_INDEXES = {
     "Presentation": "content/presentations/definitions/index.json",
     "Item": "content/items/index.json",
 }
+# Production V7 pins (D879, D887): repository-owned files pinned by digest after the
+# overlay stages, whose base digests cover the manifest without them.
+REPOSITORY_PINS = {
+    "item_keys": "tools/content-schema/native-gameplay/item-keys.json",
+    "progression": "rulesets/character/experience/native-section.json",
+}
+NATIVE_MANIFEST = "content/spells.manifest.json"
+
+
+def pin_repository_inputs(root: Path, generated: dict[str, bytes]) -> None:
+    manifest = json.loads(generated[NATIVE_MANIFEST])
+    for key, path in REPOSITORY_PINS.items():
+        manifest[key] = {
+            "path": Path(os.path.relpath(path, "content")).as_posix(),
+            "sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
+        }
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(manifest)
 
 
 def encoded(value: object, *, registry: bool = False) -> bytes:
@@ -35,6 +54,7 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     generated = current_sources.outputs(root, generated)
     from compose_monster_current_sources import compose
     generated = compose(root, baseline, generated)
+    pin_repository_inputs(root, generated)
     descriptors = spell_import.descriptors(root, generated)
     for family, path in FAMILY_INDEXES.items():
         index = json.loads((root / path).read_bytes())
