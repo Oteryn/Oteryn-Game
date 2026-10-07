@@ -133,7 +133,13 @@ fn main() -> std::process::ExitCode {
     match launch() {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
-            eprintln!("Oteryn: {error}. Reinstall Oteryn to repair it.");
+            let message = format!("{error}. Reinstall Oteryn to repair it.");
+            eprintln!("Oteryn: {message}");
+            // The launcher has no console, so the user sees the error only in a dialog. A
+            // `--smoke` run is unattended and must not block on one.
+            if !std::env::args_os().any(|argument| argument == "--smoke") {
+                oteryn_client::win_mutex::show_error(&message);
+            }
             std::process::ExitCode::from(2)
         }
     }

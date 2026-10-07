@@ -1,6 +1,6 @@
 //! Per-user install mutexes (CLIENT-INSTALLER-0 §2.1, Concurrency). This module holds the
-//! client's only unsafe code (CP D901): the Windows mutex and token-SID calls behind safe
-//! functions, every handle closed by `Drop`.
+//! client's only unsafe code (CP D901): the Windows mutex and token-SID calls and the launcher's
+//! error dialog behind safe functions, every handle closed by `Drop`.
 #![allow(unsafe_code)]
 
 use std::fmt::{self, Display, Formatter};
@@ -14,6 +14,7 @@ use windows_sys::Win32::Security::{GetTokenInformation, TOKEN_QUERY, TOKEN_USER,
 use windows_sys::Win32::System::Threading::{
     CreateMutexW, GetCurrentProcess, OpenMutexW, OpenProcessToken,
 };
+use windows_sys::Win32::UI::WindowsAndMessaging::{MB_ICONERROR, MB_OK, MessageBoxW};
 
 /// `SYNCHRONIZE` access right; defined here so the `Win32_Storage_FileSystem` feature is not needed.
 const SYNCHRONIZE: u32 = 0x0010_0000;
@@ -155,6 +156,22 @@ pub fn current_user_sid() -> io::Result<String> {
     // SAFETY: `text` was allocated by `ConvertSidToStringSidW` and is freed once, here.
     unsafe { LocalFree(text.cast::<core::ffi::c_void>() as HLOCAL) };
     value.map_err(io::Error::other)
+}
+
+/// Shows a modal error dialog titled `Oteryn` and returns when the user closes it.
+pub fn show_error(message: &str) {
+    let text = wide(message);
+    let caption = wide("Oteryn");
+    // SAFETY: both strings are NUL-terminated UTF-16 that outlive the call; a null owner window
+    // makes the dialog top-level.
+    unsafe {
+        MessageBoxW(
+            ptr::null_mut(),
+            text.as_ptr(),
+            caption.as_ptr(),
+            MB_OK | MB_ICONERROR,
+        );
+    }
 }
 
 fn wide(value: &str) -> Vec<u16> {
