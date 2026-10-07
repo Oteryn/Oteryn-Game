@@ -2,8 +2,9 @@
 ; CLIENT-INSTALLER-0_WINDOWS_CLIENT_INSTALLER_CONTRACT_CANDIDATE.md). Per-user, no elevation.
 ;
 ; The release payload (oteryn-client.exe, client.env, packages.json) is not installed by
-; [Files]: PrepareToInstall verifies or stages it into releases\<release_id>[~<n>] and activates
-; it with one MoveFileExW rename of current.txt (section 2.1 steps 1-3). The transaction mutex
+; [Files]: PrepareToInstall verifies or stages it into releases\<release_id>[~<n>], and after
+; Setup installed its tracked files ssPostInstall activates it with one MoveFileExW rename of
+; current.txt (section 2.1 steps 1-3); a failed activation exits with code 20. The transaction mutex
 ; Global\OterynClientSetup-<SID> and the client mutex Global\OterynClient-<SID> are handled in
 ; [Code] because their names are computed at run time.
 ;
@@ -123,15 +124,15 @@ const
   GENERIC_WRITE = $40000000;
   CREATE_ALWAYS = 2;
   OPEN_EXISTING = 3;
-  FILE_ATTRIBUTE_NORMAL = $80;
-  FILE_ATTRIBUTE_DIRECTORY = $10;
   INVALID_HANDLE_VALUE = $FFFFFFFF;
   MOVEFILE_REPLACE_EXISTING = 1;
   MOVEFILE_WRITE_THROUGH = 8;
+  ACTIVATION_FAILED_EXIT_CODE = 20;
 
 var
   UserSid: String;
   SetupMutex: THandle;
+  PreviousRelease, TargetRelease, ActivationError: String;
 
 function GetCurrentProcess: THandle;
   external 'GetCurrentProcess@kernel32.dll stdcall';
@@ -560,8 +561,9 @@ begin
   end;
 end;
 
-{ Section 2.1 steps 1-3. Returns '' or an error; current.txt changes only in Activate. }
-function InstallRelease: String;
+{ Section 2.1 step 1: a verified release directory in TargetRelease. Returns '' or an error;
+  current.txt is not touched. }
+function PrepareRelease: String;
 var
   AppDir, Releases, Previous, Staging, Target: String;
   Names: TArrayOfString;
@@ -603,12 +605,21 @@ begin
     end;
     Log('Staged release directory ' + Target);
   end;
+  PreviousRelease := Previous;
+  TargetRelease := Target;
+end;
 
-  Result := Activate(AppDir, Target);
+{ Section 2.1 steps 2-3, after Setup installed its tracked files. Returns '' or an error. }
+function ActivateRelease: String;
+var
+  AppDir: String;
+begin
+  AppDir := ExpandConstant('{app}');
+  Result := Activate(AppDir, TargetRelease);
   if Result <> '' then
     Exit;
-  Log('Activated ' + Target);
-  CleanUp(Releases, Previous, Target);
+  Log('Activated ' + TargetRelease);
+  CleanUp(AppDir + '\releases', PreviousRelease, TargetRelease);
 end;
 
 { --- Setup and uninstall events ----------------------------------------------------------- }
@@ -629,7 +640,7 @@ begin
     Exit;
   end;
   try
-    Result := InstallRelease;
+    Result := PrepareRelease;
   except
     Result := GetExceptionMessage;
   end;
@@ -639,14 +650,34 @@ begin
   end;
 end;
 
+{ Activation waits for ssPostInstall so that a failure while Setup installs its tracked files
+  leaves current.txt unchanged. A failed activation also leaves it unchanged; Setup then exits
+  with ACTIVATION_FAILED_EXIT_CODE. }
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
 begin
-  if (CurStep = ssDone) and HasFlag('/RELAUNCH') then
+  if CurStep = ssPostInstall then begin
+    try
+      ActivationError := ActivateRelease;
+    except
+      ActivationError := GetExceptionMessage;
+    end;
+    if ActivationError <> '' then
+      Fail('Oteryn could not be activated: ' + ActivationError + '. The previously installed release is unchanged.');
+  end;
+  if (CurStep = ssDone) and (ActivationError = '') and HasFlag('/RELAUNCH') then
     if not Exec(ExpandConstant('{app}\oteryn-launcher.exe'), '--after-setup', '', SW_SHOWNORMAL,
                 ewNoWait, ResultCode) then
       Log('Could not start the launcher: ' + SysErrorMessage(ResultCode));
+end;
+
+function GetCustomSetupExitCode: Integer;
+begin
+  if ActivationError <> '' then
+    Result := ACTIVATION_FAILED_EXIT_CODE
+  else
+    Result := 0;
 end;
 
 function InitializeUninstall: Boolean;

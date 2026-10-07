@@ -51,8 +51,12 @@ after Setup releases its mutex: `/RELAUNCH` plus `oteryn-launcher --after-setup`
 - Signing: Inno's `SignTool` is wired only under `#ifdef SignTool`, because Inno aborts a compile
   whose signing command produces no signature; CI calls `sign.ps1` (a no-op that says signing is
   not configured) explicitly. This differs from the contract's "Inno calls it through SignTool".
-- Activation happens in `PrepareToInstall`; a first install that fails after activation can leave
-  files that only a later install or the uninstaller removes.
+- Staging and verification happen in `PrepareToInstall`; activation and clean-up wait for
+  `ssPostInstall` (Codex 4204201805), so a failure while Setup installs its tracked files leaves
+  `current.txt` unchanged. A staged directory left by such a failure is inert and reused or
+  removed by the next install. A failed activation shows an error and exits with code 20.
+- ISCC 6.7.3 predefines `FILE_ATTRIBUTE_*`; the script no longer redeclares them (CI compile
+  error at 5d370fe4). Other declared names were checked against the 6.7.3 script sources.
 - Inno Setup 6.7.3 is pinned by URL and SHA-256 in the workflow; the upload action is pinned by
   commit SHA like the rest of the repository.
 - Not verified locally: the Inno script compile and every Windows runtime behaviour of the
