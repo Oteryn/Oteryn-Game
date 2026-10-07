@@ -29,9 +29,91 @@ Needs Docker, `openssl`, `sudo`, Rust 1.94.0 and a display for the OAuth browser
 keeps the services up for a Windows client; `LOGIN_LOCAL_KEEP=1` skips teardown (the work directory
 then holds per-run secrets).
 
-**Hosts.** The full client walk needs the Windows client on the same host as the services, because every
-port is bound to loopback. On a Windows PC run the script under WSL2 with Docker. A NAS run (for example
-Synology) stops at `READY`: it proves the server side only.
+**Hosts.** By default every port is bound to loopback, so the full client walk needs the Windows client on the
+same host as the services (on a Windows PC run the script under WSL2 with Docker). To serve from another machine
+on the same LAN, such as a Synology NAS, set `LOGIN_LOCAL_HOST` (next section).
+
+## NAS server + PC client
+
+`LOGIN_LOCAL_HOST=<private LAN IPv4>` (default `127.0.0.1`, which keeps the loopback behaviour unchanged). Only
+10/8, 172.16/12 and 192.168/16 are accepted; `0.0.0.0`, public and malformed values end `BLOCKED`.
+
+The client (`crates/platform-client/src/lib.rs`, `PlatformClientConfig::new`) accepts plain `http` only for
+`localhost`, `127.0.0.1` and `[::1]`; any other host must be `https`. So in LAN mode nginx serves the Platform and the
+gateway over TLS on the LAN IP with a per-run LAN test CA (leaf SAN `IP:<host>`), and `client.env` carries `https://`
+URLs. The OAuth redirect needs nothing extra: the client's loopback redirect listener and the browser both run on the
+PC, and the browser opens `OTERYN_PLATFORM_URL`. The service-token admission route stays unreachable from the LAN.
+
+On the NAS (Docker, repo and the pinned `_platform` checkout as above):
+
+```bash
+LOGIN_LOCAL_HOST=<NAS LAN IP> LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0 bash tools/qualification/login_local/run.sh
+```
+
+What changes with a LAN host: the Platform HTTP port (18564) and gateway port (18565) are published by nginx over
+TLS on the LAN IP; the game node listens on `<LAN IP>:17281` (default `_GAME_PORT`); the gameplay certificate SAN is
+`DNS:localhost,IP:<host>`; the route and `game-auth:world:ensure` use the LAN IP; the route `tls_server_name` stays
+`localhost`. PostgreSQL (15533), the Platform mTLS port (18563), the game node's database and control connections, and
+the report endpoint stay on `127.0.0.1` (they are node-local).
+
+Then copy to the PC (all three are written next to `client.env`, normally the work directory, kept because of
+`LOGIN_LOCAL_HOLD=1`):
+
+1. `client.env` (contains the per-run test password in a comment).
+2. `login-local-lan-ca.crt`: import into the Windows **Trusted Root Certification Authorities** store (it signs only
+   this run's Platform/gateway leaf and lives one day). The client verifies through the OS trust store.
+3. `login-local-gameplay.crt`: set `OTERYN_DEV_ROOT` in the PC's environment to its Windows path (in LAN mode `client.env` holds
+   the NAS path, which does not exist on the PC, and no Windows path is needed on the NAS).
+
+Load `client.env` into the PC shell and run the client there; after the server step result is visible write text
+containing the run id to the attestation file on the NAS (see Result).
+
+**Firewall.** Open only to the LAN (the NAS firewall source `192.168.x.0/24` or your subnet) the TCP ports 18564
+(Platform), 18565 (gateway) and 17281 (game node). Do not open or forward PostgreSQL 15533 or 18563. **Do not forward
+any of these ports on the router**: the test account password is in `client.env` and the run is a disposable
+qualification topology, not a hardened service. Stop the run (Ctrl-C) when done.
+
+**Unverified here.** No Docker daemon with the pinned Platform was available for a LAN run: the Platform's use of the
+request host for its own URLs behind the TLS listener, and the Platform's acceptance of the route host, are
+confirmed only by the first real run.
+
+## NAS + DSM reverse proxy
+
+Variant of the section above when the NAS already has a TLS reverse proxy (Synology DSM): the Platform and the gateway
+are reached through DSM and only the game node is reached directly on the LAN. Set both
+`LOGIN_LOCAL_PUBLIC_PLATFORM_URL` and `LOGIN_LOCAL_PUBLIC_GATEWAY_URL` (each `https://host[:port]`, nothing else) and
+`LOGIN_LOCAL_HOST` (required). Anything else ends `BLOCKED` (`public_url_pair_required`, `public_url_not_https`,
+`host_required_for_public_urls`). No LAN listener and no LAN CA are created; Platform HTTP and the gateway stay published
+on `127.0.0.1:18564` / `127.0.0.1:18565`, and the run does not probe the public URLs, so DSM can be configured after the
+run starts.
+
+DSM, Control Panel -> Login Portal -> Advanced -> Reverse Proxy, two rows (source HTTPS, destination HTTP, `127.0.0.1`):
+
+| Source | Destination |
+| --- | --- |
+| `https://synology:18574` | `http://127.0.0.1:18564` (Platform) |
+| `https://synology:18575` | `http://127.0.0.1:18565` (gateway) |
+
+DSM terminates TLS with its own certificate. The PC must trust it: if it is self-signed, export it from DSM (Control
+Panel -> Security -> Certificate) and import it into the Windows Trusted Root Certification Authorities store; the
+PC must also resolve the proxy host name (`synology`) to the NAS.
+
+On the NAS:
+
+```bash
+LOGIN_LOCAL_HOST=192.168.1.2 LOGIN_LOCAL_PUBLIC_PLATFORM_URL=https://synology:18574 LOGIN_LOCAL_PUBLIC_GATEWAY_URL=https://synology:18575 LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0 LOGIN_LOCAL_DB_START_PERIOD=600s bash tools/qualification/login_local/run.sh
+```
+
+What changes in proxy mode: `client.env` `OTERYN_PLATFORM_URL` / `OTERYN_GATEWAY_URL` are the public URLs; the Platform's
+`APP_URL` is the public Platform URL, and the loopback Platform listener (nginx `8447`) presents that authority over
+https to PHP (`HTTPS on`, `HTTP_HOST`, `SERVER_PORT`; `X-Forwarded-*` headers are blanked) so Laravel generates the public
+https issuer, authorize and redirect URLs without trusted-proxy configuration. The gateway's call to the Platform
+(`https://nginx:8444`) is unchanged. The game node still listens on `<LOGIN_LOCAL_HOST>:17281` with `IP:<host>` in the
+gameplay SAN and the LAN IP as route host (`tls_server_name` stays `localhost`).
+
+Copy only `client.env` and `login-local-gameplay.crt` to the PC and point `OTERYN_DEV_ROOT` at the certificate there.
+Firewall: allow TCP 17281 from the LAN only; DSM's own 18574 / 18575 follow your DSM firewall policy. Do not forward
+any of these ports on the router, and do not publish PostgreSQL (15533) or 18563.
 
 **Slow hosts.** The MariaDB service gets a `start_period` of `300s` from `compose.override.yml` (the
 `wp5_s3a` healthcheck alone allows about 2 minutes of first initialisation, which a NAS can exceed and
@@ -106,7 +188,9 @@ operator command creates accounts).
 
 ## Validation record
 
-`bash -n` and `shellcheck -x` pass on `run.sh`. LOGIN-LOCAL-TLS-1 (#1914): the gateway upstream certificate chain
+`bash -n` passes on `run.sh`; `shellcheck` was not available when LOGIN-LOCAL-LAN-1 was written. LOGIN-LOCAL-LAN-1: host validation was exercised
+for loopback, the three private ranges and rejected values; `docker compose config` with and without `compose.lan.yml` merges as intended
+(default publishes unchanged); a leaf with `IP:` SAN verifies with `openssl verify -verify_ip`. `bash -n` and `shellcheck -x` passed on `run.sh` earlier. LOGIN-LOCAL-TLS-1 (#1914): the gateway upstream certificate chain
 generated by `run.sh` verifies with `openssl verify -purpose sslserver -verify_hostname nginx`; the TLS run itself was not
 executed here either (Docker daemon unreachable). The documented local run was **not executed in this environment**: the Docker
 daemon is unreachable. The first operator/CI run is the first executed evidence; the OAuth client-id parse, the
