@@ -421,10 +421,10 @@ fn fence_file(file: &File) -> Result<rustix::fs::Stat, FenceUnusable> {
     Ok(stat)
 }
 
-fn open_fence(path: &Path) -> Result<File, FenceUnusable> {
+fn open_fence(directory: &OwnedFd, name: &std::ffi::OsStr) -> Result<File, FenceUnusable> {
     let fd = rustix::fs::openat(
-        rustix::fs::CWD,
-        path,
+        directory,
+        name,
         OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
         Mode::empty(),
     )
@@ -434,7 +434,8 @@ fn open_fence(path: &Path) -> Result<File, FenceUnusable> {
 
 /// Read F, refusing anything but an existing, well-formed fence.
 pub fn read_fence(path: &Path) -> Result<u64, FenceUnusable> {
-    let file = open_fence(path)?;
+    let (parent, name) = split(path)?;
+    let file = open_fence(&open_directory(parent)?, name)?;
     fence_file(&file)?;
     let mut raw = Vec::new();
     file.take(FENCE_BYTES as u64 + 1)
@@ -469,21 +470,33 @@ impl From<FenceUnusable> for FenceWrite {
     }
 }
 
+/// The fence directory, opened one component at a time without following a
+/// symbolic link anywhere in its path; every fence access is relative to it.
 fn open_directory(parent: &Path) -> Result<OwnedFd, FenceUnusable> {
-    rustix::fs::openat(
-        rustix::fs::CWD,
-        parent,
-        OFlags::RDONLY | OFlags::DIRECTORY | OFlags::CLOEXEC,
-        Mode::empty(),
-    )
-    .map_err(|_| FenceUnusable)
+    let flags = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+    let start = if parent.is_absolute() { "/" } else { "." };
+    let mut current = rustix::fs::openat(rustix::fs::CWD, start, flags, Mode::empty())
+        .map_err(|_| FenceUnusable)?;
+    for component in parent.components() {
+        match component {
+            std::path::Component::RootDir | std::path::Component::CurDir => {}
+            std::path::Component::Normal(name) => {
+                current = rustix::fs::openat(&current, name, flags, Mode::empty())
+                    .map_err(|_| FenceUnusable)?;
+            }
+            std::path::Component::ParentDir | std::path::Component::Prefix(_) => {
+                return Err(FenceUnusable);
+            }
+        }
+    }
+    Ok(current)
 }
 
 fn write_fence_with(path: &Path, value: u64, sync: DirectorySync) -> Result<(), FenceWrite> {
-    let current = open_fence(path)?;
-    let stat = fence_file(&current)?;
     let (parent, name) = split(path)?;
     let directory = open_directory(parent)?;
+    let current = open_fence(&directory, name)?;
+    let stat = fence_file(&current)?;
     let temp = format!(
         ".epoch-fence-{}-{}.tmp",
         std::process::id(),

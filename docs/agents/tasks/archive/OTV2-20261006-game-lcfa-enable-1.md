@@ -68,6 +68,9 @@ No migration, wire change or Platform change.
   succeeds; every fence handle also syncs the directory before its first read.
 - Codex P1 4204399506: a process holds one production durability root, so `projection resync` is
   dispatched before the operator root is built and connects only the projection login.
+- Codex P1 4204780444: the fence directory is opened one component at a time with `O_NOFOLLOW`
+  (`..` refused), and every fence read, write, rename and directory sync is relative to that
+  descriptor, so a symbolic link anywhere in F's path is refused.
 - Follow-up GAME-LCFA-RESYNC-DEADLINE-1 (Codex P2 4200478837): `ops projection resync` runs inside
   the ordinary 2 s root pass (`DB_PASS_DEADLINE`); a bounded maintenance deadline needs a
   durability-root change outside this packet's paths.
@@ -77,7 +80,7 @@ No migration, wire change or Platform change.
 ## Validation
 
 `cargo fmt --check`; `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`;
-`cargo test --locked -p oteryn-game-server --lib account_characters` (21), `--lib node::config`
+`cargo test --locked -p oteryn-game-server --lib account_characters` (22), `--lib node::config`
 (7), `--bin oteryn-game-ops`; `bash -n` and `shellcheck -x` on `run.sh`; `git diff --check`; all pass.
 
 - `python tools/agents/validate_governance.py`: pass

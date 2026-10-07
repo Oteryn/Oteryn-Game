@@ -25,7 +25,7 @@ Done once by the owner. The workflow never creates or changes it, and fails if i
    | `BASE/ops` | 1001 | 0700 | `migration-url` (one line, TLS-verified PostgreSQL URL), mode 0600 |
    | `BASE/node`, `BASE/node/secrets` | 1001 | 0700 | `node.toml` (0600), runtime `pg-password`, `db-ca.pem`, Platform and gameplay TLS files (each 0600) |
    | `BASE/run`, `BASE/log` | 1001 | 0700 | pid file, control socket, `current-node-id`, service log |
-   | `BASE/projection` | 1001 | 0700 | `epoch-fence` (Character projection epoch fence F, 0600, 1001), outside the Character fence directory and its backups |
+   | `BASE/projection` | 1001 | 0700 | `epoch-fence` (Character projection epoch fence F, 0600, 1001), outside the Character fence directory and its backups; no component of its path may be a symbolic link |
    | `BASE/db` | n/a | n/a | PostgreSQL volume |
    | `ROOT_BASE`, `ROOT_BASE/bin`, `ROOT_BASE/ops` | root | 0755 / 0755 / 0700 | `bin/oteryn-game-ops`, `ops/ops.toml` (0600), control `pg-password`, `projection-pg-password` (0600), `db-ca.pem` |
 

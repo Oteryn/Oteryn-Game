@@ -692,6 +692,45 @@ fn a_rename_without_a_directory_sync_leaves_the_fence_unusable_until_synced() {
 }
 
 #[test]
+fn a_symbolic_link_anywhere_in_the_fence_directory_path_is_refused() {
+    use std::os::unix::fs::PermissionsExt;
+    let directory = std::env::temp_dir().join(format!(
+        "oteryn-epoch-fence-links-{}-{:?}",
+        std::process::id(),
+        std::thread::current().id()
+    ));
+    let _ = std::fs::remove_dir_all(&directory);
+    let real = directory.join("real").join("inner");
+    std::fs::create_dir_all(&real).unwrap();
+    let fence = real.join("epoch.fence");
+    std::fs::write(&fence, b"7\n").unwrap();
+    std::fs::set_permissions(&fence, std::fs::Permissions::from_mode(0o600)).unwrap();
+    assert_eq!(read_fence(&fence), Ok(7));
+    // A link in the middle of the path, and as the fence directory itself.
+    std::os::unix::fs::symlink(directory.join("real"), directory.join("middle")).unwrap();
+    std::os::unix::fs::symlink(&real, directory.join("last")).unwrap();
+    for linked in [
+        directory.join("middle").join("inner").join("epoch.fence"),
+        directory.join("last").join("epoch.fence"),
+    ] {
+        assert_eq!(read_fence(&linked), Err(FenceUnusable));
+        assert_eq!(write_fence(&linked, 8), Err(FenceUnusable));
+        assert_eq!(
+            EpochFenceFile::new(linked.clone()).read(),
+            Err(FenceUnusable)
+        );
+        assert_eq!(EpochFenceFile::new(linked).persist(8), Err(FenceUnusable));
+    }
+    assert_eq!(std::fs::read(&fence).unwrap(), b"7\n");
+    // `..` is refused rather than resolved.
+    assert_eq!(
+        read_fence(&real.join("..").join("inner").join("epoch.fence")),
+        Err(FenceUnusable)
+    );
+    std::fs::remove_dir_all(&directory).unwrap();
+}
+
+#[test]
 fn the_fence_grammar_is_exact() {
     assert_eq!(parse_fence(b"0"), Some(0));
     assert_eq!(parse_fence(b"0\n"), Some(0));
