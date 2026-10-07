@@ -5,7 +5,9 @@
 //! whose positions are not map positions still draws the start area around its actor.
 
 use crate::input::{StepDir, TargetKind, Targetable, pick_target};
-use crate::world::{BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, TARGET_CELL, World};
+use crate::world::{
+    BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, SCAN_MARGIN, TARGET_CELL, World,
+};
 use oteryn_client_assets::CELL_PX;
 use oteryn_renderer::{
     AtlasImage, BatchError, MAX_BATCH_QUADS, SpriteBatch, TileBatch, TileCoord, TileView,
@@ -19,7 +21,9 @@ pub const SCENE_ROWS: u32 = 11;
 
 // A full view (map cells, a marker per tile, the player and the target) fits one sprite batch.
 const _: () = assert!(
-    ((SCENE_COLUMNS + 2) * (SCENE_ROWS + 2)) as usize * (MAX_TILE_DRAWS + 1) + MAX_TILE_DRAWS
+    ((SCENE_COLUMNS + SCAN_MARGIN as u32) * (SCENE_ROWS + SCAN_MARGIN as u32)) as usize
+        * (MAX_TILE_DRAWS + 1)
+        + MAX_TILE_DRAWS
         < MAX_BATCH_QUADS
 );
 
@@ -109,8 +113,9 @@ impl Scene {
         self.rebuild_sprites()
     }
 
-    /// Row by row, two tiles past the view on the right and bottom (a displaced 64 px sprite
-    /// reaches back up and left by up to two tiles): each tile's map items, its markers and the player, then what goes over them.
+    /// Row by row, [`SCAN_MARGIN`] tiles past the view on the right and bottom (the world drops
+    /// map cells reaching further up and left): each tile's map items, its markers and the
+    /// player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
         let mut sprites = SpriteBatch::new();
@@ -119,8 +124,8 @@ impl Scene {
             let offset = [draw.offset[0] - lift, draw.offset[1] - lift];
             sprites.push_offset(&self.view, atlas, tile, draw.cell, offset, CELL_PX)
         };
-        for row in 0..SCENE_ROWS as i32 + 2 {
-            for column in 0..SCENE_COLUMNS as i32 + 2 {
+        for row in 0..SCENE_ROWS as i32 + SCAN_MARGIN {
+            for column in 0..SCENE_COLUMNS as i32 + SCAN_MARGIN {
                 // Past the edge of the coordinate space there is nothing to draw.
                 let (Some(x), Some(y)) = (origin.x.checked_add(column), origin.y.checked_add(row))
                 else {

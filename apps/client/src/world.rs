@@ -59,6 +59,10 @@ const WINDOW_TILES: usize = (((2 * RADIUS + 1) / SECTOR_TILES + 2) * SECTOR_TILE
 pub const MAX_TILE_DRAWS: usize = 256;
 /// The client's cap on how far elevation lifts what is drawn above it.
 const MAX_ELEVATION: i32 = 24;
+/// How far up and left, in source pixels, a tile's cells may reach: the scene scans
+/// [`SCAN_MARGIN`] tiles past the view on the right and bottom.
+pub const SCAN_MARGIN: i32 = 2;
+const MAX_REACH_PX: i32 = SCAN_MARGIN * CELL_PX as i32;
 
 /// One atlas cell drawn at a pixel offset from a tile's top-left, in 32 px source pixels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -206,6 +210,9 @@ impl World {
                         stack.push((palette, item));
                     }
                     let mut items = Vec::new();
+                    // Refused as soon as the tile resolves to more cells than it may draw, so an
+                    // overfull tile is not held until the whole window is resolved.
+                    let mut tile_cells = 0;
                     for (palette, item) in stack {
                         let placement = Placement {
                             hook,
@@ -228,6 +235,9 @@ impl World {
                         } else {
                             3
                         };
+                        tile_cells += resolved.cells.len();
+                        within_draw_cap(tile_cells)
+                            .map_err(|error| format!("{name}: tile ({x}, {y}): {error}"))?;
                         items.push((layer, item_height(resolved.elevation), resolved.cells));
                     }
                     // Stable: items of one layer keep their stack order.
@@ -266,11 +276,13 @@ impl World {
             rgba.extend_from_slice(&pixels);
             next += 1;
         }
+        // A cell reaching further up or left than the scene scans past the view is not drawn.
         let draw = |cell: &DrawCell, lift: i32| {
             let slot = cells.get(&(cell.sprite_id, cell.cell_x, cell.cell_y))?;
-            (*slot != 0).then_some(Draw {
+            let offset = [cell.offset_x - lift, cell.offset_y - lift];
+            (*slot != 0 && within_reach(offset)).then_some(Draw {
                 cell: *slot,
-                offset: [cell.offset_x - lift, cell.offset_y - lift],
+                offset,
             })
         };
         let mut tiles = HashMap::with_capacity(entries.len());
@@ -286,8 +298,6 @@ impl World {
                 }
             }
             tile.elevation = elevation;
-            within_draw_cap(tile.under.len() + tile.over.len())
-                .map_err(|error| format!("tile {position:?}: {error}"))?;
             tiles.insert(*position, tile);
         }
         let player: [Vec<Draw>; 4] =
@@ -432,6 +442,12 @@ fn read_capped(path: &Path, max: u64) -> Result<Vec<u8>, String> {
     Ok(bytes)
 }
 
+/// Whether a map cell at `offset` (lift included) stays within [`MAX_REACH_PX`] of its tile,
+/// so the scene's scan past the view reaches it.
+fn within_reach(offset: [i32; 2]) -> bool {
+    offset.iter().all(|axis| *axis >= -MAX_REACH_PX)
+}
+
 /// Refuses more than [`MAX_TILE_DRAWS`] cells, so the world falls back to the empty map
 /// instead of failing the renderer.
 fn within_draw_cap(draws: usize) -> Result<(), String> {
@@ -504,11 +520,14 @@ fn decode_region(
             .map_err(|error| format!("sector {local}: {error}"))?;
         let mut decoded = sector::decode(&payload, (sx, sy), limits, budget)
             .map_err(|error| format!("sector {local}: {error:?}"))?;
-        // Zones are not drawn and not charged to the budget. Each zone id takes at least one
-        // payload byte, so dropping them per sector keeps a region's retained memory to the
-        // charged tiles and entries.
+        // Zones and item texts are not drawn and not charged to the budget. Dropping them per
+        // sector keeps a region's retained memory to the charged tiles and entries.
         for tile in &mut decoded {
             tile.zones = Vec::new();
+            for item in &mut tile.items {
+                item.attrs.text = None;
+                item.attrs.description = None;
+            }
         }
         tiles.extend(decoded);
     }
@@ -612,6 +631,12 @@ mod tests {
             palette_entry(&palette, 1, "region").err().as_deref(),
             Some("region: palette index 1 outside the placement index")
         );
+    }
+
+    #[test]
+    fn a_cell_beyond_the_scan_margin_is_not_drawn() {
+        assert!(within_reach([-MAX_REACH_PX, 0]));
+        assert!(!within_reach([0, -MAX_REACH_PX - 1]));
     }
 
     #[test]

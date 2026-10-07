@@ -26,6 +26,7 @@ owned_paths:
   - Cargo.toml (workspace member removal)
   - Cargo.lock
   - workspace-boundaries.toml (placeholder-assets removal, oteryn-client edges)
+  - content/world/pins/oteryn.json (inputs_digest refresh only; CP-approved, owner consent)
   - docs/agents/tasks/archive/CLIENT-VIS-1.md
 public_contracts: []
 external_repositories: []
@@ -55,6 +56,12 @@ placement index, and if loading fails the client prints the reason and draws an 
 - [x] Offline and session scenes draw the same real sprites (anchored scene test).
 - [x] Placeholder removed; workspace-boundaries PASS.
 
+## Pin refresh
+
+`content/world/pins/oteryn.json` changes only `inputs_digest`, from `9fd24261…` to the
+tree's `2ea68428fa30b0351421950b5e9266685104827ad19cb4e69f18b9fd7b9c5c90` as reported by
+`pin-check`; approved by the control plane, with owner consent.
+
 ## Excluded scope
 
 Installer packaging, `tools/qualification/login_local`, `apps/game-server`, Platform, native
@@ -66,6 +73,7 @@ milestones.
 - `cargo fmt --all --check`: pass
 - `cargo clippy --workspace --all-targets -- -D warnings`: pass
 - `cargo run -p oteryn-architecture-check -- workspace .`: pass
+- `cargo run -p oteryn-world-bundle-compiler -- pin-check . <out>`: pass
 - `cargo test -p oteryn-client -p oteryn-client-assets -p oteryn-renderer --release`: pass
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: OK
@@ -73,4 +81,4 @@ milestones.
 
 ## Review
 
-Codex review on the frozen head; P0/P1 fixed, P2 answered as follow-ups.
+Codex review on every authoring head; every P2 finding fixed and answered on its thread.
