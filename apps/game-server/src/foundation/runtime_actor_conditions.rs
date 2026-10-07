@@ -639,6 +639,9 @@ impl ChannelRuntimeV1 {
             if cure[..n].contains(actor) {
                 return Err(CarrierError::PlanConflict);
             }
+            // SPELL-LOCK-2 §1.3: a cure-only actor is outside the heal batch's own check, so
+            // every distinct cure slot refuses retryably here, before any HP or condition write.
+            self.assert_actor_spell_unreserved(*actor)?;
             prepared.push(self.stage_creature_paralysis_removal(*actor, now)?);
         }
         // Native all-target preflight includes physical generation, source-world and Bone

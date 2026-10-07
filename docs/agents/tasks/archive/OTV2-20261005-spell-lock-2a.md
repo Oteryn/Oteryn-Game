@@ -146,6 +146,15 @@ in-process concurrency invariant of the Channel owner (decision §1.7).
   dropped inside a window), `lane_tests::a_finished_writer_pass_parks_nothing`, and the source
   pin `every_cast_writer_runs_its_pass_under_a_cancel_safe_guard` over all four writers.
 
+## Fix round 5
+
+- Merge queue: #1923 added a `settle_creature_death_rewards` call site without the permit; the
+  liverat case settles through `settle_on_fresh_lane`.
+- 4208515150: `commit_source_creature_heal_and_cure` checks every distinct cure slot with
+  `assert_actor_spell_unreserved` before any HP or condition write, so a cure-only actor whose
+  slot a pending batch reserves refuses retryably.
+- Test: `cure_only_actor_on_a_reserved_slot_refuses_heal_and_cure`.
+
 ## Validation
 
 - `cargo fmt --all -- --check`: pass
