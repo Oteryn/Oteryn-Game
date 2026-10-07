@@ -333,3 +333,89 @@ fn an_unbound_corpse_refuses_the_take_before_any_durable_call() {
         entry
     )));
 }
+
+/// Codex 4202915395: a corpse entry's facts are the pinned generation's canonical Item profile,
+/// so real creature loot (the rat's cheese) and the real backpack resolve, while a definition
+/// the generation does not profile, or names only by its authoring key, fails closed.
+#[test]
+fn corpse_take_facts_are_the_generation_item_profiles() {
+    use crate::content::native_gameplay::NativeGameplayInput;
+    use crate::content::{
+        ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
+        activate_native_entry_room_with_gameplay, qualify_native_entry_room_with_gameplay,
+    };
+    // The committed production manifest's pins (its 118 canonical Item profiles among them), on
+    // the accepted entry room rather than the separately produced source world.
+    let manifest =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/spells.manifest.json");
+    let mut supplied = NativeGameplayInput::from_manifest(&manifest).unwrap();
+    supplied.source_world = None;
+    let world = activated_with_item_keys(None)
+        .active()
+        .unwrap()
+        .identity()
+        .world_id();
+    let room = qualify_native_entry_room_with_gameplay(world, &supplied).unwrap();
+    let issuance = NativeEntryActivationIssuance {
+        world_id: world,
+        activation_sequence: 1,
+        server_artifact_digest: room.compiled().server_digest(),
+        client_artifact_digest: room.compiled().client_digest(),
+        frame_binding_digest: room.frame_binding().digest(),
+    };
+    let mut controller = ContentActivationController::new();
+    activate_native_entry_room_with_gameplay(
+        &mut controller,
+        &NodeBootQuiescence::before_channel_runtime(),
+        world,
+        &issuance,
+        &supplied,
+    )
+    .unwrap();
+    let native = controller.active().unwrap().native_gameplay().unwrap();
+    let item = |key: &str| TypedDefinitionRef {
+        family: "Item".to_owned(),
+        production_key: key.to_owned(),
+        revision_ref: "definition-r1".to_owned(),
+    };
+    let cheese = item("oteryn:item.tibia.i3607");
+    assert_eq!(
+        generation_item_facts(native, &cheese).unwrap(),
+        ItemDefinitionFacts {
+            definition: cheese.clone(),
+            stack: ItemStackClass::Stackable {
+                proven_maximum: Some(100)
+            },
+            container_capacity: None,
+            container_slot_equip_pattern: false,
+        }
+    );
+    let backpack = item("oteryn:item.tibia.i2854");
+    assert_eq!(
+        generation_item_facts(native, &backpack).unwrap(),
+        ItemDefinitionFacts {
+            definition: backpack.clone(),
+            stack: ItemStackClass::NonStackable,
+            container_capacity: Some(20),
+            container_slot_equip_pattern: true,
+        }
+    );
+    let not_found = |definition: TypedDefinitionRef| {
+        generation_item_facts(native, &definition) == Err(PickupContentError::DefinitionNotFound)
+    };
+    // The gold coin has no canonical profile yet; it fails closed rather than being guessed.
+    assert!(not_found(item("oteryn:item.tibia.i3031")));
+    assert!(not_found(TypedDefinitionRef {
+        revision_ref: "definition-r2".to_owned(),
+        ..cheese.clone()
+    }));
+    assert!(not_found(TypedDefinitionRef {
+        family: "Creature".to_owned(),
+        ..cheese.clone()
+    }));
+    assert!(not_found(TypedDefinitionRef {
+        family: "Item".to_owned(),
+        production_key: "candidate:item/3607".to_owned(),
+        revision_ref: "spell-p2-r21".to_owned(),
+    }));
+}

@@ -18,12 +18,16 @@ use super::item_view::{
 };
 use super::world_spatial::{ActorPosition, ChannelEntity, VisibleKind};
 use super::{FreshAdmissionStore, GameSessionId, GameSessionState};
-use crate::combat_pickup::{CorpsePickupRequest, GroundPickupError, settle_corpse_pickup};
-use crate::content::ActiveGeneration;
+use crate::combat_pickup::{GroundPickupError, PickupContentError};
 use crate::content::item_ref::ItemDefinitionIndex;
+use crate::content::native_gameplay::{
+    NativeGameplayState, NativeItemDestination, NativeItemStackClass,
+};
+use crate::content::{ActiveGeneration, ReferenceEquipmentSlot, ReferenceItemField};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{
-    ItemTransferDestination, ItemTransferError, ItemTransferOutcome,
+    ItemDefinitionFacts, ItemStackClass, ItemTransferDestination, ItemTransferError,
+    ItemTransferOutcome, ItemTransferRequest,
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef};
 use std::num::NonZeroU32;
@@ -190,10 +194,72 @@ pub(super) async fn observe_item_target(
     })
 }
 
-/// MAP-ITEM-REF-1 Part B: command 9's corpse-entry TRANSFER into the main backpack, one durable
-/// `settle_corpse_pickup` keyed by the command's CommandRef. A dead actor, an unbound corpse or a
-/// session without an item fence is refused before any durable write; an entry that is not in
-/// the corpse's durable contents is `SourceMismatch`.
+/// The D82/D83/GAME-ITEM-01 §6.2 facts of `definition`, read from the active generation's
+/// canonical Item profiles (Codex 4202915395: never from the entry-room fixture catalogue). Only a
+/// profile whose production definition is exactly `definition` counts. A definition the
+/// generation does not profile is `DefinitionNotFound`; one it does not admit into a
+/// character's inventory has the `Unknown` stack class, which the TRANSFER refuses (D82).
+pub(super) fn generation_item_facts(
+    native: &NativeGameplayState,
+    definition: &TypedDefinitionRef,
+) -> Result<ItemDefinitionFacts, PickupContentError> {
+    let record = native
+        .item_policy(&definition.production_key, &definition.revision_ref)
+        .map(|policy| policy.record())
+        .filter(|record| {
+            let production = &record.production_definition;
+            production.family == definition.family
+                && production.production_key == definition.production_key
+                && production.revision_ref == definition.revision_ref
+        })
+        .ok_or(PickupContentError::DefinitionNotFound)?;
+    let admitted = record.admission.materializable
+        && record
+            .admission
+            .legal_destinations
+            .contains(&NativeItemDestination::CharacterInventory);
+    let stack = match record.admission.stack_class {
+        _ if !admitted => ItemStackClass::Unknown,
+        NativeItemStackClass::NonStackable => ItemStackClass::NonStackable,
+        NativeItemStackClass::StackCapable => ItemStackClass::Stackable {
+            proven_maximum: match &record.semantics.stack {
+                ReferenceItemField::Known(stack) => match stack.stack_max {
+                    ReferenceItemField::Known(maximum) => Some(u32::from(maximum)),
+                    _ => None,
+                },
+                _ => None,
+            },
+        },
+    };
+    // As `combat_pickup::resolve_item_definition_facts`: only a KNOWN capacity makes a container,
+    // and only a KNOWN pattern whose primary slot is `container` is the container-slot pattern.
+    let container_capacity = match &record.semantics.container {
+        ReferenceItemField::Known(container) => match container.capacity {
+            ReferenceItemField::Known(capacity) => Some(u32::from(capacity)),
+            _ => None,
+        },
+        _ => None,
+    };
+    let container_slot_equip_pattern = matches!(
+        &record.semantics.equipment,
+        ReferenceItemField::Known(equipment)
+            if matches!(
+                &equipment.patterns,
+                ReferenceItemField::Known(patterns)
+                    if patterns.iter().any(|pattern| {
+                        pattern.primary_slot
+                            == ReferenceItemField::Known(ReferenceEquipmentSlot::Container)
+                    })
+            )
+    );
+    Ok(ItemDefinitionFacts {
+        definition: definition.clone(),
+        stack,
+        container_capacity,
+        container_slot_equip_pattern,
+    })
+}
+
 /// The Channel half of a corpse take, decided before any durable call: the corpse is a bound
 /// D85 entity and the entry an Item instance, and a dead actor takes nothing. Gives the corpse's
 /// bound Item id and the entry id. An unbound corpse is refused as `AuthorityRejected`; no Item
@@ -215,6 +281,11 @@ fn corpse_for_take(
     Ok((corpse.item.item_instance_id, entry_id))
 }
 
+/// MAP-ITEM-REF-1 Part B: command 9's corpse-entry TRANSFER into the main backpack, one durable
+/// TRANSFER keyed by the command's CommandRef. A dead actor, an unbound corpse, a Channel content
+/// pin of another generation or a session without an item fence is refused before any durable
+/// write; an entry that is not in the corpse's durable contents is `SourceMismatch`. The facts of
+/// the entry and of the equipped backpack are the pinned generation's ([`generation_item_facts`]).
 pub(super) async fn take_corpse_entry(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -223,14 +294,19 @@ pub(super) async fn take_corpse_entry(
     entry: ItemKey,
 ) -> Result<ItemTransferOutcome, GroundPickupError> {
     use crate::interaction_chest_use::entry_chest;
-    let (corpse, entry_id) = {
+    let rejected = || GroundPickupError::Transfer(ItemTransferError::AuthorityRejected);
+    let (corpse, entry_id, native) = {
         let runtime = admission.runtime.lock().await;
         let dead = admission.spell_states.lock().await.is_dead(actor);
-        corpse_for_take(&runtime, dead, corpse, entry)?
+        let (corpse, entry_id) = corpse_for_take(&runtime, dead, corpse, entry)?;
+        pinned_index(&runtime, admission.active_generation).ok_or_else(rejected)?;
+        let native = admission
+            .active_generation
+            .and_then(ActiveGeneration::native_gameplay)
+            .ok_or_else(rejected)?;
+        (corpse, entry_id, native)
     };
-    let fence = command.item_fence.ok_or(GroundPickupError::Transfer(
-        ItemTransferError::AuthorityRejected,
-    ))?;
+    let fence = command.item_fence.ok_or_else(rejected)?;
     let command_id = crate::foundation::CommandId::new(command.command_id)
         .map_err(|_| GroundPickupError::Transfer(ItemTransferError::InvalidInput))?;
     let contents = admission
@@ -242,27 +318,37 @@ pub(super) async fn take_corpse_entry(
         .into_iter()
         .find(|candidate| candidate.item.item_instance_id == entry_id)
         .ok_or(GroundPickupError::SourceMismatch)?;
-    let session = crate::combat::DurabilitySession {
-        root: admission.root,
-        authority: admission.character,
-        node: admission.holder,
+    let item = generation_item_facts(native, &source.item.definition)
+        .map_err(GroundPickupError::Content)?;
+    let backpack = match admission
+        .root
+        .read_character_backpack(admission.character, fence.character_id)
+        .await?
+    {
+        Some(current) => Some(
+            generation_item_facts(native, &current.backpack.definition)
+                .map_err(GroundPickupError::Content)?,
+        ),
+        None => None,
     };
-    settle_corpse_pickup(
-        &session,
-        admission.chest,
-        fence,
-        CorpsePickupRequest {
-            command: crate::foundation::CommandRef::new(command.game_session_id, command_id),
-            corpse_item_instance_id: corpse,
-            source_item_instance_id: entry_id,
-            source_definition: source.item.definition,
-            destination: ItemTransferDestination::MainBackpack,
-            content_revision: entry_chest::CONTENT_REVISION.to_owned(),
-            ruleset_revision: entry_chest::RULESET_REVISION.to_owned(),
-            sim_revision: entry_chest::SIM_REVISION.to_owned(),
-        },
-    )
-    .await
+    let request = ItemTransferRequest {
+        command: crate::foundation::CommandRef::new(command.game_session_id, command_id),
+        source_item_instance_id: entry_id,
+        destination: ItemTransferDestination::MainBackpack,
+        item,
+        backpack,
+        content_revision: entry_chest::CONTENT_REVISION.to_owned(),
+        ruleset_revision: entry_chest::RULESET_REVISION.to_owned(),
+        sim_revision: entry_chest::SIM_REVISION.to_owned(),
+    };
+    let mut candidate = admission
+        .root
+        .freeze_item_transfer(admission.character, admission.holder, fence, request)
+        .await?;
+    Ok(admission
+        .root
+        .commit_item_transfer(admission.character, admission.holder, fence, &mut candidate)
+        .await?)
 }
 
 pub(super) async fn observe_character_inventory(
