@@ -464,15 +464,17 @@ mod tests {
         let (x, y) = START;
         assert_eq!(placement(x, y, Some(8)).sub_type, 8);
         assert_eq!(placement(x, y, None).count, 1);
-        // Fluid appearance 2524 is on the start area with encoded values 1 and 8.
+        // Fluid appearance 2524 is on the start area with encoded values 1 and 8. Sub-types 8
+        // and 12 share colour 5; sub-type 1 is colour 1.
         let mut resolved = Vec::new();
-        for encoded in [1, 8] {
+        for encoded in [1, 8, 12] {
             let entry = index
                 .resolve(&sheets, 2524, placement(x, y, Some(encoded)))
                 .map_err(|e| e.to_string())?;
             resolved.push(entry.cells.iter().map(|c| c.sprite_id).collect::<Vec<_>>());
         }
         assert_ne!(resolved[0], resolved[1]);
+        assert_eq!(resolved[1], resolved[2]);
         Ok(())
     }
 

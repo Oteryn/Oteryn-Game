@@ -123,6 +123,19 @@ pub struct Appearance {
     pub fluid: bool,
 }
 
+/// The pattern colour of each fluid sub-type in the modern client; unknown sub-types are empty.
+const FLUID_COLORS: [u32; 21] = [
+    0, 1, 7, 3, 3, 2, 4, 3, 5, 6, 7, 2, 5, 3, 5, 6, 3, 3, 8, 10, 9,
+];
+
+fn fluid_color(sub_type: u32) -> u32 {
+    usize::try_from(sub_type)
+        .ok()
+        .and_then(|index| FLUID_COLORS.get(index))
+        .copied()
+        .unwrap_or(0)
+}
+
 /// Where an entry sits and what it holds; these pick its pattern.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Placement {
@@ -283,9 +296,10 @@ impl AppearanceIndex {
             .ok_or(AssetError::UnknownAppearance { id: appearance_id })?;
         let z = floor.unsigned_abs();
         let (pattern_x, pattern_y) = if appearance.fluid {
+            let color = fluid_color(sub_type);
             (
-                sub_type % 4 % appearance.pattern_width,
-                sub_type / 4 % appearance.pattern_height,
+                color % 4 % appearance.pattern_width,
+                color / 4 % appearance.pattern_height,
             )
         } else if appearance.stackable {
             // Count thresholds 1, 2, 3, 4, 5, 10, 25, 50 select patterns 0..=7.
