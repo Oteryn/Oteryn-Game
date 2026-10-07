@@ -457,7 +457,26 @@
         "DOOR-1/KEY-1 identity-key amendment",
         "QUEST-GATE-1 read-only QuestCompleted bypass"
       ],
-      "note": " Current gameplay transport rejects use_with fail-closed until ITEM-USE-1; do not add a quest-private USE-WITH dispatcher."
+      "note": " Current gameplay transport rejects use_with fail-closed until ITEM-USE-1; do not add a quest-private USE-WITH dispatcher.",
+      "world_object": {
+        "source_item_id": 53380,
+        "name": "closed door",
+        "attrs": {
+          "type": "door",
+          "blockProjectile": "1"
+        }
+      },
+      "key_admission": {
+        "canonical_key": "oteryn:item.tibia.i54262",
+        "current_materializable": false,
+        "successor_status": "PROOF_COMPLETE_NOT_ADMITTED",
+        "item_facts": {
+          "stackable": false,
+          "capacity": null,
+          "charges": null,
+          "holds": []
+        }
+      }
     },
     {
       "id": "laboratory_note",
@@ -1417,7 +1436,7 @@
     "QUEST-GATE-1 is dependency-ready on current main but executable child is not yet integrated",
     "QUEST-TRIGGER-1 durable-cause architecture is resolved and merged by #1886 (root CommandRef + distinct transition_key invariant); executable runtime is still unallocated and remains serialized after QUEST-GATE-1",
     "NPC-QUEST-1 remains blocked by NPC-TALK-1; accepted NPC-TALK-1 dependencies are specifically NPC-WIRE-1 (merged), NPC-PLACE-1b (not yet implemented), and MAP-CUTOVER-1b (not yet implemented)",
-    "Asura Citadel door needs ITEM-USE-1 USE-WITH execution + identity-based i54262 Door/Key binding + post-completion bypass; donor has no keyNumber",
+    "Asura Citadel exact door 53380@33899,32666,8 and key i54262 are resolved; key Item admission is proof-complete but not merged; runtime still needs ITEM-USE-1 USE-WITH + identity-key Door/Key binding + QuestCompleted bypass",
     "Magnolia 60k phase-2 semantics are architect-resolved and merged by #1891 (`attribute max_health set 60000` -> queued `heal full` -> phase 2); current Rust ProjectV2/schema still needs the accepted max_health implementation and ENC-RT-1/ENC-COMBAT-1 -> ENC-OUTCOME-1 runtime",
     "Escape geometry/Rope Spot are resolved end-to-end; Lit Torch i54610 successor identity/admission is proof-complete (holds=[]), but the Item successor has not yet been admitted/materialized",
     "Forbidden Gardens requires one bounded QuestPredicate amendment: account_has_achievement(forbidden_fruit) composed with Shards completion; Achievement owner read already exists",
