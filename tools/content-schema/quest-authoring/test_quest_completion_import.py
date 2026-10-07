@@ -11,12 +11,12 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class CompletionImportTests(unittest.TestCase):
-    def test_all295_bindings_reference_actual_owned_transitions(self):
+    def test_all304_bindings_reference_actual_owned_transitions(self):
         outputs = tool.expected(ROOT)
         state = json.loads(outputs[tool.OUTPUT])
         plan = json.loads(outputs[tool.PLAN])
         transitions = {t['key']: t for q in state['quests'] for t in q['transitions']}
-        self.assertEqual(plan['counts'], {'quests': 295, 'stages': 1822})
+        self.assertEqual(plan['counts'], {'quests': 304, 'stages': 1891})
         for quest in plan['records']:
             self.assertFalse(quest['runtime_enabled'])
             self.assertIsNone(quest['native_reward_delivery_binding'])
@@ -70,8 +70,19 @@ class CompletionImportTests(unittest.TestCase):
             else:
                 self.assertEqual(len(quest['tracks']), len(after['tracks']))
                 self.assertEqual(len(quest['transitions']), len(after['transitions']))
-        self.assertEqual(88, len(overlays))
+        self.assertEqual(90, len(overlays))
         self.assertEqual(len(changed), 5)
+
+
+    def test_terminal_refinement_helper_is_pinned_in_candidate_provenance(self):
+        outputs = tool.expected(ROOT)
+        receipt = json.loads(outputs[tool.RECEIPT])
+        by_path = {row['path']: row['sha256'] for row in receipt['input_provenance']}
+        self.assertIn(tool.TERMINAL_REFINEMENTS, by_path)
+        self.assertEqual(
+            tool.sha((ROOT / tool.TERMINAL_REFINEMENTS).read_bytes()),
+            by_path[tool.TERMINAL_REFINEMENTS],
+        )
 
     def test_make_believe_post_release_counts_are_finite_overlay(self):
         outputs = tool.expected(ROOT)

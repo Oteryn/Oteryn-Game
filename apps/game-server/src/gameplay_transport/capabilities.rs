@@ -53,10 +53,11 @@ pub(crate) struct OfferedCapability {
     pub(crate) requires: &'static [u32],
 }
 
-/// The production offered set: the registry's `offered: true` entries, ascending by ID. VIS-3
-/// offers capability 6 `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and
-/// ATTACK-1b capability 17 `ATTACK_V1`, which requires 6. A
-/// test keeps it equal to the registry and within `REGISTERED_CAPABILITY_IDS_V1`.
+/// The production offered set for a generation without a non-empty Item key set: the registry's
+/// `offered: true` entries except capability 4, ascending by ID. VIS-3 offers capability 6
+/// `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and ATTACK-1b capability
+/// 17 `ATTACK_V1`, which requires 6. A test keeps it equal to the registry and within
+/// `REGISTERED_CAPABILITY_IDS_V1`.
 pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
         id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
@@ -73,8 +74,9 @@ pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
 ];
 
 /// MAP-ITEM-REF-1: the production offered set with capability 4 `ITEM_VIEW_MOVE_V1`, which
-/// requires 6, for a generation that pins a non-empty Item key set. Not yet offered: Part B
-/// offers it together with the composed corpse observation, item target and corpse take.
+/// requires 6, for a generation that pins a non-empty Item key set: the registry's whole
+/// `offered: true` set. Part B offers it together with the composed corpse observation, item
+/// target and corpse take.
 pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
         id: CAPABILITY_ITEM_VIEW_MOVE_V1,

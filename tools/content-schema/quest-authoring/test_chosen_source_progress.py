@@ -25,38 +25,46 @@ class ChosenSourceProgressTest(unittest.TestCase):
 
     def test_closed_source_recipe_population(self):
         summary = self.packet["summary"]
-        self.assertEqual(227, summary["quests"])
-        self.assertEqual(139, summary["new_quests"])
-        self.assertEqual(88, summary["overlay_quests"])
+        self.assertEqual(236, summary["quests"])
+        self.assertEqual(146, summary["new_quests"])
+        self.assertEqual(90, summary["overlay_quests"])
         self.assertEqual(6, summary["source_lowered_skipped"])
-        self.assertEqual(1406, summary["tracks"])
-        self.assertEqual(1406, summary["transitions"])
-        self.assertEqual(227, summary["completion_transitions"])
-        self.assertEqual(9, summary["held_quests"])
+        self.assertEqual(1475, summary["tracks"])
+        self.assertEqual(1475, summary["transitions"])
+        self.assertEqual(236, summary["completion_transitions"])
+        self.assertEqual(0, summary["held_quests"])
         self.assertFalse(self.packet["native_admission"])
         self.assertFalse(self.packet["runtime_enabled"])
 
-    def test_nine_non_unit_terminal_recipes_remain_held(self):
-        self.assertEqual(
-            {
-                "oteryn:quest.barbarian_arena_quest",
-                "oteryn:quest.bear_room_quest",
-                "oteryn:quest.behemoth_quest",
-                "oteryn:quest.demon_helmet_quest",
-                "oteryn:quest.dragon_tower_quest",
-                "oteryn:quest.edron_goblin_quest",
-                "oteryn:quest.opticording_sphere_quest",
-                "oteryn:quest.rift_warrior_outfits_quest",
-                "oteryn:quest.the_ancient_tombs_quest",
-            },
-            {row["quest"] for row in self.packet["held"]},
-        )
-        self.assertTrue(
-            all(
-                row["reason"] == "Terminal completion count must be one"
-                for row in self.packet["held"]
-            )
-        )
+    def test_nine_terminal_count_recipes_are_normalized_only_in_candidate_projection(self):
+        expected = {
+            "oteryn:quest.barbarian_arena_quest",
+            "oteryn:quest.bear_room_quest",
+            "oteryn:quest.behemoth_quest",
+            "oteryn:quest.demon_helmet_quest",
+            "oteryn:quest.dragon_tower_quest",
+            "oteryn:quest.edron_goblin_quest",
+            "oteryn:quest.opticording_sphere_quest",
+            "oteryn:quest.rift_warrior_outfits_quest",
+            "oteryn:quest.the_ancient_tombs_quest",
+        }
+        self.assertEqual([], self.packet["held"])
+        projected = self.packet["quests"] + self.packet["overlays"]
+        normalized = {
+            row["quest"]
+            for row in projected
+            if row["completion"].get("terminal_stage_normalization") is not None
+        }
+        self.assertEqual(expected, normalized)
+        for row in projected:
+            if row["quest"] not in expected:
+                continue
+            provenance = row["completion"]["terminal_stage_normalization"]
+            self.assertFalse(provenance["runtime_enabled"])
+            self.assertTrue(provenance["source_holds_preserved"])
+            self.assertEqual(row["quest"], provenance["canonical_key"])
+            self.assertEqual("complete", row["transitions"][-1]["source"]["chosen_stage"]["kind"])
+            self.assertEqual(1, row["transitions"][-1]["source"]["chosen_stage"]["count"])
 
     def test_six_source_completed_quests_are_not_overlaid(self):
         self.assertEqual(
@@ -83,17 +91,15 @@ class ChosenSourceProgressTest(unittest.TestCase):
 
         merged = self.builder.merge(base, self.packet)
 
-        self.assertEqual(235, merged["counts"]["quests"])
-        self.assertEqual(2734, merged["counts"]["tracks"])
-        self.assertEqual(4669, merged["counts"]["transitions"])
-        self.assertEqual(231, merged["counts"]["completes"])
+        self.assertEqual(242, merged["counts"]["quests"])
+        self.assertEqual(2803, merged["counts"]["tracks"])
+        self.assertEqual(4738, merged["counts"]["transitions"])
+        self.assertEqual(240, merged["counts"]["completes"])
         self.assertEqual(
             {
-                "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 139,
+                "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 146,
                 "LOWERED": 6,
-                "NOT_LOWERED_MULTI_TRACK": 1,
-                "NOT_LOWERED_NO_MISSIONS": 1,
-                "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY": 88,
+                "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY": 90,
             },
             merged["counts"]["completion"],
         )
