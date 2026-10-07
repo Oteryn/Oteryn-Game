@@ -77,19 +77,18 @@ Do not use the older Otheryn migration map `3bd40d14...` for this quest. It pred
 | s12 | Niral consecrates blue lava | Niral dialogue content exists; Blessed Flask `i54566` identity exists | exact branch + item transform `54564 → 54566` |
 | s13 | draw four runes by four crystal constructs | 4 exact physical ritual tiles present; Blessed Flask identity; base `54637` is Terrain only | four placement-driven `USE_ITEM_ON_POSITION` transitions; do not create a WorldObject identity for `54637` |
 | s14 | The Moonsnow Magnolia encounter | Magnolia + Furious Jaracal Creature/Behavior/Ability records exist | complete special Encounter: Jaracal mechanics, Bone Fiddle, Moonsilver Drift, heal-on-Death, revive/phase 2, permanent kill credit |
-| s15 | post-boss ice-prison escape | Icicle Chisel `i39578`; donor `54610` is distinct **Lit Torch (SU26)** and must not alias old `i34017`; unique high-confidence OTBM prison topology candidate identified | skeleton→torch, icicles→chisel, torch→north wall, chisel→opening are source/video-qualified; scripted Rope Spot/exit exact binding + canonical admission of `54610` remain |
+| s15 | post-boss ice-prison escape | Icicle Chisel `i39578`; donor `54610` is distinct **Lit Torch (SU26)** and must not alias old `i34017`; exact prison route is resolved | skeleton `31920,31360,9` → torch; icicles `31914,31364,9` → chisel; north wall `31920,31359,9`; Rope Spot `31923,31377,9` → generic rope destination `31923,31378,8`; remaining blocker is canonical admission/materialization of `i54610` plus generic trigger wiring |
 | s16 | return to Saraki / complete | stage graph exists | completion reducer + reward delivery + durable persistence |
 
 ## Creature/runtime readback
 
-At PR #1807 head `a3bd46170857054a8f5dd297df2f8e535ccaeefe`:
+Fresh runtime baseline: `main@492f25c90ebcdb85d8cc8f2d2b273f72017dc8ef` (2026-10-07).
 
-- `oteryn:creature.rakesh_moonfang` exists with four abilities and normal combat Behavior.
-- `oteryn:creature.the_moonsnow_magnolia` exists with five abilities, normal combat Behavior and ordinary Frost Flower Asura / Midnight Asura summoning.
-- `oteryn:creature.furious_jaracal` exists with melee + mana-drain behavior.
-- none of the three records has an `encounters[]` association for Shards.
-- no Magnolia-specific Encounter definition was found.
-- no Shards QuestState record exists on that head.
+- #1807 is merged; `oteryn:creature.rakesh_moonfang`, `oteryn:creature.the_moonsnow_magnolia` and `oteryn:creature.furious_jaracal` remain canonical Creature content.
+- #1891 merged the accepted Magnolia phase-2 rule: first lethal handling prevents death, sets encounter-local `max_health=60000`, then performs an explicit full heal; the max-health write itself never heals.
+- #1886 merged the durable-cause rule required by future QUEST-TRIGGER-1.
+- no executable `ENC-RT-1` / `ENC-OUTCOME-1` implementation is present yet, so the special fight still has no production Encounter outcome producer into QuestState.
+- current native quest bindings remain zero; Shards must consume the generic Gate/Trigger/NPC/Encounter owners rather than add a quest-private runtime.
 
 Crystal Summer itself contains the static monster files, but no dedicated Magnolia/Bone Fiddle/Moonsilver Drift/revive quest encounter script. Therefore the special fight cannot be claimed as a Crystal copy.
 
