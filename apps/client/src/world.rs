@@ -57,6 +57,8 @@ const WINDOW_TILES: usize = (((2 * RADIUS + 1) / SECTOR_TILES + 2) * SECTOR_TILE
 /// The most cells one tile, or the player, may draw, so a full view stays inside one
 /// sprite batch.
 pub const MAX_TILE_DRAWS: usize = 256;
+/// The most resolved cells the whole window may hold before the atlas is built.
+const MAX_WINDOW_CELLS: usize = 1024 * 1024;
 /// The client's cap on how far elevation lifts what is drawn above it.
 const MAX_ELEVATION: i32 = 24;
 /// How far up and left, in source pixels, a tile's cells may reach: the scene scans
@@ -160,6 +162,7 @@ impl World {
         let mut entries: Vec<((i32, i32), Vec<Item>)> = Vec::new();
         // One budget for the whole window, so the asset directory cannot make the regions
         // together decode more than the bounded region needs.
+        let mut window_cells = 0;
         let mut budget = Budget {
             tiles: WINDOW_TILES,
             entries: 1024 * 1024,
@@ -238,6 +241,8 @@ impl World {
                         tile_cells += resolved.cells.len();
                         within_draw_cap(tile_cells)
                             .map_err(|error| format!("{name}: tile ({x}, {y}): {error}"))?;
+                        window_cells += resolved.cells.len();
+                        within_window_cap(window_cells)?;
                         items.push((layer, item_height(resolved.elevation), resolved.cells));
                     }
                     // Stable: items of one layer keep their stack order.
@@ -448,6 +453,14 @@ fn within_reach(offset: [i32; 2]) -> bool {
     offset.iter().all(|axis| *axis >= -MAX_REACH_PX)
 }
 
+/// Refuses a window that resolves to more than [`MAX_WINDOW_CELLS`] cells.
+fn within_window_cap(cells: usize) -> Result<(), String> {
+    if cells > MAX_WINDOW_CELLS {
+        return Err(format!("window cells over the {MAX_WINDOW_CELLS} cap"));
+    }
+    Ok(())
+}
+
 /// Refuses more than [`MAX_TILE_DRAWS`] cells, so the world falls back to the empty map
 /// instead of failing the renderer.
 fn within_draw_cap(draws: usize) -> Result<(), String> {
@@ -641,6 +654,8 @@ mod tests {
 
     #[test]
     fn a_tile_over_the_draw_cap_is_refused() {
+        assert!(within_window_cap(MAX_WINDOW_CELLS).is_ok());
+        assert!(within_window_cap(MAX_WINDOW_CELLS + 1).is_err());
         assert!(within_draw_cap(MAX_TILE_DRAWS).is_ok());
         assert!(within_draw_cap(MAX_TILE_DRAWS + 1).is_err());
     }
