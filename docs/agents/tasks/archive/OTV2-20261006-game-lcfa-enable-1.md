@@ -17,6 +17,8 @@ owned_paths:
   - apps/game-server/src/native_admission_source/account_characters.rs
   - apps/game-server/src/native_admission_source/account_characters_tests.rs
   - apps/game-server/src/bin/oteryn-game-ops.rs
+  - apps/game-server/src/native_admission_source/http1_mtls.rs
+  - apps/game-server/tests/native_account_characters_transport.rs
   - tools/qualification/login_local/
   - deploy/synology-game/node.toml.template
   - deploy/synology-game/ops.toml.template
@@ -73,6 +75,11 @@ No migration, wire change or Platform change.
   descriptor, so a symbolic link anywhere in F's path is refused.
 - Codex P2 4206315588: the projection identity is compared with the runtime-status chain only when
   `[platform.runtime_status]` is configured, so `[platform.account_characters]` alone boots.
+- Codex P1 4206815178 (`http1_mtls.rs` and its transport test added at control-plane direction): the
+  request envelope cap is per operation. `PublishAccountCharactersV1` gets `LCA-REQUEST-BYTES` plus
+  a 512-byte head bound (longest path, 253-byte host, 20-digit length); every other operation
+  keeps 10240. Projection responses are read within the 256-byte §3 bound. A loopback mTLS test
+  sends the worst-case 64-entry snapshot and a 16384-byte body, and refuses one byte more.
 - Follow-up GAME-LCFA-RESYNC-DEADLINE-1 (Codex P2 4200478837): `ops projection resync` runs inside
   the ordinary 2 s root pass (`DB_PASS_DEADLINE`); a bounded maintenance deadline needs a
   durability-root change outside this packet's paths.
@@ -83,7 +90,7 @@ No migration, wire change or Platform change.
 
 `cargo fmt --check`; `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`;
 `cargo test --locked -p oteryn-game-server --lib account_characters` (22), `--lib node::`
-(31), `--bin oteryn-game-ops`; `bash -n` and `shellcheck -x` on `run.sh`; `git diff --check`; all pass.
+(31), `--lib native_admission_source`, `--test native_account_characters_transport`, `--bin oteryn-game-ops`; `bash -n` and `shellcheck -x` on `run.sh`; `git diff --check`; all pass.
 
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass (59 tests)
