@@ -626,7 +626,7 @@
         "timestamp_approx": "00:11:25",
         "observation": "Using the Crystal Plinth reports that the character learns the shard-room access sequence."
       },
-      "note": "Dense visual inspection through 00:11:32–00:11:42 shows no separate code UI, manual colour entry or panel-click sequence before the door is crossed. Video review additionally shows no required Note Pinned on the Wall interaction before this event.",
+      "note": "Dense visual inspection through 00:11:32\u201300:11:42 shows no separate code UI, manual colour entry or panel-click sequence before the door is crossed. Video review additionally shows no required Note Pinned on the Wall interaction before this event.",
       "requires": []
     },
     {
@@ -1231,7 +1231,7 @@
             "z": 9
           }
         },
-        "video": "22:47–22:51 fire and subsequent crumbling effects occur directly north of the skeleton/player axis; side candidates do not match the observed center target.",
+        "video": "22:47\u201322:51 fire and subsequent crumbling effects occur directly north of the skeleton/player axis; side candidates do not match the observed center target.",
         "rejected_side_tiles": [
           {
             "x": 31919,
@@ -1370,7 +1370,7 @@
             "z": 9
           }
         },
-        "video": "22:47–22:51 fire and subsequent crumbling effects occur directly north of the skeleton/player axis; side candidates do not match the observed center target.",
+        "video": "22:47\u201322:51 fire and subsequent crumbling effects occur directly north of the skeleton/player axis; side candidates do not match the observed center target.",
         "rejected_side_tiles": [
           {
             "x": 31919,
@@ -1445,7 +1445,7 @@
       "video": {
         "walkthrough": "Zz-7UyufXbU",
         "timestamp_window": "00:22:53-00:22:59",
-        "observation": "Character follows the escape corridor and uses/reaches the Rope Spot route; exact Rope Spot is resolved at 31923,31377,9 with generic moveUpstairs destination 31923,31378,8."
+        "observation": "Character follows the escape corridor and uses/reaches the Rope Spot route; exact source ground 386 is at 31923,31377,9. Generic south-default destination 31923,31378,8 is conditional on walkability, not a qualified active relocation."
       },
       "position": {
         "x": 31923,
@@ -1459,7 +1459,7 @@
       "position_status": "EXACT_DERIVED_CROSS_SOURCE",
       "runtime_semantics": {
         "owner": "Generic Rope/Tool runtime",
-        "quest_observer": "QUEST-TRIGGER-1 after successful use",
+        "quest_observer": "QUEST-TRIGGER-1 after World-authoritative successful relocation, not merely callback acceptance",
         "donor_pin": "zimbadev/crystalserver@00ce02a57ca5a12e48f32a3476e37471167e4c3f",
         "donor_global_rope_spots_includes_386": true,
         "donor_on_use": "onUseRope -> toPosition:moveUpstairs() -> player:teleportTo(toPosition,false)",
@@ -1476,9 +1476,12 @@
           "item_id": 610,
           "name": "hole",
           "floorchange": "down"
-        }
+        },
+        "destination_status": "DERIVED_CONDITIONAL_SOUTH_DEFAULT",
+        "success_witness": "Actual admitted relocation outcome with root command provenance and active placement; donor callback true is insufficient.",
+        "provider_pack_difference": "Global/custom handlers both recognize 386; only custom-pack branch adds destination PZ-lock refusal. See prison-source-readback-20261007.json."
       },
-      "note": "No Shards-specific teleport callback is required. Completion/progress observes successful generic Rope Spot use; movement remains owned by the generic rope/multitool path.",
+      "note": "No Shards-specific teleport callback is required. Completion observes the actual successful generic Rope Spot relocation through QuestTransitionRequest; Movement/World owns destination selection and refusal.",
       "fresh_static_readback": "prison-source-readback-20261007.json"
     },
     {
@@ -1680,7 +1683,7 @@
     "Blue Lava time-of-day is SOURCE_CONFLICT; no controlled daytime/nighttime comparison and no night-only runtime guard authorized",
     "Escape geometry/Rope Spot are resolved end-to-end; Lit Torch i54610 successor identity/admission is proof-complete (holds=[]), but the Item successor has not yet been admitted/materialized",
     "Forbidden Gardens door 54613@33873,32620,8 is qualified by pinned OTBM + porelease ItemLevel screenshot + TibiaMaps floor-08 topology. Remaining blockers: AccountHasAchievement(forbidden_fruit) predicate and World/QUEST-GATE-1 served placement_key binding for the active world generation.",
-    "No full real-character start→reward→relog/restart E2E qualification",
+    "No full real-character start\u2192reward\u2192relog/restart E2E qualification",
     "Jaracal Mount exact donor identity is resolved; Skewered Fish i54638 has exact identity but lacks active materializable Item admission. Tame failure semantics are now qualified as item-retaining/retryable; exact success chance remains UNKNOWN and must not be invented."
   ],
   "readback": {
