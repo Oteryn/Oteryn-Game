@@ -60,12 +60,31 @@
       "kind": "NPC_DIALOGUE",
       "trigger": {
         "npc": "oteryn:npc.sundara",
-        "source_keyword": "yukti"
+        "semantic_keyword": "yukti",
+        "greeting_required": true,
+        "branch_sequence": [
+          "hi",
+          "yukti"
+        ]
       },
       "outcome": "yukti_done",
-      "evidence": "FACT_REFERENCE_ONLY",
+      "evidence": "FACT_POST_RELEASE_BRANCH",
       "owner": "NPC-QUEST-1",
-      "blocker": "Crystal Summer Sundara is shop-only; quest Dialogue node must come from qualified reference/NPC content."
+      "alternate_route": {
+        "npc": "oteryn:npc.nipuna",
+        "semantic_keyword": "yukti",
+        "branch_sequence": [
+          "hi",
+          "yukti"
+        ],
+        "when": "quest started through Nilavarna route"
+      },
+      "completion_semantics": "Dialogue branch completion immediately yields yukti_done; no follow-up collection/use task.",
+      "source_notes": [
+        "Post-release TibiaWiki: Sundara route Hi -> Yukti; alternate Nipuna route Hi -> Yukti.",
+        "Independent post-release ItemLevel/TibiaLife guides confirm the same no-extra-task clue flow.",
+        "Crystal Summer Sundara remains shop-only and is not an executable quest donor."
+      ]
     },
     {
       "id": "clue_yukti_nipuna_alt",
