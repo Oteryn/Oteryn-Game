@@ -179,8 +179,13 @@ impl World {
                 if hex != entry.sha256 {
                     return Err(format!("{name}: sha256 does not match the placement index"));
                 }
-                for tile in decode_region(&data, (lo_x, hi_x, lo_y, hi_y), &mut budget)
-                    .map_err(|error| format!("{name}: {error}"))?
+                for tile in decode_region(
+                    &data,
+                    (START_FLOOR, rx, ry),
+                    (lo_x, hi_x, lo_y, hi_y),
+                    &mut budget,
+                )
+                .map_err(|error| format!("{name}: {error}"))?
                 {
                     let (x, y) = (i32::from(tile.x), i32::from(tile.y));
                     if !(lo_x..=hi_x).contains(&x) || !(lo_y..=hi_y).contains(&y) {
@@ -406,9 +411,11 @@ fn within_draw_cap(draws: usize) -> Result<(), String> {
 
 /// Decodes an `OTERYN_WORLD_REGION_B3/v1` file the way `world-bundle-compiler`'s `b3` reader
 /// does: a 12-byte header, `local u8 | offset u32 | length u32` rows, one zstd frame per sector.
-/// Only sectors that overlap `window` (`lo_x, hi_x, lo_y, hi_y`, inclusive) are decompressed.
+/// The header must name `region` (`z, rx, ry`), the region the file was looked up for. Only
+/// sectors that overlap `window` (`lo_x, hi_x, lo_y, hi_y`, inclusive) are decompressed.
 fn decode_region(
     data: &[u8],
+    region: (u8, i32, i32),
     window: (i32, i32, i32, i32),
     budget: &mut Budget,
 ) -> Result<Vec<sector::Tile>, String> {
@@ -424,6 +431,9 @@ fn decode_region(
     let (rx, ry, count) = (le16(6), le16(8), usize::from(le16(10)));
     if count == 0 || count > 64 || rx > 255 || ry > 255 {
         return Err("header out of range".into());
+    }
+    if (data[5], i32::from(rx), i32::from(ry)) != region {
+        return Err("header names another region".into());
     }
     let mut expected = HEADER + ROW * count;
     if data.len() < expected {
@@ -560,9 +570,38 @@ mod tests {
     }
 
     #[test]
+    fn a_region_whose_header_names_another_region_is_refused() {
+        let header = b"OTRB\x01\x06\x7e\x00\x7d\x00\x01\x00";
+        let decode = |region| {
+            decode_region(
+                header,
+                region,
+                (0, 0, 0, 0),
+                &mut Budget {
+                    tiles: 1,
+                    entries: 1,
+                },
+            )
+        };
+        assert_eq!(
+            decode((7, 126, 125)).err().as_deref(),
+            Some("header names another region")
+        );
+        assert_eq!(
+            decode((6, 126, 124)).err().as_deref(),
+            Some("header names another region")
+        );
+        assert_ne!(
+            decode((6, 126, 125)).err().as_deref(),
+            Some("header names another region")
+        );
+    }
+
+    #[test]
     fn a_region_that_does_not_match_its_digest_is_refused() -> Result<(), String> {
         let bad = decode_region(
             b"OTRB\x02\x07\x7e\x00\x7d\x00\x01\x00",
+            (7, 126, 125),
             (0, 0, 0, 0),
             &mut Budget {
                 tiles: 1,
