@@ -1,0 +1,86 @@
+{
+  "schema": "OTERYN_SHARDS_I1_CORE_QUALIFICATION/v1",
+  "scope": "EXISTING_ADMISSION_SEMANTICS_OFFLINE_CANDIDATE_ONLY",
+  "main_readback": "76ccad94b618b930166b4c1f66475dbcdafd9ac5",
+  "evidence_predecessor": "f12d11b51c4de3f755c3fb9f62863c8422a5915d",
+  "qualified_utc": "2026-10-07T20:35:59.745081+00:00",
+  "candidate": {
+    "path": "i1-item-definitions-candidate.json",
+    "sha256": "42b7c7ad183242a6c30668b89573154f6eb7addd4c1b912f39a5d55acb03fa1f",
+    "item_ids": [
+      54262,
+      54610,
+      54638
+    ],
+    "admitted": false
+  },
+  "source_xml": {
+    "path": "data/items/items.xml",
+    "git_blob": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+    "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+  },
+  "client": {
+    "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+    "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "bytes": 5017996
+  },
+  "source_functions": [
+    "item_facts",
+    "enrich",
+    "load_appearance_objects"
+  ],
+  "source_files": [
+    {
+      "path": "tools/content-migration/quest_reward_item_semantics.py",
+      "git_blob": "af35f0d729c27a5655306a586be28c41e359fa87",
+      "compiled_workspace_bytes_sha256": "f6fd87485413b64dfe238fc8284075f47d6b71fbd86e025fec717d1b4704f188"
+    },
+    {
+      "path": "tools/content-schema/item-authoring/engine_items.py",
+      "git_blob": "e2c0beb07239f7f41b2d70b058ece0ca1f963df4",
+      "compiled_workspace_bytes_sha256": "3ff3356f51ee1f8b840ed9ac5a6dd4341b2c34ac0ff2b09c00eedd5e3d8ed6bb"
+    }
+  ],
+  "positive": {
+    "result": "PASS",
+    "definitions": 3,
+    "client_flags_compared_to_actual_binary": true,
+    "donor_rows_compared_to_exact_pinned_xml": true,
+    "stack_class": "NonStackable",
+    "proposed_materializable": true,
+    "weight_values": {
+      "54262": 100,
+      "54610": 500,
+      "54638": 200
+    }
+  },
+  "negative": {
+    "result": "PASS_ALL_5_REFUSALS",
+    "codes": [
+      "CLIENT_NAME_MISMATCH",
+      "XML_ID_MISMATCH",
+      "NON_PORTABLE",
+      "EXISTING_STACK_CLASS_CONFLICT",
+      "EXISTING_FACT_CONFLICT:oteryn:item.tibia.i54610:physical.pickupable"
+    ]
+  },
+  "reproduction": "python build_i1_core_candidate.py --donor-xml <external exact pinned items.xml> --check",
+  "not_qualified": [
+    "54610 native source-held identity successor admission",
+    "Canonical binding/catalogue generation and reference closure",
+    "Item materialization in a live Character transaction",
+    "Torch light/equipment/use effect or temporal lifecycle",
+    "Javala grant/regrant or key door use",
+    "Terminal reward and Jaracal taming",
+    "Protected main integration"
+  ],
+  "overlap": {
+    "materializer_active_prs": [
+      1924,
+      1926
+    ],
+    "path": "apps/game-server/examples/materialize_content_world_project_v2.rs",
+    "rule": "Do not enter the shared path before explicit ownership/serialization."
+  },
+  "limits": "Candidate outputs use the existing data-only core semantics. They are not runtime admission; source-held identity 54610 and generated composition remain prerequisites. No temporal, use-transform or equipment behavior inferred."
+}
