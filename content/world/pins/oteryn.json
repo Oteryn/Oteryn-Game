@@ -1,9 +1,9 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "f8b11ebcd96a4140f71dcbb5944519434d3a8e6b0b0f2ecf9fecb9c74f67b6c8",
+  "digest": "cd44dc3b5860bd385e0a0fcda749ee372cda5730275d272b422932b52983f255",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "d3-7-corpse-admitted-20261006-r1",
+  "content_revision": "d3-8-cheese-admitted-20261007-r1",
   "production": false,
   "entry_start": {
     "x": 10228,

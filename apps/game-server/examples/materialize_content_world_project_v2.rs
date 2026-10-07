@@ -24,7 +24,9 @@ use oteryn_game_server::content::{
     ReferenceSignedPoints, ReferenceWeaponType, ReimportDecision, ReimportFieldState,
     capture_world_project,
     item_abilities::apply_equip_abilities_v1,
-    item_admission::{apply_item_admission_v1, apply_item_admission_v2},
+    item_admission::{
+        apply_item_admission_v1, apply_item_admission_v2, apply_item_admission_v2_cheese,
+    },
     item_bed_promotion::apply_item_bed_promotion_v1,
     item_capacity_promotion::apply_item_capacity_promotion_v1,
     item_description_promotion::apply_item_description_promotion_v1,
@@ -543,6 +545,40 @@ fn admit_corpse_on_reconciled(
     Ok(true)
 }
 
+// D3-8 admits the cheese Item on exactly the corpse-admitted package (tree digest of #1830).
+const CORPSE_ADMITTED_PREDECESSOR: &str =
+    "7353a9ed65d82bb393db172a74f576b699ede2d727ddb6690ec8cc6c50925071";
+/// Revisions are immutable (DUR-04): the cheese-admitted package is a new project revision.
+const CHEESE_ADMITTED_PROJECT_REVISION: &str = "d3-8-cheese-admitted-20261007-r1";
+
+fn admit_cheese_on_corpse_admitted(
+    parent: &Path,
+    name: &std::ffi::OsStr,
+    output: &Path,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let filesystem = ProjectFilesystemLimits {
+        project: reconciled_limits(),
+        max_entries_per_directory_scan: 32,
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
+    };
+    let Ok(captured) = capture_world_project(parent, name, filesystem) else {
+        return Ok(false);
+    };
+    let mut draft = captured.migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
+    if document_tree_digest(&before) != CORPSE_ADMITTED_PREDECESSOR {
+        return Ok(false);
+    }
+    let cheese_admitted = apply_item_admission_v2_cheese(&mut draft)?;
+    draft.core.project_revision = CHEESE_ADMITTED_PROJECT_REVISION.to_owned();
+    let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
+    let tree_sha256 = write_documents(output, &documents)?;
+    println!(
+        "cheese_admitted_items={cheese_admitted} tree_sha256={tree_sha256} predecessor_mode=true"
+    );
+    Ok(true)
+}
+
 fn materialize_from_predecessor(
     source: &Path,
     output: &Path,
@@ -550,6 +586,9 @@ fn materialize_from_predecessor(
     require_fresh_root(output)?;
     let parent = source.parent().ok_or("predecessor parent missing")?;
     let name = source.file_name().ok_or("predecessor basename missing")?;
+    if admit_cheese_on_corpse_admitted(parent, name, output)? {
+        return Ok(());
+    }
     if admit_corpse_on_reconciled(parent, name, output)? {
         return Ok(());
     }
@@ -2818,6 +2857,27 @@ mod corpse_admission_revision_tests {
         let (_, after) = body.split_once(call.as_str()).expect("admission call");
         assert!(after.contains(
             "draft.core.project_revision = CORPSE_ADMITTED_PROJECT_REVISION.to_owned();"
+        ));
+    }
+}
+
+#[cfg(test)]
+mod cheese_admission_revision_tests {
+    /// DUR-04: changed content is never serialized under an existing revision. The cheese
+    /// admission runs only in `admit_cheese_on_corpse_admitted`, which mints its own revision.
+    #[test]
+    fn cheese_admission_always_mints_the_admitted_revision() {
+        let source = include_str!("materialize_content_world_project_v2.rs");
+        let body = source
+            .split_once("\nfn admit_cheese_on_corpse_admitted(")
+            .and_then(|(_, rest)| rest.split_once("\n}\n"))
+            .map(|(body, _)| body)
+            .expect("admit_cheese_on_corpse_admitted body");
+        let call = ["apply_item_admission_v2_cheese", "(&mut draft)"].concat();
+        assert_eq!(source.matches(call.as_str()).count(), 1);
+        let (_, after) = body.split_once(call.as_str()).expect("admission call");
+        assert!(after.contains(
+            "draft.core.project_revision = CHEESE_ADMITTED_PROJECT_REVISION.to_owned();"
         ));
     }
 }

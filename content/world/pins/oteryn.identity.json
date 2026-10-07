@@ -1,12 +1,12 @@
 {
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "d3-7-corpse-admitted-20261006-r1",
-  "content_lock_digest": "89ae95e31152335b2e0f16cb1919ad990d203d4aadaaf0d0cfa5ebb11566a42e",
+  "content_revision": "d3-8-cheese-admitted-20261007-r1",
+  "content_lock_digest": "f5bc214210af357d3ad04ab727565cd0a4a7f8391079382085a439824a3b778c",
   "min_runtime_version": "1",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:d3-7-corpse-admitted-20261006-r1/992a645bfb19a9d68a35b3f55c5bec34d8bb1641b4efef09bfe5f8326d176019"
+  "provenance_summary": "lock:d3-8-cheese-admitted-20261007-r1/33887c569af460fc07131d14804c6b7bff98513683eff2420d5cb27768b9e81b"
 }

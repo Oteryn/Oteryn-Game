@@ -77,23 +77,23 @@
     },
     {
       "path": "boss.json.gz",
-      "sha256": "a12aebb94627758e7e5ce7a7931dc9ba62f46e2fe2487e7f56d54528f91a4a29"
+      "sha256": "e76e2f0eba20360f5f758a5cfc1235edd9edfd1cb8f69946a0a034b084ee9bd5"
     },
     {
       "path": "events.json.gz",
-      "sha256": "13eca0c3182bf21c34dffb7cde7e758a7fed9b832755c5f4f432d5fe9794a1ee"
+      "sha256": "5b137792d9a2f74f10c6bc90d56ba77957a5e7dbe791c26714020b76812b6068"
     },
     {
       "path": "other.json.gz",
-      "sha256": "a7edb8de8d357912d69a40f6c3b8ae588d62091aa70c4ec9a02f2ab660ec878b"
+      "sha256": "56612515c4a2b4b845de09acd304b684f17f432123a36e047238e3565b78ab09"
     },
     {
       "path": "crosswalk.json",
-      "sha256": "f01fa3cb3566ee12a32d343390d6f8b912a39e83628ea5b28a00ea722c1d43e2"
+      "sha256": "638af246aca5a13ad077d9d328b84ff1dc417d98a980163a2cadc0a7e998b41d"
     },
     {
       "path": "dialogue.json.gz",
-      "sha256": "5870f2a6b0b8592d0203d58353e22717c12f3bd934978101be4325ba99c8dd8c"
+      "sha256": "347633c66388072cec4c3bc6169a281075d4d0feb92f376f81c310d6cacd1f63"
     }
   ],
   "quest_semantic_completeness": "NOT_ESTABLISHED",

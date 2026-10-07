@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         412,
-        "89ae95e31152335b2e0f16cb1919ad990d203d4aadaaf0d0cfa5ebb11566a42e",
+        "f5bc214210af357d3ad04ab727565cd0a4a7f8391079382085a439824a3b778c",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        27_238_252,
-        "2b09b38ab63b3b68e6e3244d8ee644c68318f89882faf9f7495a055eab2cc855",
+        27_238_349,
+        "120c2289384d923546140a17cd25149860e23580ffdfed592a00e08ca867150b",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1955,
-        "a3cd7dc5080c65750efd115b69919d0cf4bd3a93d942565e0c2207ac6bf7159a",
+        "ba0c182adb464b12f014726b778e25c35b08800d31a59a7c5a355281528674cf",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         406,
-        "2a7af708f61a6f0b63d65d912841b4a2e5e65c7218489805de96ae55087e3440",
+        "512c93056279f1d2edeef7c5cd22543952a6a2da2f660663a82ff817662432f4",
     ),
     (
         "provenance/imports.json",
@@ -125,7 +125,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "7353a9ed65d82bb393db172a74f576b699ede2d727ddb6690ec8cc6c50925071";
+const TREE_SHA256: &str = "9765ddf321d887855c381a7dc4d1fb07ceb7186406dc0c129c1b1aadd79383b6";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -371,7 +371,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "d3-7-corpse-admitted-20261006-r1"
+        "d3-8-cheese-admitted-20261007-r1"
     );
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project
@@ -2128,7 +2128,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         {
             positive_stacks += 1;
             assert_eq!(stack.stack_max, ReferenceItemField::Known(100));
-            let admitted = definition.definition.key().as_str() == "oteryn:item.tibia.i3155";
+            let admitted = matches!(
+                definition.definition.key().as_str(),
+                "oteryn:item.tibia.i3155" | "oteryn:item.tibia.i3607"
+            );
             assert_eq!(item.materializable, admitted);
             assert_eq!(
                 (item.physical_class, item.stack_class),
@@ -2212,9 +2215,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             equipment_patterns += patterns.len();
         }
     }
+    // D3-8 admits cheese (i3607) with a Known stack of 100: one more positive stack.
     assert_eq!(
         (pickup_fields, positive_stacks, weight_fields),
-        (6755, 39, 6513 + 4)
+        (6755, 40, 6513 + 4)
     );
     // Portal25051 and ten exact Tentacle source Items add eleven immovable facts.
     assert_eq!((movable_true, movable_false), (5691, 11));
