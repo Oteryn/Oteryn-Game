@@ -1,3 +1,4 @@
+import collections
 import json
 import pathlib
 import unittest
@@ -14,7 +15,7 @@ class ChosenSourceEventsRewardsTest(unittest.TestCase):
         cls.packet = json.loads(PACKET.read_text(encoding="utf-8"))
 
     def test_population_and_epoch(self):
-        self.assertEqual("OTERYN_CHOSEN_SOURCE_EVENT_REWARD_ASSOCIATIONS/v3", self.packet["schema"])
+        self.assertEqual("OTERYN_CHOSEN_SOURCE_EVENT_REWARD_ASSOCIATIONS/v4", self.packet["schema"])
         self.assertEqual(PIN, self.packet["epoch"])
         self.assertEqual(WORLD_SHA, self.packet["input_refs"]["qualified_world_sha256"])
         self.assertEqual(236, self.packet["counts"]["quests"])
@@ -90,6 +91,31 @@ class ChosenSourceEventsRewardsTest(unittest.TestCase):
             self.assertFalse(row["execution_verified"])
             self.assertIsNone(row["native_dispatch_binding"])
             self.assertFalse(row["runtime_admitted"])
+
+
+    def test_completion_stages_preserve_raw_terminal_intent(self):
+        completion = [
+            stage
+            for quest in self.packet["records"]
+            for stage in quest["stages"]
+            if stage["kind"] == "complete"
+        ]
+        self.assertEqual(236, len(completion))
+        distribution = collections.Counter(
+            len(stage["terminal_intent"]["raw_targets"]) for stage in completion
+        )
+        self.assertEqual({0: 9, 1: 203, 2: 21, 3: 3}, dict(distribution))
+        self.assertEqual(
+            227,
+            sum(bool(stage["terminal_intent"]["raw_targets"]) for stage in completion),
+        )
+        for stage in completion:
+            intent = stage["terminal_intent"]
+            self.assertIsInstance(intent["raw_targets"], list)
+            self.assertTrue(intent["objective"])
+            self.assertFalse(intent["canonical_mapping_attempted"])
+            self.assertFalse(intent["runtime_admitted"])
+            self.assertFalse(stage["runtime_admitted"])
 
     def test_all_completion_stages_remain_unbound(self):
         completion = [

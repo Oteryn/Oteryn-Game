@@ -1,5 +1,5 @@
 {
-  "schema": "OTERYN_CHOSEN_SOURCE_EVENT_REWARD_ASSOCIATIONS/v3",
+  "schema": "OTERYN_CHOSEN_SOURCE_EVENT_REWARD_ASSOCIATIONS/v4",
   "epoch": "ad7a08f96caa4e7bd0e7fa90c67b39229d637277",
   "runtime_admitted": false,
   "basis": "CHOSEN_OTERYN_APPROXIMATION",
@@ -683,7 +683,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "anniversary album"
+            ],
+            "objective": "Finish the anniversary expedition with the historical album.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -1088,7 +1096,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Tereban",
+              "birthday presents"
+            ],
+            "objective": "Return the eight components to Tereban for the birthday gifts.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -1356,7 +1373,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Biff the Baker"
+            ],
+            "objective": "Return to the baker and collect the chosen festival souvenir.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -1724,7 +1749,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Eustacio"
+            ],
+            "objective": "Report the rescued coast and treasure to Eustacio.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -2083,7 +2116,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Tarun"
+            ],
+            "objective": "Return the news of the brother to Tarun and finish the Guild circuit.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -2503,7 +2544,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Kesar the Younger",
+              "Galthen and the City of Gold"
+            ],
+            "objective": "Report the Lost Queen and both City of Gold journeys.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -2909,7 +2959,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Plague Bell",
+              "Plague Mask"
+            ],
+            "objective": "Use both plague accessories to finish the Afflicted appearance.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -3121,7 +3180,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Alawar vault reward chests"
+            ],
+            "objective": "Open Alawar's reward chests and leave through the return teleport.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -3387,7 +3454,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Rabaz"
+            ],
+            "objective": "Return both botanical observations to Rabaz.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -3689,7 +3764,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Curos"
+            ],
+            "objective": "Report the alliance missions and fixed daily-task introduction to Curos.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -4097,7 +4180,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Ancient Aucar attire"
+            ],
+            "objective": "Finish both Aucar addon challenges.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -4470,7 +4561,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Vescu",
+              "Assassin attire"
+            ],
+            "objective": "Finish the assassin attire after returning the addon materials.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -4688,7 +4788,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Sunken Mines steamship",
+              "Robson's Isle"
+            ],
+            "objective": "Inspect the steamship route from Kazordoon to Robson's Isle.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -4869,7 +4978,13 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [],
+            "objective": "Complete the Barbarian Arena Quest after collecting all three difficulty trophies.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -5083,7 +5198,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Sven"
+            ],
+            "objective": "Report all three barbarian tests to Sven.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -5288,7 +5411,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Dedoras"
+            ],
+            "objective": "Deliver the Epaulettes and finish the Battle Mage attire.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -5473,7 +5604,13 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [],
+            "objective": "Complete the Bear Room Quest after opening all three reward boxes.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -5780,7 +5917,13 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [],
+            "objective": "Complete the Behemoth Quest after opening all four reward chests.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -6090,7 +6233,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Pile of Bones"
+            ],
+            "objective": "Search the northern Pile of Bones for the potion cache.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -6322,7 +6473,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "berserker treasure box"
+            ],
+            "objective": "Open the treasure box at the eastern end of the berserker floor.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -6604,7 +6763,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Wyrdin"
+            ],
+            "objective": "Return the finished book investigation to Wyrdin.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -7037,7 +7204,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Gnomebase",
+              "Gnomebase Alpha"
+            ],
+            "objective": "Report the grouped recruitment and Warzone circuit to the gnome base.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -7253,7 +7429,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Black Knight reward containers"
+            ],
+            "objective": "Open the Crown Armor and Crown Shield reward containers.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -7575,7 +7759,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Julius"
+            ],
+            "objective": "Bring proof of the four vampire brothers to Julius.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -7831,7 +8023,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Anaztassja Moroia"
+            ],
+            "objective": "Report the fortress victory to Anaztassja Moroia.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -7989,7 +8189,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Wyda"
+            ],
+            "objective": "Return to Wyda for the chosen Torn Teddy reward.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -8298,7 +8506,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Document of the Leader"
+            ],
+            "objective": "Use the Leader document to finish the cloak addon.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -8508,7 +8724,17 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Gnommander",
+              "headware addon",
+              "grappling-hook addon"
+            ],
+            "objective": "Ask Gnommander for the headware and grappling-hook addons.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -8834,7 +9060,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "dream treasure"
+            ],
+            "objective": "Open the dream treasure and return from the realm.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -9080,7 +9314,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Zalamon"
+            ],
+            "objective": "Report the six rebellion missions to Zalamon.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -9333,7 +9575,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Chyllfroest bridge"
+            ],
+            "objective": "Return across the bridge after the Ursagrodon encounter.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -9610,7 +9860,17 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Norma",
+              "Amber",
+              "citizen backpack addon"
+            ],
+            "objective": "Deliver the chosen addon materials and finish the citizen appearance.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -10085,7 +10345,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Vasko"
+            ],
+            "objective": "Report the completed laboratory circuit to Vasko.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -10390,7 +10658,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Gnomish Voucher Type CA2"
+            ],
+            "objective": "Use Voucher Type CA2 to finish the shield-and-club addon.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -11028,7 +11304,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Gerimor"
+            ],
+            "objective": "Report the grouped cult investigations to Gerimor.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -11524,7 +11808,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Morgathla reward chest"
+            ],
+            "objective": "Open the final reward chest after the dangerous-depths expedition.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -11868,7 +12160,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Ezebeth"
+            ],
+            "objective": "Return to Ezebeth for the Glooth Engineer appearance.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -12307,7 +12607,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Mr Morris"
+            ],
+            "objective": "Deliver all seven introductory assignments to Mr Morris.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -12442,7 +12750,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Dead Archer body"
+            ],
+            "objective": "Search the dead archer's body at the northern end of the room.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -12788,7 +13104,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Darklight Geode"
+            ],
+            "objective": "Use the Darklight Geode to finish the Decaying Defender appearance.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -13046,7 +13370,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Fibula reward corpses"
+            ],
+            "objective": "Search the scattered corpses for the Fibula equipment caches.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -13327,7 +13659,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Oteryn Fiehonja final-phase marker"
+            ],
+            "objective": "Activate the chosen final access marker for the full Fiehonja route.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -13526,7 +13866,13 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [],
+            "objective": "Complete the Demon Helmet Quest after opening all three reward chests.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -13869,7 +14215,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Oldrak",
+              "Demon Oak reward room"
+            ],
+            "objective": "Report the cleansed tree and choose the Demon Legs reward.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -14070,7 +14425,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Avar Tar"
+            ],
+            "objective": "Return to Avar Tar after all three chosen accomplishments.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -14329,7 +14692,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "desert reward containers"
+            ],
+            "objective": "Open the desert reward containers and leave through the return teleport.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -14684,7 +15055,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Key 3610",
+              "Devil Helmet reward chest"
+            ],
+            "objective": "Unlock the final chamber and open the Devil Helmet reward chest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -14993,7 +15373,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Draconia reward containers",
+              "Dragonfetish"
+            ],
+            "objective": "Open the final pyramid rewards and leave using the Dragonfetish route.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -15313,7 +15702,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Dead Dragon corpse"
+            ],
+            "objective": "Search the dead dragon for its equipment bag.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -15602,7 +15999,13 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [],
+            "objective": "Complete the Dragon Tower Quest after opening both supply boxes.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -15933,7 +16336,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Eruaran"
+            ],
+            "objective": "Deliver the mask and claw to Eruaran.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -16156,7 +16567,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Vanys"
+            ],
+            "objective": "Deliver the Ice Shield and finish the Dream Warrior appearance.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -16394,7 +16813,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Dream Master",
+              "Document of the Follower"
+            ],
+            "objective": "Turn in the essences and request the chosen Nightmare document reward.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -16610,7 +17038,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Tom"
+            ],
+            "objective": "Deliver both paw collections to Tom.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -16794,7 +17230,13 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [],
+            "objective": "Complete the Edron Goblin Quest after opening both throne-room chests.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -17155,7 +17597,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Arkulius"
+            ],
+            "objective": "Report the elemental investigation to Arkulius.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -17635,7 +18085,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Broken Servant Sentry"
+            ],
+            "objective": "Finish the chosen Elementalist outfit and addon exchange.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -17809,7 +18267,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Key 3802",
+              "Cookie"
+            ],
+            "objective": "Recover Key 3802 and the emperor's cookie supplies.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -18007,7 +18474,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Ubaid"
+            ],
+            "objective": "Return to Ubaid to finish the chosen Marid introduction.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -18222,7 +18697,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Hunting Task Shop",
+              "Falconer addons"
+            ],
+            "objective": "Request both Falconer addons from the Hunting Task Shop.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -18395,7 +18879,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Fanfare chest"
+            ],
+            "objective": "Open the crypt chest to recover the Fanfare.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -19468,7 +19960,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Feaster of Souls Quest"
+            ],
+            "objective": "Record the completion of the chosen Feaster of Souls Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -19887,7 +20387,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Feral Trappers Quest"
+            ],
+            "objective": "Record the completion of the chosen Feral Trappers Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -20736,7 +21244,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Ferumbras' Ascension Quest"
+            ],
+            "objective": "Record the completion of the chosen Ferumbras' Ascension Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -21089,7 +21605,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Festive Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Festive Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -21452,7 +21976,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Fiend Slayer Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Fiend Slayer Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -21828,7 +22360,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Fire Axe Quest"
+            ],
+            "objective": "Record the completion of the chosen Fire Axe Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -22232,7 +22772,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Fire-Fighter Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Fire-Fighter Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -22549,7 +23097,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Fishing Box Quest"
+            ],
+            "objective": "Record the completion of the chosen Fishing Box Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -23099,7 +23655,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Forgotten Knowledge Quest"
+            ],
+            "objective": "Record the completion of the chosen Forgotten Knowledge Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -23362,7 +23926,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Formal Dress Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Formal Dress Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -23699,7 +24271,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Formorgar Mines Hoist Quest"
+            ],
+            "objective": "Record the completion of the chosen Formorgar Mines Hoist Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -24247,7 +24827,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Friends and Traders"
+            ],
+            "objective": "Record the completion of the chosen Friends and Traders programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -24491,7 +25079,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Frost Dragon Quest"
+            ],
+            "objective": "Record the completion of the chosen Frost Dragon Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -24791,7 +25387,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Fury Gates Mini World Change"
+            ],
+            "objective": "Record the completion of the chosen Fury Gates Mini World Change programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -24948,7 +25552,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Geomancer Quest"
+            ],
+            "objective": "Record the completion of the chosen Geomancer Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -25183,7 +25795,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Ghoul Room Quest"
+            ],
+            "objective": "Record the completion of the chosen Ghoul Room Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -25345,7 +25965,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Giant Smithhammer Quest"
+            ],
+            "objective": "Record the completion of the chosen Giant Smithhammer Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -25595,7 +26223,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Glooth Engineer Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Glooth Engineer Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -26163,7 +26799,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Goblin Merchant Quest"
+            ],
+            "objective": "Record the completion of the chosen Goblin Merchant Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -26356,7 +27000,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Goblin Temple Quest"
+            ],
+            "objective": "Record the completion of the chosen Goblin Temple Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -26872,7 +27524,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Golden Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Golden Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -27413,7 +28073,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Grave Danger Quest"
+            ],
+            "objective": "Record the completion of the chosen Grave Danger Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -27664,7 +28332,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Grimvale Mini World Change"
+            ],
+            "objective": "Record the completion of the chosen Grimvale Mini World Change programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -28275,7 +28951,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Grimvale Quest"
+            ],
+            "objective": "Record the completion of the chosen Grimvale Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -28625,7 +29309,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Hand of the Inquisition Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Hand of the Inquisition Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -29305,7 +29997,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Heart of Destruction Quest"
+            ],
+            "objective": "Record the completion of the chosen Heart of Destruction Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -29596,7 +30296,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Hero of Rathleton Quest"
+            ],
+            "objective": "Record the completion of the chosen Hero of Rathleton Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -29893,7 +30601,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Hidden Threats Quest"
+            ],
+            "objective": "Record the completion of the chosen Hidden Threats Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -30171,7 +30887,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Horse Station World Change"
+            ],
+            "objective": "Record the completion of the chosen Horse Station World Change programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -30614,7 +31338,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Hunter Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Hunter Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -30943,7 +31675,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Hunting for Tokens Quest"
+            ],
+            "objective": "Record the completion of the chosen Hunting for Tokens Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -31100,7 +31840,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Hydra Egg Quest"
+            ],
+            "objective": "Record the completion of the chosen Hydra Egg Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -31223,7 +31971,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Illuminator Outfit Quest"
+            ],
+            "objective": "Record the completion of the chosen Illuminator Outfit Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -31470,7 +32226,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Illuminator Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Illuminator Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -32072,7 +32836,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "In Service of Yalahar Quest"
+            ],
+            "objective": "Record the completion of the chosen In Service of Yalahar Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -32327,7 +33099,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Inukaya Quest"
+            ],
+            "objective": "Record the completion of the chosen Inukaya Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -32543,7 +33323,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Iron Helmet Quest"
+            ],
+            "objective": "Record the completion of the chosen Iron Helmet Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -32795,7 +33583,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Katana Quest"
+            ],
+            "objective": "Record the completion of the chosen Katana Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -33317,7 +34113,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Killing in the Name of... Quest"
+            ],
+            "objective": "Record the completion of the chosen Killing in the Name of... Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -34539,7 +35343,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Kilmaresh Quest"
+            ],
+            "objective": "Record the completion of the chosen Kilmaresh Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -34863,7 +35675,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Koshei the Deathless Quest"
+            ],
+            "objective": "Record the completion of the chosen Koshei the Deathless Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -35242,7 +36062,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Krailos Quest"
+            ],
+            "objective": "Record the completion of the chosen Krailos Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -35483,7 +36311,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Life Ring Quest"
+            ],
+            "objective": "Record the completion of the chosen Life Ring Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -35709,7 +36545,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Lion Trophy Quest"
+            ],
+            "objective": "Record the completion of the chosen Lion Trophy Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -36145,7 +36989,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Lion's Rock Quest"
+            ],
+            "objective": "Record the completion of the chosen Lion's Rock Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -36615,7 +37467,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Liquid Black Quest"
+            ],
+            "objective": "Record the completion of the chosen Liquid Black Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -36891,7 +37751,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Longsword Quest"
+            ],
+            "objective": "Record the completion of the chosen Longsword Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -37414,7 +38282,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Machinery of War Quest"
+            ],
+            "objective": "Record the completion of the chosen Machinery of War Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -37622,7 +38498,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Mad Mage Room Quest"
+            ],
+            "objective": "Record the completion of the chosen Mad Mage Room Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -38060,7 +38944,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Makeshift Warrior Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Makeshift Warrior Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -38390,7 +39282,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Marlin Trophy Quest"
+            ],
+            "objective": "Record the completion of the chosen Marlin Trophy Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -38604,7 +39504,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Medusa Shield Quest"
+            ],
+            "objective": "Record the completion of the chosen Medusa Shield Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -38864,7 +39772,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Minotaur Hell Quest"
+            ],
+            "objective": "Record the completion of the chosen Minotaur Hell Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -39134,7 +40050,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Magic Forcefield"
+            ],
+            "objective": "Wejdź w pobliski Magic Forcefield, aby wrócić na początek jaskini.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -39373,7 +40297,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Newhaven Quest"
+            ],
+            "objective": "Record the completion of the chosen Newhaven Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -39620,7 +40552,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Nightmare Isles Mini World Change"
+            ],
+            "objective": "Record the completion of the chosen Nightmare Isles Mini World Change programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -39979,7 +40919,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Nightmare Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Nightmare Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -40500,7 +41448,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "No Rest for the Wicked Quest"
+            ],
+            "objective": "Record the completion of the chosen No Rest for the Wicked Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -40885,7 +41841,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Nobleman Outfits Quest"
+            ],
+            "objective": "Record the completion of the chosen Nobleman Outfits Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -41298,7 +42262,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Obsidian Knife Quest"
+            ],
+            "objective": "Record the completion of the chosen Obsidian Knife Quest programme and its selected reward intents.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -41829,7 +42801,13 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [],
+            "objective": "Complete the Opticording Sphere Quest after opening both final ornate chests.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -41953,7 +42931,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Orc Shaman treasure chest"
+            ],
+            "objective": "Otwórz Orc Shaman treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -42235,7 +43221,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Razan",
+              "Coral Comb"
+            ],
+            "objective": "Przekaż grzebień i potwierdź oba wybrane dodatki.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -42458,7 +43453,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Yasir",
+              "Broken Shamanic Staff"
+            ],
+            "objective": "Sprzedaj przygotowany produkt Yasirowi.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -42581,7 +43585,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Ornamented Shield treasure chest"
+            ],
+            "objective": "Otwórz Ornamented Shield treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -44733,7 +45745,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Queen of the Banshees"
+            ],
+            "objective": "Oddaj Queen of the Banshees orchidee za drugi Wizard addon.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -45047,7 +46067,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Guide NPC"
+            ],
+            "objective": "Zgłoś przewodnikowi zakończenie wybranej akcji ochrony zwierząt.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -45152,7 +46180,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Panpipe treasure chest"
+            ],
+            "objective": "Otwórz Panpipe treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -45311,7 +46347,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Parchment Room bag"
+            ],
+            "objective": "Otwórz Parchment Room bag i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -45488,7 +46532,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Al Dee",
+              "Small Axe"
+            ],
+            "objective": "Przekaż Small Axe Alowi Dee i odbierz Pick.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -45691,7 +46744,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Guide NPC"
+            ],
+            "objective": "Wróć do przewodnika i rozlicz pielgrzymkę.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -45814,7 +46875,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Poison Daggers chest"
+            ],
+            "objective": "Otwórz Poison Daggers chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -46083,7 +47152,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Ghost Claw"
+            ],
+            "objective": "Użyj Ghost Claw do drugiego addonu.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -46317,7 +47394,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Power Bolts treasure chest"
+            ],
+            "objective": "Otwórz Power Bolts treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -46458,7 +47543,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Power Ring treasure chest"
+            ],
+            "objective": "Otwórz Power Ring treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -46632,7 +47725,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Seymour",
+              "Present"
+            ],
+            "objective": "Oddaj Present Seymourowi, pytając o present box.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -46991,7 +48093,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Primal Ordeal reward chest"
+            ],
+            "objective": "Odbierz jednorazowy wybrany pakiet próby.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -47115,7 +48225,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Rapier treasure chest"
+            ],
+            "objective": "Otwórz Rapier treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -47355,7 +48473,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Scrubbing Brush"
+            ],
+            "objective": "Użyj Scrubbing Brush i zatwierdź pełny zestaw.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -47728,7 +48854,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Bracelet of Strengthening"
+            ],
+            "objective": "Użyj Bracelet of Strengthening do drugiego addonu.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -48107,7 +49241,13 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [],
+            "objective": "Complete the Rift Warrior Outfits Quest after Cledwyn grants the second addon.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -48450,7 +49590,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Upper Roshamuul passage"
+            ],
+            "objective": "Przejdź przez naprawioną osobistą trasę do Upper Roshamuul.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -48858,7 +50006,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Rotten Blood reward altar"
+            ],
+            "objective": "Odbierz wybraną nagrodę finału.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -49063,7 +50219,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Rottin Wood"
+            ],
+            "objective": "Zgłoś Rottinowi zakończenie trzech misji.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -49260,7 +50424,17 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Percybald",
+              "Silver Token",
+              "Gold Token"
+            ],
+            "objective": "Przekaż Percybaldowi obie darowizny i zatwierdź armor.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -49561,7 +50735,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Dead Human"
+            ],
+            "objective": "Przeszukaj Dead Human i opuść jaskinię z Legion Helmet.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -49684,7 +50866,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Scale Armor treasure chest"
+            ],
+            "objective": "Otwórz Scale Armor treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -49886,7 +51076,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Spectulus",
+              "Mirror Crystal"
+            ],
+            "objective": "Dostarcz Mirror Crystal i zakończ badania Spectulusa.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -50220,7 +51419,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Chester Kahs"
+            ],
+            "objective": "Zgłoś Chester Kahs Licence To Kill i odbierz Mysterious Package.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -50382,7 +51589,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Serpentine Tower observation"
+            ],
+            "objective": "Zapisz rezultat obu mechanizmów jako ukończenie wybranej próby.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -50793,7 +52008,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Telas"
+            ],
+            "objective": "Zgłoś Telasowi Fruits Of Success i odbierz wybrane narzędzie.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -50953,7 +52176,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Shaman Treasure chest"
+            ],
+            "objective": "Otwórz Shaman Treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -51076,7 +52307,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Amber / Rookgaard Academy Resting Room"
+            ],
+            "objective": "Oddaj notebook Amber w Resting Room pod Rookgaard Academy, aby otrzymać Short Sword.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -51212,7 +52451,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Silver Amulet treasure chest"
+            ],
+            "objective": "Otwórz Silver Amulet treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -51336,7 +52583,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Silver Brooch treasure chest"
+            ],
+            "objective": "Otwórz Silver Brooch treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -51593,7 +52848,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Sinatuki",
+              "Green Perch"
+            ],
+            "objective": "Oddaj ostatnią rybę Sinatuki i odbierz pięć Shard.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -51752,7 +53016,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Skeleton Decoration treasure chest"
+            ],
+            "objective": "Otwórz Skeleton Decoration treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -51959,7 +53231,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Witch Hill basement chest"
+            ],
+            "objective": "Otwórz skrzynkę z perłami inaszyjnikiem.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -52223,7 +53503,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Billy",
+              "Pan"
+            ],
+            "objective": "Zapytaj Billyego o pan i potwierdź oddanie naczynia.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -52580,7 +53869,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Gnomish Voucher Type MA2"
+            ],
+            "objective": "Użyj Gnomish Voucher Type MA 2 i zakończ komplet.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -53094,7 +54391,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Soul War reward chest"
+            ],
+            "objective": "Wejdź do pokoju nagród i zatwierdź jeden wybrany grant.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -53779,7 +55084,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Gnomargery"
+            ],
+            "objective": "Zgłoś Gnomargery komplet Lower Spike i zakończ kampanię trzech stref.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -53915,7 +55228,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Tiquanda stampede grounds"
+            ],
+            "objective": "Zapisz wynik walki i zakończ próbę.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -54038,7 +55359,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Ahmet / Ankrahmun"
+            ],
+            "objective": "Oddaj Ahmetowi jego rzeczy w Ankrahmun i odbierz nagrodę.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -54197,7 +55526,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Stealth Ring treasure chest"
+            ],
+            "objective": "Otwórz Stealth Ring treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -54370,7 +55707,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Junkar",
+              "Kazordoon"
+            ],
+            "objective": "Poproś o passage do Kazordoon i zakończ wybrany rejs.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -54475,7 +55821,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Steel Helmet treasure chest"
+            ],
+            "objective": "Otwórz Steel Helmet treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -54598,7 +55952,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Strong Potions treasure chest"
+            ],
+            "objective": "Otwórz Strong Potions treasure chest i zakończ osobisty claim bez ponownego wydania nagrody.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -54764,7 +56126,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Belongings of a Deceased"
+            ],
+            "objective": "Odbierz iotwórz jedną wybraną torbę pacjenta.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -55060,7 +56430,16 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Targuna ram",
+              "Bunch of Turnips"
+            ],
+            "objective": "Oddaj Bunch of Turnips ramowi na zachód od Targuna, aby uzyskać Reliable Ram.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -55253,7 +56632,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Thais Lighthouse treasure chest"
+            ],
+            "objective": "Otwórz skrzynkę latarni i odbierz wybrany zestaw.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -55457,7 +56844,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Ice Flower Seeds"
+            ],
+            "objective": "Zachowaj pierwsze Ice Flower Seeds i zakończ trasę.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -56039,7 +57434,13 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [],
+            "objective": "Complete The Ancient Tombs Quest after combining the seven helmet parts.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -56204,7 +57605,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Annihilator Magic Sword chest"
+            ],
+            "objective": "Otwórz skrzynkę Magic Sword i zablokuj odbiór pozostałych alternatyw.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -56469,7 +57878,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Carlos"
+            ],
+            "objective": "Sprzedaj Meat Carlosowi i zakończ A Hungry Tailor.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -56937,7 +58354,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "One-Eyed Joe"
+            ],
+            "objective": "Zgłoś One-Eyed Joe zakończenie dziennego zadania.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -57112,7 +58537,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Djinn War - Efreet Faction"
+            ],
+            "objective": "Record the chosen completed journey: The Djinn War - Efreet Faction.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -57294,7 +58727,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Djinn War - Marid Faction"
+            ],
+            "objective": "Record the chosen completed journey: The Djinn War - Marid Faction.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -57539,7 +58980,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Dream Courts Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Dream Courts Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -57903,7 +59352,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Explorer Society Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Explorer Society Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -58197,7 +59654,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The First Dragon Quest"
+            ],
+            "objective": "Record the chosen completed journey: The First Dragon Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -58571,7 +60036,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Gravedigger of Drefia Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Gravedigger of Drefia Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -58897,7 +60370,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Hidden City of Beregar Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Hidden City of Beregar Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -59178,7 +60659,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Hunt for the Sea Serpent Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Hunt for the Sea Serpent Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -59449,7 +60938,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Ice Islands Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Ice Islands Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -59908,7 +61405,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Inquisition Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Inquisition Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -60246,7 +61751,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Isle of Evil Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Isle of Evil Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -60509,7 +62022,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Mage's Tower World Change"
+            ],
+            "objective": "Record the chosen completed journey: The Mage's Tower World Change.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -60698,7 +62219,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Mummy's Curse World Change"
+            ],
+            "objective": "Record the chosen completed journey: The Mummy's Curse World Change.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -60913,7 +62442,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The New Frontier Quest"
+            ],
+            "objective": "Record the chosen completed journey: The New Frontier Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -61292,7 +62829,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Order of the Lion Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Order of the Lion Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -61522,7 +63067,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Order of the Stag Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Order of the Stag Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -61739,7 +63292,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Paradox Tower Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Paradox Tower Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -61976,7 +63537,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Pits of Inferno Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Pits of Inferno Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -62358,7 +63927,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Postman Missions Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Postman Missions Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -62583,7 +64160,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Queen of the Banshees Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Queen of the Banshees Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -62904,7 +64489,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Rookie Guard Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Rookie Guard Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -63188,7 +64781,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Roost of the Graveborn Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Roost of the Graveborn Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -63599,7 +65200,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Scatterbrained Sorcerer Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Scatterbrained Sorcerer Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -63918,7 +65527,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Secret Library Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Secret Library Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -64227,7 +65844,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Shattered Isles Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Shattered Isles Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -64369,7 +65994,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Spirit Will Get You Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Spirit Will Get You Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -64637,7 +66270,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Tainted Souls Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Tainted Souls Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -64833,7 +66474,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Thieves Guild Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Thieves Guild Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -65114,7 +66763,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Travelling Trader Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Travelling Trader Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -65295,7 +66952,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Ultimate Challenges"
+            ],
+            "objective": "Record the chosen completed journey: The Ultimate Challenges.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -65485,7 +67150,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The Way of the Monk Quest"
+            ],
+            "objective": "Record the chosen completed journey: The Way of the Monk Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -65665,7 +67338,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "The White Raven Monastery Quest"
+            ],
+            "objective": "Record the chosen completed journey: The White Raven Monastery Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -65890,7 +67571,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Their Master's Voice World Change"
+            ],
+            "objective": "Record the chosen completed journey: Their Master's Voice World Change.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -66193,7 +67882,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Thornfire World Change"
+            ],
+            "objective": "Record the chosen completed journey: Thornfire World Change.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -66511,7 +68208,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Threatened Dreams Quest"
+            ],
+            "objective": "Record the chosen completed journey: Threatened Dreams Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -67276,7 +68981,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Tibia Tales"
+            ],
+            "objective": "Record the chosen completed journey: Tibia Tales.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -67420,7 +69133,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Time Ring Quest"
+            ],
+            "objective": "Record the chosen completed journey: Time Ring Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -67580,7 +69301,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Tinder Box Quest"
+            ],
+            "objective": "Record the chosen completed journey: Tinder Box Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -67775,7 +69504,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "To Blind the Enemy Quest"
+            ],
+            "objective": "Record the chosen completed journey: To Blind the Enemy Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -68093,7 +69830,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Too Hot to Handle Quest"
+            ],
+            "objective": "Record the chosen completed journey: Too Hot to Handle Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -68364,7 +70109,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Tower Defence Quest"
+            ],
+            "objective": "Record the chosen completed journey: Tower Defence Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -68775,7 +70528,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Treasure Hunt Quest"
+            ],
+            "objective": "Record the chosen completed journey: Treasure Hunt Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -68962,7 +70723,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Treasure Island Quest"
+            ],
+            "objective": "Record the chosen completed journey: Treasure Island Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -69090,7 +70859,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Triangle Tower Quest"
+            ],
+            "objective": "Record the chosen completed journey: Triangle Tower Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -69295,7 +71072,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Troll Cave Quest"
+            ],
+            "objective": "Record the chosen completed journey: Troll Cave Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -69546,7 +71331,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Troll Sabotage Quest"
+            ],
+            "objective": "Record the chosen completed journey: Troll Sabotage Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -69716,7 +71509,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Tutorial"
+            ],
+            "objective": "Record the chosen completed journey: Tutorial.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -70023,7 +71824,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Twenty Miles Beneath the Sea Quest"
+            ],
+            "objective": "Record the chosen completed journey: Twenty Miles Beneath the Sea Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -70298,7 +72107,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Unnatural Selection Quest"
+            ],
+            "objective": "Record the chosen completed journey: Unnatural Selection Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -70554,7 +72371,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Vampire Shield Quest"
+            ],
+            "objective": "Record the chosen completed journey: Vampire Shield Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -70763,7 +72588,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Warmaster Outfits Quest"
+            ],
+            "objective": "Record the chosen completed journey: Warmaster Outfits Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -70916,7 +72749,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Waterfall Quest"
+            ],
+            "objective": "Record the chosen completed journey: Waterfall Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -71130,7 +72971,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Wayfarer Outfits Quest"
+            ],
+            "objective": "Record the chosen completed journey: Wayfarer Outfits Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -71287,7 +73136,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Wedding Ring Quest"
+            ],
+            "objective": "Record the chosen completed journey: Wedding Ring Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -71559,7 +73416,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "What a Foolish Quest"
+            ],
+            "objective": "Record the chosen completed journey: What a Foolish Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -71897,7 +73762,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Winterlight Solstice"
+            ],
+            "objective": "Record the chosen completed journey: Winterlight Solstice.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -72458,7 +74331,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Within the Tides Quest"
+            ],
+            "objective": "Record the chosen completed journey: Within the Tides Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -72844,7 +74725,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Wrath of the Emperor Quest"
+            ],
+            "objective": "Record the chosen completed journey: Wrath of the Emperor Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
@@ -73048,7 +74937,15 @@
           "unresolved": [
             "NATIVE_COMPLETION_REDUCER_BINDING_PENDING"
           ],
-          "runtime_admitted": false
+          "runtime_admitted": false,
+          "terminal_intent": {
+            "raw_targets": [
+              "Yalaharian Outfits Quest"
+            ],
+            "objective": "Record the chosen completed journey: Yalaharian Outfits Quest.",
+            "canonical_mapping_attempted": false,
+            "runtime_admitted": false
+          }
         }
       ],
       "reward_intents": [
