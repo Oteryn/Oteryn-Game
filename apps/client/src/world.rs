@@ -12,6 +12,7 @@
 use crate::input::StepDir;
 use oteryn_client_assets::{
     AppearanceIndex, AssetStore, CELL_PX, Catalog, DrawCell, Hook, Placement, SpriteSheets,
+    text_sha256,
 };
 use oteryn_renderer::{AtlasImage, BatchError, MAX_ATLAS_DIMENSION};
 use oteryn_world_bundle::sector::{self, Budget, TileLimits};
@@ -30,6 +31,11 @@ pub const ASSET_DIR_ENV: &str = "OTERYN_ASSET_DIR";
 /// asset file, so the client pins the manifest instead of trusting the one in the asset root.
 const MANIFEST_SHA256: &str = "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4";
 const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.json";
+/// The sha256 of `content/world/placements/index.json`, which pins every region file. A
+/// regenerated placement index must update it; a test compares it with the repository.
+const PLACEMENT_INDEX_SHA256: &str =
+    "4457eb96db6b2f9dedc641f8fa8699c92afae53299a5c7db7b036d37a102cafb";
+const PLACEMENT_INDEX_PATH: &str = "content/world/placements/index.json";
 /// The Thais temple, where the offline view starts and the play view is anchored.
 pub const START: (i32, i32) = (32369, 32241);
 pub const START_FLOOR: u8 = 7;
@@ -111,6 +117,15 @@ struct RegionEntry {
     sha256: String,
 }
 
+/// Reads the placement index, refusing one that does not match [`PLACEMENT_INDEX_SHA256`].
+fn read_placement_index(root: &Path) -> Result<PlacementIndex, String> {
+    let bytes = read_capped(&root.join(PLACEMENT_INDEX_PATH), MAX_INDEX_BYTES)?;
+    if text_sha256(&bytes) != PLACEMENT_INDEX_SHA256 {
+        return Err("placement index: sha256 does not match the pinned digest".to_owned());
+    }
+    serde_json::from_slice(&bytes).map_err(|error| format!("placement index: {error}"))
+}
+
 impl World {
     /// Only the builtin cells: no map, and the player drawn as the marker glyph.
     pub fn builtin() -> Result<Self, BatchError> {
@@ -151,11 +166,7 @@ impl World {
             .map_err(|error| format!("appearances: {error}"))?;
         let mut sheets = SpriteSheets::new(store, catalog);
         let placements = root.join("content/world/placements");
-        let map: PlacementIndex = serde_json::from_slice(&read_capped(
-            &placements.join("index.json"),
-            MAX_INDEX_BYTES,
-        )?)
-        .map_err(|error| format!("placement index: {error}"))?;
+        let map = read_placement_index(root)?;
 
         let (lo_x, hi_x, lo_y, hi_y) = (
             START.0 - RADIUS,
@@ -631,6 +642,26 @@ mod tests {
         );
         std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
         result.map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    #[test]
+    fn the_pinned_placement_index_digest_matches_the_repository() -> Result<(), String> {
+        let bytes = std::fs::read(repo().join(PLACEMENT_INDEX_PATH)).map_err(|e| e.to_string())?;
+        assert_eq!(text_sha256(&bytes), PLACEMENT_INDEX_SHA256);
+        Ok(())
+    }
+
+    #[test]
+    fn a_placement_index_off_the_pin_is_refused() -> Result<(), String> {
+        let dir = std::env::temp_dir().join(format!("oteryn-index-pin-{}", std::process::id()));
+        let index = dir.join(PLACEMENT_INDEX_PATH);
+        std::fs::create_dir_all(index.parent().ok_or("no parent")?).map_err(|e| e.to_string())?;
+        std::fs::write(&index, br#"{"regions":[]}"#).map_err(|e| e.to_string())?;
+        let result = read_placement_index(&dir);
+        std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
+        let error = result.err().ok_or("a substituted placement index loaded")?;
+        assert!(error.contains("placement index: sha256"), "{error}");
         Ok(())
     }
 

@@ -150,7 +150,7 @@ impl Application {
             let origin = TileCoord::new(0, 0);
             self.scene = Some(Scene::centered_on(
                 Arc::clone(world),
-                origin,
+                Some(origin),
                 self.offline_own,
                 self.offline_facing,
                 &[],

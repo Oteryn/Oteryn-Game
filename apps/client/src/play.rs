@@ -80,6 +80,8 @@ pub struct PlayView {
     world: Arc<World>,
     /// Added to a session position to reach the map position drawn there.
     anchor: TileCoord,
+    /// The session floor the map is anchored to; on any other floor no map is drawn.
+    map_floor: Option<i16>,
     scene: Scene,
     walk: ClickWalk,
     /// A step sent to the session task whose outcome has not arrived.
@@ -110,9 +112,10 @@ impl PlayView {
             facing: StepDir::South,
             floor,
             markers: BTreeMap::new(),
-            scene: Scene::centered_on(Arc::clone(&world), anchor, own, StepDir::South, &[])?,
+            scene: Scene::centered_on(Arc::clone(&world), None, own, StepDir::South, &[])?,
             world,
             anchor,
+            map_floor: None,
             walk: ClickWalk::new(),
             in_flight: false,
             key_step: None,
@@ -139,9 +142,11 @@ impl PlayView {
         &self.scene
     }
 
-    /// Draws `world` with the current own position on the start tile.
+    /// Draws `world` with the current own position on the start tile and the current floor on
+    /// the start floor.
     pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
         self.world = world;
+        self.map_floor = Some(self.floor);
         // Wrapping keeps the offset exact for any join position: `own + anchor` wraps back to START.
         self.anchor = TileCoord::new(
             START.0.wrapping_sub(self.own.x),
@@ -246,7 +251,7 @@ impl PlayView {
         let markers = self.drawn_markers().collect::<Vec<_>>();
         self.scene = Scene::centered_on(
             Arc::clone(&self.world),
-            self.anchor,
+            (self.map_floor == Some(self.floor)).then_some(self.anchor),
             self.own,
             self.facing,
             &markers,
@@ -660,6 +665,23 @@ mod tests {
         assert_eq!(view.marker_count(), 1);
         view.apply(&moved_to(100, 200, -7))?;
         assert_eq!(view.marker_count(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn the_map_is_drawn_only_on_the_join_floor() -> Result<(), String> {
+        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let world = Arc::new(World::load(&root)?);
+        let mut view = view().map_err(|e| e.to_string())?;
+        view.set_world(world).map_err(|e| e.to_string())?;
+        let on_floor = view.scene().sprites().len();
+        view.apply(&moved_to(100, 200, -1))
+            .map_err(|e| e.to_string())?;
+        let off_floor = view.scene().sprites().len();
+        view.apply(&moved_to(100, 200, 0))
+            .map_err(|e| e.to_string())?;
+        assert!(off_floor < on_floor / 10, "{off_floor} of {on_floor}");
+        assert_eq!(view.scene().sprites().len(), on_floor);
         Ok(())
     }
 

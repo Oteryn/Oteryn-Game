@@ -30,7 +30,8 @@ const _: () = assert!(
 #[derive(Debug, Clone)]
 pub struct Scene {
     world: Arc<World>,
-    anchor: TileCoord,
+    /// `None` draws no map: the session is on a floor the loaded map does not cover.
+    anchor: Option<TileCoord>,
     own: TileCoord,
     facing: StepDir,
     view: TileView,
@@ -45,7 +46,7 @@ impl Scene {
     /// object tile.
     pub fn centered_on(
         world: Arc<World>,
-        anchor: TileCoord,
+        anchor: Option<TileCoord>,
         own: TileCoord,
         facing: StepDir,
         markers: &[TileCoord],
@@ -132,9 +133,10 @@ impl Scene {
                     continue;
                 };
                 let tile = TileCoord::new(x, y);
-                let map = self
-                    .world
-                    .tile(x.wrapping_add(self.anchor.x), y.wrapping_add(self.anchor.y));
+                let map = self.anchor.and_then(|anchor| {
+                    self.world
+                        .tile(x.wrapping_add(anchor.x), y.wrapping_add(anchor.y))
+                });
                 for draw in map.iter().flat_map(|map| &map.under) {
                     push(&mut sprites, tile, draw, 0)?;
                 }
@@ -200,7 +202,7 @@ mod tests {
         let markers = [TileCoord::new(3, -1), TileCoord::new(-2, -2)];
         Scene::centered_on(
             world,
-            TileCoord::new(0, 0),
+            Some(TileCoord::new(0, 0)),
             TileCoord::new(0, 0),
             StepDir::South,
             &markers,
@@ -277,7 +279,7 @@ mod tests {
         let world = Arc::new(World::builtin_with([reach(9, 0), reach(0, 7)])?);
         let scene = Scene::centered_on(
             world,
-            TileCoord::new(0, 0),
+            Some(TileCoord::new(0, 0)),
             TileCoord::new(0, 0),
             StepDir::South,
             &[],
@@ -290,12 +292,13 @@ mod tests {
     fn a_view_at_the_edge_of_the_coordinate_space_builds() -> Result<(), BatchError> {
         let world = Arc::new(World::builtin()?);
         let own = TileCoord::new(i32::MAX - 8, i32::MAX - 6);
-        let scene = Scene::centered_on(world, TileCoord::new(0, 0), own, StepDir::South, &[])?;
+        let scene =
+            Scene::centered_on(world, Some(TileCoord::new(0, 0)), own, StepDir::South, &[])?;
         assert_eq!(scene.sprites().len(), 1);
         let world = Arc::new(World::builtin()?);
         let scene = Scene::centered_on(
             world,
-            TileCoord::new(i32::MAX, i32::MAX),
+            Some(TileCoord::new(i32::MAX, i32::MAX)),
             own,
             StepDir::South,
             &[],
@@ -309,8 +312,14 @@ mod tests {
         let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let world = Arc::new(World::load(&root)?);
         let start = TileCoord::new(crate::world::START.0, crate::world::START.1);
-        let scene = Scene::centered_on(world, TileCoord::new(0, 0), start, StepDir::South, &[])
-            .map_err(|error| error.to_string())?;
+        let scene = Scene::centered_on(
+            world,
+            Some(TileCoord::new(0, 0)),
+            start,
+            StepDir::South,
+            &[],
+        )
+        .map_err(|error| error.to_string())?;
         // Far more than a quad per tile, all inside the atlas and the batch cap.
         assert!(scene.sprites().len() > (SCENE_COLUMNS * SCENE_ROWS) as usize);
         for quad in scene.sprites().instances() {
@@ -319,7 +328,7 @@ mod tests {
         // The same area through an anchored session position.
         let anchored = Scene::centered_on(
             Arc::clone(&scene.world),
-            TileCoord::new(start.x - 1, start.y + 1),
+            Some(TileCoord::new(start.x - 1, start.y + 1)),
             TileCoord::new(1, -1),
             StepDir::South,
             &[],
@@ -330,13 +339,24 @@ mod tests {
         let edge = TileCoord::new(i32::MIN + 20, i32::MAX - 20);
         let anchored = Scene::centered_on(
             Arc::clone(&scene.world),
-            TileCoord::new(start.x.wrapping_sub(edge.x), start.y.wrapping_sub(edge.y)),
+            Some(TileCoord::new(
+                start.x.wrapping_sub(edge.x),
+                start.y.wrapping_sub(edge.y),
+            )),
             edge,
             StepDir::South,
             &[],
         )
         .map_err(|error| error.to_string())?;
         assert_eq!(anchored.sprites().len(), scene.sprites().len());
+        // Off the map's floor only the player is drawn.
+        let off_floor =
+            Scene::centered_on(Arc::clone(&scene.world), None, start, StepDir::South, &[])
+                .map_err(|error| error.to_string())?;
+        assert_eq!(
+            off_floor.sprites().len(),
+            scene.world.player(StepDir::South).len()
+        );
         Ok(())
     }
 }
