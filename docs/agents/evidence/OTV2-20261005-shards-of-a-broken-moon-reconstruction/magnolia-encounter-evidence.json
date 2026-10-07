@@ -370,7 +370,7 @@
       "Post-kill prison relocation under World/Encounter ownership.",
       "Crash/restart/relog cleanup and idempotence qualification."
     ],
-    "runtime_blocker": "ENC-RT-1 -> ENC-OUTCOME-1 are not yet allocated/integrated; ProjectV2 Encounter remains candidate-only and no runtime path interprets these rules."
+    "runtime_blocker": "Architecture is resolved (#1891 merged), but Encounter schema/ProjectV2 still lacks max_health on current main and no ENC-RT-1/ENC-OUTCOME-1 runtime interpreter is allocated/integrated."
   },
   "runtime_partition": {
     "reusable_existing_creature_runtime": [
@@ -401,7 +401,26 @@
     ]
   },
   "representation_readback": {
-    "main_sha": "3632deb4b0a972bd09722c7498d6d7e1d7f059a6",
+    "main_sha": "f80428d57660fce078ed4a4c37739d3383664c23",
+    "architect_disposition": {
+      "pr": 1891,
+      "merged": true,
+      "merge_commit": "739e75821bbee3740aa8ee6166ac297fb577eb09",
+      "selected_option": "B",
+      "semantics": [
+        "first lethal: prevent_death",
+        "attribute max_health set 60000",
+        "set phase counter/phase 2",
+        "queued heal full to 60000",
+        "no completion outcome on first lethal",
+        "phase-2 lethal kills normally and emits completion"
+      ]
+    },
+    "trigger_cause_disposition": {
+      "pr": 1886,
+      "merged": true,
+      "note": "QUEST-TRIGGER durable-cause ambiguity is resolved independently; Magnolia quest progress still waits for ENC-OUTCOME-1."
+    },
     "authoring_schema": {
       "lethal_damage": true,
       "prevent_death": true,
@@ -409,7 +428,8 @@
       "heal_full": true,
       "convert_damage_to_heal": true,
       "item_used": true,
-      "timers": true
+      "timers": true,
+      "max_health_attribute": "ARCHITECT_ACCEPTED_IMPLEMENTATION_PENDING"
     },
     "project_v2": {
       "lethal_damage": true,
@@ -418,13 +438,19 @@
       "heal_full": true,
       "convert_damage_to_heal": true,
       "phase_names": true,
+      "current_rust_attribute_variants": [
+        "outgoing_damage_percent",
+        "defense"
+      ],
+      "max_health_attribute_present_on_main": false,
       "runtime_status": "CANDIDATE_ONLY_NOT_INTERPRETED"
     },
     "exact_remaining_representation_gap": {
       "key": "phase_2_max_health_override",
-      "source_fact": "Phase 1 base/max HP is 52000; first lethal is prevented and Magnolia returns immediately in phase 2 with 60000 HP.",
-      "problem": "Current ProjectV2 Encounter can heal to full, transform with full/percent/absolute-preserving health, and set phase, but has no action that raises a live role's maximum health above the Creature definition. Healing 60000 into a 52000-max Creature cannot represent the published phase-2 state.",
-      "required_disposition": "Encounter owner/architect should add the smallest encounter-local health-capability needed for an exact current/max health override, or provide another accepted existing representation. Do not mint a fake second Magnolia Creature identity solely to obtain 60000 max HP."
+      "status": "DECIDED_NOT_IMPLEMENTED",
+      "accepted_shape": "attribute(max_health set 60000) followed by queued heal(full), then phase_2 semantics",
+      "implementation_owner": "ENC-COMBAT-1 / Encounter schema + ProjectV2 catch-up",
+      "forbidden": "Do not use a fake second Magnolia Creature or 52k ordinary heal as a workaround."
     }
   }
 }
