@@ -735,11 +735,10 @@ const PRIVILEGES: &str = "SELECT has_table_privilege('game_character_roots', 'SE
      AND has_table_privilege('game_character_account_projection_outbox', 'DELETE')";
 
 /// Whether the node's database role can read Character ownership and
-/// acknowledge the outbox; the publisher starts only then.
-pub async fn store_readable(root: &DurabilityRoot) -> bool {
-    let Ok(pass) = root.try_issue_semantic_pass() else {
-        return false;
-    };
+/// acknowledge the outbox, or `None` when no holder or database answer was
+/// available (a busy or re-establishing holder is not a refusal).
+pub async fn store_readable(root: &DurabilityRoot) -> Option<bool> {
+    let pass = root.try_issue_semantic_pass().ok()?;
     pass.run(|holder, _| {
         Box::pin(async move {
             Ok(sqlx::query_scalar::<_, bool>(PRIVILEGES)
@@ -748,7 +747,19 @@ pub async fn store_readable(root: &DurabilityRoot) -> bool {
         })
     })
     .await
-    .unwrap_or(false)
+    .ok()
+}
+
+/// Repeat `probe` with bounded backoff while it has no answer; only a
+/// definite answer ends the wait.
+async fn await_answer(mut probe: impl AsyncFnMut() -> Option<bool>) -> bool {
+    let mut attempt = 0;
+    loop {
+        if let Some(readable) = probe().await {
+            return readable;
+        }
+        backoff(&mut attempt).await;
+    }
 }
 
 /// The `ListCharactersForAccount` publisher until `stop`, under the
@@ -764,12 +775,18 @@ async fn account_characters_loop(
     let Some((descriptor, source_authority, fence)) = projection else {
         return;
     };
-    if !first(store_readable(root), stop.cancelled())
-        .await
-        .unwrap_or(false)
+    match first(
+        await_answer(async || store_readable(root).await),
+        stop.cancelled(),
+    )
+    .await
     {
-        event("event=account_characters_projection state=refused reason=privileges");
-        return;
+        None => return,
+        Some(false) => {
+            event("event=account_characters_projection state=refused reason=privileges");
+            return;
+        }
+        Some(true) => {}
     }
     event("event=account_characters_projection state=started");
     let publisher = Publisher::new(
@@ -2039,6 +2056,31 @@ async fn boot_and_serve(
 mod tests {
     #![allow(clippy::expect_used)]
     use super::*;
+
+    #[test]
+    fn a_busy_holder_delays_the_privilege_answer_without_refusing() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            // No idle holder at startup: no answer, which is not a privilege refusal.
+            let root = DurabilityRoot::connect_test_runtime("postgres://node@127.0.0.1:1/game")
+                .expect("lazy root");
+            assert_eq!(store_readable(&root).await, None);
+            let mut answers = [None, None, Some(true)].into_iter();
+            let mut calls = 0;
+            let readable = await_answer(async || {
+                calls += 1;
+                answers.next().flatten()
+            })
+            .await;
+            assert!(readable);
+            assert_eq!(calls, 3);
+            let mut refused = [None, Some(false)].into_iter();
+            assert!(!await_answer(async || refused.next().flatten()).await);
+        });
+    }
 
     #[test]
     fn operation_ids_must_be_single_canonical_uuid_v7_lines() {

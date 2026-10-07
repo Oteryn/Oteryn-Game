@@ -60,6 +60,12 @@ No migration, wire change or Platform change.
 - D607: 0024 grants EXECUTE on the resync function to no role, so the raise uses an operator-only
   credential from the optional ops `[projection]` section (absent by default; the command fails
   closed without it). The stack uses the local admin login for it.
+- Codex P1 4200340107: a busy or re-establishing durability holder at startup is no answer, not a
+  privilege refusal; the publisher retries the privilege check with bounded backoff and stops only
+  on a definite refusal.
+- Follow-up GAME-LCFA-RESYNC-DEADLINE-1 (Codex P2 4200478837): `ops projection resync` runs inside
+  the ordinary 2 s root pass (`DB_PASS_DEADLINE`); a bounded maintenance deadline needs a
+  durability-root change outside this packet's paths.
 - Merge blocker for the e2e stack, not for this PR: the RUNBOOK-1 Platform pin stays at `3896bcdf`
   until Platform#1465 (PLATFORM-LCFA-1) merges; the stack's feed environment names match its head.
 
