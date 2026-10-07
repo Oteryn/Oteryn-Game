@@ -1671,7 +1671,7 @@
     "Escape geometry/Rope Spot are resolved end-to-end; Lit Torch i54610 successor identity/admission is proof-complete (holds=[]), but the Item successor has not yet been admitted/materialized",
     "Forbidden Gardens door 54613@33873,32620,8 is qualified by pinned OTBM + porelease ItemLevel screenshot + TibiaMaps floor-08 topology. Remaining blockers: AccountHasAchievement(forbidden_fruit) predicate and World/QUEST-GATE-1 served placement_key binding for the active world generation.",
     "No full real-character start→reward→relog/restart E2E qualification",
-    "Jaracal Mount exact donor identity is resolved; Skewered Fish i54638 already has an EXACT Crystal->A12 binding on main, but lacks active materializable Item admission. Mount successor + tame/account-unlock runtime remain; tame chance semantics UNKNOWN."
+    "Jaracal Mount exact donor identity is resolved; Skewered Fish i54638 has exact identity but lacks active materializable Item admission. Tame failure semantics are now qualified as item-retaining/retryable; exact success chance remains UNKNOWN and must not be invented."
   ],
   "readback": {
     "refreshed_main": "52712f633786721c0d255888a92c81165cd2d5c3",
@@ -1817,7 +1817,24 @@
         "On successful tame grant account-scoped mount unlock plus existing Six Steps Ahead achievement.",
         "Qualify item consumption, idempotence and relog/restart persistence.",
         "Do not grant the mount directly from Shards s16."
-      ]
+      ],
+      "failure_semantics": {
+        "item_consumed_on_failure": false,
+        "item_breaks_on_failure": false,
+        "retry_same_item": true,
+        "evidence_class": "POST_RELEASE_COMMUNITY_OBSERVATION",
+        "source": "TibiaQA question 40059, answered 2026-07-14",
+        "observation": "Responder reports many failed Jaracal tame attempts and none broke the Skewered Fish.",
+        "confidence": "QUALIFIED_COMMUNITY_REPORT_NOT_CONTROLLED_RATE_MEASUREMENT"
+      },
+      "success_semantics": {
+        "result": [
+          "ACCOUNT_MOUNT_UNLOCK",
+          "oteryn:achievement/six_steps_ahead@1"
+        ],
+        "item_consumption": "REQUIRES_OWNER_CONFIRMATION_ON_SUCCESS",
+        "chance": "UNKNOWN"
+      }
     },
     "forbidden_gardens_predicate": {
       "required": [
