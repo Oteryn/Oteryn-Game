@@ -156,23 +156,40 @@ pub(crate) enum VisibilityUpdate {
 /// in canonical order (the degrade disposition); each refresh is diffed against what the
 /// session was last sent. It lives with the connection: a resumed connection starts from a new
 /// snapshot.
+///
+/// MAP-ITEM-REF-1 (CP D885): objects are shown only to a session that selected capability 4;
+/// without it an object's `item_definition_ref` names nothing the session can resolve, so the
+/// default view drops every object before the interest query.
 #[derive(Debug, Default)]
 pub(crate) struct SessionVisibility {
     shown: Option<VisibilityQuery>,
     entities: BTreeMap<[u8; ENTITY_IDENTITY_BYTES], WorldSpatialEntity>,
+    objects: bool,
 }
 
 impl SessionVisibility {
+    /// A view that shows objects (corpses) when `objects`, the session's capability 4.
+    pub(crate) fn with_objects(objects: bool) -> Self {
+        Self {
+            objects,
+            ..Self::default()
+        }
+    }
+
     /// The query of `channel` from the observer, and each selected entity in its wire form, in
     /// the query's order (own actor first). `attach` gives each object its item handle under
     /// capability 4. An observer that is not in `channel`, or not on a valid floor, fails.
     fn select(
+        &self,
         channel: &ChannelEntities,
         attach: &mut dyn FnMut(&mut [WorldSpatialEntity]) -> Result<(), WorldSpatialError>,
     ) -> Result<(VisibilityQuery, Vec<WorldSpatialEntity>), WorldSpatialError> {
         let mut index = InterestIndex::new();
         let mut by_identity = BTreeMap::new();
         for entity in &channel.entities {
+            if !self.objects && matches!(entity.kind, VisibleKind::Corpse { .. }) {
+                continue;
+            }
             // An entity off the 0..=15 floors cannot be shown; the observer then fails below.
             let Ok(position) = VisibilityPosition::new(
                 entity.position.x,
@@ -238,7 +255,7 @@ impl SessionVisibility {
         channel: &ChannelEntities,
         attach: &mut dyn FnMut(&mut [WorldSpatialEntity]) -> Result<(), WorldSpatialError>,
     ) -> Result<WorldSpatialEntitiesSnapshot, WorldSpatialError> {
-        let (query, selected) = Self::select(channel, attach)?;
+        let (query, selected) = self.select(channel, attach)?;
         let snapshot = Self::snapshot_of(channel, &selected)?;
         self.show(query, selected);
         Ok(snapshot)
@@ -251,7 +268,7 @@ impl SessionVisibility {
         channel: &ChannelEntities,
         attach: &mut dyn FnMut(&mut [WorldSpatialEntity]) -> Result<(), WorldSpatialError>,
     ) -> Result<VisibilityUpdate, WorldSpatialError> {
-        let (query, selected) = Self::select(channel, attach)?;
+        let (query, selected) = self.select(channel, attach)?;
         let Some(shown) = &self.shown else {
             let snapshot = Self::snapshot_of(channel, &selected)?;
             self.show(query, selected);
@@ -719,5 +736,63 @@ mod tests {
         assert_eq!(delta.actor_position, stepped.entities[0].position);
         assert_eq!(identities(&delta.update), [id(0), id(1)]);
         assert!(delta.enter.is_empty() && delta.leave.is_empty());
+    }
+
+    /// MAP-ITEM-REF-1 (CP D885): a session without capability 4 is sent no object; with it, the
+    /// corpse is an entry carrying its item handle.
+    #[test]
+    fn objects_are_shown_only_to_a_session_with_capability_4() {
+        let corpse = VisibleKind::Corpse {
+            item_definition_ref: std::num::NonZeroU32::new(4240).expect("ref"),
+        };
+        let mut corpse_at = at(2, corpse, 101, 100, 7);
+        corpse_at.generation = 0;
+        let channel = channel([at(1, VisibleKind::Creature, 101, 100, 7), corpse_at]);
+        let mut handles = |entities: &mut [WorldSpatialEntity]| {
+            for entity in entities {
+                if let EntityDetail::Object { item_handle, .. } = &mut entity.detail {
+                    *item_handle = oteryn_protocol_oteryn::item_view::ItemHandle::new(5);
+                }
+            }
+            Ok(())
+        };
+        let without = SessionVisibility::default()
+            .snapshot(&channel, &mut handles)
+            .expect("without 4");
+        assert_eq!(identities(&without.entities), [id(0), id(1)]);
+        assert!(
+            without
+                .entities
+                .iter()
+                .all(|entity| !matches!(entity.detail, EntityDetail::Object { .. }))
+        );
+        assert_eq!(
+            SessionVisibility::with_objects(false)
+                .refresh(&channel, &mut handles)
+                .map(|update| match update {
+                    VisibilityUpdate::Snapshot(snapshot) => snapshot.entities.len(),
+                    _ => usize::MAX,
+                }),
+            Ok(2)
+        );
+        let with = SessionVisibility::with_objects(true)
+            .snapshot(&channel, &mut handles)
+            .expect("with 4");
+        assert_eq!(identities(&with.entities), [id(0), id(1), id(2)]);
+        assert_eq!(with.entities[2].kind, EntityKind::Corpse);
+        assert_eq!(with.entities[2].entity.generation, 0);
+        assert_eq!(
+            with.entities[2].detail,
+            EntityDetail::Object {
+                item_definition_ref: 4240,
+                quantity: 1,
+                item_handle: oteryn_protocol_oteryn::item_view::ItemHandle::new(5),
+            }
+        );
+        let selected = [
+            CAPABILITY_WORLD_SPATIAL_ENTITIES,
+            CAPABILITY_ITEM_VIEW_MOVE_V1,
+        ];
+        assert!(encode_visibility_snapshot(&selected, &with).is_ok());
     }
 }

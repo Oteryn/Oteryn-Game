@@ -251,3 +251,47 @@ fn refuses_malformed_evidence_digest_even_with_consistent_revisions() {
         );
     }
 }
+
+/// MAP-ITEM-REF-1 Part B (CP D887): the committed production section is exactly what
+/// `build_progression.py --section-out` derives from the committed rulesets, and
+/// `content/spells.manifest.json` pins its digest, so a drift of either fails.
+#[test]
+fn committed_production_section_regenerates_from_the_rulesets() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let read = |path: &str| -> Value {
+        serde_json::from_slice(&std::fs::read(root.join(path)).unwrap()).unwrap()
+    };
+    let table = read("rulesets/character/experience/experience-table.json");
+    let death = read("rulesets/character/death/death-policy.json");
+    let reward = read("rulesets/character/experience/reward-policy.json");
+    let differences = read("rulesets/character/experience/declared-differences.json");
+    let revisions = json!({
+        "policy_revision": policy_revision(
+            table["revision"].as_str().unwrap(), death["revision"].as_str().unwrap()).unwrap(),
+        "experience_table_revision": table["revision"],
+        "death_policy_revision": death["revision"],
+        "reward_revision": reward["revision"],
+        "declaration": differences["revision"],
+        "evidence": table["evidence_revision"],
+        "simulation": PROGRESSION_SIMULATION_REVISION,
+    });
+    let regenerated = canonical(&json!({
+        "schema": PROGRESSION_SECTION_SCHEMA,
+        "experience_table": table,
+        "death_policy": death,
+        "reward_policy": reward,
+        "declared_differences": differences,
+        "revisions": revisions,
+    }))
+    .unwrap();
+    let committed = std::fs::read(root.join("content/progression/native-section.json")).unwrap();
+    assert!(regenerated == committed, "native-section.json drifted from the rulesets");
+    CharacterProgressionContent::decode(&committed).unwrap();
+    let manifest = read("content/spells.manifest.json");
+    let hex: String = sha256(&committed)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    assert_eq!(manifest["progression"]["path"], "progression/native-section.json");
+    assert_eq!(manifest["progression"]["sha256"], hex.as_str());
+}

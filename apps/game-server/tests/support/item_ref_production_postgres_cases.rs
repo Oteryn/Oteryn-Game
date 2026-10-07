@@ -40,6 +40,13 @@ fn a_bound_corpse_mint_reads_its_entries_and_moves_one_once() -> TestResult {
             ScopeOwnershipGeneration::new(1).map_err(debug)?,
         )
         .map_err(debug)?;
+        // Fail closed: nothing binds before the death is projected (no corpse to name).
+        assert!(
+            fixture
+                .bind_corpse_item(corpse, "ItemType", "fixture:corpse.rat", "corpse-r1")
+                .is_err()
+        );
+        assert_eq!(fixture.bound_corpse_item_instance_id(), None);
         fixture
             .strike("item-ref", CombatDeathFixture::HEALTH)
             .map_err(debug)?;
