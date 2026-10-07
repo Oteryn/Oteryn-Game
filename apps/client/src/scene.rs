@@ -91,8 +91,8 @@ impl Scene {
         self.rebuild_sprites()
     }
 
-    /// Row by row, one tile past the view on the right and bottom (large sprites reach back up
-    /// and left): each tile's map items, its markers and the player, then what goes over them.
+    /// Row by row, two tiles past the view on the right and bottom (a displaced 64 px sprite
+    /// reaches back up and left by up to two tiles): each tile's map items, its markers and the player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
         let mut sprites = SpriteBatch::new();
@@ -101,8 +101,8 @@ impl Scene {
             let offset = [draw.offset[0] - lift, draw.offset[1] - lift];
             sprites.push_offset(&self.view, atlas, tile, draw.cell, offset, CELL_PX)
         };
-        for row in 0..=SCENE_ROWS as i32 {
-            for column in 0..=SCENE_COLUMNS as i32 {
+        for row in 0..SCENE_ROWS as i32 + 2 {
+            for column in 0..SCENE_COLUMNS as i32 + 2 {
                 let tile = TileCoord::new(origin.x + column, origin.y + row);
                 let map = self
                     .world
