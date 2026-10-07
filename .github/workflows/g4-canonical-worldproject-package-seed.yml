@@ -48,13 +48,14 @@ jobs:
           pin=d78f0c80e6efe7b5d2fea6dae010eaf236ccd7a1
           git fetch --no-tags --depth=1 origin "$pin"
           mkdir -p "$RUNNER_TEMP/predecessor/world"
-          git ls-tree -r --name-only "$pin" content/world \
-            | grep -E '^content/world/(project|manifest|content\.lock)\.json$|^content/world/(assets|definitions|editor|presentations|provenance|worlds)/' \
-            | while IFS= read -r f; do
-                dest="$RUNNER_TEMP/predecessor/world/${f#content/world/}"
-                mkdir -p "$(dirname "$dest")"
-                git show "$pin:$f" > "$dest"
-              done
+          # Exactly the 11 package documents; successor shards (worlds/index.json, ...) are not inputs.
+          for f in project.json manifest.json content.lock.json assets/catalog.json \
+            definitions/declarations.json definitions/reference.json editor/author.json \
+            presentations/bindings.json provenance/imports.json provenance/sources.json \
+            worlds/world.json; do
+            mkdir -p "$(dirname "$RUNNER_TEMP/predecessor/world/$f")"
+            git show "$pin:content/world/$f" > "$RUNNER_TEMP/predecessor/world/$f"
+          done
           test "$(find "$RUNNER_TEMP/predecessor/world" -type f | wc -l)" -eq 11
 
       - name: Materialize twice
