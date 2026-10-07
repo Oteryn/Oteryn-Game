@@ -212,13 +212,15 @@ fn experience_bounds() {
 #[test]
 fn race_requires_the_exact_definition_revision() {
     let section: LootTablesSection = serde_json::from_value(section()).unwrap();
-    let race = BestiaryRace::new(RAT, REVISION, vec![1, 2]).unwrap();
+    // The sample keys carry `/`, which a Bestiary race key refuses; the lookup is by
+    // creature key, so a valid race key stands in.
+    let race = BestiaryRace::new("canary:creature.rat", REVISION, vec![1, 2]).unwrap();
     let races = HashMap::from([(RAT.to_owned(), race.clone())]);
     let row = CreatureRewardTable::build(&creatures(), &section, &races)
         .row(RAT)
         .unwrap();
     assert_eq!(row.race, Some(race));
-    let other = BestiaryRace::new(RAT, "canary-other", vec![1]).unwrap();
+    let other = BestiaryRace::new("canary:creature.rat", "canary-other", vec![1]).unwrap();
     let races = HashMap::from([(RAT.to_owned(), other)]);
     let row = CreatureRewardTable::build(&creatures(), &section, &races)
         .row(RAT)
