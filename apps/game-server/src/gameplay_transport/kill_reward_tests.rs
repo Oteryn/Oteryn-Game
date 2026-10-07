@@ -493,6 +493,95 @@ fn an_unknown_release_keeps_the_mark_until_the_retry_reconciles() {
 }
 
 #[test]
+fn concurrent_releases_share_the_mark_until_the_last_settles() {
+    run(async {
+        for (end, queued) in [(ReleaseEnd::Retryable, 2), (ReleaseEnd::Committed, 0)] {
+            let attack = AsyncMutex::new(ChannelAttackStates::default());
+            let principal = (session(50), 3);
+            let settler = final_settles(&attack, 0);
+            // A grace expiry and a mismatch release of one lost epoch hold the same mark.
+            let expiry = mark(release_handshake(&attack, session(50), 3, &settler).await);
+            let mismatch = mark(release_handshake(&attack, session(50), 3, &settler).await);
+            assert_eq!(attack.lock().await.kills().holders(principal), Some(2));
+            attack.lock().await.kills().append(pending(2, 50, 3, 1));
+            // One reconciles as lifted while the other is still in flight: the mark stays.
+            mismatch.settle(attack.lock().await.kills(), ReleaseEnd::Retryable);
+            assert_eq!(attack.lock().await.kills().holders(principal), Some(1));
+            assert_eq!(
+                attack.lock().await.kills().append(pending(3, 50, 3, 1)),
+                AppendOutcome::Parked(ReleasePhase::Committing)
+            );
+            assert!(!attack.lock().await.kills().has_session(session(50)));
+            expiry.settle(attack.lock().await.kills(), end);
+            assert_eq!(attack.lock().await.kills().counts(), (queued, 0, 0));
+        }
+    });
+}
+
+#[test]
+fn a_committed_release_is_not_undone_by_a_retryable_one() {
+    run(async {
+        let attack = AsyncMutex::new(ChannelAttackStates::default());
+        let principal = (session(50), 3);
+        let settler = final_settles(&attack, 0);
+        let expiry = mark(release_handshake(&attack, session(50), 3, &settler).await);
+        let mismatch = mark(release_handshake(&attack, session(50), 3, &settler).await);
+        expiry.settle(attack.lock().await.kills(), ReleaseEnd::Committed);
+        attack.lock().await.kills().append(pending(2, 50, 3, 1));
+        mismatch.settle(attack.lock().await.kills(), ReleaseEnd::Retryable);
+        assert_eq!(attack.lock().await.kills().counts(), (0, 0, 0));
+        assert_eq!(
+            attack.lock().await.kills().parked(principal),
+            Some((ReleasePhase::Committing, vec![ReleasePhase::Committing]))
+        );
+        expiry.forget(attack.lock().await.kills());
+        assert_eq!(attack.lock().await.kills().parked(principal), None);
+    });
+}
+
+#[test]
+fn a_resumed_epoch_clears_a_mark_an_unknown_outcome_left() {
+    run(async {
+        let attack = AsyncMutex::new(ChannelAttackStates::default());
+        let principal = (session(50), 3);
+        let settler = final_settles(&attack, 1);
+        let lost = mark(release_handshake(&attack, session(50), 3, &settler).await);
+        attack.lock().await.kills().append(pending(2, 50, 3, 1));
+        lost.settle(attack.lock().await.kills(), ReleaseEnd::Unknown);
+        assert_eq!(attack.lock().await.kills().holders(principal), Some(0));
+        // Only parked: a drain of the live session would not see it.
+        assert!(!attack.lock().await.kills().has_session(session(50)));
+        attack.lock().await.kills().release_orphaned(session(50));
+        assert_eq!(attack.lock().await.kills().parked(principal), None);
+        assert!(attack.lock().await.kills().has_session(session(50)));
+        assert_eq!(
+            drain_session_kills(&attack, session(50), 3, &settler).await,
+            DrainOutcome::Drained
+        );
+        assert_eq!(
+            attack.lock().await.kills().append(pending(3, 50, 3, 1)),
+            AppendOutcome::Queued
+        );
+    });
+}
+
+#[test]
+fn a_held_mark_is_not_an_orphan() {
+    run(async {
+        let attack = AsyncMutex::new(ChannelAttackStates::default());
+        let principal = (session(50), 3);
+        let settler = final_settles(&attack, 0);
+        let _held = mark(release_handshake(&attack, session(50), 3, &settler).await);
+        attack.lock().await.kills().append(pending(2, 50, 3, 1));
+        attack.lock().await.kills().release_orphaned(session(50));
+        assert_eq!(
+            attack.lock().await.kills().parked(principal),
+            Some((ReleasePhase::Committing, vec![ReleasePhase::Committing]))
+        );
+    });
+}
+
+#[test]
 fn an_entry_whose_principal_has_no_live_session_is_freed() {
     let queue = KillSettlementQueue::default();
     queue.append(pending(3, 50, 3, 0));

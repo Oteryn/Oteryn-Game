@@ -1419,6 +1419,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some(hold) = held.as_mut() {
                     self.fence_holders.release(hold);
                 }
+                // KILL-REWARD-COMP-1 §1.3: no release of the resumed epoch committed, so a kill
+                // mark an unknown outcome kept is cleared as retryable.
+                self.release_orphaned_kills(session).await;
                 return GraceExpiryResult::NotApplicable;
             };
             let token = TransitionFence::GraceExpiry(epoch);
@@ -1463,6 +1466,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // The mark moved: the epoch was resumed before the fence.
                 FenceStep::Refused(CarrierError::ControlLossConflict) => {
+                    self.release_orphaned_kills(session).await;
                     return GraceExpiryResult::NotApplicable;
                 }
                 FenceStep::Refused(_) => return GraceExpiryResult::Unknown,
@@ -1502,7 +1506,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             self.forget_kill_release(kills).await;
                             return result;
                         }
-                        UnendedSettle::Unknown => next_backoff(),
+                        UnendedSettle::Unknown => {
+                            self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                            next_backoff()
+                        }
                     }
                 }
                 Ok(ExpiredLossReleaseV1::NotExpired { deadline, now }) => {
@@ -1520,7 +1527,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             self.forget_kill_release(kills).await;
                             return result;
                         }
-                        UnendedSettle::Unknown => next_backoff(),
+                        UnendedSettle::Unknown => {
+                            self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                            next_backoff()
+                        }
                     }
                 }
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
@@ -1711,13 +1721,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut hold = FenceHold::new(session, token);
         let mut settled_death = None;
         let mut kills = None;
+        let mut kill_unknown = false;
+        let abandoned = matches!(release, TerminalRelease::Abandoned(_));
         let mut backoff = RECONCILE_BACKOFF;
         let mut next_backoff = || {
             let pause = backoff;
             backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
             pause
         };
-        for _ in 0..EXPIRY_ATTEMPTS {
+        let mut attempt = 0;
+        while retries_release(attempt, abandoned, kill_unknown) {
+            attempt = attempt.saturating_add(1);
             if !self
                 .settle_released_death(actor, session, &mut settled_death)
                 .await
@@ -1792,7 +1806,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         self.forget_kill_release(kills).await;
                         return result;
                     }
-                    UnendedSettle::Unknown => next_backoff(),
+                    UnendedSettle::Unknown => {
+                        self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                        kill_unknown = true;
+                        next_backoff()
+                    }
                 },
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
                     self.settle_kill_release(kills, ReleaseEnd::Committed).await;
@@ -1804,6 +1822,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // the durable row.
                 Err(_) => {
                     self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                    kill_unknown = true;
                     next_backoff()
                 }
             };
@@ -1814,9 +1833,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // settles as released; a session still holding the lease gives back this release's
             // hold, and the epoch fence is lifted once no other release holds it, so the client's
             // retry can repeat the release.
+            // Every attempt gave up its kill hold, so the kill mark is reconciled, not settled.
             return match self.settle_unended(&store, actor, &mut hold).await {
                 UnendedSettle::Terminal => {
-                    self.settle_kill_release(kills, ReleaseEnd::Committed).await;
+                    self.reconcile_kill_release(kills, ReleaseEnd::Committed)
+                        .await;
                     let result = self
                         .retire_reconciled(controller.account_id, session, actor)
                         .await;
@@ -1824,13 +1845,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     result
                 }
                 UnendedSettle::Lifted => {
-                    self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
+                    self.reconcile_kill_release(kills, ReleaseEnd::Retryable)
+                        .await;
                     GraceExpiryResult::Unknown
                 }
-                UnendedSettle::Unknown => {
-                    self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
-                    GraceExpiryResult::Unknown
-                }
+                UnendedSettle::Unknown => GraceExpiryResult::Unknown,
             };
         }
         GraceExpiryResult::Unknown
@@ -3009,6 +3028,14 @@ const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
 /// Bound on grace-expiry release attempts (waits for the deadline and store
 /// retries): with the capped backoff, about two minutes of owner unavailability.
 const EXPIRY_ATTEMPTS: u32 = 32;
+
+/// Whether a terminal release makes another attempt. KILL-REWARD-COMP-1 §1.3: an abandoned
+/// release whose kill mark an unknown outcome kept runs on behind the backoff, unbounded in
+/// count, since its callers cannot retry it.
+const fn retries_release(attempt: u32, abandoned: bool, kill_unknown: bool) -> bool {
+    attempt < EXPIRY_ATTEMPTS || (abandoned && kill_unknown)
+}
+
 /// Cap of the grace-expiry store retry backoff.
 const EXPIRY_MAX_BACKOFF: Duration = Duration::from_secs(5);
 /// Whole-second durable clock: wait just past the deadline second.
@@ -4523,6 +4550,17 @@ mod tests {
             self.expiring.fetch_add(1, Ordering::SeqCst);
             std::future::pending().await
         }
+    }
+
+    /// KILL-REWARD-COMP-1 §1.3: an abandoned release whose kill mark an unknown outcome kept runs
+    /// past the attempt bound; any other release stops at it.
+    #[test]
+    fn an_abandoned_release_with_an_unknown_kill_mark_retries_past_the_bound() {
+        assert!(retries_release(0, true, false));
+        assert!(!retries_release(EXPIRY_ATTEMPTS, true, false));
+        assert!(!retries_release(EXPIRY_ATTEMPTS, false, true));
+        assert!(retries_release(EXPIRY_ATTEMPTS, true, true));
+        assert!(retries_release(u32::MAX, true, true));
     }
 
     /// Records the loss; the first two grace expiries end unknown.
