@@ -519,14 +519,27 @@
       "kind": "NPC_DIALOGUE_REGRANT",
       "trigger": {
         "npc": "oteryn:npc.javala",
-        "source_keyword": "lost"
+        "dialogue": "oteryn:dialogue.npc.javala",
+        "branch_sequence": [
+          "hi",
+          "lost"
+        ]
       },
       "requires": [
         "javala_alliance",
         "does_not_hold_asura_citadel_key"
       ],
-      "evidence": "FACT_REFERENCE_ONLY",
-      "owner": "NPC-QUEST-1 + Item/Durability + KEY-1"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1 + Item/Durability + KEY-1",
+      "item_effect": {
+        "grant": "oteryn:item.tibia.i54262",
+        "count": 1,
+        "guard": "quest eligible AND character does not currently hold the Asura Citadel key"
+      },
+      "source_notes": [
+        "Post-release TibiaWiki Key (Asura Citadel) and 15.30 update pages explicitly document Javala Hi -> Lost regrant.",
+        "After Shards completion the key is no longer required for the door."
+      ]
     },
     {
       "id": "asura_citadel_key_door",
