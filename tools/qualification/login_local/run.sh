@@ -17,6 +17,9 @@
 # LOGIN_LOCAL_HOST (default 127.0.0.1) is the address the client reaches the services at. A private LAN IPv4
 # (NAS server + PC client) publishes the Platform and gateway over TLS (per-run LAN test CA) and binds the game node
 # there; PostgreSQL and the Platform mTLS port stay on 127.0.0.1. Any other value is BLOCKED.
+# Proxy mode (LOGIN_LOCAL_PUBLIC_PLATFORM_URL + LOGIN_LOCAL_PUBLIC_GATEWAY_URL, both https://host[:port], LOGIN_LOCAL_HOST
+# required): an existing TLS reverse proxy (Synology DSM) fronts Platform 127.0.0.1:18564 and gateway 127.0.0.1:18565;
+# no LAN listener or CA is created, the Platform's external URL is the public one, only the game node is reached directly.
 # PHP snippets are deliberately single-quoted for the container shell; the identities are JSON text.
 # shellcheck disable=SC2016,SC2089,SC2090
 set -Eeuo pipefail
@@ -37,13 +40,14 @@ readonly COMPOSE_S3B=tools/qualification/wp5_s3b/compose.override.yml
 readonly COMPOSE_NODE_BOOT=tools/qualification/node_boot/compose.override.yml
 readonly COMPOSE_LOCAL=tools/qualification/login_local/compose.override.yml
 readonly COMPOSE_LAN=tools/qualification/login_local/compose.lan.yml
+readonly COMPOSE_PROXY=tools/qualification/login_local/compose.proxy.yml
 readonly PG_IMAGE=postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
 readonly SERVICE_USER=oteryn-login-local
 readonly BASE=/srv/oteryn-login-local
 readonly RUNTIME_IDENTITY=oteryn-game-node-runtime-status
 readonly OPS_IDENTITY=oteryn-game-ops
 
-blocked() { echo "LOGIN_LOCAL_RESULT=BLOCKED reason=$1"; exit 2; }
+blocked() { echo "LOGIN_LOCAL_RESULT=BLOCKED reason=$1"; [[ -z "${WORK:-}" ]] || rm -rf "$WORK"; exit 2; }
 command -v docker >/dev/null 2>&1 || blocked docker_missing
 docker info >/dev/null 2>&1 || blocked docker_daemon_unreachable
 for tool in openssl cargo sudo git; do command -v "$tool" >/dev/null 2>&1 || blocked "${tool}_missing"; done
@@ -96,7 +100,61 @@ if [[ "$LL_LAN" == 1 ]]; then
 fi
 LL_PLATFORM_SCHEME=http
 LL_GATEWAY_SCHEME=http
-[[ "$LL_LAN" != 1 ]] || LL_PLATFORM_SCHEME=https LL_GATEWAY_SCHEME=https
+LL_TLS=$LL_LAN
+LL_PROXY=0
+LL_PUBLIC_PLATFORM_URL="${LOGIN_LOCAL_PUBLIC_PLATFORM_URL:-}"
+LL_PUBLIC_GATEWAY_URL="${LOGIN_LOCAL_PUBLIC_GATEWAY_URL:-}"
+if [[ -n "$LL_PUBLIC_PLATFORM_URL$LL_PUBLIC_GATEWAY_URL" ]]; then
+  [[ -n "$LL_PUBLIC_PLATFORM_URL" && -n "$LL_PUBLIC_GATEWAY_URL" ]] || blocked public_url_pair_required
+  [[ "$LL_LAN" == 1 ]] || blocked host_required_for_public_urls
+  for public_url in "$LL_PUBLIC_PLATFORM_URL" "$LL_PUBLIC_GATEWAY_URL"; do
+    [[ "$public_url" =~ ^https://[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?(:[0-9]{1,5})?$ ]] || blocked public_url_not_https
+  done
+  LL_PROXY=1
+  LL_TLS=0
+  LL_PLATFORM_PUBLISH="127.0.0.1:$LL_PLATFORM_HTTP_PORT:8447"
+  LL_GATEWAY_PUBLISH="127.0.0.1:$LL_GATEWAY_PORT:8080"
+  LL_PUBLIC_AUTHORITY="${LL_PUBLIC_PLATFORM_URL#https://}"
+  LL_PUBLIC_PORT=443
+  [[ "$LL_PUBLIC_AUTHORITY" != *:* ]] || LL_PUBLIC_PORT="${LL_PUBLIC_AUTHORITY##*:}"
+  # Platform behind the reverse proxy: a loopback listener that presents the public authority over https to PHP, so
+  # Laravel generates the public https URLs (issuer, authorize, redirect) without trusting any forwarded header.
+  LL_PROXY_CONF="$WORK/nginx-proxy"
+  mkdir -m 0755 "$LL_PROXY_CONF"
+  cat > "$LL_PROXY_CONF/proxy.conf" <<NGINX
+server {
+    listen 8447;
+    client_max_body_size 16k;
+    location ^~ /internal/ { return 404; }
+    location / {
+        include /etc/nginx/fastcgi_params;
+        fastcgi_pass platform:9000;
+        fastcgi_param SCRIPT_FILENAME /var/www/platform/public/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_param HTTPS on;
+        fastcgi_param HTTP_HOST "$LL_PUBLIC_AUTHORITY";
+        fastcgi_param SERVER_NAME "${LL_PUBLIC_AUTHORITY%%:*}";
+        fastcgi_param SERVER_PORT $LL_PUBLIC_PORT;
+        fastcgi_param HTTP_X_FORWARDED_PROTO "";
+        fastcgi_param HTTP_X_FORWARDED_HOST "";
+        fastcgi_param HTTP_X_FORWARDED_PORT "";
+        fastcgi_param HTTP_X_FORWARDED_FOR "";
+        fastcgi_param HTTP_FORWARDED "";
+        fastcgi_read_timeout 10s;
+    }
+}
+NGINX
+  export LL_PROXY_CONF LL_PUBLIC_PLATFORM_URL LL_PUBLIC_AUTHORITY
+fi
+LL_PLATFORM_URL="http://$LL_HOST:$LL_PLATFORM_HTTP_PORT"
+LL_GATEWAY_URL="http://$LL_HOST:$LL_GATEWAY_PORT"
+if [[ "$LL_TLS" == 1 ]]; then
+  LL_PLATFORM_URL="https://$LL_HOST:$LL_PLATFORM_HTTP_PORT"
+  LL_GATEWAY_URL="https://$LL_HOST:$LL_GATEWAY_PORT"
+elif [[ "$LL_PROXY" == 1 ]]; then
+  LL_PLATFORM_URL="$LL_PUBLIC_PLATFORM_URL"
+  LL_GATEWAY_URL="$LL_PUBLIC_GATEWAY_URL"
+fi
 PG_PORT="${LOGIN_LOCAL_PG_PORT:-15533}"
 WP5_PROJECT="loginlocal${GITHUB_RUN_ID:-local}${GITHUB_RUN_ATTEMPT:-1}"
 WP5_DB_PASSWORD="$(openssl rand -hex 24)"
@@ -119,14 +177,15 @@ LL_SCOPE_ASSIGNMENT_IDENTITIES='{}'
 export GAME_SOURCE PLATFORM_SOURCE WP5_PKI WP5_SCRATCH WP5_PORT WP5_PROJECT WP5_DB_PASSWORD WP5_DB_ROOT_PASSWORD
 export LL_TOPOLOGY_HEX LL_TOPOLOGY_DIR
 export WP5_APP_KEY WP5_TOPOLOGY_REVISION WP5_FSYNC_FAULT LL_PLATFORM_HTTP_PORT LL_GATEWAY_PORT LL_PLATFORM_PUBLISH LL_GATEWAY_PUBLISH
-export LL_HOST
+export LL_HOST LL_PROXY
 export LL_SERVICE_TOKEN LL_SERVICE_TOKEN_SHA256 LL_ADMISSION_KEY_ID LL_WORLD_ID LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
 NODE_PID=""
 result=FAIL
 
 compose() {
   local lan=()
-  [[ "$LL_LAN" != 1 ]] || lan=(--file "$GAME_SOURCE/$COMPOSE_LAN")
+  [[ "$LL_TLS" != 1 ]] || lan=(--file "$GAME_SOURCE/$COMPOSE_LAN")
+  [[ "$LL_PROXY" != 1 ]] || lan=(--file "$GAME_SOURCE/$COMPOSE_PROXY")
   docker compose --project-name "$WP5_PROJECT" --file "$GAME_SOURCE/$COMPOSE_FILE" --file "$GAME_SOURCE/$COMPOSE_S3B" \
     --file "$GAME_SOURCE/$COMPOSE_NODE_BOOT" --file "$GAME_SOURCE/$COMPOSE_LOCAL" "${lan[@]}" "$@"
 }
@@ -183,6 +242,8 @@ GAMEPLAY_SAN=DNS:localhost
 LL_LAN_PKI="$WORK/lan-pki"
 if [[ "$LL_LAN" == 1 ]]; then
   GAMEPLAY_SAN="DNS:localhost,IP:$LL_HOST"
+fi
+if [[ "$LL_TLS" == 1 ]]; then
   make_ca lan-ca login-local-lan-ca
   make_leaf lan "$LL_HOST" lan-ca serverAuth "IP:$LL_HOST"
   mkdir -m 0755 "$LL_LAN_PKI"
@@ -446,8 +507,8 @@ if [[ "${LOGIN_LOCAL_RUN_CLIENT:-1}" != 1 ]]; then
   fi
 fi
 {
-  echo "OTERYN_PLATFORM_URL=$LL_PLATFORM_SCHEME://$LL_HOST:$LL_PLATFORM_HTTP_PORT"
-  echo "OTERYN_GATEWAY_URL=$LL_GATEWAY_SCHEME://$LL_HOST:$LL_GATEWAY_PORT"
+  echo "OTERYN_PLATFORM_URL=$LL_PLATFORM_URL"
+  echo "OTERYN_GATEWAY_URL=$LL_GATEWAY_URL"
   echo "OTERYN_OAUTH_CLIENT_ID=$OAUTH_CLIENT_ID"
   echo "OTERYN_WORLD=$WORLD_ID"
   echo "OTERYN_CHARACTER_ID=$CHARACTER_ID"
@@ -455,14 +516,18 @@ fi
   echo "# browser sign-in at /login: $ACCOUNT_EMAIL / $ACCOUNT_PASSWORD"
 } > "$CLIENT_ENV"
 if [[ "$LL_LAN" == 1 ]]; then
-  # The PC imports this CA into the Windows trust store (README); the gameplay dev root is copied with client.env too.
+  # The gameplay dev root is copied next to client.env; the PC sets OTERYN_DEV_ROOT to it.
+  cp "$WP5_PKI/gameplay.crt" "$(dirname "$CLIENT_ENV")/login-local-gameplay.crt"
+  evidence "lan host=$LL_HOST gameplay_root=$(dirname "$CLIENT_ENV")/login-local-gameplay.crt"
+fi
+if [[ "$LL_TLS" == 1 ]]; then
+  # The PC imports this CA into the Windows trust store (README).
   LAN_CA_OUT="$(dirname "$CLIENT_ENV")/login-local-lan-ca.crt"
   install -m 0644 "$WP5_PKI/lan-ca.crt" "$LAN_CA_OUT"
-  cp "$WP5_PKI/gameplay.crt" "$(dirname "$CLIENT_ENV")/login-local-gameplay.crt"
-  evidence "lan host=$LL_HOST ca=$LAN_CA_OUT gameplay_root=$(dirname "$CLIENT_ENV")/login-local-gameplay.crt"
+  evidence "lan ca=$LAN_CA_OUT"
 fi
 result=READY
-evidence "ready client_env=$CLIENT_ENV platform=$LL_PLATFORM_SCHEME://$LL_HOST:$LL_PLATFORM_HTTP_PORT gateway=$LL_GATEWAY_SCHEME://$LL_HOST:$LL_GATEWAY_PORT"
+evidence "ready client_env=$CLIENT_ENV platform=$LL_PLATFORM_URL gateway=$LL_GATEWAY_URL"
 
 if [[ "${LOGIN_LOCAL_RUN_CLIENT:-1}" == 1 ]]; then
   # The client opens the system browser for the OAuth sign-in; this needs an operator and a display.

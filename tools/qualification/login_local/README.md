@@ -76,6 +76,44 @@ qualification topology, not a hardened service. Stop the run (Ctrl-C) when done.
 request host for its own URLs behind the TLS listener, and the Platform's acceptance of the route host, are
 confirmed only by the first real run.
 
+## NAS + DSM reverse proxy
+
+Variant of the section above when the NAS already has a TLS reverse proxy (Synology DSM): the Platform and the gateway
+are reached through DSM and only the game node is reached directly on the LAN. Set both
+`LOGIN_LOCAL_PUBLIC_PLATFORM_URL` and `LOGIN_LOCAL_PUBLIC_GATEWAY_URL` (each `https://host[:port]`, nothing else) and
+`LOGIN_LOCAL_HOST` (required). Anything else ends `BLOCKED` (`public_url_pair_required`, `public_url_not_https`,
+`host_required_for_public_urls`). No LAN listener and no LAN CA are created; Platform HTTP and the gateway stay published
+on `127.0.0.1:18564` / `127.0.0.1:18565`, and the run does not probe the public URLs, so DSM can be configured after the
+run starts.
+
+DSM, Control Panel -> Login Portal -> Advanced -> Reverse Proxy, two rows (source HTTPS, destination HTTP, `127.0.0.1`):
+
+| Source | Destination |
+| --- | --- |
+| `https://synology:18574` | `http://127.0.0.1:18564` (Platform) |
+| `https://synology:18575` | `http://127.0.0.1:18565` (gateway) |
+
+DSM terminates TLS with its own certificate. The PC must trust it: if it is self-signed, export it from DSM (Control
+Panel -> Security -> Certificate) and import it into the Windows Trusted Root Certification Authorities store; the
+PC must also resolve the proxy host name (`synology`) to the NAS.
+
+On the NAS:
+
+```bash
+LOGIN_LOCAL_HOST=192.168.1.2 LOGIN_LOCAL_PUBLIC_PLATFORM_URL=https://synology:18574 LOGIN_LOCAL_PUBLIC_GATEWAY_URL=https://synology:18575 LOGIN_LOCAL_HOLD=1 LOGIN_LOCAL_RUN_CLIENT=0 LOGIN_LOCAL_DB_START_PERIOD=600s bash tools/qualification/login_local/run.sh
+```
+
+What changes in proxy mode: `client.env` `OTERYN_PLATFORM_URL` / `OTERYN_GATEWAY_URL` are the public URLs; the Platform's
+`APP_URL` is the public Platform URL, and the loopback Platform listener (nginx `8447`) presents that authority over
+https to PHP (`HTTPS on`, `HTTP_HOST`, `SERVER_PORT`; `X-Forwarded-*` headers are blanked) so Laravel generates the public
+https issuer, authorize and redirect URLs without trusted-proxy configuration. The gateway's call to the Platform
+(`https://nginx:8444`) is unchanged. The game node still listens on `<LOGIN_LOCAL_HOST>:17281` with `IP:<host>` in the
+gameplay SAN and the LAN IP as route host (`tls_server_name` stays `localhost`).
+
+Copy only `client.env` and `login-local-gameplay.crt` to the PC and point `OTERYN_DEV_ROOT` at the certificate there.
+Firewall: allow TCP 17281 from the LAN only; DSM's own 18574 / 18575 follow your DSM firewall policy. Do not forward
+any of these ports on the router, and do not publish PostgreSQL (15533) or 18563.
+
 **Slow hosts.** The MariaDB service gets a `start_period` of `300s` from `compose.override.yml` (the
 `wp5_s3a` healthcheck alone allows about 2 minutes of first initialisation, which a NAS can exceed and
 ends `dependency failed to start: ... db-1 is unhealthy`). Override it with

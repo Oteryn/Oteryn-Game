@@ -39,6 +39,7 @@ server side can run on a NAS and the Windows client on another PC. The default `
 - PROVEN: `crates/platform-client/src/lib.rs` `PlatformClientConfig::new` accepts `http` only for localhost/127.0.0.1/[::1]; other hosts need `https`.
 - PROVEN: the client OAuth redirect is its own `127.0.0.1` listener (`crates/identity`), reached by the browser on the same PC.
 - DERIVED: reqwest `rustls` feature verifies through the OS trust store, so the PC imports the LAN CA. Not run here.
+- DERIVED: in proxy mode nginx 8447 presents `HTTPS on` and the public host to PHP, so Laravel needs no trusted-proxy setting.
 - UNVERIFIED: Platform behaviour behind the TLS listener (own-URL generation, route host); first real run confirms.
 
 ## Acceptance criteria
@@ -48,6 +49,7 @@ server side can run on a NAS and the Windows client on another PC. The default `
 - [x] Gameplay SAN `DNS:localhost,IP:<host>`; route and `world:ensure` host is the LAN IP; `tls_server_name` stays `localhost`.
 - [x] `client.env` URLs use the LAN IP over https; LAN CA and gameplay root written next to it.
 - [x] README "NAS server + PC client" with LAN-only firewall ports and a no-router-forwarding warning.
+- [x] Proxy mode (owner decision, control plane, #1919): `LOGIN_LOCAL_PUBLIC_PLATFORM_URL` + `LOGIN_LOCAL_PUBLIC_GATEWAY_URL` (https only, both, with `LOGIN_LOCAL_HOST`, else BLOCKED): no LAN listener or CA, Platform and gateway stay on `127.0.0.1:18564/18565`, `client.env` and Platform `APP_URL` use the public URLs, the game node stays on the LAN IP; README "NAS + DSM reverse proxy".
 
 ## Excluded scope
 
@@ -61,6 +63,7 @@ Client code, Platform, other qualification directories, workflows, gate files.
 - `docker compose config` with and without `compose.lan.yml`: pass (default publishes unchanged)
 - `openssl verify -verify_ip` on an `IP:` SAN leaf: OK
 - full `run.sh`: NOT_APPLICABLE, pinned Platform checkout not available
+- proxy mode: URL/host validation matrix (https-only, pair required, host required) pass; `docker compose config` with `compose.proxy.yml` pass (`APP_URL` public, 18564 -> nginx 8447, 18565 -> gateway); no readiness probe of the public URLs
 - `git diff --check`: pass
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
