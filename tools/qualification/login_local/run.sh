@@ -19,8 +19,8 @@
 set -Eeuo pipefail
 umask 077
 
-# Platform main carrying U1 (>= 71bbe6c).
-readonly PLATFORM_SHA=3896bcdf75a511f1e386ac645303eaf8f234ffcf
+# Platform main carrying U1 (>= 71bbe6c) and the native-only gateway config (Oteryn-Platform #1472).
+readonly PLATFORM_SHA=b18d32d30c4c4e496330077d12b37db3f0f29011
 readonly TOPOLOGY_REVISION=login-local-v1
 readonly ACCOUNT_ID=01934f10-7c00-7000-8000-0000000000a1
 readonly ACCOUNT_EMAIL=login-local@example.invalid
@@ -142,6 +142,9 @@ make_leaf ops-authority "$OPS_IDENTITY" client-ca clientAuth
 make_ca platform-upstream-ca login-local-platform-upstream-ca
 make_leaf platform-upstream nginx platform-upstream-ca serverAuth DNS:nginx
 chmod 644 "$WP5_PKI/platform-upstream-ca.crt"
+LL_NO_SYSTEM_ROOTS="$WORK/no-system-roots"
+mkdir -m 0755 "$LL_NO_SYSTEM_ROOTS"
+export LL_NO_SYSTEM_ROOTS
 # Gameplay listener leaf: the dev root the client trusts is this self-signed end-entity certificate.
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 1 -subj "/CN=localhost" \
   -addext "subjectAltName=DNS:localhost" -addext "basicConstraints=critical,CA:FALSE" \
@@ -205,6 +208,11 @@ LL_RUNTIME_STATUS_IDENTITIES="{\"CN=$RUNTIME_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID
 LL_SCOPE_ASSIGNMENT_IDENTITIES="{\"CN=$OPS_IDENTITY\":[\"$WORLD_ID/$CHANNEL_ID\"]}"
 export LL_WORLD_ID LL_RUNTIME_STATUS_IDENTITIES LL_SCOPE_ASSIGNMENT_IDENTITIES
 compose up --detach --wait --force-recreate platform
+# The gateway trusts exactly the per-run CA: one certificate in SSL_CERT_FILE, an empty SSL_CERT_DIR.
+[[ "$(grep -c 'BEGIN CERTIFICATE' "$WP5_PKI/platform-upstream-ca.crt")" == 1 && -z "$(ls -A "$LL_NO_SYSTEM_ROOTS")" ]] \
+  || { echo "gateway trust roots are not exactly the per-run CA"; exit 1; }
+compose config gateway | grep -q 'SSL_CERT_DIR: /run/login-local/no-system-roots' \
+  || { echo "gateway SSL_CERT_DIR is not the empty roots directory"; exit 1; }
 compose up --detach --wait nginx gateway
 compose exec --no-TTY --user root platform install -o www-data -g www-data -m 0600 /run/wp5/signing.seed /run/oteryn-admission/signing.seed
 php_exec 'app(App\GameAuth\NativeEvidence\NativeSigningTrustRegistry::class)->publishTrustedKey(App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_ISSUER,App\GameAuth\NativeEvidence\NativeEvidenceContract::FRESH_PROFILE,"fresh_admission","'"$ADMISSION_KEY_ID"'",hex2bin("'"$ADMISSION_PUBLIC_HEX"'"));'

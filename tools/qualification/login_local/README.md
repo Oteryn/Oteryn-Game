@@ -17,8 +17,8 @@ game node ─ runtime status (own mTLS identity) ─> Platform      ops assignme
 ## Run
 
 ```bash
-# Platform main carrying U1 (>= 71bbe6c), exactly the pinned SHA in run.sh:
-git clone https://github.com/Oteryn/Oteryn-Platform _platform && git -C _platform checkout 3896bcdf75a511f1e386ac645303eaf8f234ffcf
+# Platform main carrying U1 (>= 71bbe6c) and #1472, exactly the pinned SHA in run.sh:
+git clone https://github.com/Oteryn/Oteryn-Platform _platform && git -C _platform checkout b18d32d30c4c4e496330077d12b37db3f0f29011
 bash tools/qualification/login_local/run.sh
 ```
 
@@ -57,7 +57,8 @@ ends `dependency failed to start: ... db-1 is unhealthy`). Override it with
 5. Runs the Go gateway with `GATEWAY_NATIVE_LOGIN_ENABLED=true` and the hashed/plain service token pair.
    The gateway accepts `http` only for loopback hosts, so it calls Platform at `https://nginx:8444`
    (in-network TLS listener, not published; only the native-admissions route) and trusts only the per-run
-   test CA, mounted read-only as `SSL_CERT_FILE`.
+   test CA, mounted read-only as `SSL_CERT_FILE`, with `SSL_CERT_DIR` set to an empty read-only directory so Go
+   loads no system roots (the run checks both before starting the gateway).
 6. Runs one node with `[platform.runtime_status]` and `assignment_epoch = 1` (declared, never raised by ops),
    then `ops assignment assign --node-config --report-config`, which must print `report=ReportScopeAssignmentV1`.
 7. Creates the test account, ensures the OAuth client, bootstraps one Character from a real Platform intent.
