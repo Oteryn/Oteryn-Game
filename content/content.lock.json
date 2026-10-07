@@ -45,7 +45,7 @@
     "declarations": "ad60e61c43110681f01bda20d502a49abccbf422",
     "editor": "ec0ee6cb9195cb6db3f12b1f226fbbf0cac536e7",
     "imports": "49f94022e9642e2fe8e04b975a8334cbb25efcfe",
-    "reference": "10f047e7c136e5a4c8f74b994a0e0fa8bb34f44c",
+    "reference": "f9ef3360c0af886a83536f71114cf2761398e6af",
     "sources": "71e382c6864316e918f77fda32002224b0be1806"
   },
   "project_revision": "tree-npc-reviewed-definitions-r1",
@@ -158,7 +158,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "a97d5e4c83f050ffd2376aa5c2efccd90790f70f1beb5b3104edbaeb7dc66658"
+          "sha256": "facb13a9ad75161b43582f970dfc09a701530b7b73c20c918c739ca73e7fbdb4"
         },
         {
           "creates_canonical_identities": false,

@@ -11,6 +11,7 @@ pub(crate) mod fresh_evidence;
 mod item_move;
 mod item_ref_admission;
 mod item_view;
+mod kill_reward;
 mod monk_save;
 mod monster_ai_cycle;
 #[allow(
@@ -2463,7 +2464,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .cast_native_combat(actor, game_session_id, command_id, &intent, &access)
             .await
         {
-            actor_spell::NativeCastDispatch::Outcome(outcome) => Some(outcome),
+            actor_spell::NativeCastDispatch::Outcome(outcome) => {
+                let _ = self.drain_kill_rewards(game_session_id).await;
+                Some(outcome)
+            }
             actor_spell::NativeCastDispatch::Pending => None,
             actor_spell::NativeCastDispatch::NotApplicable => {
                 let outcome = self
@@ -2529,6 +2533,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
         self.drain_monster_melee().await;
         self.drain_auto_attacks().await;
+        let _ = self.drain_kill_rewards(game_session_id).await;
         self.drain_source_item_deadlines().await;
         self.drain_source_party_deadlines_bounded().await;
         // DEATH-2 §4.5: a dead player's cadence tick settles its death and respawns it.
@@ -2661,6 +2666,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         self.drain_auto_attacks().await;
+        let _ = self.drain_kill_rewards(game_session_id).await;
         self.observe_combat_state(actor, game_session_id).await
     }
 
