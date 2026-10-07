@@ -1533,7 +1533,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // Unknown outcome: keep the fence and the kill mark; the retry reconciles from
                 // the durable row.
-                Err(_) => next_backoff(),
+                Err(_) => {
+                    self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                    next_backoff()
+                }
             };
             tokio::time::sleep(pause).await;
         }
@@ -1799,7 +1802,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // Unknown outcome: keep the fence and the kill mark; the retry reconciles from
                 // the durable row.
-                Err(_) => next_backoff(),
+                Err(_) => {
+                    self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                    next_backoff()
+                }
             };
             tokio::time::sleep(pause).await;
         }
@@ -1821,7 +1827,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
                     GraceExpiryResult::Unknown
                 }
-                UnendedSettle::Unknown => GraceExpiryResult::Unknown,
+                UnendedSettle::Unknown => {
+                    self.settle_kill_release(kills, ReleaseEnd::Unknown).await;
+                    GraceExpiryResult::Unknown
+                }
             };
         }
         GraceExpiryResult::Unknown
