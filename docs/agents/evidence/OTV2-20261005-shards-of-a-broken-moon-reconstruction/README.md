@@ -1,8 +1,9 @@
-# Shards of a Broken Moon — reconstruction evidence packet
+# Shards of a Broken Moon â€” reconstruction evidence packet
 
 Task: `SHARDS-RECON-0`  
 Mode: evidence-only / no runtime mutation  
-Base: `fc3db9abfb4ae05c13b0264752cfbbca13a276e6`  
+Original base: `fc3db9abfb4ae05c13b0264752cfbbca13a276e6`
+Current dependency readback: `3bacc59e6adbf138655e6f0c1cf0b4fdf9a36096` (2026-10-07)
 Walkthrough: `https://www.youtube.com/watch?v=Zz-7UyufXbU&t=1295s`
 
 ## Result
@@ -55,7 +56,7 @@ Audited positions:
 33901,32718,9
 ```
 
-The four ritual positions at `33868/33880 × 32664/32676, z=9` are separate physical tiles. Their base appearance `54637` is confirmed as `Terrain:ground_or_border`; it must **not** be promoted to a quest WorldObject. The ritual binds `USE_ITEM_ON_POSITION` to the four exact placements.
+The four ritual positions at `33868/33880 Ã— 32664/32676, z=9` are separate physical tiles. Their base appearance `54637` is confirmed as `Terrain:ground_or_border`; it must **not** be promoted to a quest WorldObject. The ritual binds `USE_ITEM_ON_POSITION` to the four exact placements.
 
 Do not use the older Otheryn migration map `3bd40d14...` for this quest. It predates the Summer world additions and produces false absences.
 
@@ -72,12 +73,12 @@ Do not use the older Otheryn migration map `3bd40d14...` for this quest. It pred
 | s7 | Javala grants lab/stone-door access | Javala NPC + Dialogue candidate; Asura Citadel Key = `oteryn:item.tibia.i54262` (exact cross-source) | NPC progress + identity-based key-door binding; donor has no `keyNumber`; post-completion bypass needs Door/Key architecture disposition |
 | s8 | laboratory / Crystal Plinth / Large Crystal Apparatus | Note Pinned on the Wall = donor `6121` at exact `33881,32684,9` (optional lore); Crystal Plinth `i54515`; Apparatus `i53514` | Plinth directly yields `lab_access_sequence_learned`; no manual colour-code UI/input; sealed-room gate + apparatus interaction still need native trigger/gate adapters |
 | s9 | Niral explains Rakesh / sealing | Niral NPC + Dialogue candidate | exact branch + progress write |
-| s10 | kill Rakesh Moonfang | Creature `oteryn:creature.rakesh_moonfang` with abilities/Behavior | encounter admission + kill-credit → quest transition |
+| s10 | kill Rakesh Moonfang | Creature `oteryn:creature.rakesh_moonfang` with abilities/Behavior | encounter admission + kill-credit â†’ quest transition |
 | s11 | Moon Mirror + Empty Crystal Flask at blue lava | Moon Mirror `i25975`; Empty Flask `i53696`; Blue Lava Flask `i54564`; volcano position exists | materialization/use-transform + source-qualified night-time predicate |
-| s12 | Niral consecrates blue lava | Niral dialogue content exists; Blessed Flask `i54566` identity exists | exact branch + item transform `54564 → 54566` |
+| s12 | Niral consecrates blue lava | Niral dialogue content exists; Blessed Flask `i54566` identity exists | exact branch + item transform `54564 â†’ 54566` |
 | s13 | draw four runes by four crystal constructs | 4 exact physical ritual tiles present; Blessed Flask identity; base `54637` is Terrain only | four placement-driven `USE_ITEM_ON_POSITION` transitions; do not create a WorldObject identity for `54637` |
 | s14 | The Moonsnow Magnolia encounter | Magnolia + Furious Jaracal Creature/Behavior/Ability records exist | complete special Encounter: Jaracal mechanics, Bone Fiddle, Moonsilver Drift, heal-on-Death, revive/phase 2, permanent kill credit |
-| s15 | post-boss ice-prison escape | Icicle Chisel `i39578`; donor `54610` is distinct **Lit Torch (SU26)** and must not alias old `i34017`; exact prison route is resolved | skeleton `31920,31360,9` → torch; icicles `31914,31364,9` → chisel; north wall `31920,31359,9`; Rope Spot `31923,31377,9` → generic rope destination `31923,31378,8`; remaining blocker is canonical admission/materialization of `i54610` plus generic trigger wiring |
+| s15 | post-boss ice-prison escape | Icicle Chisel `i39578`; donor `54610` is distinct **Lit Torch (SU26)** and must not alias old `i34017`; exact prison route is resolved | skeleton `31920,31360,9` â†’ torch; icicles `31914,31364,9` â†’ chisel; north wall `31920,31359,9`; Rope Spot `31923,31377,9` â†’ generic rope destination `31923,31378,8`; remaining blocker is canonical admission/materialization of `i54610` plus generic trigger wiring |
 | s16 | return to Saraki / complete | stage graph exists | completion reducer + reward delivery + durable persistence |
 
 ## Creature/runtime readback
@@ -121,9 +122,9 @@ Known canonical or qualified identities:
 - Moon Mirror: `oteryn:item.tibia.i25975`
 - Icicle Chisel: `oteryn:item.tibia.i39578`
 - Lit Torch (SU26): donor id `54610`; independent Item-ID evidence distinguishes it from old `Lit Torch (Quest)` id `34017`, so the old probable-alias hold is incorrect for Shards and requires Item-owner admission as a distinct identity
-- Crystal Apparatus: `oteryn:item.tibia.i53514` → WorldObject
-- Crystal Plinth: `oteryn:item.tibia.i54515` → WorldObject
-- Moonsilver Drift: `oteryn:item.tibia.i54235` → WorldObject
+- Crystal Apparatus: `oteryn:item.tibia.i53514` â†’ WorldObject
+- Crystal Plinth: `oteryn:item.tibia.i54515` â†’ WorldObject
+- Moonsilver Drift: `oteryn:item.tibia.i54235` â†’ WorldObject
 - Amati's Echo: `oteryn:achievement/amati_s_echo@1`, staticdata source id 594, 4 points, premium
 - Skewered Fish: `oteryn:item.tibia.i54638`; donor id `54638`; current A12 canonical identity (retired alias `i00038475` resolves here), qualified as a taming tool, currently non-materializable
 
@@ -133,7 +134,7 @@ Jaracal mount / `Six Steps Ahead` are downstream taming outcomes and must not be
 
 The quest also unlocks the True Feverbloom hunting route. Current quest completion tooling explicitly rejects treating a free-text Area identity as an executable access capability. The final implementation therefore needs a real access predicate/capability binding.
 
-## Blue Lava night requirement — source disposition
+## Blue Lava night requirement â€” source disposition
 
 The pinned post-release Fandom spoiler revision `1202455` (2026-08-20) explicitly requires taking the Empty Crystal Flask to the active volcano **during the night time** with a Moon Mirror.
 
@@ -179,14 +180,23 @@ The quest is not complete until a real character can:
 
 ```
 start
-→ complete all 16 authored stages through native events
-→ kill Rakesh with credit
-→ execute the four-rune ritual
-→ complete the real Magnolia two-phase encounter
-→ escape the ice prison
-→ return/complete
-→ receive direct rewards exactly once
-→ retain quest/reward/access state across relog and server restart
+â†’ complete all 16 authored stages through native events
+â†’ kill Rakesh with credit
+â†’ execute the four-rune ritual
+â†’ complete the real Magnolia two-phase encounter
+â†’ escape the ice prison
+â†’ return/complete
+â†’ receive direct rewards exactly once
+â†’ retain quest/reward/access state across relog and server restart
 ```
 
 No mutation under `content/**`, `apps/game-server/**` or currently owned #1804/#1807 paths is part of this evidence packet.
+
+## Fresh consistency pass (2026-10-07)
+
+- #1916 MAP-CUTOVER-1b is merged; bundle serving does not admit Shards USE/USE-WITH or native Quest/NPC/Encounter producers.
+- `prison-source-readback-20261007.json` rechecks nine exact donor stacks, the center wall orientation and Rope Spot/destination, with pinned Canary position-rule cross-check. Retained video evidence is identified separately from this fresh static parse.
+- `magnolia-encounter-spec.md` maps the two-phase behavior to the current closed Encounter vocabulary and the merged #1891 max-health ruling. Unknown cadence, damage distributions, transformation mapping and spawn coordinates remain held.
+- Blue Lava night-only remains SOURCE_CONFLICT, with no runtime guard selected.
+- Item 54610 still has no active canonical Item or exact donor binding on this main; i54262/i54638 bindings exist but both Items remain materializable=false.
+- No SHARDS-Q1/I1/E1/R1 runtime/content ownership for this lead was found in live #1622. Changes remain path-disjoint evidence only.

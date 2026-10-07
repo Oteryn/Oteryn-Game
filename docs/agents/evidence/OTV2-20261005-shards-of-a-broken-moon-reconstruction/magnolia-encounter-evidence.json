@@ -356,7 +356,8 @@
         "y": 31378,
         "z": 8
       },
-      "note": "Quest-specific prison geometry is resolved. Final movement remains owned by generic rope/multitool semantics; Shards only observes successful escape."
+      "note": "Quest-specific prison geometry is resolved. Final movement remains owned by generic rope/multitool semantics; Shards only observes successful escape.",
+      "static_readback": "prison-source-readback-20261007.json"
     }
   },
   "crystal_gap": {
@@ -424,7 +425,7 @@
     ]
   },
   "representation_readback": {
-    "main_sha": "f80428d57660fce078ed4a4c37739d3383664c23",
+    "main_sha": "3bacc59e6adbf138655e6f0c1cf0b4fdf9a36096",
     "architect_disposition": {
       "pr": 1891,
       "merged": true,
@@ -474,6 +475,7 @@
       "accepted_shape": "attribute(max_health set 60000) followed by queued heal(full), then phase_2 semantics",
       "implementation_owner": "ENC-COMBAT-1 / Encounter schema + ProjectV2 catch-up",
       "forbidden": "Do not use a fake second Magnolia Creature or 52k ordinary heal as a workaround."
-    }
+    },
+    "authoring_spec": "magnolia-encounter-spec.md"
   }
 }

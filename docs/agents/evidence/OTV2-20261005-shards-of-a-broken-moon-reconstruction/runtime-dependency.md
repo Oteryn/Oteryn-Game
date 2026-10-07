@@ -1,6 +1,6 @@
 # Shards runtime dependency readback
 
-Fresh readback: `main@492f25c90ebcdb85d8cc8f2d2b273f72017dc8ef` (2026-10-07).
+Fresh readback: `main@3bacc59e6adbf138655e6f0c1cf0b4fdf9a36096` (2026-10-07).
 
 This note records the executable dependency boundary for Shards of a Broken Moon. It supersedes the older `fc3db9ab...` runtime readback while preserving the same rule: **do not build a quest-specific runtime**.
 
@@ -37,7 +37,7 @@ Fresh PR/main search finds no open implementation PR for:
 - `QUEST-TRIGGER-1`;
 - `NPC-TALK-1`;
 - `NPC-PLACE-1b`;
-- `MAP-CUTOVER-1b`;
+
 - `ENC-RT-1`;
 - `ENC-OUTCOME-1`.
 
@@ -54,10 +54,10 @@ For Shards:
 
 ### Lane B — served World / NPC chain
 
-`MAP-CUTOVER-1b` is the shared serving root. Current accepted order is:
+`MAP-CUTOVER-1b` merged in #1916 (`0e834533323a032893b51b9bca748d3ba8d56aa6`) and is present on this main. Bundle serving requires capability 18. This is not proof of a deployed Summer world or Shards interactions: bundle USE/field paths remain refused, and USE-WITH is still fail-closed until ITEM-USE-1. Remaining order is:
 
 ```text
-MAP-CUTOVER-1b + NPC-PLACE-1a
+MAP-CUTOVER-1b (merged) + NPC-PLACE-1a
     -> NPC-PLACE-1b
     -> NPC-TALK-1
     -> NPC-QUEST-1
@@ -125,6 +125,10 @@ Current `QuestPredicate` has no Achievement fact predicate. #1852 contains the b
 
 The active World placement must also be confirmed/bound through `QUEST-GATE-1` once the Summer world is actually served.
 
+## Blue Lava evidence fence
+
+Night-only remains `SOURCE_CONFLICT`, not an executable guard. Fandom asserts night, other guides omit it, and the retained video narrator is uncertain. No controlled daytime success or day/night comparison is proved. This packet does not select a night-only predicate.
+
 ## Resolved prison route
 
 The escape geometry is no longer an implementation-unknown:
@@ -135,7 +139,7 @@ The escape geometry is no longer an implementation-unknown:
 - Rope Spot: `31923,31377,9`;
 - generic rope destination: `31923,31378,8`.
 
-Movement remains owned by generic World/rope semantics. Quest progress observes qualified interaction success.
+The nine relevant donor tiles were reparsed in `prison-source-readback-20261007.json`; Crystal and pinned Canary agree on the generic upstairs south-default rule. Static coordinates do not establish active placement keys or walkability. Movement remains owned by generic World/rope semantics. Quest progress observes qualified interaction success.
 
 ## Execution order
 
@@ -143,7 +147,7 @@ The smallest non-special-case route to playable Shards is:
 
 ```text
 1. QUEST-GATE-1
-2. MAP-CUTOVER-1b
+2. bind/confirm the served Summer placements through merged MAP-CUTOVER-1b
 3. QUEST-TRIGGER-1
 4. NPC-PLACE-1a/1b -> NPC-TALK-1 -> NPC-QUEST-1
 5. Item-owner successor/admission for i54262/i54610/i54638

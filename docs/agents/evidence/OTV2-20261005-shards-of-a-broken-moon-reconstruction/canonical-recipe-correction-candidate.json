@@ -184,11 +184,12 @@
         "empty_flask": "oteryn:item.tibia.i53696",
         "moon_mirror": "oteryn:item.tibia.i25975",
         "output": "oteryn:item.tibia.i54564",
-        "night_time_required": true,
-        "evidence_class": "STRUCTURED_REFERENCE_CANDIDATE",
-        "controlled_global_day_vs_night_test": "NOT_VERIFIED"
+        "night_time_required": null,
+        "evidence_class": "SOURCE_CONFLICT_OWNER_HOLD",
+        "controlled_global_day_vs_night_test": "NOT_VERIFIED",
+        "runtime_enforcement": false
       },
-      "disposition": "KEEP_NIGHT_GUARD_AS_SELECTED_SOURCE_REQUIREMENT_UNTIL_STRONGER_OBSERVATION"
+      "disposition": "NO_NIGHT_ONLY_RUNTIME_GUARD_WITHOUT_STRONGER_QUALIFIED_WITNESS"
     },
     {
       "id": "C12_NIRAL_CONSECRATION",
@@ -349,7 +350,7 @@
     "Quest content owner: decide presentation-vs-execution encoding and regenerate canonical quest bytes if needed.",
     "QUEST-GATE-1",
     "QUEST-TRIGGER-1",
-    "MAP-CUTOVER-1b + NPC-PLACE-1b -> NPC-TALK-1 -> NPC-QUEST-1",
+    "MAP-CUTOVER-1b (#1916 merged; exact active world bindings still required) + NPC-PLACE-1b -> NPC-TALK-1 -> NPC-QUEST-1",
     "Item admission/materialization and identity-key Door/Key",
     "ENC-RT-1 / ENC-COMBAT-1 -> ENC-OUTCOME-1",
     "Achievement predicate / World served placement binding",

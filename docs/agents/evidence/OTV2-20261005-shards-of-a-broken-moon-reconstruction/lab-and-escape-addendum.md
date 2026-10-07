@@ -1,6 +1,6 @@
 # Laboratory and post-Magnolia escape addendum
 
-Status: **EVIDENCE / VIDEO-VERIFIED SEMANTICS; EXACT PLACEMENT IDENTITIES STILL PARTIAL**
+Status: **EVIDENCE; DONOR COORDINATES RESOLVED; ACTIVE WORLD BINDINGS PENDING**
 
 Walkthrough inspected visually from the actual video:
 `https://www.youtube.com/watch?v=Zz-7UyufXbU`
@@ -12,7 +12,7 @@ The frame readback below supersedes the earlier assumption that the laboratory r
 Current quest reference places the laboratory sequence at:
 
 - laboratory room entry: approximately `33881,32687,9`;
-- Note Pinned on the Wall: detailed route `33881,32688,9`;
+- Note Pinned on the Wall: exact donor 6121 at `33881,32684,9` (older guide route coordinate is not the object placement);
 - sealed door: `33874,32686,9`;
 - Crystal Apparatus: `33874,32677,9`.
 
@@ -28,7 +28,7 @@ The missing native binding remains:
 exact placed readable object
 + exact Shards laboratory document text
 + inspect/read interaction
-+ quest transition
++ optional lore observation (not required for quest progress)
 ```
 
 Do not mint a new portable `Laboratory note` Item by name.
@@ -101,7 +101,7 @@ use/inspect Crystal Apparatus
   -> laboratory_done
 ```
 
-The exact canonical placement/document binding of the laboratory note remains open.
+The donor object coordinate is exact; native placement_key and Document admission remain World/Document-owned. The note is optional lore and must not gate `laboratory_done`.
 
 ## Post-Magnolia escape: video-verified order
 
@@ -140,7 +140,7 @@ Known Item evidence:
 - pinned Crystal Summer item id `54610` is named **lit torch** and is resolved as `light_source` in Oteryn's donor census;
 - the Oteryn donor key is currently `donor:crystalserver@00ce02a5:item/54610`; do not silently promote it to a canonical `oteryn:item.tibia.i54610` identity unless the Item owner admits that identity.
 
-The Lit Torch must use the existing Timed Item / Item owner semantics; do not create a quest-private torch implementation.
+Lit Torch 54610 uses Item/Durability admission and ordinary light/use semantics. No timed/decay/54609 transform lifecycle is proved; do not inherit the older torch lifecycle.
 
 ### Safe native semantics
 
@@ -174,20 +174,18 @@ use/reach Rope Spot
   -> prison_escaped
 ```
 
-### What is still UNKNOWN
+### Exact donor positions and remaining native gaps
 
-The broad previous blocker “escape sequence not re-observed” is now obsolete. The gameplay order is visually verified.
+Fresh exact-map parse: `prison-source-readback-20261007.json`.
 
-Only these placement/identity details remain open:
+- skeleton 8606: `31920,31360,9`;
+- icicles 6966: `31914,31364,9`;
+- center north wall: `31920,31359,9`, actual ground 6869; stacked 4728, debris 6374, ice wall 6729 and overlays 6926/6928;
+- left candidate carries debris 6378; right candidate has a different wall 6737. Retained video fire/crumbling lies on the skeleton's center axis;
+- Rope Spot ground 386: `31923,31377,9`; hole 610 directly above at z=8; south-default generic destination `31923,31378,8` has ground 6684 and no items;
+- Crystal and pinned Canary `Position:moveUpstairs` agree on decrementing z and preferring one tile south when walkable.
 
-- exact skeleton coordinate / placement key;
-- exact icicle coordinate / placement key;
-- exact north-wall placement key / appearance id;
-- exact Rope Spot coordinate / placement key;
-- canonical Oteryn admission/identity for the pinned donor Lit Torch `54610` (donor identity is proven; canonical promotion is not);
-- whether the collapsing wall is represented by an existing LocalObject state, overlay transform or another accepted World Interaction representation.
-
-Do not invent these coordinates or IDs from the video viewport alone.
+These close the static coordinate/stack questions. Active placement_key, dynamic walkability/occupancy, collapse/reclose representation and Item admission remain with World/Item owners. The generic rope destination is DERIVED, not a hosted movement test. No quest-private teleport is required.
 
 ## Donor status
 
@@ -208,4 +206,4 @@ No direct QuestState mutation belongs in an object handler.
 
 ## Remaining verification target
 
-Use exact map/source placement evidence to bind the prison skeleton, icicles, north wall and Rope Spot. The interaction order itself no longer needs re-observation.
+Bind the resolved donor coordinates to the active served generation and qualify generic tool success -> QuestTransitionRequest, wrong-order refusal and collapse/reclose with relog/restart. Static map and retained video evidence do not prove those runtime effects.

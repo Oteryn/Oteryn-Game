@@ -1,0 +1,276 @@
+{
+  "schema": "OTERYN_SHARDS_PRISON_SOURCE_READBACK/v1",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "packed_sha256": "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7",
+  "decompressed_sha256": "8cfa01c9aed9336a5df2fdfd3554fa488f9a1e79668d7c1e6191e736b72329c7",
+  "method": "existing ots_map_check.walk_map over exact donor bytes",
+  "tiles": [
+    {
+      "position": [
+        31914,
+        31364,
+        9
+      ],
+      "ground": 6683,
+      "items": [
+        {
+          "id": 6380,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6966,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 7488,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        }
+      ]
+    },
+    {
+      "position": [
+        31919,
+        31359,
+        9
+      ],
+      "ground": 6869,
+      "items": [
+        {
+          "id": 4728,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6378,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6729,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6926,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        }
+      ]
+    },
+    {
+      "position": [
+        31920,
+        31359,
+        9
+      ],
+      "ground": 6869,
+      "items": [
+        {
+          "id": 4728,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6374,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6729,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6926,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6928,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        }
+      ]
+    },
+    {
+      "position": [
+        31920,
+        31360,
+        9
+      ],
+      "ground": 799,
+      "items": [
+        {
+          "id": 6373,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 7107,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 8606,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 7486,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        }
+      ]
+    },
+    {
+      "position": [
+        31921,
+        31359,
+        9
+      ],
+      "ground": 6869,
+      "items": [
+        {
+          "id": 4728,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6379,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 7150,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6737,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6926,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6928,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        }
+      ]
+    },
+    {
+      "position": [
+        31923,
+        31377,
+        8
+      ],
+      "ground": 610,
+      "items": []
+    },
+    {
+      "position": [
+        31923,
+        31377,
+        9
+      ],
+      "ground": 386,
+      "items": []
+    },
+    {
+      "position": [
+        31923,
+        31378,
+        8
+      ],
+      "ground": 6684,
+      "items": []
+    },
+    {
+      "position": [
+        33881,
+        32684,
+        9
+      ],
+      "ground": 1128,
+      "items": [
+        {
+          "id": 53369,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        },
+        {
+          "id": 6121,
+          "aid": 0,
+          "uid": 0,
+          "children": []
+        }
+      ]
+    }
+  ],
+  "scope": "STATIC_SOURCE_ONLY_NOT_SERVED_WORLD_PROOF",
+  "classification": {
+    "static_tile_stacks": "FACT_PINNED_DONOR_REPARSED",
+    "north_wall_target": "DERIVED_CROSS_STATIC_STACK_AND_RETAINED_VIDEO_AXIS",
+    "rope_destination": "DERIVED_GENERIC_MOVEUPSTAIRS_SOUTH_DEFAULT",
+    "served_world_placement_key": "UNKNOWN",
+    "dynamic_destination_walkability": "UNKNOWN_OWNER_CHECK_REQUIRED"
+  },
+  "rope_position_crosscheck": [
+    {
+      "provider": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data/libs/functions/position.lua",
+      "git_blob": "27923eeb26843766bb3f41716b8bad3b868d2af9",
+      "sha256": "c18d16465394a4064e82d35463105511c1f273e7c6de588f29b9da8b1eadaf9b"
+    },
+    {
+      "provider": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/libs/functions/position.lua",
+      "git_blob": "ee0dad4996716990860fdbd58cb28990b03c656c",
+      "sha256": "d933c6df3c0d0e0e974048bf0a58063f14d7f872adca2d5bb0250d6cdc261920"
+    }
+  ],
+  "rope_position_rule": "Both pinned Position:moveUpstairs implementations decrement z and prefer south if walkable; retained donor onUseRope witness delegates there. Destination tile is static ground 6684 with no items, but active walkability/occupancy must be checked by World owner.",
+  "video_witness": {
+    "youtube_id": "Zz-7UyufXbU",
+    "status": "RETAINED_PRIOR_FRAME_READBACK_NOT_REVIEWED_AGAIN_THIS_PASS",
+    "intervals": [
+      "22:47-22:51 north-wall axis",
+      "22:53-22:59 escape corridor"
+    ],
+    "refresh_limitation": "YouTube web fetch throttled; no fresh visual claim."
+  }
+}

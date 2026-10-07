@@ -257,11 +257,11 @@ Javala + "moon" [stone_door_observed]
   -> Item owner mints/grants the qualified Asura Citadel key
 ```
 
-Important identity hold:
+Current identity disposition:
 
-- donor id `54262` is only an unresolved `name="key"` candidate;
-- existing family proposal calls it a possible Shards/Javala key but explicitly does **not** prove the identity;
-- do not promote `i54262` to exact Asura Citadel key without stronger binding evidence.
+- 54262 is exact `oteryn:item.tibia.i54262`, including the current exact Summer donor binding;
+- the canonical Item still needs materializable admission;
+- no numeric keyNumber is proved; the existing identity-key Door/Key amendment remains necessary.
 
 Source behavior also allows a lost-key regrant from Javala while the quest is in the eligible state.
 
@@ -298,7 +298,7 @@ inspect Note Pinned on the Wall
   -> lab_note_read
 
 inspect/use Crystal Plinth i54515
-  -> crystal_plinth_inspected
+  -> lab_access_sequence_learned
 
 inspect Large Crystal Apparatus / relevant machinery i53514
   -> crystal_apparatus_inspected
@@ -307,7 +307,7 @@ required laboratory facts
   -> laboratory_done
 ```
 
-“Laboratory note” in the authored recipe is currently a semantic label, not a resolved canonical identity. Do not mint one by name match.
+Note 6121 is exact at `33881,32684,9` and optional lore. `lab_note_read` is never a prerequisite or part of the required-facts join. Plinth yields the access fact directly; no manual colour-entry puzzle is required.
 
 ### Missing source step after s8 — return to Sharai
 
@@ -357,7 +357,7 @@ use i53696 at exact blue-lava source
   -> blue_lava_obtained
 ```
 
-Night-time use is selected as a `STRUCTURED_REFERENCE_CANDIDATE`: pinned post-release Fandom explicitly requires night; BR/guides omit time-of-day but do not demonstrate daytime success. Keep the predicate explicit and source-qualified; controlled Global day-vs-night verification remains absent.
+Night-only remains `SOURCE_CONFLICT`: Fandom states it; BR/guides omit it; the video narrator is uncertain. No controlled Global day-vs-night witness exists. Do not select or enforce a night-only predicate.
 
 ### Visible s12 — Niral consecration
 
@@ -435,7 +435,7 @@ cross opened/crumbling passage + final escape route
   -> prison_escaped
 ```
 
-Lit Torch uses the Item/Timed-Item owner; do not bypass its accepted lifecycle semantics.
+Lit Torch 54610 uses Item/Durability. No timed/decay/transform lifecycle is proved; do not alias to i34017 or inherit its lifecycle. Exact skeleton/icicles/wall/Rope Spot coordinates and static stacks are in `prison-source-readback-20261007.json`.
 
 ### Visible s16 — completion
 
@@ -487,11 +487,11 @@ In both cases the current serial semantics `s2 -> s3 -> s4` must not be treated 
 ## Open blockers after this refinement
 
 1. executable QUEST-GATE-1 / QUEST-TRIGGER-1 / NPC-QUEST-1 producers are not found on current main;
-2. exact Asura Citadel key identity is not yet proven;
+2. exact Asura Citadel key identity is proved, but Item materialization is pending;
 3. key-door post-completion bypass requires Door/Key owner composition;
-4. Laboratory Note placement identity is unresolved;
+4. Laboratory Note donor placement is exact and optional; native placement/Document admission remains pending;
 5. ritual appearance `54637` lacks quest semantics;
 6. Magnolia special Encounter is absent;
-7. Blue Lava night predicate is source-qualified but still lacks controlled Global day-vs-night verification;
+7. Blue Lava night-only remains SOURCE_CONFLICT with no controlled Global day-vs-night verification or selected guard;
 8. Forbidden Gardens needs Achievement-owned predicate composition;
 9. final real-character start -> reward -> relog/restart E2E remains unqualified.
