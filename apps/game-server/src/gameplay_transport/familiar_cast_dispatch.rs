@@ -216,8 +216,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> &'static str {
-        let original = super::super::native_combat_cast::parked_original(
-            &self.spell_states.lock().await.pending_familiars,
+        let original = super::super::PendingSpellMarker::take_original(
+            &mut self.spell_states.lock().await.pending_familiars,
             actor,
             session,
         );

@@ -131,6 +131,21 @@ in-process concurrency invariant of the Channel owner (decision §1.7).
 - Tests: `lane_tests` cancellation/fence cases and the source pin
   `guarded_cast_writers_mark_history_before_any_fallible_follow_up`.
 
+## Fix round 4
+
+- 4206324070: one drop guard, `SpellWriterPass`, owns the lane permit and the attempt for the
+  whole pass of each writer (native, world-item, parameter, familiar). It is built before the
+  first await after the marker, and a finished pass settles its marker with no await between
+  `finish` and `settle`. A cancelled pass parks its attempt, or, holding none, a vacant marker
+  reference, unless a commit window already parked; the resolver then re-runs the writer or
+  removes the vacant marker (`PendingSpellMarker::take_original`), so a retry resolves instead
+  of returning `Pending`. The familiar writer keeps its reclaimed attempt in the pass across the
+  rollback await. Sweep: no other await separates a marker from its guard or settlement.
+- Tests: `lane_tests::a_cancelled_writer_pass_parks_its_attempt_or_its_marker` (an aborted
+  spawned task holding the attempt, a future dropped after its first poll holding none, and one
+  dropped inside a window), `lane_tests::a_finished_writer_pass_parks_nothing`, and the source
+  pin `every_cast_writer_runs_its_pass_under_a_cancel_safe_guard` over all four writers.
+
 ## Validation
 
 - `cargo fmt --all -- --check`: pass

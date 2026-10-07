@@ -21,7 +21,7 @@ use crate::durability::character_build::{
 use crate::durability::spell_item_transaction::{
     SpellItemAuthority, read_spell_tile_in_transaction,
 };
-use crate::durability::spell_owner_commit::{SpellLanePermit, UnresolvedLane};
+use crate::durability::spell_owner_commit::{SpellLanePermit, SpellWriterPass, UnresolvedLane};
 use crate::foundation::{
     ChannelRuntimeV1, CharacterId, CommandRef, ExactActorRef, GameSessionId, MovementFacing,
     MovementLocalPosition, MovementPositionSnapshot, RuntimeScopeRefV1,
@@ -200,19 +200,6 @@ pub(crate) struct ParkedMarker {
     pub(crate) session: GameSessionId,
 }
 
-/// The original of a resolving attempt from its caster's marker: the command id and the intent,
-/// only while the marker still holds the attempt.
-pub(crate) fn parked_original<I: Clone, T>(
-    markers: &[super::PendingSpellMarker<I, T>],
-    actor: ExactActorRef,
-    session: GameSessionId,
-) -> Option<(u64, I)> {
-    markers
-        .iter()
-        .find(|m| m.is_for(actor, session) && m.attempt.is_some())
-        .map(|m| (m.command.command_id().get(), m.intent.clone()))
-}
-
 /// Keeps the lane fenced across the awaits of a resolution (§1.6). From the move of the parked
 /// attempt into its caster's marker until the resolver installs, releases or parks it, dropping
 /// the resolution (a cancelled task) parks a reference to that marker, so no other key-33 writer
@@ -255,6 +242,18 @@ impl Drop for ResolutionFence {
 impl UnresolvedSpellCommit {
     fn park_marker(marker: ParkedMarker) -> Box<dyn std::any::Any + Send> {
         Box::new(Self::InMarker(marker))
+    }
+    /// The reference a cancelled writer pass parks for its caster's marker (§1.6).
+    pub(crate) fn park_vacant(
+        kind: ParkedMarkerKind,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Box<dyn std::any::Any + Send> {
+        Self::park_marker(ParkedMarker {
+            kind,
+            actor,
+            session,
+        })
     }
     pub(crate) fn park_native(attempt: PendingNativeCast) -> Box<dyn std::any::Any + Send> {
         Box::new(Self::Native(Box::new(attempt)))
@@ -2697,8 +2696,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> &'static str {
-        let original = parked_original(
-            &self.spell_states.lock().await.pending_native,
+        let original = super::PendingSpellMarker::take_original(
+            &mut self.spell_states.lock().await.pending_native,
             actor,
             session,
         );
@@ -3009,16 +3008,25 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 None
             }
         };
+        // A cancelled pass parks what it holds, so the marker is always settled (§1.6).
+        let writer = SpellWriterPass::new(
+            permit,
+            retained,
+            UnresolvedSpellCommit::park_native,
+            UnresolvedSpellCommit::park_vacant(ParkedMarkerKind::Native, actor, session),
+        );
         let objects = self.door.lock().await;
         let Ok(pass) = self.root.try_issue_semantic_pass() else {
+            drop(objects);
+            let (leftover, parked) = writer.finish();
             super::PendingSpellMarker::settle(
                 &mut states.pending_native,
                 actor,
                 session,
                 command,
                 marker_intent,
-                retained,
-                permit.has_unresolved(),
+                leftover,
+                parked,
             );
             return NativeCastDispatch::Pending;
         };
@@ -3036,13 +3044,13 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let mut context = (
             self,
             access,
-            permit,
+            writer,
             Some((runtime, states, objects)),
-            retained,
             parameter_output,
         );
         let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
-            let (owner,access,permit,guards,pending,parameter_output)=ctx;
+            let (owner,access,writer,guards,parameter_output)=ctx;
+            let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
             let room=owner.qualified_room.ok_or(DurabilityError::Unavailable)?;
@@ -3361,11 +3369,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             Ok(NativeCastDispatch::Outcome(super::SpellCastOutcome{disposition,
                 vitals:super::observe_vitals(&runtime,&states,actor,session)}))
         })).await;
-        let (_, _, permit, guards, leftover, _) = &mut context;
-        *guards = None;
-        let parked = permit.has_unresolved();
-        let leftover = leftover.take();
+        let (_, _, writer, guards, _) = context;
+        drop(guards);
         let mut states = self.spell_states.lock().await;
+        let (leftover, parked) = writer.finish();
         super::PendingSpellMarker::settle(
             &mut states.pending_native,
             actor,

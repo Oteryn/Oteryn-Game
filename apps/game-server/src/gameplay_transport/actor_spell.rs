@@ -203,6 +203,28 @@ impl<I, T> PendingSpellMarker<I, T> {
         }
     }
 
+    /// The original of a resolving attempt from its caster's marker (§1.6): the command id and
+    /// the intent, only while the marker holds the attempt. A marker without one is vacant (its
+    /// writer pass was cancelled after it installed, released or never prepared the attempt) and
+    /// is removed, since the resolution holds the lane and no pass or parked record owns it.
+    pub(crate) fn take_original(
+        markers: &mut Vec<Self>,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u64, I)>
+    where
+        I: Clone,
+    {
+        let original = markers
+            .iter()
+            .find(|m| m.is_for(actor, session) && m.attempt.is_some())
+            .map(|m| (m.command.command_id().get(), m.intent.clone()));
+        if original.is_none() {
+            markers.retain(|m| !m.is_for(actor, session));
+        }
+        original
+    }
+
     /// Takes the attempt out of the caster's marker, leaving the marker in place.
     pub(crate) fn take_attempt(
         markers: &mut [Self],

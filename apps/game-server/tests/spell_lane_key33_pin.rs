@@ -464,3 +464,38 @@ fn guarded_cast_writers_mark_history_before_any_fallible_follow_up() {
         );
     }
 }
+
+#[test]
+fn every_cast_writer_runs_its_pass_under_a_cancel_safe_guard() {
+    for file in [
+        "src/gameplay_transport/native_combat_cast.rs",
+        "src/gameplay_transport/world_item_cast.rs",
+        "src/gameplay_transport/parameter_cast.rs",
+        "src/gameplay_transport/familiar_cast.rs",
+    ] {
+        let raw = fs::read_to_string(root().join(file)).expect("source");
+        let text = collapse(&raw).replace(' ', "");
+        let empty = text
+            .find("attempt:None,")
+            .unwrap_or_else(|| panic!("{file} pushes an empty marker"));
+        let guard = text
+            .find("SpellWriterPass::new(")
+            .unwrap_or_else(|| panic!("{file} guards its writer pass"));
+        assert!(
+            empty < guard && !text[empty..guard].contains(".await"),
+            "{file} guards the pass before any await after the marker"
+        );
+        let finishes = find_all(&text, "writer.finish();");
+        assert!(!finishes.is_empty(), "{file} finishes its pass");
+        for at in finishes {
+            let rest = &text[at..];
+            let settle = rest
+                .find("PendingSpellMarker::settle(")
+                .unwrap_or_else(|| panic!("{file} settles a finished pass"));
+            assert!(
+                !rest[..settle].contains(".await"),
+                "{file} settles its marker with no await after finishing the pass"
+            );
+        }
+    }
+}

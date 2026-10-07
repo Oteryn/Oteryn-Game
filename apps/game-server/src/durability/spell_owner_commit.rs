@@ -313,6 +313,68 @@ impl<T: Send + 'static> Drop for SpellCommitWindow<'_, T> {
     }
 }
 
+/// A writer's pass over its caster's marker (§1.6): from the creation of the marker, or the take
+/// of its retained attempt, until the pass settles the marker. The pass owns the permit and,
+/// between its commit windows, the attempt. Dropping it unsettled (a cancelled writer) parks the
+/// attempt in `unresolved`, or the reference to the marker when the pass holds no attempt, so the
+/// lane stays fenced and its resolution settles the marker and any reservation of the attempt.
+pub(crate) struct SpellWriterPass<'p, T: Send + 'static> {
+    permit: &'p mut SpellLanePermit,
+    attempt: Option<T>,
+    park: fn(T) -> Box<dyn Any + Send>,
+    vacant: Option<Box<dyn Any + Send>>,
+}
+
+impl<'p, T: Send + 'static> SpellWriterPass<'p, T> {
+    pub(crate) fn new(
+        permit: &'p mut SpellLanePermit,
+        attempt: Option<T>,
+        park: fn(T) -> Box<dyn Any + Send>,
+        vacant: Box<dyn Any + Send>,
+    ) -> Self {
+        Self {
+            permit,
+            attempt,
+            park,
+            vacant: Some(vacant),
+        }
+    }
+
+    pub(crate) fn permit(&mut self) -> &mut SpellLanePermit {
+        self.permit
+    }
+
+    /// The permit and the attempt slot, for a pass body that opens a commit window from the slot
+    /// and puts a reclaimed attempt back into it.
+    pub(crate) fn parts(&mut self) -> (&mut SpellLanePermit, &mut Option<T>) {
+        (self.permit, &mut self.attempt)
+    }
+
+    /// The end of the pass, with no await before the caller settles the marker: the attempt
+    /// the pass still holds, and whether the lane holds one in `unresolved`.
+    pub(crate) fn finish(mut self) -> (Option<T>, bool) {
+        self.vacant = None;
+        (self.attempt.take(), self.permit.has_unresolved())
+    }
+}
+
+impl<T: Send + 'static> Drop for SpellWriterPass<'_, T> {
+    fn drop(&mut self) {
+        let Some(vacant) = self.vacant.take() else {
+            return;
+        };
+        if self.permit.has_unresolved() {
+            // A commit window of this pass already parked the attempt.
+            return;
+        }
+        let parked = match self.attempt.take() {
+            Some(attempt) => (self.park)(attempt),
+            None => vacant,
+        };
+        *self.permit.guard.unresolved() = Some(parked);
+    }
+}
+
 pub(crate) struct PendingSpellOwnerTransaction {
     items: Option<CommittedSpellItems>,
     companion: Option<PendingCompanionAcquisition>,
@@ -709,6 +771,75 @@ mod lane_tests {
                 assert_eq!(attempt.downcast_ref::<u32>(), Some(&8));
                 drop(permit);
             }
+        });
+    }
+
+    /// A writer pass that holds its attempt across an await, as between the marker and the
+    /// commit window, and is cancelled there.
+    async fn pass_then_wait(lane: SpellLane, attempt: Option<u32>, open_window: bool) {
+        let mut permit = permit(&lane).await;
+        let mut pass = SpellWriterPass::new(&mut permit, attempt, park, Box::new("vacant"));
+        let (permit, slot) = pass.parts();
+        let _window = match (open_window, slot.take()) {
+            (true, Some(attempt)) => Some(permit.open_commit_window(attempt + 100, park)),
+            (_, attempt) => {
+                *slot = attempt;
+                None
+            }
+        };
+        std::future::pending::<()>().await;
+    }
+
+    fn poll_once<F: std::future::Future>(
+        future: std::pin::Pin<&mut F>,
+    ) -> std::task::Poll<F::Output> {
+        future.poll(&mut std::task::Context::from_waker(std::task::Waker::noop()))
+    }
+
+    async fn parked(lane: &SpellLane) -> Box<dyn Any + Send> {
+        let Err(unresolved) = lane.acquire().await else {
+            panic!("a cancelled writer pass keeps the lane fenced")
+        };
+        let (permit, attempt) = unresolved.into_resolution();
+        drop(permit);
+        attempt
+    }
+
+    #[test]
+    fn a_cancelled_writer_pass_parks_its_attempt_or_its_marker() {
+        block_on(async {
+            // Aborted as a spawned task while it holds the attempt.
+            let lane = lane(44);
+            let task = tokio::spawn(pass_then_wait(lane.clone(), Some(9), false));
+            tokio::task::yield_now().await;
+            task.abort();
+            assert!(task.await.is_err_and(|error| error.is_cancelled()));
+            assert_eq!(parked(&lane).await.downcast_ref::<u32>(), Some(&9));
+            assert!(lane.acquire().await.is_ok());
+
+            // Dropped after the first poll while it holds no attempt: the marker reference.
+            let mut future = Box::pin(pass_then_wait(lane.clone(), None, false));
+            assert!(poll_once(future.as_mut()).is_pending());
+            drop(future);
+            assert_eq!(parked(&lane).await.downcast_ref::<&str>(), Some(&"vacant"));
+
+            // Cancelled inside a commit window: the window's park is kept.
+            let mut future = Box::pin(pass_then_wait(lane.clone(), Some(1), true));
+            assert!(poll_once(future.as_mut()).is_pending());
+            drop(future);
+            assert_eq!(parked(&lane).await.downcast_ref::<u32>(), Some(&101));
+            assert!(lane.acquire().await.is_ok());
+        });
+    }
+
+    #[test]
+    fn a_finished_writer_pass_parks_nothing() {
+        block_on(async {
+            let lane = lane(45);
+            let mut permit = permit(&lane).await;
+            let pass = SpellWriterPass::new(&mut permit, Some(2_u32), park, Box::new("vacant"));
+            assert_eq!(pass.finish(), (Some(2), false));
+            assert!(!permit.has_unresolved());
         });
     }
 

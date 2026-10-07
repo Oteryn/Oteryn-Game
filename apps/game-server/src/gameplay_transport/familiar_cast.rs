@@ -180,7 +180,7 @@ use crate::durability::character_familiar::FamiliarStateOccurrence;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::spell_items_abi::SpellItemTransactionRequest;
-use crate::durability::spell_owner_commit::SpellLanePermit;
+use crate::durability::spell_owner_commit::{SpellLanePermit, SpellWriterPass};
 use crate::foundation::{CommandId, CommandRef, GameSessionState, RuntimeScopeRefV1};
 use crate::spell::companion_lifecycle::{
     FamiliarOwnerFacts, check_commit_familiar, familiar_cost_binding, finish_familiar_payment,
@@ -850,9 +850,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             prepared
         };
         let intent = prepared.intent;
+        // A cancelled pass parks what it holds, so the marker is always settled (§1.6). The
+        // pass takes `prepared` with no await before its commit window.
+        let mut writer = SpellWriterPass::new(
+            permit,
+            None,
+            UnresolvedSpellCommit::park_familiar,
+            UnresolvedSpellCommit::park_vacant(
+                super::native_combat_cast::ParkedMarkerKind::Familiar,
+                actor,
+                session,
+            ),
+        );
         let (outcome, leftover) = self
             .finish_familiar_cast(
-                permit,
+                &mut writer,
                 runtime,
                 states,
                 prepared,
@@ -861,8 +873,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 owned.binding(),
             )
             .await;
-        let parked = permit.has_unresolved();
+        *writer.parts().1 = leftover;
         let mut states = self.spell_states.lock().await;
+        let (leftover, parked) = writer.finish();
         super::PendingSpellMarker::settle(
             &mut states.pending_familiars,
             actor,
@@ -887,10 +900,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     )]
     /// One writer pass (§1.6): S under the held guards, which it then releases; COMMIT with only
     /// the lane held; a fallible phase 1 and an infallible phase 2 under re-taken guards. It
-    /// returns the attempt it still holds, or `None` once installed, released or parked.
+    /// returns the attempt it still holds, or `None` once installed, released or parked. Across
+    /// an await outside a commit window, the attempt stays in the writer pass.
     async fn finish_familiar_cast(
         &self,
-        permit: &mut SpellLanePermit,
+        writer: &mut SpellWriterPass<'_, PreparedFamiliarCast>,
         mut runtime_guard: tokio::sync::MutexGuard<'_, crate::foundation::ChannelRuntimeV1>,
         mut states_guard: tokio::sync::MutexGuard<'_, ChannelSpellStates>,
         mut prepared: PreparedFamiliarCast,
@@ -1074,7 +1088,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Lock order (§1.2): no Channel guard is held across COMMIT; the reservations above keep
         // the real fixed slots sealed, and phase 1 re-checks everything else.
         drop((runtime_guard, states_guard));
-        let mut window = permit.open_commit_window(prepared, UnresolvedSpellCommit::park_familiar);
+        let mut window = writer
+            .permit()
+            .open_commit_window(prepared, UnresolvedSpellCommit::park_familiar);
         let commit_result = if allow_new_mutation {
             self.root
                 .commit_familiar_spell_in_window(
@@ -1103,7 +1119,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let committed = match commit_result {
             Ok(value) => value,
             Err(error) => {
-                let mut prepared = match window.reclaim_uncommitted() {
+                let prepared = match window.reclaim_uncommitted() {
                     Ok(prepared) => prepared,
                     // COMMIT was called with an unknown outcome: the window parks the attempt.
                     Err(window) => {
@@ -1114,15 +1130,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if !definite_familiar_rejection(&error) {
                     return (SpellCastOutcome::rejected(), Some(prepared));
                 }
+                let slot = writer.parts().1;
+                let held = slot.insert(prepared);
                 let mut runtime = self.runtime.lock().await;
-                let released = prepared.familiar.rollback_physical(&mut runtime).is_ok()
+                let released = held.familiar.rollback_physical(&mut runtime).is_ok()
                     && runtime
                         .release_definitely_uncommitted_spell_batch(&staged)
                         .is_ok();
-                prepared.physical = prepared.physical.filter(|_| !released);
                 return (
                     SpellCastOutcome::rejected(),
-                    (!released).then_some(prepared),
+                    slot.take().filter(|_| !released),
                 );
             }
         };
