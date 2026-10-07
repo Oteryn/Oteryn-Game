@@ -605,14 +605,22 @@
       "trigger": {
         "npc": "oteryn:npc.niral",
         "dialogue": "oteryn:dialogue.npc.niral",
-        "source_keyword": "moon"
+        "semantic_keyword": "moon",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ]
       },
       "requires": [
         "sharai_machines_reported"
       ],
       "outcome": "niral_rakesh_task",
-      "evidence": "FACT",
-      "owner": "NPC-QUEST-1"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express and story flows use Hi -> Moon for this Niral state.",
+        "Crystal Summer branch labels such as seal/consecrate are donor implementation hints only and are not Reference dispatch authority."
+      ]
     },
     {
       "id": "rakesh_kill",
@@ -638,14 +646,22 @@
       "trigger": {
         "npc": "oteryn:npc.niral",
         "dialogue": "oteryn:dialogue.npc.niral",
-        "semantic_branch": "post-Rakesh; Crystal source branch named seal"
+        "semantic_keyword": "moon",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ]
       },
       "requires": [
         "rakesh_defeated"
       ],
       "outcome": "niral_seal_instructions",
-      "evidence": "FACT",
-      "owner": "NPC-QUEST-1"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express and story flows use Hi -> Moon for this Niral state.",
+        "Crystal Summer branch labels such as seal/consecrate are donor implementation hints only and are not Reference dispatch authority."
+      ]
     },
     {
       "id": "empty_flask_pickup",
@@ -746,13 +762,29 @@
       "trigger": {
         "npc": "oteryn:npc.niral",
         "dialogue": "oteryn:dialogue.npc.niral",
-        "source_keyword": "consecrate"
+        "semantic_keyword": "moon",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ]
       },
       "input_item": "oteryn:item.tibia.i54564",
       "result_item": "oteryn:item.tibia.i54566",
       "outcome": "blue_lava_blessed",
-      "evidence": "FACT",
-      "owner": "NPC-QUEST-1 + Item/Durability"
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1 + Item/Durability",
+      "requires": [
+        "blue_lava_obtained"
+      ],
+      "source_notes": [
+        "Post-release TibiaWiki express and story flows use Hi -> Moon for this Niral state.",
+        "Crystal Summer branch labels such as seal/consecrate are donor implementation hints only and are not Reference dispatch authority."
+      ],
+      "item_effect": {
+        "input": "oteryn:item.tibia.i54564",
+        "output": "oteryn:item.tibia.i54566",
+        "semantics": "qualified dialogue branch transforms Blue Lava Flask to Blessed Blue Lava Flask"
+      }
     },
     {
       "id": "rune_silent_moon",
