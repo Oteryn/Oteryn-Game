@@ -89,12 +89,23 @@ function New-Installer([string] $Id, [string] $Payload) {
     $setup
 }
 
+# Start-Process -Wait also waits for descendants, so a client that /RELAUNCH starts would block
+# it forever. Wait for the setup process alone, with a bound.
+function Wait-Run([Diagnostics.Process] $Process, [string] $Name) {
+    $null = $Process.Handle
+    if (-not $Process.WaitForExit(300000)) {
+        Stop-Process -Id $Process.Id -Force -ErrorAction SilentlyContinue
+        throw "$Name timed out"
+    }
+    $Process
+}
+
 function Invoke-Setup([string] $Setup, [string[]] $Extra = @()) {
     Check (Test-Path -LiteralPath $Setup -PathType Leaf) "no setup executable at '$Setup'"
     $script:Run++
     $log = Join-Path $Logs "setup-$script:Run.log"
     $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$InstallDir`"", "/LOG=`"$log`"") + $Extra
-    $process = Start-Process -FilePath $Setup -ArgumentList $arguments -Wait -PassThru
+    $process = Wait-Run (Start-Process -FilePath $Setup -ArgumentList $arguments -PassThru) "setup run $script:Run"
     Write-Host "setup run $script:Run ($([IO.Path]::GetFileName($Setup)) $Extra) exited $($process.ExitCode)"
     $process.ExitCode
 }
@@ -104,7 +115,7 @@ function Invoke-Uninstall {
     $log = Join-Path $Logs "uninstall-$script:Run.log"
     $uninstaller = Join-Path $InstallDir 'unins000.exe'
     Check (Test-Path -LiteralPath $uninstaller -PathType Leaf) 'unins000.exe is missing'
-    $process = Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=`"$log`"") -Wait -PassThru
+    $process = Wait-Run (Start-Process -FilePath $uninstaller -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=`"$log`"") -PassThru) "uninstall run $script:Run"
     Write-Host "uninstall run $script:Run exited $($process.ExitCode)"
     $process.ExitCode
 }
