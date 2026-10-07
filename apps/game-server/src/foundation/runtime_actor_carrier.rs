@@ -823,6 +823,20 @@ pub(crate) enum TopDamagePrincipal {
     Present(TopDamageContributor),
 }
 
+impl TopDamagePrincipal {
+    /// The tracked winner, if any; callers outside Foundation cannot name this enum.
+    pub(crate) const fn present(self) -> Option<TopDamageContributor> {
+        match self {
+            Self::Present(winner) => Some(winner),
+            Self::Untracked | Self::Gone => None,
+        }
+    }
+
+    pub(crate) const fn is_gone(self) -> bool {
+        matches!(self, Self::Gone)
+    }
+}
+
 /// Stable identity of the one committed lethal occurrence. Construction stays
 /// private to the physical Channel owner; callers cannot supply occurrence
 /// bytes, HP facts or actor generation.

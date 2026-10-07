@@ -17,27 +17,27 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         412,
-        "ddaecec0c3973fac2cf5e826c1dd6abbe34f362d73eb00107e8e50b671d3af40",
+        "89ae95e31152335b2e0f16cb1919ad990d203d4aadaaf0d0cfa5ebb11566a42e",
     ),
     (
         "definitions/declarations.json",
-        27_275_107,
+        27275107,
         "b6c28de9a38da6bf0c5bca39f0936f6ccf69ed59df4d1266a1ff4641116dbe95",
     ),
     (
         "definitions/reference.json",
-        27_051_649,
-        "412f9e531906ef0ff525be513a86f0648ffbc8924a44b2751faf1f5990dd6d60",
+        27_238_252,
+        "2b09b38ab63b3b68e6e3244d8ee644c68318f89882faf9f7495a055eab2cc855",
     ),
     (
         "editor/author.json",
-        120_557,
+        120557,
         "14c6e3163baf17096545daa897a866df0b5ee23721c26312867ffa73447bbfdb",
     ),
     (
         "manifest.json",
         1955,
-        "61edd6dbc42e5ffb8291ec826d297b20699c5dbae114f1162ea15e123f4881c6",
+        "a3cd7dc5080c65750efd115b69919d0cf4bd3a93d942565e0c2207ac6bf7159a",
     ),
     (
         "presentations/bindings.json",
@@ -47,16 +47,16 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         406,
-        "d660f46a2d9c4e7d9ddc0a693cca6a05851469a567ef300c2217cca04e7b0e63",
+        "2a7af708f61a6f0b63d65d912841b4a2e5e65c7218489805de96ae55087e3440",
     ),
     (
         "provenance/imports.json",
-        6_770_800,
+        6770800,
         "6ac5b17b337f384a25aed9523eda8b2fd2ba94d7ffe62b3e2869859dcaa1994f",
     ),
     (
         "provenance/sources.json",
-        1_666_853,
+        1666853,
         "6414fc9da96985e0529bf986fd2e021a75a145ba6cb899af5ad992e4699147c6",
     ),
     (
@@ -125,7 +125,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "29c162c9108296fece952e46ca03b66a6d09b6863af9847b71eccd111c50ddb9";
+const TREE_SHA256: &str = "7353a9ed65d82bb393db172a74f576b699ede2d727ddb6690ec8cc6c50925071";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -336,6 +336,28 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
         }
     }
     assert_eq!(tree_digest(&root), TREE_SHA256);
+}
+
+#[test]
+fn bed_promotion_is_idempotent_on_the_committed_world() {
+    let root = project_root();
+    let mut draft = capture_world_project(
+        root.parent().expect("package has content parent"),
+        OsStr::new("world"),
+        filesystem_limits(),
+    )
+    .expect("capture tracked canonical package")
+    .migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())
+        .expect("committed world documents");
+    item_bed_promotion::apply_item_bed_promotion_v1(&mut draft)
+        .expect("bed promotion re-applies to promoted world");
+    let after = CanonicalProjectDocuments::from_v2_draft(draft, limits())
+        .expect("re-promoted world documents");
+    assert!(
+        before == after,
+        "re-applying the bed promotion changed the committed world"
+    );
 }
 
 #[test]

@@ -23,14 +23,14 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     let catalogue =
         NpcDataCatalogue::from_project(project, npc_catalogue_preproduction_limits().project)
             .expect("data import");
-    // Revision and source tree digest measured on the #1807 merged repository source.
+    // Revision and source tree digest measured on the corpse-admitted repository source (main + D3-7).
     assert_eq!(
         catalogue.project_revision(),
         "d3-7-corpse-admitted-20261006-r1"
     );
     assert_eq!(
         catalogue.source_tree_digest(),
-        "29c162c9108296fece952e46ca03b66a6d09b6863af9847b71eccd111c50ddb9"
+        "7353a9ed65d82bb393db172a74f576b699ede2d727ddb6690ec8cc6c50925071"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);

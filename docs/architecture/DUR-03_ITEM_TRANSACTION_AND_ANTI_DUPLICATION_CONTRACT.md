@@ -1743,6 +1743,49 @@ Once accepted, in its NPC-QUEST-1 child:
   independent of the BURN lines. Every other §39 obligation is unchanged; its rows are suffixed
   `-QUEST-EXCHANGE`.
 
+**Amendment (pending on acceptance of QUEST-GATE-0; `reviews/OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §16.2.5).**
+Once accepted, in its QUEST-TRIGGER-1 child, the reward chest amendment's MINT gains one terminal
+state, **retired**, for a reservation whose trigger plan was lost before its MINT committed:
+
+- **Record.** One migration adds the insert-only table `game_reward_claim_mint_retirements`, keyed
+  by the reservation's (game_session_id, command_id) and referencing it. The runtime role gets
+  `SELECT, INSERT` only, and a no-truncate trigger is added as for the 0012 tables. The 0012
+  reservation guard is unchanged.
+- **Eligibility.** The same migration adds the insert-only table
+  `game_reward_claim_mint_trigger_children`, keyed by the reservation's (game_session_id,
+  command_id) and referencing it. `RewardClaimMintRequest` gains a closed origin
+  (`TriggerPlanChild`, `Other`); `freeze_reward_claim_mint` inserts the row in the reservation's
+  own transaction for `TriggerPlanChild` only, and a guard trigger refuses the insert unless the
+  current transaction inserted that reservation. A later pass whose origin disagrees with the row's
+  presence refuses with `ConflictingCause`. The runtime role gets `SELECT, INSERT` only, with a
+  no-truncate trigger. Every MINT reserved under a root that carries a trigger plan has the
+  `TriggerPlanChild` origin: the plan's `RewardClaim` children and the D39 chest claim of a `USE`
+  that roots the plan. Only a dialogue claim and the D39 chest claim of a `USE` with no trigger plan
+  have the `Other` origin. The root's plan check runs before the root commits, so every pass under
+  one CommandRef computes the same origin.
+- **Retirement.** A new operation in `reward_claim_mint.rs` loads the reservation by its CommandRef
+  and refuses with `NotRetirable`, writing nothing, unless its `character_id` is the reconciled
+  Character and its trigger-child row exists. In one transaction under the current recovery fence
+  it takes the commit pass's locks in their order and reads the receipt, then the retirement row.
+  With a receipt it writes nothing and returns the committed result; with a retirement row it
+  writes nothing and returns `Retired`; with neither it inserts the retirement row and returns
+  `Retired`. It spends no RL-08 work unit.
+- **Reconcile.** `reconcile_reward_claim_mint` returns a closed `RewardClaimMintReconciliation`
+  (`Committed`, `Retired`, `Pending`) in place of its `Option`. It returns `Retired` for a
+  retirement row read before its work unit charge, without charging, or read under the cause lock
+  when there is no receipt. `Retired` is terminal and never retried; only `Pending` (neither row)
+  lets the same candidate be retried.
+- **Commit and freeze.** `commit_reward_claim_mint_noticed` and `freeze_reward_claim_mint` refuse
+  with `CapacityExceeded`, under the cause lock and before any write, when a retirement row exists
+  for their CommandRef, whatever the stored work unit count.
+- **Terminal.** A retired reservation is terminal and not pending (GAME-INTERACTION-01 successor
+  §17.2): no item, no `RewardClaim` row and no quest obligation exist for it, and the claim may be
+  taken by a fresh `USE` under a new CommandRef. The same CommandRef never commits a MINT after its
+  retirement.
+
+Every other reward MINT obligation (the §38 rewards row, D40-D42, §39.1-§39.3 as amended) is
+unchanged.
+
 **Amendment (pending on acceptance of RUNE-USE-0; `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`
 §39.3).** `reviews/OTERYN_GAME_RUNE_USE0_USING_RUNES_DECISION_2026-09-30.md` §5 and §10, once
 accepted, admit for these shapes only: (a) **rune use**, the item use burn shape above under a

@@ -167,6 +167,8 @@ Two triggers run inline, inside the damage applier, before it continues:
   `damage_modifier` with `this_hit`, `reflect_damage` and `convert_damage_to_heal` act on this hit.
 
 Their other actions run inline too, in order; any occurrence they raise goes to the queue (§4.1).
+That queue is drained only after the root hit completes and its staged effects, the drain of the
+hit included, have applied (staging, below).
 
 **Inline re-entry bound.** An inline action that changes health (`heal`, `damage`, `cast`,
 `reflect_damage`, `convert_damage_to_heal`, `shared_life` propagation) enters the damage applier
@@ -241,7 +243,8 @@ and the rule-scoped subjects `triggering`, `spawned` and `picked`.
   stage (§4.2).
 - **`cast`:** an Ability or the encounter's own `encounter_ability`, through GAME-ABILITY-01.
 - **`attribute`, `move_lock`:** overrides on the creature, held by the instance, read by
-  CREATURE-AI-0 and the damage applier; they end with the creature or the instance.
+  CREATURE-AI-0 and the damage applier; they end with the creature or the instance. `attribute`
+  `max_health` is §17.2.
 - **`prevent_death`:** §4.2 only.
 
 ### 6.3 World, chat and items (ENC-WORLD-1)
@@ -433,3 +436,145 @@ None. D26 and D27 settled scope and outcomes; every other choice applies Canary 
    refs; no raw coordinates.
 5. **Wire:** none new.
 6. **Split work:** none; each action is one owner call in the turn.
+
+## 17. Boss form health and Boss Difficulty (2026-10-06)
+
+Answers the SHARDS-E1 blocker (#1622 6021146350) and the Phosphorus Boss Difficulty disposition
+(#1622 6021403988). Role: Sol Supervising Architect.
+
+### 17.1 Facts
+
+**PROVEN**
+- Format §3 names `phases[]` and `set_phase`; §6.1 gives `set_phase` to ENC-RT-1. The WorldProject
+  v2 Encounter schema has `phases` as a list of names and no `set_phase` action.
+- The health forms are `full`, `keep_percent`, `keep_absolute`, `remembered` and percent. None sets
+  a maximum. `attribute` (D34) overrides `outgoing_damage_percent` and `defense` on a creature,
+  held by the instance (§6.2).
+- The Bosstiary key is the Creature definition key of the Bosstiary entry (BOSS-RAID-0 §10.1).
+- Creature maximum health has no single upper bound today:
+  - the monster authoring schema accepts any positive integer
+    (`tools/content-schema/monster-authoring/monster.schema.json`, `stats.max_health`);
+  - `ProjectV2CreatureAuthoring.health` is a `u64`;
+  - the runtime creature paths refuse a maximum above `i64::MAX` (`bind_creature_self_heal` in
+    `foundation/runtime_actor_carrier.rs`, `self_heal_qualification.rs`);
+  - native combat holds a target's health and maximum health as `u32` (`NativeTargetFact`,
+    `spell/native_combat.rs`) and rejects a creature target whose health or maximum does not fit
+    (`gameplay_transport/native_combat_cast.rs`). A larger maximum would make the creature
+    untargetable by native spells.
+- The Moonsnow Magnolia: phase 1 has 52,000 health; Reference shows phase 2 returning at exactly
+  60,000.
+- Crystal SU26 `phosphorus.lua` and `phosphorus_final.lua` say the Boss Difficulty System is not
+  wired. Their 70,000 and 90,000 health and their loot are placeholders. `boss_difficulty_test.lua`
+  is a client-window test.
+
+**DERIVED**
+- A phase-2 Creature form would be a second Creature definition. Its death would credit its own
+  key unless a new mapping to the public key were added. It would also need to be excluded from the
+  Bestiary, the Bosstiary, the Cyclopedia and Atlas exports.
+
+### 17.2 Ruling: SHARDS-E1 is option B, a bounded `max_health` attribute
+
+- `attribute` gains `max_health` with `set` to an absolute integer in **1..=4,294,967,295**
+  (`u32::MAX`), or `reset` to the type's value. It is an override held by the instance, like the
+  other attributes, and it ends with the creature or the instance.
+- **Bound.** This range is the Creature health range: the narrowest runtime bound (native combat's
+  `u32`), applied at every layer. The combat path is not widened.
+  - The encounter schema and the encounter content lowering reject a `set` outside it, and so does the
+    runtime, so no layer accepts a value that another refuses.
+  - The monster authoring schema's `stats.max_health` and `initial_health` take the same `maximum`.
+    Creature admission refuses a definition above it.
+  - The type value that `reset` restores is therefore in range.
+- **Health.** Setting a lower maximum clamps current health to it. Setting a higher one does not
+  heal: health rises only through an explicit `heal` (`full` heals to the overridden maximum). No
+  path sets health above the maximum in force.
+- **Reads.** `health_percent`, `health_crossed` in percent, `damage_accumulated` in percent,
+  `keep_percent` and the client health percent use the maximum in force at the read. A
+  `damage_accumulated` percent threshold is that percent of the maximum in force when each hit is
+  counted; the count already taken is kept when the maximum changes.
+- **Charm reads (CHARM-4).** Every charm formula that reads the creature's maximum health uses the
+  maximum in force at the committed hit, never the base Creature definition. This covers the
+  attack-proc damage percent, the Overpower and Overflux damage cap, and the Carnage percent of the
+  killed creature (its maximum in force at its lethal hit). The charm hook takes the maximum from
+  the creature's runtime snapshot (`snapshot.maximum_health`, `gameplay_transport/attack.rs`), so
+  the override is what that snapshot reports. Health never exceeds the maximum in force, so the
+  hook's check that health before the hit is at most the maximum still holds after a lower `set`.
+- **Magnolia phase 2.** Two rules, because an inline `heal` is followed by the drain of the lethal
+  hit (§4.2, format §7):
+  1. Inline `lethal_damage(magnolia)`, with the condition `counter_compare(magnolia_phase, <, 2)`:
+     `prevent_death`, `attribute(max_health set 60000)` and `counter(magnolia_phase) set 2`. The
+     counter raises `counter_reached(magnolia_phase, 2)` into the queue.
+  2. Queued `counter_reached(magnolia_phase, 2)`: `heal(full)` (and `set_phase` once ENC-RT-1 has
+     it). The queue drains only after the root hit completes and its drain has applied (§4.2), so
+     the heal ends at 60,000 out of 60,000.
+
+  The first lethal hit emits no outcome. In phase 2 the condition no longer holds, so the next
+  lethal hit kills and its death emits the outcome. One Creature definition stays the public
+  identity, so the death, Bosstiary, loot and outcome keys are unchanged.
+- **`set_phase`.** The schema gap is ENC-RT-1's catch-up to §6.1 (a typed `phases` list, the
+  `set_phase` action and the `phase_entered` trigger). It is not a new decision. Magnolia does not
+  depend on it.
+- **Rejected (option A).** An internal phase-2 Creature form adds a hidden Creature identity, a
+  Bosstiary key mapping and export exclusions to carry one health value.
+
+### 17.3 Ruling: Phosphorus and Boss Difficulty
+
+- Boss Difficulty is Encounter-owned mechanics of one fight, not quest state. It never writes
+  QuestState, reward intents or quest completion. The Make Believe completion unlocks (Fate Forge,
+  shortcuts, crafting) are quest outcomes, independent of the difficulty chosen.
+- The Crystal SU26 values (70,000 and 90,000 health, loot, the test talkaction) are
+  `OTS_HYPOTHESIS_ONLY`. They are never canonical gameplay values.
+- Phosphorus and its encounter stay held, `PARITY_PENDING`, until official base values are
+  captured. Reference evidence is not enough to admit difficulty 0 without its health.
+- The difficulty tiers (+10% incoming danger, +5% monster health, +2% loot per level; the 5, 10, 15
+  and 25 thresholds; the Auric Moon Sigil chance) are decided by a successor decision,
+  BOSS-DIFFICULTY-0. It is decided with the first allocation that admits a difficulty boss.
+  - Its health scaling uses §17.2.
+  - Its danger scaling uses `attribute(outgoing_damage_percent)`: the boss and its encounter roles
+    deal more damage. `damage_modifier` scales the damage a role takes, which is the opposite
+    direction.
+  - Its loot and drop changes belong to BOSS-REWARD-1.
+  - The chosen difficulty is per encounter instance and runtime-only, as all encounter state (§9).
+- No ENC-RT-1 or ENC-OUTCOME-1 scope is added for it, and no Make Believe special case is allowed.
+
+### 17.4 Decision test
+
+- **Must decide now:** YES. SHARDS-E1 is blocked on it.
+- **Minimum sufficient:** one attribute name on an existing override, with no new identity, wire
+  or persistence.
+- **Superseding evidence:** a Tibia boss whose phase is a separate Bosstiary or Bestiary entry; the
+  captured official Boss Difficulty formulas.
+- **Deliberately not decided:** BOSS-DIFFICULTY-0.
+
+### 17.5 Before-freeze checklist
+
+1. **Amendments:** the format `attribute` row (with the exact bound), the `damage_accumulated` row
+   (§4) and §9.4, in place; ENC-COMBAT-1 adds the bound to the encounter and monster authoring
+   schemas; §6.2 carries a pointer. This decision's §4.2 states when the queue raised by an inline
+   hook drains.
+2. **Serialization:** unchanged. The override is applied in the owner turn.
+3. **Restart:** the override is runtime-only and is lost with the fight (§9).
+4. **Typed references:** the role, the Creature definition key and the encounter key and revision.
+5. **Wire:** none new. Clients see the health percent.
+6. **Tests (ENC-COMBAT-1):**
+   - `set` above the current maximum leaves health unchanged until a `heal`;
+   - `set` below it clamps health;
+   - `heal(full)` reaches the overridden maximum and never exceeds it;
+   - `reset` restores the type value and clamps;
+   - `health_percent` reads the maximum in force;
+   - `damage_accumulated` in percent counts against the maximum in force: a 10% threshold fires
+     after 6,000 damage once the maximum is 60,000, and the damage already counted is kept when
+     the maximum changes;
+   - an occurrence raised by an inline `lethal_damage` rule drains only after the hit's drain has
+     applied, so a queued `heal(full)` ends at the full maximum;
+   - content validation rejects 0, a negative value and 4,294,967,296, and accepts 4,294,967,295;
+     the runtime refuses the same out-of-range value;
+   - the monster authoring schema and Creature admission reject a maximum health above `u32::MAX`;
+   - a creature at 4,294,967,295 maximum health, by definition or by `set`, is still a legal native
+     spell target;
+   - CHARM-4 reads the maximum in force. On a 52,000 base after `set 60000`, a 5% attack proc
+     computes from 60,000. The Overpower and Overflux cap and Carnage's percent also use 60,000.
+     After a lower `set`, the next committed hit passes the charm hook's event check and uses the
+     lower maximum;
+   - an ENC-PARITY-1 fixture covers Magnolia: phase 2 at 60,000 out of 60,000 after the queued
+     heal, no outcome on the first lethal hit, the phase-2 lethal hit kills, and one death and one
+     Bosstiary kill for the public key.

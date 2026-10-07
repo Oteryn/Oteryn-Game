@@ -9807,6 +9807,28 @@
         "crates/protocol-oteryn/src/npc_service.rs TALK_RANGE_TILES"
       ],
       "notes": "NPC-BEHAVIOUR-0 \u00a77; value fixed by the amendment of NPC-0 \u00a74.1. Registered by OTV2-20261005-npc-wire-1 (NPC-WIRE-1)."
+    },
+    {
+      "id": "KILLRW-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_ARCH_KILL_REWARD_LOGOUT_PACKETS_2026-10-04.md",
+      "resource": "Unsettled creature kill reward entries per Channel (queued plus in flight)",
+      "unit": "entries",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked when a lethal creature death is appended, under the Channel attack guard; the 65th unsettled entry is not queued, settles nothing and logs one kill_reward_refused reason=queue_full line. Each entry holds the projected death facts, an Arc of the immutable reward row and the death ground context; no entry is allocated past the bound.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=64: 63 queued plus 1 in flight are all held",
+        "max+1=65: the 65th unsettled death is refused with queue_full while one is in flight"
+      ],
+      "consumers": [
+        "apps/game-server/src/gameplay_transport/kill_reward.rs KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX"
+      ],
+      "notes": "ARCH-KILL-REWARD-LOGOUT-1 \u00a71.3. Registered by OTV2-20261004-kill-reward-comp-1 (KILL-REWARD-COMP-1)."
     }
   ]
 }
