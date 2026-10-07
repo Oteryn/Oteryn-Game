@@ -1176,6 +1176,24 @@ jobs:
         shell: pwsh
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
 
+      - name: Derive release identity
+        shell: pwsh
+        env:
+          TARGET_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          if ($env:TARGET_SHA -cnotmatch '^[0-9a-f]{40}$') {
+            throw "target SHA is not a full lowercase commit id"
+          }
+          $metadata = cargo +1.94.0 metadata --locked --no-deps --format-version 1 | ConvertFrom-Json
+          $version = @($metadata.packages | Where-Object { $_.name -eq 'oteryn-client' })[0].version
+          if (-not $version) {
+            throw "oteryn-client version not found"
+          }
+          "OTERYN_RELEASE_ID=$version+dev.ci.g$($env:TARGET_SHA.Substring(0, 12))" >> $env:GITHUB_ENV
+          "CLIENT_VERSION=$version" >> $env:GITHUB_ENV
+
       - name: Build production client
         shell: pwsh
         run: cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
@@ -1197,6 +1215,52 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw "release client smoke failed with exit code $LASTEXITCODE"
           }
+
+      - name: Install Inno Setup
+        shell: pwsh
+        env:
+          INNO_SETUP_URL: https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe
+          INNO_SETUP_SHA256: 9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $download = Join-Path $env:RUNNER_TEMP 'innosetup-6.7.3.exe'
+          $directory = Join-Path $env:RUNNER_TEMP 'innosetup'
+          Invoke-WebRequest -Uri $env:INNO_SETUP_URL -OutFile $download
+          $actual = (Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:INNO_SETUP_SHA256) {
+            throw "Inno Setup download SHA-256 mismatch: $actual"
+          }
+          $process = Start-Process -FilePath $download -Wait -PassThru -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/CURRENTUSER', "/DIR=`"$directory`"")
+          if ($process.ExitCode -ne 0) {
+            throw "Inno Setup install failed with exit code $($process.ExitCode)"
+          }
+          $iscc = Join-Path $directory 'ISCC.exe'
+          if (-not (Test-Path -LiteralPath $iscc -PathType Leaf)) {
+            throw "ISCC.exe missing: $iscc"
+          }
+          "ISCC=$iscc" >> $env:GITHUB_ENV
+
+      - name: Build and test unsigned installer
+        shell: pwsh
+        env:
+          TARGET_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: >-
+          .\apps\client\installer\ci-installer.ps1
+          -ReleaseId $env:OTERYN_RELEASE_ID
+          -ClientVersion $env:CLIENT_VERSION
+          -GameCommit $env:TARGET_SHA
+          -Iscc $env:ISCC
+          -WorkDir (Join-Path $env:RUNNER_TEMP 'oteryn-installer')
+          -OutputDir (Join-Path $env:RUNNER_TEMP 'oteryn-installer-artifact')
+
+      - name: Upload unsigned installer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: oteryn-client-${{ env.OTERYN_RELEASE_ID }}-x86_64-unsigned
+          path: ${{ runner.temp }}/oteryn-installer-artifact
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Run synthetic harness
         shell: pwsh

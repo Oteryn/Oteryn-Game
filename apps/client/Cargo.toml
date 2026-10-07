@@ -11,6 +11,14 @@ publish.workspace = true
 category = "app"
 release-role = "production"
 
+[[bin]]
+name = "oteryn-client"
+path = "src/main.rs"
+
+[[bin]]
+name = "oteryn-launcher"
+path = "src/bin/oteryn-launcher.rs"
+
 [dependencies]
 oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }
 oteryn-diagnostics = { version = "=0.1.0", path = "../../crates/diagnostics" }
@@ -28,11 +36,24 @@ rustls.workspace = true
 tokio.workspace = true
 
 [target.'cfg(windows)'.dependencies]
+windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_Threading"] }
 winit.workspace = true
 
 [dev-dependencies]
 rcgen.workspace = true
 tokio-rustls.workspace = true
 
-[lints]
-workspace = true
+# The workspace lints with one change: `unsafe_code` is `deny` instead of `forbid`, so the
+# Windows mutex FFI in `src/win_mutex.rs` alone can allow it (CP D901).
+[lints.rust]
+unsafe_code = "deny"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+dbg_macro = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+unwrap_used = "deny"
