@@ -988,6 +988,14 @@ struct DurableKillSettle<'s, 'a, 'f, 'g> {
 impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     async fn settle(&self, entry: &PendingKillSettlement, inflight_before: usize) -> SettleReport {
         let admission = self.admission;
+        // Lock order (SPELL-LOCK-2 §1.2): the lane before the revision slot; the corpse loot
+        // mint is a key-33 writer. `None` retries with no side effect while the lane is fenced.
+        let Some(permit) = admission.spell_lane_permit().await else {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        };
         let mut slot = admission
             .revision_sequencer
             .acquire(self.fence.character_id)
@@ -1022,6 +1030,7 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
             node: admission.holder,
         };
         let outcome = settle_creature_death_rewards_with_bestiary(
+            &permit,
             entry.facts,
             &session,
             &mut slot,
