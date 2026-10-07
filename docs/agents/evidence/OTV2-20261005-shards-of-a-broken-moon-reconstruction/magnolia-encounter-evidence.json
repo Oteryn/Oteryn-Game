@@ -7,7 +7,7 @@
   "source_policy": {
     "crystal_static": "May qualify creature/item/map identity and donor statblock facts only. Crystal Summer has no executable Magnolia encounter script.",
     "current_reference": "Current Global-facing mechanics source. Approximate values remain approximate and may not be promoted to exact constants without a stronger witness.",
-    "video": "Corroboration of observed path/mechanics only; narrator uncertainty is preserved and never promoted to Reference fact.",
+    "video": "Corroboration of observed path/mechanics only; narrator uncertainty is preserved and never promoted to Reference fact. The supplied video predates the official 2026-07-28 Magnolia HP reduction, so video HP pacing is not current-stat authority.",
     "unknown": "Fail closed. Do not infer from donor TODO/balance comments or narration guesses."
   },
   "sources": {
@@ -60,6 +60,14 @@
       "retrieved_utc": "2026-10-06",
       "changes": [
         {
+          "date": "2026-07-28",
+          "source": "https://www.tibia.com/news/?id=8905&subtopic=newsarchive",
+          "facts": [
+            "Moonsnow Magnolia HP was reduced by approximately 15%."
+          ],
+          "consequence": "Do not infer current phase-1 HP from the supplied release-day July 13 video. Current 52000 base HP must come from post-balance current Reference evidence."
+        },
+        {
           "date": "2026-08-25",
           "facts": [
             "Furious Jaracals now spawn close to the noxious catnip instead of the centre of the room.",
@@ -76,6 +84,20 @@
           "consequence": "Encounter cleanup/leave must cancel or fence phase-owned spawn schedules so no phase-two spawns continue after the actor leaves."
         }
       ]
+    },
+    "community_magnolia": {
+      "title": "How to kill The Moonsnow Magnolia?",
+      "publisher": "TibiaQA",
+      "asked": "2026-07-12",
+      "answered": "2026-07-14",
+      "evidence_class": "POST_RELEASE_COMMUNITY_CORROBORATION",
+      "verified_corroboration": [
+        "Bone Fiddle is used during phase 1 after the initial Furious Jaracals; approximately 30-second use cadence is recommended.",
+        "Approximately 70 seconds without suppression leads to four Furious Jaracals.",
+        "Moonsilver Drift damages the player and strengthens/transforms asuras that cross it.",
+        "First lethal is non-terminal; the second phase returns with 60000 HP and Bone Fiddle is no longer required."
+      ],
+      "authority_limit": "Corroboration only. Approximate cadence/damage remains approximate; exact 60000 phase-2 HP is independently carried by current reference evidence."
     }
   },
   "admission": {
@@ -120,7 +142,8 @@
       "donor_limits": [
         "Donor attack magnitudes contain explicit TODO(balance) non-official estimates.",
         "Donor defenses/armor/mitigation contain explicit TODO(balance) non-official estimates.",
-        "Donor file has no phase/revive/Bone-Fiddle/Moonsilver-Drift encounter runtime."
+        "Donor file has no phase/revive/Bone-Fiddle/Moonsilver-Drift encounter runtime.",
+        "The supplied July 13 walkthrough predates the official July 28 HP reduction; release-day fight duration/HP pacing is not current Reference stat evidence."
       ]
     },
     {
