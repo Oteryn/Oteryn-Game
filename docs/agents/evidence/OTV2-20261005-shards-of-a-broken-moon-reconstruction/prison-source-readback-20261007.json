@@ -263,7 +263,7 @@
       "sha256": "d933c6df3c0d0e0e974048bf0a58063f14d7f872adca2d5bb0250d6cdc261920"
     }
   ],
-  "rope_position_rule": "Both pinned Position:moveUpstairs implementations decrement z and prefer south if walkable; retained donor onUseRope witness delegates there. Destination tile is static ground 6684 with no items, but active walkability/occupancy must be checked by World owner.",
+  "rope_position_rule": "Pinned Crystal and Canary Global/custom rope-spot callbacks recognize ground 386 and delegate to moveUpstairs. Both pinned Position implementations decrement z and prefer south if walkable. Destination tile 31923,31378,8 is static ground 6684 with no items; destination remains conditional on World walkability and qualified relocation success. Global/custom PZ guards differ; no universal PZ guard is inferred.",
   "video_witness": {
     "youtube_id": "Zz-7UyufXbU",
     "status": "RETAINED_PRIOR_FRAME_READBACK_NOT_REVIEWED_AGAIN_THIS_PASS",
@@ -272,5 +272,146 @@
       "22:53-22:59 escape corridor"
     ],
     "refresh_limitation": "YouTube web fetch throttled; no fresh visual claim."
+  },
+  "rope_handler_sources": [
+    {
+      "provider": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data/scripts/actions/tools/rope.lua",
+      "git_blob": "a9c694c694166caec91eafdf5bdf0205171b8db5",
+      "sha256": "fc6ecb8966ba4d240b3ccd927a7bb6c8f840d9a8e081e0c11d68e2c775771734"
+    },
+    {
+      "provider": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-global/scripts/lib/register_actions.lua",
+      "git_blob": "380ee44a9f803b9c48287f33772dc48c0d9f3d78",
+      "sha256": "4a9c9f217f034d69372170a50bdfbbad3427453fc98fb233e0bd29c8779cf069"
+    },
+    {
+      "provider": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data-crystal/scripts/lib/register_actions.lua",
+      "git_blob": "6ccd8bc74f237c88b30bee504530dccaff0f21b8",
+      "sha256": "832ae0a361b8a51f76020358f239a7c5dde22c3aad26d0345395f585402a3950"
+    },
+    {
+      "provider": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data/global.lua",
+      "git_blob": "e45ab68dc085126dc2825e78a104e01e20aea801",
+      "sha256": "6949be337ff3e7607af1141780b089083058146e8b5b268748482fb526311d5b"
+    },
+    {
+      "provider": "crystal",
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "path": "data/libs/functions/tile.lua",
+      "git_blob": "6424566955a07c856557748b7cb29606386ffe0d",
+      "sha256": "0c9a116b5d34feb7a2fd0083c89dec7f07c525d6553f65a23367b9dacf49abb7"
+    },
+    {
+      "provider": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/scripts/actions/tools/rope.lua",
+      "git_blob": "a9c694c694166caec91eafdf5bdf0205171b8db5",
+      "sha256": "fc6ecb8966ba4d240b3ccd927a7bb6c8f840d9a8e081e0c11d68e2c775771734"
+    },
+    {
+      "provider": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/lib/register_actions.lua",
+      "git_blob": "863cda020b15aa784e407129238ed33e79bf0bb0",
+      "sha256": "43fc4eb36c5e3452038a3cc29e60f73abe7d4667eec32936f57a89931d8cfb17"
+    },
+    {
+      "provider": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-canary/scripts/lib/register_actions.lua",
+      "git_blob": "e59a46b3b035631964b557bb268bb9052aae3f63",
+      "sha256": "8b5376441db22ddc795aa07fb9023fd2ea76fca8c390e25f23bceceed36aae7b"
+    },
+    {
+      "provider": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/global.lua",
+      "git_blob": "4811197e96a734be97d2005089e9834c03982b70",
+      "sha256": "449b703a6ba45b8ff2daa26ad05d1553454e4707552648308fb4eb6063bdb3c5"
+    },
+    {
+      "provider": "canary",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/libs/functions/tile.lua",
+      "git_blob": "0e35d24afbdbd150a6e1558ac474aaedf01ba687",
+      "sha256": "78921505d34485a2087bfa050fc1852e0c2a45f1b5e36350306d33ed624f3fe9"
+    }
+  ],
+  "rope_handler_qualification": {
+    "classification": "FACT_PINNED_PROVIDER_CALLBACK_CHAIN",
+    "common_action": {
+      "path": "data/scripts/actions/tools/rope.lua",
+      "lines": [
+        1,
+        8
+      ],
+      "tool_ids": [
+        3003,
+        646
+      ],
+      "callback": "onUseRope"
+    },
+    "ground_recognition": {
+      "path": "data/global.lua",
+      "crystal_line": 89,
+      "canary_line": 83,
+      "table": "ropeSpots",
+      "ground_id": 386
+    },
+    "global_pack": {
+      "crystal_path": "data-global/scripts/lib/register_actions.lua",
+      "crystal_lines": [
+        323,
+        339
+      ],
+      "canary_path": "data-otservbr-global/scripts/lib/register_actions.lua",
+      "canary_lines": [
+        319,
+        335
+      ],
+      "behavior": "Reject container position; accept Tile:isRopeSpot, call moveUpstairs, teleport player. Tile:isRopeSpot recognizes ground 386 through ropeSpots. This branch does not perform the custom-pack destination PZ-lock check."
+    },
+    "custom_pack": {
+      "crystal_path": "data-crystal/scripts/lib/register_actions.lua",
+      "crystal_lines": [
+        319,
+        335
+      ],
+      "canary_path": "data-canary/scripts/lib/register_actions.lua",
+      "canary_lines": [
+        124,
+        140
+      ],
+      "behavior": "Recognize ground through ropeSpots (or special item 12935), mutate destination through moveUpstairs, refuse if destination is protection zone and player is PZ-locked; otherwise teleport."
+    },
+    "pack_comparison": "Both pack variants recognize 386 and route through moveUpstairs. PZ-lock semantics differ: do not import a custom-pack guard into the Global branch as a universal rule.",
+    "item_consumption": "Neither successful rope-spot branch removes or transforms the rope tool.",
+    "quest_mutation": "No Shards quest storage or state write in the rope-spot branch; Global 7762 tutorial hint is unrelated to prison ground 386.",
+    "source_success_limit": "The callbacks return true after teleport invocation without testing its return value. A true callback is therefore not a qualified relocation/completion witness.",
+    "destination_status": "DERIVED_CONDITIONAL_SOUTH_DEFAULT_NOT_EXACT_RUNTIME_SUCCESS",
+    "unresolved": [
+      "Loaded data-pack selection in a running donor instance",
+      "Active Oteryn placement key and generation",
+      "Destination walkability and occupancy",
+      "World-authoritative successful relocation occurrence consumed by QuestTransitionRequest"
+    ]
   }
 }

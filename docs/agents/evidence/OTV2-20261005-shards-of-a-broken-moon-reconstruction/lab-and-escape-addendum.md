@@ -187,6 +187,28 @@ Fresh exact-map parse: `prison-source-readback-20261007.json`.
 
 These close the static coordinate/stack questions. Active placement_key, dynamic walkability/occupancy, collapse/reclose representation and Item admission remain with World/Item owners. The generic rope destination is DERIVED, not a hosted movement test. No quest-private teleport is required.
 
+### Qualified rope callback and completion boundary
+
+`prison-source-readback-20261007.json` now pins the complete provider chain, including Git blob and raw-byte SHA-256 for both repositories. The common rope action registers tools 3003/646. Both pinned Global and custom pack handlers recognize ground 386 through `ropeSpots` and call `Position:moveUpstairs`. The Global variant uses `Tile:isRopeSpot`; the custom variant checks the ground table directly and additionally refuses relocation into a protection zone when the player is PZ-locked. The loaded pack matters; the custom guard is not a universal Global rule.
+
+Neither successful rope-spot branch consumes the rope nor writes Shards progress. Both return true after calling teleport without checking its result. Consequently callback acceptance alone cannot set `prison_escaped`: the Oteryn adapter must consume the existing World-authoritative successful relocation occurrence and submit the existing `QuestTransitionRequest`. Do not copy the donor's unrelated ground-7762 tutorial storage handling into this quest.
+
+The south-default destination is conditional. If that tile is unavailable or non-walkable, `moveUpstairs` searches other directions; static absence of stacked items does not prove current walkability. The request must reference the actual admitted relocation outcome, not an assumed south coordinate.
+
+### Runtime witness protocol for the owner
+
+Record exact content generation, placement key, tool custody, character, command reference, World relocation occurrence and Quest transition result for each case. These are proposed acceptance observations, not executed tests or new runtime contracts.
+
+| Case | Required observation |
+| --- | --- |
+| Ground 386 with admitted rope, open route and valid destination | World reports the actual destination and successful relocation; only then can the existing transition writer record `prison_escaped`. |
+| Destination refused or relocation fails | No escape fact, no quest progress and no consumed rope. A donor-style callback `true` is insufficient. |
+| South-default cell unavailable | Capture the World-selected destination or refusal. Do not credit an assumed teleport to `31923,31378,8`. |
+| Wrong object, wrong tool or unresolved active placement | Refuse before quest progress; preserve item custody and state. |
+| Duplicate successful occurrence / retry after relog | Existing transition identity admits at most one escape fact for the same occurrence. No direct QuestState writes. |
+| Rope used before the chamber opening is crossed | Confirm the physical route and accepted quest prerequisites; do not let a coordinate-only trigger bypass the escape micrograph. |
+| Custom-pack PZ-locked reference case | Keep separate from Global source behavior; select an Oteryn rule only through the owning Movement/World contract. |
+
 ## Donor status
 
 Pinned Crystal Summer does not provide a Shards quest script for either the laboratory access flow or the post-Magnolia escape.
