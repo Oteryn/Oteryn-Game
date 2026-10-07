@@ -54,13 +54,24 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             [row["key"] for row in by_title["To Outfox a Fox Quest"]["canonical"]],
         )
         self.assertEqual(
-            "DEFINITION_READY_RUNTIME_UNKNOWN",
+            "REWARD_ONLY_RUNTIME_PENDING",
             by_title["To Outfox a Fox Quest"]["work_state"],
+        )
+        reward_only = [
+            row for row in self.result["records"]
+            if row["work_state"] == "REWARD_ONLY_RUNTIME_PENDING"
+        ]
+        self.assertEqual(42, len(reward_only))
+        self.assertTrue(
+            all(
+                {definition["kind"] for definition in row["canonical"]} == {"reward_only"}
+                for row in reward_only
+            )
         )
         self.assertEqual(
             {
-                "DEFINITION_READY_RUNTIME_UNKNOWN": 42,
                 "NATIVE_BINDINGS_PENDING": 331,
+                "REWARD_ONLY_RUNTIME_PENDING": 42,
             },
             self.result["summary"]["implementation_state"],
         )
