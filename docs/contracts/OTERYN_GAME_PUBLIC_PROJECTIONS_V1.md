@@ -175,7 +175,7 @@ different content, `429` rate limited, `503` unavailable.
 ### 4.1 `highscores` (HIGHSCORES-0 export profile)
 
 ```json
-{"contract_version":1,"operation":"PublishWorldHighscoresV1","source_authority":"oteryn:game:primary","world_id":"01934f10-7c02-7001-805b-3b1122334401","category":1,"filter":0,"projection_epoch":"1","projection_revision":"17","source_observed_at":"1790000000","computed_at":"1790000000","rows":[{"rank":"1","name":"Aldric","vocation":4,"level":"412","value":"11400000000"}]}
+{"contract_version":1,"operation":"PublishWorldHighscoresV1","source_authority":"oteryn:game:primary","world_id":"01934f10-7c02-7001-805b-3b1122334401","category":1,"filter":0,"projection_epoch":"1","projection_revision":"17","source_observed_at":"1790000000","computed_at":"1790000000","rows":[{"rank":"1","character_id":"01934f10-7c04-7001-805b-3b1122334401","name":"Aldric","vocation":4,"level":"412","value":"11400000000"}]}
 ```
 
 - Subject: `world_id`, `category` 1..11 (the HIGHSCORES-0 §3 ids that have a Game source; 13
@@ -183,20 +183,23 @@ different content, `429` rate limited, `503` unavailable.
   vocation, HIGHSCORES-0 §5).
 - `computed_at` is the snapshot's `computed_at`. `rows` are the snapshot's rows for that filter in
   `position` order: 0..1,000 rows (`HIGHSCORES0-RL-02`). `rank` is the competition rank (1, 2, 2,
-  4). `name` is the name read at the cut. `value` is the category value; `0` is allowed.
-- A row carries no `character_id`, `AccountId` or position. Category 10 (Achievement Points)
+  4). `character_id` is the row's character, at most once per snapshot. It is an internal join
+  key and never appears on a public page (§7.3). `name` is the name read at the cut. `value` is
+  the category value; `0` is allowed.
+- A row carries no `AccountId` or position. Category 10 (Achievement Points)
   appears only under the character HIGHSCORES-0 selects (highest-level live character). Platform
   must not add any other character of that account.
 - One HIGHSCORES-0 snapshot of (World, category) is published as six snapshots, one per filter, all
   with the same revision (§5). Who is listed, and every exclusion, follows HIGHSCORES-0 §5. The
   deletion, sale and sanction exclusions it leaves open apply here once they are decided.
 - **Profile join (fail closed, D607).** Platform shows a highscores row only while it serves a
-  `character_profile` entry with the same (`world_id`, `name`). Otherwise the row is left out
-  and the other rows keep their published `rank`. A character that becomes hidden, locked,
-  pending deletion or deleted therefore drops out of every highscores page when its
-  `profile: []` is stored, before the next HIGHSCORES-0 job. A row that still has the old name
-  after a rename drops out the same way. While `character_profile` is stale (§6), no highscores
-  row is shown.
+  `character_profile` entry for the row's `character_id` in the same `world_id`, and shows it
+  under that entry's current name. Otherwise the row is left out and the other rows keep their
+  published `rank`. A character that becomes hidden, locked, pending deletion or deleted
+  therefore drops out of every highscores page when its `profile: []` is stored, before the next
+  HIGHSCORES-0 job. Names are mutable and may be reused (FND-ID-01), so the join never uses the
+  name: a reused name never inherits another character's row. While `character_profile` is stale
+  (§6), no highscores row is shown.
 
 ### 4.2 `character_profile`
 
@@ -319,7 +322,7 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
 | `character_profile` | create; rename; lifecycle change; world transfer; level or vocation change; guild join, leave or rank change; any visibility decision |
 | `character_deaths` | each committed death of the character; any change that flips its profile between `[]` and present |
 | `guild` | any change to guild state, name, ranks, roster or a member's rank; a member's rename; any change that flips a member's profile between `[]` and present |
-| `house` | any property state or revision change; a catalogue activation that changes the record; a rename of the owner character or guild; any change that flips the owner's profile |
+| `house` | any property state or revision change; any bid placement, raise, lowering or withdrawal that changes `current_bid` or `auction_ends_at`; a catalogue activation that changes the record; a rename of the owner character or guild; any change that flips the owner's profile |
 | `world_online` | the publisher's own scan of every World, which starts every `PUBPROJ-ONLINE-INTERVAL` (10 s); a World gets a revision when its qualifying list differs from its last snapshot. Its watermark follows the scan, not the outbox (§5.1) |
 
 - **Transactional outbox.** Each revision touch also records the subject in that family's outbox,
@@ -436,7 +439,7 @@ the implementation, as LCFA's were.
 
 | Limit | Value | Basis |
 |---|---|---|
-| `PUBPROJ-HS-REQUEST-BYTES` | 196,608 | 1,000 rows × at most 160 bytes + envelope |
+| `PUBPROJ-HS-REQUEST-BYTES` | 262,144 | 1,000 rows × at most 212 bytes + envelope |
 | `PUBPROJ-PROFILE-REQUEST-BYTES` | 2,048 | at most 650 bytes in total |
 | `PUBPROJ-DEATHS` | 20 deaths | most recent first |
 | `PUBPROJ-KILLERS` | 16 names per death | final blow first |
@@ -476,7 +479,9 @@ the implementation, as LCFA's were.
 - Content: a highscores snapshot with an equal pair and a different `computed_at` is `409`; a
   guild with every member hidden publishes an empty `members` list; a highscores row whose
   character publishes `profile: []` is not shown before the next HIGHSCORES-0 job, and no row is
-  shown while `character_profile` is stale.
+  shown while `character_profile` is stale; a highscores row is joined by `character_id`, so a
+  name reused by another character never shows the old row under it; a bid that changes
+  `current_bid` or `auction_ends_at` advances the house revision.
 - Identity: only the public-projection certificate is accepted on these routes, and it is refused
   elsewhere.
 
