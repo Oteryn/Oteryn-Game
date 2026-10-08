@@ -38,7 +38,7 @@
     },
     "a12_helper": {
       "path": "tools/content-migration/item_official_navigation.py",
-      "sha256": "b2d30cef92eba43f5e9945f663fb0483229693024499638c7e4fc0c552e37e0f"
+      "sha256": "e39d051c146e2ef0e9eca03f624438d87af303abe383f8f9c08879e0083c9dd1"
     },
     "bindings": {
       "path": "imports/crystalserver/bindings/items.json",
