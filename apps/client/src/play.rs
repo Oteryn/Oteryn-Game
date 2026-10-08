@@ -91,8 +91,6 @@ pub struct PlayView {
     in_flight: bool,
     /// An arrow key waiting for the next step; the latest press wins.
     key_step: Option<StepDir>,
-    /// The tile of a click not yet sent to the session task as an attack-target attempt.
-    attack_click: Option<TileCoord>,
     /// Spell-book entries pressed and not yet sent, in press order.
     casts: Vec<NonZeroU32>,
     /// The last combat line the server's answer produced, shown until the next one.
@@ -128,7 +126,6 @@ impl PlayView {
             walk: ClickWalk::new(),
             in_flight: false,
             key_step: None,
-            attack_click: None,
             casts: Vec::new(),
             combat_line: None,
         };
@@ -181,13 +178,10 @@ impl PlayView {
 
     /// A click on `tile`: a drawn object or actor is selected, any other tile becomes the walk
     /// goal.
-    /// The tile is also offered to the session task as an attack target: only it can tell
-    /// whether a creature stands there, and a hit ends the walk (see [`Self::apply_combat`]).
     pub fn click(&mut self, tile: TileCoord) -> Result<(), BatchError> {
         if self.scene.select_tile(tile)?.is_none() {
             self.walk.set_goal(tile);
         }
-        self.attack_click = Some(tile);
         Ok(())
     }
 
@@ -208,18 +202,9 @@ impl PlayView {
             .to_owned()
     }
 
-    /// Shows the server's answer to a combat command. A successful attack ends the walk the same
-    /// click started.
+    /// Shows the server's answer to a combat command.
     pub fn apply_combat(&mut self, report: CombatReport) {
-        if matches!(
-            report,
-            CombatReport::Attack(oteryn_session::AttackIntentDisposition::Ok)
-        ) {
-            self.walk.cancel();
-        }
-        if report != CombatReport::NoTarget {
-            self.combat_line = report.text();
-        }
+        self.combat_line = report.text();
     }
 
     pub const fn arrow(&mut self, direction: StepDir) {
@@ -326,12 +311,6 @@ impl PlayView {
             .map_err(|_error| PublicClass::SessionUnavailable)?
         {
             link.request(direction);
-        }
-        if let Some(tile) = self.attack_click.take() {
-            link.request_combat(CombatCommand::AttackTile {
-                tile,
-                floor: self.floor,
-            });
         }
         for spell in self.casts.drain(..) {
             link.request_combat(CombatCommand::Cast(spell));
@@ -813,9 +792,6 @@ mod tests {
         async fn combat(&mut self, command: CombatCommand) -> Result<CombatReport, SessionError> {
             lock_combats(&self.combats).push(command);
             Ok(match command {
-                CombatCommand::AttackTile { .. } => {
-                    CombatReport::Attack(oteryn_session::AttackIntentDisposition::Ok)
-                }
                 CombatCommand::Cast(_) => CombatReport::Cast(SpellCastDisposition::NotEnoughMana),
             })
         }
@@ -883,7 +859,7 @@ mod tests {
     }
 
     #[test]
-    fn a_click_and_a_hotkey_reach_the_session_task_and_their_answers_reach_the_view()
+    fn a_hotkey_reaches_the_session_task_in_press_order_and_its_answer_reaches_the_view()
     -> Result<(), String> {
         let serves = Arc::new(AtomicUsize::new(0));
         let combats = Arc::new(Mutex::new(Vec::new()));
@@ -901,26 +877,25 @@ mod tests {
             .spawn(run_session(fake, commands, events))
             .map_err(|error| error.to_string())?;
         let mut view = view().map_err(|error| format!("{error:?}"))?;
-        let tile = TileCoord::new(101, 200);
-        view.click(tile).map_err(|error| format!("{error:?}"))?;
         let spell = NonZeroU32::new(2).ok_or("spell")?;
+        let first = NonZeroU32::new(1).ok_or("spell")?;
         view.cast(spell);
+        view.cast(first);
         // Past the bar: ignored.
         view.cast(NonZeroU32::new(9).ok_or("spell")?);
         assert_eq!(view.tick(&link), Ok(()));
         for _ in 0..200 {
             assert_eq!(view.tick(&link), Ok(()));
-            if view.combat_status().ends_with("Not enough mana") {
+            if lock_combats(&combats).len() == 2
+                && view.combat_status().ends_with("Not enough mana")
+            {
                 break;
             }
             std::thread::sleep(Duration::from_millis(5));
         }
         assert_eq!(
             *lock_combats(&combats),
-            [
-                CombatCommand::AttackTile { tile, floor: 0 },
-                CombatCommand::Cast(spell)
-            ]
+            [CombatCommand::Cast(spell), CombatCommand::Cast(first)]
         );
         assert_eq!(
             view.combat_status(),
@@ -987,7 +962,7 @@ mod tests {
 
     impl Stepper for Pushing {
         async fn combat(&mut self, _command: CombatCommand) -> Result<CombatReport, SessionError> {
-            Ok(CombatReport::NoTarget)
+            Ok(CombatReport::Cast(SpellCastDisposition::NotEnoughMana))
         }
 
         async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {

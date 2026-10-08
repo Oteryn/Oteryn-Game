@@ -1731,8 +1731,12 @@ impl<S: SessionStream> Session<S> {
         payload: &[u8],
     ) -> Result<AttackOutcome, SessionError> {
         let result = self.send_and_read_result(command_type, payload).await?;
-        let disposition =
-            attack::decode_attack_intent_result(&result.payload).map_err(SessionError::Attack)?;
+        // The server's rate limit answers `Rejected` with an empty payload: a normal refusal.
+        let disposition = if result.status == CommandStatus::Rejected && result.payload.is_empty() {
+            AttackIntentDisposition::Rejected
+        } else {
+            attack::decode_attack_intent_result(&result.payload).map_err(SessionError::Attack)?
+        };
         check_status_pairing(
             result.command_id,
             result.status,

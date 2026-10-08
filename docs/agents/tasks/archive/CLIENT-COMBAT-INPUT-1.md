@@ -20,6 +20,9 @@ owned_paths:
   - apps/client/src/play.rs
   - apps/client/src/spell.rs
   - apps/client/src/combat_input.rs
+  - apps/client/src/lib.rs
+  - apps/client/src/windows_shell.rs
+  - tools/dev-client/src/lib.rs
   - docs/agents/tasks/archive/CLIENT-COMBAT-INPUT-1.md
 public_contracts: []
 external_repositories: []
@@ -27,10 +30,10 @@ external_repositories: []
 
 ## Outcome
 
-The client reaches the server's attack and cast dispatch: a click on a creature or player sends
-attack-target (cmd 11), digits 1-4 cast spell-book entries (cmd 3, aimed at the attack target),
-the answer shows in the window title, and the session layer has senders for cmd 11 and cmd 12 and
-keeps the actor combat state (domain 10). D964 packet S1, root finding 1 (coordination #1622).
+The client reaches the server's attack and cast dispatch: digits 1-4 cast spell-book entries (cmd 3, aimed at the attack target), in press order, and the
+answer shows in the window title. The session layer has senders for attack-target (cmd 11) and
+fight modes (cmd 12) and keeps the actor combat state (domain 10). Click-to-attack is out of this
+task: the view carries no visible entities yet, so it returns in CLIENT-ENTITY-VIEW-1. D964 packet S1, root finding 1 (coordination #1622).
 
 ## Architecture and source of truth
 
@@ -43,15 +46,15 @@ keeps the actor combat state (domain 10). D964 packet S1, root finding 1 (coordi
 
 - [x] Session sends cmd 11 and cmd 12 and keeps domain 10; refuses both before sending when cap 17
   was not selected (session tests).
-- [x] A click and a hotkey reach the session task and their answers reach the view
-  (`play::tests::a_click_and_a_hotkey_reach_the_session_task_and_their_answers_reach_the_view`).
+- [x] Hotkeys reach the session task in press order and their answers reach the view
+  (`play::tests::a_hotkey_reaches_the_session_task_in_press_order_and_its_answer_reaches_the_view`).
+- [x] An empty `Rejected` attack answer (server rate limit) is a normal refusal.
 - [x] `windows_shell.rs` routes hotkeys and shows the combat line (`cfg(windows)`, not compiled here).
 
 ## Excluded scope
 
-`apps/game-server/**` and `protocol-oteryn` unchanged. No fight-mode control. `tools/dev-client`
-got one `SessionError::Attack` mapping arm, forced by its exhaustive match (outside the listed
-owned paths; no behaviour change).
+`apps/game-server/**` and `protocol-oteryn` unchanged. No fight-mode control and no click-to-attack.
+`tools/dev-client` got one `SessionError::Attack` mapping arm, forced by its exhaustive match.
 
 ## Validation
 
@@ -62,7 +65,4 @@ owned paths; no behaviour change).
 - `python -m unittest discover -s tools/agents/tests`: OK
 - E2E (attack the qualification rat, cast exura): `NOT_APPLICABLE` here; it needs a game server
   with PostgreSQL 17.6, the platform login and a browser sign-in, none available in this session.
-- Gap: the tile-to-entity pick (`attackable_at`, `run_combat`) has no unit test because
-  `WorldEntities` has no public constructor and the client has no session fixture; the wire is
-  covered by the session tests and the dispatch by the client Fake test.
 - Windows shell: the repository Windows CI job on the PR head.
