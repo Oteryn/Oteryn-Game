@@ -3,7 +3,19 @@
   "permissions": {
     "allow": [
       "mcp__claude-code-remote__create_session",
-      "mcp__github__resolve_review_thread"
+      "mcp__github__resolve_review_thread",
+      "Bash(python tools/content-migration/world_project_v2_to_tree.py)",
+      "Bash(python tools/content-migration/world_project_v2_to_tree.py *)",
+      "Bash(python3 tools/content-migration/world_project_v2_to_tree.py)",
+      "Bash(python3 tools/content-migration/world_project_v2_to_tree.py *)",
+      "Bash(python tools/content-migration/regenerate_content.py)",
+      "Bash(python tools/content-migration/regenerate_content.py *)",
+      "Bash(python3 tools/content-migration/regenerate_content.py)",
+      "Bash(python3 tools/content-migration/regenerate_content.py *)",
+      "Bash(python tools/content-schema/native-gameplay/build_full_spell_artifact.py)",
+      "Bash(python tools/content-schema/native-gameplay/build_full_spell_artifact.py *)",
+      "Bash(python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py)",
+      "Bash(python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py *)"
     ]
   }
 }
