@@ -51,11 +51,11 @@ The same three tiers apply when the control plane, a lead or the architect start
 
 - Haiku: read-only work that needs reading, not judgement: file reads and code search, pin and hash checks, PR/CI/review state and failure logs, Reference data extraction (monsters, spells, items), environment checks and verbatim text moves. Haiku never writes code, rules on a blocker or decides a merge.
 - Sonnet: ordinary implementation.
-- Opus: persistence, fencing, protocol, authority, durable value, the native login track and hard rulings.
+- Opus: the `hard` categories of the model table in `docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md` (persistence, session-generation fencing, `protocol-oteryn` wire format, authority, durable value, security, a cross-lane architecture decision), plus the native login track and hard rulings.
 
 Haiku sessions run in the dedicated lookup environment with autocompact at 100k tokens (D944, D956); Sonnet and Opus sessions run in the default environment. Exact model and environment identifiers live in the canonical STATE, never in the repository. Prefer a Haiku subagent or session for any large read so that it stays out of Sonnet and Opus context.
 
-The control plane keeps STATE to the rules and recent decisions, and moves closed history verbatim into archive comments listed in STATE (D957).
+The control plane archives only closed history: it moves it verbatim into archive comments listed in STATE (D957). STATE always keeps the rules, recent decisions and the live coordination fields required by the coordinator prompt: active tasks, held paths and leases, blockers with recheck triggers and the owner decision queue.
 
 ### Local checks by changed path
 
