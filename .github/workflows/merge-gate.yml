@@ -652,6 +652,7 @@ jobs:
           key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
             rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.94.0-
 
       - name: Select changed workspace crates
         env:
@@ -1032,6 +1033,7 @@ jobs:
           key: rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
             rust-linux-v2-1.94.0-${{ hashFiles('Cargo.lock') }}-
+            rust-linux-v2-1.94.0-
 
       - name: Build workspace
         run: cargo +1.94.0 build --locked --workspace --all-targets
