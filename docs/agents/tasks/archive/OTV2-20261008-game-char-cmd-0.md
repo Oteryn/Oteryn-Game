@@ -75,6 +75,10 @@ registration (the implementation packet registers §12). No enablement.
 ## Implementation / findings
 
 - New contract document and lock entry; no other file changed.
+- Review round 1 (external review of the first frozen head, six threads) fixed in one push:
+  future-dated intents rejected, resumable pending list, unknown-command receipt shape,
+  configurable creation-page URL, shared account portfolio lock with a fixed lock order, and
+  `operation_id` unique per issuer across commands; conformance scenarios 19 to 23 added.
 
 ## Validation
 

@@ -104,16 +104,21 @@ lowercase non-nil UUIDv7 strings. Counters and times are canonical non-zero deci
 Request:
 
 ```json
-{"contract_version":1,"operation":"ListPendingCharacterCommandsV1","source_authority":"oteryn:character-authority:primary","max_entries":32}
+{"contract_version":1,"operation":"ListPendingCharacterCommandsV1","source_authority":"oteryn:character-authority:primary","after_source_revision":"0","max_entries":32}
 ```
 
-Response `200`, 0..32 entries sorted by `source_revision` ascending, unique `operation_id`:
+Response `200`, 0..32 PENDING entries with `source_revision` strictly above
+`after_source_revision`, sorted by `source_revision` ascending, unique `operation_id`:
 
 ```json
 {"contract_version":1,"pending":[{"command":"CreateCharacter","operation_id":"0192a000-0000-7000-8000-000000000001","source_revision":"17"}]}
 ```
 
 - PENDING means "no receipt stored on Platform", whatever the intent's expiry.
+- Paging: `after_source_revision` is a decimal uint64 string, and the only counter that may be
+  `"0"`. The consumer starts at `"0"`, continues from the last returned `source_revision`, and
+  starts again at `"0"` after a response with fewer than `max_entries` entries. An intent that
+  stays PENDING (a transient dependency failure, §6) therefore never hides later intents.
 - `source_authority` is the configured Character Authority namespace (LCFA §4 rule).
 
 ### 4.2 Intent read
@@ -151,7 +156,7 @@ Platform holds no intent with that `(command, operation_id)`.
 | `requested_name` | 2..29 bytes of the CHAR-NAME-1 repertoire (boundary §6.1); Game validates it, Platform's check is advisory |
 | `character_id` | the Character to transfer |
 | `purpose` | closed set, for audit only: `BAZAAR_LISTING_ESCROW`, `BAZAAR_SETTLEMENT`, `BAZAAR_ESCROW_RETURN` |
-| `issued_at_source`, `expires_at_source` | `issued < expires ≤ issued + 300` (the bootstrap intent's technical TTL) |
+| `issued_at_source`, `expires_at_source` | `issued < expires ≤ issued + 300` (the bootstrap intent's technical TTL); `issued` at most 5 s after trusted Game time (§5.3) |
 
 Creation choices other than name and World (sex, outfit, vocation) are not v1 inputs: Character
 sex is not yet a creation input (`OTERYN_GAME_CHARACTER_APPEARANCE_OWNER_DECISION_2026-09-28.md`)
@@ -178,7 +183,11 @@ Rejected, either command:
 {"contract_version":1,"operation":"PublishCharacterCommandReceiptV1","source_authority":"oteryn:character-authority:primary","command":"CreateCharacter","operation_id":"0192a000-0000-7000-8000-000000000001","outcome":"REJECTED","result_code":"CHAR_CMD_NAME_UNAVAILABLE","decided_at":"1790000002"}
 ```
 
-- The three member sets above are exact per `(command, outcome)`.
+- The three member sets above are exact per `(command, outcome)`. The rejected member set also
+  serves a `command` that Game does not know: Game then echoes the pending-list `command` string
+  with `CHAR_CMD_UNSUPPORTED` (§7). Platform accepts that string when it equals the stored
+  intent's `command`. A `command` string is 1..64 bytes of ASCII letters, digits and `_`; an entry
+  outside that form is a malformed list response, not an intent.
 - `projection_epoch` and the projection revisions are the LCFA values the commit assigned to the
   affected accounts (LCFA §5); Platform uses them to know when its read model shows the result
   (§9).
@@ -200,7 +209,14 @@ and raises its own. Neither side rewrites the other's record.
 - Platform mints a fresh UUIDv7 `operation_id` once per user submission or saga step and stores
   it with the intent before any Game exchange. A browser double-submit or a saga retry reuses the
   same `operation_id`; a new attempt after a terminal receipt uses a new one.
-- Uniqueness scope: `(issuer_authority, command, operation_id)`.
+- Uniqueness scope: `(issuer_authority, operation_id)`, across both commands. Platform keys its
+  intents and stored receipts, and Game keys its receipts, by that same pair. An `operation_id`
+  is never reused for another command.
+- Game checks before any mutation that the decoded intent's `command` equals the pending-list
+  and read-request `command`, and that no stored receipt holds that `operation_id` for another
+  command. A mismatch with no stored receipt gets a stored `REJECTED`
+  `CHAR_CMD_OPERATION_CONFLICT` receipt and an operator alarm; a mismatch against a stored
+  receipt follows §5.2 (no write, no new receipt, alarm).
 - Platform intents are immutable: the stored intent bytes never change.
 
 ### 5.2 Game receipt store
@@ -229,6 +245,11 @@ and raises its own. Neither side rewrites the other's record.
 - Expiry is checked against conservative trusted Game time inside the deciding transaction. An
   expired intent gets a stored `REJECTED` `CHAR_CMD_INTENT_EXPIRED` receipt, so a late consumer
   can never commit it.
+- Future-dated intents: an `issued_at_source` more than 5 s (the permitted clock skew) after
+  trusted Game time, or Game time that is unavailable or ambiguous, never commits (bootstrap
+  decision: future or ambiguous intents are rejected). A future-dated intent gets a stored
+  `REJECTED` `CHAR_CMD_INTENT_INVALID` receipt; unavailable Game time is the transient case of §6.
+  An intent can therefore never stay valid for more than 305 s of Game time.
 - The Character restore fence (`CHARACTER_RESTORE_NONROLLBACK_FENCE_V1`) is a prerequisite of
   every decision: a store that is restored and not yet reconciled decides nothing and publishes
   nothing.
@@ -253,7 +274,7 @@ intent stays PENDING and the consumer retries. A definite answer is a stored rec
 
 ### 6.1 CreateCharacter
 
-In one transaction, serialized per account (the account portfolio lock), or not at all:
+In one transaction, holding the account portfolio lock (§6.3) of `account_id`, or not at all:
 
 - name: CHAR-NAME-1 repertoire, comparison key and global reservation (boundary §6.1); a taken
   key is `CHAR_CMD_NAME_UNAVAILABLE` with no Character write; concurrent same-key creates have
@@ -269,8 +290,9 @@ Creation takes no CharacterLease and creates no GameSession.
 
 ### 6.2 TransferCharacterOwnership
 
-In one transaction, under the Character's admission serialization (the CharacterLease row), or
-not at all:
+In one transaction, holding the account portfolio locks (§6.3) of `expected_from_account_id`
+and `to_account_id` and then the Character's admission serialization (its CharacterLease row),
+or not at all:
 
 - the Character exists and is not terminally deleted;
 - current owner equals `expected_from_account_id`, and `to_account_id` differs from it;
@@ -283,7 +305,7 @@ not at all:
   and 14) refuses the former owner (boundary §16 scenarios 1 and 5). Ownership never has two
   holders, and no stale grant, lease or session generation issued before the transfer can admit
   or write for the former owner;
-- `to_account_id` holds fewer than 64 listed Characters;
+- `to_account_id` holds fewer than 64 listed Characters, checked under its portfolio lock;
 - rebind the owner, advance the Character revision and both accounts' LCFA projection revisions
   (LCFA §5), store the receipt, the audit event and its outbox state.
 
@@ -293,6 +315,19 @@ auction; settlement moves it to the buyer (`BAZAAR_SETTLEMENT`); a cancelled auc
 (`BAZAAR_ESCROW_RETURN`). Game treats the escrow account as any other `AccountId`. Platform
 settles money only on a `COMMITTED` settlement receipt, and recovers a `REJECTED` one through its
 own saga (boundary §10).
+
+### 6.3 Account portfolio lock and lock order
+
+- Each `AccountId` known to Character Authority has one portfolio lock (one row locked for
+  update). Every command that adds a Character to, or removes one from, an account holds that
+  account's lock: `CreateCharacter` for `account_id`, `TransferCharacterOwnership` for both
+  accounts. The 64-Character check runs only while the lock is held, so concurrent creates and
+  transfers into one account serialize and the account can never exceed 64 listed Characters.
+- Lock order, the same for every command: portfolio locks first, in ascending `AccountId`
+  order; then CharacterLease rows, in ascending `CharacterId` order. Admission takes no
+  portfolio lock, so it cannot form a cycle with these commands. A deadlock or serialization
+  failure that the database still reports is the transient case of §6: the transaction rolls
+  back, nothing is stored and the intent is decided again.
 
 ## 7. Result codes
 
@@ -317,9 +352,9 @@ code is terminal and stored. The boundary §13 class tells Platform how to proce
 | `CHAR_CMD_OPERATION_CONFLICT` | both | ambiguous / contradiction | alarm; no automatic retry |
 | `CHAR_CMD_UNSUPPORTED` | both | mixed-version rejection | keep the feature disabled; never fall back to Canary or SQL |
 
-- `CHAR_CMD_UNSUPPORTED` covers an unknown `contract_version`, `command` or `variant`. Game can
-  publish it from the pending-list entry even when it cannot decode the intent body (boundary
-  §16 scenario 9).
+- `CHAR_CMD_UNSUPPORTED` covers an unknown `contract_version`, `command` or `variant`. Game
+  publishes it from the pending-list entry, as the rejected receipt of §4.3, even when it cannot
+  decode the intent body (boundary §16 scenario 9).
 - Dependency unavailability is not a code: it is the transient case of §6.
 - Receipts never carry raw database errors (boundary §5).
 
@@ -338,11 +373,13 @@ D965 Q5=A, normative for the Game client:
 - The Character list screen has a "Create character" entry. Activating it opens the system web
   browser at the configured Platform account page for Character creation. The client has no
   creation form and sends no Game command.
-- The URL is the client's configured Platform web origin (HTTPS only, the origin the client
-  already uses for account links) plus the fixed path `/account/characters/create`. The client
+- The URL is one complete client configuration value: an absolute `https` URL on the Platform
+  web origin the client already uses for account links. It is not part of the versioned wire;
+  the expected value ends in `/account/characters/create` (U-CC4). The client
   appends no query, fragment, token, `AccountId`, `CharacterId`, session or ticket. The page
   requires its own Platform web login; no Game credential crosses into the browser. The exact
-  Platform route is Platform's to confirm (U-CC4); changing it is a client configuration change.
+  Platform route is Platform's to confirm (U-CC4); changing it is a client configuration change,
+  not a new `contract_version`.
 - The page submits the user's name and World choice to Platform, which stores a
   `CreateCharacter` intent (§2). The page shows "pending" until the receipt, then the result
   code's message, and "created" only on `COMMITTED`.
@@ -409,7 +446,23 @@ The Game implementation and the Platform consumer must prove, with shared exact 
 17. **client deep link:** the entry opens exactly the configured HTTPS URL with nothing appended,
     and a focus regain after a committed create shows the Character once the read model reaches
     the receipt's revision;
-18. **privacy:** no log line of either side carries an `AccountId`, name or Character list.
+18. **privacy:** no log line of either side carries an `AccountId`, name or Character list;
+19. **future-dated intent:** `issued_at_source` 6 s after trusted Game time gets a stored
+    `CHAR_CMD_INTENT_INVALID` receipt and never commits; 5 s after is decided normally;
+20. **portfolio limit race:** an account holding 63 Characters receives two concurrent
+    transfers, or a transfer and a create: exactly one commits, the other gets
+    `CHAR_CMD_ACCOUNT_CHARACTER_LIMIT`; two transfers between the same two accounts in opposite
+    directions never deadlock-stall (lock order of §6.3);
+21. **operation id across commands:** one `operation_id` listed or read once as
+    `CreateCharacter` and once as `TransferCharacterOwnership`: the first decided keeps its
+    receipt; the second writes nothing, stores no second receipt and alarms; a read whose intent
+    `command` differs from the requested `command` gets a stored `CHAR_CMD_OPERATION_CONFLICT`
+    receipt before any mutation;
+22. **pending paging:** with 32 permanently PENDING intents (dependency unavailable), a 33rd
+    intent is still listed and decided through `after_source_revision`;
+23. **unknown command receipt:** a pending entry `{"command":"RenameCharacter",...}` gets the
+    rejected receipt with `"command":"RenameCharacter"` and `CHAR_CMD_UNSUPPORTED`, and Platform
+    accepts it with `200`.
 
 ## 12. Limits
 
@@ -434,7 +487,7 @@ The implementation packet registers the new limits in `docs/contracts/RESOURCE_L
 | U-CC1 | product Character slot quota | open; only the 64 wire bound applies |
 | U-CC2 | creation choices beyond name and World (sex, outfit, vocation) | not inputs; a new `contract_version` |
 | U-CC3 | per-account create rate limit | Platform's to set on the web page |
-| U-CC4 | exact Platform account page route | `/account/characters/create` until Platform confirms |
+| U-CC4 | exact Platform account page route | client configuration; expected `/account/characters/create` until Platform confirms |
 | U-CC5 | production PKI and Character Authority host list | open, as LCFA U-LC6 |
 | U-CC6 | rename, deletion, restore, world transfer | out of scope; later contract versions |
 
