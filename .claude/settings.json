@@ -3,7 +3,11 @@
   "permissions": {
     "allow": [
       "mcp__claude-code-remote__create_session",
-      "mcp__github__resolve_review_thread"
+      "mcp__github__resolve_review_thread",
+      "Bash(python tools/content-migration/*)",
+      "Bash(python3 tools/content-migration/*)",
+      "Bash(python tools/content-schema/*)",
+      "Bash(python3 tools/content-schema/*)"
     ]
   }
 }
