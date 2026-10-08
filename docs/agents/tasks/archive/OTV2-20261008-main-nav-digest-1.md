@@ -4,11 +4,11 @@
 task_id: OTV2-20261008-main-nav-digest-1
 title: Re-pin the item_identity.rs navigation source digest broken on main by #1929
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/main-nav-digest-1-20261008
-pr: null
+pr: 1934
 issue: 1622
 base_sha: 340278d84f5c5406b45c634c9750e3414844bd88
 head_sha: null
@@ -29,7 +29,7 @@ owned_paths:
   - tools/content-migration/item_navigation_source_supplement.py
   - tools/content-migration/item_official_navigation.py
   - content/items/taxonomy/items.json
-  - docs/agents/tasks/active/OTV2-20261008-main-nav-digest-1.md
+  - docs/agents/tasks/archive/OTV2-20261008-main-nav-digest-1.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -71,3 +71,8 @@ Candidate:
 - `python tools/content-migration/test_item_external_family_refinement.py` OK
 - `python tools/content-migration/test_item_bounded7_navigation.py` OK
 - `python tools/content-migration/validate_world_project_v2_to_tree.py` PASS
+- `python tools/agents/validate_governance.py` pass
+- `python -m unittest discover -s tools/agents/tests` OK
+- `python tools/repository/validate_repository_policy.py` pass
+
+Review: no independent review required (digest re-pin only, no logic). Merge: squash merge of #1934 via Merge Queue.
