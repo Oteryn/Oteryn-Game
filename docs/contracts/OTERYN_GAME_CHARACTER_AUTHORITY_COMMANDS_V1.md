@@ -84,9 +84,10 @@ client, exactly as LCFA §3.
   - `ListPendingCharacterCommandsV1` → `/internal/v1/game-auth/character-commands/pending`;
   - `ReadCharacterCommandIntentV1` → `/internal/v1/game-auth/character-commands/read`;
   - `PublishCharacterCommandReceiptV1` → `/internal/v1/game-auth/character-commands/receipt`.
-- Bounds: connect 1 s, handshake 2 s, exchange 3 s; every request at most 256 bytes except a
-  receipt (at most 1024 bytes); a pending-list response at most 4096 bytes; an intent response
-  at most 4096 bytes; a receipt response at most 256 bytes; one in-flight exchange per consumer.
+- Bounds: connect 1 s, handshake 2 s, exchange 3 s; a read request at most 256 bytes, a
+  pending-list request at most 512 bytes and a receipt at most 1024 bytes; a pending-list
+  response at most 8192 bytes (a full page of 32 entries with 64-byte commands and 20-digit
+  revisions is 5602 bytes); an intent response at most 4096 bytes; a receipt response at most 256 bytes; one in-flight exchange per consumer.
 - Cadence: while enabled the consumer lists pending intents every 1 s, and backs off up to 10 s
   on `429` or `503`.
 - The internal reverse proxy of a stack must route these three paths behind `internal-mtls`
@@ -104,21 +105,25 @@ lowercase non-nil UUIDv7 strings. Counters and times are canonical non-zero deci
 Request:
 
 ```json
-{"contract_version":1,"operation":"ListPendingCharacterCommandsV1","source_authority":"oteryn:character-authority:primary","after_source_revision":"0","max_entries":32}
+{"contract_version":1,"operation":"ListPendingCharacterCommandsV1","source_authority":"oteryn:character-authority:primary","after_source_revision":"0","after_operation_id":"00000000-0000-0000-0000-000000000000","max_entries":32}
 ```
 
-Response `200`, 0..32 PENDING entries with `source_revision` strictly above
-`after_source_revision`, sorted by `source_revision` ascending, unique `operation_id`:
+Response `200`, 0..32 PENDING entries whose key `(source_revision, operation_id)` is strictly
+above `(after_source_revision, after_operation_id)`, sorted by that key ascending (`source_revision`
+as uint64, then `operation_id` as bytes), unique `operation_id`:
 
 ```json
 {"contract_version":1,"pending":[{"command":"CreateCharacter","operation_id":"0192a000-0000-7000-8000-000000000001","source_revision":"17"}]}
 ```
 
 - PENDING means "no receipt stored on Platform", whatever the intent's expiry.
-- Paging: `after_source_revision` is a decimal uint64 string, and the only counter that may be
-  `"0"`. The consumer starts at `"0"`, continues from the last returned `source_revision`, and
-  starts again at `"0"` after a response with fewer than `max_entries` entries. An intent that
-  stays PENDING (a transient dependency failure, §6) therefore never hides later intents.
+- Paging: the continuation key is `(after_source_revision, after_operation_id)`, because the two
+  variants can share a `source_revision` (§4.2). `after_source_revision` is a decimal uint64
+  string and the only counter that may be `"0"`; `after_operation_id` is the only identifier that
+  may be the nil UUID. The consumer starts at `("0", nil)`, continues from the last returned
+  entry's key, and starts again at `("0", nil)` after a response with fewer than `max_entries`
+  entries. An intent that stays PENDING (a transient dependency failure, §6) therefore never hides
+  later intents, including ones that share its `source_revision`.
 - `source_authority` is the configured Character Authority namespace (LCFA §4 rule).
 
 ### 4.2 Intent read
@@ -459,7 +464,10 @@ The Game implementation and the Platform consumer must prove, with shared exact 
     `command` differs from the requested `command` gets a stored `CHAR_CMD_OPERATION_CONFLICT`
     receipt before any mutation;
 22. **pending paging:** with 32 permanently PENDING intents (dependency unavailable), a 33rd
-    intent is still listed and decided through `after_source_revision`;
+    intent is still listed and decided through the continuation key; a `CreateCharacter` and a
+    `TransferCharacterOwnership` sharing `source_revision` across a page boundary are both listed;
+    a full page of 32 entries with 64-byte commands and 20-digit revisions (5602 bytes) is
+    accepted, and a 33-entry or over-8192-byte response is a malformed list response;
 23. **unknown command receipt:** a pending entry `{"command":"RenameCharacter",...}` gets the
     rejected receipt with `"command":"RenameCharacter"` and `CHAR_CMD_UNSUPPORTED`, and Platform
     accepts it with `200`.
@@ -469,10 +477,11 @@ The Game implementation and the Platform consumer must prove, with shared exact 
 | Limit | Value |
 |---|---|
 | pending entries per list response | 32 |
-| request bytes (list, read) | 256 |
+| request bytes (read) | 256 |
+| request bytes (pending list) | 512 |
 | intent bytes | 4096 |
 | receipt request bytes | 1024 |
-| response bytes (pending list) | 4096 |
+| response bytes (pending list) | 8192 |
 | response bytes (receipt) | 256 |
 | in-flight exchanges per consumer | 1 |
 | intent TTL | 300 s |

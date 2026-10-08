@@ -79,6 +79,8 @@ registration (the implementation packet registers §12). No enablement.
   future-dated intents rejected, resumable pending list, unknown-command receipt shape,
   configurable creation-page URL, shared account portfolio lock with a fixed lock order, and
   `operation_id` unique per issuer across commands; conformance scenarios 19 to 23 added.
+- Review round 2: pending-list response bound raised to 8192 bytes (worst full page 5602) and
+  list request to 512 bytes; compound continuation key `(source_revision, operation_id)`.
 
 ## Validation
 
