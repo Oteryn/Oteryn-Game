@@ -5,8 +5,10 @@
 //! domain-1 and domain-2 deltas move it. The map is the start area anchored at the join
 //! position (CLIENT-VIS-1 milestone 1) until positions are map positions.
 
+use crate::combat_input::{CombatCommand, CombatReport, PlayCommand, run_combat};
 use crate::input::{ClickWalk, StepDir, StepResult};
 use crate::scene::Scene;
+use crate::spell::{SPELL_SLOTS, SpellFeedback};
 use crate::world::{START, World};
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
@@ -14,8 +16,9 @@ use oteryn_session::{
     ActorPosition, JoinSnapshot, Session, SessionError, SessionEvent, SessionStream, StepDirection,
     StepDisposition, StepOutcome, WorldObjectOverlayEntry,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::future::Future;
+use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -88,6 +91,12 @@ pub struct PlayView {
     in_flight: bool,
     /// An arrow key waiting for the next step; the latest press wins.
     key_step: Option<StepDir>,
+    /// The tile of a click not yet sent to the session task as an attack-target attempt.
+    attack_click: Option<TileCoord>,
+    /// Spell-book entries pressed and not yet sent, in press order.
+    casts: Vec<NonZeroU32>,
+    /// The last combat line the server's answer produced, shown until the next one.
+    combat_line: Option<&'static str>,
 }
 
 impl PlayView {
@@ -119,6 +128,9 @@ impl PlayView {
             walk: ClickWalk::new(),
             in_flight: false,
             key_step: None,
+            attack_click: None,
+            casts: Vec::new(),
+            combat_line: None,
         };
         for entry in overlay {
             view.set_marker(entry);
@@ -169,11 +181,45 @@ impl PlayView {
 
     /// A click on `tile`: a drawn object or actor is selected, any other tile becomes the walk
     /// goal.
+    /// The tile is also offered to the session task as an attack target: only it can tell
+    /// whether a creature stands there, and a hit ends the walk (see [`Self::apply_combat`]).
     pub fn click(&mut self, tile: TileCoord) -> Result<(), BatchError> {
         if self.scene.select_tile(tile)?.is_none() {
             self.walk.set_goal(tile);
         }
+        self.attack_click = Some(tile);
         Ok(())
+    }
+
+    /// A spell hotkey: casts the 1-based spell-book entry. Entries past the bar are ignored and
+    /// at most one press per bar slot waits for the next tick.
+    pub fn cast(&mut self, spell: NonZeroU32) {
+        if spell.get() <= u32::from(SPELL_SLOTS) && self.casts.len() < usize::from(SPELL_SLOTS) {
+            self.casts.push(spell);
+        }
+    }
+
+    /// The minimal spell bar: its hotkeys and the last combat or cast line.
+    #[must_use]
+    pub fn combat_status(&self) -> String {
+        let line = self.combat_line.unwrap_or("");
+        format!("spells 1-{SPELL_SLOTS} {line}")
+            .trim_end()
+            .to_owned()
+    }
+
+    /// Shows the server's answer to a combat command. A successful attack ends the walk the same
+    /// click started.
+    pub fn apply_combat(&mut self, report: CombatReport) {
+        if matches!(
+            report,
+            CombatReport::Attack(oteryn_session::AttackIntentDisposition::Ok)
+        ) {
+            self.walk.cancel();
+        }
+        if report != CombatReport::NoTarget {
+            self.combat_line = report.text();
+        }
     }
 
     pub const fn arrow(&mut self, direction: StepDir) {
@@ -271,6 +317,7 @@ impl PlayView {
                 PlayEvent::Pushed(pushed) => self
                     .apply_pushed(&pushed)
                     .map_err(|_error| PublicClass::SessionUnavailable)?,
+                PlayEvent::Combat(report) => self.apply_combat(report),
                 PlayEvent::Ended(class) => return Err(class),
             }
         }
@@ -279,6 +326,15 @@ impl PlayView {
             .map_err(|_error| PublicClass::SessionUnavailable)?
         {
             link.request(direction);
+        }
+        if let Some(tile) = self.attack_click.take() {
+            link.request_combat(CombatCommand::AttackTile {
+                tile,
+                floor: self.floor,
+            });
+        }
+        for spell in self.casts.drain(..) {
+            link.request_combat(CombatCommand::Cast(spell));
         }
         Ok(())
     }
@@ -301,6 +357,8 @@ pub enum PlayEvent {
     Stepped(Box<StepOutcome>),
     /// Deltas pushed outside any step, coalesced since the last poll.
     Pushed(Pushed),
+    /// The server's answer to a combat command.
+    Combat(CombatReport),
     /// The session ended; return to login with this public class.
     Ended(PublicClass),
 }
@@ -346,8 +404,12 @@ struct Mailbox {
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
     pushed: Pushed,
+    /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
+    combat: VecDeque<CombatReport>,
     ended: Option<PublicClass>,
 }
+
+const MAX_COMBAT_REPORTS: usize = 8;
 
 type SharedMailbox = Arc<Mutex<Mailbox>>;
 
@@ -383,6 +445,14 @@ impl Outbox {
         }
     }
 
+    fn combat(&self, report: CombatReport) {
+        let mut mailbox = lock(&self.0);
+        if mailbox.combat.len() == MAX_COMBAT_REPORTS {
+            mailbox.combat.pop_front();
+        }
+        mailbox.combat.push_back(report);
+    }
+
     /// The first end wins.
     fn end(&self, class: PublicClass) {
         lock(&self.0).ended.get_or_insert(class);
@@ -392,14 +462,18 @@ impl Outbox {
 /// The shell's end of the session task: steps out, a bounded mailbox in, neither ever blocking.
 #[derive(Debug)]
 pub struct PlayLink {
-    commands: UnboundedSender<StepDir>,
+    commands: UnboundedSender<PlayCommand>,
     mailbox: SharedMailbox,
 }
 
 impl PlayLink {
     pub fn request(&self, direction: StepDir) {
         // A closed task has already reported or will report `Ended`.
-        let _ = self.commands.send(direction);
+        let _ = self.commands.send(PlayCommand::Step(direction));
+    }
+
+    pub fn request_combat(&self, command: CombatCommand) {
+        let _ = self.commands.send(PlayCommand::Combat(command));
     }
 
     /// The next event: the pushes older than the step outcome, the step outcome, then the coalesced pushes, then the end.
@@ -413,6 +487,9 @@ impl PlayLink {
         }
         if mailbox.pushed != Pushed::default() {
             return Some(PlayEvent::Pushed(std::mem::take(&mut mailbox.pushed)));
+        }
+        if let Some(report) = mailbox.combat.pop_front() {
+            return Some(PlayEvent::Combat(report));
         }
         mailbox.ended.take().map(PlayEvent::Ended)
     }
@@ -431,6 +508,11 @@ pub trait Stepper: Send {
     /// The pushed deltas applied since the last call; the session fails closed when this queue
     /// is left to fill.
     fn drain(&mut self) -> Vec<SessionEvent>;
+    /// Runs one combat command (attack target, cast).
+    fn combat(
+        &mut self,
+        command: CombatCommand,
+    ) -> impl Future<Output = Result<CombatReport, SessionError>> + Send;
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
@@ -451,10 +533,14 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     fn drain(&mut self) -> Vec<SessionEvent> {
         self.take_events()
     }
+
+    async fn combat(&mut self, command: CombatCommand) -> Result<CombatReport, SessionError> {
+        run_combat(self, &mut SpellFeedback::default(), command).await
+    }
 }
 
 /// The channel pair between the shell and `run_session`.
-pub fn play_channel() -> (PlayLink, UnboundedReceiver<StepDir>, Outbox) {
+pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
     let (commands, command_rx) = tokio::sync::mpsc::unbounded_channel();
     let mailbox = SharedMailbox::default();
     (
@@ -472,14 +558,24 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<StepDir>, Outbox) {
 /// session error (reported with its public class) or when the shell drops its link.
 pub async fn run_session<T: Stepper>(
     mut session: T,
-    mut commands: UnboundedReceiver<StepDir>,
+    mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
     loop {
         let ended = match commands.try_recv() {
-            Ok(direction) => match session.step(step_direction(direction)).await {
-                Ok(outcome) => {
-                    outbox.stepped(outcome);
+            Ok(PlayCommand::Step(direction)) => {
+                match session.step(step_direction(direction)).await {
+                    Ok(outcome) => {
+                        outbox.stepped(outcome);
+                        outbox.push(session.drain());
+                        continue;
+                    }
+                    Err(error) => error,
+                }
+            }
+            Ok(PlayCommand::Combat(command)) => match session.combat(command).await {
+                Ok(report) => {
+                    outbox.combat(report);
                     outbox.push(session.drain());
                     continue;
                 }
@@ -506,7 +602,8 @@ mod tests {
     use super::*;
     use oteryn_client_runtime::ClientRuntime;
     use oteryn_session::{
-        ActorPosition, AppliedDelta, CommandStatus, MAX_QUEUED_EVENTS, WorldSpatialObservation,
+        ActorPosition, AppliedDelta, CommandStatus, MAX_QUEUED_EVENTS, SpellCastDisposition,
+        WorldSpatialObservation,
     };
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -703,6 +800,7 @@ mod tests {
         fail_serve_after: usize,
         queued: Vec<SessionEvent>,
         drained: Arc<AtomicUsize>,
+        combats: Arc<Mutex<Vec<CombatCommand>>>,
     }
 
     impl Stepper for Fake {
@@ -710,6 +808,16 @@ mod tests {
             let events = std::mem::take(&mut self.queued);
             self.drained.fetch_add(events.len(), Ordering::SeqCst);
             events
+        }
+
+        async fn combat(&mut self, command: CombatCommand) -> Result<CombatReport, SessionError> {
+            lock_combats(&self.combats).push(command);
+            Ok(match command {
+                CombatCommand::AttackTile { .. } => {
+                    CombatReport::Attack(oteryn_session::AttackIntentDisposition::Ok)
+                }
+                CombatCommand::Cast(_) => CombatReport::Cast(SpellCastDisposition::NotEnoughMana),
+            })
         }
 
         async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
@@ -730,6 +838,10 @@ mod tests {
         }
     }
 
+    fn lock_combats(combats: &Mutex<Vec<CombatCommand>>) -> MutexGuard<'_, Vec<CombatCommand>> {
+        combats.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
     type Task = (PlayLink, Arc<AtomicUsize>, ClientRuntime);
 
     fn task(fail_step: bool, fail_serve_after: usize) -> Result<Task, String> {
@@ -742,6 +854,7 @@ mod tests {
             fail_serve_after,
             queued: Vec::new(),
             drained: Arc::new(AtomicUsize::new(0)),
+            combats: Arc::new(Mutex::new(Vec::new())),
         };
         runtime
             .spawn(run_session(fake, commands, events))
@@ -765,6 +878,54 @@ mod tests {
         std::thread::sleep(Duration::from_millis(300));
         assert!(serves.load(Ordering::SeqCst) >= 5);
         drop(link);
+        runtime.shutdown(Duration::from_millis(250));
+        Ok(())
+    }
+
+    #[test]
+    fn a_click_and_a_hotkey_reach_the_session_task_and_their_answers_reach_the_view()
+    -> Result<(), String> {
+        let serves = Arc::new(AtomicUsize::new(0));
+        let combats = Arc::new(Mutex::new(Vec::new()));
+        let (link, commands, events) = play_channel();
+        let runtime = ClientRuntime::new().map_err(|error| error.to_string())?;
+        let fake = Fake {
+            serves,
+            fail_step: false,
+            fail_serve_after: usize::MAX,
+            queued: Vec::new(),
+            drained: Arc::new(AtomicUsize::new(0)),
+            combats: Arc::clone(&combats),
+        };
+        runtime
+            .spawn(run_session(fake, commands, events))
+            .map_err(|error| error.to_string())?;
+        let mut view = view().map_err(|error| format!("{error:?}"))?;
+        let tile = TileCoord::new(101, 200);
+        view.click(tile).map_err(|error| format!("{error:?}"))?;
+        let spell = NonZeroU32::new(2).ok_or("spell")?;
+        view.cast(spell);
+        // Past the bar: ignored.
+        view.cast(NonZeroU32::new(9).ok_or("spell")?);
+        assert_eq!(view.tick(&link), Ok(()));
+        for _ in 0..200 {
+            assert_eq!(view.tick(&link), Ok(()));
+            if view.combat_status().ends_with("Not enough mana") {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert_eq!(
+            *lock_combats(&combats),
+            [
+                CombatCommand::AttackTile { tile, floor: 0 },
+                CombatCommand::Cast(spell)
+            ]
+        );
+        assert_eq!(
+            view.combat_status(),
+            "spells 1-4 Spell cast".replace("Spell cast", "Not enough mana")
+        );
         runtime.shutdown(Duration::from_millis(250));
         Ok(())
     }
@@ -825,6 +986,10 @@ mod tests {
     }
 
     impl Stepper for Pushing {
+        async fn combat(&mut self, _command: CombatCommand) -> Result<CombatReport, SessionError> {
+            Ok(CombatReport::NoTarget)
+        }
+
         async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
             Ok(moved_to(100, 199, 0))
         }
@@ -882,7 +1047,7 @@ mod tests {
                             .map_err(|error| format!("{error:?}"))?;
                     }
                     PlayEvent::Ended(class) => return Err(format!("session ended: {class:?}")),
-                    PlayEvent::Stepped(_) => {}
+                    PlayEvent::Stepped(_) | PlayEvent::Combat(_) => {}
                 }
             }
             if pushed > 4 {
