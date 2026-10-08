@@ -55,7 +55,7 @@ The same three tiers apply when the control plane, a lead or the architect start
 
 Haiku sessions run in the dedicated lookup environment with autocompact at 100k tokens (D944, D956); Sonnet and Opus sessions run in the default environment. Exact model and environment identifiers live in the canonical STATE, never in the repository. Prefer a Haiku subagent or session for any large read so that it stays out of Sonnet and Opus context.
 
-Sessions may run the repository's content generators and pin tools under `tools/content-migration/` and `tools/content-schema/` without a prompt (`.claude/settings.json`). Change a pinned digest with the file-edit tool, never with `sed` in Bash. A command the auto-mode classifier denies is never retried or worked around: report `BLOCKER` and wait for the owner's approval in that session.
+Sessions may run the content generators listed by exact path in `.claude/settings.json` (`world_project_v2_to_tree.py`, `regenerate_content.py`, `build_full_spell_artifact.py`) without a prompt; add a script there by exact path, never by directory wildcard. Change a pinned digest with the file-edit tool, never with `sed` in Bash. A command the auto-mode classifier denies is never retried or worked around: report `BLOCKER` and wait for the owner's approval in that session.
 
 The control plane archives only closed history: it moves it verbatim into archive comments listed in STATE (D957). STATE always keeps the rules, recent decisions and the live coordination fields required by the coordinator prompt: active tasks, held paths and leases, blockers with recheck triggers and the owner decision queue.
 
