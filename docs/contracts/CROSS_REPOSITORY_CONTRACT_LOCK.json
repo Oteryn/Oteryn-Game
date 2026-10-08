@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-10-05T12:00:00Z",
+  "updated_at": "2026-10-08T00:00:00Z",
   "policy": {
     "canonical_revisions_must_be_merged": true,
     "mutable_pr_heads_are_canonical": false,
@@ -231,6 +231,40 @@
       ],
       "production_enabled": false,
       "notes": "Re-pinned 2026-10-05 from ed6c0d38 (#1420) to f880cd74 (#1427, on Platform main 71bbe6c): the U16 row carries the #1426 epoch finding, new section 17 Amendment N4P-3 adds testing/preproduction issuance modes 33a (D171) and 34a (D172), and Non-authorization is section 18. Accepted by the Game architect and the owner (D721) for testing and preproduction only through docs/architecture/reviews/OTERYN_GAME_ARCH_LOGIN_FIRST_PACKETS_2026-10-05.md; the contract file Status line still reads CANDIDATE (Platform-side edit). Acceptance grants no implementation, deployment or activation authority by itself. Production still needs U1, U3, U8, U9, the mode 33a release gate (CHAR-NAME-1, LCFA-1), the mode 34a release gate (U3, D3, U7) and the full ADR-0020 section 7 entry."
+    },
+    {
+      "coordination_id": "GAME-PUBLIC-PROJ-0",
+      "contract_name": "oteryn-game-public-projections-v1",
+      "status": "PENDING_CANONICAL_MERGE",
+      "canonical_repository": "Oteryn/Oteryn-Game",
+      "canonical_contract_path": "docs/contracts/OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md",
+      "pending_pull_request": 1937,
+      "contract_status": "CANDIDATE_REVISION_1_NOT_ACCEPTED",
+      "governing_issues": [
+        "Oteryn/Oteryn-Game#1622",
+        "Oteryn/Oteryn-Platform#1476"
+      ],
+      "accepted_for_fnd02": false,
+      "production_enabled": false,
+      "producers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "CANDIDATE_CONTRACT_NOT_IMPLEMENTED"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "NOT_IMPLEMENTED"
+        }
+      ],
+      "rollout_order": [
+        "independent protocol, privacy and persistence review and owner or architect acceptance of the candidate",
+        "record the Game merge commit, schema revision and contract digest here and switch this entry to LOCKED",
+        "Game producer child registers the PUBPROJ limits and implements the outbox publisher behind a default-off switch",
+        "Platform consumer child (Oteryn/Oteryn-Platform#1476) implements the read models and ingestion endpoints",
+        "enable per environment in testing, then preproduction; production needs separate explicit authority"
+      ]
     }
   ]
 }

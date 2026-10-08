@@ -4,15 +4,15 @@
 task_id: OTV2-20261008-game-public-proj-0
 title: GAME-PUBLIC-PROJ-0 Game public projections contract v1 (candidate)
 mode: CONTRACT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/game-public-proj-0-20261008
 issue: 1622
-pr: null
+pr: 1937
 base_sha: 340278d8
-head_sha: null
-final_head_sha: null
+head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
+final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_frozen_at: null
 owner: GAME-PUBLIC-PROJ-0 writer (control plane P5, coordination #1622)
 created_at: 2026-10-08T00:00:00Z
@@ -49,9 +49,9 @@ and idempotency, a watermark, error handling and bounds.
 
 ## Acceptance criteria
 
-- [ ] Contract file with all six families, privacy review, ordering, watermark, errors and limits.
-- [ ] `PENDING_CANONICAL_MERGE` lock entry naming this PR.
-- [ ] No code, migrations, Platform files or GAME-CHAR-CMD-0 files changed.
+- [x] Contract file with all six families, privacy review, ordering, watermark, errors and limits.
+- [x] `PENDING_CANONICAL_MERGE` lock entry naming this PR.
+- [x] No code, migrations, Platform files or GAME-CHAR-CMD-0 files changed.
 
 ## Excluded scope
 
@@ -60,4 +60,10 @@ repository and GAME-CHAR-CMD-0 files.
 
 ## Validation
 
-- pending
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
+- `git diff --check`: pass
+
+## PR and closeout
+
+- PR #1937; closeout by squash merge of #1937 (pending). Platform consumption follows in Oteryn/Oteryn-Platform#1476.
