@@ -49,6 +49,13 @@ installed_at = <UNIX_SECONDS_AT_SETUP>
 client_certificate_file = "<BASE>/node/secrets/runtime-status.crt"
 client_key_file = "<BASE>/node/secrets/runtime-status.key"
 assignment_epoch = <ASSIGNMENT_EPOCH>
+[platform.account_characters]
+# The Character projection identity (CN=<PROJECTION_IDENTITY>), distinct from the evidence and
+# runtime-status ones. F is the contract §5 epoch fence, outside the Character fence directory.
+client_certificate_file = "<BASE>/node/secrets/projection.crt"
+client_key_file = "<BASE>/node/secrets/projection.key"
+source_authority = "<PROJECTION_SOURCE_AUTHORITY>"
+epoch_fence_file = "<BASE>/projection/epoch-fence"
 [launch]
 authorization_file = "<BASE>/state/launch-initial.json"
 s2_authorization_file = "<BASE>/state/s2-fresh-store.json"

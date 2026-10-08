@@ -43,6 +43,7 @@ use crate::durability::item_transfer::{
     CurrentCharacterItemFence, ItemDefinitionFacts, ItemSourceLocation, ItemStackClass,
     ItemTransferDestination, ItemTransferError, ItemTransferOutcome, ItemTransferRequest,
 };
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::CommandRef;
 
 /// The Content-binding half of B3-2: no admission, no identity check, no I/O.
@@ -223,17 +224,27 @@ impl std::error::Error for GroundPickupError {}
 /// backpack equipped is passed through as `backpack: None`, so the existing
 /// `ItemTransferRefusal::NoMainBackpack` (D80) still fires, unchanged.
 pub(crate) async fn settle_ground_pickup(
+    permit: &SpellLanePermit,
     session: &DurabilitySession<'_, '_, '_>,
     content: &CanonicalReferencePlayableContent,
     fence: CurrentCharacterItemFence,
     request: GroundPickupRequest,
 ) -> Result<ItemTransferOutcome, GroundPickupError> {
-    settle_pickup(session, content, fence, ItemSourceLocation::Ground, request).await
+    settle_pickup(
+        permit,
+        session,
+        content,
+        fence,
+        ItemSourceLocation::Ground,
+        request,
+    )
+    .await
 }
 
 /// D3-5 entry point: [`settle_ground_pickup`] for an entry of the named corpse. Whether the
 /// requester may take it yet (D133) is decided by the TRANSFER admission, not here.
 pub(crate) async fn settle_corpse_pickup(
+    permit: &SpellLanePermit,
     session: &DurabilitySession<'_, '_, '_>,
     content: &CanonicalReferencePlayableContent,
     fence: CurrentCharacterItemFence,
@@ -251,10 +262,11 @@ pub(crate) async fn settle_corpse_pickup(
         ruleset_revision: request.ruleset_revision,
         sim_revision: request.sim_revision,
     };
-    settle_pickup(session, content, fence, source, request).await
+    settle_pickup(permit, session, content, fence, source, request).await
 }
 
 async fn settle_pickup(
+    permit: &SpellLanePermit,
     session: &DurabilitySession<'_, '_, '_>,
     content: &CanonicalReferencePlayableContent,
     fence: CurrentCharacterItemFence,
@@ -306,7 +318,13 @@ async fn settle_pickup(
         .await?;
     Ok(session
         .root
-        .commit_item_transfer(session.authority, session.node, fence, &mut candidate)
+        .commit_item_transfer(
+            permit,
+            session.authority,
+            session.node,
+            fence,
+            &mut candidate,
+        )
         .await?)
 }
 

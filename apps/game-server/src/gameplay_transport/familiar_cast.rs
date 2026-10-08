@@ -92,6 +92,27 @@ pub(in crate::gameplay_transport) enum FamiliarLogoutSave {
     FencedOut,
     Unknown,
 }
+/// Moves a parked familiar attempt into its caster's marker for the resolution (§1.6).
+pub(crate) fn restore_parked_familiar(
+    states: &mut ChannelSpellStates,
+    attempt: PreparedFamiliarCast,
+) -> super::native_combat_cast::ParkedMarker {
+    let (actor, session, intent) = (attempt.actor, attempt.session, attempt.intent);
+    let command = attempt.familiar.binding().command;
+    super::PendingSpellMarker::restore(
+        &mut states.pending_familiars,
+        actor,
+        session,
+        command,
+        intent,
+        attempt,
+    );
+    super::native_combat_cast::ParkedMarker {
+        kind: super::native_combat_cast::ParkedMarkerKind::Familiar,
+        actor,
+        session,
+    }
+}
 impl ChannelSpellStates {
     pub(crate) fn has_pending_familiar(
         &self,
@@ -100,7 +121,7 @@ impl ChannelSpellStates {
     ) -> bool {
         self.pending_familiars
             .iter()
-            .any(|v| v.actor == actor && v.session == session)
+            .any(|v| v.is_for(actor, session))
             || self
                 .pending_familiar_lifecycle
                 .iter()
@@ -151,6 +172,7 @@ pub(crate) trait CurrentFamiliarSourceOwner: source_registration::Registered {
         now_micros: u64,
     ) -> Option<CurrentProjection<FamiliarSourceSettings>>;
 }
+use super::native_combat_cast::UnresolvedSpellCommit;
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::domain::CharacterId;
 use crate::durability::character_build::BuildOccurrence;
@@ -158,10 +180,11 @@ use crate::durability::character_familiar::FamiliarStateOccurrence;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::spell_items_abi::SpellItemTransactionRequest;
+use crate::durability::spell_owner_commit::{SpellLanePermit, SpellWriterPass};
 use crate::foundation::{CommandId, CommandRef, GameSessionState, RuntimeScopeRefV1};
 use crate::spell::companion_lifecycle::{
-    FamiliarOwnerFacts, commit_familiar, familiar_cost_binding, finish_familiar_payment,
-    prepare_familiar,
+    FamiliarOwnerFacts, check_commit_familiar, familiar_cost_binding, finish_familiar_payment,
+    install_familiar, prepare_familiar,
 };
 use crate::spell::delayed_execution::{
     CastBinding, ScheduleRequest, SpellTimerOccurrence, TimerPayload,
@@ -577,6 +600,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(in crate::gameplay_transport) async fn cast_durable_familiar(
         &self,
+        permit: &mut SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
         command_id: u64,
@@ -617,7 +641,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Some(SpellCastOutcome::rejected());
         };
         let now = self.owner_now();
-        let mut runtime = self.runtime.lock().await;
+        let runtime = self.runtime.lock().await;
         let _measurement = FamiliarOwnerTurnMeasurement(std::time::Instant::now());
         let mut states = self.spell_states.lock().await;
         if !current_owner(&runtime, &fence, actor, session)
@@ -631,20 +655,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Some(SpellCastOutcome::rejected());
         }
+        let command = CommandRef::new(session, CommandId::new(command_id).ok()?);
         let retained = states
             .pending_familiars
             .iter()
-            .find(|p| p.actor == actor && p.session == session)
-            .cloned();
-        let (prepared, training) = if let Some(prepared) = retained {
-            if prepared.command_id != command_id
-                || prepared.intent != *intent
-                || states.get(&runtime, actor, session) != Some(&prepared.before)
-            {
+            .position(|marker| marker.is_for(actor, session));
+        let prepared = if let Some(index) = retained {
+            let marker = &mut states.pending_familiars[index];
+            if marker.command != command || marker.intent != *intent {
                 return Some(SpellCastOutcome::rejected());
             }
-            let training = prepared.training.clone();
-            (prepared, training)
+            // The lane is held and resolved, so only a writer's own pass can hold the attempt.
+            let prepared = marker.attempt.take()?;
+            if states.get(&runtime, actor, session) != Some(&prepared.before) {
+                states.pending_familiars[index].attempt = Some(prepared);
+                return Some(SpellCastOutcome::rejected());
+            }
+            prepared
         } else {
             let Some(state) = states.get(&runtime, actor, session) else {
                 return Some(SpellCastOutcome::rejected());
@@ -696,7 +723,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 caster: actor,
                 attacker: crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
                     .ok()?,
-                command: CommandRef::new(session, CommandId::new(command_id).ok()?),
+                command,
                 occurrence,
                 parent_binding: serde_json::to_vec(profile.spell()).ok()?,
                 cast_at: crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
@@ -805,28 +832,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 anchor,
                 facts_binding: owned.binding().clone(),
                 settings,
-                training: training.clone(),
+                training,
                 touches: None,
                 physical: None,
             };
             if states.pending_familiars.try_reserve(1).is_err() {
                 return Some(SpellCastOutcome::rejected());
             }
-            states.pending_familiars.push(prepared.clone());
-            (prepared, training)
+            // The marker exists from preparation on; the attempt itself travels with the pass.
+            states.pending_familiars.push(super::PendingSpellMarker {
+                actor,
+                session,
+                command,
+                intent: *intent,
+                attempt: None,
+            });
+            prepared
         };
-        Some(
-            self.finish_familiar_cast(
-                &mut runtime,
-                &mut states,
+        let intent = prepared.intent;
+        // A cancelled pass parks what it holds, so the marker is always settled (§1.6). The
+        // pass takes `prepared` with no await before its commit window.
+        let mut writer = SpellWriterPass::new(
+            permit,
+            None,
+            UnresolvedSpellCommit::park_familiar,
+            UnresolvedSpellCommit::park_vacant(
+                super::native_combat_cast::ParkedMarkerKind::Familiar,
+                actor,
+                session,
+            ),
+        );
+        let (outcome, leftover) = self
+            .finish_familiar_cast(
+                &mut writer,
+                runtime,
+                states,
                 prepared,
-                training,
                 content,
                 source,
                 owned.binding(),
             )
-            .await,
-        )
+            .await;
+        *writer.parts().1 = leftover;
+        let mut states = self.spell_states.lock().await;
+        let (leftover, parked) = writer.finish();
+        super::PendingSpellMarker::settle(
+            &mut states.pending_familiars,
+            actor,
+            session,
+            command,
+            intent,
+            leftover,
+            parked,
+        );
+        Some(outcome)
     }
 }
 
@@ -839,17 +898,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         clippy::too_many_arguments,
         reason = "the owner turn binds every independently resolved fact explicitly"
     )]
+    /// One writer pass (§1.6): S under the held guards, which it then releases; COMMIT with only
+    /// the lane held; a fallible phase 1 and an infallible phase 2 under re-taken guards. It
+    /// returns the attempt it still holds, or `None` once installed, released or parked. Across
+    /// an await outside a commit window, the attempt stays in the writer pass.
     async fn finish_familiar_cast(
         &self,
-        runtime: &mut crate::foundation::ChannelRuntimeV1,
-        states: &mut ChannelSpellStates,
+        writer: &mut SpellWriterPass<'_, PreparedFamiliarCast>,
+        mut runtime_guard: tokio::sync::MutexGuard<'_, crate::foundation::ChannelRuntimeV1>,
+        mut states_guard: tokio::sync::MutexGuard<'_, ChannelSpellStates>,
         mut prepared: PreparedFamiliarCast,
-        mut training: PreparedPlayerTraining,
         content: &NativeGameplayState,
         source: &impl CurrentFamiliarSourceOwner,
         actual_binding: &CastFactsBinding,
-    ) -> SpellCastOutcome {
+    ) -> (SpellCastOutcome, Option<PreparedFamiliarCast>) {
+        macro_rules! keep {
+            () => {
+                return (SpellCastOutcome::rejected(), Some(prepared))
+            };
+        }
         let now = self.owner_now();
+        let (runtime, states) = (&mut *runtime_guard, &mut *states_guard);
         if states.get(runtime, prepared.actor, prepared.session) != Some(&prepared.before)
             || !current_owner(runtime, &prepared.fence, prepared.actor, prepared.session)
             || prepared
@@ -857,12 +926,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .validate_current(runtime, prepared.familiar.owner_facts())
                 .is_err()
         {
-            return SpellCastOutcome::rejected();
+            keep!();
         }
         let mut expected_binding = prepared.facts_binding.clone();
         expected_binding.character_revision = actual_binding.character_revision;
         if actual_binding != &expected_binding {
-            return SpellCastOutcome::rejected();
+            keep!();
         }
         let settings = source
             .read_current(actual_binding, now.get())
@@ -889,7 +958,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let touches = match prepared.touches.as_ref() {
             Some(touches) => {
                 let Some(physical) = prepared.physical.as_ref() else {
-                    return SpellCastOutcome::rejected();
+                    keep!();
                 };
                 batch = physical.batch().clone();
                 touches.clone()
@@ -899,7 +968,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 prepared.familiar.reservation_snapshots(),
             ) {
                 Ok(touches) => touches,
-                Err(_) => return SpellCastOutcome::rejected(),
+                Err(_) => keep!(),
             },
         };
         // Reserve all physical batch/timer capacity while these same owners remain held.
@@ -907,23 +976,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(mut base_preflight) =
             super::stage_player_batch(runtime, states, &batch, Some(prepared.paid.clone()))
         else {
-            return SpellCastOutcome::rejected();
+            keep!();
         };
         if base_preflight.validate_current(runtime, states).is_err() {
-            return SpellCastOutcome::rejected();
+            keep!();
         }
         let Ok(mut staged) = runtime.stage_spell_batch_with_companion_touches(&batch, &touches)
         else {
-            return SpellCastOutcome::rejected();
+            keep!();
         };
         if !staged.will_apply() {
-            return SpellCastOutcome::rejected();
+            keep!();
         }
         let Ok(stamp) = runtime.issue_owner_work() else {
-            return SpellCastOutcome::rejected();
+            keep!();
         };
         let Ok(schedules) = prepared.familiar.schedules(binding.cast_at, 0) else {
-            return SpellCastOutcome::rejected();
+            keep!();
         };
         let requests = schedules
             .into_iter()
@@ -937,30 +1006,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .collect();
         let Some(timers) = states.spell_timers.as_ref() else {
-            return SpellCastOutcome::rejected();
+            keep!();
         };
         let Ok(owner_fence) = runtime.owner_fence() else {
-            return SpellCastOutcome::rejected();
+            keep!();
         };
         let Ok(reservation) = timers.schedule_reservation(owner_fence, stamp, requests) else {
-            return SpellCastOutcome::rejected();
+            keep!();
         };
         let Ok(timer_preflight) =
             timers.preflight_familiar_install(owner_fence, stamp, reservation, &prepared.familiar)
         else {
-            return SpellCastOutcome::rejected();
+            keep!();
         };
         let profile = binding.spell.spell();
         let (Some(key), Some(revision)) = (
             profile["identity"]["key"].as_str(),
             profile["identity"]["revision"].as_str(),
         ) else {
-            return SpellCastOutcome::rejected();
+            keep!();
         };
         let Ok(cost_binding) =
             familiar_cost_binding(&prepared.before, &prepared.paid, &prepared.anchor)
         else {
-            return SpellCastOutcome::rejected();
+            keep!();
         };
         let cost = SpellItemTransactionRequest {
             command: binding.command,
@@ -989,61 +1058,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             direct_companion: None,
         };
         let Some(formula) = content.training_formula() else {
-            return SpellCastOutcome::rejected();
+            keep!();
         };
-        let training_request = training
+        let training_request = prepared
+            .training
             .request()
             .cloned()
             .map(|request| (request, formula.clone()));
-        // Allocate the successor and immutable comparison data before the durable write.
-        let mut paid = prepared.paid.clone();
-        let facts = prepared.familiar.owner_facts().clone();
         if let Some(original) = prepared.physical.as_ref() {
             if runtime.validate_staged_spell_batch(original).is_err() {
-                return SpellCastOutcome::rejected();
+                keep!();
             }
         } else if prepared.familiar.reserve_physical(runtime).is_err() {
-            return SpellCastOutcome::rejected();
+            keep!();
         }
         if runtime.reserve_spell_batch(&mut staged).is_err() {
             // No SQL has started. A matching new fixed-slot reservation may be returned.
             let _ = prepared.familiar.rollback_physical(runtime);
-            return SpellCastOutcome::rejected();
+            keep!();
         }
         // Retain the exact real touched-slot seal BEFORE the first committing await.
         // These clones allocate only before SQL; the physical pending_owner data lives
         // in the actual caster and companion slots, and dropping this data releases none.
         prepared.touches = Some(touches);
         prepared.physical = Some(staged.clone());
-        if let Some(original) = states.pending_familiars.iter_mut().find(|value| {
-            value.actor == prepared.actor
-                && value.session == prepared.session
-                && value.command_id == prepared.command_id
-        }) {
-            *original = prepared.clone();
-        } else {
-            return SpellCastOutcome::rejected();
-        }
-        // This method captures only owned recovery/node/request/formula data in its SQL pass.
-        // No Channel guard is captured by that callback; locks keep the real fixed slots stable.
+        let fence = prepared.fence;
+        let request = prepared.request.clone();
+        let (actor, session) = (prepared.actor, prepared.session);
+        // Lock order (§1.2): no Channel guard is held across COMMIT; the reservations above keep
+        // the real fixed slots sealed, and phase 1 re-checks everything else.
+        drop((runtime_guard, states_guard));
+        let mut window = writer
+            .permit()
+            .open_commit_window(prepared, UnresolvedSpellCommit::park_familiar);
         let commit_result = if allow_new_mutation {
             self.root
-                .commit_familiar_spell(
+                .commit_familiar_spell_in_window(
+                    &mut window,
                     self.character,
                     self.holder,
-                    prepared.fence,
-                    prepared.request.clone(),
+                    fence,
+                    request,
                     cost,
                     training_request,
                 )
                 .await
         } else {
             self.root
-                .reconcile_familiar_spell(
+                .reconcile_familiar_spell_in_window(
+                    &mut window,
                     self.character,
                     self.holder,
-                    prepared.fence,
-                    prepared.request.clone(),
+                    fence,
+                    request,
                     cost,
                     training_request,
                 )
@@ -1052,110 +1119,132 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let committed = match commit_result {
             Ok(value) => value,
             Err(error) => {
-                if definite_familiar_rejection(&error)
-                    && prepared.familiar.rollback_physical(runtime).is_ok()
+                let prepared = match window.reclaim_uncommitted() {
+                    Ok(prepared) => prepared,
+                    // COMMIT was called with an unknown outcome: the window parks the attempt.
+                    Err(window) => {
+                        window.park();
+                        return (SpellCastOutcome::rejected(), None);
+                    }
+                };
+                if !definite_familiar_rejection(&error) {
+                    return (SpellCastOutcome::rejected(), Some(prepared));
+                }
+                let slot = writer.parts().1;
+                let held = slot.insert(prepared);
+                let mut runtime = self.runtime.lock().await;
+                let released = held.familiar.rollback_physical(&mut runtime).is_ok()
                     && runtime
                         .release_definitely_uncommitted_spell_batch(&staged)
-                        .is_ok()
-                {
-                    states.pending_familiars.retain(|v| {
-                        v.actor != prepared.actor
-                            || v.session != prepared.session
-                            || v.command_id != prepared.command_id
-                    });
-                }
-                return SpellCastOutcome::rejected();
+                        .is_ok();
+                return (
+                    SpellCastOutcome::rejected(),
+                    slot.take().filter(|_| !released),
+                );
             }
         };
+        if matches!(
+            committed,
+            crate::durability::character_familiar::FamiliarSpellCommit::Reconciled { .. }
+        ) {
+            window.mark_already_committed();
+        }
+        // From here the decision is durable: every exit below parks the attempt in the lane.
         let Some(receipt) = committed.familiar() else {
-            return SpellCastOutcome::rejected();
+            return (SpellCastOutcome::rejected(), None);
         };
-        if committed.cost().is_none()
-            || !receipt.matches_request(&prepared.fence, &prepared.request)
+        if committed.cost().is_none() || !receipt.matches_request(&fence, &window.attempt().request)
         {
-            return SpellCastOutcome::rejected();
+            return (SpellCastOutcome::rejected(), None);
         }
         let expected_revision = committed
             .training()
             .map(|value| value.committed_character_revision)
             .unwrap_or_else(|| receipt.committed_character_revision());
         // History never renews authority. Re-read the independently current admission/root fence.
-        let Some(fresh_fence) = self.familiar_fence(prepared.session).await else {
-            return SpellCastOutcome::rejected();
+        let Some(fresh_fence) = self.familiar_fence(session).await else {
+            return (SpellCastOutcome::rejected(), None);
         };
-        let mut expected_fence = prepared.fence;
+        let mut expected_fence = fence;
         expected_fence.expected_character_revision = expected_revision;
+        let mut runtime = self.runtime.lock().await;
+        let mut states = self.spell_states.lock().await;
+        let (runtime, states) = (&mut *runtime, &mut *states);
+        // Phase 1: every fallible check, against the attempt the window still owns.
+        let attempt = window.attempt();
         if fresh_fence != expected_fence
-            || !current_owner(runtime, &fresh_fence, prepared.actor, prepared.session)
-            || states.get(runtime, prepared.actor, prepared.session) != Some(&prepared.before)
+            || !current_owner(runtime, &fresh_fence, actor, session)
+            || states.get(runtime, actor, session) != Some(&attempt.before)
         {
-            return SpellCastOutcome::rejected();
+            return (SpellCastOutcome::rejected(), None);
         }
         // The genuine source COMMIT already accepted this exact original occurrence.
         // Commercial expiry now cannot retract its paid successor. Fresh full durable
         // and physical fences above still gate installation independently from history.
-        if training
-            .prepare_install(
-                &prepared.before,
-                &mut paid,
-                &prepared.anchor,
+        let Ok(qualified_paid) = attempt
+            .training
+            .check_install(
+                &attempt.before,
+                &attempt.paid,
+                &attempt.anchor,
                 committed.training(),
             )
-            .is_err()
-        {
-            return SpellCastOutcome::rejected();
-        }
-        if base_preflight
-            .rebind_training(runtime, states, paid)
-            .is_err()
-            || base_preflight.validate_current(runtime, states).is_err()
-            || prepared
-                .familiar
-                .validate_current(runtime, prepared.familiar.owner_facts())
-                .is_err()
-        {
-            return SpellCastOutcome::rejected();
-        }
-        if runtime
-            .release_companion_touches_for_source_commit(&mut staged)
-            .is_err()
-        {
-            return SpellCastOutcome::rejected();
-        }
-        let Ok(applied) = commit_familiar(
-            runtime,
-            prepared.familiar,
-            &facts,
-            &prepared.fence,
-            Some(&prepared.request),
-            Some(receipt),
-        ) else {
-            return SpellCastOutcome::rejected();
+            .and_then(|()| attempt.training.qualified_preview(&attempt.paid))
+        else {
+            return (SpellCastOutcome::rejected(), None);
         };
-        // All timer payloads were source-matched to this exact preparation before SQL.
-        let validated_timer = timer_preflight.finalize(&applied).expect(
-            "unchanged source-qualified familiar preparation must match its actual apply receipt",
-        );
-        super::commit_owner_batch(runtime, states, staged, Some(base_preflight))
-            .expect("exclusive familiar owner turn preserves the preflighted caster batch");
+        if base_preflight
+            .check_rebind_training(runtime, states, &qualified_paid)
+            .is_err()
+            || runtime.check_companion_touch_release(&staged).is_err()
+        {
+            return (SpellCastOutcome::rejected(), None);
+        }
+        let Ok(checked_familiar) = check_commit_familiar(
+            runtime,
+            &attempt.familiar,
+            attempt.familiar.owner_facts(),
+            &attempt.fence,
+            Some(&attempt.request),
+            Some(receipt),
+            Some(&staged),
+        ) else {
+            return (SpellCastOutcome::rejected(), None);
+        };
+        if timer_preflight
+            .check_finalize(checked_familiar.receipt())
+            .is_err()
+        {
+            return (SpellCastOutcome::rejected(), None);
+        }
+        let Ok(checked_batch) =
+            super::check_owner_batch(runtime, states, &staged, Some(&base_preflight))
+        else {
+            return (SpellCastOutcome::rejected(), None);
+        };
+        // Phase 2: no fallible step, allocation or await remains.
+        let prepared = window.install();
+        base_preflight.install_rebind_training(qualified_paid);
+        runtime.install_companion_touch_release(&mut staged);
+        install_familiar(runtime, prepared.familiar, checked_familiar);
+        let validated_timer = timer_preflight.install_finalized();
+        super::install_owner_batch(runtime, states, staged, Some(base_preflight), checked_batch);
         states
             .spell_timers
             .as_mut()
             .expect("held timer owner exists")
             .install_familiar_preflighted(validated_timer);
-        states.pending_familiars.retain(|value| {
-            value.actor != prepared.actor
-                || value.session != prepared.session
-                || value.command_id != prepared.command_id
-        });
         let next = states
-            .get(runtime, prepared.actor, prepared.session)
+            .get(runtime, actor, session)
             .expect("same owner contains committed familiar caster");
 
-        SpellCastOutcome {
-            disposition: SpellCastDisposition::Cast,
-            vitals: Some((next.revision(), next.vitals())),
-        }
+        (
+            SpellCastOutcome {
+                disposition: SpellCastDisposition::Cast,
+                vitals: Some((next.revision(), next.vitals())),
+            },
+            None,
+        )
     }
 }
 

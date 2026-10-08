@@ -32,6 +32,7 @@ use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
     LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
 };
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
     AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
@@ -526,7 +527,12 @@ impl Harness {
             .map_err(debug)?;
         match self
             .root
-            .commit_item_mint(authority, &self.node, &mut candidate)
+            .commit_item_mint(
+                &candidate.fresh_death_lane_permit().await,
+                authority,
+                &self.node,
+                &mut candidate,
+            )
             .await
             .map_err(debug)?
         {
@@ -546,7 +552,13 @@ impl Harness {
             .freeze_item_transfer(authority, &self.node, fence, request)
             .await?;
         self.root
-            .commit_item_transfer(authority, &self.node, fence, &mut candidate)
+            .commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope(fence.runtime_scope).await?,
+                authority,
+                &self.node,
+                fence,
+                &mut candidate,
+            )
             .await
     }
 
@@ -853,7 +865,15 @@ fn slot_then_entries_newest_first_replay_and_no_revision_advance() -> TestResult
         assert_eq!(replay.transaction_id(), &two.transaction_id);
         match harness
             .root
-            .commit_item_transfer(&authority, &harness.node, fence()?, &mut replay)
+            .commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                    .await
+                    .map_err(debug)?,
+                &authority,
+                &harness.node,
+                fence()?,
+                &mut replay,
+            )
             .await
             .map_err(debug)?
         {
@@ -1220,7 +1240,13 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
             rejected(
                 harness
                     .root
-                    .commit_item_transfer(&authority, &harness.node, stale, &mut candidate)
+                    .commit_item_transfer(
+                        &stale_fence_lane(stale).await.map_err(debug)?,
+                        &authority,
+                        &harness.node,
+                        stale,
+                        &mut candidate,
+                    )
                     .await,
                 label,
             )?;
@@ -1267,7 +1293,15 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
         rejected(
             harness
                 .root
-                .commit_item_transfer(&authority, &other_node, fence()?, &mut candidate)
+                .commit_item_transfer(
+                    &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                        .await
+                        .map_err(debug)?,
+                    &authority,
+                    &other_node,
+                    fence()?,
+                    &mut candidate,
+                )
                 .await,
             "assignment holder",
         )?;
@@ -1334,7 +1368,15 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
             rejected(
                 harness
                     .root
-                    .commit_item_transfer(&authority, &harness.node, fence()?, &mut candidate)
+                    .commit_item_transfer(
+                        &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                            .await
+                            .map_err(debug)?,
+                        &authority,
+                        &harness.node,
+                        fence()?,
+                        &mut candidate,
+                    )
                     .await,
                 label,
             )?;
@@ -1363,13 +1405,29 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
         rejected(
             harness
                 .root
-                .commit_item_transfer(&authority, &harness.node, fence()?, &mut candidate)
+                .commit_item_transfer(
+                    &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                        .await
+                        .map_err(debug)?,
+                    &authority,
+                    &harness.node,
+                    fence()?,
+                    &mut candidate,
+                )
                 .await,
             "predecessor connection generation",
         )?;
         let continued = match harness
             .root
-            .commit_item_transfer(&authority, &harness.node, reconnected, &mut candidate)
+            .commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope((reconnected).runtime_scope)
+                    .await
+                    .map_err(debug)?,
+                &authority,
+                &harness.node,
+                reconnected,
+                &mut candidate,
+            )
             .await
             .map_err(debug)?
         {
@@ -1399,7 +1457,15 @@ fn every_fence_operator_rejects_at_freeze_and_at_commit() -> TestResult {
         rejected(
             harness
                 .root
-                .commit_item_transfer(&authority, &harness.node, reconnected, &mut candidate)
+                .commit_item_transfer(
+                    &SpellLanePermit::of_fresh_scope((reconnected).runtime_scope)
+                        .await
+                        .map_err(debug)?,
+                    &authority,
+                    &harness.node,
+                    reconnected,
+                    &mut candidate,
+                )
                 .await,
             "ended node incarnation",
         )?;
@@ -2352,10 +2418,24 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
             .map_err(debug)?;
         assert_eq!(one.transaction_id(), two.transaction_id());
         let (left, right) = join_two(
-            harness
-                .root
-                .commit_item_transfer(&first, &harness.node, fence()?, &mut one),
-            second_root.commit_item_transfer(&second, &harness.node, fence()?, &mut two),
+            harness.root.commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                    .await
+                    .map_err(debug)?,
+                &first,
+                &harness.node,
+                fence()?,
+                &mut one,
+            ),
+            second_root.commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                    .await
+                    .map_err(debug)?,
+                &second,
+                &harness.node,
+                fence()?,
+                &mut two,
+            ),
         )
         .await;
         match (left.map_err(debug)?, right.map_err(debug)?) {
@@ -2401,9 +2481,15 @@ fn concurrent_commits_on_two_roots_serialize() -> TestResult {
                 xp_fence,
                 xp_request(70)?,
             ),
-            harness
-                .root
-                .commit_item_transfer(&first, &harness.node, fence()?, &mut candidate),
+            harness.root.commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                    .await
+                    .map_err(debug)?,
+                &first,
+                &harness.node,
+                fence()?,
+                &mut candidate,
+            ),
         )
         .await;
         assert!(matches!(
@@ -2766,4 +2852,16 @@ fn transfer_audit_event_must_start_pending() -> TestResult {
         drop(seal);
         harness.cleanup().await
     })
+}
+
+/// The lane a stale-fence commit runs under: the stale Channel's own lane, or the fenced
+/// Channel's lane when the stale scope is no Channel (the writer refuses that fence first).
+async fn stale_fence_lane(stale: CurrentCharacterItemFence) -> TestResult<SpellLanePermit> {
+    let scope = match stale.runtime_scope {
+        RuntimeScopeRefV1::Channel { .. } => stale.runtime_scope,
+        _ => fence()?.runtime_scope,
+    };
+    Ok(SpellLanePermit::of_fresh_scope(scope)
+        .await
+        .map_err(debug)?)
 }

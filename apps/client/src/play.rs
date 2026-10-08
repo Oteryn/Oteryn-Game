@@ -1,11 +1,13 @@
-//! Play view after admission (N2N3-1): a placeholder ground grid centred on the own actor, one
-//! marker per overlay object, and the walk over `Session::step`.
+//! Play view after admission (N2N3-1): the map around the own actor, one marker per overlay
+//! object, and the walk over `Session::step`.
 //!
 //! The view holds no authority. It is built from the join snapshot, and only a step outcome's
-//! domain-1 and domain-2 deltas move it. Real map tiles arrive with the map track.
+//! domain-1 and domain-2 deltas move it. The map is the start area anchored at the join
+//! position (CLIENT-VIS-1 milestone 1) until positions are map positions.
 
 use crate::input::{ClickWalk, StepDir, StepResult};
-use crate::scene::PlaceholderScene;
+use crate::scene::Scene;
+use crate::world::{START, World};
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
@@ -70,10 +72,17 @@ pub const fn public_class(_error: &SessionError) -> PublicClass {
 #[derive(Debug, Clone)]
 pub struct PlayView {
     own: TileCoord,
+    /// The direction of the latest step sent; the player is drawn facing it.
+    facing: StepDir,
     floor: i16,
     /// Every decodable overlay entry with its floor; the current floor selects what is drawn.
     markers: BTreeMap<Vec<u8>, (TileCoord, i16)>,
-    scene: PlaceholderScene,
+    world: Arc<World>,
+    /// Added to a session position to reach the map position drawn there.
+    anchor: TileCoord,
+    /// The session floor the map is anchored to; on any other floor no map is drawn.
+    map_floor: Option<i16>,
+    scene: Scene,
     walk: ClickWalk,
     /// A step sent to the session task whose outcome has not arrived.
     in_flight: bool,
@@ -96,11 +105,17 @@ impl PlayView {
         floor: i16,
         overlay: &[WorldObjectOverlayEntry],
     ) -> Result<Self, BatchError> {
+        let world = Arc::new(World::builtin()?);
+        let anchor = TileCoord::new(0, 0);
         let mut view = Self {
             own,
+            facing: StepDir::South,
             floor,
             markers: BTreeMap::new(),
-            scene: PlaceholderScene::centered_on(own, &[])?,
+            scene: Scene::centered_on(Arc::clone(&world), None, own, StepDir::South, &[])?,
+            world,
+            anchor,
+            map_floor: None,
             walk: ClickWalk::new(),
             in_flight: false,
             key_step: None,
@@ -118,8 +133,26 @@ impl PlayView {
     }
 
     #[must_use]
-    pub const fn scene(&self) -> &PlaceholderScene {
+    pub const fn facing(&self) -> StepDir {
+        self.facing
+    }
+
+    #[must_use]
+    pub const fn scene(&self) -> &Scene {
         &self.scene
+    }
+
+    /// Draws `world` with the current own position on the start tile and the current floor on
+    /// the start floor.
+    pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
+        self.world = world;
+        self.map_floor = Some(self.floor);
+        // Wrapping keeps the offset exact for any join position: `own + anchor` wraps back to START.
+        self.anchor = TileCoord::new(
+            START.0.wrapping_sub(self.own.x),
+            START.1.wrapping_sub(self.own.y),
+        );
+        self.rebuild()
     }
 
     #[must_use]
@@ -154,6 +187,9 @@ impl PlayView {
         }
         let direction = self.pending_step();
         self.in_flight = direction.is_some();
+        if let Some(facing) = direction {
+            self.facing = facing;
+        }
         direction
     }
 
@@ -213,7 +249,13 @@ impl PlayView {
 
     fn rebuild(&mut self) -> Result<(), BatchError> {
         let markers = self.drawn_markers().collect::<Vec<_>>();
-        self.scene = PlaceholderScene::centered_on(self.own, &markers)?;
+        self.scene = Scene::centered_on(
+            Arc::clone(&self.world),
+            (self.map_floor == Some(self.floor)).then_some(self.anchor),
+            self.own,
+            self.facing,
+            &markers,
+        )?;
         Ok(())
     }
 
@@ -232,10 +274,24 @@ impl PlayView {
                 PlayEvent::Ended(class) => return Err(class),
             }
         }
-        if let Some(direction) = self.next_step() {
+        if let Some(direction) = self
+            .send_step()
+            .map_err(|_error| PublicClass::SessionUnavailable)?
+        {
             link.request(direction);
         }
         Ok(())
+    }
+
+    /// [`Self::next_step`], redrawing at once when the player turns, so the new facing shows
+    /// before the outcome arrives.
+    fn send_step(&mut self) -> Result<Option<StepDir>, BatchError> {
+        let before = self.facing;
+        let direction = self.next_step();
+        if self.facing != before {
+            self.scene.set_facing(self.facing)?;
+        }
+        Ok(direction)
     }
 }
 
@@ -536,9 +592,26 @@ mod tests {
     #[test]
     fn arrow_key_steps_without_a_goal() -> Result<(), BatchError> {
         let mut view = view()?;
+        assert_eq!(view.facing(), StepDir::South);
         view.arrow(StepDir::North);
         assert_eq!(view.next_step(), Some(StepDir::North));
         assert_eq!(view.next_step(), None);
+        // The player turns to the step sent, moved or not.
+        assert_eq!(view.facing(), StepDir::North);
+        Ok(())
+    }
+
+    #[test]
+    fn sending_a_step_redraws_the_new_facing() -> Result<(), BatchError> {
+        let mut view = view()?;
+        view.click(view.own())?;
+        let target = view.scene().target();
+        assert!(target.is_some());
+        view.arrow(StepDir::North);
+        assert_eq!(view.send_step()?, Some(StepDir::North));
+        assert_eq!(view.scene().facing(), StepDir::North);
+        // Turning keeps the selection.
+        assert_eq!(view.scene().target(), target);
         Ok(())
     }
 
@@ -592,6 +665,23 @@ mod tests {
         assert_eq!(view.marker_count(), 1);
         view.apply(&moved_to(100, 200, -7))?;
         assert_eq!(view.marker_count(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn the_map_is_drawn_only_on_the_join_floor() -> Result<(), String> {
+        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let world = Arc::new(World::load(&root)?);
+        let mut view = view().map_err(|e| e.to_string())?;
+        view.set_world(world).map_err(|e| e.to_string())?;
+        let on_floor = view.scene().sprites().len();
+        view.apply(&moved_to(100, 200, -1))
+            .map_err(|e| e.to_string())?;
+        let off_floor = view.scene().sprites().len();
+        view.apply(&moved_to(100, 200, 0))
+            .map_err(|e| e.to_string())?;
+        assert!(off_floor < on_floor / 10, "{off_floor} of {on_floor}");
+        assert_eq!(view.scene().sprites().len(), on_floor);
         Ok(())
     }
 

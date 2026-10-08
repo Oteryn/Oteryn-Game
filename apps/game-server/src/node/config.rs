@@ -117,6 +117,10 @@ pub struct PlatformConfig {
     /// `oteryn-game-native-runtime-status-v1` §3. Absent: reporting is off
     /// (§15 rollback).
     pub runtime_status: Option<RuntimeStatusConfig>,
+    /// `oteryn-game-list-characters-for-account-v1` §3. Absent: the
+    /// projection publisher does not run. Endpoint, peer name and trust roots
+    /// are those above.
+    pub account_characters: Option<AccountCharactersConfig>,
 }
 
 /// The node host's own runtime-status identity (never the evidence one).
@@ -127,6 +131,19 @@ pub struct RuntimeStatusConfig {
     pub client_key_file: PathBuf,
     /// Declared ownership-authority epoch until its Game storage exists (U-RS5).
     pub assignment_epoch: u64,
+}
+
+/// The Character Authority host's own projection identity (never the evidence
+/// or runtime-status one) and the contract §5 epoch fence.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AccountCharactersConfig {
+    pub client_certificate_file: PathBuf,
+    pub client_key_file: PathBuf,
+    pub source_authority: String,
+    /// Persisted high-water fence F, outside the Character store and its
+    /// backups.
+    pub epoch_fence_file: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -207,6 +224,18 @@ pub struct OpsConfig {
     pub operator: OperatorConfig,
     pub database: DatabaseConfig,
     pub character: CharacterFenceConfig,
+    /// `projection resync`: absent, the command refuses.
+    pub projection: Option<ProjectionOpsConfig>,
+}
+
+/// The operator-only projection resync (`oteryn-game-list-characters-for-account-v1`
+/// §5). Its database login is the one allowed to call
+/// `game_character_account_projection_resync`, never the node's.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectionOpsConfig {
+    pub epoch_fence_file: PathBuf,
+    pub database: DatabaseConfig,
 }
 
 fn token(value: &str, maximum: usize, extra: &[u8]) -> bool {
@@ -268,6 +297,11 @@ fn check_character(character: &CharacterFenceConfig) -> Result<(), ConfigError> 
         return reject("character.issuer_identity");
     }
     Ok(())
+}
+
+/// An absolute file path outside the Character store's fence directory.
+fn outside(path: &std::path::Path, character: &CharacterFenceConfig) -> bool {
+    absolute(path) && path.file_name().is_some() && !path.starts_with(&character.fence_directory)
 }
 
 fn parse<T: serde::de::DeserializeOwned>(document: &[u8]) -> Result<T, ConfigError> {
@@ -395,6 +429,41 @@ impl NodeConfig {
                 return reject("platform.runtime_status.assignment_epoch");
             }
         }
+        if let Some(projection) = &platform.account_characters {
+            let status = platform.runtime_status.as_ref();
+            for (key, path) in [
+                (
+                    "platform.account_characters.client_certificate_file",
+                    &projection.client_certificate_file,
+                ),
+                (
+                    "platform.account_characters.client_key_file",
+                    &projection.client_key_file,
+                ),
+            ] {
+                if !absolute(path)
+                    || path == &platform.client_certificate_file
+                    || path == &platform.client_key_file
+                    || status.is_some_and(|status| {
+                        path == &status.client_certificate_file || path == &status.client_key_file
+                    })
+                {
+                    return reject(key);
+                }
+            }
+            let authority = projection.source_authority.as_str();
+            if !token(authority, 128, b"/")
+                || authority == platform.source_authority
+                || authority == readiness.source_authority
+                || authority == crate::character_bootstrap_intent::ISSUER_AUTHORITY
+                || authority == crate::native_admission_source::account_characters::PURPOSE
+            {
+                return reject("platform.account_characters.source_authority");
+            }
+            if !outside(&projection.epoch_fence_file, &self.character) {
+                return reject("platform.account_characters.epoch_fence_file");
+            }
+        }
         if platform.descriptor_revision == 0 {
             return reject("platform.descriptor_revision");
         }
@@ -463,6 +532,14 @@ impl OpsConfig {
         }
         check_database(&config.database)?;
         check_character(&config.character)?;
+        if let Some(projection) = &config.projection {
+            if !outside(&projection.epoch_fence_file, &config.character) {
+                return reject("projection.epoch_fence_file");
+            }
+            check_database(&projection.database).map_err(|_| ConfigError {
+                key: "projection.database",
+            })?;
+        }
         Ok(config)
     }
 }
@@ -581,6 +658,105 @@ assignment_epoch = 1
         }
         // No endpoint or route is configurable for the report.
         let endpoint = status.replace("assignment_epoch = 1", "assignment_epoch = 1\nhost = \"x\"");
+        assert!(NodeConfig::parse(endpoint.as_bytes()).is_err());
+    }
+
+    const PROJECTION: &str = r#"
+[platform.account_characters]
+client_certificate_file = "/etc/oteryn/node/projection.crt"
+client_key_file = "/etc/oteryn/node/projection.key"
+source_authority = "oteryn:character-authority:primary"
+epoch_fence_file = "/var/lib/oteryn/projection/epoch-fence"
+
+[launch]"#;
+
+    #[test]
+    fn account_characters_section_is_optional_separate_and_fenced() {
+        let config = NodeConfig::parse(NODE.as_bytes()).expect("valid configuration");
+        assert!(config.platform.account_characters.is_none());
+        let both = NODE
+            .replace("\n[launch]", STATUS)
+            .replace("\n[launch]", PROJECTION);
+        let config = NodeConfig::parse(both.as_bytes()).expect("projection");
+        let projection = config.platform.account_characters.expect("section");
+        assert_eq!(
+            projection.source_authority,
+            "oteryn:character-authority:primary"
+        );
+        let alone = NODE.replace("\n[launch]", PROJECTION);
+        assert!(NodeConfig::parse(alone.as_bytes()).is_ok());
+        for (from, to, key) in [
+            (
+                "projection.crt",
+                "platform-client.crt",
+                "platform.account_characters.client_certificate_file",
+            ),
+            (
+                "projection.crt",
+                "runtime-status.crt",
+                "platform.account_characters.client_certificate_file",
+            ),
+            (
+                "projection.key",
+                "runtime-status.key",
+                "platform.account_characters.client_key_file",
+            ),
+            (
+                "projection.key",
+                "platform-client.key",
+                "platform.account_characters.client_key_file",
+            ),
+            (
+                "\"/etc/oteryn/node/projection.key\"",
+                "\"etc/projection.key\"",
+                "platform.account_characters.client_key_file",
+            ),
+            (
+                "source_authority = \"oteryn:character-authority:primary\"",
+                "source_authority = \"urn:oteryn:platform:game-auth\"",
+                "platform.account_characters.source_authority",
+            ),
+            (
+                "source_authority = \"oteryn:character-authority:primary\"",
+                "source_authority = \"oteryn:runtime:world-1:channel-1\"",
+                "platform.account_characters.source_authority",
+            ),
+            (
+                "source_authority = \"oteryn:character-authority:primary\"",
+                "source_authority = \"OTERYN_GAME_ACCOUNT_CHARACTERS_PROJECTION\"",
+                "platform.account_characters.source_authority",
+            ),
+            (
+                "source_authority = \"oteryn:character-authority:primary\"",
+                "source_authority = \"bad authority\"",
+                "platform.account_characters.source_authority",
+            ),
+            (
+                "/var/lib/oteryn/projection/epoch-fence",
+                "/var/lib/oteryn/character-fence/epoch-fence",
+                "platform.account_characters.epoch_fence_file",
+            ),
+            (
+                "/var/lib/oteryn/projection/epoch-fence",
+                "/var/lib/oteryn/character-fence",
+                "platform.account_characters.epoch_fence_file",
+            ),
+            (
+                "/var/lib/oteryn/projection/epoch-fence",
+                "/var/lib/oteryn/../epoch-fence",
+                "platform.account_characters.epoch_fence_file",
+            ),
+        ] {
+            let changed = both.replacen(from, to, 1);
+            assert_ne!(changed, both, "{from}");
+            let error = NodeConfig::parse(changed.as_bytes()).expect_err(key);
+            assert_eq!(error.key, key);
+        }
+        // Endpoint, peer name and trust roots are reused, never configured here.
+        let endpoint = both.replace(
+            "epoch_fence_file = ",
+            "endpoint = \"10.0.0.6:8443\"\nepoch_fence_file = ",
+        );
         assert!(NodeConfig::parse(endpoint.as_bytes()).is_err());
     }
 
@@ -753,7 +929,57 @@ fence_directory = "/var/lib/oteryn/character-fence"
 authority_scope_id = "character-primary"
 issuer_identity = "game-ops"
 "#;
-        assert!(OpsConfig::parse(ops.as_bytes()).is_ok());
+        assert!(
+            OpsConfig::parse(ops.as_bytes())
+                .expect("ops")
+                .projection
+                .is_none()
+        );
+        let projection = format!(
+            "{ops}{}",
+            r#"
+[projection]
+epoch_fence_file = "/var/lib/oteryn/projection/epoch-fence"
+
+[projection.database]
+transport_ip = "127.0.0.1"
+port = 5432
+tls_server_name = "db.internal"
+database = "oteryn"
+username = "projection_owner"
+password_file = "/etc/oteryn/ops/projection-pg-password"
+root_ca_file = "/etc/oteryn/ops/db-ca.pem"
+"#
+        );
+        assert!(
+            OpsConfig::parse(projection.as_bytes())
+                .expect("projection")
+                .projection
+                .is_some()
+        );
+        for (from, to, key) in [
+            (
+                "/var/lib/oteryn/projection/epoch-fence",
+                "/var/lib/oteryn/character-fence/f",
+                "projection.epoch_fence_file",
+            ),
+            (
+                "username = \"projection_owner\"",
+                "username = \"bad user\"",
+                "projection.database",
+            ),
+            (
+                "/etc/oteryn/ops/projection-pg-password",
+                "pg-password",
+                "projection.database",
+            ),
+        ] {
+            let changed = projection.replace(from, to);
+            assert_eq!(
+                OpsConfig::parse(changed.as_bytes()).err().map(|e| e.key),
+                Some(key)
+            );
+        }
         let root = ops.replace("service_uid = 990", "service_uid = 0");
         assert_eq!(
             OpsConfig::parse(root.as_bytes()).err(),
