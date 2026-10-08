@@ -160,8 +160,10 @@ Encoding rules:
 - **Vocation.** `vocation` is the build-state vocation id (A13, as stored in HIGHSCORES-0 rows),
   0..255. Platform maps it for display. An id it does not know is shown as unknown and never
   refuses the snapshot.
-- **Content.** The content of a snapshot is its subject members plus its body. The envelope,
-  `source_observed_at` and the epoch and revision pair are not content (LCFA §4 ruling). An equal
+- **Content.** The content of a snapshot is its subject members plus its body. For
+  `highscores`, `computed_at` is content as well, so an equal pair with a different
+  `computed_at` is `409`. The envelope, `source_observed_at` and the epoch and revision pair are
+  not content (LCFA §4 ruling). An equal
   pair with equal content is an idempotent `200 accepted`, and the consumer keeps its first stored
   `source_observed_at`.
 
@@ -239,9 +241,10 @@ different content, `429` rate limited, `503` unavailable.
 - `guild` has 0 or 1 entries. `DISBANDED`, or a guild the publisher cannot classify, publishes
   `[]`. `state` is `FORMING`, `ACTIVE` or `DISBANDING`. `founded_at` is `created_at`.
 - `ranks`: 3..20 entries (`GUILD0-RL-06`), `level` ascending, unique.
-- `members`: 1..2,000 entries (`GUILD0-RL-05`), ordered by `rank_level` then name (GUILD-0 §9
+- `members`: 0..2,000 entries (`GUILD0-RL-05`), ordered by `rank_level` then name (GUILD-0 §9
   keyset order is rank level then CharacterId; names are used here because `character_id` is not
-  published per member). A member whose character would publish `profile: []` is left out.
+  published per member). A member whose character would publish `profile: []` is left out. A guild
+  whose members are all left out publishes an empty `members` list, never `guild: []` (D245).
 - Vocation, level and online state of members are not repeated here. Platform shows them by
   joining with `character_profile` and `world_online` on (`world_id`, name). That way one
   revocation path governs presence (§7.2), and a member's level-up never touches the guild.
@@ -310,7 +313,7 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
 | `character_deaths` | each committed death of the character; any change that flips its profile between `[]` and present |
 | `guild` | any change to guild state, name, ranks, roster or a member's rank; a member's rename; any change that flips a member's profile between `[]` and present |
 | `house` | any property state or revision change; a catalogue activation that changes the record; a rename of the owner character or guild; any change that flips the owner's profile |
-| `world_online` | the publisher's own snapshot job, when the qualifying list differs from the last snapshot; at most once per `PUBPROJ-ONLINE-INTERVAL` (10 s) per World |
+| `world_online` | the publisher's own scan of every World, when a World's qualifying list differs from its last snapshot; at most once per `PUBPROJ-ONLINE-INTERVAL` (10 s) per World. Its watermark follows the scan, not the outbox (§5.1) |
 
 - **Transactional outbox.** Each revision touch also records the subject in that family's outbox,
   in the same transaction. The publisher reads the current subject state and revision in one read
@@ -336,9 +339,13 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
   (`PUBPROJ-WATERMARK-GAP`). `complete_through` follows LCFA §5.1: no committed change at or
   before it is still undelivered, and during a full resync it stays below the resync start. Its
   validation and refusal are LCFA §5.1's, with Platform's `clock_uncertainty` of 1 s.
-- For `world_online`, a World whose snapshot is refused for its bound (§4.6), or whose last
-  publication failed, holds `complete_through` below its oldest undelivered change. The whole
-  family therefore goes stale rather than showing a list that is wrong for one World.
+- For `world_online`, online changes (login, logout, level or vocation, a presence setting) are
+  not recorded in an outbox, so the watermark is held by the scan instead (D607). A scan reads
+  the committed session state of every World at one cut time. `complete_through` is the cut time
+  of the last scan that completed and whose changed Worlds were all `accepted` or `superseded`,
+  and it never passes that cut. A stopped, late or failed scan therefore stalls the watermark,
+  and so does a World whose snapshot is refused for its bound (§4.6) or whose publication failed.
+  The whole family goes stale rather than showing a list that is wrong for one World.
 - A family is stale when `platform_now - complete_through + clock_uncertainty > S`, when the
   stored `complete_through` is more than `clock_uncertainty` after `platform_now`, or when the
   watermark epoch is not the highest seen. S = 30 s for `testing` and `preproduction` (U-PP1).
@@ -357,7 +364,7 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
 | Family state | What Platform serves |
 |---|---|
 | `world_online` stale | no online list and no online markers anywhere (fail toward less disclosure) |
-| any other family stale | its last accepted entries, marked with their `source_observed_at` (and `computed_at` for highscores), for at most `M` = 1 h; then the family's pages say the data is unavailable (U-PP1) |
+| any other family stale | none of its entries; the family's pages say the data is unavailable. There is no stale display window, because an undelivered change may be a visibility removal (fail closed, D607) |
 | entry below the highest epoch | not served until its new-epoch snapshot arrives |
 | profile `[]` | the character's profile, deaths and highscore links are not found (§7.3) |
 
@@ -454,7 +461,10 @@ the implementation, as LCFA's were.
   goes stale; once a presence setting exists, hiding it removes the character within one interval.
 - Deaths: killer names stay the names at the death commit after a rename.
 - Watermark: `complete_through` never passes an undelivered change; a future-dated watermark is
-  refused; a stopped watermark makes the family stale.
+  refused; a stopped watermark makes the family stale and unserved; a stopped `world_online` scan
+  stalls its watermark even when no outbox row is pending.
+- Content: a highscores snapshot with an equal pair and a different `computed_at` is `409`; a
+  guild with every member hidden publishes an empty `members` list.
 - Identity: only the public-projection certificate is accepted on these routes, and it is refused
   elsewhere.
 
@@ -462,7 +472,7 @@ the implementation, as LCFA's were.
 
 | ID | Testing and preproduction (proposed) | Release entry |
 |---|---|---|
-| U-PP1 | S = 30 s; stale display window M = 1 h | open: measured S and M |
+| U-PP1 | S = 30 s; no stale display window (D607) | open: measured S |
 | U-PP2 | coarse online is public by default (§7.2) | open: the privacy-preference contract and its default |
 | U-PP3 | no creature or environment killers | open: a durable killer-cause field (DEATH-0 amendment), then a new `contract_version` |
 | U-PP4 | public-projection identity from the test stack's development CA, one per publisher host | open: Platform PKI and the production host list |

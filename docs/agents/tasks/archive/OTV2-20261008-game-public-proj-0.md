@@ -66,4 +66,5 @@ repository and GAME-CHAR-CMD-0 files.
 
 ## PR and closeout
 
+- Review repair (CP ruling D607): the world-online watermark is held at the last completed scan; stale families are not served (fail closed); highscores `computed_at` is content; a guild with every member hidden publishes an empty roster (D245).
 - PR #1937; closeout by squash merge of #1937 (pending). Platform consumption follows in Oteryn/Oteryn-Platform#1476.
