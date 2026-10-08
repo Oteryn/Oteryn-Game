@@ -598,7 +598,23 @@ fn materialize_from_predecessor(
     if admit_cheese_on_corpse_admitted(parent, name, output)? {
         return Ok(());
     }
-    if admit_corpse_on_reconciled(parent, name, output)? {
+    // The pinned predecessor predates both admissions: stage the corpse-admitted package beside
+    // the output and admit the cheese on top of it, so the result is the tracked package.
+    let stage = output.with_file_name(format!(
+        ".{}-corpse-stage",
+        output
+            .file_name()
+            .ok_or("output basename missing")?
+            .to_string_lossy()
+    ));
+    if admit_corpse_on_reconciled(parent, name, &stage)? {
+        let stage_parent = stage.parent().ok_or("stage parent missing")?;
+        let stage_name = stage.file_name().ok_or("stage basename missing")?;
+        let chained = admit_cheese_on_corpse_admitted(stage_parent, stage_name, output);
+        fs::remove_dir_all(&stage)?;
+        if !chained? {
+            return Err("corpse-admitted stage is not the cheese predecessor".into());
+        }
         return Ok(());
     }
     let filesystem = ProjectFilesystemLimits {
