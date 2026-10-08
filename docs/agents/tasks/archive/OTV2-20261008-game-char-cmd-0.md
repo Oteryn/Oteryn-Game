@@ -81,6 +81,9 @@ registration (the implementation packet registers §12). No enablement.
   `operation_id` unique per issuer across commands; conformance scenarios 19 to 23 added.
 - Review round 2: pending-list response bound raised to 8192 bytes (worst full page 5602) and
   list request to 512 bytes; compound continuation key `(source_revision, operation_id)`.
+- Review round 3: `recovery_generation` on every receipt and restore reconciliation (§5.4,
+  OPERABILITY §3 ruling 10); housing disposition proof before rebinding (§6.4, EXP-HOUSES-01
+  §§13.5, 14.7) with `CHAR_CMD_HOUSING_NOT_PREPARED`; scenarios 24 and 25; unknowns U-CC7, U-CC8.
 
 ## Validation
 

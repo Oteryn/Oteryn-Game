@@ -24,7 +24,10 @@
   (intent model; this contract is the separate explicit contract that decision reserves for
   Platform user creation); `docs/contracts/OTERYN_GAME_LIST_CHARACTERS_FOR_ACCOUNT_PROJECTION_V1.md`
   (LCFA, the read side); `docs/architecture/FND-04_IDENTITY_GAME_SESSION_ADMISSION_CHARACTER_LEASE_CONTRACT.md`
-  (CharacterLease and admission).
+  (CharacterLease and admission);
+  `docs/architecture/reviews/OTERYN_GAME_ARCH_ALPHA_OPERABILITY_2026-10-06.md` §3 ruling 10
+  (restore reconciliation, §5.4); `docs/architecture/EXP-HOUSES-01_OWNER_ACCEPTANCE_BASELINE.md`
+  §§7, 13, 14.7, 22.2 (Bazaar housing disposition, §6.4).
 
 ## 1. Scope
 
@@ -85,7 +88,8 @@ client, exactly as LCFA §3.
   - `ReadCharacterCommandIntentV1` → `/internal/v1/game-auth/character-commands/read`;
   - `PublishCharacterCommandReceiptV1` → `/internal/v1/game-auth/character-commands/receipt`.
 - Bounds: connect 1 s, handshake 2 s, exchange 3 s; a read request at most 256 bytes, a
-  pending-list request at most 512 bytes and a receipt at most 1024 bytes; a pending-list
+  pending-list request at most 512 bytes and a receipt at most 1024 bytes (the largest receipt,
+  a committed transfer with 20-digit counters, is 699 bytes); a pending-list
   response at most 8192 bytes (a full page of 32 entries with 64-byte commands and 20-digit
   revisions is 5602 bytes); an intent response at most 4096 bytes; a receipt response at most 256 bytes; one in-flight exchange per consumer.
 - Cadence: while enabled the consumer lists pending intents every 1 s, and backs off up to 10 s
@@ -173,19 +177,19 @@ and the canonical starter state applies (boundary §6). Adding a choice is a new
 Committed `CreateCharacter`:
 
 ```json
-{"contract_version":1,"operation":"PublishCharacterCommandReceiptV1","source_authority":"oteryn:character-authority:primary","command":"CreateCharacter","operation_id":"0192a000-0000-7000-8000-000000000001","outcome":"COMMITTED","result_code":"CHAR_CMD_OK","character_id":"01934f10-7c04-7001-805b-3b1122334401","account_id":"0190f2a1-3b4c-7d5e-8f60-718293a4b5c6","world_id":"01934f10-7c02-7001-805b-3b1122334401","name":"Aldric","character_revision":"1","projection_epoch":"1","projection_revision":"43","decided_at":"1790000002"}
+{"contract_version":1,"operation":"PublishCharacterCommandReceiptV1","source_authority":"oteryn:character-authority:primary","command":"CreateCharacter","operation_id":"0192a000-0000-7000-8000-000000000001","outcome":"COMMITTED","result_code":"CHAR_CMD_OK","character_id":"01934f10-7c04-7001-805b-3b1122334401","account_id":"0190f2a1-3b4c-7d5e-8f60-718293a4b5c6","world_id":"01934f10-7c02-7001-805b-3b1122334401","name":"Aldric","character_revision":"1","projection_epoch":"1","projection_revision":"43","recovery_generation":"3","decided_at":"1790000002"}
 ```
 
 Committed `TransferCharacterOwnership`:
 
 ```json
-{"contract_version":1,"operation":"PublishCharacterCommandReceiptV1","source_authority":"oteryn:character-authority:primary","command":"TransferCharacterOwnership","operation_id":"0192a000-0000-7000-8000-000000000002","outcome":"COMMITTED","result_code":"CHAR_CMD_OK","character_id":"01934f10-7c04-7001-805b-3b1122334401","from_account_id":"0190f2a1-3b4c-7d5e-8f60-718293a4b5c6","to_account_id":"0190f2a1-3b4c-7d5e-8f60-718293a4b5c7","character_revision":"9","projection_epoch":"1","from_projection_revision":"44","to_projection_revision":"12","decided_at":"1790000002"}
+{"contract_version":1,"operation":"PublishCharacterCommandReceiptV1","source_authority":"oteryn:character-authority:primary","command":"TransferCharacterOwnership","operation_id":"0192a000-0000-7000-8000-000000000002","outcome":"COMMITTED","result_code":"CHAR_CMD_OK","character_id":"01934f10-7c04-7001-805b-3b1122334401","from_account_id":"0190f2a1-3b4c-7d5e-8f60-718293a4b5c6","to_account_id":"0190f2a1-3b4c-7d5e-8f60-718293a4b5c7","character_revision":"9","projection_epoch":"1","from_projection_revision":"44","to_projection_revision":"12","recovery_generation":"3","decided_at":"1790000002"}
 ```
 
 Rejected, either command:
 
 ```json
-{"contract_version":1,"operation":"PublishCharacterCommandReceiptV1","source_authority":"oteryn:character-authority:primary","command":"CreateCharacter","operation_id":"0192a000-0000-7000-8000-000000000001","outcome":"REJECTED","result_code":"CHAR_CMD_NAME_UNAVAILABLE","decided_at":"1790000002"}
+{"contract_version":1,"operation":"PublishCharacterCommandReceiptV1","source_authority":"oteryn:character-authority:primary","command":"CreateCharacter","operation_id":"0192a000-0000-7000-8000-000000000001","outcome":"REJECTED","result_code":"CHAR_CMD_NAME_UNAVAILABLE","recovery_generation":"3","decided_at":"1790000002"}
 ```
 
 - The three member sets above are exact per `(command, outcome)`. The rejected member set also
@@ -197,13 +201,17 @@ Rejected, either command:
   affected accounts (LCFA §5); Platform uses them to know when its read model shows the result
   (§9).
 - `decided_at` is the Character Authority transaction time.
+- `recovery_generation` is in every receipt, committed or rejected: the Character recovery
+  generation (`game_character_recovery_admissions.recovery_generation`, 1..2^64−1) whose fence
+  the deciding transaction asserted (`assert_recovery_fence`) when it stored the receipt.
+  Platform stores it with the receipt; it selects the receipts that a Game restore reopens (§5.4).
 - Every publication of one `operation_id` is byte-identical: Game publishes the stored receipt
   bytes, never a recomputed receipt.
 
 Responses: `200` `{"contract_version":1,"result":"accepted"}` when Platform stores the receipt or
 already holds the identical bytes. Failures are empty bodies: `400` malformed, `401`
 unauthenticated, `404` no such intent, `409` Platform holds different receipt bytes for that
-`operation_id`, `429` rate limited, `503` unavailable. On `404` or `409` Game keeps its receipt,
+`operation_id` and that operation is not reopened by a restore (§5.4), `429` rate limited, `503` unavailable. On `404` or `409` Game keeps its receipt,
 stops republishing that operation and raises an operator alarm; Platform keeps the intent PENDING
 and raises its own. Neither side rewrites the other's record.
 
@@ -259,6 +267,35 @@ and raises its own. Neither side rewrites the other's record.
   every decision: a store that is restored and not yet reconciled decides nothing and publishes
   nothing.
 
+### 5.4 Restore reconciliation
+
+OPERABILITY §3 ruling 10 applies to both commands; this section fixes how it uses this wire. The
+restore notice and its acknowledgement are PLATFORM-RESTORE-RECONCILE-P1's wire, not this one's.
+
+- After a Game restore notice with restored generation H, Platform reopens as PENDING every
+  intent whose stored receipt carries `recovery_generation` ≥ H. It selects only by generation,
+  never by comparing a Platform time, `decided_at` or `issued_at_source` with the restore point T.
+  It keeps the superseded receipt as history and stores exactly one new receipt for that
+  `(issuer_authority, operation_id)`; it settles or compensates only on that new receipt and
+  never infers a Game outcome from its own saga row.
+- Game consumes reopened intents through the unchanged §4 routes, after the fence reconcile and
+  before admission opens (ruling 9 step 11), and decides each from restored state by operation
+  identity:
+  - a receipt that survived in the restored store is republished byte-identical, a no-op;
+  - with no stored receipt, the intent is decided again by §6 under the new generation. The
+    expiry and future-skew rules of §5.3 apply unchanged against the original intent times, so
+    an operation lost by the restore is in practice decided `CHAR_CMD_INTENT_EXPIRED`; a lost
+    create never silently reappears with another `CharacterId`, and a lost transfer never
+    commits outside its 300 s window;
+  - an erased or terminally deleted Character, or a Character created after T, is always a
+    bounded rejection (`CHAR_CMD_CHARACTER_NOT_FOUND`); an erased account is
+    `CHAR_CMD_ACCOUNT_NOT_ELIGIBLE`.
+- On any `REJECTED` new receipt Platform compensates its own state (refund, reverse the escrow
+  or settlement step, tell the user). Platform acknowledges the restore notice only after every
+  reopened intent has a new receipt; Game opens admission only after that acknowledgement.
+- A reopened intent's republished or new receipt is accepted with `200`; `409` stays the answer
+  for different bytes on an operation that no restore reopened.
+
 ## 6. Decision procedure
 
 Before any authoritative write, Character Authority proves independently, as the bootstrap
@@ -311,6 +348,8 @@ or not at all:
   holders, and no stale grant, lease or session generation issued before the transfer can admit
   or write for the former owner;
 - `to_account_id` holds fewer than 64 listed Characters, checked under its portfolio lock;
+- **housing proof** (§6.4): when the Character's housing requires it, a current housing prepare
+  for this operation is consumed; otherwise `CHAR_CMD_HOUSING_NOT_PREPARED`;
 - rebind the owner, advance the Character revision and both accounts' LCFA projection revisions
   (LCFA §5), store the receipt, the audit event and its outbox state.
 
@@ -334,6 +373,37 @@ own saga (boundary §10).
   failure that the database still reports is the transient case of §6: the transaction rolls
   back, nothing is stored and the intent is decided again.
 
+### 6.4 Housing disposition proof
+
+EXP-HOUSES-01 §§13.5, 14.7 step 4 and 22.2 bind Character Authority to consume current housing
+proof before an Account rebinding that changes control of a housing scope. A Character never
+carries a house to another account silently (§13).
+
+- **When required:** in the deciding transaction, before any write, Character Authority reads
+  the Game housing domain. A housing prepare is required when the Character owns a physical
+  house, or when `to_account_id` holds a Residence or a physical house in the Character's World
+  and the Character owns a physical house there (the §7 personal-slot conflict). It applies to
+  every `purpose`, escrow moves included; an escrow `AccountId` has the same per-World slot.
+- **What is proof:** a housing prepare for the same `(issuer_authority, operation_id)`, bound to
+  this `character_id`, `expected_from_account_id`, `to_account_id` and the Character's World,
+  in a pending, non-terminal disposition state (§13.1, §13.4), whose content fence (§14.7
+  step 2) is still held at the revision the prepare recorded, and whose seller disposition
+  (§13) and, on a slot conflict, buyer keep-choice (§13.3, §13.4) are recorded. Character
+  Authority reads it under lock in the same transaction, so the fence cannot be released between
+  the check and the rebinding commit.
+- **Fail closed:** missing, stale, mismatched, released or terminal proof is a stored `REJECTED`
+  `CHAR_CMD_HOUSING_NOT_PREPARED` receipt with no Character write. Character Authority never
+  infers housing state from the intent, a Platform listing or an earlier receipt (§13.5).
+- **After the decision:** the transfer never releases the fence and writes no housing state. The
+  housing domain finalizes on `COMMITTED` and runs abort restoration on `REJECTED` (§13.1,
+  §13.4, §14.7 steps 5–6), keyed by the same operation identity; while no receipt exists the
+  housing state stays pending and fenced (§14.7 step 7).
+- The housing prepare command and its wire belong to the housing contract, not this one. Until
+  the housing domain exists no Character owns housing and the check passes trivially; the
+  housing activation packet must add the read before any Character can own a house.
+- A house auction bid that nominates the transferred Character (§11.2) is not consulted here;
+  the auction's final guards exclude it once the Account binding changes (§11.5).
+
 ## 7. Result codes
 
 `outcome` is `COMMITTED` only with `CHAR_CMD_OK`; every other code is `REJECTED`. Each `REJECTED`
@@ -351,6 +421,7 @@ code is terminal and stored. The boundary §13 class tells Platform how to proce
 | `CHAR_CMD_OWNER_MISMATCH` | transfer | stale expected state | reread through LCFA, recover the saga |
 | `CHAR_CMD_CHARACTER_IN_SESSION` | transfer | session conflict | ask the seller to log out, new `operation_id` |
 | `CHAR_CMD_CHARACTER_NOT_TRANSFERABLE` | transfer | lifecycle conflict | recover the saga |
+| `CHAR_CMD_HOUSING_NOT_PREPARED` | transfer | stale expected state | let housing restore, prepare again, new `operation_id` |
 | `CHAR_CMD_SAME_ACCOUNT` | transfer | deterministic business rejection | Platform defect; alarm |
 | `CHAR_CMD_INTENT_EXPIRED` | both | stale expected state | new `operation_id` if still wanted |
 | `CHAR_CMD_INTENT_INVALID` | both | authorization rejection | Platform defect; alarm |
@@ -414,6 +485,11 @@ D965 Q5=A, normative for the Game client:
 | §14 rollout | producer first; Platform stays disabled until Game supports this version (D963) |
 | §16 scenarios 2–5, 9 | §11 below |
 
+Related accepted documents: OPERABILITY §3 ruling 10 (generation on every outcome, re-request by
+operation identity, rejection for an erased Character, no clock selection) is kept by §4.3 and
+§5.4; EXP-HOUSES-01 §§7, 13, 14.7 and 22.2 (no silent house transfer, current same-operation
+fence proof, fail closed, abort restoration by housing) are kept by §6.4.
+
 ## 11. Conformance scenarios
 
 The Game implementation and the Platform consumer must prove, with shared exact wire fixtures:
@@ -470,7 +546,24 @@ The Game implementation and the Platform consumer must prove, with shared exact 
     accepted, and a 33-entry or over-8192-byte response is a malformed list response;
 23. **unknown command receipt:** a pending entry `{"command":"RenameCharacter",...}` gets the
     rejected receipt with `"command":"RenameCharacter"` and `CHAR_CMD_UNSUPPORTED`, and Platform
-    accepts it with `200`.
+    accepts it with `200`;
+24. **restore after a terminalized transfer** (ruling 10): a transfer commits under generation
+    3 and Platform settles; a PITR to a T before that commit restores generation H = 3 and
+    the fence moves to 4. Platform reopens every receipt with generation ≥ 3, selected without
+    any clock comparison, including one decided before T. The receipt that survived T is
+    republished byte-identical and changes nothing; the lost transfer has no stored receipt, is
+    decided `CHAR_CMD_INTENT_EXPIRED` under generation 4 with no rebinding, Platform accepts the
+    new receipt with `200` and compensates; a lost create is not recreated; a Character erased
+    after T gets `CHAR_CMD_CHARACTER_NOT_FOUND`; Game opens admission only after Platform's
+    acknowledgement; every receipt carries `recovery_generation`;
+25. **housing proof** (EXP-HOUSES-01 §25 scenarios 12–15, 29, 36, 37, 41, 42): a Character that
+    owns a physical house, transferred with no prepare, with a prepare of another
+    `operation_id` or Character, with a prepare whose content fence was released or whose
+    content revision advanced, or, on a buyer slot conflict, with no recorded keep-choice, gets
+    `CHAR_CMD_HOUSING_NOT_PREPARED` with no rebinding, and housing restores the prior result; the
+    same transfer with a current same-operation prepare commits, keeps the fence for housing
+    finalization and rebinds once; an escrow move follows the same rule; a Character with no
+    housing needs no prepare.
 
 ## 12. Limits
 
@@ -499,6 +592,8 @@ The implementation packet registers the new limits in `docs/contracts/RESOURCE_L
 | U-CC4 | exact Platform account page route | client configuration; expected `/account/characters/create` until Platform confirms |
 | U-CC5 | production PKI and Character Authority host list | open, as LCFA U-LC6 |
 | U-CC6 | rename, deletion, restore, world transfer | out of scope; later contract versions |
+| U-CC7 | Platform storage of `recovery_generation` and the restore notice (PLATFORM-RESTORE-RECONCILE-P1, not yet accepted by Platform) | enablement (§14 step 4) requires Platform's acceptance; until then both commands stay disabled |
+| U-CC8 | housing prepare command and fence representation (EXP-HOUSES-01 not started) | §6.4 semantics bind; the housing contract fixes the wire and tables |
 
 ## 14. Rollout
 
@@ -507,7 +602,7 @@ The implementation packet registers the new limits in `docs/contracts/RESOURCE_L
 2. Game implementation (consumer, receipt store, decision transactions), disabled by default.
 3. Platform consumer: intent store, the three routes, receipt handling, the account page and the
    Bazaar saga change (packets DECANARY-CREATE-1 and DECANARY-BAZAAR-1).
-4. Enable both in one `testing` stack with shared fixtures; then `preproduction`.
+4. With U-CC7 settled, enable both in one `testing` stack with shared fixtures; then `preproduction`.
 5. Until step 4, Platform keeps creation and transfer disabled (D963 Q2=A).
 
 ## 15. Acceptance
