@@ -29,6 +29,12 @@ owned_paths:
   - tools/content-migration/item_navigation_source_supplement.py
   - tools/content-migration/item_official_navigation.py
   - content/items/taxonomy/items.json
+  - tools/content-schema/world-object-authoring/official_corpses.py
+  - tools/content-schema/world-object-authoring/qualified_world.py
+  - tools/content-schema/world-object-authoring/samples/qualified-official-corpses-15.30.json
+  - tools/content-schema/world-object-authoring/samples/qualified-world-wiki46-fixed3-15.30.json
+  - tools/content-schema/world-object-authoring/samples/census-official-corpses-15.30.json
+  - tools/content-schema/world-object-authoring/samples/census-world-wiki46-fixed3-15.30.json
   - docs/agents/tasks/archive/OTV2-20261008-main-nav-digest-1.md
 public_contracts: []
 depends_on: []
@@ -55,6 +61,10 @@ This task changes pinned digests only; no logic, no `.github/**`, `Cargo.*` or
   matching bounded7 constant.
 - `content/items/taxonomy/items.json` regenerated with
   `tools/content-migration/world_project_v2_to_tree.py`.
+- World-object qualification packets (Codex P2 on c5a134a9): the same `item_identity.rs` pin in
+  `qualified-official-corpses-15.30.json` and `qualified-world-wiki46-fixed3-15.30.json`, their
+  qualification digests in `official_corpses.py` / `qualified_world.py`, and the
+  `qualification_sha256` seal in the two census samples.
 
 ## Validation
 
@@ -71,6 +81,8 @@ Candidate:
 - `python tools/content-migration/test_item_external_family_refinement.py` OK
 - `python tools/content-migration/test_item_bounded7_navigation.py` OK
 - `python tools/content-migration/validate_world_project_v2_to_tree.py` PASS
+- `python test_world_objects.py`, `test_official_corpses.py`, `test_qualified_world.py` (world-object-authoring) OK
+- Not run locally: the Crystal catalogue drift step (`build_catalogue.py --check`), which needs the pinned Crystal checkouts; hosted CI covers it.
 - `python tools/agents/validate_governance.py` pass
 - `python -m unittest discover -s tools/agents/tests` OK
 - `python tools/repository/validate_repository_policy.py` pass
