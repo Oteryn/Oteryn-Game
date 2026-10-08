@@ -47,6 +47,16 @@ Leads that run workers as subagents use the definitions in `.claude/agents/`:
 
 Subagent workers get the META policy and routing from their lead and read only the sections their definition names. A subagent's final report is at most 15 lines. Subagents never trigger paid review, allocate or merge.
 
+The same three tiers apply when the control plane, a lead or the architect starts a new session (D955):
+
+- Haiku: read-only work that needs reading, not judgement: file reads and code search, pin and hash checks, PR/CI/review state and failure logs, Reference data extraction (monsters, spells, items), environment checks and verbatim text moves. Haiku never writes code, rules on a blocker or decides a merge.
+- Sonnet: ordinary implementation.
+- Opus: persistence, fencing, protocol, authority, durable value, the native login track and hard rulings.
+
+Haiku sessions run in the dedicated lookup environment with autocompact at 100k tokens (D944, D956); Sonnet and Opus sessions run in the default environment. Exact model and environment identifiers live in the canonical STATE, never in the repository. Prefer a Haiku subagent or session for any large read so that it stays out of Sonnet and Opus context.
+
+The control plane keeps STATE to the rules and recent decisions, and moves closed history verbatim into archive comments listed in STATE (D957).
+
 ### Local checks by changed path
 
 Run the narrow local check for what you changed and leave the full workspace build, Windows client and E2E lanes to CI. Do not read `.github/workflows/merge-gate.yml` to discover checks.
