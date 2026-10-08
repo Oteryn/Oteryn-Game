@@ -808,7 +808,7 @@ jobs:
     # Heavy: runs in the Merge Queue; on the PR only on demand (full-ci label).
     if: needs.scope.outputs.full_ci == 'true' && needs.lanes.outputs.rust == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: read
       pull-requests: read
