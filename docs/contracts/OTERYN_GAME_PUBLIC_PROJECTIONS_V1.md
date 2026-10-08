@@ -190,6 +190,13 @@ different content, `429` rate limited, `503` unavailable.
 - One HIGHSCORES-0 snapshot of (World, category) is published as six snapshots, one per filter, all
   with the same revision (§5). Who is listed, and every exclusion, follows HIGHSCORES-0 §5. The
   deletion, sale and sanction exclusions it leaves open apply here once they are decided.
+- **Profile join (fail closed, D607).** Platform shows a highscores row only while it serves a
+  `character_profile` entry with the same (`world_id`, `name`). Otherwise the row is left out
+  and the other rows keep their published `rank`. A character that becomes hidden, locked,
+  pending deletion or deleted therefore drops out of every highscores page when its
+  `profile: []` is stored, before the next HIGHSCORES-0 job. A row that still has the old name
+  after a rename drops out the same way. While `character_profile` is stale (§6), no highscores
+  row is shown.
 
 ### 4.2 `character_profile`
 
@@ -308,12 +315,12 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
 
 | Family | Revision advanced by |
 |---|---|
-| `highscores` | each committed HIGHSCORES-0 job run of (World, category): one revision for all six filters |
+| `highscores` | each committed HIGHSCORES-0 job run of (World, category): one revision for all six filters. A visibility removal does not touch it; the profile join removes the row (§4.1) |
 | `character_profile` | create; rename; lifecycle change; world transfer; level or vocation change; guild join, leave or rank change; any visibility decision |
 | `character_deaths` | each committed death of the character; any change that flips its profile between `[]` and present |
 | `guild` | any change to guild state, name, ranks, roster or a member's rank; a member's rename; any change that flips a member's profile between `[]` and present |
 | `house` | any property state or revision change; a catalogue activation that changes the record; a rename of the owner character or guild; any change that flips the owner's profile |
-| `world_online` | the publisher's own scan of every World, when a World's qualifying list differs from its last snapshot; at most once per `PUBPROJ-ONLINE-INTERVAL` (10 s) per World. Its watermark follows the scan, not the outbox (§5.1) |
+| `world_online` | the publisher's own scan of every World, which starts every `PUBPROJ-ONLINE-INTERVAL` (10 s); a World gets a revision when its qualifying list differs from its last snapshot. Its watermark follows the scan, not the outbox (§5.1) |
 
 - **Transactional outbox.** Each revision touch also records the subject in that family's outbox,
   in the same transaction. The publisher reads the current subject state and revision in one read
@@ -340,8 +347,9 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
   before it is still undelivered, and during a full resync it stays below the resync start. Its
   validation and refusal are LCFA §5.1's, with Platform's `clock_uncertainty` of 1 s.
 - For `world_online`, online changes (login, logout, level or vocation, a presence setting) are
-  not recorded in an outbox, so the watermark is held by the scan instead (D607). A scan reads
-  the committed session state of every World at one cut time. `complete_through` is the cut time
+  not recorded in an outbox, so the watermark is held by the scan instead (D607). A scan starts
+  every `PUBPROJ-ONLINE-INTERVAL` and reads the committed session state of every World at one
+  cut time. `complete_through` is the cut time
   of the last scan that completed and whose changed Worlds were all `accepted` or `superseded`,
   and it never passes that cut. A stopped, late or failed scan therefore stalls the watermark,
   and so does a World whose snapshot is refused for its bound (§4.6) or whose publication failed.
@@ -400,8 +408,9 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
   §4.2 already shows a coarse online flag to the whole World. It is a candidate default (U-PP2).
 - When a privacy-preference contract adds a presence setting, a character whose setting hides
   presence, or whose setting cannot be read, is left out of `world_online`. A setting change takes
-  effect in the World's next snapshot, at most `PUBPROJ-ONLINE-INTERVAL` later. A stale feed is
-  hidden (§6), so a revocation is never outlived by a cached "online".
+  effect in the World's next snapshot, within one `PUBPROJ-ONLINE-INTERVAL` while scans run on
+  time. A late or failed scan stalls the watermark, and the whole list is hidden once the family
+  is stale (§6), so a revocation is never outlived by a cached "online".
 
 ### 7.3 Enumeration and identifiers
 
@@ -437,7 +446,7 @@ the implementation, as LCFA's were.
 | `PUBPROJ-HOUSE-REQUEST-BYTES` | 2,048 | at most 1,100 bytes in total |
 | `PUBPROJ-ONLINE` | 4,096 entries per World | wire bound, not a capacity; 8 Channels × 500 players (D128) |
 | `PUBPROJ-ONLINE-REQUEST-BYTES` | 524,288 | 4,096 × at most 112 bytes + envelope |
-| `PUBPROJ-ONLINE-INTERVAL` | 10 s | minimum gap between `world_online` revisions of one World |
+| `PUBPROJ-ONLINE-INTERVAL` | 10 s | fixed start interval of `world_online` scans: the minimum gap between revisions of one World, and the maximum age of a healthy scan |
 | `PUBPROJ-WATERMARK-BYTES` | 512 | |
 | `PUBPROJ-WATERMARK-GAP` | 10 s | maximum gap between watermarks of one family |
 | `PUBPROJ-INFLIGHT` | 1 per family per publisher | |
@@ -462,9 +471,12 @@ the implementation, as LCFA's were.
 - Deaths: killer names stay the names at the death commit after a rename.
 - Watermark: `complete_through` never passes an undelivered change; a future-dated watermark is
   refused; a stopped watermark makes the family stale and unserved; a stopped `world_online` scan
-  stalls its watermark even when no outbox row is pending.
+  stalls its watermark even when no outbox row is pending; a scan that does not start within
+  `PUBPROJ-ONLINE-INTERVAL` of the last one stalls it too.
 - Content: a highscores snapshot with an equal pair and a different `computed_at` is `409`; a
-  guild with every member hidden publishes an empty `members` list.
+  guild with every member hidden publishes an empty `members` list; a highscores row whose
+  character publishes `profile: []` is not shown before the next HIGHSCORES-0 job, and no row is
+  shown while `character_profile` is stale.
 - Identity: only the public-projection certificate is accepted on these routes, and it is refused
   elsewhere.
 
