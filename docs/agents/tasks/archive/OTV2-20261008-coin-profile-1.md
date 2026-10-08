@@ -4,13 +4,13 @@
 task_id: OTV2-20261008-coin-profile-1
 title: "Admit the gold, platinum and crystal coin Item profiles in the active generation"
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 1622
 lane_id: content
 base_branch: main
 branch: claude/coin-profile-1-20261008
-pr: PENDING
+pr: 1935
 base_sha: 340278d
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
@@ -62,3 +62,24 @@ stack maximum are unchanged.
 `item_ref_admission_tests.rs`: every `Coin::ALL` key resolves to
 `Stackable{proven_maximum: Some(COIN_STACK_MAXIMUM)}`, no container, not the container-slot
 pattern (was `DefinitionNotFound` for `i3031`). The full-artifact profile count is 121.
+
+## Validation
+
+- `python3 tools/content-migration/register_spell_families.py --check`: pass.
+- `python3 tools/content-migration/test_import_spell_families.py`: OK.
+- `python3 tools/content-migration/test_import_current_spell_sources.py`: OK.
+- `python3 tools/content-migration/test_compose_monster_current_sources.py`: OK.
+- `python3 tools/content-schema/native-gameplay/test_full_spell_artifact.py`: OK.
+- `python3 tools/content-schema/native-gameplay/test_spell_item_identities.py`: OK.
+- `python3 tools/content-schema/native-gameplay/test_source_world.py`: OK.
+- `cargo fmt --all --check`: pass.
+- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass.
+- `cargo test -p oteryn-game-server --lib`: pass (2638 passed).
+- `cargo test -p oteryn-game-server --tests`: pass.
+- `python3 tools/repository/validate_repository_policy.py`: pass.
+- `python tools/agents/validate_governance.py`: pass.
+- `python -m unittest discover -s tools/agents/tests`: pass.
+
+## Review
+
+Review state on the frozen head is the control plane's; none requested by this worker.
