@@ -1,14 +1,14 @@
-﻿# OTV2-20261008 Quest native-binding preflight
+# OTV2-20261008 Quest native-binding preflight
 
 ```yaml
 task_id: OTV2-20261008-quest-native-binding-preflight
 title: Deterministic canonical Quest consumer gap inventory
 mode: AUDIT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/quest-native-binding-preflight-20261008
-pr: null
+pr: 1930
 base_sha: d0b091b6b5ad4b9527d354df0043c6e55d5861cc
 head_sha: null
 final_head_sha: null
@@ -21,7 +21,7 @@ owned_paths:
   - tools/content-schema/quest-authoring/quest_native_binding_preflight.py
   - tools/content-schema/quest-authoring/test_quest_native_binding_preflight.py
   - tools/content-schema/quest-authoring/samples/native-binding-preflight/all352.json
-  - docs/agents/tasks/OTV2-20261008-quest-native-binding-preflight.md
+  - docs/agents/tasks/archive/OTV2-20261008-quest-native-binding-preflight.md
 public_contracts: []
 depends_on:
   - docs/agents/evidence/OTV2-20261006-crystal-summer-quest-audit.md
@@ -106,6 +106,8 @@ Potential overlapping open PRs at snapshot: #1888 (COLLECT), #1901/#1889 (USE), 
 - `python -m unittest test_quest_native_binding_preflight.py`: 5/5 PASS.
 - `python quest_native_binding_preflight.py --check`: PASS.
 - `git diff --check`: PASS.
+- `python tools/agents/validate_governance.py`: PASS.
+- `python -m unittest discover -s tools/agents/tests`: 59/59 PASS.
 
 ### Component/integration
 
@@ -117,7 +119,7 @@ NOT_APPLICABLE â€” this is an offline diagnostic report; production gamepla
 
 ### Exact-head CI
 
-Pending PR publication; the exact head is recorded in live GitHub PR/check state.
+PR #1930, exact final head recorded in live GitHub PR/check state; checks pending.
 
 ## Self-review
 
@@ -129,16 +131,16 @@ Risk tier low: no production/runtime changes. Repository review and normal prote
 
 ## PR and closeout
 
-One narrow, additive diagnostic PR; no overlapping existing sources are modified. No Merge Queue request is made by this task.
+PR #1930 opened as a narrow additive diagnostic PR; no overlapping existing sources are modified. No Merge Queue request is made by this task.
 
 ## Context checkpoint
 
 ```yaml
 last_progress: 352 owner preflight generated from current main with 1891 stage gaps and 304/6/42 partition
-status: implementing
+status: validating
 branch: codex/quest-native-binding-preflight-20261008
 head_sha: null
-pr: null
+pr: 1930
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -156,5 +158,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish one bounded report PR, then reconcile exact event-owner work from its per-quest gaps
+next_action: qualify PR #1930 exact head checks and review, then reconcile disjoint event-owner work
 ```
