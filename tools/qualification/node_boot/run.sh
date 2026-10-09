@@ -170,8 +170,8 @@ php_exec 'require "vendor/autoload.php"; $app=require "bootstrap/app.php"; $app-
 evidence "platform_seed=synthetic_accounts=2 fresh_trust=published_public_key_only client_identities=1"
 
 # Shipped binaries and the SEAM client harness.
-cargo +1.94.0 build --locked -p oteryn-game-server --bins
-cargo +1.94.0 test --locked -p oteryn-game-server --lib --no-run
+cargo +1.95.0 build --locked -p oteryn-game-server --bins
+cargo +1.95.0 test --locked -p oteryn-game-server --lib --no-run
 TARGET="$GAME_SOURCE/target/debug"
 
 # Deployment administration: service user, directories, roles, migration.
@@ -503,7 +503,7 @@ seam_stages() { # §4.6 every #823 stage against the node's own port
   WP5_S3A_ACCOUNT_ID="$ACCOUNT_ID" WP5_S3B_SECOND_ACCOUNT_ID="$SECOND_ACCOUNT_ID" \
   WP5_S3B_FRESH_KEY_ID="$FRESH_KEY_ID" WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
   WP5_S3B_RECOVERY_KEY_ID="$RECOVERY_KEY_ID" WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-    cargo +1.94.0 test --locked -p oteryn-game-server --lib \
+    cargo +1.95.0 test --locked -p oteryn-game-server --lib \
     "gameplay_transport::qualification::$qualification" -- --ignored --exact --nocapture
 }
 

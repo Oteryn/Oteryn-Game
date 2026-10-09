@@ -151,7 +151,7 @@ fi
 
 # Compile before disposable services start: reduce peak scratch storage and
 # keep the 300 s intent validity available for the actual run.
-cargo +1.94.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
+cargo +1.95.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" --no-run
 
 compose config --quiet
 compose build --pull platform
@@ -192,7 +192,7 @@ done
 evidence "platform_intents=issued count=2 path=operator_command ttl_seconds=300"
 WP5_S3B_FRESH_KEY_SEED="$FRESH_SEED_HEX" \
 WP5_S3B_RECOVERY_KEY_SEED="$RECOVERY_SEED_HEX" \
-  cargo +1.94.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" \
+  cargo +1.95.0 test --locked -p oteryn-game-server "${TEST_TARGET[@]}" \
   "$TEST_NAME" -- --ignored --exact --nocapture
 unset FRESH_SEED_HEX RECOVERY_SEED_HEX
 result="$PASS_RESULT"
