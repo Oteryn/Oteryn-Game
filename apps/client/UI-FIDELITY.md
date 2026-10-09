@@ -14,7 +14,7 @@ assets remain private; the product ships independently authored code/artwork.
 | Action Bar Hotkeys | Typed nine-row editor | Slot chords and modal/held-key routing work; reference table arrangement incomplete |
 | Custom Hotkeys | Pending | Requires accepted command catalogue, not arbitrary command text |
 | Interface | Yes | Language/contrast work; cursor, link-copy warning and expiry intents prepared; consumers pending |
-| HUD | Pending | Actor projection integration and exact two-group/condition-table composition incomplete |
+| HUD | Yes, two groups/arcs/condition table | Six visible conditions prepared; remaining conditions/order and actor projection consumers incomplete |
 | Console | Yes | Chat visibility works; timestamp/message filters await chat/event projection |
 | Game Window | Yes | Effect/message rows prepared; target dropdown membership unverified, legacy frame/highlight intent retained |
 | Action Bars | Yes | Three masters/nine independent rows, locks, chords and session action clearing work |
@@ -24,9 +24,9 @@ assets remain private; the product ships independently authored code/artwork.
 | Sound | Yes, device + five volume groups | Food/move-item controls belong in item group; audio backend/content pending |
 | Battle Sounds | Yes, own/others/creatures | Nested spell categories and volume preferences stored; mixer/events pending |
 | UI Sounds | Yes, UI/social + console categories | Filters stored; audio playback pending |
-| Miscellaneous | Pending | Confirmation and secure session controls require explicit consumers |
+| Miscellaneous | Yes, seven rows | Confirmation and session selections require explicit consumers; secure remembered sign-in stays OFF/unwired |
 | Gameplay | Yes | Inspection/chase/loot intent prepared; engine contracts/consumers pending |
-| Screenshots | Pending | Separate event triggers, capture pipeline and folder action incomplete |
+| Screenshots | Yes, two trigger columns | Seventeen individual triggers prepared; capture pipeline/storage/folder action incomplete |
 | Help | Pending | Reference compositions/support actions incomplete |
 
 ## Required evidence per page/panel

@@ -12,7 +12,7 @@ owner: root
 ```
 
 AUTHORING on draft #1942. Published anchor:
-1ec067ff5900d535ef79c75f35c9f40519e17005. Not frozen or merged.
+18bbf03bca55dc66cbf1f564fa15e9f99fc3dce1. Not frozen or merged.
 Root is sole publisher. No new worker delegation in this increment.
 Owner scope: complete native client/UI/settings plus necessary Platform/engine
 work. Preserve missing server values as unknown; prepare future controls without
@@ -69,6 +69,23 @@ all new choices inside the unchanged32KiB bound; maximal escaped-text roundtrip
 regression covers actual save/load. Native124 library+30 application+5 launcher
 tests(159 total), strict all-target MSVC Clippy/release PASS. Private actual Windows Graphics/Shortcuts captures verify current layouts;
 clean publication governance/policy and59 regression tests PASS.
+
+## HUD/capture/confirmation increment
+
+Dedicated HUD groups own/other, Harmony position radios, arc controls, six directly
+visible condition rows with independent HUD/bar switches, and status-bar flags.
+Other conditions/order and undiscovered arc-size choices remain unverified.
+Screenshots has17 separate triggers/two columns, three capture flags and an
+unavailable folder action. No capture pipeline or retention is falsely enabled.
+Misc has seven confirmation/session choices, without storing credentials or
+activating remembered sign-in. Existing legacy intent keys remain accepted.
+Movement editor wraps vertically; ASCII physical arrow-key names replace missing
+font glyphs. New actual click/clip regression checks all four direction choices
+in PL/EN and WASD preset validation. Native124 library+31 application+5
+launcher tests(160 total), strict all-target MSVC Clippy and release PASS.
+All configurable preferences fit both existing count/byte bounds and32KiB
+compact save with maximal escaped text; save/load roundtrip PASS. Clean
+publication governance/policy and59 regression tests PASS. Captures pending.
 
 ## Related PRs and authority
 

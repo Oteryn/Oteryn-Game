@@ -2,6 +2,8 @@
 use super::{boxed, reference_option};
 #[path = "preferences_display_pages.rs"]
 mod display;
+#[path = "preferences_hud_pages.rs"]
+mod hud;
 use oteryn_client::{
     panel_catalog::{PANELS, ShortcutOrder, panel},
     settings::ClientSettings,
@@ -29,7 +31,10 @@ pub(super) fn show(
         "sound" => sound(ui, draft, english),
         "battle_sounds" => battle(ui, draft, english),
         "ui_sounds" => ui_sound(ui, draft, english),
-        _ => return display::show(ui, draft, section, english, state),
+        _ => {
+            return hud::show(ui, draft, section, english)
+                || display::show(ui, draft, section, english, state);
+        }
     }
     true
 }
@@ -628,6 +633,9 @@ mod tests {
                 "graphics",
                 "game_window",
                 "gameplay",
+                "hud",
+                "miscellaneous",
+                "screenshots",
             ] {
                 let ctx = egui::Context::default();
                 crate::client_chrome::install(&ctx, false);

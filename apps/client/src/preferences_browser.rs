@@ -331,6 +331,11 @@ fn reference_option(
             && option.kind == OptionKind::Toggle
         {
             future_toggle(ui, draft, &key, label, english);
+        } else if let Implementation::Implemented {
+            field: "movement_keys",
+        } = option.implementation
+        {
+            ui.vertical(|ui| implemented(ui, draft, option, "movement_keys", english));
         } else {
             ui.horizontal(|ui| {
                 if let Implementation::Implemented { field } = option.implementation {
@@ -895,10 +900,10 @@ fn shortcut_label(code: u16) -> String {
         30..=38 => (code - 29).to_string(),
         39 => "0".into(),
         58..=69 => format!("F{}", code - 57),
-        79 => "→".into(),
-        80 => "←".into(),
-        81 => "↓".into(),
-        82 => "↑".into(),
+        79 => "Right".into(),
+        80 => "Left".into(),
+        81 => "Down".into(),
+        82 => "Up".into(),
         _ => "?".into(),
     }
 }
@@ -997,6 +1002,55 @@ pub(crate) mod test_support {
 mod tests {
     use super::*;
     use test_support::{button_position, click, frame, scroll_geometry};
+
+    #[test]
+    fn movement_editor_fits_a_settings_column_and_routes_preset_clicks() -> Result<(), &'static str>
+    {
+        for english in [false, true] {
+            let ctx = egui::Context::default();
+            crate::client_chrome::install(&ctx, false);
+            let size = egui::vec2(450.0, 350.0);
+            let mut draft = ClientSettings::default();
+            let mut draw = |ctx: &egui::Context| {
+                egui::Window::new("movement-test")
+                    .default_size([350.0, 260.0])
+                    .show(ctx, |ui| {
+                        reference_option(
+                            ui,
+                            &mut draft,
+                            "controls",
+                            "controls.movement",
+                            ["Klawisze ruchu", "Movement Keys"],
+                            english,
+                        );
+                    });
+            };
+            for _ in 0..4 {
+                let _ = frame(&ctx, size, vec![], &mut draw);
+            }
+            let (_, output) = frame(&ctx, size, vec![], &mut draw);
+            for label in if english {
+                ["North: Up", "East: Right", "South: Down", "West: Left"]
+            } else {
+                [
+                    "Północ: Up",
+                    "Wschód: Right",
+                    "Południe: Down",
+                    "Zachód: Left",
+                ]
+            } {
+                assert!(
+                    button_position(&output, size, label).is_some(),
+                    "clipped {label}"
+                );
+            }
+            let wasd = button_position(&output, size, "WASD").ok_or("preset visible")?;
+            click(&ctx, size, wasd, &mut draw);
+            assert_eq!(draft.movement_keys, [26, 7, 22, 4]);
+            draft.validate().map_err(|_| "valid preset")?;
+        }
+        Ok(())
+    }
 
     #[test]
     fn advanced_action_bars_fit_all_clear_buttons_without_scrolling() -> Result<(), &'static str> {
@@ -1365,7 +1419,11 @@ mod tests {
                 })
                 .1;
             }
-            let first_effect = effects.options[0].text(english);
+            let first_effect = if english {
+                "Show HUD for Own Character"
+            } else {
+                "HUD własnej postaci"
+            };
             assert!(button_position(&output, size, first_effect).is_some());
             let _ = frame(
                 &ctx,
