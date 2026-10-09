@@ -161,11 +161,13 @@ Own grey grain/bevels, smaller HUD/icons, minimap/paperdoll/item/chat proportion
 share viewport constants; original assets stay private. Volume is an actual
 horizontal intent slider; audio and other pending consumers remain absent.
 Linux core125 and actual-module headless21 tests pass. Final Windows124lib +
-25app +5launcher (154 total), strict MSVC Clippy/release pass on staged final
-bytes. Basic clip tests cover PL/EN; native PL is visible. OK/Apply/Cancel are distinct. All off/on
+26app +5launcher (155 total), strict MSVC Clippy/release pass on staged final
+bytes. Basic clip tests cover PL/EN; native PL is visible. All nine Clear buttons fit
+the Action Bars page; a full-Browser PL/EN clipping/click regression reproduced
+the excess-space failure before the bounded layout correction. OK/Apply/Cancel are distinct. All off/on
 visibly changes viewport and preserves raw rows; saved original layout restored.
 Own-window captures verify compact HUD/options without original UI assets.
-Final native follow-up154 tests/Clippy/release also passes after replacing missing
+Final native follow-up155 tests/Clippy/release also passes after replacing missing
 font triangle glyphs with independently drawn expandable-navigation arrows.
 One admission attempt failed; a normal retry admitted the same test character.
 Its cause was not diagnosed or fixed by this UI batch.
@@ -180,7 +182,7 @@ CI #1943/#1944 stay unchanged, unmerged. Secure remembered sign-in stays unwired
 - `cargo test --locked -p oteryn-client --all-targets`: pass, 123+5 Linux tests.
 - `cargo clippy --locked -p oteryn-client --lib --tests -- -D warnings`: pass.
 - `cargo clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-gnu -- -D warnings`: pass.
-- Native Windows same package/all-targets test, Clippy and release: pass,154 tests.
+- Native Windows same package/all-targets test, Clippy and release: pass,155 tests.
 - `cargo fmt --all --check`: pass.
 - Scoped source whitespace: pass.
 - `python tools/agents/validate_governance.py`: validate in clean publication clone;

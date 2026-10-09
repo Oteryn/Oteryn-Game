@@ -117,7 +117,7 @@ impl PreferencesBrowser {
                 }
                 // Keep the columns inside the current dialog body, reserving room for
                 // availability text and secondary controls below them.
-                let column_height = (ui.available_height() - if basic && !compact { 30.0 } else if basic { 50.0 } else { 95.0 }).max(1.0);
+                let column_height = (ui.available_height() - if basic && !compact { 30.0 } else if basic { 50.0 } else if SETTINGS_SECTIONS[self.section].id == "action_bars" { 45.0 } else { 95.0 }).max(1.0);
                 ui.horizontal_top(|ui| {
                     if !compact {
                         ui.set_max_height(column_height);
@@ -992,6 +992,88 @@ pub(crate) mod test_support {
 mod tests {
     use super::*;
     use test_support::{button_position, click, frame, scroll_geometry};
+
+    #[test]
+    fn advanced_action_bars_fit_all_clear_buttons_without_scrolling() -> Result<(), &'static str> {
+        for english in [false, true] {
+            let ctx = egui::Context::default();
+            ctx.set_theme(egui::Theme::Dark);
+            let size = egui::vec2(900.0, 620.0);
+            let viewport = egui::Rect::from_min_size(egui::Pos2::ZERO, size);
+            let mut browser = PreferencesBrowser::new();
+            browser.section = SETTINGS_SECTIONS
+                .iter()
+                .position(|section| section.id == "action_bars")
+                .ok_or("missing action bars")?;
+            browser.set_action_bar_available(true);
+            let mut draft = ClientSettings {
+                english,
+                ..Default::default()
+            };
+            draft
+                .future_preferences
+                .insert("basic.basic.advanced".into(), FutureValue::Bool(true));
+            let mut output = egui::FullOutput::default();
+            for _ in 0..4 {
+                output = frame(&ctx, size, Vec::new(), |ctx| {
+                    browser.show(ctx, &mut draft, None)
+                })
+                .1;
+            }
+            assert!(
+                button_position(
+                    &output,
+                    size,
+                    if english {
+                        "Clear Right Action Bars:"
+                    } else {
+                        "Wyczyść prawe paski:"
+                    }
+                )
+                .is_some(),
+                "right clear row is clipped"
+            );
+            for index in 1..=3 {
+                let label = format!("{} {index}", if english { "Bar" } else { "Pasek" });
+                let (bounds, clip) = output
+                    .shapes
+                    .iter()
+                    .rev()
+                    .find_map(|shape| match &shape.shape {
+                        egui::epaint::Shape::Text(text) if text.galley.job.text == label => {
+                            Some((text.visual_bounding_rect(), shape.clip_rect))
+                        }
+                        _ => None,
+                    })
+                    .ok_or("right clear button missing")?;
+                assert!(
+                    clip.contains_rect(bounds) && viewport.contains_rect(bounds),
+                    "right clear button is clipped: {label}"
+                );
+                let _ = click(&ctx, size, bounds.center(), |ctx| {
+                    browser.show(ctx, &mut draft, None)
+                });
+                assert_eq!(browser.take_clear_action_row(), Some(5 + index));
+                let hovered = ctx.interaction_snapshot(|snapshot| {
+                    snapshot.hovered.iter().copied().collect::<Vec<_>>()
+                });
+                assert!(
+                    hovered
+                        .iter()
+                        .filter_map(|id| ctx.read_response(*id))
+                        .any(|response| response.clicked()
+                            && clip.contains_rect(response.rect)
+                            && viewport.contains_rect(response.rect)),
+                    "clear button frame is clipped"
+                );
+                output = frame(&ctx, size, Vec::new(), |ctx| {
+                    browser.show(ctx, &mut draft, None)
+                })
+                .1;
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn master_volume_remains_unset_until_slider_input() -> Result<(), &'static str> {

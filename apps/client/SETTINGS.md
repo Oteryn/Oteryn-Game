@@ -207,6 +207,7 @@ share canonical masters. Legacy explicit Boolean master selections migrate;
 missing selections default to enabled masters without modifying legacy rows.
 Hidden hotkeys retain their established activation policy. Clear Bar clears
 current-session assignments only, obeys runtime locks and is unavailable at login.
+All nine Clear Bar buttons fit the standard dialog without scrolling.
 
 The in-world chrome uses independently drawn grey grain and bevels, shared
 156-point sidebar/30-point header/108-point console reservations, compact minimap,
