@@ -66,6 +66,14 @@ impl PreferencesBrowser {
             draft.future_preferences.get("basic.basic.advanced"),
             Some(FutureValue::Bool(true))
         );
+        if advanced
+            && self.section == 0
+            && let Some(index) = SETTINGS_SECTIONS
+                .iter()
+                .position(|section| section.id == "controls")
+        {
+            self.section = index;
+        }
         if !advanced && !category_visible(SETTINGS_SECTIONS[self.section].id, false) {
             self.section = 0;
         }
@@ -106,9 +114,10 @@ impl PreferencesBrowser {
                 ui.set_width(body_width);
                 let compact = body_width < 520.0;
                 let basic = SETTINGS_SECTIONS[self.section].id == "basic";
-                if !basic { ui.add(egui::TextEdit::singleline(&mut self.search).desired_width(body_width).char_limit(120).hint_text(tr("Szukaj ustawienia…", "Search preferences…"))); ui.separator(); }
+                let reference = reference_page(SETTINGS_SECTIONS[self.section].id);
+                if !reference { ui.add(egui::TextEdit::singleline(&mut self.search).desired_width(body_width).char_limit(120).hint_text(tr("Szukaj ustawienia…", "Search preferences…"))); ui.separator(); }
                 let sections_width = 105.0;
-                let search = if basic { String::new() } else { self.search.trim().to_lowercase() };
+                let search = if reference { String::new() } else { self.search.trim().to_lowercase() };
                 if compact {
                     egui::ComboBox::from_id_salt("all-preferences-category").width(body_width).truncate()
                         .selected_text(SETTINGS_SECTIONS[self.section].text(english)).show_ui(ui, |ui| {
@@ -121,13 +130,15 @@ impl PreferencesBrowser {
                 }
                 // Keep the columns inside the current dialog body, reserving room for
                 // availability text and secondary controls below them.
-                let column_height = (ui.available_height() - if basic && !compact { 30.0 } else if basic { 50.0 } else { 45.0 }).max(1.0);
+                let column_height = (ui.available_height() - if basic && !compact { 30.0 } else if reference && !compact { 25.0 } else if compact { 52.0 } else { 45.0 }).max(1.0);
                 ui.horizontal_top(|ui| {
                     if !compact {
                         ui.set_max_height(column_height);
                     }
                     if !compact {
-                    egui::ScrollArea::vertical().id_salt("all-preferences-sections").scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded).max_height(column_height).show(ui, |ui| {
+                    ui.vertical(|ui| {
+                    ui.set_width(sections_width);
+                    egui::ScrollArea::vertical().id_salt("all-preferences-sections").scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded).max_height((column_height - 25.0).max(1.0)).show(ui, |ui| {
                         ui.vertical(|ui| {
                         ui.set_width(sections_width);
                         for (index, section) in SETTINGS_SECTIONS.iter().enumerate() {
@@ -145,6 +156,9 @@ impl PreferencesBrowser {
                             }
                         }
                         });
+                    });
+                    ui.separator();
+                    if ui.small_button(tr("Konto i sieć", "Account/network")).on_hover_text(tr("OTERYN: konto i połączenie", "OTERYN: account and connection")).clicked() { action = PreferenceAction::QuickSettings; }
                     });
                     ui.separator();
                     }
@@ -188,17 +202,14 @@ impl PreferencesBrowser {
                     });
                 });
                 ui.separator();
-                if !basic && SETTINGS_SECTIONS[self.section].id != "shortcuts" { ui.small(tr("Opcje bez obsługi zapisują wybór do przyszłego użycia; nie zmieniają jeszcze gry.", "Preferences awaiting support save your choice for future use; they do not change gameplay yet.")); }
+                if !reference { ui.small(tr("Opcje bez obsługi zapisują wybór do przyszłego użycia; nie zmieniają jeszcze gry.", "Preferences awaiting support save your choice for future use; they do not change gameplay yet.")); }
                 if let Some(message) = message { ui.label(message); }
                 let mut show_advanced = advanced;
                 if compact && ui.checkbox(&mut show_advanced, tr("Pokaż opcje zaawansowane", "Show advanced options")).changed() { draft.future_preferences.insert("basic.basic.advanced".into(), FutureValue::Bool(show_advanced)); }
-                if basic && !compact { ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("Reset").clicked() { action = PreferenceAction::Defaults; }
-                    if ui.small_button(tr("OTERYN: połączenie i konto", "OTERYN: connection and account")).clicked() { action = PreferenceAction::QuickSettings; }
-                }); } else { ui.horizontal_wrapped(|ui| {
-                    if ui.button(tr("Domyślne", "Defaults")).clicked() { action = PreferenceAction::Defaults; }
-                    if ui.button(tr("Połączenie i konto", "Connection and account")).clicked() { action = PreferenceAction::QuickSettings; }
-                }); }
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.button("Reset").on_hover_text(tr("Przywróć ustawienia domyślne w wersji roboczej", "Restore defaults in the settings draft")).clicked() { action = PreferenceAction::Defaults; }
+                    if compact && ui.small_button(tr("Konto i połączenie", "Account and connection")).clicked() { action = PreferenceAction::QuickSettings; }
+                });
                 });
                 #[cfg(test)]
                 test_support::record_scroll_geometry(ctx, "all-preferences-body-geometry", &_body_output);
@@ -245,6 +256,32 @@ fn navigation_arrow(ui: &mut egui::Ui, expanded: bool, english: bool) -> egui::R
     response
 }
 
+fn reference_page(id: &str) -> bool {
+    matches!(
+        id,
+        "basic"
+            | "controls"
+            | "general_hotkeys"
+            | "action_hotkeys"
+            | "custom_hotkeys"
+            | "interface"
+            | "hud"
+            | "console"
+            | "game_window"
+            | "action_bars"
+            | "shortcuts"
+            | "graphics"
+            | "effects"
+            | "sound"
+            | "battle_sounds"
+            | "ui_sounds"
+            | "miscellaneous"
+            | "gameplay"
+            | "screenshots"
+            | "help"
+    )
+}
+
 fn navigation_parent(id: &str) -> Option<&'static str> {
     match id {
         "general_hotkeys" | "action_hotkeys" | "custom_hotkeys" => Some("controls"),
@@ -257,7 +294,11 @@ fn navigation_parent(id: &str) -> Option<&'static str> {
 }
 
 fn category_visible(id: &str, advanced: bool) -> bool {
-    advanced || matches!(id, "basic" | "general_hotkeys" | "shortcuts" | "help")
+    if advanced {
+        id != "basic"
+    } else {
+        matches!(id, "basic" | "general_hotkeys" | "shortcuts" | "help")
+    }
 }
 
 fn boxed(ui: &mut egui::Ui, title: &str, body: impl FnOnce(&mut egui::Ui)) {
@@ -285,15 +326,21 @@ fn future_toggle(
 ) {
     let stored = draft.future_preferences.get(key);
     let mut value = matches!(stored, Some(FutureValue::Bool(true)));
-    if ui
+    let response = ui
         .add(egui::Checkbox::new(&mut value, label).indeterminate(stored.is_none()))
         .on_hover_text(if english {
             "Saved selection; gameplay support is pending."
         } else {
             "Zapisany wybór; działanie w grze oczekuje na obsługę."
-        })
-        .changed()
-    {
+        });
+    #[cfg(test)]
+    ui.ctx().data_mut(|data| {
+        data.insert_temp(
+            egui::Id::new(("preference-toggle", key)),
+            (response.rect, ui.clip_rect()),
+        )
+    });
+    if response.changed() {
         draft
             .future_preferences
             .insert(key.into(), FutureValue::Bool(value));
@@ -1006,6 +1053,134 @@ mod tests {
     use test_support::{button_position, click, frame, scroll_geometry};
 
     #[test]
+    fn native_default_hud_fits_status_flags_and_routes_independent_condition_cells()
+    -> Result<(), &'static str> {
+        for english in [false, true] {
+            let ctx = egui::Context::default();
+            let size = egui::vec2(900.0, 620.0);
+            let mut browser = PreferencesBrowser::new();
+            browser.section = SETTINGS_SECTIONS
+                .iter()
+                .position(|s| s.id == "hud")
+                .ok_or("HUD page")?;
+            let mut draft = ClientSettings {
+                english,
+                ..Default::default()
+            };
+            draft
+                .future_preferences
+                .insert("basic.basic.advanced".into(), FutureValue::Bool(true));
+            let mut output = egui::FullOutput::default();
+            for _ in 0..4 {
+                output = frame(&ctx, size, vec![], |ctx| {
+                    browser.show(ctx, &mut draft, None)
+                })
+                .1;
+            }
+            for label in if english {
+                [
+                    "Account/network",
+                    "Powerless",
+                    "Show Customisable Status Bars",
+                    "Show Status Bars",
+                    "Reset",
+                    "OK",
+                    "Apply",
+                    "Cancel",
+                ]
+            } else {
+                [
+                    "Konto i sieć",
+                    "Bezsilność",
+                    "Konfigurowalne paski stanu",
+                    "Paski stanu",
+                    "Reset",
+                    "OK",
+                    "Zastosuj",
+                    "Anuluj",
+                ]
+            } {
+                assert!(
+                    button_position(&output, size, label).is_some(),
+                    "default HUD clips {label}"
+                );
+            }
+            // Short and long labels must not move either checkbox column.
+            let condition_cell = |key: &str| {
+                ctx.data(|data| {
+                    data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                        "preference-toggle",
+                        key,
+                    )))
+                })
+                .map(|(rect, _)| rect)
+            };
+            let poison = condition_cell("hud.condition_poison_hud").ok_or("poison HUD cell")?;
+            let powerless =
+                condition_cell("hud.condition_powerless_hud").ok_or("powerless HUD cell")?;
+            let poison_bar = condition_cell("hud.condition_poison_bar").ok_or("poison bar cell")?;
+            let powerless_bar =
+                condition_cell("hud.condition_powerless_bar").ok_or("powerless bar cell")?;
+            assert!((poison.left() - powerless.left()).abs() < 0.5);
+            assert!((poison_bar.left() - powerless_bar.left()).abs() < 0.5);
+            assert!(poison_bar.left() - poison.left() > 70.0);
+            let account = button_position(
+                &output,
+                size,
+                if english {
+                    "Account/network"
+                } else {
+                    "Konto i sieć"
+                },
+            )
+            .ok_or("account navigation clipped")?;
+            assert!(matches!(
+                click(&ctx, size, account, |ctx| browser
+                    .show(ctx, &mut draft, None)),
+                PreferenceAction::QuickSettings
+            ));
+            for where_ in ["hud", "bar"] {
+                let key = format!("hud.condition_powerless_{where_}");
+                let (rect, clip) = ctx
+                    .data(|data| {
+                        data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                            "preference-toggle",
+                            key.as_str(),
+                        )))
+                    })
+                    .ok_or("condition cell")?;
+                assert!(clip.contains_rect(rect));
+                let _ = click(&ctx, size, rect.center(), |ctx| {
+                    browser.show(ctx, &mut draft, None)
+                });
+                assert_eq!(
+                    draft.future_preferences.get(&key),
+                    Some(&FutureValue::Bool(true))
+                );
+            }
+            assert!(
+                !draft
+                    .future_preferences
+                    .contains_key("hud.condition_agony_hud")
+            );
+            draft.validate().map_err(|_| "valid draft")?;
+            assert!(
+                button_position(
+                    &output,
+                    size,
+                    if english {
+                        "Search preferences…"
+                    } else {
+                        "Szukaj ustawienia…"
+                    }
+                )
+                .is_none()
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn movement_editor_fits_a_settings_column_and_routes_preset_clicks() -> Result<(), &'static str>
     {
         for english in [false, true] {
@@ -1397,7 +1572,7 @@ mod tests {
             browser.expanded.extend(["graphics", "interface"]);
             let effects = SETTINGS_SECTIONS
                 .iter()
-                .find(|section| section.id == "hud")
+                .find(|section| section.id == "game_window")
                 .ok_or("missing effects")?;
             let action_bars = SETTINGS_SECTIONS
                 .iter()
@@ -1422,9 +1597,9 @@ mod tests {
                 .1;
             }
             let first_effect = if english {
-                "Show HUD for Own Character"
+                "Show Textual Effects"
             } else {
-                "HUD własnej postaci"
+                "Efekty tekstowe"
             };
             assert!(button_position(&output, size, first_effect).is_some());
             let _ = frame(

@@ -67,62 +67,98 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
         });
     });
     boxed(ui, "", |ui| {
-        reference_option(
-            ui,
-            draft,
-            "hud",
-            "hud.arcs",
-            ["Pokaż łuki", "Show Arcs"],
-            en,
-        );
-        // Only the displayed Default Size member is verified; other members remain unknown.
-        reference_option(
-            ui,
-            draft,
-            "hud",
-            "arc_size_preset",
-            ["Rozmiar:", "Size:"],
-            en,
-        );
-        percent(
-            ui,
-            draft,
-            "hud",
-            "hud.arc_distance",
-            ["Odległość:", "Distance:"],
-            en,
-        );
-        percent(
-            ui,
-            draft,
-            "hud",
-            "hud.arc_opacity",
-            ["Widoczność:", "Opacity:"],
-            en,
-        );
+        ui.columns(2, |columns| {
+            reference_option(
+                &mut columns[0],
+                draft,
+                "hud",
+                "hud.arcs",
+                ["Pokaż łuki", "Show Arcs"],
+                en,
+            );
+            // Only Default Size is verified; do not invent other dropdown members.
+            reference_option(
+                &mut columns[0],
+                draft,
+                "hud",
+                "arc_size_preset",
+                ["", ""],
+                en,
+            );
+            percent(
+                &mut columns[1],
+                draft,
+                "hud",
+                "hud.arc_distance",
+                ["Odległość:", "Distance:"],
+                en,
+            );
+            percent(
+                &mut columns[1],
+                draft,
+                "hud",
+                "hud.arc_opacity",
+                ["Widoczność:", "Opacity:"],
+                en,
+            );
+        });
     });
-    egui::Grid::new("hud-special-conditions")
-        .striped(true)
-        .spacing([5.0, 2.0])
-        .show(ui, |ui| {
+    let widths = [
+        ui.available_width() * 0.56,
+        ui.available_width() * 0.23,
+        ui.available_width() * 0.21,
+    ];
+    let row_height = 15.0;
+    let cell = |ui: &mut egui::Ui, column: usize, draw: &mut dyn FnMut(&mut egui::Ui)| {
+        ui.allocate_ui_with_layout(
+            egui::vec2((widths[column] - 3.0).max(1.0), row_height),
+            egui::Layout::left_to_right(egui::Align::Center),
+            |ui| {
+                ui.set_min_size(egui::vec2((widths[column] - 3.0).max(1.0), row_height));
+                draw(ui);
+            },
+        );
+    };
+    ui.horizontal(|ui| {
+        cell(ui, 0, &mut |ui| {
             ui.label(if en {
                 "Special Condition"
             } else {
                 "Stan postaci"
             });
-            ui.label("HUD");
-            ui.label(if en { "Bar" } else { "Pasek" });
-            ui.end_row();
-            for (id, labels) in [
-                ("poison", ["Zatrucie", "Poisoned"]),
-                ("burning", ["Płonięcie", "Burning"]),
-                ("electric", ["Porażenie", "Electrified"]),
-                ("bleeding", ["Krwawienie", "Bleeding"]),
-                ("agony", ["Agonia", "Agony"]),
-                ("powerless", ["Bezsilność", "Powerless"]),
-            ] {
+        });
+        cell(ui, 1, &mut |ui| {
+            ui.label(if en { "Show in HUD" } else { "Pokaż w HUD" });
+        });
+        cell(ui, 2, &mut |ui| {
+            ui.label(if en { "Show in Bar" } else { "Pokaż na pasku" });
+        });
+    });
+    for (index, (id, labels)) in [
+        ("poison", ["Zatrucie", "Poisoned"]),
+        ("burning", ["Płonięcie", "Burning"]),
+        ("electric", ["Porażenie", "Electrified"]),
+        ("bleeding", ["Krwawienie", "Bleeding"]),
+        ("agony", ["Agonia", "Agony"]),
+        ("powerless", ["Bezsilność", "Powerless"]),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        ui.horizontal(|ui| {
+            if index % 2 == 0 {
+                let rect = egui::Rect::from_min_size(
+                    ui.cursor().min,
+                    egui::vec2(ui.available_width(), row_height),
+                );
+                ui.painter()
+                    .rect_filled(rect, 0.0, ui.visuals().faint_bg_color);
+            }
+            cell(ui, 0, &mut |ui| {
                 ui.label(labels[usize::from(en)]);
-                for where_ in ["hud", "bar"] {
+            });
+            for (column, where_) in [(1, "hud"), (2, "bar")] {
+                cell(ui, column, &mut |ui| {
                     reference_option(
                         ui,
                         draft,
@@ -131,15 +167,10 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                         ["", ""],
                         en,
                     );
-                }
-                ui.end_row();
+                });
             }
         });
-    ui.weak(if en {
-        "Condition order and remaining conditions await verified layout and projection."
-    } else {
-        "Kolejność i pozostałe stany wymagają weryfikacji układu i danych gry."
-    });
+    }
     for (id, labels) in [
         (
             "custom_status_bars",

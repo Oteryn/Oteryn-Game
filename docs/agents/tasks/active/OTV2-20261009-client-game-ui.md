@@ -12,7 +12,7 @@ owner: root
 ```
 
 AUTHORING on draft #1942. Published anchor:
-67c6421a769d2cd99c1b30975cc4c980e301de51. Not frozen or merged.
+72b0ecf958bc79bf03c677b654c7019867ca37ae. Not frozen or merged.
 Root is sole publisher. No new worker delegation in this increment.
 Owner scope: complete native client/UI/settings plus necessary Platform/engine
 work. Preserve missing server values as unknown; prepare future controls without
@@ -113,3 +113,22 @@ remaining advanced arrangements and panels per UI-FIDELITY.md. Required checks:
 client all-target native tests/strict Clippy/release, scoped formatting/whitespace,
 clean publication governance and applicable policy checks. Save concrete evidence
 and remaining consumer gaps; never describe this draft as the finished client.
+
+## Owner-directed execution plan, 2026-10-09
+
+Owner requested a concrete plan and execution after rejecting catalogue-based
+completion claims. apps/client/UI-EXECUTION-PLAN.md defines screen-by-screen
+visual and behavior acceptance across preferences, hotkeys, panels and login.
+First target: native options shell/HUD. Reference pages no longer waste body
+space on global search/footer implementation notes; Oteryn account access moves
+to separate navigation and Reset retains draft-only behavior. HUD arcs form two
+columns and condition switches align in full-width columns. Native161 tests
+(124lib+32app+5launcher), strict all-target MSVC Clippy/release PASS. New full-dialog
+PL/EN regression proves lower status controls/Reset/OK/Apply/Cancel visibility
+and independent HUD/bar condition clicks. Native Windows capture compared: fixed full-width HUD/bar columns, all six
+condition rows and both lower flags/footer visible. Account/network access is
+sticky below category scroll; PL/EN regression clicks it and verifies cell
+alignment across differently sized condition labels. Private own-client capture:
+/workspace/artifacts/oteryn-client-hud-qualified-native-20261009.png.
+Original NAS session confirmed active; private research uses exact client window,
+never Apply/Reset or character commands. Additional unknowns remain unverified.
