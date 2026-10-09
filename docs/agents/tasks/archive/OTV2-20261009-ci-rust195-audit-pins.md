@@ -103,4 +103,3 @@ Independent deep review and hosted final-head qualification remain pending.
 Merge commit/result is pending; a future squash merge of #1943 requires separate
 owner authorization, normal MQ proof and protected-main readback. No integration,
 production activation or ownership-release result is claimed by this archive.
-
