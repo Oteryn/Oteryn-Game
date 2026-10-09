@@ -4,13 +4,13 @@
 task_id: OTV2-20261009-ci-rust195-audit-pins
 title: Preapprove exact Rust 1.95 gate blobs
 mode: GOVERNANCE
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 base_sha: 1e77ca22b4fcb7869f8f1d169f4e12bc749b295d
 branch: chore/ci-rust195-audit-pins-20261009
 issue: 1927
-pr: null
+pr: 1943
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -36,10 +36,11 @@ This grants preparation/publication/review, not merge, activation, deployment,
 production, credential, ruleset or database mutation. No audit exception is
 self-granted. No unrelated client or server edits are included.
 
-Current state is AUTHORING, with no PR number or remote freeze yet. Root opens
-the main-targeted draft, records its positive PR number, completes the final
-authoring/archive step required by tasks/archive/README.md, then freezes the
-exact read-back remote head before candidate-specific validation/review.
+Canonical draft PR #1943 is open against main. This record is archived in the
+final AUTHORING successor, as required by tasks/archive/README.md. Its completed
+status closes the authoring record only; review and integration are pending.
+Root publishes the record-only successor and records the exact read-back remote
+freeze outside this commit before candidate-specific validation/review.
 Independent deep review is required and remains pending; no local check is
 represented as that independent review or protected integration.
 
@@ -91,4 +92,15 @@ grant above does not grant that exception or any merge authority.
 After separately authorized normal MQ integration and protected-main readback,
 the dependent migration requires its ordinary successful protected-base audit.
 No exception is transferred to that second PR or a materially changed head.
+
+## PR and authoring closeout
+
+Canonical draft: https://github.com/Oteryn/Oteryn-Game/pull/1943.
+The source audit blob remains exactly the prepared value above; this final
+authoring successor changes only this record and its active-to-archive location.
+The frozen SHA is recorded outside the commit on the PR/coordination issue.
+Independent deep review and hosted final-head qualification remain pending.
+Merge commit/result is pending; a future squash merge of #1943 requires separate
+owner authorization, normal MQ proof and protected-main readback. No integration,
+production activation or ownership-release result is claimed by this archive.
 
