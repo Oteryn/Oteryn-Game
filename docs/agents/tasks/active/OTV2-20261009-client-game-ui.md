@@ -143,3 +143,18 @@ no fabricated resource. Native164tests/strictMSVCClippy/release PASS; Linux
 headless3geometrytests PASS. Actual live-session capture remains pending.
 Names/marks/Harmony/conditions and remaining HUD table/order are unfinished.
 Do not infer full HUD behavior from this bounded renderer checkpoint.
+
+## Owner-requested Astra pass
+
+Owner explicitly requested Astra. Astra specialist edited only HUD composition:
+shared own/other frame/divider, indentation, master-dependent child editing with
+retained values, arc dependencies and framed condition columns with working
+six-flag aggregate switches. Two regression tests cover disabled-click
+preservation/re-enable and bounded aggregate edits. Native166tests (124lib +
+37app +5launcher), strictalltargetMSVCClippy/release PASS. Linux26headless
+composition/behavior tests PASS. Scoped formatting and whitespace PASS.
+Actual in-world visual acceptance remains pending; mouse position changed under
+automation and its guard withheld input. No original-client changes in this pass.
+No condition reorder/icons, new condition membership or consumer completion
+claim. Root sole publisher, product draft stays AUTHORING. Model leading this
+chat cannot be switched by the assistant; user must use the app model selector.

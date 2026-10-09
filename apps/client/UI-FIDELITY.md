@@ -14,7 +14,7 @@ assets remain private; the product ships independently authored code/artwork.
 | Action Bar Hotkeys | Typed nine-row editor | Slot chords and modal/held-key routing work; reference table arrangement incomplete |
 | Custom Hotkeys | Pending | Requires accepted command catalogue, not arbitrary command text |
 | Interface | Yes | Language/contrast work; cursor, link-copy warning and expiry intents prepared; consumers pending |
-| HUD | Yes, two groups/arcs/condition table | Native default-size PL/EN reachability and aligned independent condition cells verified; own-health/mana bars/arcs consume real session vitals (live-session visual acceptance pending); names/marks/conditions/order incomplete |
+| HUD | Yes, shared groups/arcs/condition table | Native PL/EN reachability, master-dependent editing and six-flag header batch edits verified; compiled visual acceptance of Astra pass pending; own-health/mana bars/arcs consume real session vitals (live-session visual acceptance pending); names/marks/conditions/order incomplete |
 | Console | Yes | Chat visibility works; timestamp/message filters await chat/event projection |
 | Game Window | Yes | Effect/message rows prepared; target dropdown membership unverified, legacy frame/highlight intent retained |
 | Action Bars | Yes | Three masters/nine independent rows, locks, chords and session action clearing work |

@@ -79,7 +79,7 @@ fn percent(
         ui.label(format!("{} {text}", labels[usize::from(en)]));
         ui.spacing_mut().slider_width = ui.available_width().clamp(45.0, 185.0);
         ui.add(egui::Slider::new(&mut value, 0..=100).show_value(false))
-            .on_hover_text(if en { "Saved preference. Playback/rendering support is pending; — means unset." } else { "Zapisany wybór. Obsługa odtwarzania/renderowania jest w przygotowaniu; — oznacza brak wyboru." })
+            .on_hover_text(if crate::actor_hud::resource_consumer(&key) { if en { "Applied to own-character resource arcs; — means no explicit value." } else { "Działa na łuki zasobów własnej postaci; — oznacza brak własnej wartości." } } else if en { "Saved preference. Playback/rendering support is pending; — means unset." } else { "Zapisany wybór. Obsługa odtwarzania/renderowania jest w przygotowaniu; — oznacza brak wyboru." })
     }).inner).inner;
     if response.changed() || (selected.is_none() && response.clicked()) {
         draft
