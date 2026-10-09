@@ -181,6 +181,7 @@ Deployment-DB races, live OS vault, HTTP adapters and contract/security approval
 remain outstanding. This engineering sweep is not formal frozen-head review.
 
 Client Linux100 library+5 launcher tests PASS after upstream reconciliation;
-strict GNU Windows/Linux all-target Clippy PASS. Native Windows build/UI pending. Main advanced8 commits adding launcher/installer/installation
+strict GNU Windows/Linux all-target Clippy PASS. Native Windows99 library+2 application+5 launcher tests, strict Clippy and
+MSVC release build PASS. New client launched; admitted UI recheck in progress. Main advanced8 commits adding launcher/installer/installation
 coexistence marker (not an exclusive login lock); merge up while AUTHORING, preserve all additions.
 Jira mapping remains pending. Product source has not yet been published.
