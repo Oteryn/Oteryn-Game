@@ -53,17 +53,32 @@ fn native_entry() -> Result<Option<NativeGameplay>, ()> {
     }
 }
 
+/// Holds `Global\OterynClient-<SID>` for the process lifetime and refuses to start while an
+/// install or uninstall holds the transaction mutex (CLIENT-INSTALLER-0 §2.1).
 #[cfg(windows)]
-fn main() -> Result<(), windows_shell::ShellError> {
+fn main() -> std::process::ExitCode {
+    let _instance = match oteryn_client::win_mutex::acquire_client_instance() {
+        Ok(instance) => instance,
+        Err(error) => {
+            eprintln!("Oteryn: {error}");
+            return std::process::ExitCode::from(3);
+        }
+    };
     let entry = match if std::env::args().any(|argument| argument == "--auto-login") {
         native_entry()
     } else {
         Ok(None)
     } {
         Ok(entry) => entry,
-        Err(()) => return Ok(()),
+        Err(()) => return std::process::ExitCode::FAILURE,
     };
-    windows_shell::run(entry)
+    match windows_shell::run(entry) {
+        Ok(()) => std::process::ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("Error: {error:?}");
+            std::process::ExitCode::FAILURE
+        }
+    }
 }
 
 #[cfg(not(windows))]

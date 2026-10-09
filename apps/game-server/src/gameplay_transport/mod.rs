@@ -513,6 +513,10 @@ pub async fn serve_gameplay(
         premium: premium_refresher(owners.root),
         premium_sessions: std::sync::Mutex::default(),
         fence_holders: FenceHolders::default(),
+        spell_lane: crate::durability::spell_owner_commit::SpellLane::new(
+            owners.world_id,
+            owners.channel_id,
+        ),
     };
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
@@ -686,6 +690,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) premium_sessions: std::sync::Mutex<PremiumSessions>,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
     pub(crate) fence_holders: FenceHolders,
+    /// The Channel's spell lane (ARCH-SPELL-LOCK-2 §1.2): taken before `runtime` by every
+    /// key-33 caller and never while a Channel guard is held.
+    pub(crate) spell_lane: crate::durability::spell_owner_commit::SpellLane,
 }
 
 /// One admitted session's quest state (QUEST-STATE-0 §5.4, §7).
@@ -2386,6 +2393,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         };
         let equipment = self.read_movement_equipment(actor, session).await;
         let now = self.owner_now().get();
+        // Lock order (§1.2): the lane before any Channel guard.
+        let Some(permit) = self.spell_lane_permit().await else {
+            return (StepOutcome::rejected(), None);
+        };
         let mut runtime = self.runtime.lock().await;
         let mut states = self.spell_states.lock().await;
         if states.has_pending_spell_commit(actor, session) {
@@ -2420,6 +2431,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             )
         } else {
             self.step_with_field_ingress(
+                &permit,
                 &mut runtime,
                 &mut states,
                 actor,

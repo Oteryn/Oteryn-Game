@@ -618,6 +618,7 @@ pub enum ProjectV2TimerOperation {
 pub enum ProjectV2EncounterAttribute {
     OutgoingDamagePercent,
     Defense,
+    MaxHealth,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -625,6 +626,7 @@ pub enum ProjectV2EncounterAttribute {
 pub enum ProjectV2AttributeOperation {
     Add,
     Reset,
+    Set,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -2044,11 +2046,26 @@ fn actions(
             }
             A::Attribute {
                 role,
+                attribute,
                 operation,
                 value,
-                ..
             } => {
                 names.role(role)?;
+                if *attribute == ProjectV2EncounterAttribute::MaxHealth {
+                    match (operation, value) {
+                        (
+                            ProjectV2AttributeOperation::Set,
+                            Some(ProjectV2AttributeValue::Fixed { value }),
+                        ) if (1..=u64::from(u32::MAX)).contains(value) => {}
+                        (ProjectV2AttributeOperation::Reset, None) => {}
+                        _ => {
+                            return invalid(
+                                "v2 max_health needs an absolute u32 set or a reset without value",
+                            );
+                        }
+                    }
+                    continue;
+                }
                 match (operation, value) {
                     (
                         ProjectV2AttributeOperation::Add,

@@ -2382,55 +2382,117 @@
           ]
         },
         {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "kind": {
-              "const": "attribute"
-            },
-            "role": {
-              "type": "string",
-              "pattern": "^[a-z][a-z0-9_]*$"
-            },
-            "attribute": {
-              "enum": [
-                "outgoing_damage_percent",
-                "defense"
-              ]
-            },
-            "operation": {
-              "enum": [
-                "add",
-                "reset"
-              ]
-            },
-            "value": {
-              "oneOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "attribute"
                 },
-                {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "properties": {
-                    "counter": {
-                      "type": "string",
-                      "pattern": "^[a-z][a-z0-9_]*$"
+                "role": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "attribute": {
+                  "enum": [
+                    "outgoing_damage_percent",
+                    "defense"
+                  ]
+                },
+                "operation": {
+                  "const": "add"
+                },
+                "value": {
+                  "oneOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "counter": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_]*$"
+                        }
+                      },
+                      "required": [
+                        "counter"
+                      ]
                     }
-                  },
-                  "required": [
-                    "counter"
                   ]
                 }
+              },
+              "required": [
+                "kind",
+                "role",
+                "attribute",
+                "operation",
+                "value"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "attribute"
+                },
+                "role": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "attribute": {
+                  "const": "max_health"
+                },
+                "operation": {
+                  "const": "set"
+                },
+                "value": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 4294967295
+                }
+              },
+              "required": [
+                "kind",
+                "role",
+                "attribute",
+                "operation",
+                "value"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "attribute"
+                },
+                "role": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "attribute": {
+                  "enum": [
+                    "outgoing_damage_percent",
+                    "defense",
+                    "max_health"
+                  ]
+                },
+                "operation": {
+                  "const": "reset"
+                }
+              },
+              "required": [
+                "kind",
+                "role",
+                "attribute",
+                "operation"
               ]
             }
-          },
-          "required": [
-            "kind",
-            "role",
-            "attribute",
-            "operation"
           ]
         },
         {

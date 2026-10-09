@@ -2550,6 +2550,7 @@ dependencies = [
  "tokio-rustls",
  "url",
  "windows-native-keyring-store",
+ "windows-sys 0.61.2",
  "winit",
  "zeroize",
  "zstd",
@@ -2696,6 +2697,18 @@ name = "oteryn-platform-contracts"
 version = "0.1.0"
 dependencies = [
  "oteryn-foundation",
+]
+
+[[package]]
+name = "oteryn-player-bots"
+version = "0.1.0"
+dependencies = [
+ "oteryn-dev-client",
+ "oteryn-protocol-oteryn",
+ "rcgen",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]

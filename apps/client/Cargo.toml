@@ -11,6 +11,14 @@ publish.workspace = true
 category = "app"
 release-role = "production"
 
+[[bin]]
+name = "oteryn-client"
+path = "src/main.rs"
+
+[[bin]]
+name = "oteryn-launcher"
+path = "src/bin/oteryn-launcher.rs"
+
 [dependencies]
 oteryn-client-assets = { version = "=0.1.0", path = "../../crates/client-assets" }
 oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }
@@ -38,6 +46,7 @@ zeroize = "=1.9.0"
 egui = "=0.36.2"
 egui-winit = { version = "=0.36.2", default-features = false }
 image = { version = "=0.25.8", default-features = false, features = ["webp"] }
+windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging"] }
 winit.workspace = true
 keyring-core = { version = "=1.0.0", default-features = false }
 windows-native-keyring-store = { version = "=1.1.0", default-features = false }
@@ -49,5 +58,17 @@ secret-service = { version = "=5.2.0", default-features = false, features = ["rt
 rcgen.workspace = true
 tokio-rustls.workspace = true
 
-[lints]
-workspace = true
+# The workspace lints with one change: `unsafe_code` is `deny` instead of `forbid`, so the
+# Windows mutex FFI in `src/win_mutex.rs` alone can allow it (CP D901).
+[lints.rust]
+unsafe_code = "deny"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+dbg_macro = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+unwrap_used = "deny"

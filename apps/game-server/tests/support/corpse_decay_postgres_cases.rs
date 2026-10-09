@@ -23,6 +23,7 @@ use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, NodeIncarnationProof,
     OperationKey, RuntimeScopeAssignmentWriter,
 };
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
 use crate::item_transfer_postgres_cases::{
     CHANNEL, CHARACTER, Harness, SESSION, TestResult, WORLD, configured_admin, debug, fence, id,
@@ -127,7 +128,13 @@ async fn retire_step(
         .await?;
     harness
         .root
-        .commit_decay_retire(authority, node, fence, &mut candidate)
+        .commit_decay_retire(
+            &SpellLanePermit::of_fresh_lane((fence).world_id, (fence).channel_id).await,
+            authority,
+            node,
+            fence,
+            &mut candidate,
+        )
         .await
 }
 
@@ -189,7 +196,17 @@ fn decay_retires_each_entry_then_the_corpse_at_sixty_seconds() -> TestResult {
         refused(
             harness
                 .root
-                .retire_decayed_corpse(&authority, node, decay_fence(GENERATION)?, corpse)
+                .retire_decayed_corpse(
+                    &SpellLanePermit::of_fresh_lane(
+                        (decay_fence(GENERATION)?).world_id,
+                        (decay_fence(GENERATION)?).channel_id,
+                    )
+                    .await,
+                    &authority,
+                    node,
+                    decay_fence(GENERATION)?,
+                    corpse,
+                )
                 .await,
             DecayRetireRefusal::NotYetDue,
         )?;
@@ -221,7 +238,17 @@ fn decay_retires_each_entry_then_the_corpse_at_sixty_seconds() -> TestResult {
         let deadline = materialized_at(&harness, corpse).await? + CORPSE_DECAY_AFTER_MS;
         let report = harness
             .root
-            .retire_decayed_corpse(&authority, node, decay_fence(GENERATION)?, corpse)
+            .retire_decayed_corpse(
+                &SpellLanePermit::of_fresh_lane(
+                    (decay_fence(GENERATION)?).world_id,
+                    (decay_fence(GENERATION)?).channel_id,
+                )
+                .await,
+                &authority,
+                node,
+                decay_fence(GENERATION)?,
+                corpse,
+            )
             .await
             .map_err(debug)?;
         let retired: Vec<[u8; 16]> = report
@@ -286,7 +313,17 @@ fn decay_retires_each_entry_then_the_corpse_at_sixty_seconds() -> TestResult {
         let settled = decay_footprint(&harness).await?;
         let again = harness
             .root
-            .retire_decayed_corpse(&authority, node, decay_fence(GENERATION)?, corpse)
+            .retire_decayed_corpse(
+                &SpellLanePermit::of_fresh_lane(
+                    (decay_fence(GENERATION)?).world_id,
+                    (decay_fence(GENERATION)?).channel_id,
+                )
+                .await,
+                &authority,
+                node,
+                decay_fence(GENERATION)?,
+                corpse,
+            )
             .await
             .map_err(debug)?;
         assert!(again.entries.is_empty());
@@ -410,7 +447,13 @@ fn the_corpse_step_waits_for_every_live_entry() -> TestResult {
         let second = committed(
             harness
                 .root
-                .commit_decay_retire(&authority, node, fence, &mut candidate)
+                .commit_decay_retire(
+                    &SpellLanePermit::of_fresh_lane((fence).world_id, (fence).channel_id).await,
+                    &authority,
+                    node,
+                    fence,
+                    &mut candidate,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -419,7 +462,13 @@ fn the_corpse_step_waits_for_every_live_entry() -> TestResult {
         assert_eq!(
             harness
                 .root
-                .commit_decay_retire(&authority, node, fence, &mut candidate)
+                .commit_decay_retire(
+                    &SpellLanePermit::of_fresh_lane((fence).world_id, (fence).channel_id).await,
+                    &authority,
+                    node,
+                    fence,
+                    &mut candidate
+                )
                 .await
                 .map_err(debug)?,
             DecayRetireOutcome::AlreadyCommitted(second.clone())
@@ -553,7 +602,14 @@ fn a_partial_decay_resumes_from_durable_state_after_a_handoff() -> TestResult {
         assert!(matches!(
             harness
                 .root
-                .commit_decay_retire(&authority, &harness.node, old_fence, &mut stranded)
+                .commit_decay_retire(
+                    &SpellLanePermit::of_fresh_lane((old_fence).world_id, (old_fence).channel_id)
+                        .await,
+                    &authority,
+                    &harness.node,
+                    old_fence,
+                    &mut stranded
+                )
                 .await,
             Err(DecayRetireError::AuthorityRejected)
         ));
@@ -578,7 +634,17 @@ fn a_partial_decay_resumes_from_durable_state_after_a_handoff() -> TestResult {
         // ... and draining it completes only the remaining steps.
         let report = harness
             .root
-            .retire_decayed_corpse(&authority, &node2, decay_fence(2)?, corpse)
+            .retire_decayed_corpse(
+                &SpellLanePermit::of_fresh_lane(
+                    (decay_fence(2)?).world_id,
+                    (decay_fence(2)?).channel_id,
+                )
+                .await,
+                &authority,
+                &node2,
+                decay_fence(2)?,
+                corpse,
+            )
             .await
             .map_err(debug)?;
         let retired: Vec<[u8; 16]> = report
@@ -605,7 +671,13 @@ fn a_partial_decay_resumes_from_durable_state_after_a_handoff() -> TestResult {
         // second retirement.
         match harness
             .root
-            .commit_decay_retire(&authority, &harness.node, old_fence, &mut stranded)
+            .commit_decay_retire(
+                &SpellLanePermit::of_fresh_lane((old_fence).world_id, (old_fence).channel_id).await,
+                &authority,
+                &harness.node,
+                old_fence,
+                &mut stranded,
+            )
             .await
             .map_err(debug)?
         {
@@ -700,14 +772,26 @@ fn an_entry_picked_up_before_decay_is_never_retired() -> TestResult {
         refused(
             harness
                 .root
-                .commit_decay_retire(&authority, node, fence_1, &mut raced)
+                .commit_decay_retire(
+                    &SpellLanePermit::of_fresh_lane((fence_1).world_id, (fence_1).channel_id).await,
+                    &authority,
+                    node,
+                    fence_1,
+                    &mut raced,
+                )
                 .await,
             DecayRetireRefusal::NotInCorpse,
         )?;
 
         let report = harness
             .root
-            .retire_decayed_corpse(&authority, node, fence_1, corpse)
+            .retire_decayed_corpse(
+                &SpellLanePermit::of_fresh_lane((fence_1).world_id, (fence_1).channel_id).await,
+                &authority,
+                node,
+                fence_1,
+                corpse,
+            )
             .await
             .map_err(debug)?;
         let retired: Vec<[u8; 16]> = report
