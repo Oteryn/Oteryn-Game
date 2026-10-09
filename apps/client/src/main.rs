@@ -1,8 +1,12 @@
 #[cfg(windows)]
 mod login_screen;
 #[cfg(windows)]
+mod preferences_browser;
+#[cfg(windows)]
 mod settings_ui;
 
+#[cfg(windows)]
+mod client_panels;
 #[cfg(windows)]
 mod game_ui;
 #[cfg(windows)]

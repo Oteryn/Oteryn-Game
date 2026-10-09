@@ -129,7 +129,7 @@ fn read_placement_index(root: &Path) -> Result<PlacementIndex, String> {
 impl World {
     /// Only the builtin cells: no map, and the player drawn as the marker glyph.
     pub fn builtin() -> Result<Self, BatchError> {
-        let atlas = AtlasImage::new(CELL_PX, BUILTIN_CELLS as u32, 1, builtin_rgba())?;
+        let atlas = atlas_from_cells(builtin_rgba(), BUILTIN_CELLS)?;
         Ok(Self {
             atlas,
             tiles: HashMap::new(),

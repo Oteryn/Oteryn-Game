@@ -142,6 +142,24 @@ impl PlayView {
         &self.scene
     }
 
+    #[must_use]
+    pub fn minimap_image(&self) -> Option<crate::minimap::LoadedMinimap> {
+        crate::minimap::LoadedMinimap::from_world(&self.world)
+    }
+
+    #[must_use]
+    pub fn minimap_location(&self) -> Option<crate::minimap::MapLocation> {
+        crate::minimap::MapLocation::from_session(
+            ActorPosition {
+                x: self.own.x,
+                y: self.own.y,
+                floor: self.floor,
+            },
+            self.anchor,
+            self.map_floor,
+        )
+    }
+
     /// Draws `world` with the current own position on the start tile and the current floor on
     /// the start floor.
     pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
@@ -350,6 +368,8 @@ struct Mailbox {
     game: GameState,
     chat_pending: Option<oteryn_session::ChatIntent>,
     chat_result: Option<oteryn_session::ChatOutcome>,
+    action_pending: Option<crate::action_bar::ActionBarCommand>,
+    action_result: Option<crate::action_bar::ActionBarOutcome>,
 }
 
 type SharedMailbox = Arc<Mutex<Mailbox>>;
@@ -410,6 +430,21 @@ pub struct PlayLink {
 }
 
 impl PlayLink {
+    /// One pending action shared by mouse activation and physical shortcuts.
+    pub fn send_action(&self, command: crate::action_bar::ActionBarCommand) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.ended.is_some() || mailbox.action_pending.is_some() {
+            return false;
+        }
+        mailbox.action_pending = Some(command);
+        true
+    }
+
+    #[must_use]
+    pub fn action_result(&self) -> Option<crate::action_bar::ActionBarOutcome> {
+        lock(&self.mailbox).action_result.clone()
+    }
+
     #[must_use]
     pub fn game_state(&self) -> GameState {
         lock(&self.mailbox).game.clone()
@@ -453,6 +488,14 @@ impl PlayLink {
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn action(
+        &mut self,
+        _command: &crate::action_bar::ActionBarCommand,
+    ) -> impl Future<Output = Result<Option<crate::action_bar::ActionBarOutcome>, SessionError>> + Send
+    {
+        async { Ok(None) }
+    }
+
     fn game_state(&self) -> GameState {
         GameState::default()
     }
@@ -479,6 +522,18 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    async fn action(
+        &mut self,
+        command: &crate::action_bar::ActionBarCommand,
+    ) -> Result<Option<crate::action_bar::ActionBarOutcome>, SessionError> {
+        match command.execute(self).await {
+            Err(SessionError::CapabilityNotSelected { .. }) => {
+                Ok(Some(crate::action_bar::ActionBarOutcome::Unavailable))
+            }
+            result => result.map(Some),
+        }
+    }
+
     fn game_state(&self) -> GameState {
         GameState {
             vitals: self.actor_vitals().copied(),
@@ -542,6 +597,20 @@ pub async fn run_session<T: Stepper>(
 ) {
     lock(&outbox.0).game = session.game_state();
     loop {
+        let action = lock(&outbox.0).action_pending.take();
+        if let Some(command) = action {
+            match session.action(&command).await {
+                Ok(result) => {
+                    lock(&outbox.0).action_result = result;
+                    outbox.push(session.drain());
+                    lock(&outbox.0).game = session.game_state();
+                }
+                Err(error) => {
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+        }
         let pending = lock(&outbox.0).chat_pending.take();
         if let Some(intent) = pending {
             match session.chat(&intent).await {

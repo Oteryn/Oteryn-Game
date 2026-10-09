@@ -10,6 +10,17 @@ pub struct GameViewport {
 impl GameViewport {
     #[must_use]
     pub fn fit(width: f32, height: f32, pixels_per_point: f32, chat: bool) -> Option<Self> {
+        Self::fit_with_actions(width, height, pixels_per_point, chat, false)
+    }
+
+    #[must_use]
+    pub fn fit_with_actions(
+        width: f32,
+        height: f32,
+        pixels_per_point: f32,
+        chat: bool,
+        actions: bool,
+    ) -> Option<Self> {
         if !width.is_finite()
             || !height.is_finite()
             || !pixels_per_point.is_finite()
@@ -23,6 +34,10 @@ impl GameViewport {
             160.0 * pixels_per_point
         } else {
             12.0 * pixels_per_point
+        } + if actions {
+            56.0 * pixels_per_point
+        } else {
+            0.0
         };
         let available_w = width - 220.0 * pixels_per_point - margin * 2.0;
         let available_h = height - top - bottom - margin * 2.0;

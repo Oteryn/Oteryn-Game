@@ -31,10 +31,27 @@ pub struct ClientSettings {
     pub show_battle: bool,
     #[serde(default = "enabled")]
     pub show_chat: bool,
+    #[serde(default = "enabled")]
+    pub show_minimap: bool,
+    #[serde(default)]
+    pub action_bar: crate::action_bar::ActionBarPreferences,
+    #[serde(default = "default_panel_shortcuts")]
+    pub panel_shortcuts: Vec<String>,
+    #[serde(default)]
+    pub future_preferences:
+        std::collections::BTreeMap<String, crate::settings_catalog::FutureValue>,
 }
 
 const fn enabled() -> bool {
     true
+}
+
+fn default_panel_shortcuts() -> Vec<String> {
+    crate::panel_catalog::PANELS
+        .iter()
+        .filter(|p| p.default_visible)
+        .map(|p| p.id.to_owned())
+        .collect()
 }
 
 impl Default for ClientSettings {
@@ -56,6 +73,10 @@ impl Default for ClientSettings {
             show_inventory: true,
             show_battle: true,
             show_chat: true,
+            show_minimap: true,
+            action_bar: crate::action_bar::ActionBarPreferences::default(),
+            panel_shortcuts: default_panel_shortcuts(),
+            future_preferences: std::collections::BTreeMap::new(),
         }
     }
 }
@@ -85,7 +106,19 @@ impl ClientSettings {
                 "Invalid client preferences",
             ));
         }
-        Ok(())
+        self.action_bar.validate(&self.movement_keys)?;
+        if self.panel_shortcuts.len() > crate::panel_catalog::PANELS.len()
+            || self.panel_shortcuts.iter().enumerate().any(|(index, id)| {
+                crate::panel_catalog::panel(id).is_none()
+                    || self.panel_shortcuts[..index].contains(id)
+            })
+        {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Invalid panel shortcuts",
+            ));
+        }
+        crate::settings_catalog::validate_future_preferences(&self.future_preferences)
     }
 
     pub fn path() -> Option<PathBuf> {
@@ -100,7 +133,7 @@ impl ClientSettings {
     }
 
     pub fn load(path: &Path) -> io::Result<Self> {
-        if fs::metadata(path)?.len() > 8192 {
+        if fs::metadata(path)?.len() > 32768 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "Preferences too large",
@@ -118,6 +151,12 @@ impl ClientSettings {
             fs::create_dir_all(parent)?;
         }
         let bytes = serde_json::to_vec_pretty(self)?;
+        if bytes.len() > 32768 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Client preferences exceed their size bound",
+            ));
+        }
         let temporary = path.with_extension(format!("{}.tmp", std::process::id()));
         fs::write(&temporary, bytes)?;
         let file = fs::OpenOptions::new().write(true).open(&temporary)?;
@@ -131,6 +170,7 @@ impl ClientSettings {
             let NormalizedInputEvent::Key {
                 code,
                 state: ButtonState::Pressed,
+                modifiers: oteryn_input_actions::Modifiers::NONE,
                 ..
             } = event
             else {
@@ -162,6 +202,27 @@ mod tests {
         settings = ClientSettings::default();
         settings.version = 2;
         assert!(settings.validate().is_err());
+    }
+
+    #[test]
+    fn modified_action_shortcut_does_not_also_walk() -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_input_actions::{Modifier, Modifiers};
+        let settings = ClientSettings {
+            movement_keys: [26, 7, 22, 4],
+            ..ClientSettings::default()
+        };
+        let mut event = NormalizedInputEvent::Key {
+            code: KeyCode::new(26)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::one(Modifier::Control),
+            repeat: false,
+        };
+        assert_eq!(settings.direction(&[event.clone()]), None);
+        if let NormalizedInputEvent::Key { modifiers, .. } = &mut event {
+            *modifiers = Modifiers::NONE;
+        }
+        assert_eq!(settings.direction(&[event]), Some(StepDir::North));
+        Ok(())
     }
 
     #[test]

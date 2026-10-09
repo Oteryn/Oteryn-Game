@@ -31,12 +31,19 @@ serde_json.workspace = true
 sha2.workspace = true
 tokio.workspace = true
 zstd.workspace = true
+url = "=2.5.8"
+zeroize = "=1.9.0"
 
 [target.'cfg(windows)'.dependencies]
 egui = "=0.36.2"
 egui-winit = { version = "=0.36.2", default-features = false }
 image = { version = "=0.25.8", default-features = false, features = ["webp"] }
 winit.workspace = true
+keyring-core = { version = "=1.0.0", default-features = false }
+windows-native-keyring-store = { version = "=1.1.0", default-features = false }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+secret-service = { version = "=5.2.0", default-features = false, features = ["rt-async-io-crypto-rust"] }
 
 [dev-dependencies]
 rcgen.workspace = true

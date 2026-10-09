@@ -1,12 +1,17 @@
 //! Production pre-native client composition.
 //! Terminal evidence is revalidated after the MPL-2.0 and Linux lint corrections.
 
+pub mod action_bar;
 pub mod cyclopedia;
+pub mod device_store;
 pub mod input;
 pub mod layout;
+pub mod minimap;
+pub mod panel_catalog;
 pub mod play;
 pub mod scene;
 pub mod settings;
+pub mod settings_catalog;
 pub mod spell;
 pub mod world;
 

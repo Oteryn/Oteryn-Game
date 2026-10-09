@@ -133,7 +133,32 @@ impl Application {
         &mut self,
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
+        consumed: bool,
     ) {
+        let modal = self.game_ui.as_ref().is_some_and(|ui| ui.settings.open);
+        let typing = self
+            .game_ui
+            .as_ref()
+            .is_some_and(|ui| ui.context.egui_wants_keyboard_input());
+        if let Some(play) = &self.play {
+            self.hud.route_actions(
+                events,
+                &play.link,
+                &self.preferences,
+                typing || consumed,
+                modal,
+            );
+        }
+        let Ok(clicks) =
+            self.actions
+                .route_with_ui(events, typing, modal || self.login.is_some(), consumed)
+        else {
+            self.fail(event_loop, ShellError::InputInitialization);
+            return;
+        };
+        if consumed {
+            return;
+        }
         if self.login.is_some() || self.game_ui.as_ref().is_some_and(|ui| ui.settings.open) {
             return;
         }
@@ -146,11 +171,12 @@ impl Application {
         }
         let viewport = self.window.as_ref().and_then(|window| {
             let size = window.inner_size();
-            oteryn_client::layout::GameViewport::fit(
+            oteryn_client::layout::GameViewport::fit_with_actions(
                 size.width as f32,
                 size.height as f32,
                 window.scale_factor() as f32 * self.preferences.ui_scale,
                 self.preferences.show_chat,
+                self.preferences.action_bar.visible,
             )
         });
         if let Some(play) = &mut self.play {
@@ -158,9 +184,7 @@ impl Application {
                 play.view.arrow(direction);
             }
             let mut render_failed = false;
-            for click in self
-                .actions
-                .route(events)
+            for click in clicks
                 .into_iter()
                 .filter(|_| self.preferences.click_to_walk)
             {
@@ -183,7 +207,7 @@ impl Application {
                 return;
             }
         }
-        for click in self.actions.route(events) {
+        for click in clicks {
             let picked = self.scene.as_mut().and_then(|scene| {
                 let tile = click_tile(scene.view(), click.x, click.y)?;
                 Some((tile, scene.select_tile(tile)))
@@ -354,7 +378,7 @@ impl ApplicationHandler for Application {
         event: DeviceEvent,
     ) {
         if let Ok(events) = self.input.process_device_event(&event) {
-            self.handle_input(event_loop, &events);
+            self.handle_input(event_loop, &events, false);
         }
     }
 
@@ -371,10 +395,8 @@ impl ApplicationHandler for Application {
         };
         // Every window event goes through the adapter and router first; select or walk is
         // triggered only by the routed gameplay action.
-        if let Ok(events) = self.input.process_window_event(&event)
-            && !consumed
-        {
-            self.handle_input(event_loop, &events);
+        if let Ok(events) = self.input.process_window_event(&event) {
+            self.handle_input(event_loop, &events, consumed);
         }
         match event {
             WindowEvent::Focused(focused) => {
@@ -455,11 +477,12 @@ impl ApplicationHandler for Application {
                     let input = state.take_egui_input(window);
                     let context = gui.context.clone();
                     let size = window.inner_size();
-                    let viewport = oteryn_client::layout::GameViewport::fit(
+                    let viewport = oteryn_client::layout::GameViewport::fit_with_actions(
                         size.width as f32,
                         size.height as f32,
                         window.scale_factor() as f32 * self.preferences.ui_scale,
                         self.preferences.show_chat,
+                        self.preferences.action_bar.visible,
                     );
                     let Some(viewport) = viewport else {
                         return;
@@ -478,12 +501,24 @@ impl ApplicationHandler for Application {
                     }
                     let output = context.run_ui(input, |ui| {
                         if !gui.settings.open
-                            && self.hud.show(ui.ctx(), &play.link, &self.preferences)
+                            && self
+                                .hud
+                                .show(ui.ctx(), &play.link, &play.view, &self.preferences)
                         {
                             gui.settings.open = true;
                         }
                         gui.settings_window(ui.ctx());
                     });
+                    if let Some(preferences) = self.hud.take_preferences() {
+                        let saved = oteryn_client::settings::ClientSettings::path()
+                            .is_some_and(|path| preferences.save(&path).is_ok());
+                        if saved {
+                            self.preferences = preferences.clone();
+                            gui.settings.replace_current(preferences);
+                        } else {
+                            self.hud.preferences_save_failed(preferences.english);
+                        }
+                    }
                     state.handle_platform_output(window, output.platform_output.clone());
                     let scene = play.view.scene();
                     if renderer

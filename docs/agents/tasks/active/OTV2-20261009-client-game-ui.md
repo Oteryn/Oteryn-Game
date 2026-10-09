@@ -148,3 +148,43 @@ found by the focused read-only audit. A stored reusable credential introduces
 additional theft exposure compared with memory-only bootstrap credentials.
 The design must document and control that risk; do not promise identical risk,
 indefinite sign-in, or claim that the OS vault protects a compromised account.
+
+## Local completion checkpoint — 2026-10-09
+
+Owner clarified: prepare the complete client now even where engine mechanics will
+arrive later. Engine work is not required to populate invented client values.
+Scope now also includes client {action_bar,device_store,minimap,panel_catalog,
+settings_catalog,client_panels,preferences_browser}.rs; world builtin atlas
+packing correction; Cargo dependencies; semantic reference JSON and licensed
+Cinzel font/OFL notice. Original proprietary graphics/binaries are not included.
+
+28 panel shortcuts, specialised tab/field layouts, minimap of actually loaded
+terrain, 12 session-owned action slots, 25 settings sections and 207 typed options
+are prepared. Working settings apply to existing runtime fields; future settings
+retain validated user intent with an explicit pending consumer. Unknown server
+values remain unknown. Reference RCC filename tree verified:1063 resources;
+executable handler names are string evidence, not recovered source/layouts.
+
+Local normal registration/login created a DPAPI-protected test credential on the
+owner PC; Game operator bootstrap committed character Oteryn Tester. Normal
+browser PKCE/consent and native selection completed actual Game admission.
+No game database reset/raw character injection or password rotation.
+
+Independent local engineering sweep found and repaired held-input suppression,
+modified movement/action conflicts, action feedback hidden without chat, and
+conflicting minimap controls. Linux duplicate vault deletion now cleans the exact
+namespace while load/save fail closed on ambiguity. Remembered login remains
+OFF and unwired: first-device/current login still uses browser PKCE; OS-vault
+primitives alone do not implement rotation/crash/concurrency recovery.
+
+Platform disabled service/MFA focused regression:41 tests/315 assertions PASS
+in isolated Docker SQLite memory. MFA confirmation now invokes existing native
+authorization revocation; old device families cannot bypass newly enabled MFA.
+Deployment-DB races, live OS vault, HTTP adapters and contract/security approval
+remain outstanding. This engineering sweep is not formal frozen-head review.
+
+Client Linux98 tests PASS; strict Windows GNU all-target Clippy and workspace
+boundaries PASS before final upstream reconciliation. Native Windows build and
+UI evidence pending. Main advanced8 commits adding launcher/installer/single
+instance ownership; merge up while AUTHORING, preserve all additions.
+Jira mapping remains pending. Product source has not yet been published.

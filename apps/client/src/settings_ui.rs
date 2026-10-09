@@ -8,9 +8,14 @@ pub struct SettingsPanel {
     pub applied: bool,
     tab: usize,
     message: Option<String>,
+    browser: crate::preferences_browser::PreferencesBrowser,
 }
 
 impl SettingsPanel {
+    pub fn replace_current(&mut self, settings: ClientSettings) {
+        self.draft = settings.clone();
+        self.current = settings;
+    }
     pub fn new() -> Self {
         let loaded = ClientSettings::path().and_then(|path| {
             if path.exists() {
@@ -31,6 +36,7 @@ impl SettingsPanel {
             applied: true,
             tab: 0,
             message,
+            browser: crate::preferences_browser::PreferencesBrowser::default(),
         }
     }
 
@@ -64,6 +70,7 @@ impl SettingsPanel {
             .fixed_size(Vec2::new(available.x.min(730.0) - 35.0, available.y.min(510.0) - 60.0))
             .show(ctx, |ui| {
                 ui.label(RichText::new(tr("OTERYN • USTAWIENIA KLIENTA", "OTERYN • CLIENT PREFERENCES")).strong());
+                if ui.button(tr("Wszystkie ustawienia", "All preferences")).clicked() { self.browser.open = true; }
                 ui.separator();
                 ui.horizontal_top(|ui| {
                     ui.vertical(|ui| {
@@ -136,6 +143,22 @@ impl SettingsPanel {
                                 }
                                 ui.checkbox(&mut self.draft.click_to_walk, tr("Chodzenie lewym kliknięciem", "Walk with left mouse click"));
                                 ui.small(tr("Każdy kierunek wymaga innego klawisza. F10 otwiera ustawienia.", "Each direction requires a different key. F10 opens settings."));
+                                ui.separator();
+                                ui.heading(tr("Pasek akcji", "Action bar"));
+                                ui.checkbox(&mut self.draft.action_bar.visible, tr("Pokaż pasek", "Show bar"));
+                                ui.checkbox(&mut self.draft.action_bar.locked, tr("Zablokuj przypisania", "Lock assignments"));
+                                for slot in 0..oteryn_client::action_bar::ACTION_BAR_SLOTS {
+                                    let shortcut = &mut self.draft.action_bar.shortcuts[slot];
+                                    egui::ComboBox::from_id_salt(("action-shortcut", slot))
+                                        .selected_text(format!("{}: {}", slot + 1, shortcut.map_or_else(|| tr("Brak", "None").into(), |s| action_key_label(s.key))))
+                                        .show_ui(ui, |ui| {
+                                            ui.selectable_value(shortcut, None, tr("Brak", "None"));
+                                            for key in (4..=39).chain(58..=66).chain(68..=69) {
+                                                ui.selectable_value(shortcut, Some(oteryn_client::action_bar::SlotShortcut { key, modifiers: 0 }), action_key_label(key));
+                                            }
+                                        });
+                                }
+                                ui.small(tr("Prawy przycisk na polu paska pozwala przypisać akcję. Przypisania przedmiotów i czarów dotyczą bieżącej sesji.", "Right-click an action slot to assign it. Item and spell assignments belong to the current session."));
                             }
                             3 => {
                                 ui.heading(tr("Dźwięk", "Audio"));
@@ -147,6 +170,7 @@ impl SettingsPanel {
                                 ui.heading(tr("Gra, HUD i czat", "Game, HUD and chat"));
                                 ui.checkbox(&mut self.draft.show_inventory, tr("Ekwipunek i otwarty kontener", "Inventory and open container"));
                                 ui.checkbox(&mut self.draft.show_battle, tr("Lista widocznych postaci", "Visible actors list"));
+                                ui.checkbox(&mut self.draft.show_minimap, tr("Minimapa", "Minimap"));
                                 ui.checkbox(&mut self.draft.show_chat, tr("Konsola czatu", "Chat console"));
                                 ui.separator();
                                 ui.label(tr("Zakres docelowy: nazwy i paski zdrowia, obrażenia, siatka mapy, minimapa, układ paneli, rozmiar czatu, znaczniki czasu, filtry i powiadomienia.", "Target scope: names and health bars, damage, map grid, minimap, panel layout, chat size, timestamps, filters and notifications."));
@@ -192,6 +216,7 @@ impl SettingsPanel {
                     });
                 });
             });
+        self.browser.show(ctx, &mut self.draft);
         check_connection
     }
 }
@@ -206,5 +231,14 @@ fn key_label(code: u16) -> String {
             .unwrap_or('?')
             .to_string(),
         _ => "?".into(),
+    }
+}
+
+fn action_key_label(code: u16) -> String {
+    match code {
+        30..=38 => (code - 29).to_string(),
+        39 => "0".into(),
+        58..=69 => format!("F{}", code - 57),
+        _ => key_label(code),
     }
 }

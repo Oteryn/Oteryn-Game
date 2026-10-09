@@ -331,6 +331,19 @@ impl MouseActions {
         &self.gameplay
     }
 
+    /// Always reconcile releases and lifecycle events, including events consumed by UI.
+    pub fn route_with_ui(
+        &mut self,
+        events: &[NormalizedInputEvent],
+        text: bool,
+        modal: bool,
+        consumed: bool,
+    ) -> Result<Vec<ClickAction>, InputError> {
+        self.set_text_active(text)?;
+        self.set_modal_active(modal || consumed)?;
+        Ok(self.route(events))
+    }
+
     /// Feeds normalized events and returns the gameplay clicks they produced.
     pub fn route(&mut self, events: &[NormalizedInputEvent]) -> Vec<ClickAction> {
         let mut clicks = Vec::new();
@@ -541,6 +554,34 @@ mod tests {
         let clicks = actions.route(&[moved(100, 60)?, primary(ButtonState::Pressed)]);
         assert_eq!(clicks, vec![ClickAction { x: 100.0, y: 60.0 }]);
         assert!(actions.route(&[primary(ButtonState::Released)]).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn release_consumed_by_ui_does_not_block_the_next_map_click() -> Result<(), InputError> {
+        let mut actions = MouseActions::new()?;
+        assert_eq!(
+            actions
+                .route_with_ui(
+                    &[moved(100, 60)?, primary(ButtonState::Pressed)],
+                    false,
+                    false,
+                    false
+                )?
+                .len(),
+            1
+        );
+        assert!(
+            actions
+                .route_with_ui(&[primary(ButtonState::Released)], false, false, true)?
+                .is_empty()
+        );
+        assert_eq!(
+            actions
+                .route_with_ui(&[primary(ButtonState::Pressed)], false, false, false)?
+                .len(),
+            1
+        );
         Ok(())
     }
 
