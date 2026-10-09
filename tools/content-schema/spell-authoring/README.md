@@ -59,6 +59,14 @@ Intense Healing Rune includes Monk and Paralyse Rune uses the Attack group.
 Their instant conjuring requirements and groups remain unchanged. The ledger binds
 the TibiaData mirror payload hashes and independent client readbacks; it preserves
 the historical S13/S24 evidence and qualifies these as 2026-10-09 candidates.
+The separate `conjure-source-resolutions.json` qualifies Arrow Call's quantity as
+30 Simple Arrows from Fandom revision 1182610 (2026-05-06), before the historical
+cut. The converter fences the spell words, ID, result item, previous count and
+source revision/digest. Quantity is distinct from its 30 mana cost. The current
+TibiaData amount corroborates the dated wiki as third-party evidence; both pinned
+emulators' count 3 and mana 10 remain attributed. Historical capture files and
+the rune-use ledger remain unchanged; this does not establish cast parity.
+
 Successful conjuring cues follow the selected donor's `items.xml` rune type,
 including its first-loaded declaration rule, rather than rune registrar membership.
 This gives Blank Rune its magic-red cue and makes Lightest and Practise Wand

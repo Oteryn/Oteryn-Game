@@ -65,6 +65,9 @@ GUARDS = json.loads((ROOT / 'guard-behaviours.json').read_text(encoding='utf-8')
 # Two dated rune-use details, distinct from the historical wiki/list captures.
 RUNE_USE_RESOLUTIONS_PATH = ROOT / 'rune-use-source-resolutions.json'
 RUNE_USE_RESOLUTIONS = json.loads(RUNE_USE_RESOLUTIONS_PATH.read_text(encoding='utf-8'))
+# Exact dated wiki quantity omitted by the historical selected-field capture.
+CONJURE_RESOLUTIONS_PATH = ROOT / 'conjure-source-resolutions.json'
+CONJURE_RESOLUTIONS = json.loads(CONJURE_RESOLUTIONS_PATH.read_text(encoding='utf-8'))
 CHAIN_FIELDS = ('max_targets', 'range_tiles', 'backtracking', 'shape', 'initial_range_tiles', 'damage_step_percent')
 CANARY_DECIDES = 'S21: the Canary 15.30 branch decides a Canary/Crystal conflict no wiki or tibia.com states'
 # Damage-model corrections below are explicit offline reference proposals, not source unanimity
@@ -1127,6 +1130,46 @@ class Bundle:
         return {'item': ref('Item', f'candidate:item/{int(item or 0)}'), 'charges': int(charges or 1),
                 'magic_level': int(magic_level or 0), 'allow_far_use': bool(far), 'blocking': {'solid': solid, 'creature': creature}}
 
+    def conjure_quantity_reference(self, previous, conjure):
+        """Qualify only the exact Arrow Call historical quantity and identity."""
+        resolution = CONJURE_RESOLUTIONS['spells'].get(self.name)
+        if resolution is None:
+            return previous
+        if (any(r['spell_type'] != resolution['carrier']
+                or r['registrar'].get('name') != resolution['source']['title']
+                or r['registrar'].get('words') != resolution['words']
+                or r['registrar'].get('id') != resolution['reference_spell_id']
+                for r in self.records.values())
+                or conjure.get('result_item_id') != resolution['result_item_id']):
+            raise Unresolved(f'{self.name} conjure quantity: unexpected spell or result identity')
+        chosen = resolution['value']
+        if (type(previous) is not int or previous not in (resolution['previous'], chosen)
+                or type(conjure.get('count')) is not int
+                or conjure['count'] not in (resolution['previous'], chosen)):
+            raise Unresolved(f'{self.name} conjure quantity: unexpected previous/source count; '
+                             'fresh source disposition required')
+        # The separate ledger proves the omitted field without rewriting the capture.
+        page = resolution['source']
+        captured = self.wikis.docs['fandom']['pages']
+        if not any(p.get('page_id') == page['page_id']
+                   and p.get('revision_id') == page['revision_id']
+                   and p.get('content_sha256') == page['content_sha256'] for p in captured):
+            raise Unresolved(f'{self.name} conjure quantity: historical revision/digest changed')
+        note = (f"S3: exact Fandom revision {page['revision_id']} "
+                f"({resolution['revision_timestamp']}, before {CONJURE_RESOLUTIONS['reference_date']}) "
+                f"states {resolution['source_value']!r} in {resolution['source_field']}; "
+                f"{previous} -> {chosen}. Quantity is distinct from mana; "
+                f"{CONJURE_RESOLUTIONS_PATH.name} SHA256 "
+                f"{hashlib.sha256(CONJURE_RESOLUTIONS_PATH.read_bytes()).hexdigest()}. "
+                "The current TibiaData corroboration remains a third-party community capture; "
+                "historical sample bytes are unchanged, no cast or runtime qualification.")
+        self.row('mapped', resolution['source_field'] + '/quantity',
+                 '/spell/spell/execution/conjure/count', note, wiki=('fandom', page))
+        if previous != chosen:
+            self.row('approved_omission', 'conjureItem/count', resolution=note,
+                     source=next(iter(self.records)), kind='script')
+        return chosen
+
     def execution(self, deps, base_power, pages):
         tiers = {s: r['cast']['tier'] for s, r in self.records.items()}
         if all(t == 'conjure' for t in tiers.values()):
@@ -1147,6 +1190,7 @@ class Bundle:
             elif source_count not in (None, count):
                 self.row('approved_omission', 'conjureItem', resolution=f'S3: the wiki amount {count} supersedes '
                          f'{source_count}.', source=next(iter(self.records)), kind='script')
+            count = self.conjure_quantity_reference(count, conjure)
             result = conjure.get('result_item_id')
             if not isinstance(result, int) or not isinstance(count, int) or count < 1:
                 self.row('unresolved_semantics', 'conjureItem', resolution='conjure arguments are not literal item ids.',

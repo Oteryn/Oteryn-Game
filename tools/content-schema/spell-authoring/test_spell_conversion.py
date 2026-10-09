@@ -7,7 +7,7 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
-from convert_spells import MONSTER, PARTY, RUNE_USE_RESOLUTIONS, Bundle, Execution, Unresolved, Wikis
+from convert_spells import MONSTER, PARTY, RUNE_USE_RESOLUTIONS, CONJURE_RESOLUTIONS, Bundle, Execution, Unresolved, Wikis
 from validate_spell import validate
 from verify_formal_schema import CATALOG, POSITIVE, identity, ref
 
@@ -239,6 +239,56 @@ class ConjureItemTypeTests(unittest.TestCase):
                                  ('magic_red' if first_is_rune else 'magic_blue'))
                 self.assertEqual(bundle.executions['canary'].conjure_effect(3175, None),
                                  ('CONST_ME_MAGIC_RED' if next_is_rune else None, next_is_rune))
+
+
+class ConjureQuantityReferenceTests(unittest.TestCase):
+    def candidate(self, name='arrow call'):
+        resolution = CONJURE_RESOLUTIONS['spells']['arrow call']
+        page = copy.deepcopy(resolution['source'])
+        wikis = Wikis({'api': page['api'], 'pages': [page]}, {'pages': []}, {'changes': []})
+        records = {'canary': {'spell_type': 'instant', 'file': 'arrow.lua',
+                   'registrar': {'name': 'Arrow Call', 'words': 'exevo infir con', 'id': 176}}}
+        return Bundle(name, records, wikis, {}, {('canary', 'arrow.lua'): ''})
+
+    def test_exact_historical_quantity_has_mediawiki_provenance(self):
+        bundle = self.candidate()
+        self.assertEqual(bundle.conjure_quantity_reference(3, {'result_item_id': 21470, 'count': 3}), 30)
+        row = next(r for r in bundle.rows if r.get('destination'))
+        self.assertEqual(row['destination'], '/spell/spell/execution/conjure/count')
+        source = bundle.sources[row['source_index']]
+        self.assertEqual((source['kind'], source['revision_id']), ('mediawiki', 1182610))
+        self.assertIn('Quantity is distinct from mana', row['resolution'])
+
+    def test_conjure_arrow_and_rune_counts_are_not_overridden(self):
+        self.assertEqual(self.candidate('conjure arrow').conjure_quantity_reference(
+            10, {'result_item_id': 3447, 'count': 10}), 10)
+        self.assertEqual(self.candidate('intense healing rune').conjure_quantity_reference(
+            1, {'result_item_id': 3160, 'count': 1}), 1)
+
+    def test_wrong_identity_fails_before_quantity_resolution(self):
+        for field, value in [('words', 'exevo con'), ('id', 51), ('name', 'Conjure Arrow')]:
+            bundle = self.candidate()
+            bundle.records['canary']['registrar'][field] = value
+            with self.subTest(field=field), self.assertRaises(Unresolved):
+                bundle.conjure_quantity_reference(3, {'result_item_id': 21470, 'count': 3})
+        bundle = self.candidate()
+        bundle.records['canary']['spell_type'] = 'rune'
+        with self.assertRaises(Unresolved):
+            bundle.conjure_quantity_reference(3, {'result_item_id': 21470, 'count': 3})
+        with self.assertRaises(Unresolved):
+            self.candidate().conjure_quantity_reference(3, {'result_item_id': 3447, 'count': 3})
+
+    def test_unexpected_previous_or_donor_count_fails_closed(self):
+        for previous, count in [(4, 3), (3, 4), (True, 3), (3, True)]:
+            with self.subTest(previous=previous, count=count), self.assertRaises(Unresolved):
+                self.candidate().conjure_quantity_reference(previous, {'result_item_id': 21470, 'count': count})
+
+    def test_historical_source_identity_and_digest_are_fenced(self):
+        for field, value in [('page_id', 1), ('revision_id', 1), ('content_sha256', '0' * 64)]:
+            bundle = self.candidate()
+            bundle.wikis.docs['fandom']['pages'][0][field] = value
+            with self.subTest(field=field), self.assertRaises(Unresolved):
+                bundle.conjure_quantity_reference(3, {'result_item_id': 21470, 'count': 3})
 
 
 class CurrentRuneUseReferenceTests(unittest.TestCase):
