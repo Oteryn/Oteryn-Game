@@ -4,13 +4,13 @@
 task_id: OTV2-20261009-ci-rust195-workflows
 title: Align active Rust CI and reviewed expectations to 1.95
 mode: GOVERNANCE
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 base_sha: 1e77ca22b4fcb7869f8f1d169f4e12bc749b295d
 branch: chore/ci-rust195-workflows-20261009
 issue: 1927
-pr: null
+pr: 1944
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -40,7 +40,7 @@ owned_paths:
   - tools/repository/validate_repository_policy_core.py
   - docs/agents/tasks/active/OTV2-20261009-ci-rust195-workflows.md
   - docs/agents/tasks/archive/OTV2-20261009-ci-rust195-workflows.md
-depends_on: [OTV2-20261009-ci-rust195-audit-pins]
+depends_on: [OTV2-20261009-ci-rust195-audit-pins, PR-1943]
 blocks: [PR-1942-native-client-CI-qualification]
 external_repositories: []
 ```
@@ -55,10 +55,12 @@ This grants preparation/publication/review, not merge, activation, deployment,
 production, credential, ruleset or database mutation. No audit exception is
 self-granted. No unrelated client or server edits are included.
 
-Current state is AUTHORING, with no PR number or remote freeze yet. Root opens
-the main-targeted draft, records its positive PR number, completes the final
-authoring/archive step required by tasks/archive/README.md, then freezes the
-exact read-back remote head before candidate-specific validation/review.
+Canonical draft PR #1944 is open against main and depends on audit-pin PR #1943.
+This record is archived in the final AUTHORING successor, as required by
+tasks/archive/README.md. Its completed status closes the authoring record only;
+review and integration are pending. Root publishes the record-only successor and
+records the exact read-back remote freeze outside this commit before validation
+and independent review.
 Independent deep review is required and remains pending; no local check is
 represented as that independent review or protected integration.
 
@@ -122,4 +124,17 @@ require the normal successful audit plus all other qualification.
 
 Publication and review are authorized. Merge, activation, production operation,
 protection changes and an audit exception for this migration are not authorized.
+
+## PR and authoring closeout
+
+Canonical draft: https://github.com/Oteryn/Oteryn-Game/pull/1944.
+Prerequisite: https://github.com/Oteryn/Oteryn-Game/pull/1943.
+All 20 migration source files remain byte-identical to the qualified prepared
+candidate; this final authoring successor changes only this record and its
+active-to-archive location. The frozen SHA is recorded outside the commit on
+the PR/coordination issue. Independent deep review and hosted final-head
+qualification remain pending. Merge commit/result is pending; a future squash
+merge of #1944 requires separate owner authorization, prerequisite main readback,
+ordinary green protected audit and normal MQ proof. No integration, production
+activation or ownership-release result is claimed by this archive.
 
