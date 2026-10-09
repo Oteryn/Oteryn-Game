@@ -10,7 +10,7 @@ branch: feat/client-completion-20261009
 owner: root
 ```
 
-Status: AUTHORING on draft PR #1942; published anchor 0026b73299faed34bc39b1683f71e77cc6c40ca4. Not frozen or merged.
+Status: AUTHORING on draft PR #1942; published anchor 821c0854855708de729a106db65c19083ff3469e. Not frozen or merged.
 Owner scope: complete client and necessary engine/protocol functionality together.
 No production deployment or database reset. Single writer: root.
 
@@ -50,20 +50,11 @@ system browser and rejects embedded credential webviews. Threat model GA-006
 and ADR-0009 must be reconciled with any accepted replacement. This packet does
 not amend those contracts or claim an embedded webview is compliant.
 
-Proposed first-party native screens, sharing the existing egui window:
-
-1. Sign in: email, masked password, reveal control, sign-in action, registration
-   and recovery navigation; explicit loading, cancellation and retry states.
-2. MFA: server-selected supported challenge, expired/rejected challenge feedback
-   and recovery-code alternative when permitted by Platform policy.
-3. Registration: email, password and confirmation, server policy feedback;
-   verification state when required. No success before authoritative acceptance.
-4. Recovery: neutral acknowledgement preventing account enumeration; completion
-   depends on possession of the required recovery proof.
-5. Characters: authoritative list, world availability, native character creation
-   and its pending/committed/rejected result; no legacy Canary substitution.
-6. Channel selection and admission: current world/channel directory, progress,
-   cancellation, unavailable-world feedback, then the admitted live session.
+The earlier native-password proposal covers sign-in, server-selected MFA,
+registration, recovery, authoritative characters and channel admission in the
+same window. That proposal is not accepted; the later remembered-device scope
+below supersedes it as the preferred candidate without implying owner acceptance
+of a first-use browser exception.
 
 Platform remains the credential, MFA and security-generation authority. A new
 bounded native authentication contract must define challenge lifetime, attempt
@@ -158,15 +149,14 @@ namespace while load/save fail closed on ambiguity. Remembered login remains
 OFF and unwired: first-device/current login still uses browser PKCE; OS-vault
 primitives alone do not implement rotation/crash/concurrency recovery.
 
-Platform disabled service/MFA focused regression:41 tests/315 assertions PASS
-in isolated Docker SQLite memory. MFA confirmation now invokes existing native
-authorization revocation; old device families cannot bypass newly enabled MFA.
-Deployment-DB races, live OS vault, concrete client lock/journal/HTTPS bindings and
-contract/security approval remain outstanding. HTTP candidate stays OFF; isolated
-HTTP/core/MFA/cache tests pass64/657, including original OAuth consumption. This engineering sweep is not formal frozen-head review.
+Platform HTTP/core/MFA/cache/catalogue qualification:75 tests/737 assertions
+and full PHPStan level10 PASS; platform-gate/runtime tests on published787028f8
+also PASS. Deployment-DB races, live OS vault, concrete client lock/journal/HTTPS
+bindings and contract/security approval remain outstanding. HTTP candidate OFF.
+This engineering sweep is not formal frozen-head review.
 
-Current Linux library tests109 PASS, including8 pure remembered-device adversarial
-groups; candidate module is exposed but unwired. Native Windows108 library+4 application+5 launcher tests, strict Clippy and
+Current Linux library tests112 PASS, including8 pure remembered-device adversarial
+groups; candidate module is exposed but unwired. Native Windows111 library+4 application+5 launcher tests, strict Clippy and
 MSVC release PASS. Archive timestamps were refreshed before rerun to prevent stale
 Cargo artifacts; full native preferences footer screenshot verified. Normal browser PKCE and character
 selection entered the live local world; screenshot verified actual loaded minimap.
@@ -183,3 +173,11 @@ exception/notices qualified; coherent Rust1.95 protected workflow/pin migration 
 proposal-only pending owning governance route. Jira mapping remains pending.
 
 World pin-check PASS: two identical builds, unchanged payload f8b11ebc…; compiler-input pin refreshed for actual Cargo/toolchain inputs88be0150….
+
+Observed UI repairs: saved shortcut order/editor, Drop Tracker→Cyclopedia Items
+local navigation, separate offence/defence fields, title filters/search and Item
+Summary Store Inbox/search/List/Grid. Real inventory data used; missing values
+unknown. Settings navigation fills resized height; toolbar language propagates
+to game. Full parity still lacks expanded action rows, Wheel/perk composition,
+achievement controls and domain consumers. Rust1.94 CI rejects required1.95;
+protected migration proposal exists, active gates unchanged.

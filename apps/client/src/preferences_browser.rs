@@ -57,7 +57,9 @@ impl PreferencesBrowser {
                 ui.separator();
                 let sections_width = (ui.available_width() * 0.28).clamp(120.0, 190.0);
                 let options_width = (ui.available_width() - sections_width - 28.0).max(120.0);
-                let column_height = (maximum.y - 215.0).clamp(80.0, 350.0);
+                // Let the navigation use the resized window, reserving space for
+                // feedback and the apply/cancel controls at its bottom.
+                let column_height = (ui.available_height().min(maximum.y) - 95.0).max(80.0);
                 let search = self.search.trim().to_lowercase();
                 ui.horizontal_top(|ui| {
                     egui::ScrollArea::vertical().id_salt("all-preferences-sections").scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible).max_height(column_height).show(ui, |ui| {

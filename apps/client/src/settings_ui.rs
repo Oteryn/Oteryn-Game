@@ -43,6 +43,7 @@ impl SettingsPanel {
     pub fn set_language(&mut self, english: bool) {
         self.current.english = english;
         self.draft.english = english;
+        self.applied = true;
         if let Some(path) = ClientSettings::path()
             && self.current.save(&path).is_err()
         {
