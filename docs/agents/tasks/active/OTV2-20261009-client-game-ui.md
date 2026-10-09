@@ -11,184 +11,64 @@ branch: feat/client-completion-20261009
 owner: root
 ```
 
-AUTHORING on draft #1942. Published anchor:
-72b0ecf958bc79bf03c677b654c7019867ca37ae. Not frozen or merged.
-Root is sole publisher. No new worker delegation in this increment.
-Owner scope: complete native client/UI/settings plus necessary Platform/engine
-work. Preserve missing server values as unknown; prepare future controls without
-claiming their absent mechanics work. No production deployment, database reset,
-password rotation, merge or third-party proprietary asset redistribution.
+AUTHORING on draft #1942, predecessor 580b31689837b2e2dd78ffad76f0571de96e6113.
+Root is sole publisher; no freeze, merge, production deployment or DB reset.
+Owner permits client/Platform/engine work; preserve unrelated modifications.
+Do not publish proprietary reference assets or private account data.
 
-## Current scope and evidence
+## Current owner direction and correction
 
-Owner requested faithful UI and every observed option/function. The explicit
-acceptance matrix is apps/client/UI-FIDELITY.md. Counts are not fidelity proof.
-This increment replaces generic Console, Effects, Sound, Battle Sounds, UI Sounds
-and Shortcuts pages with dedicated compositions. Shortcuts use displayed/available
-lists with add/remove/order editing inside the settings draft. Live panel registry
-now refreshes after Apply without overwriting unsaved manager changes.
-Private source captures establish composition, not redistributed assets or
-invented defaults. Audio/effect selections remain bounded pending intent.
+Owner rejected cosmetic patches to incomplete existing forms. Inspect the original
+Tibia Global interface, dropdowns, scroll extents and nested panels BEFORE building
+replacement UI. Modern Oteryn appearance must retain complete interaction groups.
+Previous complete-HUD wording was wrong: live scrolling reveals 35 conditions;
+our catalogue and table expose six. The original first bottom action bar ends at
+1.50; our rows have 12 slots. Hotkey profile auto-switch is missing in our source.
+Evidence and remaining audit scope: apps/client/UI-REFERENCE-OBSERVATIONS.md.
+apps/client/UI-FIDELITY.md now marks the HUD partial, not complete.
+This increment changes documentation only; no additional cosmetic client edits.
 
-Prior published 487cb644: native 124 library +26 application +5 launcher tests,
-strict all-target MSVC Clippy and release pass. Linux library125 tests pass.
-Current increment: native124 library +29 application +5 launcher tests
-(158 total), strict all-target MSVC Clippy and release PASS. Native private
-capture verifies two-list composition; painted arrow controls replace
-unsupported font glyphs. Scope format/whitespace, clean publication governance,
-repository policy and59 governance regression tests pass.
-Source transfer uses SHA-256 baseline/staged checks, exact file backups and
-refreshed timestamps. Use only the own executable HWND for capture and guarded
-foreground clicks. Windows checkout:
-C:/Users/barte/Downloads/oteryn-client-main-20261007.
+## Existing implementation and verification scope
 
-Nine action rows/108 physical chords, per-row locks, assignment clearing and
-modal/held-key/session fencing are implemented. Edge master toggles preserve raw
-row selections and legacy migration preserves locks/chords. Full settings fit
-32KiB bound. Original client assets and private account data are not published.
-28 shortcuts,22 prepared panel views,20 Cyclopedia subpages,six dialogs and27
-settings sections exist, but many arrangements and consumers remain incomplete.
-Server HP/MP/inventory/chat absence stays unknown. Wheel topology is unverified;
-no fabricated allocations, progression or records. Gem/Fragment private captures
-establish their group compositions only. User wants missing engine mechanisms
-completed later; accepted authority/projection contracts still govern that work.
+580b3168 improves HUD legibility and fixes footer reachability. Native Windows
+169 tests (124 library/40 app/5 launcher), strict MSVC Clippy/release and Linux28
+composition tests passed for that source. Those results do not establish option
+coverage, original behavior, visual parity or complete gameplay. Native screenshot:
+/workspace/artifacts/oteryn-full-hud-native-20261009.png.
+Quick settings are supplementary; complete pages must remain reachable.
+Nine action rows/108 chords, shortcut draft add/remove/order and Apply/Cancel work.
+Own-resource HUD consumes real session vitals; unknown/invalid maxima draw no fake
+resources. Names/marks/conditions/order and many panel consumers remain incomplete.
+28 shortcuts,22 prepared panel views,20 Cyclopedia pages and six dialogs are
+scaffolding counts, not completion. Audio/effects/capture consumers remain open.
+Modern charcoal/bronze chrome and pinned Lucide icons do not establish fidelity.
 
-## Display/input authoring batch
+## Security, dependencies and retained boundaries
 
-Dedicated Controls, Interface, Graphics, Game Window and Gameplay compositions
-replace generic fields. Rotation has separate Ctrl/Shift/Alt modifier intent,
-not a required letter key. Whole-stack Ctrl intent, link COPY warning and three
-expiry destinations have distinct bounded bool keys; legacy intent remains valid
-and is not silently repurposed. Delay range and target-dropdown membership are
-still unverified. No input/clipboard/expiry consumer is falsely asserted.
-Graphics consumes existing fullscreen/VSync/FPS/window fields. Unlimited toggle
-restores the previous draft frame limit; FPS range follows existing30..360 bound.
-Current FPS stays unknown because diagnostics are not supplied to preferences.
-Existing JSON schema/read compatibility is preserved. Compact encoding saves
-all new choices inside the unchanged32KiB bound; maximal escaped-text roundtrip
-regression covers actual save/load. Native124 library+30 application+5 launcher
-tests(159 total), strict all-target MSVC Clippy/release PASS. Private actual Windows Graphics/Shortcuts captures verify current layouts;
-clean publication governance/policy and59 regression tests PASS.
+Actual first/repeated sign-in remains system-browser PKCE. Remembered native
+sign-in primitives are OFF/unwired. Never persist account passwords. Platform
+PR#1484 is separate. CI fixes #1943/#1944 remain frozen/unmerged; the main Rust
+1.94/client1.95 mismatch is not repaired by this draft. protocol-oteryn,
+WorldId/ChannelId separation and generation fencing remain invariant.
+Original resources are private compatibility references only. Missing engine
+mechanics do not justify omitting planned controls, but cannot be claimed working.
 
-## HUD/capture/confirmation increment
+## Runtime and next steps
 
-Dedicated HUD groups own/other, Harmony position radios, arc controls, six directly
-visible condition rows with independent HUD/bar switches, and status-bar flags.
-Other conditions/order and undiscovered arc-size choices remain unverified.
-Screenshots has17 separate triggers/two columns, three capture flags and an
-unavailable folder action. No capture pipeline or retention is falsely enabled.
-Misc has seven confirmation/session choices, without storing credentials or
-activating remembered sign-in. Existing legacy intent keys remain accepted.
-Movement editor wraps vertically; ASCII physical arrow-key names replace missing
-font glyphs. New actual click/clip regression checks all four direction choices
-in PL/EN and WASD preset validation. Native124 library+31 application+5
-launcher tests(160 total), strict all-target MSVC Clippy and release PASS.
-All configurable preferences fit both existing count/byte bounds and32KiB
-compact save with maximal escaped text; save/load roundtrip PASS. Clean
-publication governance/policy and59 regression tests PASS. Native private HUD
-capture verified own/other groups and exposed excess empty headings/row height.
-Follow-up removes empty headings and scopes compact spacing to HUD. Native160
-tests, strict all-target MSVC Clippy and release PASS on the compact source.
+Windows checkout: C:/Users/barte/Downloads/oteryn-client-main-20261007.
+Native file transfer remains SHA-256 guarded with exact backups and scoped HWND
+interaction. Do not print private launch scripts or credentials. Synology reference:
+otclient-track-a-kasmvnc, DISPLAY=:1, window27262999; verify live title/geometry.
+Private fresh captures are NAS /tmp/oteryn-hud-conditions-*.png and hotkey captures
+listed in UI-REFERENCE-OBSERVATIONS.md. No Apply/Reset/reference account changes.
 
-## Related PRs and authority
-
-Product draft #1942 stays AUTHORING, not merge-ready. Root is sole publisher;
-fresh-read live head, validate owned paths in clean /workspace/publish-client,
-then guarded publication with exact expected predecessor and recovery bundle.
-No force/reset/rebase. Preserve unrelated server/login-local diagnostics and two
-older untracked task records. Govern only this task's own record.
-CI #1943 frozen4b535efc and #1944 frozeneba78bf have clean required review and
-remain unmerged/untouched. Owner approved their preparation and funded required
-review under standing policy; no authority to merge. CI still targets Rust1.94
-until those fixes integrate; client requires1.95. Platform #1484 head787028f
-passes75tests737assertions/PHPStan10/Pint. Remembered native sign-in primitives
-are OFF/unwired; first/repeated login uses accepted system-browser PKCE. No
-credential webview or insecure password persistence. One earlier admission
-failure succeeded on normal retry; its cause is undiagnosed by UI work.
-
-## Next acceptance
-
-Complete native qualification/captures, publish current page batch and continue
-remaining advanced arrangements and panels per UI-FIDELITY.md. Required checks:
-client all-target native tests/strict Clippy/release, scoped formatting/whitespace,
-clean publication governance and applicable policy checks. Save concrete evidence
-and remaining consumer gaps; never describe this draft as the finished client.
-
-## Owner-directed execution plan, 2026-10-09
-
-Owner requested a concrete plan and execution after rejecting catalogue-based
-completion claims. apps/client/UI-EXECUTION-PLAN.md defines screen-by-screen
-visual and behavior acceptance across preferences, hotkeys, panels and login.
-First target: native options shell/HUD. Reference pages no longer waste body
-space on global search/footer implementation notes; Oteryn account access moves
-to separate navigation and Reset retains draft-only behavior. HUD arcs form two
-columns and condition switches align in full-width columns. Native161 tests
-(124lib+32app+5launcher), strict all-target MSVC Clippy/release PASS. New full-dialog
-PL/EN regression proves lower status controls/Reset/OK/Apply/Cancel visibility
-and independent HUD/bar condition clicks. Native Windows capture compared: fixed full-width HUD/bar columns, all six
-condition rows and both lower flags/footer visible. Account/network access is
-sticky below category scroll; PL/EN regression clicks it and verifies cell
-alignment across differently sized condition labels. Private own-client capture:
-/workspace/artifacts/oteryn-client-hud-qualified-native-20261009.png.
-Original NAS session confirmed active; private research uses exact client window,
-never Apply/Reset or character commands. Additional unknowns remain unverified.
-
-## Own-resource renderer authoring checkpoint
-
-Published plan/options-shell head49e2a6ee. Private original client.en.qm research
-verified Small/Default/Large arc sizes and own-HUD bars/arcs dependencies. The
-new actor_hud module reads authoritative vitals, projects onto the same scene
-viewport and draws only explicitly selected HP/MP. Missing/max-zero data draw
-no fabricated resource. Native164tests/strictMSVCClippy/release PASS; Linux
-headless3geometrytests PASS. Actual live-session capture remains pending.
-Names/marks/Harmony/conditions and remaining HUD table/order are unfinished.
-Do not infer full HUD behavior from this bounded renderer checkpoint.
-
-## Previous Astra HUD pass
-
-Shared own/other frame, dependent editing, six-flag condition aggregate controls
-and native166tests were qualified at b8cd1b0d. No condition reorder or full HUD
-consumer completion was claimed. Current qualification below supersedes this.
-
-## Modern Oteryn visual direction
-
-Owner clarified: reference functionality/controls and panel organization, modern
-Oteryn presentation rather than legacy chrome. Shared chrome now uses slate
-surfaces, restrained gold selection, rounded controls and larger text; procedural
-gray noise/bevels removed. All 28 shortcut symbols use pinned Lucide 0.468.0
-assets with upstream license, source SVG hashes and lossless high-DPI atlas.
-License is embedded and readable in Help. Empty equipment silhouettes remain
-explicitly empty-slot symbols, not item art. Actual item rendering and modules
-are unfinished. No new gameplay behavior or full-reference-parity claim.
-Native Windows167tests (124lib+38app+5launcher), strict Clippy and release PASS.
-Linux26composition tests PASS; repository governance/policy PASS. Actual Windows
-Options capture checked at default 900x620 logical dimensions: footer reachable,
-new chrome visible. In-world and Linux visual acceptance remain pending.
-Private evidence: artifacts/oteryn-modern-options-native-20261009.png.
-Draft1942 remains AUTHORING; no merge, production or database changes.
-
-## Owner correction: reference workflow before decorative overview
-
-Owner explicitly rejected the gap between generated concept and native window,
-then requested another live Global Tibia inspection. Live reference 3440x1174:
-Controls and Interface inspected; multiple independent dock columns, Analytics
-Selector, Battle List, Store Inbox, Drop Tracker and Spell List/details visible.
-The five-switch oversized overview is NOT an accepted replacement for the full
-HUD page (own/other groups, arcs, conditions/status controls). Retain reference
-functional grouping and density; apply modern charcoal/bronze treatment to it.
-Current overview work is an exploratory implementation, not visual
-acceptance or completion. Existing full pages remain accessible. Windows168tests
-and strict Clippy/release passed for final client-bronze-qualified-20261009;
-Linux27composition tests PASS. Overview is explicitly Quick settings with a
-direct full-HUD entry; full reference composition remains separate and intact.
-No Global settings were saved and no character actions requested.
-
-## Readable full HUD checkpoint
-
-Full groups retained; 13px labels, spaced rows, padded sections, aligned conditions
-and combined status group. Reset moved into persistent footer. Native Windows
-169tests/strictClippy/release and Linux28tests PASS, including overview-to-HUD
-navigation. Final actual Windows capture confirms all groups/footer visible at
-900x620 logical size. Artifact: oteryn-full-hud-native-20261009.png. PDB linker
-error recovered by preserving/rebuilding only the affected generated PDB.
-Whole-client visual fidelity and pending consumers remain unfinished.
+Finish the complete original interaction inventory: remaining scroll extents,
+choices, hotkey modes/profiles/custom editors, plus-menu panels, context menus,
+nested modules and visible/disabled dependencies. Record observed facts separately
+from untested behavior. Then replace incomplete compositions using the complete
+inventory and a consistent Oteryn component system; verify compiled native views
+and actual actions. Preserve working runtime code without treating its forms as
+the target design. Publish bounded increments through the guarded single-writer
+path in /workspace/publish-client. Root workspace contains unrelated server/login
+changes and task files; do not stage or alter them. Use isolated publication
+checkout for governance checks because unrelated task docs fail its current gate.
