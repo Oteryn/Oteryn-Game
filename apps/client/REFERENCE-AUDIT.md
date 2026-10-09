@@ -55,11 +55,11 @@ All **17 extra shortcuts** were added; the available list became empty:
 | Party List | Inspected |
 | Wheel of Destiny | Inspected in normal preview, including both supporting tabs |
 | Quest Tracker | Visible; dedicated controls still pending |
-| Unjustified Points | Pending |
-| Prey Dialog | Pending |
-| Kill Tracker | Pending |
-| Reward Wall | Pending |
-| Analytics Selector | Pending |
+| Unjustified Points | Inspected: zero open points and three skull-threshold bars |
+| Prey Dialog | Opened: official restriction; character has not reached main continent |
+| Kill Tracker | Inspected: prey creature tracking, inactive state |
+| Reward Wall | Opened: daily rewards restricted until main continent |
+| Analytics Selector | Inspected selector; individual analyser windows pending |
 | Bosstiary | Inspected through Cyclopedia; shortcut route pending |
 | Boss Slots | Inspected through Cyclopedia; shortcut route pending |
 | Bosstiary Tracker | Pending |
@@ -69,6 +69,10 @@ All **17 extra shortcuts** were added; the available list became empty:
 | Exaltation Forge | Pending |
 | Social | Pending |
 | Task Board | Pending |
+
+Analytics Selector visibly offers Hunting, Loot, Supply, Impact, Damage Input,
+XP, Drop Tracker and Party Hunt analysis. More entries may require scrolling;
+this checkpoint does not claim the complete analyser inventory.
 
 Backpack context controls and remaining chat/navigation controls also need
 inspection. Empty or account-restricted states must be reported as such.
