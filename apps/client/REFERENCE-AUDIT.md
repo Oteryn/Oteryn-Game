@@ -143,6 +143,67 @@ search, clear/add list controls and Premium availability explanations. Categorie
 were scrolled to inspect the bounded list. No container assignment or list
 mutation was submitted.
 
+## Character stat subpages
+
+Character Stats shows progression, skills, resource/capacity/speed, stamina,
+offline training, account status and badges. Offence Stats breaks down flat
+healing/damage, attack contributions and critical chance/extra damage. Defence
+Stats shows equipment/skill defence contributions, armor, mitigation, magic-shield
+capacity and reductions for physical/fire/earth/energy/ice/holy/death. Misc. Stats
+shows blessings and their detail entry. The general-stat group has four child
+pages; navigation names are checked against actual contents, not capture names.
+Recent Deaths and Recent PvP Kills were both opened, including pagination and
+empty record tables. Achievements shows grade counts, accomplishment filters,
+sorting, dates, descriptions and a scrollable achievement list. Item Summary
+shows inventory/depot/inbox/stash/store-inbox selectors, search and list/grid
+views. Appearances opens separate Outfit, Mount and Familiar collections.
+Store Summary shows account-benefit categories, including XP boosts, blessings,
+Prey, Task Board, daily rewards and charms; its lower scroll region remains
+unverified. Character Titles exposes current title, permanent/temporary and
+locked/unlocked filters, search and a title table. No title was activated.
+Familiar collection filtering offers all, standard and quest familiars.
+
+## Static client-file sweep
+
+The installed reference is the official Tibia distribution, despite the
+`otclient-track-a-kasmvnc` container name. Its `bin/client.en.qm` is a Qt
+translation catalogue, not application source. A read-only parser consumed its
+702,294-byte messages block completely and found 4,622 distinct source keys.
+No account/configuration values, proprietary graphics or translated text corpus
+are published here. Qt framework QML files are not evidence of product UI source.
+
+The catalogue independently identifies 358 `optionsmenu` keys and exactly 28
+shortcut definitions, matching the live shortcut inventory. Key counts include
+captions, help and warnings; they are not counts of independent settings.
+Static discovery establishes interface vocabulary, not reachability or behavior.
+
+Additional controls identified in files, still requiring targeted runtime checks:
+
+- Social: friend list, invitations, friend configuration, account search and
+  badges, alongside join/assemble team pages already encountered.
+- Containers: name, stack size, weight and expiry sorting in both directions;
+  backpacks first, manual sorting, recursive sorting and filtering.
+- Quest Tracker: automatic addition/removal, remove tracked/all/completed,
+  track new quests and navigation to the Quest Log.
+- Loot analyser: reset, per-hour view, graph, gauge and gauge target.
+- Battle List: vocation filters including Monk; players, monsters, NPCs,
+  player summons, own guild, party and non-skulled players; secondary lists
+  and primary-list selection, subject to account restrictions.
+- Chat: channel opening/closing, participants, secondary chat, server and
+  join/leave message visibility, mute/unmute, copy and save channel.
+- Hotkeys: add/copy/rename/remove presets, automatic preset switching,
+  search, new action and distinct chat-on/chat-off bindings.
+- Graphics vocabulary includes three antialiasing choices and twelve renderer
+  identifiers. Platform-specific identifiers do not establish Linux/Windows
+  availability or define the renderer choices Oteryn should expose.
+- Sound includes automatic output-device selection, separate volume groups,
+  creature attacks/deaths/noises, weapons, spells, eating/item movement and
+  UI/chat/system/private/guild/party/raid/team-finder/VIP notifications.
+
+This sweep substantially expands the inventory without treating unavailable
+menus or destructive actions as tested. Remaining dropdown, context-menu and
+account-dependent behavior checks retain their pending status.
+
 ## Evidence and preservation
 
 Private screenshots remain under `/workspace/artifacts/oteryn-reference`, with
@@ -156,9 +217,11 @@ No purchase, reset, profile deletion, spell assignment, enhancement, party invit
 or gameplay action was required for this audit. Shortcut visibility was saved
 through the normal UI with the owner's authorization. Inspection is ongoing;
 this checkpoint does not claim every panel or behavior is complete. Closing
-Manage Containers closed the shared Cyclopedia modal; one subsequent stale
-navigation click landed in the game viewport. That capture is excluded and
-modal navigation now verifies the actual title before each click. No gameplay
+Manage Containers closed the shared Cyclopedia modal; subsequent stale
+navigation clicks landed in the game viewport. That capture is excluded and
+modal navigation now verifies the actual title before each click; fixed-position
+checks compare against a previously verified capture, not an unverified live
+frame. Input modifier/button state was released before resuming navigation. No gameplay
 action was intended as an audit step.
 
 ## Oteryn implementation consequence
