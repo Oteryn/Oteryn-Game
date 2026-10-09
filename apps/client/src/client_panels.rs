@@ -17,15 +17,15 @@ pub struct ClientPanels {
     open: BTreeSet<&'static str>,
     contents: BTreeMap<&'static str, PanelState>,
     views: crate::panel_views::PanelViews,
-    initialized: bool,
+    applied_shortcuts: Option<Vec<String>>,
     dirty: bool,
 }
 
 impl ClientPanels {
     pub fn initialize(&mut self, shortcuts: &[String]) {
-        if !self.initialized {
+        if self.applied_shortcuts.as_deref() != Some(shortcuts) && !self.dirty {
             self.pinned = ShortcutOrder::from_saved(shortcuts).unwrap_or_default();
-            self.initialized = true;
+            self.applied_shortcuts = Some(shortcuts.to_vec());
         }
     }
 
@@ -708,4 +708,30 @@ fn battle_entries(
         "Nazwy i zdrowie oczekują na dane gry.",
         "Names and health await game data.",
     ));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn applied_shortcuts_refresh_without_overwriting_unconsumed_manager_edits() {
+        let mut panels = ClientPanels::default();
+        panels.initialize(&["skills".into()]);
+        assert_eq!(panels.pinned.ids(), &["skills"]);
+        panels.initialize(&["vip".into(), "forge".into()]);
+        assert_eq!(panels.pinned.ids(), &["vip", "forge"]);
+        panels.pinned.set_visible("skills", true);
+        panels.dirty = true;
+        panels.initialize(&["vip".into(), "forge".into()]);
+        assert_eq!(
+            panels.take_shortcuts(),
+            Some(vec!["vip".into(), "forge".into(), "skills".into()])
+        );
+        panels.initialize(&["vip".into(), "forge".into(), "skills".into()]);
+        assert_eq!(panels.pinned.ids(), &["vip", "forge", "skills"]);
+        assert!(panels.take_shortcuts().is_none());
+        panels.initialize(&[]);
+        assert!(panels.pinned.ids().is_empty());
+    }
 }

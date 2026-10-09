@@ -1,4 +1,7 @@
 //! Complete preference navigation with explicit future-consumer configuration.
+#[path = "preferences_pages.rs"]
+mod pages;
+
 use oteryn_client::{
     settings::ClientSettings,
     settings_catalog::{
@@ -11,6 +14,7 @@ pub struct PreferencesBrowser {
     pub open: bool,
     section: usize,
     search: String,
+    page_state: pages::PageState,
     action_bar_available: bool,
     clear_action_row: Option<usize>,
     expanded: std::collections::BTreeSet<&'static str>,
@@ -117,7 +121,7 @@ impl PreferencesBrowser {
                 }
                 // Keep the columns inside the current dialog body, reserving room for
                 // availability text and secondary controls below them.
-                let column_height = (ui.available_height() - if basic && !compact { 30.0 } else if basic { 50.0 } else if SETTINGS_SECTIONS[self.section].id == "action_bars" { 45.0 } else { 95.0 }).max(1.0);
+                let column_height = (ui.available_height() - if basic && !compact { 30.0 } else if basic { 50.0 } else { 45.0 }).max(1.0);
                 ui.horizontal_top(|ui| {
                     if !compact {
                         ui.set_max_height(column_height);
@@ -151,6 +155,7 @@ impl PreferencesBrowser {
                         let section = &SETTINGS_SECTIONS[self.section];
                         if section.id == "basic" { basic_page(ui, draft, english); }
                         else if section.id == "action_bars" { action_bars_page(ui, draft, english, self.action_bar_available, &mut self.clear_action_row); }
+                        else if search.is_empty() && pages::show(ui, draft, section.id, english, &mut self.page_state) {}
                         else {
                         ui.heading(section.text(english));
                         let mut matching = 0;
@@ -183,7 +188,7 @@ impl PreferencesBrowser {
                     });
                 });
                 ui.separator();
-                if !basic { ui.small(tr("Opcje bez obsługi zapisują wybór do przyszłego użycia; nie zmieniają jeszcze gry.", "Preferences awaiting support save your choice for future use; they do not change gameplay yet.")); }
+                if !basic && SETTINGS_SECTIONS[self.section].id != "shortcuts" { ui.small(tr("Opcje bez obsługi zapisują wybór do przyszłego użycia; nie zmieniają jeszcze gry.", "Preferences awaiting support save your choice for future use; they do not change gameplay yet.")); }
                 if let Some(message) = message { ui.label(message); }
                 let mut show_advanced = advanced;
                 if compact && ui.checkbox(&mut show_advanced, tr("Pokaż opcje zaawansowane", "Show advanced options")).changed() { draft.future_preferences.insert("basic.basic.advanced".into(), FutureValue::Bool(show_advanced)); }
@@ -1336,7 +1341,7 @@ mod tests {
             browser.expanded.extend(["graphics", "interface"]);
             let effects = SETTINGS_SECTIONS
                 .iter()
-                .find(|section| section.id == "effects")
+                .find(|section| section.id == "hud")
                 .ok_or("missing effects")?;
             let action_bars = SETTINGS_SECTIONS
                 .iter()
