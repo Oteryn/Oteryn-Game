@@ -4,9 +4,8 @@ The owner requested the complete intended preferences experience, available befo
 sign-in and during play. This is the working implementation and remaining product
 scope, not a declaration that the whole game client is complete.
 
-Implementation status below refers to the private authoring branch
-`fix/native-client-login-20261007`, not the main branch. This checkpoint is
-documentation only and does not publish that implementation.
+Implementation status refers to `feat/client-completion-20261009`. This is an
+authoring candidate, not merged main or production readiness.
 
 ## Implemented
 
@@ -166,3 +165,19 @@ seven-section preferences panel are the foundation, not this complete compositio
 Reference screenshots and the sanitized name catalogue are private task artifacts
 under `/workspace/artifacts/oteryn-reference`; they are not bundled game assets.
 Oteryn uses its own branding, textures and implementation.
+
+## Prepared reference-completion candidate, 2026-10-09
+
+The complete browser exposes25 sections and207 typed bilingual options.16 map
+to existing client fields; remaining options keep validated user intent with
+explicit pending-consumer labels. They do not simulate missing engine behavior.
+
+In-world UI includes28 panel shortcuts with differentiated fields/tabs, six
+additional reference-derived dialogs, a minimap of actually loaded terrain and
+12 action slots. Session item/spell handles never persist across admission.
+Future gameplay values remain unknown; pending mutation actions are disabled.
+
+OS-vault primitives use local Windows credential storage or encrypted Linux
+Secret Service, without plaintext fallback. They are not wired into remembered
+sign-in yet. Browser PKCE remains current behavior; rotation recovery, per-origin
+process serialization and reviewed Platform HTTP integration remain outstanding.

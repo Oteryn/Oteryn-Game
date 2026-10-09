@@ -229,8 +229,8 @@ action was intended as an audit step.
 Build actual viewport/HUD/domain panels, inventory and action bars, chat, input
 contexts, effect/audio consumers and persistent layout before exposing their
 settings as active controls. The implementation status in SETTINGS.md describes
-private work on `fix/native-client-login-20261007`; this documentation PR neither
-publishes that source delta nor establishes full client readiness.
+the client authoring branch `feat/client-completion-20261009`; source and
+documentation remain a draft candidate without full-client readiness.
 
 ## Semantic source evidence, 2026-10-09
 
@@ -241,9 +241,9 @@ asset payloads, executable copies or translation corpus were added to the repo.
 
 The executable contains the cited `GameserverMessagePlayerData`,
 `receivedCreatureHealthMessage` and `handlePlayerInventoryMessage` name strings.
-Its ordinary symbol table is stripped; these names were not exported dynamic
-symbols either. Names identify consumer vocabulary, not source code or proven
-runtime packet layouts. Additional class-name evidence separates basic/current
+Its ordinary symbol table is stripped; the dynamic-symbol probe exposed no
+matching handler/method definitions. Names identify consumer vocabulary, not
+source code or proven runtime packet layouts. Additional class-name evidence separates basic/current
 player data, player skills/state, vocation-specific data, resource balances,
 inventory changes, inspection, depot search, stash and market messages.
 

@@ -35,13 +35,10 @@ Restored the canonical CommonApplicationData path for the child process only.
 Docker now running; existing Game/Platform/gateway/database containers resumed
 automatically. No factory reset, DB reset, or test-password rotation.
 Native Windows strict Clippy also passed.
-No native runtime claim before build and UI inspection.
 
-Remaining completion scope: item names/icons and actions, full actor rendering/HUD,
-minimap, skills/quests/social/cyclopedia panels, action bars and hotkey profiles,
-chat filters/notifications/accessibility, audio, captures, Linux GUI composition.
-Add required owning engine projections and commands, including missing mechanics;
-current server capability availability is a sequencing constraint, not a scope cut.
+Remaining completion scope: complete production consumers/content, audio,
+captures, Linux GUI composition and secure remembered-login integration.
+Prepared UI is not a claim that absent engine projections/mechanics work.
 Draft reference audit PR #1941 contains documentation only, not this product source.
 
 Portal and public directory HTTP 200. Directory initially empty: the Game
@@ -103,8 +100,8 @@ meet that acceptance. Linux must use the same protocol and state transitions.
 Runtime recovery completed: renewed client development trust certificate,
 advanced the local descriptor revision for changed certificate facts, and
 replaced assignment through fenced ops. Native node reached READY and public
-directory returned one world. No database reset. Account/character creation and
-admitted-session visual verification remain outstanding.
+directory returned one world. No database reset. The later local completion checkpoint records account/character creation and
+admitted-session visual verification.
 
 ## Clarification: avoid recurring browser redirects without weakening security
 
@@ -122,7 +119,7 @@ Platform consumes access and associated refresh credentials upon ticket issue.
 Current default access/refresh lifetimes are 5/10 minutes. Keeping the existing
 refresh token in a file or removing ticket-time revocation is not a valid fix.
 
-Required remembered-device extension, proposed and not implemented:
+Remembered-device requirements; disabled service/vault candidate exists, integration pending:
 
 - Explicit opt-in on trusted devices; shared-computer use retains interactive
   authentication. No passwords in the client or its persistent preferences.
@@ -159,8 +156,8 @@ packing correction; Cargo dependencies; semantic reference JSON and licensed
 Cinzel font/OFL notice. Original proprietary graphics/binaries are not included.
 
 28 panel shortcuts, specialised tab/field layouts, minimap of actually loaded
-terrain, 12 session-owned action slots, 25 settings sections and 207 typed options
-are prepared. Working settings apply to existing runtime fields; future settings
+terrain, 12 session-owned action slots, 25 settings sections and 207 typed options, plus six reference-derived native
+dialogs, are prepared. Working settings apply to existing runtime fields; future settings
 retain validated user intent with an explicit pending consumer. Unknown server
 values remain unknown. Reference RCC filename tree verified:1063 resources;
 executable handler names are string evidence, not recovered source/layouts.
@@ -183,8 +180,7 @@ authorization revocation; old device families cannot bypass newly enabled MFA.
 Deployment-DB races, live OS vault, HTTP adapters and contract/security approval
 remain outstanding. This engineering sweep is not formal frozen-head review.
 
-Client Linux98 tests PASS; strict Windows GNU all-target Clippy and workspace
-boundaries PASS before final upstream reconciliation. Native Windows build and
-UI evidence pending. Main advanced8 commits adding launcher/installer/single
-instance ownership; merge up while AUTHORING, preserve all additions.
+Client Linux100 library+5 launcher tests PASS after upstream reconciliation;
+strict GNU Windows/Linux all-target Clippy PASS. Native Windows build/UI pending. Main advanced8 commits adding launcher/installer/installation
+coexistence marker (not an exclusive login lock); merge up while AUTHORING, preserve all additions.
 Jira mapping remains pending. Product source has not yet been published.

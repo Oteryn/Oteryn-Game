@@ -21,10 +21,15 @@ pub struct GameUi {
     minimap_zoom: usize,
     minimap_retry_at: f64,
     panels: crate::client_panels::ClientPanels,
+    dialogs: crate::reference_dialogs::ReferenceDialogs,
     preferences_changes: Option<ClientSettings>,
 }
 
 impl GameUi {
+    pub fn blocks_game_input(&self) -> bool {
+        self.panels.manage || self.dialogs.any_open()
+    }
+
     pub fn preferences_save_failed(&mut self, english: bool) {
         self.notice = Some(
             if english {
@@ -218,6 +223,9 @@ impl GameUi {
                                 .clicked()
                             {
                                 self.panels.manage = true;
+                            }
+                            if ui.button(tr("Więcej", "More")).clicked() {
+                                self.dialogs.manage = true;
                             }
                         });
                     });
@@ -541,6 +549,7 @@ impl GameUi {
                 }
             });
         self.panels.show(ctx, &state, en);
+        self.dialogs.show(ctx, en);
         if let Some(shortcuts) = self.panels.take_shortcuts() {
             let mut next = settings.clone();
             next.panel_shortcuts = shortcuts;

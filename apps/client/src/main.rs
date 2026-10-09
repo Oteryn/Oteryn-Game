@@ -3,6 +3,8 @@ mod login_screen;
 #[cfg(windows)]
 mod preferences_browser;
 #[cfg(windows)]
+mod reference_dialogs;
+#[cfg(windows)]
 mod settings_ui;
 
 #[cfg(windows)]

@@ -135,7 +135,8 @@ impl Application {
         events: &[oteryn_input_actions::NormalizedInputEvent],
         consumed: bool,
     ) {
-        let modal = self.game_ui.as_ref().is_some_and(|ui| ui.settings.open);
+        let modal = self.game_ui.as_ref().is_some_and(|ui| ui.settings.open)
+            || self.hud.blocks_game_input();
         let typing = self
             .game_ui
             .as_ref()
@@ -159,7 +160,7 @@ impl Application {
         if consumed {
             return;
         }
-        if self.login.is_some() || self.game_ui.as_ref().is_some_and(|ui| ui.settings.open) {
+        if self.login.is_some() || modal {
             return;
         }
         if self
