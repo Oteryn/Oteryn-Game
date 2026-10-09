@@ -20,8 +20,8 @@ POSTGRES_IMAGE = (
 )
 # Like the canonical scope/aggregate pins, these bind execution semantics, not just text fragments.
 EXPECTED_EVIDENCE_JOB_SHA256 = {
-    "rust_linux": "53773732a35fc9a8948507c06e913d8c6ef6e51550be2edaa0ac4b9a1b859cb9",
-    "rust_windows": "948119003ae6c085408376a5dbe391b071c1d0169a0362eb12bd678d580c7533",
+    "rust_linux": "1172ab6117f12a0948698d69c22d4af0accdde15ddeb820455112ea03484b570",
+    "rust_windows": "9d09c490c39d26abcc98e6953646149055142a36a700b31de43e2f418e4926bf",
 }
 
 
@@ -171,7 +171,7 @@ def validate() -> list[str]:
     evidence_fragments = (
         "        run: |\n",
         "          verify_registered_target_binding() {\n",
-        '            cargo +1.94.0 metadata --locked --no-deps --format-version 1 > "$metadata"\n',
+        '            cargo +1.95.0 metadata --locked --no-deps --format-version 1 > "$metadata"\n',
         '            python - "$metadata" "$name" "$path" <<\'PY\'\n',
         "              owners = [package for package in packages if package.get('name') == 'oteryn-game-server']\n",
         "              expected_manifest = (pathlib.Path.cwd() / 'apps/game-server/Cargo.toml').resolve(strict=True)\n",
@@ -189,7 +189,7 @@ def validate() -> list[str]:
         '                checkout_blob="$(git hash-object -- "$path")"\n',
         '                if [[ ! "$classified_blob" =~ ^[0-9a-f]{40}$ || "$checkout_blob" != "$classified_blob" ]]; then\n',
         '                verify_registered_target_binding "$name" "$path"\n',
-        '                cargo +1.94.0 test --locked --workspace --test "$name"\n',
+        '                cargo +1.95.0 test --locked --workspace --test "$name"\n',
         '                if [[ -e "$path" || -L "$path" || -n "$classified_blob" ]]; then\n',
     ) + tuple(
         fragment
@@ -229,9 +229,9 @@ def validate() -> list[str]:
                 '$client = ".\\target\\x86_64-pc-windows-msvc\\release\\oteryn-client.exe"',
                 "Test-Path -LiteralPath $client -PathType Leaf",
                 "& $client --smoke",
-                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
-                "cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
-                "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
+                "cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc",
+                "cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc",
+                "cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
             ),
         )
     )
@@ -242,7 +242,7 @@ def validate() -> list[str]:
             "Test Windows input platform",
             (
                 "        shell: pwsh\n",
-                "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n",
+                "        run: cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n",
             ),
         )
     )
@@ -253,7 +253,7 @@ def validate() -> list[str]:
             "Verify deterministic simulation golden fixtures",
             (
                 "        shell: pwsh\n",
-                "        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n",
+                "        run: cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n",
             ),
         )
     )

@@ -38,8 +38,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rustup toolchain install 1.94.0 --profile minimal
-          cargo +1.94.0 build --release --locked -p oteryn-game-server --bins
+          rustup toolchain install 1.95.0 --profile minimal
+          cargo +1.95.0 build --release --locked -p oteryn-game-server --bins
 
       - name: Stage release bundle
         shell: bash

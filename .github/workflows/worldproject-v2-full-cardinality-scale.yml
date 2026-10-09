@@ -60,17 +60,17 @@ jobs:
           stderr=world-project-v2-scale-smoke.stderr
           raw=world-project-v2-scale-smoke.stdout.txt
           set +e
-          rustup toolchain install 1.94.0 --profile minimal >/dev/null 2>>"$stderr"
+          rustup toolchain install 1.95.0 --profile minimal >/dev/null 2>>"$stderr"
           toolchain_rc=$?
           test_rc=0
           run_rc=$toolchain_rc
           if [ "$toolchain_rc" -eq 0 ]; then
-            cargo +1.94.0 test --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
+            cargo +1.95.0 test --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
             test_rc=$?
             run_rc=$test_rc
           fi
           if [ "$toolchain_rc" -eq 0 ] && [ "$test_rc" -eq 0 ]; then
-            /usr/bin/time -v -o "$time_report" cargo +1.94.0 run --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml -- --mode smoke >"$raw" 2>>"$stderr"
+            /usr/bin/time -v -o "$time_report" cargo +1.95.0 run --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml -- --mode smoke >"$raw" 2>>"$stderr"
             run_rc=$?
           fi
           set -e
@@ -203,11 +203,11 @@ jobs:
           stderr=world-project-v2-scale-full.stderr
           raw=world-project-v2-scale-full.stdout.txt
           set +e
-          rustup toolchain install 1.94.0 --profile minimal >/dev/null 2>>"$stderr"
+          rustup toolchain install 1.95.0 --profile minimal >/dev/null 2>>"$stderr"
           toolchain_rc=$?
           build_rc=$toolchain_rc
           if [ "$toolchain_rc" -eq 0 ]; then
-            cargo +1.94.0 build --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
+            cargo +1.95.0 build --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
             build_rc=$?
           fi
           set -e
@@ -397,11 +397,11 @@ jobs:
           stderr=world-project-v2-scale-sharded.stderr
           raw=world-project-v2-scale-sharded.stdout.txt
           set +e
-          rustup toolchain install 1.94.0 --profile minimal >/dev/null 2>>"$stderr"
+          rustup toolchain install 1.95.0 --profile minimal >/dev/null 2>>"$stderr"
           toolchain_rc=$?
           build_rc=$toolchain_rc
           if [ "$toolchain_rc" -eq 0 ]; then
-            cargo +1.94.0 build --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
+            cargo +1.95.0 build --release --manifest-path tools/world-project-v2-scale-measurement/Cargo.toml >/dev/null 2>>"$stderr"
             build_rc=$?
           fi
           set -e

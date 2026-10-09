@@ -203,7 +203,7 @@ def test_simulation_evidence_step_cannot_be_skipped() -> None:
 def test_input_platform_evidence_contract_is_mandatory() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     marker = "      - name: Test Windows input platform\n"
-    command = "        run: cargo +1.94.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n"
+    command = "        run: cargo +1.95.0 test --locked -p oteryn-input-platform --target x86_64-pc-windows-msvc\n"
     assert baseline.count(marker) == baseline.count(command) == 1
     mutations = (
         baseline.replace(marker, "      - name: Optional Windows input platform\n", 1),
@@ -902,7 +902,7 @@ def test_postgres_digest_and_invocation_are_mandatory() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     stale = baseline.replace("      - name: Build workspace\n", "      - name: Build workspace # stale\n", 1)
     assert any("rust_linux" in error and "exactly match" in error for error in validate_mutated_gate(stale))
-    invocation = '              cargo +1.94.0 test --locked --workspace --test "$name"\n'
+    invocation = '              cargo +1.95.0 test --locked --workspace --test "$name"\n'
     assert baseline.count(invocation) == 1
     errors = validate_mutated_gate(baseline.replace(invocation, "", 1))
     assert any("rust_linux" in error for error in errors), errors

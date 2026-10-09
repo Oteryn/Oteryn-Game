@@ -69,14 +69,14 @@ jobs:
         run: test "$(git -C _platform rev-parse HEAD)" = 5d4883acf7079e26fd51e03f460166730de1ada0
 
       - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt
+        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt
 
       - name: Validate harness
         run: |
           set -euo pipefail
           bash -n tools/qualification/wp5_s3b/run.sh
-          cargo +1.94.0 fmt --all --check
-          cargo +1.94.0 test --locked -p oteryn-game-server --test wp5_s3b_composition --no-run
+          cargo +1.95.0 fmt --all --check
+          cargo +1.95.0 test --locked -p oteryn-game-server --test wp5_s3b_composition --no-run
           echo 'S3B_EVIDENCE static_validation=PASS rust=compiled shell=parsed'
 
       - name: Run real composed qualification
