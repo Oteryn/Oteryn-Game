@@ -168,7 +168,7 @@ Oteryn uses its own branding, textures and implementation.
 
 ## Prepared reference-completion candidate, 2026-10-09
 
-The complete browser exposes25 sections and207 typed bilingual options.16 map
+The complete browser exposes27 groups and276 typed bilingual controls.16 map
 to existing client fields; remaining options keep validated user intent with
 explicit pending-consumer labels. They do not simulate missing engine behavior.
 
@@ -181,3 +181,10 @@ OS-vault primitives use local Windows credential storage or encrypted Linux
 Secret Service, without plaintext fallback. They are not wired into remembered
 sign-in yet. Browser PKCE remains current behavior; rotation recovery, per-origin
 process serialization and reviewed Platform HTTP integration remain outstanding.
+
+
+The full preferences tree is the default F10/login entry, with search and its own
+Apply/Cancel/Defaults footer. Connection/account details remain accessible from
+that footer. 68 additional controls have names-only reference provenance; their
+precise original behavior is not inferred from configuration-key names. Future
+preferences store user choices without pretending to enable absent consumers.

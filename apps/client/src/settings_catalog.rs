@@ -32,6 +32,7 @@ pub struct LocalizedChoice {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Evidence {
     ObservedReferenceUi,
+    NamesOnly,
     OterynRequested,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -46,6 +47,8 @@ pub struct SettingOption {
     pub en: &'static str,
     pub kind: OptionKind,
     pub evidence: Evidence,
+    /// Names-only provenance, never a config value or a statement of tested behavior.
+    pub reference_key: Option<&'static str>,
     pub implementation: Implementation,
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -155,6 +158,7 @@ macro_rules! p {
             en: $en,
             kind: $kind,
             evidence: Evidence::ObservedReferenceUi,
+            reference_key: None,
             implementation: Implementation::Pending {
                 consumer: $consumer,
             },
@@ -169,6 +173,7 @@ macro_rules! r {
             en: $en,
             kind: $kind,
             evidence: Evidence::OterynRequested,
+            reference_key: None,
             implementation: Implementation::Implemented { field: $field },
         }
     };
@@ -181,6 +186,15 @@ macro_rules! q {
         }
     };
 }
+macro_rules! n {
+    ($id:literal, $pl:literal, $en:literal, $kind:expr, $consumer:literal, $key:literal) => {
+        SettingOption {
+            evidence: Evidence::NamesOnly,
+            reference_key: Some($key),
+            ..p!($id, $pl, $en, $kind, $consumer)
+        }
+    };
+}
 macro_rules! section {
     ($id:literal, $pl:literal, $en:literal, [$($option:expr),* $(,)?]) => {
         SettingsSection { id: $id, pl: $pl, en: $en, options: &[$($option),*] }
@@ -189,6 +203,18 @@ macro_rules! section {
 use OptionKind::{Action, Binding, Choice, Decimal, Integer, Text, Toggle};
 const UNKNOWN_CHOICES: OptionKind = Choice(&[]);
 const PERCENT: OptionKind = Integer { min: 0, max: 100 };
+#[rustfmt::skip]
+pub const CONTAINER_SORT_CHOICES: &[LocalizedChoice] = &[
+    LocalizedChoice { id: "manual", pl: "Ręcznie", en: "Manual" },
+    LocalizedChoice { id: "name_ascending", pl: "Nazwa rosnąco", en: "Name ascending" },
+    LocalizedChoice { id: "name_descending", pl: "Nazwa malejąco", en: "Name descending" },
+    LocalizedChoice { id: "amount_ascending", pl: "Ilość rosnąco", en: "Stack size ascending" },
+    LocalizedChoice { id: "amount_descending", pl: "Ilość malejąco", en: "Stack size descending" },
+    LocalizedChoice { id: "weight_ascending", pl: "Waga rosnąco", en: "Weight ascending" },
+    LocalizedChoice { id: "weight_descending", pl: "Waga malejąco", en: "Weight descending" },
+    LocalizedChoice { id: "expiry_ascending", pl: "Termin wygaśnięcia rosnąco", en: "Expiry ascending" },
+    LocalizedChoice { id: "expiry_descending", pl: "Termin wygaśnięcia malejąco", en: "Expiry descending" },
+];
 
 #[rustfmt::skip]
 pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
@@ -203,6 +229,11 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         q!("controls.rotation", "Modyfikator obracania postaci", "Turn modifier", Binding, "movement actions"),
         q!("controls.held_keys", "Działanie przytrzymanych klawiszy", "Held-key behavior", UNKNOWN_CHOICES, "input router"),
         q!("controls.drag_modifier", "Modyfikator przeciągania", "Drag modifier", Binding, "inventory commands"),
+        n!("controls.face_movement", "Zwracaj postać w kierunku ruchu", "Face movement direction", Toggle, "movement presentation", "alwaysTurnTowardsMoveDirection"),
+        n!("controls.default_key_delay", "Używaj domyślnego opóźnienia klawiatury", "Use default keyboard delay", Toggle, "input repeat policy", "keyboardDelayUseDefault"),
+        // Nonnegative i32 is the local draft bound; the reference's supported delay range is unknown.
+        n!("controls.key_delay_ms", "Własne opóźnienie klawiatury (ms)", "Custom keyboard delay (ms)", Integer { min: 0, max: i32::MAX }, "input repeat policy", "keyboardDelayMs"),
+        n!("controls.drag_all", "Domyślnie przenoś cały stos", "Move whole stack by default", Toggle, "item-move amount intent", "dragAndDropDefaultActionIsMoveAll"),
     ]),
     section!("general_hotkeys", "Skróty ogólne", "General Hotkeys", [
         q!("hotkeys.profile", "Profil skrótów", "Hotkey profile", UNKNOWN_CHOICES, "binding profiles"),
@@ -233,6 +264,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         q!("interface.cursor_size", "Rozmiar kursora", "Cursor size", UNKNOWN_CHOICES, "cursor integration"),
         q!("interface.cursor_animation", "Animowany kursor", "Animated cursor", Toggle, "cursor integration"),
         q!("interface.link_confirmation", "Potwierdzaj otwieranie linków", "Confirm external links", Toggle, "safe link routing"),
+        n!("interface.system_cursor", "Używaj kursora systemowego", "Use system cursor", Toggle, "cursor integration", "mouseSystemCursor"),
     ]),
     section!("hud", "HUD i wskaźniki", "HUD", [
         p!("hud.owner_name", "Nazwa własnej postaci", "Own character name", Toggle, "actor HUD"),
@@ -252,6 +284,12 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("hud.conditions_order", "Kolejność stanów postaci", "Condition order", Action, "condition layout"),
         p!("hud.status_placement", "Położenie pasków stanu", "Status-bar placement", UNKNOWN_CHOICES, "HUD layout"),
         p!("hud.status_customization", "Zawartość pasków stanu", "Customize status bars", Action, "HUD layout"),
+        n!("hud.player_enabled", "HUD własnej postaci", "Own character HUD", Toggle, "actor HUD", "playerHudEnabled"),
+        n!("hud.creatures_enabled", "HUD pozostałych postaci i stworzeń", "Other actor HUD", Toggle, "actor HUD", "creatureHudEnabled"),
+        n!("hud.resource_bars", "Paski zasobów", "Resource bars", Toggle, "actor HUD", "playerHudShowBars"),
+        n!("hud.cooldown_bar", "Osobny pasek czasów odnowienia", "Standalone cooldown bar", Toggle, "cooldown projection", "cooldownBarEnabled"),
+        n!("hud.harmony_left", "Harmonia po lewej stronie HUD", "Harmony on the left of HUD", Toggle, "vocation HUD", "playerHudShowHarmonyLeft"),
+        n!("hud.serene_harmony", "Pokazuj spokojną harmonię", "Show serene Harmony", Toggle, "vocation condition projection", "playerShowHarmonySerene"),
     ]),
     section!("console", "Czat i konsola", "Console", [
         r!("console.visible", "Pokaż panel czatu", "Show chat panel", Toggle, "show_chat"),
@@ -264,6 +302,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("console.events", "Komunikaty o zdarzeniach", "Event messages", Toggle, "session events"),
         p!("console.information", "Komunikaty informacyjne", "Information messages", Toggle, "session events"),
         p!("console.private_tab", "Osobna karta prywatnej rozmowy", "Private message tab", Toggle, "chat presentation"),
+        n!("console.join_leave", "Komunikaty wejścia i wyjścia z kanału", "Channel join/leave messages", Toggle, "chat membership projection", "consoleShowJoinLeaveMessages"),
     ]),
     section!("game_window", "Okno gry", "Game Window", [
         q!("window.fit", "Dopasowanie obszaru gry", "Game viewport fit", UNKNOWN_CHOICES, "scene layout"),
@@ -283,6 +322,9 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("window.banner", "Baner gry", "Game banner", Toggle, "scene presentation"),
         p!("window.target_frame", "Ramka celu", "Target frame", Toggle, "target projection"),
         p!("window.target_highlight", "Wyróżnianie celu", "Target highlight", Toggle, "target projection"),
+        n!("window.potion_notices", "Komunikaty mikstur", "Potion messages", Toggle, "item-use notices", "gameWindowShowPotionMessages"),
+        n!("window.store_notices", "Komunikaty sklepu", "Store messages", Toggle, "commercial notices", "gameWindowShowStoreMessages"),
+        n!("window.boosted_creatures", "Komunikaty wzmocnionych stworzeń", "Boosted-creature messages", Toggle, "world notices", "gameWindowShowBoostedCreatureMessages"),
     ]),
     section!("action_bars", "Paski akcji", "Action Bars", [
         p!("bars.bottom_rows", "Dolne paski akcji", "Bottom action rows", Integer { min: 0, max: 3 }, "action bar"),
@@ -297,6 +339,21 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("bars.tooltips", "Podpowiedzi", "Tooltips", Toggle, "action bar"),
         p!("bars.auto_spells", "Dodawaj nowe zaklęcia", "Automatically add new spells", Toggle, "spell catalogue"),
         p!("bars.clear_row", "Wyczyść wybrany pasek", "Clear selected row", Action, "action bar layout"),
+        n!("bars.bottom_visible", "Pokaż dolne paski", "Show bottom bars", Toggle, "action bar layout", "actionBarsShowBottom"),
+        n!("bars.left_visible", "Pokaż lewe paski", "Show left bars", Toggle, "action bar layout", "actionBarsShowLeft"),
+        n!("bars.right_visible", "Pokaż prawe paski", "Show right bars", Toggle, "action bar layout", "actionBarsShowRight"),
+        n!("bars.bottom_locked", "Zablokuj dolne paski", "Lock bottom bars", Toggle, "action bar layout", "actionBarBottomLocked"),
+        n!("bars.left_locked", "Zablokuj lewe paski", "Lock left bars", Toggle, "action bar layout", "actionBarLeftLocked"),
+        n!("bars.right_locked", "Zablokuj prawe paski", "Lock right bars", Toggle, "action bar layout", "actionBarRightLocked"),
+        n!("bars.bottom_first", "Dolny pasek 1", "Bottom row 1", Toggle, "action bar layout", "actionBarShowBottom1"),
+        n!("bars.bottom_second", "Dolny pasek 2", "Bottom row 2", Toggle, "action bar layout", "actionBarShowBottom2"),
+        n!("bars.bottom_third", "Dolny pasek 3", "Bottom row 3", Toggle, "action bar layout", "actionBarShowBottom3"),
+        n!("bars.left_first", "Lewy pasek 1", "Left row 1", Toggle, "action bar layout", "actionBarShowLeft1"),
+        n!("bars.left_second", "Lewy pasek 2", "Left row 2", Toggle, "action bar layout", "actionBarShowLeft2"),
+        n!("bars.left_third", "Lewy pasek 3", "Left row 3", Toggle, "action bar layout", "actionBarShowLeft3"),
+        n!("bars.right_first", "Prawy pasek 1", "Right row 1", Toggle, "action bar layout", "actionBarShowRight1"),
+        n!("bars.right_second", "Prawy pasek 2", "Right row 2", Toggle, "action bar layout", "actionBarShowRight2"),
+        n!("bars.right_third", "Prawy pasek 3", "Right row 3", Toggle, "action bar layout", "actionBarShowRight3"),
     ]),
     section!("shortcuts", "Skróty paneli", "Shortcuts", [
         p!("shortcuts.visible", "Widoczne skróty paneli", "Displayed panel shortcuts", Action, "panel registry"),
@@ -328,6 +385,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("effects.other_opacity", "Widoczność zaklęć innych", "Other-player spell opacity", PERCENT, "effect renderer"),
         p!("effects.creature_opacity", "Widoczność zaklęć stworzeń", "Creature spell opacity", PERCENT, "effect renderer"),
         p!("effects.boss_opacity", "Widoczność obszarów ataków bossów", "Boss-area spell opacity", PERCENT, "effect renderer"),
+        n!("effects.lighting", "Efekty oświetlenia", "Lighting effects", Toggle, "lighting renderer", "lightEffectsEnabled"),
     ]),
     section!("sound", "Dźwięk", "Sound", [
         p!("sound.device", "Urządzenie wyjściowe", "Output device", UNKNOWN_CHOICES, "audio backend"),
@@ -337,6 +395,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("sound.items", "Dźwięki przedmiotów", "Item volume", PERCENT, "audio mixer"),
         p!("sound.events", "Dźwięki zdarzeń", "Event volume", PERCENT, "audio mixer"),
         q!("sound.background_mute", "Wycisz w tle", "Mute in background", Toggle, "audio mixer"),
+        n!("sound.anthem", "Odtwarzaj hymn", "Play anthem", Toggle, "audio event policy", "soundAnthemEnabled"),
     ]),
     section!("battle_sounds", "Dźwięki walki", "Battle Sounds", [
         p!("sound.own_combat", "Dźwięki własnej walki", "Own combat volume", PERCENT, "combat audio"),
@@ -353,6 +412,8 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("sound.creature_attacks", "Ataki stworzeń", "Creature attacks", Toggle, "creature audio"),
         p!("sound.creature_noise", "Odgłosy stworzeń", "Creature noises", Toggle, "creature audio"),
         p!("sound.creature_death", "Śmierć stworzeń", "Creature deaths", Toggle, "creature audio"),
+        n!("sound.own_spells", "Własne zaklęcia — cała grupa", "Own spells — entire group", Toggle, "combat audio", "soundBattleOwnSpellsEnabled"),
+        n!("sound.other_spells", "Zaklęcia innych — cała grupa", "Others' spells — entire group", Toggle, "combat audio", "soundBattleOthersSpellsEnabled"),
     ]),
     section!("ui_sounds", "Dźwięki interfejsu", "UI Sounds", [
         p!("sound.ui", "Głośność interfejsu", "UI volume", PERCENT, "UI audio"),
@@ -362,6 +423,16 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("sound.party_notice", "Powiadomienia drużyny", "Party notifications", Toggle, "social audio"),
         p!("sound.vip_notice", "Powiadomienia znajomych", "VIP notifications", Toggle, "social audio"),
         p!("sound.chat_channels", "Dźwięki wybranych kanałów", "Chat-channel sounds", Action, "chat audio filters"),
+        n!("sound.chat_enabled", "Powiadomienia czatu", "Chat notifications", Toggle, "chat audio", "ChatEnabled"),
+        n!("sound.global", "Kanały ogólne", "Global channels", Toggle, "chat audio", "GlobalMessagesEnabled"),
+        n!("sound.guild", "Wiadomości gildii", "Guild messages", Toggle, "chat audio", "GuildMessagesEnabled"),
+        n!("sound.npc", "Rozmowy z NPC", "NPC conversations", Toggle, "chat audio", "NpcMessageseEnabled"),
+        n!("sound.party_chat", "Czat drużyny", "Party chat", Toggle, "chat audio", "PartyMessagesEnabled"),
+        n!("sound.private", "Wiadomości prywatne", "Private messages", Toggle, "chat audio", "PrivateMessagesEnabled"),
+        n!("sound.private_without_tab", "Prywatne wiadomości bez osobnej karty", "Private messages without a tab", Toggle, "chat audio", "PrivateMessagesWithoutTabEnabled"),
+        n!("sound.raids", "Komunikaty najazdów", "Raid messages", Toggle, "world-event audio", "RaidMessagesEnabled"),
+        n!("sound.system", "Komunikaty systemowe", "System messages", Toggle, "session audio", "SystemMessagesEnabled"),
+        n!("sound.team_finder", "Wyszukiwarka drużyn", "Team finder", Toggle, "social audio", "TeamFinderMessagesEnabled"),
     ]),
     section!("miscellaneous", "Różne", "Miscellaneous", [
         p!("misc.confirmations", "Potwierdzenia czynności", "Action confirmations", Action, "safe command UI"),
@@ -391,6 +462,16 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("capture.healing", "Przy wysokim leczeniu", "Healing events", Toggle, "combat events"),
         p!("capture.low_health", "Przy niskim zdrowiu", "Low-health events", Toggle, "vitals projection"),
         p!("capture.gift_of_life", "Przy efekcie Gift of Life", "Gift of Life events", Toggle, "accepted resurrection mechanic"),
+        n!("capture.auto_enabled", "Automatyczne zrzuty", "Automatic screenshots", Toggle, "capture events", "screenshotsAutoScreenshotsEnabled"),
+        n!("capture.skill_up", "Przy awansie umiejętności", "Skill-up events", Toggle, "progression events", "screenshotsSkillUpEnabled"),
+        n!("capture.bestiary_partial", "Przy częściowym odkryciu bestiariusza", "Partial bestiary completion", Toggle, "bestiary events", "screenshotsBestiaryPartlyEnabled"),
+        n!("capture.bestiary_full", "Przy pełnym odkryciu bestiariusza", "Full bestiary completion", Toggle, "bestiary events", "screenshotsBestiaryFullEnabled"),
+        n!("capture.death_pve", "Przy śmierci PvE", "PvE death", Toggle, "death events", "screenshotsDeathPvEEnabled"),
+        n!("capture.death_pvp", "Przy śmierci PvP", "PvP death", Toggle, "death events", "screenshotsDeathPvPEnabled"),
+        n!("capture.pvp_attack", "Przy ataku PvP", "PvP attack", Toggle, "PvP events", "screenshotsPvPAttackEnabled"),
+        n!("capture.player_kill", "Przy pokonaniu gracza", "Player kill", Toggle, "PvP events", "screenshotsPlayerKillFullEnabled"),
+        n!("capture.player_kill_assist", "Przy pomocy w pokonaniu gracza", "Player-kill assist", Toggle, "PvP events", "screenshotsPlayerKillAssistEnabled"),
+        n!("capture.reward_chest", "Przy skrzyni nagród", "Reward chest", Toggle, "reward events", "screenshotsRewardChestEnabled"),
     ]),
     section!("help", "Pomoc i dane lokalne", "Help", [
         p!("help.documentation", "Otwórz dokumentację", "Open documentation", Action, "safe link routing"),
@@ -423,6 +504,25 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("containers.loot_valuation", "Wycena łupów", "Loot valuation", UNKNOWN_CHOICES, "accepted item valuation"),
         p!("containers.track_drop", "Śledź łupy wybranego przedmiotu", "Track selected item drops", Action, "drop tracker"),
         p!("containers.skip_item", "Pomijaj wybrany przedmiot", "Skip selected item when looting", Action, "accepted loot preferences"),
+        n!("containers.backpacks_first", "Plecaki przed innymi przedmiotami", "Backpacks first", Toggle, "container presentation", "containerSortBackpacksFirst"),
+        n!("containers.sort_recursive", "Sortuj podkontenery", "Sort nested containers", Toggle, "container presentation", "containerSortRecursive"),
+        n!("containers.confirm_recursive_sort", "Potwierdzaj sortowanie podkontenerów", "Confirm nested-container sorting", Toggle, "container confirmation", "containerSortRecursiveShowWarningAgain"),
+        n!("containers.managed_recursive", "Przenoś zawartość podkontenerów do przypisanych pojemników", "Move nested contents to assigned containers", Toggle, "accepted managed-container intents", "containerMoveToManagedContainerRecursive"),
+        n!("containers.confirm_managed_move", "Potwierdzaj przenoszenie podkontenerów", "Confirm nested-container moves", Toggle, "container confirmation", "containerMoveToManagedContainerRecursiveShowWarningAgain"),
+        n!("containers.expiry", "Wygaśnięcie w kontenerach", "Expiry in containers", Toggle, "item expiry projection", "showExpireInContainers"),
+        n!("containers.inventory_expiry", "Wygaśnięcie w ekwipunku", "Expiry in inventory", Toggle, "item expiry projection", "showExpireInInventory"),
+        n!("containers.unused_expiry", "Wygaśnięcie nieużywanych przedmiotów", "Expiry of unused items", Toggle, "item expiry projection", "showExpireWhenUnused"),
+        n!("containers.confirm_stash", "Potwierdzaj odłożenie zawartości do magazynu", "Confirm stowing container contents", Toggle, "stash confirmation", "stashAskBeforeStowContainerContent"),
+        q!("containers.sort_order", "Kolejność sortowania", "Sort order", Choice(CONTAINER_SORT_CHOICES), "container presentation"),
+    ]),
+    section!("character_selection", "Wybór postaci", "Character Selection", [
+        n!("characters.hidden", "Pokaż ukryte postacie", "Show hidden characters", Toggle, "character-list presentation", "characterSelectionShowHidden"),
+        n!("characters.outfits", "Pokaż stroje postaci", "Show character outfits", Toggle, "character appearance projection", "characterSelectionShowOutfits"),
+        n!("characters.sort_column", "Sortuj listę według kolumny", "Sort by column", UNKNOWN_CHOICES, "character-list presentation", "characterSelectionSortColumn"),
+        n!("characters.sort_ascending", "Rosnąca kolejność postaci", "Ascending character order", Toggle, "character-list presentation", "characterSelectionSortAscendingOrder"),
+    ]),
+    section!("market", "Rynek", "Market", [
+        n!("market.locker_only", "Tylko przedmioty z depozytu", "Locker items only", Toggle, "market item eligibility", "marketShowLockerOnly"),
     ]),
     section!("floating_messages", "Teksty nad grą", "Floating Messages", [
         p!("floating.enabled", "Tekstowe efekty w grze", "Textual game effects", Toggle, "scene text renderer"),
@@ -493,6 +593,31 @@ mod tests {
         ] {
             assert!(validate_future_preferences(&BTreeMap::from([(key.to_owned(), value)])).is_err());
         }
+        Ok(())
+    }
+    #[test]
+    fn names_only_controls_have_inventory_provenance_and_exclude_credentials() -> Result<(), Box<dyn std::error::Error>> {
+        #[derive(serde::Deserialize)]
+        struct Inventory { options: Vec<String> }
+        let inventory: Inventory = serde_json::from_str(NAMES_ONLY_INVENTORY_JSON)?;
+        let keys: HashSet<_> = inventory.options.iter().map(String::as_str).collect();
+        let mut references = HashSet::new();
+        for option in SETTINGS_SECTIONS.iter().flat_map(|section| section.options) {
+            if option.evidence == Evidence::NamesOnly {
+                let key = option.reference_key.ok_or("names-only control requires its source key")?;
+                assert!(keys.contains(key), "missing source key {key}");
+                assert!(references.insert(key), "duplicated source key {key}");
+                assert_ne!(key, "loginEmailAddress");
+            } else {
+                assert!(option.reference_key.is_none());
+            }
+        }
+        assert_eq!(references.len(), 68);
+        let choices: HashSet<_> = CONTAINER_SORT_CHOICES.iter().map(|choice| choice.id).collect();
+        assert_eq!(choices.len(), 9);
+        let value = std::collections::BTreeMap::from([("containers.containers.sort_order".into(),
+            FutureValue::Choice("amount_descending".into()))]);
+        assert!(validate_future_preferences(&value).is_ok());
         Ok(())
     }
 }

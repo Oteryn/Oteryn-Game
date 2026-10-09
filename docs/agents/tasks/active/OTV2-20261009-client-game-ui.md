@@ -10,31 +10,15 @@ branch: feat/client-completion-20261009
 owner: root
 ```
 
-Status: implementation in progress; private local source, not frozen or merged.
+Status: AUTHORING on draft PR #1942; published anchor 0026b73299faed34bc39b1683f71e77cc6c40ca4. Not frozen or merged.
 Owner scope: complete client and necessary engine/protocol functionality together.
 No production deployment or database reset. Single writer: root.
 
-First implementation batch consumes authoritative session projections for inventory,
-open container, visible actors and chat; sends bounded chat intents through Session;
-fits the map between panels with a shared rendering/picking transform; persists
-inventory/battle/chat visibility with backwards-compatible defaults; separates text
-and modal input from movement. Vitals are shown only when supplied by the session.
-
-Owned paths: apps/client/src/{game_ui,layout,play,settings,settings_ui,windows_shell,
-main,lib}.rs and crates/renderer/src/windows.rs. Existing private login/settings
-implementation remains intact. The Windows source copy was compared against the
-cloud checkout; differences in the six replaced existing files are only this batch.
-Original Windows source backed up before replacement.
-
-Validation: Linux client library tests 81 passed; strict library/test Clippy passed;
-Windows GNU cross-check passed. Native Windows tests passed (81 library + 2 application); release build passed.
-Client launched on owner PC via the existing local launcher. Login window
-verified; portal unavailable because Docker Desktop engine was stopped.
-Docker launch inherited a missing ProgramData variable from the remote shell.
-Restored the canonical CommonApplicationData path for the child process only.
-Docker now running; existing Game/Platform/gateway/database containers resumed
-automatically. No factory reset, DB reset, or test-password rotation.
-Native Windows strict Clippy also passed.
+Client UI consumes actual session inventory, containers, actors and chat. Map
+rendering and pointer picking share one viewport transform; modal/text input
+suppresses movement. Unknown vitals remain unknown. Owned scope includes native
+client UI/settings/auth candidates and renderer presentation. Existing source was
+backed up on Windows. Docker ProgramData fixed for child process only; no resets.
 
 Remaining completion scope: complete production consumers/content, audio,
 captures, Linux GUI composition and secure remembered-login integration.
@@ -156,7 +140,7 @@ packing correction; Cargo dependencies; semantic reference JSON and licensed
 Cinzel font/OFL notice. Original proprietary graphics/binaries are not included.
 
 28 panel shortcuts, specialised tab/field layouts, minimap of actually loaded
-terrain, 12 session-owned action slots, 25 settings sections and 207 typed options, plus six reference-derived native
+terrain, 12 session-owned action slots, 27 settings sections and 276 typed options, plus six reference-derived native
 dialogs, are prepared. Working settings apply to existing runtime fields; future settings
 retain validated user intent with an explicit pending consumer. Unknown server
 values remain unknown. Reference RCC filename tree verified:1063 resources;
@@ -177,11 +161,25 @@ primitives alone do not implement rotation/crash/concurrency recovery.
 Platform disabled service/MFA focused regression:41 tests/315 assertions PASS
 in isolated Docker SQLite memory. MFA confirmation now invokes existing native
 authorization revocation; old device families cannot bypass newly enabled MFA.
-Deployment-DB races, live OS vault, HTTP adapters and contract/security approval
-remain outstanding. This engineering sweep is not formal frozen-head review.
+Deployment-DB races, live OS vault, concrete client lock/journal/HTTPS bindings and
+contract/security approval remain outstanding. HTTP candidate stays OFF; isolated
+HTTP/core/MFA/cache tests pass64/657, including original OAuth consumption. This engineering sweep is not formal frozen-head review.
 
-Client Linux100 library+5 launcher tests PASS after upstream reconciliation;
-strict GNU Windows/Linux all-target Clippy PASS. Native Windows99 library+2 application+5 launcher tests, strict Clippy and
-MSVC release build PASS. New client launched; admitted UI recheck in progress. Main advanced8 commits adding launcher/installer/installation
-coexistence marker (not an exclusive login lock); merge up while AUTHORING, preserve all additions.
-Jira mapping remains pending. Product source has not yet been published.
+Current Linux library tests109 PASS, including8 pure remembered-device adversarial
+groups; candidate module is exposed but unwired. Native Windows108 library+4 application+5 launcher tests, strict Clippy and
+MSVC release PASS. Archive timestamps were refreshed before rerun to prevent stale
+Cargo artifacts; full native preferences footer screenshot verified. Normal browser PKCE and character
+selection entered the live local world; screenshot verified actual loaded minimap.
+
+Current UI successor: compact per-panel statistics/list layouts, real resource
+values when supplied, minimap above vector shortcuts, equipment paper doll,
+localised command feedback. Full preferences open directly under F10, with search
+and their own Apply/Cancel/Defaults. Dedicated compositions now cover22 feature panels and20 Cyclopedia pages.
+Missing server data stays unknown; this still does not prove full visual parity.
+
+Drafts: Game1942 and Platform1484 are saved authoring candidates. No frozen-head
+review, merge, production activation or Linux GUI parity is claimed. Font license
+exception/notices qualified; coherent Rust1.95 protected workflow/pin migration is
+proposal-only pending owning governance route. Jira mapping remains pending.
+
+World pin-check PASS: two identical builds, unchanged payload f8b11ebc…; compiler-input pin refreshed for actual Cargo/toolchain inputs88be0150….

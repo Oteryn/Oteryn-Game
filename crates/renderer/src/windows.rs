@@ -295,9 +295,9 @@ where
             resolve_target: None,
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Clear(wgpu::Color {
-                    r: 0.035,
-                    g: 0.055,
-                    b: 0.090,
+                    r: 0.004,
+                    g: 0.006,
+                    b: 0.008,
                     a: 1.0,
                 }),
                 store: wgpu::StoreOp::Store,

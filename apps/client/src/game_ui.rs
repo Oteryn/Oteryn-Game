@@ -8,7 +8,10 @@ use oteryn_client::{
     play::{PlayLink, PlayView},
     settings::ClientSettings,
 };
-use oteryn_session::{ChatIntent, ChatLine, ChatRoom, ChatSpeechMode, EntityDetail, ItemEntry};
+use oteryn_session::{
+    ChatDisposition, ChatIntent, ChatLine, ChatRoom, ChatSpeechMode, EntityDetail, EntityKind,
+    EquipmentSlot, ItemEntry, ItemMoveOutcome, UseDisposition,
+};
 
 #[derive(Default)]
 pub struct GameUi {
@@ -183,6 +186,7 @@ impl GameUi {
                 egui::Frame::group(ui.style())
                     .fill(Color32::from_rgb(12, 20, 26))
                     .show(ui, |ui| {
+                        ui.spacing_mut().item_spacing = egui::vec2(6.0, 4.0);
                         ui.set_width((rect.width() - 20.0).max(1.0));
                         ui.horizontal_wrapped(|ui| {
                             ui.label(
@@ -236,13 +240,13 @@ impl GameUi {
                 egui::Frame::group(ui.style())
                     .fill(Color32::from_rgb(12, 20, 26))
                     .show(ui, |ui| {
+                        ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
                         ui.set_width(198.0);
                         egui::ScrollArea::vertical()
                             .max_height((rect.height() - 70.0).max(10.0))
                             .show(ui, |ui| {
-                                self.panels.shortcuts(ui, en);
                                 if settings.show_minimap {
-                                    ui.heading(tr("Minimapa", "Minimap"));
+                                    ui.strong(tr("Minimapa", "Minimap"));
                                     egui::ComboBox::from_id_salt("minimap-zoom")
                                         .selected_text(
                                             [
@@ -291,7 +295,7 @@ impl GameUi {
                                             ),
                                         );
                                         let (rect, _) = ui.allocate_exact_size(
-                                            egui::vec2(180.0, 180.0),
+                                            egui::vec2(128.0, 128.0),
                                             egui::Sense::hover(),
                                         );
                                         ui.painter().image(texture.id(), rect, uv, Color32::WHITE);
@@ -317,24 +321,24 @@ impl GameUi {
                                     }
                                     ui.separator();
                                 }
+                                self.panels.shortcuts(ui, en);
+                                ui.separator();
                                 if settings.show_inventory {
-                                    ui.heading(tr("Ekwipunek", "Inventory"));
+                                    ui.strong(tr("Ekwipunek", "Inventory"));
+                                    equipment(ui, state.inventory.as_ref(), link, en);
                                     if let Some(inventory) = &state.inventory {
-                                        for equipped in &inventory.equipment {
-                                            ui.small(format!("{:?}", equipped.slot));
-                                            item(ui, &equipped.item, link);
-                                        }
-                                        if let Some(backpack) = &inventory.main_backpack {
-                                            item(ui, backpack, link);
-                                        }
                                         ui.separator();
                                         ui.strong(tr("Plecak", "Backpack"));
                                         if inventory.entries.is_empty() {
                                             ui.small(tr("Pusty", "Empty"));
                                         }
-                                        for entry in &inventory.entries {
-                                            item(ui, entry, link);
-                                        }
+                                        item_grid(
+                                            ui,
+                                            "main-backpack",
+                                            &inventory.entries,
+                                            link,
+                                            en,
+                                        );
                                     } else {
                                         ui.small(tr(
                                             "Brak danych ekwipunku",
@@ -346,19 +350,25 @@ impl GameUi {
                                     {
                                         ui.separator();
                                         ui.strong(tr("Otwarty kontener", "Open container"));
-                                        for entry in &container.entries {
-                                            item(ui, entry, link);
-                                        }
+                                        item_grid(
+                                            ui,
+                                            "open-container",
+                                            &container.entries,
+                                            link,
+                                            en,
+                                        );
                                     }
                                 }
                                 if settings.show_battle {
                                     ui.separator();
-                                    ui.heading(tr("Widoczne postacie", "Visible actors"));
+                                    ui.strong(tr("Lista walki", "Battle list"));
                                     for entity in &state.entities {
                                         if let EntityDetail::Actor { .. } = entity.detail {
                                             ui.label(format!(
-                                                "{:?} · {}, {}",
-                                                entity.kind, entity.position.x, entity.position.y
+                                                "{} · {}, {}",
+                                                actor_kind(entity.kind, en),
+                                                entity.position.x,
+                                                entity.position.y
                                             ));
                                         }
                                     }
@@ -375,10 +385,38 @@ impl GameUi {
                         .show(ui, |ui| {
                             ui.set_width((rect.width() - 240.0).max(100.0));
                             let Some(chat) = &state.chat else {
-                                ui.label(tr(
-                                    "Czat nie jest dostępny w tej sesji",
-                                    "Chat is unavailable in this session",
-                                ));
+                                ui.set_min_height(135.0);
+                                ui.horizontal_wrapped(|ui| {
+                                    for (index, label) in [
+                                        tr("Lokalny", "Local"),
+                                        "World",
+                                        "English",
+                                        "Help",
+                                        "Advertising",
+                                        tr("Prywatny", "Private"),
+                                    ]
+                                    .iter()
+                                    .enumerate()
+                                    {
+                                        ui.selectable_value(&mut self.channel, index, *label);
+                                    }
+                                });
+                                ui.separator();
+                                ui.allocate_ui(egui::vec2(ui.available_width(), 55.0), |ui| {
+                                    ui.weak(tr(
+                                        "Kanały czatu są niedostępne w tej sesji.",
+                                        "Chat channels are unavailable in this session.",
+                                    ));
+                                });
+                                ui.horizontal(|ui| {
+                                    ui.add_enabled(
+                                        false,
+                                        egui::TextEdit::singleline(&mut self.draft)
+                                            .hint_text(tr("Wiadomość", "Message"))
+                                            .desired_width((ui.available_width() - 80.0).max(50.0)),
+                                    );
+                                    ui.add_enabled(false, egui::Button::new(tr("Wyślij", "Send")));
+                                });
                                 return;
                             };
                             ui.horizontal(|ui| {
@@ -512,8 +550,9 @@ impl GameUi {
                                 && result.disposition != oteryn_session::ChatDisposition::Ok
                             {
                                 ui.small(format!(
-                                    "{:?} · {} s",
-                                    result.disposition, result.wait_seconds
+                                    "{} · {} s",
+                                    chat_feedback(result.disposition, en),
+                                    result.wait_seconds
                                 ));
                             }
                         });
@@ -531,13 +570,13 @@ impl GameUi {
                             oteryn_client::spell::feedback_text(result.disposition).to_owned()
                         }
                         ActionBarOutcome::Used(result) => {
-                            format!("{:?}", result.disposition)
+                            use_feedback(result.disposition, en).to_owned()
                         }
                         ActionBarOutcome::Moved(result) => {
-                            format!("{:?}", result.outcome)
+                            move_feedback(result.outcome, en).to_owned()
                         }
                         ActionBarOutcome::Chat(result) => {
-                            format!("{:?}", result.disposition)
+                            chat_feedback(result.disposition, en).to_owned()
                         }
                         ActionBarOutcome::Unavailable => tr(
                             "Ta akcja jest niedostępna w tej sesji",
@@ -549,7 +588,11 @@ impl GameUi {
                 }
             });
         self.panels.show(ctx, &state, en);
+        self.dialogs.set_session_views(&state);
         self.dialogs.show(ctx, en);
+        if let Some(intent) = self.dialogs.take_chat_intent() {
+            let _ = link.send_chat(intent);
+        }
         if let Some(shortcuts) = self.panels.take_shortcuts() {
             let mut next = settings.clone();
             next.panel_shortcuts = shortcuts;
@@ -567,16 +610,213 @@ fn ratio(value: u32, maximum: u32) -> f32 {
     }
 }
 
-fn item(ui: &mut egui::Ui, item: &ItemEntry, link: &PlayLink) {
-    ui.label(format!("#{} × {}", item.item_definition_ref, item.count))
-        .on_hover_text(format!("Subtype: {}", item.sub_type))
-        .context_menu(|ui| {
-            if ui
-                .button("Przenieś do plecaka / Move to backpack")
-                .clicked()
-            {
-                let _ = link.send_action(ActionBarCommand::MoveToBackpack(item.handle));
-                ui.close();
+fn equipment(
+    ui: &mut egui::Ui,
+    inventory: Option<&oteryn_session::CharacterInventory>,
+    link: &PlayLink,
+    english: bool,
+) {
+    let slots = [
+        Some(EquipmentSlot::Necklace),
+        Some(EquipmentSlot::Head),
+        None,
+        Some(EquipmentSlot::RightHand),
+        Some(EquipmentSlot::Armor),
+        Some(EquipmentSlot::LeftHand),
+        Some(EquipmentSlot::Ring),
+        Some(EquipmentSlot::Legs),
+        Some(EquipmentSlot::Ammo),
+        None,
+        Some(EquipmentSlot::Feet),
+        None,
+    ];
+    egui::Grid::new("equipment-paper-doll")
+        .num_columns(3)
+        .spacing([4.0, 4.0])
+        .show(ui, |ui| {
+            for (index, slot) in slots.into_iter().enumerate() {
+                if slot.is_none() && index != 2 {
+                    ui.allocate_space(egui::vec2(42.0, 38.0));
+                } else {
+                    let (id, label) = slot.map_or(
+                        ("backpack", if english { "Backpack" } else { "Plecak" }),
+                        |slot| slot_label(slot, english),
+                    );
+                    let entry = inventory.and_then(|inventory| {
+                        slot.map_or(inventory.main_backpack.as_ref(), |slot| {
+                            inventory
+                                .equipment
+                                .iter()
+                                .find(|entry| entry.slot == slot)
+                                .map(|entry| &entry.item)
+                        })
+                    });
+                    let response = crate::panel_icons::equipment(ui, id, label);
+                    if let Some(item) = entry {
+                        ui.painter().text(
+                            response.rect.right_bottom() - egui::vec2(3.0, 3.0),
+                            egui::Align2::RIGHT_BOTTOM,
+                            item.count.to_string(),
+                            egui::FontId::proportional(11.0),
+                            Color32::from_rgb(231, 210, 162),
+                        );
+                        response
+                            .clone()
+                            .on_hover_text(item_description(item, english));
+                        item_menu(response, item, link, english);
+                    } else {
+                        response.on_hover_text(if english {
+                            "Item data is unavailable."
+                        } else {
+                            "Dane przedmiotu są niedostępne."
+                        });
+                    }
+                }
+                if index % 3 == 2 {
+                    ui.end_row();
+                }
             }
         });
+}
+
+fn slot_label(slot: EquipmentSlot, english: bool) -> (&'static str, &'static str) {
+    let (id, pl, en) = match slot {
+        EquipmentSlot::Head => ("head", "Głowa", "Head"),
+        EquipmentSlot::Necklace => ("necklace", "Naszyjnik", "Necklace"),
+        EquipmentSlot::Armor => ("armor", "Pancerz", "Armor"),
+        EquipmentSlot::RightHand => ("right-hand", "Prawa ręka", "Right hand"),
+        EquipmentSlot::LeftHand => ("left-hand", "Lewa ręka", "Left hand"),
+        EquipmentSlot::Legs => ("legs", "Nogi", "Legs"),
+        EquipmentSlot::Feet => ("feet", "Stopy", "Feet"),
+        EquipmentSlot::Ring => ("ring", "Pierścień", "Ring"),
+        EquipmentSlot::Ammo => ("ammo", "Amunicja", "Ammo"),
+    };
+    (id, if english { en } else { pl })
+}
+
+fn item_grid(ui: &mut egui::Ui, id: &str, items: &[ItemEntry], link: &PlayLink, english: bool) {
+    egui::Grid::new(id)
+        .num_columns(4)
+        .spacing([4.0, 4.0])
+        .show(ui, |ui| {
+            for (index, item) in items.iter().enumerate() {
+                let response = ui
+                    .add_sized([42.0, 34.0], egui::Button::new(item.count.to_string()))
+                    .on_hover_text(item_description(item, english));
+                item_menu(response, item, link, english);
+                if index % 4 == 3 {
+                    ui.end_row();
+                }
+            }
+        });
+}
+
+fn item_description(item: &ItemEntry, english: bool) -> String {
+    if english {
+        format!(
+            "Item #{} · quantity {}",
+            item.item_definition_ref, item.count
+        )
+    } else {
+        format!(
+            "Przedmiot #{} · ilość {}",
+            item.item_definition_ref, item.count
+        )
+    }
+}
+
+fn item_menu(response: egui::Response, item: &ItemEntry, link: &PlayLink, english: bool) {
+    response.context_menu(|ui| {
+        if ui
+            .button(if english {
+                "Move to backpack"
+            } else {
+                "Przenieś do plecaka"
+            })
+            .clicked()
+        {
+            let _ = link.send_action(ActionBarCommand::MoveToBackpack(item.handle));
+            ui.close();
+        }
+    });
+}
+
+fn actor_kind(kind: EntityKind, english: bool) -> &'static str {
+    let (pl, en) = match kind {
+        EntityKind::Player => ("Gracz", "Player"),
+        EntityKind::Creature => ("Stworzenie", "Creature"),
+        EntityKind::Npc => ("NPC", "NPC"),
+        EntityKind::Corpse => ("Zwłoki", "Corpse"),
+        EntityKind::GroundItem => ("Przedmiot", "Item"),
+    };
+    if english { en } else { pl }
+}
+
+fn use_feedback(value: UseDisposition, english: bool) -> &'static str {
+    let (pl, en) = match value {
+        UseDisposition::Committed => ("Wykonano czynność", "Action completed"),
+        UseDisposition::NothingToUse => ("Nie ma czego użyć", "Nothing to use"),
+        UseDisposition::Occupied => ("Miejsce jest zajęte", "Location is occupied"),
+        UseDisposition::StaleState => ("Stan przedmiotu zmienił się", "Item state changed"),
+        UseDisposition::TooFar => ("Za daleko", "Too far away"),
+        UseDisposition::Rejected => (
+            "Nie można wykonać czynności",
+            "Action could not be completed",
+        ),
+        UseDisposition::RequirementNotMet => ("Nie spełniasz wymagań", "Requirements are not met"),
+        UseDisposition::Exhausted => (
+            "Poczekaj przed kolejną czynnością",
+            "Wait before the next action",
+        ),
+        UseDisposition::Full => ("Brak miejsca", "No space available"),
+        UseDisposition::NoTarget => ("Wybierz cel", "Select a target"),
+    };
+    if english { en } else { pl }
+}
+
+fn move_feedback(value: ItemMoveOutcome, english: bool) -> &'static str {
+    let (pl, en) = match value {
+        ItemMoveOutcome::Moved => ("Przeniesiono przedmiot", "Item moved"),
+        ItemMoveOutcome::Stale => ("Przedmiot zmienił się", "Item changed"),
+        ItemMoveOutcome::TooFar => ("Za daleko", "Too far away"),
+        ItemMoveOutcome::NoBackpack => ("Brak plecaka", "No backpack"),
+        ItemMoveOutcome::NoRoom => ("Brak miejsca", "No space available"),
+        ItemMoveOutcome::NotOwner => ("Przedmiot nie należy do ciebie", "You do not own this item"),
+        ItemMoveOutcome::NotPickupable => (
+            "Nie można podnieść przedmiotu",
+            "This item cannot be picked up",
+        ),
+        ItemMoveOutcome::NotSupported => {
+            ("Ta czynność jest niedostępna", "This action is unavailable")
+        }
+        ItemMoveOutcome::Rejected => ("Nie można przenieść przedmiotu", "Item could not be moved"),
+        ItemMoveOutcome::SlotMismatch => (
+            "Przedmiot nie pasuje do slotu",
+            "Item does not fit this slot",
+        ),
+        ItemMoveOutcome::RequirementNotMet => ("Nie spełniasz wymagań", "Requirements are not met"),
+        ItemMoveOutcome::Blocked => (
+            "Miejsce docelowe jest niedostępne",
+            "Destination is unavailable",
+        ),
+    };
+    if english { en } else { pl }
+}
+
+fn chat_feedback(value: ChatDisposition, english: bool) -> &'static str {
+    let (pl, en) = match value {
+        ChatDisposition::Ok => ("Wysłano", "Sent"),
+        ChatDisposition::Muted => ("Czat jest wyciszony", "Chat is muted"),
+        ChatDisposition::Exhausted => (
+            "Poczekaj przed kolejną wiadomością",
+            "Wait before the next message",
+        ),
+        ChatDisposition::LevelTooLow => ("Wymagany wyższy poziom", "A higher level is required"),
+        ChatDisposition::NotOnline => ("Odbiorca jest offline", "Recipient is offline"),
+        ChatDisposition::NoVocation => ("Wymagana profesja", "A vocation is required"),
+        ChatDisposition::RoomNotOpen => ("Otwórz kanał", "Open the channel"),
+        ChatDisposition::ChatUnavailable => ("Czat jest niedostępny", "Chat is unavailable"),
+        ChatDisposition::Rejected => ("Wiadomość odrzucona", "Message was rejected"),
+    };
+    if english { en } else { pl }
 }

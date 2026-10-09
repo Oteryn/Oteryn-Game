@@ -95,6 +95,7 @@ SignedUninstaller=yes
 
 [Files]
 Source: "{#LauncherPath}"; DestDir: "{app}"; DestName: "oteryn-launcher.exe"; Flags: ignoreversion
+Source: "{#SourcePath}\..\THIRD-PARTY-FONTS.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#PayloadDir}\oteryn-client.exe"; DestDir: "{tmp}"; Flags: dontcopy
 Source: "{#PayloadDir}\client.env"; DestDir: "{tmp}"; Flags: dontcopy
 Source: "{#PayloadDir}\packages.json"; DestDir: "{tmp}"; Flags: dontcopy

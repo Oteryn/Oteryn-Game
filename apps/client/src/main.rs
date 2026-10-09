@@ -12,6 +12,10 @@ mod client_panels;
 #[cfg(windows)]
 mod game_ui;
 #[cfg(windows)]
+mod panel_icons;
+#[cfg(windows)]
+mod panel_views;
+#[cfg(windows)]
 mod windows_shell;
 
 type NativeGameplay = (

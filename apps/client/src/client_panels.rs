@@ -1,7 +1,9 @@
 //! Native panel navigation and future layouts; unknown server values stay unknown.
 use egui::{Color32, RichText, Vec2};
 use oteryn_client::{
-    panel_catalog::{FieldKind, PANELS, PanelField, PanelLayout, fields_for_tab, panel},
+    panel_catalog::{
+        FieldKind, PANELS, PanelDefinition, PanelField, PanelLayout, fields_for_tab, panel,
+    },
     play::GameState,
 };
 use oteryn_session::{EntityDetail, EntityKind};
@@ -11,8 +13,8 @@ pub struct ClientPanels {
     pub manage: bool,
     pinned: BTreeSet<&'static str>,
     open: BTreeSet<&'static str>,
-    tabs: BTreeMap<&'static str, usize>,
-    searches: BTreeMap<&'static str, String>,
+    contents: BTreeMap<&'static str, PanelState>,
+    views: crate::panel_views::PanelViews,
     initialized: bool,
     dirty: bool,
 }
@@ -27,8 +29,8 @@ impl Default for ClientPanels {
                 .map(|p| p.id)
                 .collect(),
             open: BTreeSet::new(),
-            tabs: BTreeMap::new(),
-            searches: BTreeMap::new(),
+            contents: BTreeMap::new(),
+            views: crate::panel_views::PanelViews::default(),
             initialized: false,
             dirty: false,
         }
@@ -52,16 +54,15 @@ impl ClientPanels {
     }
     pub fn shortcuts(&mut self, ui: &mut egui::Ui, english: bool) {
         ui.horizontal_wrapped(|ui| {
+            ui.spacing_mut().item_spacing = Vec2::splat(4.0);
             for definition in PANELS.iter().filter(|p| self.pinned.contains(p.id)) {
                 let label = definition.label(english);
-                let icon: String = label
-                    .split_whitespace()
-                    .take(2)
-                    .filter_map(|word| word.chars().next())
-                    .collect();
-                if ui
-                    .add_sized([34.0, 30.0], egui::Button::new(icon))
-                    .on_hover_text(label)
+                let selected = if definition.id == "shortcuts" {
+                    self.manage
+                } else {
+                    self.open.contains(definition.id)
+                };
+                if crate::panel_icons::shortcut_selected(ui, definition.id, label, selected)
                     .clicked()
                 {
                     if definition.id == "shortcuts" {
@@ -72,7 +73,7 @@ impl ClientPanels {
                 }
             }
             if ui
-                .button("+")
+                .add_sized([34.0, 30.0], egui::Button::new("+"))
                 .on_hover_text(if english {
                     "Manage shortcuts"
                 } else {
@@ -122,6 +123,16 @@ impl ClientPanels {
                         .show(ui, |ui| {
                             for definition in PANELS {
                                 ui.horizontal(|ui| {
+                                    if crate::panel_icons::shortcut(
+                                        ui,
+                                        definition.id,
+                                        definition.label(english),
+                                    )
+                                    .clicked()
+                                        && definition.id != "shortcuts"
+                                    {
+                                        self.open.insert(definition.id);
+                                    }
                                     let mut pinned = self.pinned.contains(definition.id);
                                     if ui
                                         .checkbox(&mut pinned, definition.label(english))
@@ -150,66 +161,266 @@ impl ClientPanels {
                 continue;
             };
             let mut open = true;
+            let size = panel_size(definition.layout).min(maximum);
             egui::Window::new(definition.label(english))
                 .id(egui::Id::new(("client-panel", id)))
                 .open(&mut open)
                 .constrain_to(bounds)
                 .min_size([120.0, 100.0])
                 .max_size(maximum)
-                .default_size([520.0_f32.min(maximum.x), 420.0_f32.min(maximum.y)])
+                .default_size(size)
                 .show(ctx, |ui| {
-                    let selected = self.tabs.entry(id).or_default();
-                    let search = self.searches.entry(id).or_default();
+                    ui.spacing_mut().item_spacing = Vec2::new(6.0, 4.0);
                     egui::ScrollArea::vertical()
                         .id_salt(("panel-content", id))
                         .max_height(ui.available_height().max(40.0))
                         .show(ui, |ui| {
-                    if !definition.tabs.is_empty() {
-                        ui.horizontal_wrapped(|ui| {
-                            for (index, tab) in definition.tabs.iter().enumerate() { ui.selectable_value(selected, index, tab.label(english)); }
-                        });
-                        ui.separator();
-                    }
-                    let fields = definition.tabs.get(*selected).map_or(definition.fields, |tab| fields_for_tab(id, tab.id));
-                    if definition.layout != PanelLayout::Documents {
-                        ui.add(egui::TextEdit::singleline(search).desired_width(ui.available_width()).hint_text(tr("Filtruj pola i dostępne wpisy", "Filter fields and available entries")));
-                        ui.add_space(8.0);
-                    }
-                    let query = search.trim().to_lowercase();
-                    if definition.layout == PanelLayout::Documents {
-                        ui.heading("Oteryn");
-                        ui.label(tr("F10 otwiera ustawienia. Kliknięcie mapy wyznacza drogę, a kierunki zmienisz w Sterowaniu. Skróty paneli dodasz przyciskiem +.", "F10 opens settings. Click the map to walk; change movement keys in Controls. Add panel shortcuts using +."));
-                        ui.separator();
-                    }
-                    if definition.layout == PanelLayout::Battle {
-                        battle_entries(ui, state, &query, english);
-                    } else {
-                        let mut matched = false;
-                        for field in fields {
-                            if !query.is_empty() && !field.label(english).to_lowercase().contains(&query) {
-                                continue;
+                            if !self.views.show(ui, id, english, state) {
+                                panel_content(
+                                    ui,
+                                    definition,
+                                    self.contents.entry(id).or_default(),
+                                    state,
+                                    english,
+                                );
                             }
-                            matched = true;
-                            let vitals_panel = id == "skills" || (id == "cyclopedia" && definition.tabs.get(*selected).is_some_and(|t| matches!(t.id, "character" | "character-stats")));
-                            let values = vitals_panel.then_some(state.vitals).flatten().and_then(|v| match field.key {
-                                "health" => Some((v.health, v.max_health)),
-                                "mana" => Some((v.mana, v.max_mana)),
-                                _ => None,
-                            });
-                            field_widget(ui, id, field, values, english);
-                            ui.add_space(6.0);
-                        }
-                        if !matched { ui.label(tr("Brak pól pasujących do filtra.", "No fields match this filter.")); }
-                    }
-                        ui.separator();
-                        ui.small(tr("Pola bez wartości oczekują na dane gry.", "Fields without values await game data."));
-                    });
+                        });
                 });
             if !open {
                 self.open.remove(id);
             }
         }
     }
+}
+
+#[derive(Default)]
+struct PanelState {
+    tab: usize,
+    query: String,
+    actor_filter: usize,
+    sort: usize,
+}
+
+fn panel_size(layout: PanelLayout) -> Vec2 {
+    match layout {
+        PanelLayout::Statistics => Vec2::new(300.0, 390.0),
+        PanelLayout::Battle
+        | PanelLayout::Contacts
+        | PanelLayout::Party
+        | PanelLayout::Tracker
+        | PanelLayout::Thresholds
+        | PanelLayout::EquipmentEffects => Vec2::new(290.0, 320.0),
+        PanelLayout::Cyclopedia
+        | PanelLayout::Wheel
+        | PanelLayout::Forge
+        | PanelLayout::TaskBoard
+        | PanelLayout::Analytics => Vec2::new(600.0, 420.0),
+        _ => Vec2::new(440.0, 350.0),
+    }
+}
+
+fn panel_content(
+    ui: &mut egui::Ui,
+    definition: &PanelDefinition,
+    contents: &mut PanelState,
+    state: &GameState,
+    english: bool,
+) {
+    let tr = |pl, en| if english { en } else { pl };
+    if !definition.tabs.is_empty() {
+        if definition.tabs.len() > 7 {
+            // Keep the twenty-page Cyclopedia navigator compact instead of consuming
+            // the viewport with wrapped tab rows.
+            let groups: &[&[&str]] = &[
+                &["map", "items", "houses"],
+                &[
+                    "character",
+                    "character-stats",
+                    "offence",
+                    "defence",
+                    "blessings",
+                    "deaths",
+                    "pvp-kills",
+                    "achievements",
+                    "item-summary",
+                    "appearances",
+                    "store-summary",
+                    "titles",
+                ],
+                &["bestiary", "charms", "bosses", "boss-slots", "archive"],
+            ];
+            if definition.id == "cyclopedia" {
+                ui.horizontal_wrapped(|ui| {
+                    for (group, label) in groups.iter().zip([
+                        tr("Świat", "World"),
+                        tr("Postać", "Character"),
+                        tr("Stworzenia i magia", "Creatures and magic"),
+                    ]) {
+                        let current = definition.tabs.get(contents.tab).map(|tab| tab.id);
+                        if ui
+                            .selectable_label(current.is_some_and(|id| group.contains(&id)), label)
+                            .clicked()
+                            && let Some(index) = definition
+                                .tabs
+                                .iter()
+                                .position(|tab| group.contains(&tab.id))
+                        {
+                            contents.tab = index;
+                        }
+                    }
+                });
+            }
+            egui::ComboBox::from_id_salt((definition.id, "section"))
+                .selected_text(
+                    definition
+                        .tabs
+                        .get(contents.tab)
+                        .map_or("", |tab| tab.label(english)),
+                )
+                .width(ui.available_width())
+                .show_ui(ui, |ui| {
+                    for (index, tab) in definition.tabs.iter().enumerate() {
+                        ui.selectable_value(&mut contents.tab, index, tab.label(english));
+                    }
+                });
+        } else {
+            ui.horizontal_wrapped(|ui| {
+                for (index, tab) in definition.tabs.iter().enumerate() {
+                    ui.selectable_value(&mut contents.tab, index, tab.label(english));
+                }
+            });
+        }
+        ui.separator();
+    }
+    let tab = definition.tabs.get(contents.tab).map(|tab| tab.id);
+    if definition.layout == PanelLayout::Documents {
+        document(ui, definition.id, tab, english);
+        return;
+    }
+    ui.add(
+        egui::TextEdit::singleline(&mut contents.query)
+            .desired_width(ui.available_width())
+            .hint_text(tr("Szukaj", "Search")),
+    );
+    let query = contents.query.trim().to_lowercase();
+    if definition.layout == PanelLayout::Battle {
+        battle_entries(
+            ui,
+            state,
+            &query,
+            &mut contents.actor_filter,
+            &mut contents.sort,
+            english,
+        );
+        return;
+    }
+    let fields = tab.map_or(definition.fields, |tab| fields_for_tab(definition.id, tab));
+    let vitals_panel = definition.id == "skills"
+        || (definition.id == "cyclopedia" && matches!(tab, Some("character" | "character-stats")));
+    let vitals = vitals_panel.then_some(state.vitals).flatten();
+    if let Some(vitals) = vitals {
+        ui.horizontal_wrapped(|ui| {
+            for (label, value) in [
+                ("Soul", vitals.soul),
+                (tr("Harmonia", "Harmony"), vitals.harmony),
+            ] {
+                if query.is_empty() || label.to_lowercase().contains(&query) {
+                    ui.label(format!("{label}: {value}"));
+                }
+            }
+            if query.is_empty() || "serene".contains(&query) {
+                ui.label(if vitals.serene {
+                    tr("Serene: aktywne", "Serene: active")
+                } else {
+                    tr("Serene: nieaktywne", "Serene: inactive")
+                });
+            }
+        });
+    }
+    let filtered: Vec<_> = fields
+        .iter()
+        .filter(|field| query.is_empty() || field.label(english).to_lowercase().contains(&query))
+        .collect();
+    let resource_match = vitals.is_some()
+        && ["Soul", tr("Harmonia", "Harmony"), "Serene"]
+            .iter()
+            .any(|label| label.to_lowercase().contains(&query));
+    if filtered.is_empty() && !query.is_empty() && !resource_match {
+        ui.label(tr(
+            "Brak pól pasujących do filtra.",
+            "No fields match this filter.",
+        ));
+        return;
+    }
+    ui.add_space(4.0);
+    // Scalar statistics belong in compact rows; progress, lists and descriptions retain
+    // their own presentation instead of one framed placeholder per statistic.
+    egui::Grid::new((definition.id, contents.tab, "statistics"))
+        .num_columns(2)
+        .spacing([16.0, 4.0])
+        .striped(true)
+        .show(ui, |ui| {
+            for field in filtered.iter().filter(|field| {
+                matches!(
+                    field.kind,
+                    FieldKind::Value | FieldKind::Duration | FieldKind::Status
+                )
+            }) {
+                ui.label(field.label(english));
+                ui.label(RichText::new("—").color(Color32::from_gray(145)));
+                ui.end_row();
+            }
+        });
+    for field in filtered.iter().filter(|field| {
+        !matches!(
+            field.kind,
+            FieldKind::Value | FieldKind::Duration | FieldKind::Status
+        )
+    }) {
+        let measured = vitals.and_then(|v| match field.key {
+            "health" => Some((v.health, v.max_health)),
+            "mana" => Some((v.mana, v.max_mana)),
+            _ => None,
+        });
+        field_widget(ui, definition.id, field, measured, english);
+        ui.add_space(4.0);
+    }
+    ui.separator();
+    ui.small(tr(
+        "— oznacza brak danych gry.",
+        "— means game data is unavailable.",
+    ));
+}
+
+fn document(ui: &mut egui::Ui, id: &str, tab: Option<&str>, english: bool) {
+    let tr = |pl, en| if english { en } else { pl };
+    let text = match (id, tab) {
+        (_, Some("account")) => tr(
+            "Wybierz konto i postać na ekranie logowania. Dane świata i dostępność postaci pochodzą z Platformy Oteryn.",
+            "Choose your account and character on the sign-in screen. World information and character availability come from Oteryn Platform.",
+        ),
+        (_, Some("world")) => tr(
+            "Minimapa pokazuje teren wczytany przez klienta. Świat, postacie i wyniki wykonywanych czynności aktualizuje serwer gry.",
+            "The minimap shows terrain loaded by the client. The game server updates the world, actors and action outcomes.",
+        ),
+        (_, Some("features")) => tr(
+            "Skróty otwierają umiejętności, listę walki, dzienniki, cyklopedię i pozostałe panele. Przycisk + wybiera widoczne skróty.",
+            "Shortcuts open skills, the battle list, journals, Cyclopedia and other panels. Use + to choose visible shortcuts.",
+        ),
+        (_, Some("support")) => tr(
+            "Przy zgłoszeniu problemu podaj wersję klienta, świat i widoczny komunikat błędu. Nie udostępniaj haseł ani biletów logowania.",
+            "When reporting a problem, include the client version, world and displayed error. Keep passwords and sign-in tickets private.",
+        ),
+        (_, Some("updates")) => {
+            ui.label(format!("Oteryn {}", env!("CARGO_PKG_VERSION")));
+            return;
+        }
+        _ => tr(
+            "F10 otwiera ustawienia. Kierunki ruchu zmienisz w Sterowaniu. Kliknięcie terenu wyznacza drogę; kliknięcie obiektu wybiera go. Prawy przycisk na polu paska akcji otwiera menu przypisania.",
+            "F10 opens settings. Change movement keys in Controls. Clicking terrain sets a walking goal; clicking an object selects it. Right-click an action slot to open its assignment menu.",
+        ),
+    };
+    ui.label(text);
 }
 
 fn field_widget(
@@ -243,7 +454,7 @@ fn field_widget(
                 );
             } else {
                 // An outline with no fill represents missing data, never a fabricated 0%.
-                let (rect, _) = ui.allocate_exact_size(
+                let (rect, response) = ui.allocate_exact_size(
                     Vec2::new(ui.available_width(), 22.0),
                     egui::Sense::hover(),
                 );
@@ -254,7 +465,7 @@ fn field_widget(
                     egui::StrokeKind::Inside,
                 );
                 let label = measured.map_or_else(
-                    || tr("Postęp nieznany", "Progress unknown").to_owned(),
+                    || "—".to_owned(),
                     |(current, maximum)| format!("{current} / {maximum}"),
                 );
                 ui.painter().text(
@@ -264,6 +475,10 @@ fn field_widget(
                     egui::FontId::proportional(13.0),
                     Color32::from_gray(155),
                 );
+                response.on_hover_text(tr(
+                    "Nie otrzymano danych postępu.",
+                    "Progress data has not been received.",
+                ));
             }
         }
         FieldKind::Duration => {
@@ -307,19 +522,16 @@ fn field_widget(
                         ui.end_row();
                     });
                 ui.separator();
-                ui.label(unknown());
-                ui.small(tr(
-                    "Wpisy pojawią się po otrzymaniu danych gry.",
-                    "Entries will appear when game data arrives.",
-                ));
+                ui.add_space(8.0);
+                ui.label(RichText::new("—").color(Color32::from_gray(145)));
             });
         }
         FieldKind::Details => {
-            ui.group(|ui| {
-                ui.label(RichText::new(field.label(english)).strong());
-                ui.label(unknown());
-                ui.add_space(8.0);
-            });
+            egui::CollapsingHeader::new(field.label(english))
+                .id_salt((panel_id, field.key))
+                .show(ui, |ui| {
+                    ui.label(RichText::new("—").color(Color32::from_gray(145)));
+                });
         }
     }
 }
@@ -343,16 +555,72 @@ fn table_columns(panel_id: &str, field: &str, english: bool) -> &'static [&'stat
     }
 }
 
-fn battle_entries(ui: &mut egui::Ui, state: &GameState, query: &str, english: bool) {
+fn battle_entries(
+    ui: &mut egui::Ui,
+    state: &GameState,
+    query: &str,
+    filter: &mut usize,
+    sort: &mut usize,
+    english: bool,
+) {
     let tr = |pl, en| if english { en } else { pl };
-    ui.heading(tr("Widoczne postacie", "Visible actors"));
-    let mut received = false;
-    let mut matched = false;
-    for entity in &state.entities {
-        if !matches!(entity.detail, EntityDetail::Actor { .. }) {
-            continue;
+    ui.horizontal_wrapped(|ui| {
+        for (index, label) in [
+            tr("Wszystkie", "All"),
+            tr("Gracze", "Players"),
+            tr("Stworzenia", "Creatures"),
+            "NPC",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            ui.selectable_value(filter, index, label);
         }
-        received = true;
+    });
+    egui::ComboBox::from_id_salt("battle-sort")
+        .selected_text(
+            [
+                tr("Według rodzaju", "By type"),
+                tr("Według położenia", "By position"),
+            ][*sort],
+        )
+        .show_ui(ui, |ui| {
+            ui.selectable_value(sort, 0, tr("Według rodzaju", "By type"));
+            ui.selectable_value(sort, 1, tr("Według położenia", "By position"));
+        });
+    ui.separator();
+    let mut actors: Vec<_> = state
+        .entities
+        .iter()
+        .filter(|entity| {
+            matches!(entity.detail, EntityDetail::Actor { .. })
+                && match *filter {
+                    1 => entity.kind == EntityKind::Player,
+                    2 => entity.kind == EntityKind::Creature,
+                    3 => entity.kind == EntityKind::Npc,
+                    _ => true,
+                }
+        })
+        .collect();
+    actors.sort_by_key(|entity| {
+        if *sort == 0 {
+            (
+                entity.kind as i32,
+                entity.position.x,
+                entity.position.y,
+                entity.position.floor,
+            )
+        } else {
+            (
+                i32::from(entity.position.floor),
+                entity.position.y,
+                entity.position.x,
+                entity.kind as i16,
+            )
+        }
+    });
+    let mut matched = false;
+    for entity in &actors {
         let kind = match entity.kind {
             EntityKind::Player => tr("Gracz", "Player"),
             EntityKind::Creature => tr("Stworzenie", "Creature"),
@@ -367,24 +635,20 @@ fn battle_entries(ui: &mut egui::Ui, state: &GameState, query: &str, english: bo
             continue;
         }
         matched = true;
-        ui.group(|ui| {
-            ui.label(RichText::new(label).strong());
-            ui.small(tr(
-                "Nazwa i wiarygodne zdrowie: brak danych",
-                "Name and authoritative health: no data",
+        ui.horizontal_wrapped(|ui| {
+            ui.label(RichText::new(kind).strong());
+            ui.monospace(format!(
+                "{}, {} / {}",
+                entity.position.x, entity.position.y, entity.position.floor
             ));
         });
-        ui.add_space(4.0);
     }
-    if !received {
-        ui.label(tr(
-            "Nie otrzymano wpisów postaci.",
-            "No actor entries have been received.",
-        ));
-    } else if !matched {
-        ui.label(tr(
-            "Żadna postać nie pasuje do filtra.",
-            "No actors match this filter.",
-        ));
+    if !matched {
+        ui.label(RichText::new("—").color(Color32::from_gray(145)));
     }
+    ui.separator();
+    ui.small(tr(
+        "Nazwy i zdrowie oczekują na dane gry.",
+        "Names and health await game data.",
+    ));
 }

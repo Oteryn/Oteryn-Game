@@ -1,6 +1,10 @@
-//! Client-owned dialog layouts with local drafts. No protocol values or mutations are
-//! inferred from reference symbols: data stays unknown and submission remains unavailable.
+//! Client-owned dialogs: drafts stay separate from bounded, authoritative session views.
+//! Unknown reference fields never imply protocol values, participants or item definitions.
 use egui::{Color32, RichText};
+use oteryn_client::play::GameState;
+use oteryn_session::{
+    CharacterInventory, ChatIntent, ChatLine, ChatLog, ChatRoom, ItemEntry, OpenContainer,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ReferenceDialogKind {
@@ -112,9 +116,40 @@ pub struct ReferenceDialogs {
     channel_search: String,
     channel_muted: Option<bool>,
     secondary_chat: Option<bool>,
+    session_inventory: Option<CharacterInventory>,
+    session_container: Option<OpenContainer>,
+    session_chat: Option<ChatLog>,
+    selected_container: Option<usize>,
+    applied_sort: Option<ContainerSort>,
+    selected_room: Option<ChatRoom>,
+    pending_chat: Option<ChatIntent>,
 }
 
 impl ReferenceDialogs {
+    /// Call with the current generation's view; reset this object on new admission.
+    pub fn set_session_views(&mut self, state: &GameState) {
+        if self.session_inventory != state.inventory {
+            self.session_inventory.clone_from(&state.inventory);
+        }
+        if self.session_container != state.container {
+            self.session_container.clone_from(&state.container);
+        }
+        if self.session_chat != state.chat {
+            self.session_chat.clone_from(&state.chat);
+        }
+        if self.container_entries().is_none() {
+            self.selected_container = None;
+            self.applied_sort = None;
+        }
+        if self.session_chat.is_none() {
+            self.selected_room = None;
+            self.pending_chat = None;
+        }
+    }
+    /// The shell sends this through PlayLink/Session; this UI never applies a room change.
+    pub fn take_chat_intent(&mut self) -> Option<ChatIntent> {
+        self.pending_chat.take()
+    }
     pub fn open(&mut self, kind: ReferenceDialogKind) {
         self.opened[kind as usize] = true;
     }
@@ -166,7 +201,13 @@ impl ReferenceDialogs {
                         ReferenceDialogKind::ContextControls => self.context(ui, english),
                     }
                     ui.separator();
-                    waiting(ui, english);
+                    if kind == ReferenceDialogKind::ContextControls {
+                        ui.small(tr(english,
+                            "Dane sesji są wyświetlane po odebraniu. Nieznane pola pozostają puste.",
+                            "Session data is shown when received. Unknown fields remain empty."));
+                    } else {
+                        waiting(ui, english);
+                    }
                 });
             self.opened[index] = open;
         }
@@ -468,7 +509,36 @@ impl ReferenceDialogs {
             ],
         );
         if self.context_tab == 0 {
-            unavailable_choice(ui, en, ("Kontener", "Container"));
+            egui::ComboBox::from_id_salt("live-container")
+                .selected_text(match self.selected_container {
+                    Some(0) => tr(en, "Główny plecak", "Main backpack"),
+                    Some(1) => tr(en, "Otwarty kontener", "Open container"),
+                    _ => tr(en, "Wybierz kontener", "Choose container"),
+                })
+                .show_ui(ui, |ui| {
+                    if self
+                        .session_inventory
+                        .as_ref()
+                        .is_some_and(|view| view.main_backpack.is_some())
+                    {
+                        ui.selectable_value(
+                            &mut self.selected_container,
+                            Some(0),
+                            tr(en, "Główny plecak", "Main backpack"),
+                        );
+                    }
+                    if self
+                        .session_container
+                        .as_ref()
+                        .is_some_and(|view| view.container_handle.is_some())
+                    {
+                        ui.selectable_value(
+                            &mut self.selected_container,
+                            Some(1),
+                            tr(en, "Otwarty kontener", "Open container"),
+                        );
+                    }
+                });
             edit(
                 ui,
                 en,
@@ -495,7 +565,47 @@ impl ReferenceDialogs {
                 ("Plecaki na początku", "Backpacks first"),
                 &mut self.backpacks_first,
             );
-            pending_button(ui, en, ("Zastosuj sortowanie", "Apply sorting"));
+            let can_sort = self.container_entries().is_some()
+                && matches!(
+                    self.container_sort,
+                    Some(ContainerSort::Manual | ContainerSort::CountUp | ContainerSort::CountDown)
+                );
+            if ui
+                .add_enabled(
+                    can_sort,
+                    egui::Button::new(tr(en, "Zastosuj kolejność widoku", "Apply display order")),
+                )
+                .clicked()
+            {
+                self.applied_sort = self.container_sort;
+            }
+            ui.small(tr(en,
+                "Kolejność widoku nie przenosi przedmiotów. Nazwy, waga i terminy wymagają katalogu przedmiotów.",
+                "Display order does not move items. Names, weight and expiry require item-catalogue data."));
+            if !self.container_filter.is_empty() || self.backpacks_first.is_some() {
+                ui.small(tr(
+                    en,
+                    "Filtr nazw i rozpoznawanie plecaków oczekują na katalog.",
+                    "Name filtering and backpack classification await a catalogue.",
+                ));
+            }
+            if let Some(entries) = self.container_entries() {
+                let mut entries = entries.to_vec();
+                order_entries(&mut entries, self.applied_sort);
+                ui.separator();
+                ui.strong(tr(en, "Przedmiot / ilość", "Item / stack size"));
+                for entry in &entries {
+                    ui.horizontal(|ui| {
+                        ui.label("—");
+                        ui.label(entry.count.to_string());
+                    });
+                }
+                if entries.is_empty() {
+                    ui.weak(tr(en, "Kontener jest pusty.", "Container is empty."));
+                }
+            } else {
+                table(ui, en, &[("Przedmiot", "Item"), ("Ilość", "Stack size")]);
+            }
             pending_button(ui, en, ("Sortuj rekurencyjnie…", "Sort recursively…"));
             ui.small(tr(
                 en,
@@ -504,12 +614,32 @@ impl ReferenceDialogs {
             ));
         } else {
             edit(ui, en, ("Kanał", "Channel"), &mut self.channel_search, 128);
-            unavailable_choice(ui, en, ("Wybrany kanał", "Selected channel"));
+            let filter = self.channel_search.to_lowercase();
+            egui::ComboBox::from_id_salt("live-chat-room")
+                .selected_text(
+                    self.selected_room
+                        .map_or(tr(en, "Wybierz kanał", "Choose channel"), |room| {
+                            room_label(room, en)
+                        }),
+                )
+                .show_ui(ui, |ui| {
+                    if self.session_chat.is_some() {
+                        for room in ChatRoom::ALL {
+                            if room_label(room, en).to_lowercase().contains(&filter) {
+                                ui.selectable_value(
+                                    &mut self.selected_room,
+                                    Some(room),
+                                    room_label(room, en),
+                                );
+                            }
+                        }
+                    }
+                });
             optional_bool(
                 ui,
                 en,
                 "chat-muted",
-                ("Wycisz kanał", "Mute channel"),
+                ("Wycisz podgląd kanału", "Mute channel preview"),
                 &mut self.channel_muted,
             );
             optional_bool(
@@ -521,14 +651,130 @@ impl ReferenceDialogs {
             );
             ui.heading(tr(en, "Uczestnicy kanału", "Channel participants"));
             table(ui, en, &[("Postać", "Character"), ("Stan", "Status")]);
+            let room_open = self
+                .selected_room
+                .zip(self.session_chat.as_ref())
+                .map(|(room, chat)| chat.rooms().contains(room));
+            let contents = self
+                .selected_room
+                .zip(self.session_chat.as_ref())
+                .map(|(room, chat)| room_contents(chat, room));
+            if let Some(open) = room_open {
+                ui.label(if open {
+                    tr(en, "Kanał jest otwarty.", "Channel is open.")
+                } else {
+                    tr(en, "Kanał jest zamknięty.", "Channel is closed.")
+                });
+            }
             ui.horizontal_wrapped(|ui| {
-                pending_button(ui, en, ("Otwórz kanał", "Open channel"));
-                pending_button(ui, en, ("Zamknij kanał", "Close channel"));
-                pending_button(ui, en, ("Kopiuj treść", "Copy contents"));
-                pending_button(ui, en, ("Zapisz treść…", "Save contents…"));
+                let available = self.pending_chat.is_none();
+                if ui
+                    .add_enabled(
+                        available && room_open == Some(false),
+                        egui::Button::new(tr(en, "Otwórz kanał", "Open channel")),
+                    )
+                    .clicked()
+                {
+                    self.pending_chat = self.selected_room.map(ChatIntent::OpenRoom);
+                }
+                if ui
+                    .add_enabled(
+                        available && room_open == Some(true),
+                        egui::Button::new(tr(en, "Zamknij kanał", "Close channel")),
+                    )
+                    .clicked()
+                {
+                    self.pending_chat = self.selected_room.map(ChatIntent::CloseRoom);
+                }
+                if ui
+                    .add_enabled(
+                        contents.as_ref().is_some_and(|text| !text.is_empty()),
+                        egui::Button::new(tr(en, "Kopiuj treść", "Copy contents")),
+                    )
+                    .clicked()
+                    && let Some(contents) = &contents
+                {
+                    ui.ctx().copy_text(contents.clone());
+                }
+                ui.add_enabled(
+                    false,
+                    egui::Button::new(tr(en, "Zapisz treść…", "Save contents…")),
+                )
+                .on_hover_text(tr(
+                    en,
+                    "Eksport do pliku jest w przygotowaniu. Możesz skopiować odebrane wiadomości.",
+                    "File export is in preparation. You can copy received messages.",
+                ));
             });
+            ui.heading(tr(
+                en,
+                "Podgląd odebranych wiadomości",
+                "Received-message preview",
+            ));
+            if self.channel_muted != Some(true)
+                && let Some(contents) = contents
+            {
+                egui::ScrollArea::vertical()
+                    .id_salt("channel-context-lines")
+                    .max_height(130.0)
+                    .show(ui, |ui| {
+                        ui.label(contents);
+                    });
+            }
+            ui.small(tr(
+                en,
+                "Lista uczestników, druga konsola i eksport do pliku wymagają dalszej integracji.",
+                "Participants, secondary console and file export require further integration.",
+            ));
         }
     }
+
+    fn container_entries(&self) -> Option<&[ItemEntry]> {
+        match self.selected_container? {
+            0 => self
+                .session_inventory
+                .as_ref()
+                .filter(|view| view.main_backpack.is_some())
+                .map(|view| view.entries.as_slice()),
+            1 => self
+                .session_container
+                .as_ref()
+                .filter(|view| view.container_handle.is_some())
+                .map(|view| view.entries.as_slice()),
+            _ => None,
+        }
+    }
+}
+
+fn order_entries(entries: &mut [ItemEntry], sort: Option<ContainerSort>) {
+    match sort {
+        Some(ContainerSort::CountUp) => entries.sort_by_key(|entry| entry.count),
+        Some(ContainerSort::CountDown) => {
+            entries.sort_by_key(|entry| std::cmp::Reverse(entry.count))
+        }
+        _ => {}
+    }
+}
+fn room_label(room: ChatRoom, en: bool) -> &'static str {
+    match room {
+        ChatRoom::World => tr(en, "Świat", "World"),
+        ChatRoom::English => "English",
+        ChatRoom::Help => tr(en, "Pomoc", "Help"),
+        ChatRoom::Advertising => tr(en, "Reklamy", "Advertising"),
+    }
+}
+fn room_contents(chat: &ChatLog, room: ChatRoom) -> String {
+    chat.lines()
+        .filter_map(|line| match line {
+            ChatLine::Room {
+                room: line_room,
+                speaker_name,
+                text,
+            } if room == *line_room => Some(format!("{speaker_name}: {text}")),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn tr<'a>(en: bool, pl: &'a str, english: &'a str) -> &'a str {
@@ -629,4 +875,51 @@ fn optional_bool(
             ui.selectable_value(value, Some(true), tr(en, "Tak", "Yes"));
             ui.selectable_value(value, Some(false), tr(en, "Nie", "No"));
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn loss_of_chat_projection_drops_queued_intent_but_keeps_draft() {
+        let mut dialogs = ReferenceDialogs {
+            selected_room: Some(ChatRoom::Help),
+            pending_chat: Some(ChatIntent::OpenRoom(ChatRoom::Help)),
+            channel_search: "help".into(),
+            ..Default::default()
+        };
+        dialogs.set_session_views(&GameState::default());
+        assert!(dialogs.take_chat_intent().is_none());
+        assert_eq!(dialogs.selected_room, None);
+        assert_eq!(dialogs.channel_search, "help");
+    }
+
+    #[test]
+    fn count_order_preserves_identity_and_ties_without_mutating_session_view()
+    -> Result<(), &'static str> {
+        let item = |handle, count| -> Result<ItemEntry, &'static str> {
+            Ok(ItemEntry {
+                handle: std::num::NonZeroU64::new(handle).ok_or("zero item handle")?,
+                item_definition_ref: std::num::NonZeroU32::MIN,
+                count: std::num::NonZeroU32::new(count).ok_or("zero item count")?,
+                sub_type: 0,
+            })
+        };
+        let original = vec![item(1, 5)?, item(2, 1)?, item(3, 5)?];
+        let mut display = original.clone();
+        order_entries(&mut display, Some(ContainerSort::CountDown));
+        assert_eq!(display, vec![original[0], original[2], original[1]]);
+        assert_eq!(
+            original
+                .iter()
+                .map(|entry| entry.handle.get())
+                .collect::<Vec<_>>(),
+            vec![1, 2, 3]
+        );
+        let mut unavailable = original.clone();
+        order_entries(&mut unavailable, Some(ContainerSort::NameUp));
+        assert_eq!(unavailable, original);
+        Ok(())
+    }
 }

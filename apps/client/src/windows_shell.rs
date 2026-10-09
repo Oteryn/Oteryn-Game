@@ -608,6 +608,12 @@ impl ApplicationHandler for Application {
                     self.client = Some(client);
                     self.play = Some(Play { view, link });
                     self.game_ui = self.login.take();
+                    if let Some(gui) = &self.game_ui {
+                        let mut style = (*gui.context.style_of(egui::Theme::Dark)).clone();
+                        style.spacing.item_spacing = egui::vec2(6.0, 4.0);
+                        style.spacing.button_padding = egui::vec2(7.0, 4.0);
+                        gui.context.set_style_of(egui::Theme::Dark, style);
+                    }
                     if let Some(window) = &self.window {
                         window.set_title("Oteryn");
                     }

@@ -1,0 +1,26 @@
+{
+  "schema": "oteryn.ci-migration.review-evidence.v1",
+  "publication": "none",
+  "actual_workflow_edits": [],
+  "repository_head_read_only": "0026b73299faed34bc39b1683f71e77cc6c40ca4",
+  "checks": {
+    "actual_repository_policy": "pass",
+    "proposed_yaml_python_exact_delta_blob_hashes": "pass",
+    "proposed_policy_core_in_memory_overlay": "pass",
+    "existing_post_merge_routing_regressions": "pass",
+    "cargo_deny_0_20_2_licenses": "pass",
+    "font_archive_lock_hashes_full_original_notices": "pass",
+    "exact_version_exception_negative_canary": "pass",
+    "owned_source_diff_whitespace": "pass",
+    "windows_inno_installer": "not-run-cloud-has-no-windows-inno-or-pwsh",
+    "protected_audit_github_ci_merge_queue": "not-run-no-authorized-publication",
+    "world_pin_refresh": "pass-two-identical-builds-unchanged-world-payload",
+    "zero_context_durable_patch_reconstruction": "pass-all-21-proposed-files-byte-identical"
+  },
+  "artifact_sha256": {
+    "02-toolchain-migration.patch": "2c3c43df41784de3def1edf93b61c365ab2dfccdc52e5e3ed0d9e4700a804e99",
+    "README.md": "3959befc20b2554b01f4383c37b9856417bdbac4f5aba6d089f989c48b2ee21f",
+    "manifest.json": "9e515e1be13a962c2e0af5ed4cb410def2e25ba7ae751b524061e74780499368",
+    "01-audit-pin-rotation.patch": "0979fca70e365b3908d0649e73a35021a1c12f766d18e13cff92796baded702b"
+  }
+}

@@ -1,0 +1,20 @@
+diff --git a/.github/workflows/merge-authority-audit.yml b/.github/workflows/merge-authority-audit.yml
+--- a/.github/workflows/merge-authority-audit.yml
++++ b/.github/workflows/merge-authority-audit.yml
+@@ -29 +29 @@
+-      EXPECTED_MERGE_GROUP_GATE_BLOB: "ed36f5b9dfc3c2126e7bbef450efeffec7336157"
++      EXPECTED_MERGE_GROUP_GATE_BLOB: "2fe13184cae1982f7d9d605794bb98ecde760061"
+@@ -31 +31 @@
+-      EXPECTED_MERGE_GATE_BLOB: "6ead5004439c806a6cf2668d5988e77e3ccc122e"
++      EXPECTED_MERGE_GATE_BLOB: "4abf4feb48ab406eb09b7fa7c142c8edaa7d82a5"
+@@ -228 +228 @@
+-              '              cargo +1.94.0 test --locked --workspace --test "$name"\n',
++              '              cargo +1.95.0 test --locked --workspace --test "$name"\n',
+@@ -234 +234 @@
+-              '        run: cargo +1.94.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"\n',
++              '        run: cargo +1.95.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$RUNNER_TEMP/world-bundle"\n',
+@@ -245,2 +245,2 @@
+-              '          cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc\n',
+-              '        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n',
++              '          cargo +1.95.0 run --locked -p oteryn-synthetic-client-harness --target x86_64-pc-windows-msvc\n',
++              '        run: cargo +1.95.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n',

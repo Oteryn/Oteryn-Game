@@ -25,6 +25,14 @@ allow = [
     "Zlib",
 ]
 
+# Embedded, unmodified fonts of this exact upstream crate only. Copyright and
+# license texts ship with the client: apps/client/THIRD-PARTY-FONTS.txt.
+# Compatibility/provenance: docs/repository/LICENSING.md and
+# apps/client/FONT-PROVENANCE.json. Other packages retain the global allow-list.
+[[licenses.exceptions]]
+crate = "epaint_default_fonts@0.36.2"
+allow = ["OFL-1.1", "Ubuntu-font-1.0"]
+
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"

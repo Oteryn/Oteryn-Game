@@ -1,0 +1,67 @@
+{
+  "rust": "1.95.0",
+  "actual_workflow_edits": [],
+  "proposal_only_paths": [
+    ".github/workflows/g4-canonical-worldproject-package-seed.yml",
+    ".github/workflows/g4-item-binding-pilot.yml",
+    ".github/workflows/gameplay-server-seam.yml",
+    ".github/workflows/item-content-continuity.yml",
+    ".github/workflows/item-content-promotion.yml",
+    ".github/workflows/item-content-verification.yml",
+    ".github/workflows/merge-authority-audit.yml",
+    ".github/workflows/merge-gate.yml",
+    ".github/workflows/merge-group-gate.yml",
+    ".github/workflows/native-entry-room-qualification.yml",
+    ".github/workflows/node-boot-qualification.yml",
+    ".github/workflows/rust-cache-pilot.yml",
+    ".github/workflows/rust.yml",
+    ".github/workflows/synology-game-deploy.yml",
+    ".github/workflows/worldproject-v2-full-cardinality-scale.yml",
+    ".github/workflows/wp5-s3a-real-interop.yml",
+    ".github/workflows/wp5-s3b-composition.yml",
+    "tools/repository/test_validate_merge_group_pg_sim.py",
+    "tools/repository/test_validate_pr_gate_pg_sim.py",
+    "tools/repository/validate_pr_gate_pg_sim.py",
+    "tools/repository/validate_repository_policy_core.py"
+  ],
+  "protected_gate_blobs": {
+    ".github/workflows/merge-gate.yml": {
+      "before": "6ead5004439c806a6cf2668d5988e77e3ccc122e",
+      "proposed": "4abf4feb48ab406eb09b7fa7c142c8edaa7d82a5"
+    },
+    ".github/workflows/merge-group-gate.yml": {
+      "before": "ed36f5b9dfc3c2126e7bbef450efeffec7336157",
+      "proposed": "2fe13184cae1982f7d9d605794bb98ecde760061"
+    }
+  },
+  "reviewed_contract_hash_rotations": {
+    "EXPECTED_MERGE_GATE_LANES_JOB_SHA256": {
+      "before": "ea55c7616536cbd1a51bbe88a952eecddd6da81976e11682ed6e04f8f927038c",
+      "proposed": "5bed54ebea7f88cc67262280053a06d2fba60a385601c7260b8ee2641e68d70e"
+    },
+    "EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256": {
+      "before": "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6",
+      "proposed": "ebfafb92bf321b9e0fd794f32dfca7f84eb8f00c345fb550bfa5bede99ee501b"
+    },
+    "EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256": {
+      "before": "3b99b013e3cd5be77b3b38d0e56e58a6b80ab540ea51060bc9d74c29bc11dc1d",
+      "proposed": "5581be5d2fda53c0f56d91d3f49f19966dd369a5bdb59adf2dbbabc8786f4c00"
+    },
+    "EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256": {
+      "before": "100f9ddd5667fc70e80aa06a10023abde8f5ea8b01f165ec56250d45f0763d5b",
+      "proposed": "c3bbddd196437066745b1c59731e45ded30ea906e013ca91a75665e4b65c759c"
+    },
+    "EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256": {
+      "before": "74cff6521db83eb964d9e66a12bfa263d59d1a4b7ebf1619a066487abe50f43b",
+      "proposed": "3b5b47553a635cac8755b1d4f19fa934dd901faf9fb55a7f6ef31e1dacd819d3"
+    },
+    "EXPECTED_MERGE_GROUP_GATE_BLOB": {
+      "before": "ed36f5b9dfc3c2126e7bbef450efeffec7336157",
+      "proposed": "2fe13184cae1982f7d9d605794bb98ecde760061"
+    },
+    "EXPECTED_POST_MERGE_RUST_SHA256": {
+      "before": "d942814a212cd1697ca02da71c17cd0bdf29589f557b80bd0fead2a88dfba5fb",
+      "proposed": "942ddf0ec317633a20113e89a91139dc56aa75630ffce28d2203437b7443039b"
+    }
+  }
+}

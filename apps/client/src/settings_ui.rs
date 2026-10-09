@@ -36,7 +36,7 @@ impl SettingsPanel {
             applied: true,
             tab: 0,
             message,
-            browser: crate::preferences_browser::PreferencesBrowser::default(),
+            browser: crate::preferences_browser::PreferencesBrowser::new(),
         }
     }
 
@@ -61,6 +61,36 @@ impl SettingsPanel {
         }
         let en = self.current.english;
         let tr = |pl, english| if en { english } else { pl };
+        if self.browser.open {
+            use crate::preferences_browser::PreferenceAction;
+            match self
+                .browser
+                .show(ctx, &mut self.draft, self.message.as_deref())
+            {
+                PreferenceAction::None => {
+                    if !self.browser.open {
+                        self.open = false;
+                        self.browser.open = true;
+                        self.draft = self.current.clone();
+                    }
+                }
+                PreferenceAction::Apply => self.save_preferences(),
+                PreferenceAction::Cancel => {
+                    self.draft = self.current.clone();
+                    self.open = false;
+                    self.message = None;
+                }
+                PreferenceAction::Defaults => {
+                    self.draft = ClientSettings::default();
+                    self.message = None;
+                }
+                PreferenceAction::QuickSettings => {
+                    self.browser.open = false;
+                    self.tab = 5;
+                }
+            }
+            return false;
+        }
         let mut check_connection = false;
         let available = ctx.content_rect().size();
         egui::Window::new(tr("Ustawienia", "Settings"))
@@ -216,8 +246,17 @@ impl SettingsPanel {
                     });
                 });
             });
-        self.browser.show(ctx, &mut self.draft);
         check_connection
+    }
+
+    fn save_preferences(&mut self) {
+        let result = ClientSettings::path()
+            .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
+            .and_then(|path| self.draft.save(&path));
+        match result {
+            Ok(()) => { self.current = self.draft.clone(); self.applied = true; self.message = Some(if self.current.english { "Preferences saved." } else { "Zapisano ustawienia." }.into()); }
+            Err(_) => self.message = Some(if self.current.english { "Not saved. Check distinct movement keys, action shortcuts and preferences directory access." } else { "Nie zapisano. Sprawdź klawisze kierunków, skróty akcji i dostęp do folderu ustawień." }.into()),
+        }
     }
 }
 

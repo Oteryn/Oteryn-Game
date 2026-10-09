@@ -9,6 +9,8 @@ pub mod layout;
 pub mod minimap;
 pub mod panel_catalog;
 pub mod play;
+/// Disabled remembered-device candidate; no native-login or runtime activation.
+pub mod remembered_device;
 pub mod scene;
 pub mod settings;
 pub mod settings_catalog;
