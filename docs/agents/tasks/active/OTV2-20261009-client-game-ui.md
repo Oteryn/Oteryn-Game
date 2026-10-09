@@ -12,7 +12,7 @@ owner: root
 ```
 
 AUTHORING on draft #1942. Published anchor:
-18bbf03bca55dc66cbf1f564fa15e9f99fc3dce1. Not frozen or merged.
+67c6421a769d2cd99c1b30975cc4c980e301de51. Not frozen or merged.
 Root is sole publisher. No new worker delegation in this increment.
 Owner scope: complete native client/UI/settings plus necessary Platform/engine
 work. Preserve missing server values as unknown; prepare future controls without
@@ -85,7 +85,10 @@ in PL/EN and WASD preset validation. Native124 library+31 application+5
 launcher tests(160 total), strict all-target MSVC Clippy and release PASS.
 All configurable preferences fit both existing count/byte bounds and32KiB
 compact save with maximal escaped text; save/load roundtrip PASS. Clean
-publication governance/policy and59 regression tests PASS. Captures pending.
+publication governance/policy and59 regression tests PASS. Native private HUD
+capture verified own/other groups and exposed excess empty headings/row height.
+Follow-up removes empty headings and scopes compact spacing to HUD. Native160
+tests, strict all-target MSVC Clippy and release PASS on the compact source.
 
 ## Related PRs and authority
 

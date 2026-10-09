@@ -4,7 +4,13 @@ use oteryn_client::settings::ClientSettings;
 
 pub(super) fn show(ui: &mut egui::Ui, draft: &mut ClientSettings, section: &str, en: bool) -> bool {
     match section {
-        "hud" => hud(ui, draft, en),
+        "hud" => {
+            ui.scope(|ui| {
+                ui.spacing_mut().interact_size.y = 14.0;
+                ui.spacing_mut().item_spacing.y = 1.0;
+                hud(ui, draft, en);
+            });
+        }
         "miscellaneous" => miscellaneous(ui, draft, en),
         "screenshots" => screenshots(ui, draft, en),
         _ => return false,

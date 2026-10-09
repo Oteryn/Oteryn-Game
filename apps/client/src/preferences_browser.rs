@@ -266,9 +266,11 @@ fn boxed(ui: &mut egui::Ui, title: &str, body: impl FnOnce(&mut egui::Ui)) {
         .show(ui, |ui| {
             crate::client_chrome::surface(ui, ui.max_rect(), true);
             ui.set_width(ui.available_width());
-            ui.vertical_centered(|ui| {
-                ui.label(egui::RichText::new(title).strong());
-            });
+            if !title.is_empty() {
+                ui.vertical_centered(|ui| {
+                    ui.label(egui::RichText::new(title).strong());
+                });
+            }
             body(ui);
         });
     ui.add_space(1.0);
