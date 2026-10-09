@@ -210,6 +210,58 @@ macro_rules! section {
 }
 use OptionKind::{Action, Binding, Choice, Decimal, Integer, Text, Toggle};
 const UNKNOWN_CHOICES: OptionKind = Choice(&[]);
+// Mouse dropdown membership verified in the reference Options draft (Cancel only).
+const MOUSE_PRESETS: &[LocalizedChoice] = &[
+    LocalizedChoice {
+        id: "classic_controls",
+        pl: "Klasyczne sterowanie",
+        en: "Classic Controls",
+    },
+    LocalizedChoice {
+        id: "regular_controls",
+        pl: "Zwykłe sterowanie",
+        en: "Regular Controls",
+    },
+    LocalizedChoice {
+        id: "left_smart_click",
+        pl: "Lewy Smart-Click",
+        en: "Left Smart-Click",
+    },
+];
+const ANTIALIASING: &[LocalizedChoice] = &[
+    LocalizedChoice {
+        id: "none",
+        pl: "Brak",
+        en: "None",
+    },
+    LocalizedChoice {
+        id: "antialiasing",
+        pl: "Wygładzanie",
+        en: "Antialiasing",
+    },
+    LocalizedChoice {
+        id: "smooth_retro",
+        pl: "Smooth Retro",
+        en: "Smooth Retro",
+    },
+];
+const LOOT_COLOUR: &[LocalizedChoice] = &[
+    LocalizedChoice {
+        id: "none",
+        pl: "Brak",
+        en: "None",
+    },
+    LocalizedChoice {
+        id: "frames",
+        pl: "Ramki",
+        en: "Frames",
+    },
+    LocalizedChoice {
+        id: "corners",
+        pl: "Narożniki",
+        en: "Corners",
+    },
+];
 const PERCENT: OptionKind = Integer { min: 0, max: 100 };
 #[rustfmt::skip]
 pub const CONTAINER_SORT_CHOICES: &[LocalizedChoice] = &[
@@ -232,7 +284,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         r!("basic.ui_scale", "Skala interfejsu", "Interface scale", Decimal { min: 0.8, max: 1.8 }, "ui_scale"),
     ]),
     section!("controls", "Sterowanie", "Controls", [
-        p!("controls.mouse_preset", "Schemat sterowania myszą", "Mouse control preset", UNKNOWN_CHOICES, "input router"),
+        p!("controls.mouse_preset", "Schemat sterowania myszą", "Mouse control preset", Choice(MOUSE_PRESETS), "input router"),
         r!("controls.movement", "Klawisze kierunków", "Movement keys", Binding, "movement_keys"),
         q!("controls.rotation", "Modyfikator obracania postaci", "Turn modifier", Binding, "movement actions"),
         q!("controls.held_keys", "Działanie przytrzymanych klawiszy", "Held-key behavior", UNKNOWN_CHOICES, "input router"),
@@ -266,6 +318,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         q!("hotkeys.custom_binding", "Skrót własnej czynności", "Custom-action shortcut", Binding, "supported action commands"),
     ]),
     section!("interface", "Interfejs", "Interface", [
+        p!("interface.colourise_loot_value", "Koloruj wartość łupu", "Colourise Loot Value", Choice(LOOT_COLOUR), "item value presentation"),
         r!("interface.english", "Interfejs po angielsku", "English interface", Toggle, "english"),
         r!("interface.contrast", "Wyższy kontrast paneli", "Higher panel contrast", Toggle, "high_contrast"),
         r!("interface.reduced_motion", "Ograniczone animacje", "Reduced animation", Toggle, "reduced_motion"),
@@ -347,9 +400,9 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("bars.tooltips", "Podpowiedzi", "Tooltips", Toggle, "action bar"),
         p!("bars.auto_spells", "Dodawaj nowe zaklęcia", "Automatically add new spells", Toggle, "spell catalogue"),
         p!("bars.clear_row", "Wyczyść wybrany pasek", "Clear selected row", Action, "action bar layout"),
-        n!("bars.bottom_visible", "Pokaż dolne paski", "Show bottom bars", Toggle, "action bar layout", "actionBarsShowBottom"),
-        n!("bars.left_visible", "Pokaż lewe paski", "Show left bars", Toggle, "action bar layout", "actionBarsShowLeft"),
-        n!("bars.right_visible", "Pokaż prawe paski", "Show right bars", Toggle, "action bar layout", "actionBarsShowRight"),
+        i!("bars.bottom_visible", "Pokaż dolne paski", "Show bottom bars", Toggle, "action_bottom_enabled"),
+        i!("bars.left_visible", "Pokaż lewe paski", "Show left bars", Toggle, "action_left_enabled"),
+        i!("bars.right_visible", "Pokaż prawe paski", "Show right bars", Toggle, "action_right_enabled"),
         n!("bars.bottom_locked", "Zablokuj dolne paski", "Lock bottom bars", Toggle, "action bar layout", "actionBarBottomLocked"),
         n!("bars.left_locked", "Zablokuj lewe paski", "Lock left bars", Toggle, "action bar layout", "actionBarLeftLocked"),
         n!("bars.right_locked", "Zablokuj prawe paski", "Lock right bars", Toggle, "action bar layout", "actionBarRightLocked"),
@@ -378,7 +431,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         r!("graphics.fps", "Limit FPS (0: bez limitu)", "FPS limit (0: unlimited)", Integer { min: 0, max: 360 }, "fps"),
         r!("graphics.background_fps", "Limit FPS w tle", "Background FPS limit", Integer { min: 5, max: 60 }, "background_fps"),
         p!("graphics.engine", "Obsługiwany silnik graficzny", "Supported graphics engine", UNKNOWN_CHOICES, "renderer capabilities"),
-        p!("graphics.antialiasing", "Wygładzanie obrazu", "Antialiasing", UNKNOWN_CHOICES, "renderer capabilities"),
+        p!("graphics.antialiasing", "Wygładzanie obrazu", "Antialiasing", Choice(ANTIALIASING), "renderer capabilities"),
         p!("graphics.integer_scale", "Skalowanie całkowite", "Integer scaling", Toggle, "scene viewport"),
         q!("graphics.monitor", "Monitor", "Monitor", UNKNOWN_CHOICES, "window integration"),
         q!("graphics.fps_indicator", "Wskaźnik FPS", "FPS indicator", Toggle, "frame diagnostics"),
@@ -620,7 +673,7 @@ mod tests {
                 assert!(option.reference_key.is_none());
             }
         }
-        assert_eq!(references.len(), 68);
+        assert_eq!(references.len(), 65);
         let choices: HashSet<_> = CONTAINER_SORT_CHOICES.iter().map(|choice| choice.id).collect();
         assert_eq!(choices.len(), 9);
         let value = std::collections::BTreeMap::from([("containers.containers.sort_order".into(),

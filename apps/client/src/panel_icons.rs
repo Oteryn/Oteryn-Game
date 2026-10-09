@@ -6,18 +6,19 @@ pub fn shortcut(ui: &mut Ui, id: &str, label: &str) -> Response {
 }
 
 pub fn shortcut_selected(ui: &mut Ui, id: &str, label: &str, selected: bool) -> Response {
-    let response = ui.add_sized([34.0, 30.0], egui::Button::new("").selected(selected));
+    let response = ui.add_sized([22.0, 20.0], egui::Button::new("").selected(selected));
     response.widget_info(|| {
         egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), label)
     });
     if ui.is_rect_visible(response.rect) {
         let ink = Ink {
             painter: ui.painter(),
-            origin: response.rect.center() - Vec2::splat(12.0),
+            origin: response.rect.center() - Vec2::splat(7.8),
+            scale: 0.65,
             gold: Stroke::new(
                 1.5,
                 if ui.is_enabled() {
-                    Color32::from_rgb(218, 183, 110)
+                    Color32::from_gray(213)
                 } else {
                     Color32::from_gray(110)
                 },
@@ -25,7 +26,7 @@ pub fn shortcut_selected(ui: &mut Ui, id: &str, label: &str, selected: bool) -> 
             blue: Stroke::new(
                 1.5,
                 if ui.is_enabled() {
-                    Color32::from_rgb(110, 177, 219)
+                    Color32::from_rgb(139, 163, 181)
                 } else {
                     Color32::from_gray(95)
                 },
@@ -38,13 +39,14 @@ pub fn shortcut_selected(ui: &mut Ui, id: &str, label: &str, selected: bool) -> 
 
 /// Slot silhouettes describe the paper-doll position, never an invented item appearance.
 pub fn equipment(ui: &mut Ui, id: &str, label: &str) -> Response {
-    let response = ui.add_sized([42.0, 38.0], egui::Button::new(""));
+    let response = ui.add_sized([30.0, 30.0], egui::Button::new(""));
     response.widget_info(|| {
         egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), label)
     });
     let ink = Ink {
         painter: ui.painter(),
         origin: response.rect.center() - Vec2::splat(12.0),
+        scale: 1.0,
         gold: Stroke::new(1.2, Color32::from_rgb(128, 126, 110)),
         blue: Stroke::new(1.2, Color32::from_rgb(106, 130, 151)),
     };
@@ -55,12 +57,13 @@ pub fn equipment(ui: &mut Ui, id: &str, label: &str) -> Response {
 struct Ink<'a> {
     painter: &'a Painter,
     origin: Pos2,
+    scale: f32,
     gold: Stroke,
     blue: Stroke,
 }
 impl Ink<'_> {
     fn point(&self, x: f32, y: f32) -> Pos2 {
-        self.origin + Vec2::new(x, y)
+        self.origin + Vec2::new(x, y) * self.scale
     }
     fn line(&self, a: [f32; 2], b: [f32; 2], accent: bool) {
         self.painter.line_segment(
@@ -77,13 +80,13 @@ impl Ink<'_> {
     fn circle(&self, x: f32, y: f32, radius: f32, accent: bool) {
         self.painter.circle_stroke(
             self.point(x, y),
-            radius,
+            radius * self.scale,
             if accent { self.blue } else { self.gold },
         );
     }
     fn box_at(&self, x: f32, y: f32, width: f32, height: f32, accent: bool) {
         self.painter.rect_stroke(
-            Rect::from_min_size(self.point(x, y), Vec2::new(width, height)),
+            Rect::from_min_size(self.point(x, y), Vec2::new(width, height) * self.scale),
             1.0,
             if accent { self.blue } else { self.gold },
             egui::StrokeKind::Inside,

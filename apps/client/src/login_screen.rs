@@ -307,6 +307,7 @@ impl LoginScreen {
     }
 
     pub fn show(&mut self, ctx: &egui::Context) {
+        self.settings.set_action_bar_available(false);
         self.paint_background(ctx);
         self.toolbar(ctx);
         let width = match self.screen {

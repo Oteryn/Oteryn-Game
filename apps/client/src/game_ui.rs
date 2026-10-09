@@ -1,6 +1,7 @@
 //! In-world UI consumes session projections; it never invents character state.
 use egui::{Color32, RichText};
 use oteryn_client::action_bar::{ActionBar, ActionBarCommand, ActionBarOutcome};
+use oteryn_client::layout::{HUD_CHAT_HEIGHT, HUD_MARGIN, HUD_SIDEBAR_WIDTH, HUD_TOP_HEIGHT};
 use oteryn_client::minimap::{LoadedMinimap, MINIMAP_SIDE, MinimapZoom};
 use oteryn_client::{
     play::{PlayLink, PlayView},
@@ -43,6 +44,21 @@ impl GameUi {
     }
     pub fn take_preferences(&mut self) -> Option<ClientSettings> {
         self.preferences_changes.take()
+    }
+    pub fn clear_action_row(&mut self, row: usize, settings: &ClientSettings) {
+        if self
+            .bar(settings)
+            .is_none_or(|bar| bar.clear_row(row).is_err())
+        {
+            self.notice = Some(
+                if settings.english {
+                    "This action row is locked or unavailable."
+                } else {
+                    "Ten pasek akcji jest zablokowany lub niedostępny."
+                }
+                .into(),
+            );
+        }
     }
     fn bar(&mut self, settings: &ClientSettings) -> Option<&mut ActionBar> {
         if self.action_bar.is_none() {
@@ -107,12 +123,16 @@ impl GameUi {
                 self.minimap = Some((map, texture));
             }
         }
-        let chat_height = if settings.show_chat { 160.0 } else { 12.0 };
+        let chat_height = if settings.show_chat {
+            HUD_CHAT_HEIGHT
+        } else {
+            HUD_MARGIN
+        };
         let body = egui::Rect::from_min_max(
-            egui::pos2(rect.left() + 12.0, rect.top() + 52.0),
+            egui::pos2(rect.left() + HUD_MARGIN, rect.top() + HUD_TOP_HEIGHT),
             egui::pos2(
-                (rect.right() - 220.0).max(rect.left() + 13.0),
-                (rect.bottom() - chat_height).max(rect.top() + 53.0),
+                (rect.right() - HUD_SIDEBAR_WIDTH).max(rect.left() + HUD_MARGIN + 1.0),
+                (rect.bottom() - chat_height).max(rect.top() + HUD_TOP_HEIGHT + 1.0),
             ),
         );
         let usable_scene = oteryn_client::layout::GameViewport::fit_with_action_rows(
@@ -140,259 +160,242 @@ impl GameUi {
             .enabled(hud_enabled)
             .fixed_pos(rect.min)
             .show(ctx, |ui| {
-                egui::Frame::group(ui.style())
-                    .fill(Color32::from_rgb(12, 20, 26))
-                    .show(ui, |ui| {
-                        ui.spacing_mut().item_spacing = egui::vec2(6.0, 4.0);
-                        ui.set_width((rect.width() - 20.0).max(1.0));
-                        ui.horizontal_wrapped(|ui| {
-                            ui.label(
-                                RichText::new("OTERYN")
-                                    .strong()
-                                    .color(Color32::from_rgb(220, 183, 111)),
+                ui.set_width((rect.width() - HUD_MARGIN * 2.0).max(1.0));
+                ui.spacing_mut().item_spacing = egui::vec2(2.0, 1.0);
+                ui.horizontal(|ui| {
+                    let width = ((ui.available_width() - 2.0) * 0.5).max(1.0);
+                    for (label, values, color) in [
+                        (
+                            "HP",
+                            state.vitals.map(|v| (v.health, v.max_health)),
+                            Color32::from_rgb(56, 170, 53),
+                        ),
+                        (
+                            "MP",
+                            state.vitals.map(|v| (v.mana, v.max_mana)),
+                            Color32::from_rgb(54, 112, 189),
+                        ),
+                    ] {
+                        if let Some((value, maximum)) = values {
+                            ui.add(
+                                egui::ProgressBar::new(ratio(value, maximum))
+                                    .desired_width(width)
+                                    .desired_height(11.0)
+                                    .fill(color)
+                                    .text(format!("{value}/{maximum}")),
                             );
-                            if let Some(vitals) = state.vitals {
-                                ui.add(
-                                    egui::ProgressBar::new(ratio(vitals.health, vitals.max_health))
-                                        .desired_width(145.0)
-                                        .fill(Color32::from_rgb(174, 55, 58))
-                                        .text(format!(
-                                            "HP {} / {}",
-                                            vitals.health, vitals.max_health
-                                        )),
-                                );
-                                ui.add(
-                                    egui::ProgressBar::new(ratio(vitals.mana, vitals.max_mana))
-                                        .desired_width(145.0)
-                                        .fill(Color32::from_rgb(56, 100, 179))
-                                        .text(format!("MP {} / {}", vitals.mana, vitals.max_mana)),
-                                );
-                                ui.small(format!(
-                                    "Soul {} · Harmony {}",
-                                    vitals.soul, vitals.harmony
-                                ));
-                            } else {
-                                ui.label(
-                                    RichText::new("HP —").color(Color32::from_rgb(174, 95, 98)),
-                                )
-                                .on_hover_text(tr("Zdrowie niedostępne", "Health unavailable"));
-                                ui.label(
-                                    RichText::new("MP —").color(Color32::from_rgb(96, 130, 179)),
-                                )
-                                .on_hover_text(tr("Mana niedostępna", "Mana unavailable"));
-                            }
-                            if ui
-                                .button(tr("Ustawienia · F10", "Settings · F10"))
-                                .clicked()
-                            {
-                                open_settings = true;
-                            }
-                            if ui
-                                .button("+")
-                                .on_hover_text(tr("Panele i skróty", "Panels and shortcuts"))
-                                .clicked()
-                            {
-                                self.panels.manage = true;
-                            }
-                            if ui.button(tr("Więcej", "More")).clicked() {
-                                self.dialogs.manage = true;
-                            }
-                        });
-                    });
+                        } else {
+                            let (track, _) = ui
+                                .allocate_exact_size(egui::vec2(width, 11.0), egui::Sense::hover());
+                            crate::client_chrome::surface(ui, track, true);
+                            ui.painter().text(
+                                track.center(),
+                                egui::Align2::CENTER_CENTER,
+                                format!("{label} —"),
+                                egui::FontId::proportional(9.0),
+                                ui.visuals().text_color(),
+                            );
+                        }
+                    }
+                });
+                ui.horizontal(|ui| {
+                    if let Some(vitals) = state.vitals {
+                        ui.small(format!("Soul {} · Harmony {}", vitals.soul, vitals.harmony));
+                    }
+                    if ui
+                        .small_button(tr("Ustawienia · F10", "Settings · F10"))
+                        .clicked()
+                    {
+                        open_settings = true;
+                    }
+                    if ui
+                        .small_button("+")
+                        .on_hover_text(tr("Panele i skróty", "Panels and shortcuts"))
+                        .clicked()
+                    {
+                        self.panels.manage = true;
+                    }
+                    if ui.small_button(tr("Więcej", "More")).clicked() {
+                        self.dialogs.manage = true;
+                    }
+                });
             });
         egui::Area::new("game-sidebar".into())
             .enabled(hud_enabled)
-            .fixed_pos(egui::pos2(rect.right() - 220.0, rect.top() + 52.0))
-            .default_size([210.0, (rect.height() - 70.0).max(10.0)])
+            .fixed_pos(egui::pos2(
+                rect.right() - HUD_SIDEBAR_WIDTH,
+                rect.top() + HUD_TOP_HEIGHT,
+            ))
+            .default_size([
+                HUD_SIDEBAR_WIDTH - HUD_MARGIN,
+                (rect.height() - HUD_TOP_HEIGHT - HUD_MARGIN).max(10.0),
+            ])
             .show(ctx, |ui| {
-                ui.set_height((rect.height() - 70.0).max(10.0));
-                egui::Frame::group(ui.style())
-                    .fill(Color32::from_rgb(12, 20, 26))
-                    .show(ui, |ui| {
-                        ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                        ui.set_width(198.0);
-                        egui::ScrollArea::vertical()
-                            .scroll_bar_visibility(
-                                egui::scroll_area::ScrollBarVisibility::AlwaysVisible,
-                            )
-                            .max_height((rect.height() - 70.0).max(10.0))
-                            .show(ui, |ui| {
-                                if settings.show_minimap {
-                                    ui.strong(tr("Minimapa", "Minimap"));
-                                    egui::ComboBox::from_id_salt("minimap-zoom")
-                                        .selected_text(
-                                            [
-                                                tr("Blisko", "Nearby"),
-                                                tr("Okolica", "Region"),
-                                                tr("Wczytany obszar", "Loaded area"),
-                                            ][self.minimap_zoom],
-                                        )
-                                        .show_ui(ui, |ui| {
-                                            for (index, label) in [
-                                                tr("Blisko", "Nearby"),
-                                                tr("Okolica", "Region"),
-                                                tr("Wczytany obszar", "Loaded area"),
-                                            ]
-                                            .into_iter()
-                                            .enumerate()
-                                            {
-                                                ui.selectable_value(
+                ui.set_height((rect.height() - HUD_TOP_HEIGHT - HUD_MARGIN).max(10.0));
+                egui::Frame::group(ui.style()).show(ui, |ui| {
+                    ui.spacing_mut().item_spacing = egui::vec2(2.0, 2.0);
+                    ui.set_width((HUD_SIDEBAR_WIDTH - 12.0).max(1.0));
+                    egui::ScrollArea::vertical()
+                        .scroll_bar_visibility(
+                            egui::scroll_area::ScrollBarVisibility::AlwaysVisible,
+                        )
+                        .max_height((rect.height() - HUD_TOP_HEIGHT - 12.0).max(10.0))
+                        .show(ui, |ui| {
+                            if settings.show_minimap {
+                                ui.horizontal(|ui| {
+                                    ui.small(tr("Minimapa", "Minimap"));
+                                    ui.menu_button("▾", |ui| {
+                                        for (index, label) in [
+                                            tr("Blisko", "Nearby"),
+                                            tr("Okolica", "Region"),
+                                            tr("Wczytany obszar", "Loaded area"),
+                                        ]
+                                        .into_iter()
+                                        .enumerate()
+                                        {
+                                            if ui
+                                                .selectable_value(
                                                     &mut self.minimap_zoom,
                                                     index,
                                                     label,
-                                                );
+                                                )
+                                                .clicked()
+                                            {
+                                                ui.close();
                                             }
-                                        });
-                                    let zoom = [
-                                        MinimapZoom::Nearby,
-                                        MinimapZoom::Region,
-                                        MinimapZoom::LoadedArea,
-                                    ][self.minimap_zoom];
-                                    if let Some((map, texture)) = &self.minimap
-                                        && let Some(crop) = map.viewport(
-                                            view.minimap_location(),
-                                            oteryn_client::world::START_FLOOR,
-                                            zoom,
-                                        )
+                                        }
+                                    });
+                                    if ui
+                                        .small_button("−")
+                                        .on_hover_text(tr("Oddal", "Zoom out"))
+                                        .clicked()
                                     {
-                                        let side = f32::from(MINIMAP_SIDE);
-                                        let uv = egui::Rect::from_min_max(
-                                            egui::pos2(
-                                                f32::from(crop.origin[0]) / side,
-                                                f32::from(crop.origin[1]) / side,
-                                            ),
-                                            egui::pos2(
-                                                f32::from(crop.origin[0] + crop.size[0]) / side,
-                                                f32::from(crop.origin[1] + crop.size[1]) / side,
-                                            ),
-                                        );
-                                        let (rect, _) = ui.allocate_exact_size(
-                                            egui::vec2(128.0, 128.0),
-                                            egui::Sense::hover(),
-                                        );
-                                        ui.painter().image(texture.id(), rect, uv, Color32::WHITE);
-                                        let marker = rect.min
-                                            + egui::vec2(
-                                                (f32::from(crop.player[0]) + 0.5)
-                                                    / f32::from(crop.size[0])
-                                                    * rect.width(),
-                                                (f32::from(crop.player[1]) + 0.5)
-                                                    / f32::from(crop.size[1])
-                                                    * rect.height(),
-                                            );
-                                        ui.painter().circle_filled(
-                                            marker,
-                                            3.0,
-                                            Color32::from_rgb(245, 90, 85),
-                                        );
-                                    } else {
-                                        ui.small(tr(
-                                            "Mapa tej okolicy jest niedostępna",
-                                            "Map of this area is unavailable",
-                                        ));
+                                        self.minimap_zoom = (self.minimap_zoom + 1).min(2);
                                     }
-                                    ui.separator();
+                                    if ui
+                                        .small_button("+")
+                                        .on_hover_text(tr("Przybliż", "Zoom in"))
+                                        .clicked()
+                                    {
+                                        self.minimap_zoom = self.minimap_zoom.saturating_sub(1);
+                                    }
+                                });
+                                let zoom = [
+                                    MinimapZoom::Nearby,
+                                    MinimapZoom::Region,
+                                    MinimapZoom::LoadedArea,
+                                ][self.minimap_zoom];
+                                if let Some((map, texture)) = &self.minimap
+                                    && let Some(crop) = map.viewport(
+                                        view.minimap_location(),
+                                        oteryn_client::world::START_FLOOR,
+                                        zoom,
+                                    )
+                                {
+                                    let side = f32::from(MINIMAP_SIDE);
+                                    let uv = egui::Rect::from_min_max(
+                                        egui::pos2(
+                                            f32::from(crop.origin[0]) / side,
+                                            f32::from(crop.origin[1]) / side,
+                                        ),
+                                        egui::pos2(
+                                            f32::from(crop.origin[0] + crop.size[0]) / side,
+                                            f32::from(crop.origin[1] + crop.size[1]) / side,
+                                        ),
+                                    );
+                                    let (rect, _) = ui.allocate_exact_size(
+                                        egui::vec2(112.0, 112.0),
+                                        egui::Sense::hover(),
+                                    );
+                                    ui.painter().image(texture.id(), rect, uv, Color32::WHITE);
+                                    let marker = rect.min
+                                        + egui::vec2(
+                                            (f32::from(crop.player[0]) + 0.5)
+                                                / f32::from(crop.size[0])
+                                                * rect.width(),
+                                            (f32::from(crop.player[1]) + 0.5)
+                                                / f32::from(crop.size[1])
+                                                * rect.height(),
+                                        );
+                                    ui.painter().circle_filled(
+                                        marker,
+                                        3.0,
+                                        Color32::from_rgb(245, 90, 85),
+                                    );
+                                } else {
+                                    ui.small(tr(
+                                        "Mapa tej okolicy jest niedostępna",
+                                        "Map of this area is unavailable",
+                                    ));
                                 }
-                                self.panels.shortcuts(ui, en);
                                 ui.separator();
-                                if settings.show_inventory {
-                                    ui.strong(tr("Ekwipunek", "Inventory"));
-                                    equipment(ui, state.inventory.as_ref(), link, en);
-                                    if let Some(inventory) = &state.inventory {
-                                        ui.separator();
-                                        ui.strong(tr("Plecak", "Backpack"));
-                                        if inventory.entries.is_empty() {
-                                            ui.small(tr("Pusty", "Empty"));
-                                        }
-                                        item_grid(
-                                            ui,
-                                            "main-backpack",
-                                            &inventory.entries,
-                                            link,
-                                            en,
-                                        );
-                                    } else {
-                                        ui.small(tr(
-                                            "Brak danych ekwipunku",
-                                            "Inventory data unavailable",
-                                        ));
-                                    }
-                                    if let Some(container) = &state.container
-                                        && container.container_handle.is_some()
-                                    {
-                                        ui.separator();
-                                        ui.strong(tr("Otwarty kontener", "Open container"));
-                                        item_grid(
-                                            ui,
-                                            "open-container",
-                                            &container.entries,
-                                            link,
-                                            en,
-                                        );
-                                    }
-                                }
-                                if settings.show_battle {
+                            }
+                            self.panels.shortcuts(ui, en);
+                            ui.separator();
+                            if settings.show_inventory {
+                                equipment(ui, state.inventory.as_ref(), state.vitals, link, en);
+                                if let Some(inventory) = &state.inventory {
                                     ui.separator();
-                                    ui.strong(tr("Lista walki", "Battle list"));
-                                    for entity in &state.entities {
-                                        if let EntityDetail::Actor { .. } = entity.detail {
-                                            ui.label(format!(
-                                                "{} · {}, {}",
-                                                actor_kind(entity.kind, en),
-                                                entity.position.x,
-                                                entity.position.y
-                                            ));
-                                        }
+                                    panel_heading(ui, tr("Plecak", "Backpack"));
+                                    if inventory.entries.is_empty() {
+                                        ui.small(tr("Pusty", "Empty"));
+                                    }
+                                    item_grid(ui, "main-backpack", &inventory.entries, link, en);
+                                } else {
+                                    ui.small(tr(
+                                        "Brak danych ekwipunku",
+                                        "Inventory data unavailable",
+                                    ));
+                                }
+                                if let Some(container) = &state.container
+                                    && container.container_handle.is_some()
+                                {
+                                    ui.separator();
+                                    panel_heading(ui, tr("Otwarty kontener", "Open container"));
+                                    item_grid(ui, "open-container", &container.entries, link, en);
+                                }
+                            }
+                            if settings.show_battle {
+                                ui.separator();
+                                panel_heading(ui, tr("Lista walki", "Battle list"));
+                                for entity in &state.entities {
+                                    if let EntityDetail::Actor { health_percent, .. } =
+                                        entity.detail
+                                    {
+                                        ui.small(actor_kind(entity.kind, en)).on_hover_text(
+                                            format!("{}, {}", entity.position.x, entity.position.y),
+                                        );
+                                        ui.add(
+                                            egui::ProgressBar::new(
+                                                f32::from(health_percent) / 100.0,
+                                            )
+                                            .desired_width(ui.available_width())
+                                            .desired_height(4.0)
+                                            .fill(Color32::from_rgb(55, 172, 47)),
+                                        );
                                     }
                                 }
-                            });
-                    });
+                            }
+                        });
+                });
             });
         if settings.show_chat {
             egui::Area::new("game-console".into())
                 .enabled(hud_enabled)
-                .fixed_pos(egui::pos2(rect.left(), rect.bottom() - 160.0))
+                .fixed_pos(egui::pos2(rect.left(), rect.bottom() - HUD_CHAT_HEIGHT))
                 .show(ctx, |ui| {
-                    egui::Frame::group(ui.style())
-                        .fill(Color32::from_rgb(12, 20, 26))
-                        .show(ui, |ui| {
-                            ui.set_width((rect.width() - 240.0).max(100.0));
-                            let Some(chat) = &state.chat else {
-                                ui.set_min_height(135.0);
-                                ui.horizontal_wrapped(|ui| {
-                                    for (index, label) in [
-                                        tr("Lokalny", "Local"),
-                                        "World",
-                                        "English",
-                                        "Help",
-                                        "Advertising",
-                                        tr("Prywatny", "Private"),
-                                    ]
-                                    .iter()
-                                    .enumerate()
-                                    {
-                                        ui.selectable_value(&mut self.channel, index, *label);
-                                    }
-                                });
-                                ui.separator();
-                                ui.allocate_ui(egui::vec2(ui.available_width(), 55.0), |ui| {
-                                    ui.weak(tr(
-                                        "Kanały czatu są niedostępne w tej sesji.",
-                                        "Chat channels are unavailable in this session.",
-                                    ));
-                                });
-                                ui.horizontal(|ui| {
-                                    ui.add_enabled(
-                                        false,
-                                        egui::TextEdit::singleline(&mut self.draft)
-                                            .hint_text(tr("Wiadomość", "Message"))
-                                            .desired_width((ui.available_width() - 80.0).max(50.0)),
-                                    );
-                                    ui.add_enabled(false, egui::Button::new(tr("Wyślij", "Send")));
-                                });
-                                return;
-                            };
-                            ui.horizontal(|ui| {
+                    egui::Frame::group(ui.style()).show(ui, |ui| {
+                        ui.set_width(
+                            (rect.width() - HUD_SIDEBAR_WIDTH - HUD_MARGIN * 2.0).max(100.0),
+                        );
+                        ui.set_max_height(HUD_CHAT_HEIGHT - 4.0);
+                        ui.spacing_mut().item_spacing = egui::vec2(2.0, 2.0);
+                        ui.set_clip_rect(ui.clip_rect().intersect(egui::Rect::from_min_max(
+                            egui::pos2(rect.left(), rect.bottom() - HUD_CHAT_HEIGHT),
+                            egui::pos2(rect.right() - HUD_SIDEBAR_WIDTH, rect.bottom()),
+                        )));
+                        let Some(chat) = &state.chat else {
+                            ui.horizontal_wrapped(|ui| {
                                 for (index, label) in [
                                     tr("Lokalny", "Local"),
                                     "World",
@@ -407,132 +410,172 @@ impl GameUi {
                                     ui.selectable_value(&mut self.channel, index, *label);
                                 }
                             });
-                            let room = self
-                                .channel
-                                .checked_sub(1)
-                                .and_then(|index| ChatRoom::ALL.get(index).copied());
-                            if let Some(room) = room
-                                && !chat.rooms().contains(room)
-                                && ui.button(tr("Otwórz kanał", "Open channel")).clicked()
-                            {
-                                let _ = link.send_chat(ChatIntent::OpenRoom(room));
-                            }
-                            egui::ScrollArea::vertical()
-                                .max_height(65.0)
-                                .stick_to_bottom(true)
-                                .show(ui, |ui| {
-                                    for line in chat.lines() {
-                                        let text = match line {
-                                            ChatLine::Local {
-                                                speaker_name, text, ..
-                                            } if self.channel == 0 => {
-                                                Some(format!("{speaker_name}: {text}"))
-                                            }
-                                            ChatLine::Private { speaker_name, text }
-                                                if self.channel == 5 =>
-                                            {
-                                                Some(format!("{speaker_name}: {text}"))
-                                            }
-                                            ChatLine::Room {
-                                                room: line_room,
-                                                speaker_name,
-                                                text,
-                                            } if room == Some(*line_room) => {
-                                                Some(format!("{speaker_name}: {text}"))
-                                            }
-                                            ChatLine::Dropped => Some(
-                                                tr(
-                                                    "Pominięto starsze wiadomości",
-                                                    "Older messages were dropped",
-                                                )
-                                                .into(),
-                                            ),
-                                            _ => None,
-                                        };
-                                        if let Some(text) = text {
-                                            ui.label(text);
-                                        }
-                                    }
-                                });
+                            ui.separator();
+                            ui.allocate_ui(
+                                egui::vec2(
+                                    ui.available_width(),
+                                    (ui.available_height() - ui.spacing().interact_size.y - 12.0)
+                                        .max(1.0),
+                                ),
+                                |ui| {
+                                    ui.weak(tr(
+                                        "Kanały czatu są niedostępne w tej sesji.",
+                                        "Chat channels are unavailable in this session.",
+                                    ));
+                                },
+                            );
                             ui.horizontal(|ui| {
-                                if self.channel == 5 {
-                                    ui.add(
-                                        egui::TextEdit::singleline(&mut self.recipient)
-                                            .desired_width(100.0)
-                                            .hint_text(tr("Odbiorca", "Recipient")),
-                                    );
-                                }
-                                let edit = ui.add(
+                                ui.add_enabled(
+                                    false,
                                     egui::TextEdit::singleline(&mut self.draft)
-                                        .desired_width((ui.available_width() - 65.0).max(30.0))
-                                        .hint_text(tr("Napisz wiadomość", "Write a message")),
+                                        .hint_text(tr("Wiadomość", "Message"))
+                                        .desired_width((ui.available_width() - 80.0).max(50.0)),
                                 );
-                                let submit = ui.button(tr("Wyślij", "Send")).clicked()
-                                    || edit.lost_focus()
-                                        && ui.input(|input| input.key_pressed(egui::Key::Enter));
-                                if submit && !self.draft.trim().is_empty() {
-                                    let text = self.draft.trim().to_owned();
-                                    if text.len() > oteryn_session::MAX_CHAT_TEXT_BYTES {
-                                        self.notice = Some(
-                                            tr("Wiadomość jest zbyt długa", "Message is too long")
-                                                .into(),
-                                        );
-                                    } else if self.channel == 5
-                                        && (self.recipient.trim().is_empty()
-                                            || self.recipient.len()
-                                                > oteryn_session::MAX_CHAT_NAME_BYTES)
-                                    {
-                                        self.notice = Some(
+                                ui.add_enabled(false, egui::Button::new(tr("Wyślij", "Send")));
+                            });
+                            return;
+                        };
+                        ui.horizontal(|ui| {
+                            for (index, label) in [
+                                tr("Lokalny", "Local"),
+                                "World",
+                                "English",
+                                "Help",
+                                "Advertising",
+                                tr("Prywatny", "Private"),
+                            ]
+                            .iter()
+                            .enumerate()
+                            {
+                                ui.selectable_value(&mut self.channel, index, *label);
+                            }
+                        });
+                        let room = self
+                            .channel
+                            .checked_sub(1)
+                            .and_then(|index| ChatRoom::ALL.get(index).copied());
+                        if let Some(room) = room
+                            && !chat.rooms().contains(room)
+                            && ui.button(tr("Otwórz kanał", "Open channel")).clicked()
+                        {
+                            let _ = link.send_chat(ChatIntent::OpenRoom(room));
+                        }
+                        egui::ScrollArea::vertical()
+                            .max_height((ui.available_height() - 36.0).max(12.0))
+                            .stick_to_bottom(true)
+                            .show(ui, |ui| {
+                                for line in chat.lines() {
+                                    let text = match line {
+                                        ChatLine::Local {
+                                            speaker_name, text, ..
+                                        } if self.channel == 0 => {
+                                            Some(format!("{speaker_name}: {text}"))
+                                        }
+                                        ChatLine::Private { speaker_name, text }
+                                            if self.channel == 5 =>
+                                        {
+                                            Some(format!("{speaker_name}: {text}"))
+                                        }
+                                        ChatLine::Room {
+                                            room: line_room,
+                                            speaker_name,
+                                            text,
+                                        } if room == Some(*line_room) => {
+                                            Some(format!("{speaker_name}: {text}"))
+                                        }
+                                        ChatLine::Dropped => Some(
                                             tr(
-                                                "Podaj prawidłowego odbiorcę",
-                                                "Enter a valid recipient",
+                                                "Pominięto starsze wiadomości",
+                                                "Older messages were dropped",
                                             )
                                             .into(),
-                                        );
-                                    } else {
-                                        let intent = if self.channel == 5 {
-                                            ChatIntent::Private {
-                                                recipient_name: self.recipient.trim().into(),
-                                                text,
-                                            }
-                                        } else if let Some(room) = room {
-                                            ChatIntent::Room { room, text }
-                                        } else {
-                                            ChatIntent::Say {
-                                                mode: ChatSpeechMode::Say,
-                                                text,
-                                            }
-                                        };
-                                        if link.send_chat(intent) {
-                                            self.draft.clear();
-                                            self.notice = None;
-                                            edit.request_focus();
-                                        } else {
-                                            self.notice = Some(
-                                                tr(
-                                                    "Poczekaj na poprzednią wiadomość",
-                                                    "Wait for the previous message",
-                                                )
-                                                .into(),
-                                            );
-                                        }
+                                        ),
+                                        _ => None,
+                                    };
+                                    if let Some(text) = text {
+                                        ui.label(text);
                                     }
                                 }
                             });
-                            if let Some(result) = link.chat_result()
-                                && result.disposition != oteryn_session::ChatDisposition::Ok
-                            {
-                                ui.small(format!(
-                                    "{} · {} s",
-                                    chat_feedback(result.disposition, en),
-                                    result.wait_seconds
-                                ));
+                        ui.horizontal(|ui| {
+                            if self.channel == 5 {
+                                ui.add(
+                                    egui::TextEdit::singleline(&mut self.recipient)
+                                        .desired_width(100.0)
+                                        .hint_text(tr("Odbiorca", "Recipient")),
+                                );
+                            }
+                            let edit = ui.add(
+                                egui::TextEdit::singleline(&mut self.draft)
+                                    .desired_width((ui.available_width() - 65.0).max(30.0))
+                                    .hint_text(tr("Napisz wiadomość", "Write a message")),
+                            );
+                            let submit = ui.button(tr("Wyślij", "Send")).clicked()
+                                || edit.lost_focus()
+                                    && ui.input(|input| input.key_pressed(egui::Key::Enter));
+                            if submit && !self.draft.trim().is_empty() {
+                                let text = self.draft.trim().to_owned();
+                                if text.len() > oteryn_session::MAX_CHAT_TEXT_BYTES {
+                                    self.notice = Some(
+                                        tr("Wiadomość jest zbyt długa", "Message is too long")
+                                            .into(),
+                                    );
+                                } else if self.channel == 5
+                                    && (self.recipient.trim().is_empty()
+                                        || self.recipient.len()
+                                            > oteryn_session::MAX_CHAT_NAME_BYTES)
+                                {
+                                    self.notice = Some(
+                                        tr(
+                                            "Podaj prawidłowego odbiorcę",
+                                            "Enter a valid recipient",
+                                        )
+                                        .into(),
+                                    );
+                                } else {
+                                    let intent = if self.channel == 5 {
+                                        ChatIntent::Private {
+                                            recipient_name: self.recipient.trim().into(),
+                                            text,
+                                        }
+                                    } else if let Some(room) = room {
+                                        ChatIntent::Room { room, text }
+                                    } else {
+                                        ChatIntent::Say {
+                                            mode: ChatSpeechMode::Say,
+                                            text,
+                                        }
+                                    };
+                                    if link.send_chat(intent) {
+                                        self.draft.clear();
+                                        self.notice = None;
+                                        edit.request_focus();
+                                    } else {
+                                        self.notice = Some(
+                                            tr(
+                                                "Poczekaj na poprzednią wiadomość",
+                                                "Wait for the previous message",
+                                            )
+                                            .into(),
+                                        );
+                                    }
+                                }
                             }
                         });
+                        if let Some(result) = link.chat_result()
+                            && result.disposition != oteryn_session::ChatDisposition::Ok
+                        {
+                            ui.small(format!(
+                                "{} · {} s",
+                                chat_feedback(result.disposition, en),
+                                result.wait_seconds
+                            ));
+                        }
+                    });
                 });
         }
         egui::Area::new("game-feedback".into())
-            .anchor(egui::Align2::LEFT_TOP, [12.0, 42.0])
+            .anchor(egui::Align2::LEFT_TOP, [HUD_MARGIN, HUD_TOP_HEIGHT])
             .show(ctx, |ui| {
                 if let Some(notice) = &self.notice {
                     ui.small(notice);
@@ -614,9 +657,20 @@ fn action_busy(english: bool) -> &'static str {
     }
 }
 
+fn panel_heading(ui: &mut egui::Ui, label: &str) {
+    egui::Frame::NONE
+        .fill(ui.visuals().widgets.inactive.bg_fill)
+        .inner_margin(1.0)
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.label(RichText::new(label).size(10.0).strong());
+        });
+}
+
 fn equipment(
     ui: &mut egui::Ui,
     inventory: Option<&oteryn_session::CharacterInventory>,
+    vitals: Option<oteryn_session::ActorVitals>,
     link: &PlayLink,
     english: bool,
 ) {
@@ -636,11 +690,22 @@ fn equipment(
     ];
     egui::Grid::new("equipment-paper-doll")
         .num_columns(3)
-        .spacing([4.0, 4.0])
+        .spacing([2.0, 2.0])
         .show(ui, |ui| {
             for (index, slot) in slots.into_iter().enumerate() {
                 if slot.is_none() && index != 2 {
-                    ui.allocate_space(egui::vec2(42.0, 38.0));
+                    ui.allocate_ui_with_layout(
+                        egui::vec2(30.0, 30.0),
+                        egui::Layout::top_down(egui::Align::Center),
+                        |ui| {
+                            ui.small(if index == 9 { "Soul" } else { "Cap" });
+                            ui.small(if index == 9 {
+                                vitals.map_or_else(|| "—".into(), |v| v.soul.to_string())
+                            } else {
+                                "—".into()
+                            });
+                        },
+                    );
                 } else {
                     let (id, label) = slot.map_or(
                         ("backpack", if english { "Backpack" } else { "Plecak" }),
@@ -657,22 +722,32 @@ fn equipment(
                     });
                     let response = crate::panel_icons::equipment(ui, id, label);
                     if let Some(item) = entry {
-                        ui.painter().text(
-                            response.rect.right_bottom() - egui::vec2(3.0, 3.0),
-                            egui::Align2::RIGHT_BOTTOM,
-                            item.count.to_string(),
-                            egui::FontId::proportional(11.0),
-                            Color32::from_rgb(231, 210, 162),
-                        );
+                        ui.painter()
+                            .with_clip_rect(response.rect.shrink(1.0).intersect(ui.clip_rect()))
+                            .text(
+                                response.rect.right_bottom() - egui::vec2(3.0, 3.0),
+                                egui::Align2::RIGHT_BOTTOM,
+                                item.count.to_string(),
+                                egui::FontId::proportional(9.0),
+                                ui.visuals().text_color(),
+                            );
                         response
                             .clone()
                             .on_hover_text(item_description(item, english));
                         item_menu(response, item, link, english);
                     } else {
                         response.on_hover_text(if english {
-                            "Item data is unavailable."
+                            if inventory.is_some() {
+                                "Empty slot."
+                            } else {
+                                "Item data is unavailable."
+                            }
                         } else {
-                            "Dane przedmiotu są niedostępne."
+                            if inventory.is_some() {
+                                "Puste miejsce."
+                            } else {
+                                "Dane przedmiotu są niedostępne."
+                            }
                         });
                     }
                 }
@@ -701,18 +776,48 @@ fn slot_label(slot: EquipmentSlot, english: bool) -> (&'static str, &'static str
 fn item_grid(ui: &mut egui::Ui, id: &str, items: &[ItemEntry], link: &PlayLink, english: bool) {
     egui::Grid::new(id)
         .num_columns(4)
-        .spacing([4.0, 4.0])
+        .spacing([2.0, 2.0])
         .show(ui, |ui| {
             for (index, item) in items.iter().enumerate() {
-                let response = ui
-                    .add_sized([42.0, 34.0], egui::Button::new(item.count.to_string()))
-                    .on_hover_text(item_description(item, english));
+                let response = item_button(ui, item).on_hover_text(item_description(item, english));
                 item_menu(response, item, link, english);
                 if index % 4 == 3 {
                     ui.end_row();
                 }
             }
         });
+}
+
+fn item_button(ui: &mut egui::Ui, item: &ItemEntry) -> egui::Response {
+    let response = ui.add_sized([30.0, 30.0], egui::Button::new(""));
+    for (row, text) in [
+        format!("#{}", item.item_definition_ref),
+        format!("×{}", item.count),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let rect = egui::Rect::from_min_size(
+            response.rect.min + egui::vec2(2.0, 2.0 + row as f32 * 13.0),
+            egui::vec2(26.0, 12.0),
+        );
+        let painter = ui.painter().with_clip_rect(rect.intersect(ui.clip_rect()));
+        let mut job = egui::text::LayoutJob::simple_singleline(
+            text,
+            egui::FontId::proportional(9.0),
+            ui.visuals().text_color(),
+        );
+        job.wrap.max_width = rect.width();
+        job.wrap.max_rows = 1;
+        job.wrap.break_anywhere = true;
+        let galley = painter.layout_job(job);
+        painter.galley(
+            rect.center() - galley.size() * 0.5,
+            galley,
+            ui.visuals().text_color(),
+        );
+    }
+    response
 }
 
 fn item_description(item: &ItemEntry, english: bool) -> String {
@@ -831,8 +936,44 @@ fn chat_feedback(value: ChatDisposition, english: bool) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use super::show_window_recovery;
+    use super::{item_button, show_window_recovery};
     use crate::preferences_browser::test_support::{button_position, click, frame};
+
+    #[test]
+    fn long_authoritative_item_labels_stay_inside_compact_tiles() -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(156.0, 100.0);
+        for value in [1, u32::MAX] {
+            let item = oteryn_session::ItemEntry {
+                handle: std::num::NonZeroU64::new(1).ok_or("handle")?,
+                item_definition_ref: std::num::NonZeroU32::new(value).ok_or("definition")?,
+                count: std::num::NonZeroU32::new(value).ok_or("count")?,
+                sub_type: 0,
+            };
+            let mut rect = egui::Rect::NOTHING;
+            let mut output = egui::FullOutput::default();
+            for _ in 0..2 {
+                output = frame(&ctx, size, Vec::new(), |ctx| {
+                    egui::Area::new("item-tile-test".into()).show(ctx, |ui| {
+                        rect = item_button(ui, &item).rect;
+                    });
+                })
+                .1;
+            }
+            assert_eq!(rect.size(), egui::vec2(30.0, 30.0));
+            let mut painted_rows = 0;
+            for shape in output.shapes {
+                if let egui::epaint::Shape::Text(text) = shape.shape
+                    && !text.galley.job.text.is_empty()
+                {
+                    assert!(rect.contains_rect(shape.clip_rect));
+                    painted_rows += 1;
+                }
+            }
+            assert_eq!(painted_rows, 2);
+        }
+        Ok(())
+    }
 
     #[test]
     fn a_scene_too_small_for_action_rows_keeps_settings_clickable() -> Result<(), &'static str> {

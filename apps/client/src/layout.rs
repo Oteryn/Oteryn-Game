@@ -1,4 +1,9 @@
 //! Shared physical-pixel transform for rendering and pointer picking.
+pub const HUD_SIDEBAR_WIDTH: f32 = 156.0;
+pub const HUD_TOP_HEIGHT: f32 = 30.0;
+pub const HUD_MARGIN: f32 = 4.0;
+pub const HUD_CHAT_HEIGHT: f32 = 108.0;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GameViewport {
     pub x: f32,
@@ -48,17 +53,18 @@ impl GameViewport {
         {
             return None;
         }
-        let margin = 12.0 * pixels_per_point;
-        let top = 52.0 * pixels_per_point;
+        let margin = HUD_MARGIN * pixels_per_point;
+        let top = HUD_TOP_HEIGHT * pixels_per_point;
         let bottom =
             if chat {
-                160.0 * pixels_per_point
+                HUD_CHAT_HEIGHT * pixels_per_point
             } else {
-                12.0 * pixels_per_point
+                HUD_MARGIN * pixels_per_point
             } + f32::from(rows[0]) * crate::action_bar::ACTION_ROW_HEIGHT * pixels_per_point;
         let left = f32::from(rows[1]) * crate::action_bar::ACTION_COLUMN_WIDTH * pixels_per_point;
         let right = f32::from(rows[2]) * crate::action_bar::ACTION_COLUMN_WIDTH * pixels_per_point;
-        let available_w = width - 220.0 * pixels_per_point - margin * 2.0 - left - right;
+        let available_w =
+            width - HUD_SIDEBAR_WIDTH * pixels_per_point - margin * 2.0 - left - right;
         let available_h = height - top - bottom - margin * 2.0;
         let scale = (available_w / 720.0).min(available_h / 528.0);
         if scale <= 0.0 {
@@ -118,7 +124,7 @@ mod tests {
                 assert!((y - 264.0).abs() < 0.001);
                 assert!(viewport.scene_point(-1.0, 0.0).is_none());
                 assert!(viewport.scene_point(f64::NAN, 0.0).is_none());
-                assert!(viewport.x + viewport.width <= w - 220.0 * scale);
+                assert!(viewport.x + viewport.width <= w - HUD_SIDEBAR_WIDTH * scale);
                 assert!(viewport.y + viewport.height <= h);
             }
         }
@@ -150,26 +156,26 @@ mod tests {
                         assert!((x - 360.0).abs() < 0.001 && (y - 264.0).abs() < 0.001);
                         assert!(
                             view.x
-                                >= (12.0
+                                >= (HUD_MARGIN
                                     + f32::from(left) * crate::action_bar::ACTION_COLUMN_WIDTH)
                                     * scale
                         );
                         assert!(
                             view.x + view.width
                                 <= width
-                                    - (220.0
+                                    - (HUD_SIDEBAR_WIDTH
                                         + f32::from(right)
                                             * crate::action_bar::ACTION_COLUMN_WIDTH
-                                        + 12.0)
+                                        + HUD_MARGIN)
                                         * scale
                                     + 0.001
                         );
                         assert!(
                             view.y + view.height
                                 <= height
-                                    - (160.0
+                                    - (HUD_CHAT_HEIGHT
                                         + f32::from(bottom) * crate::action_bar::ACTION_ROW_HEIGHT
-                                        + 12.0)
+                                        + HUD_MARGIN)
                                         * scale
                                     + 0.001
                         );

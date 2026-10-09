@@ -123,6 +123,31 @@ impl ClientSettings {
         Ok(())
     }
 
+    /// Consume explicit former draft intent once, matching the count migration's
+    /// precedence. Missing keys retain the canonical typed value and never invent
+    /// a reference preference. Masters preserve each row's selection, lock and chord.
+    fn migrate_legacy_action_edge_masters(&mut self) -> io::Result<()> {
+        for (edge, key) in [
+            "action_bars.bars.bottom_visible",
+            "action_bars.bars.left_visible",
+            "action_bars.bars.right_visible",
+        ]
+        .iter()
+        .enumerate()
+        {
+            if let Some(value) = self.future_preferences.remove(*key) {
+                let crate::settings_catalog::FutureValue::Bool(enabled) = value else {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid legacy action edge master",
+                    ));
+                };
+                self.action_bar.edge_enabled[edge] = enabled;
+            }
+        }
+        Ok(())
+    }
+
     pub fn validate(&self) -> io::Result<()> {
         let keys_valid = self
             .movement_keys
@@ -172,6 +197,7 @@ impl ClientSettings {
         }
         let mut settings: Self = serde_json::from_slice(&fs::read(path)?)?;
         settings.migrate_legacy_action_rows()?;
+        settings.migrate_legacy_action_edge_masters()?;
         settings.validate()?;
         Ok(settings)
     }
@@ -423,6 +449,89 @@ mod tests {
         assert!(settings.set_action_row_count(3, 1).is_err());
         assert!(settings.set_action_row_count(0, 4).is_err());
         assert_eq!(settings, before);
+        Ok(())
+    }
+
+    #[test]
+    fn explicit_legacy_edge_masters_migrate_once_without_erasing_raw_rows()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::{action_bar::SlotShortcut, settings_catalog::FutureValue};
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-legacy-edge-masters-{}.json",
+            std::process::id()
+        ));
+        let mut old = ClientSettings::default();
+        old.action_bar.edge_enabled = [true, false, false];
+        old.action_bar.extra_rows[1].visible = true; // Bottom rows 1 and 3.
+        old.action_bar.extra_rows[3].visible = true; // Only left row 2.
+        old.action_bar.extra_rows[3].locked = true;
+        old.action_bar.extra_rows[3].shortcuts[0] = Some(SlotShortcut {
+            key: 4,
+            modifiers: 2,
+        });
+        old.future_preferences.extend([
+            (
+                "action_bars.bars.bottom_visible".into(),
+                FutureValue::Bool(false),
+            ),
+            (
+                "action_bars.bars.left_visible".into(),
+                FutureValue::Bool(true),
+            ),
+            (
+                "action_bars.bars.right_visible".into(),
+                FutureValue::Bool(true),
+            ),
+            ("action_bars.bars.right_rows".into(), FutureValue::Int(2)),
+            ("sound.sound.master".into(), FutureValue::Int(40)),
+        ]);
+        let mut legacy = serde_json::to_value(&old)?;
+        fs::write(&path, serde_json::to_vec(&legacy)?)?;
+        let migrated = ClientSettings::load(&path)?;
+        assert_eq!(migrated.action_bar.edge_enabled, [false, true, true]);
+        assert_eq!(migrated.action_bar.visible_rows(), [0, 1, 2]);
+        for row in 0..6 {
+            assert_eq!(migrated.action_bar.row(row), old.action_bar.row(row));
+        }
+        assert_eq!(migrated.action_bar.shortcuts, old.action_bar.shortcuts);
+        assert_eq!(migrated.future_preferences.len(), 1);
+        assert_eq!(
+            migrated.future_preferences["sound.sound.master"],
+            FutureValue::Int(40)
+        );
+        migrated.save(&path)?;
+        assert_eq!(ClientSettings::load(&path)?, migrated);
+        let saved = fs::read(&path)?;
+        assert!(saved.len() <= 32768);
+        assert!(!String::from_utf8(saved)?.contains("bars.bottom_visible"));
+        let mut reenabled = migrated.clone();
+        reenabled.action_bar.edge_enabled[0] = true;
+        assert!(reenabled.action_bar.row_is_visible(0));
+        assert!(!reenabled.action_bar.row_is_visible(1));
+        assert!(reenabled.action_bar.row_is_visible(2));
+        reenabled.save(&path)?;
+        assert_eq!(ClientSettings::load(&path)?, reenabled);
+        legacy["future_preferences"]
+            .as_object_mut()
+            .ok_or("Expected future intent object")?
+            .remove("action_bars.bars.left_visible");
+        fs::write(&path, serde_json::to_vec(&legacy)?)?;
+        let missing = ClientSettings::load(&path)?;
+        assert!(!missing.action_bar.edge_enabled[1]); // No absent intent inferred.
+        assert_eq!(missing.action_bar.row(4), old.action_bar.row(4));
+        for invalid in [
+            FutureValue::Int(0),
+            FutureValue::Text("true".into()),
+            FutureValue::Choice("on".into()),
+        ] {
+            legacy["future_preferences"]["action_bars.bars.bottom_visible"] =
+                serde_json::to_value(invalid)?;
+            let bytes = serde_json::to_vec(&legacy)?;
+            fs::write(&path, &bytes)?;
+            assert!(ClientSettings::load(&path).is_err());
+            assert_eq!(fs::read(&path)?, bytes);
+        }
+        fs::remove_file(path)?;
         Ok(())
     }
 

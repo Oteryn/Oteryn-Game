@@ -34,7 +34,7 @@ impl ClientPanels {
     }
     pub fn shortcuts(&mut self, ui: &mut egui::Ui, english: bool) {
         ui.horizontal_wrapped(|ui| {
-            ui.spacing_mut().item_spacing = Vec2::splat(4.0);
+            ui.spacing_mut().item_spacing = Vec2::splat(2.0);
             for definition in self.pinned.ids().iter().filter_map(|id| panel(id)) {
                 let label = definition.label(english);
                 let selected = if definition.id == "shortcuts" {
@@ -53,7 +53,7 @@ impl ClientPanels {
                 }
             }
             if ui
-                .add_sized([34.0, 30.0], egui::Button::new("+"))
+                .add_sized([22.0, 20.0], egui::Button::new("+"))
                 .on_hover_text(if english {
                     "Manage shortcuts"
                 } else {

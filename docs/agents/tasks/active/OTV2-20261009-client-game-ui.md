@@ -12,7 +12,7 @@ owner: root
 ```
 
 AUTHORING on draft #1942. Published anchor:
-7661702eb5ca3b622ea1edca0f80e25dbb9e4d64. Not frozen or merged.
+34e9206fd98cd1ba784340c518330b9c6fadc3fa. Not frozen or merged.
 Root is sole publisher. Workers author disjoint client files only.
 Owner scope: complete native client/UI/settings plus necessary Platform/engine
 work. Preserve missing server values as unknown; prepare future controls without
@@ -150,23 +150,35 @@ negative canary pass. Windows/Inno installer execution remains unqualified.
 World pin-check passed two identical builds with unchanged payload f8b11ebc…;
 compiler inputs 88be0150… are stable. Original proprietary assets are excluded.
 
-## Next completion boundaries
+## Reference fidelity correction
 
-UI/input/settings repairs, final tests/Clippy and native release are qualified.
-Save bounded two-file UI successor plus qualified frozen CI proposal packet
-and this record through the guarded publisher. Responsive settings and
-all-nine-row HUD have been verified on the owner PC.
-CI final archived-record heads were frozen and deduplicated; independent deep
-reviews completed clean on #1943/#1944. Keep their exact frozen heads stable. No merge pending owner decision. Full production
-consumers/content/audio, Linux GUI and secure remembered-device integration
-remain completion work; this draft is not a finished game client.
+Owner rejected generic UI as visually/behaviorally inaccurate. Basic now has
+four compact groups; advanced navigation is nested. Reference draft confirmed
+all three independent All masters preserve raw row choices, and Mouse/AA/Loot
+choices exactly. Typed masters and Boolean legacy migration are active; hidden
+hotkeys, locks/chords/assignments remain unchanged. Clear is admitted-session-only.
+Own grey grain/bevels, smaller HUD/icons, minimap/paperdoll/item/chat proportions
+share viewport constants; original assets stay private. Volume is an actual
+horizontal intent slider; audio and other pending consumers remain absent.
+Linux core125 and actual-module headless21 tests pass. Final Windows124lib +
+25app +5launcher (154 total), strict MSVC Clippy/release pass on staged final
+bytes. Basic clip tests cover PL/EN; native PL is visible. OK/Apply/Cancel are distinct. All off/on
+visibly changes viewport and preserves raw rows; saved original layout restored.
+Own-window captures verify compact HUD/options without original UI assets.
+One admission attempt failed; a normal retry admitted the same test character.
+Its cause was not diagnosed or fixed by this UI batch.
+
+Remaining fidelity: rotation/stack modifiers, cursor/link-copy/expiry controls,
+shortcut draft ordering and other advanced page arrangements. Prepared panels
+still require content/mechanics; this draft is not a finished client. Frozen
+CI #1943/#1944 stay unchanged, unmerged. Secure remembered sign-in stays unwired.
 
 ## Validation commands for this product increment
 
 - `cargo test --locked -p oteryn-client --all-targets`: pass, 123+5 Linux tests.
 - `cargo clippy --locked -p oteryn-client --lib --tests -- -D warnings`: pass.
 - `cargo clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-gnu -- -D warnings`: pass.
-- Native Windows same package/all-targets test, Clippy and release: pass,146 tests.
+- Native Windows same package/all-targets test, Clippy and release: pass,154 tests.
 - `cargo fmt --all --check`: pass.
 - Scoped source whitespace: pass.
 - `python tools/agents/validate_governance.py`: validate in clean publication clone;

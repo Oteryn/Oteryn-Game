@@ -10,6 +10,8 @@ mod settings_ui;
 #[cfg(windows)]
 mod action_bar_ui;
 #[cfg(windows)]
+mod client_chrome;
+#[cfg(windows)]
 mod client_panels;
 #[cfg(windows)]
 mod game_ui;

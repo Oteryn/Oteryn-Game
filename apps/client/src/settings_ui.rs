@@ -12,6 +12,12 @@ pub struct SettingsPanel {
 }
 
 impl SettingsPanel {
+    pub fn set_action_bar_available(&mut self, available: bool) {
+        self.browser.set_action_bar_available(available);
+    }
+    pub fn take_clear_action_row(&mut self) -> Option<usize> {
+        self.browser.take_clear_action_row()
+    }
     pub fn replace_current(&mut self, settings: ClientSettings) {
         self.draft = settings.clone();
         self.current = settings;
@@ -75,7 +81,8 @@ impl SettingsPanel {
                         self.draft = self.current.clone();
                     }
                 }
-                PreferenceAction::Apply => self.save_preferences(),
+                PreferenceAction::Ok => self.save_preferences(true),
+                PreferenceAction::Apply => self.save_preferences(false),
                 PreferenceAction::Cancel => {
                     self.draft = self.current.clone();
                     self.open = false;
@@ -114,9 +121,10 @@ impl SettingsPanel {
                 use crate::preferences_browser::PreferenceAction;
                 let (footer_action, body_rect) = crate::preferences_browser::primary_footer(ui, "quick-preferences-footer", en);
                 match footer_action {
-                    PreferenceAction::Apply => self.save_preferences(),
+                    PreferenceAction::Ok => self.save_preferences(true),
+                    PreferenceAction::Apply => self.save_preferences(false),
                     PreferenceAction::Cancel => { self.draft = self.current.clone(); self.open = false; self.message = None; }
-                    _ => {}
+                    PreferenceAction::None | PreferenceAction::Defaults | PreferenceAction::QuickSettings => {}
                 }
                 let body_size = body_rect.size().max(egui::Vec2::splat(1.0));
                 let mut body_ui = ui.new_child(egui::UiBuilder::new().max_rect(body_rect));
@@ -269,12 +277,16 @@ impl SettingsPanel {
         check_connection
     }
 
-    fn save_preferences(&mut self) {
+    fn save_preferences(&mut self, close_after_save: bool) {
         let result = ClientSettings::path()
             .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
             .and_then(|path| self.draft.save(&path));
+        self.finish_save(result, close_after_save);
+    }
+
+    fn finish_save(&mut self, result: std::io::Result<()>, close_after_save: bool) {
         match result {
-            Ok(()) => { self.current = self.draft.clone(); self.applied = true; self.message = Some(if self.current.english { "Preferences saved." } else { "Zapisano ustawienia." }.into()); }
+            Ok(()) => { self.current = self.draft.clone(); self.applied = true; self.message = Some(if self.current.english { "Preferences saved." } else { "Zapisano ustawienia." }.into()); if close_after_save { self.open = false; self.message = None; } }
             Err(_) => self.message = Some(if self.current.english { "Not saved. Check distinct movement keys, action shortcuts and preferences directory access." } else { "Nie zapisano. Sprawdź klawisze kierunków, skróty akcji i dostęp do folderu ustawień." }.into()),
         }
     }
@@ -300,6 +312,34 @@ mod tests {
         PreferencesBrowser,
         test_support::{button_position, click, frame, scroll_geometry},
     };
+
+    #[test]
+    fn ok_closes_only_after_save_success_while_apply_remains_open() {
+        for close_after_save in [false, true] {
+            let current = ClientSettings::default();
+            let mut panel = SettingsPanel {
+                draft: ClientSettings {
+                    fullscreen: true,
+                    ..current.clone()
+                },
+                current: current.clone(),
+                open: true,
+                applied: false,
+                tab: 0,
+                message: None,
+                browser: PreferencesBrowser::default(),
+            };
+            // Exercise completion of a failed/successful save without touching global preferences.
+            panel.finish_save(Err(std::io::Error::other("write failed")), close_after_save);
+            assert!(panel.open && !panel.applied && panel.message.is_some());
+            assert_eq!(panel.current, current);
+            assert!(panel.draft.fullscreen);
+            panel.finish_save(Ok(()), close_after_save);
+            assert_eq!(panel.open, !close_after_save);
+            assert!(panel.applied && panel.current.fullscreen);
+            assert_eq!(panel.current, panel.draft);
+        }
+    }
 
     #[test]
     fn quick_settings_columns_fit_the_current_body_without_outer_overflow()
@@ -378,12 +418,7 @@ mod tests {
                 for _ in 0..4 {
                     output = frame(&ctx, size, Vec::new(), |ctx| panel.show(ctx, None, None)).1;
                 }
-                let apply_label = match (english, size.x < 560.0) {
-                    (true, true) => "Apply",
-                    (false, true) => "Zapisz",
-                    (true, false) => "Apply and save",
-                    (false, false) => "Zastosuj i zapisz",
-                };
+                let apply_label = if english { "Apply" } else { "Zastosuj" };
                 assert!(
                     button_position(&output, size, apply_label).is_some(),
                     "Apply is clipped or outside viewport"

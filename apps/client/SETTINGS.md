@@ -168,13 +168,13 @@ Oteryn uses its own branding, textures and implementation.
 
 ## Prepared reference-completion candidate, 2026-10-09
 
-The complete browser exposes27 groups and276 typed bilingual controls.16 map
+The complete browser exposes27 groups and277 typed bilingual controls.19 map
 to existing client fields; remaining options keep validated user intent with
 explicit pending-consumer labels. They do not simulate missing engine behavior.
 
 In-world UI includes28 panel shortcuts with differentiated fields/tabs, six
 additional reference-derived dialogs, a minimap of actually loaded terrain and
-12 action slots. Session item/spell handles never persist across admission.
+108 action slots across nine independently selected rows. Session item/spell handles never persist across admission.
 Future gameplay values remain unknown; pending mutation actions are disabled.
 
 OS-vault primitives use local Windows credential storage or encrypted Linux
@@ -185,6 +185,36 @@ process serialization and reviewed Platform HTTP integration remain outstanding.
 
 The full preferences tree is the default F10/login entry, with search and its own
 Apply/Cancel/Defaults footer. Connection/account details remain accessible from
-that footer. 68 additional controls have names-only reference provenance; their
+that footer. 65 additional controls have names-only reference provenance; their
 precise original behavior is not inferred from configuration-key names. Future
 preferences store user choices without pretending to enable absent consumers.
+
+
+## Reference fidelity repair, 2026-10-09
+
+Basic Options now has Gameplay, Interface, Graphics and Sound groups, compact
+square controls, nested advanced navigation and a pinned OK/Apply/Cancel footer. OK closes only
+after a successful save; Apply stays open and Cancel discards the draft. Mouse presets,
+antialiasing and loot-colour dropdown membership were verified live in the
+reference draft; all changes there were canceled. These choices and the volume
+slider retain validated intent while their consumers are absent. No audio,
+looting, inspection or rendering mode is simulated by those controls.
+
+Each edge's All checkbox has an actual visibility consumer and preserves its
+three independent row selections, locks and chords when off. Basic/Advanced
+share canonical masters. Legacy explicit Boolean master selections migrate;
+missing selections default to enabled masters without modifying legacy rows.
+Hidden hotkeys retain their established activation policy. Clear Bar clears
+current-session assignments only, obeys runtime locks and is unavailable at login.
+
+The in-world chrome uses independently drawn grey grain and bevels, shared
+156-point sidebar/30-point header/108-point console reservations, compact minimap,
+3-by-4 equipment layout, four-column item cells and smaller shortcut controls.
+Rendering, picking and surrounding chrome use the same effective-row viewport.
+Private reference captures and original textures/icons remain outside the repo.
+
+This repairs two concrete compositions; it is not full visual/behavior parity.
+Outstanding reference details include modifier-only rotation/stack controls,
+Interface cursor/link-copy/expiry controls, draft-based shortcut list ordering,
+and the remaining advanced page-specific arrangements. Generic prepared feature
+panels and missing engine projections still need their own completion batches.

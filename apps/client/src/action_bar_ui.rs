@@ -1,5 +1,5 @@
 //! Native action rows. Assignments use the current session's projections, never saved handles.
-use egui::{Color32, Rect, RichText};
+use egui::{Rect, RichText};
 use oteryn_client::action_bar::{
     ACTION_BAR_ROWS, ACTION_BAR_SLOTS, ACTION_COLUMN_WIDTH, ACTION_ROW_HEIGHT, ActionBar,
     ActionBarCommand, ActionBarEdge, ActionBarPreferences, SlotAssignment, SlotShortcut,
@@ -34,7 +34,11 @@ pub fn show(
     let mut shown = [0_usize; 3];
     let mut commands = Vec::new();
     for row in 0..ACTION_BAR_ROWS {
-        let Some(preferences) = bar.preferences().row(row).filter(|r| r.visible) else {
+        let Some(preferences) = bar
+            .preferences()
+            .row(row)
+            .filter(|_| bar.preferences().row_is_visible(row))
+        else {
             continue;
         };
         let Some((edge, _)) = row_position(row) else {
@@ -87,7 +91,7 @@ pub fn show(
                 ui.set_clip_rect(clip.intersect(ui.clip_rect()));
                 ui.spacing_mut().item_spacing = egui::vec2(2.0, 2.0);
                 egui::Frame::NONE
-                    .fill(Color32::from_rgb(12, 20, 26))
+                    .fill(ui.visuals().panel_fill)
                     .show(ui, |ui| {
                         let name = row_label(row, english);
                         let header = ui.label(
@@ -100,7 +104,7 @@ pub fn show(
                             } else {
                                 name
                             })
-                            .size(10.0),
+                            .size(8.0),
                         );
                         if !enabled {
                             egui::Popup::close_id(ctx, egui::Popup::default_response_id(&header));
@@ -138,7 +142,7 @@ pub fn show(
                                 let shortcut = preferences.shortcuts[index]
                                     .map_or_else(|| "—".into(), shortcut_label);
                                 let response = ui
-                                    .add_sized([width, 36.0], egui::Button::new(""))
+                                    .add_sized([width, 24.0], egui::Button::new(""))
                                     .on_hover_text(format!(
                                         "{} · {}\n{label}\n{shortcut}",
                                         row_label(row, english),

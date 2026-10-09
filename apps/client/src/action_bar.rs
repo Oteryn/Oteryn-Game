@@ -19,8 +19,8 @@ use std::{collections::BTreeSet, io, num::NonZeroU32};
 pub const ACTION_BAR_SLOTS: usize = 12;
 pub const ACTION_BAR_ROWS: usize = 9;
 pub const TOTAL_ACTION_BAR_SLOTS: usize = ACTION_BAR_ROWS * ACTION_BAR_SLOTS;
-pub const ACTION_ROW_HEIGHT: f32 = 56.0;
-pub const ACTION_COLUMN_WIDTH: f32 = 44.0;
+pub const ACTION_ROW_HEIGHT: f32 = 38.0;
+pub const ACTION_COLUMN_WIDTH: f32 = 30.0;
 pub const BOTTOM_ROWS: [usize; 3] = [0, 1, 2];
 pub const LEFT_ROWS: [usize; 3] = [3, 4, 5];
 pub const RIGHT_ROWS: [usize; 3] = [6, 7, 8];
@@ -71,6 +71,14 @@ pub struct ActionBarPreferences {
     /// Three bottom, three left, three right rows; the legacy fields remain bottom row 1.
     #[serde(default)]
     pub extra_rows: [ActionRowPreferences; ACTION_BAR_ROWS - 1],
+    /// Independent bottom/left/right visibility masters; raw row selections and hotkeys
+    /// remain intact. Legacy files retain their existing layout through enabled masters.
+    #[serde(default = "default_edge_enabled")]
+    pub edge_enabled: [bool; 3],
+}
+
+const fn default_edge_enabled() -> [bool; 3] {
+    [true; 3]
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -89,16 +97,26 @@ impl Default for ActionBarPreferences {
             locked: false,
             shortcuts: keys.map(|key| Some(SlotShortcut { key, modifiers: 0 })),
             extra_rows: [ActionRowPreferences::default(); ACTION_BAR_ROWS - 1],
+            edge_enabled: default_edge_enabled(),
         }
     }
 }
 
 impl ActionBarPreferences {
+    /// Effective rendering visibility, separate from the retained raw row selection.
+    #[must_use]
+    pub fn row_is_visible(&self, row: usize) -> bool {
+        self.edge_enabled
+            .get(row / 3)
+            .is_some_and(|enabled| *enabled)
+            && self.row(row).is_some_and(|preferences| preferences.visible)
+    }
+
     #[must_use]
     pub fn visible_rows(&self) -> [u8; 3] {
         let mut counts = [0; 3];
         for row in 0..ACTION_BAR_ROWS {
-            if self.row(row).is_some_and(|r| r.visible) {
+            if self.row_is_visible(row) {
                 counts[row / 3] += 1;
             }
         }
@@ -688,12 +706,13 @@ mod tests {
     fn legacy_json_keeps_primary_defaults_and_bounds_extra_rows()
     -> Result<(), Box<dyn std::error::Error>> {
         let mut json = serde_json::to_value(ActionBarPreferences::default())?;
-        json.as_object_mut()
-            .ok_or("Expected preferences object")?
-            .remove("extra_rows");
+        let object = json.as_object_mut().ok_or("Expected preferences object")?;
+        object.remove("extra_rows");
+        object.remove("edge_enabled");
         let old: ActionBarPreferences = serde_json::from_value(json)?;
         assert_eq!(old, ActionBarPreferences::default());
         assert_eq!(old.visible_rows(), [1, 0, 0]);
+        assert_eq!(old.edge_enabled, [true; 3]);
         assert!(
             old.extra_rows
                 .iter()
@@ -702,6 +721,69 @@ mod tests {
         let mut json = serde_json::to_value(old)?;
         json["extra_rows"] = serde_json::json!([]);
         assert!(serde_json::from_value::<ActionBarPreferences>(json).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn edge_masters_retain_noncontiguous_rows_chords_locks_and_session_assignments()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = assigned_bar()?;
+        let assignment = bar.assignment(0).cloned();
+        bar.assign(4 * ACTION_BAR_SLOTS, assignment.clone())?;
+        let mut preferences = bar.preferences().clone();
+        preferences.extra_rows[1].visible = true;
+        preferences.extra_rows[3].visible = true;
+        preferences.extra_rows[3].locked = true;
+        preferences.extra_rows[3].shortcuts[0] = Some(SlotShortcut {
+            key: 4,
+            modifiers: 2,
+        });
+        preferences.extra_rows[7].visible = true;
+        let rows: Vec<_> = (0..ACTION_BAR_ROWS)
+            .map(|row| preferences.row(row))
+            .collect();
+        for edge in 0..3 {
+            let mut hidden = preferences.clone();
+            hidden.edge_enabled[edge] = false;
+            bar.reconfigure(hidden, &[])?;
+            let mut expected = [2, 1, 1];
+            expected[edge] = 0;
+            assert_eq!(bar.preferences().visible_rows(), expected);
+            assert_eq!(
+                (0..ACTION_BAR_ROWS)
+                    .map(|row| bar.preferences().row(row))
+                    .collect::<Vec<_>>(),
+                rows
+            );
+            assert!((edge * 3..edge * 3 + 3).all(|row| !bar.preferences().row_is_visible(row)));
+            assert_eq!(bar.assignment(4 * ACTION_BAR_SLOTS), assignment.as_ref());
+        }
+        let mut hidden = preferences.clone();
+        hidden.edge_enabled = [false; 3];
+        bar.reconfigure(hidden, &[])?;
+        assert_eq!(bar.preferences().visible_rows(), [0; 3]);
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        bar.route(&[event(ButtonState::Released, false)?]);
+        bar.reconfigure(preferences.clone(), &[])?;
+        assert_eq!(bar.preferences().visible_rows(), [2, 1, 1]);
+        assert_eq!(bar.preferences(), &preferences);
+        assert_eq!(bar.assignment(4 * ACTION_BAR_SLOTS), assignment.as_ref());
+        assert!(!preferences.row_is_visible(ACTION_BAR_ROWS));
+        assert!(!preferences.row_is_visible(usize::MAX));
+        assert_eq!(
+            serde_json::from_slice::<ActionBarPreferences>(&serde_json::to_vec(&preferences)?)?,
+            preferences
+        );
+        for invalid in [
+            serde_json::json!([true, false]),
+            serde_json::json!([true, true, true, true]),
+            serde_json::json!(null),
+            serde_json::json!([true, 1, false]),
+        ] {
+            let mut json = serde_json::to_value(&preferences)?;
+            json["edge_enabled"] = invalid;
+            assert!(serde_json::from_value::<ActionBarPreferences>(json).is_err());
+        }
         Ok(())
     }
 

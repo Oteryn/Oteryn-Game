@@ -498,6 +498,21 @@ impl ApplicationHandler for Application {
                         return;
                     }
                     let output = context.run_ui(input, |ui| {
+                        let scene = oteryn_client::layout::GameViewport::fit_with_action_rows(
+                            ui.ctx().content_rect().width(),
+                            ui.ctx().content_rect().height(),
+                            1.0,
+                            self.preferences.show_chat,
+                            self.preferences.action_bar.visible_rows(),
+                        )
+                        .map(|view| {
+                            egui::Rect::from_min_size(
+                                egui::pos2(view.x, view.y),
+                                egui::vec2(view.width, view.height),
+                            )
+                        });
+                        crate::client_chrome::backdrop(ui.ctx(), scene);
+                        gui.settings.set_action_bar_available(true);
                         if !gui.settings.open
                             && self
                                 .hud
@@ -506,6 +521,9 @@ impl ApplicationHandler for Application {
                             gui.settings.open = true;
                         }
                         gui.settings_window(ui.ctx());
+                        while let Some(row) = gui.settings.take_clear_action_row() {
+                            self.hud.clear_action_row(row, &self.preferences);
+                        }
                     });
                     if let Some(preferences) = self.hud.take_preferences() {
                         let saved = oteryn_client::settings::ClientSettings::path()
@@ -580,18 +598,22 @@ impl ApplicationHandler for Application {
                 self.fail(event_loop, ShellError::RendererRender);
                 return;
             }
-            let mut visuals = ui.context.style_of(egui::Theme::Dark).visuals.clone();
-            visuals.window_fill = if self.preferences.high_contrast {
-                egui::Color32::BLACK
+            if self.play.is_some() {
+                crate::client_chrome::install(&ui.context, self.preferences.high_contrast);
             } else {
-                egui::Color32::from_rgb(10, 15, 19)
-            };
-            visuals.override_text_color = Some(if self.preferences.high_contrast {
-                egui::Color32::WHITE
-            } else {
-                egui::Color32::from_rgb(231, 235, 240)
-            });
-            ui.context.set_visuals(visuals);
+                let mut visuals = ui.context.style_of(egui::Theme::Dark).visuals.clone();
+                visuals.window_fill = if self.preferences.high_contrast {
+                    egui::Color32::BLACK
+                } else {
+                    egui::Color32::from_rgb(10, 15, 19)
+                };
+                visuals.override_text_color = Some(if self.preferences.high_contrast {
+                    egui::Color32::WHITE
+                } else {
+                    egui::Color32::from_rgb(231, 235, 240)
+                });
+                ui.context.set_visuals(visuals);
+            }
         }
         if let Some(login) = &mut self.login
             && let Some((client, admitted)) = login.poll()
@@ -608,10 +630,7 @@ impl ApplicationHandler for Application {
                     self.play = Some(Play { view, link });
                     self.game_ui = self.login.take();
                     if let Some(gui) = &self.game_ui {
-                        let mut style = (*gui.context.style_of(egui::Theme::Dark)).clone();
-                        style.spacing.item_spacing = egui::vec2(6.0, 4.0);
-                        style.spacing.button_padding = egui::vec2(7.0, 4.0);
-                        gui.context.set_style_of(egui::Theme::Dark, style);
+                        crate::client_chrome::install(&gui.context, self.preferences.high_contrast);
                     }
                     if let Some(window) = &self.window {
                         window.set_title("Oteryn");
