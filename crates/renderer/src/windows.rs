@@ -19,6 +19,9 @@ where
     state: SurfaceState,
     atlas: Option<AtlasImage>,
     scene: Option<SceneGpu>,
+    ui: Option<egui_wgpu::Renderer>,
+    vsync: bool,
+    scene_viewport: Option<[f32; 4]>,
 }
 
 /// Tile and sprite batches for one frame; sprites are drawn over tiles.
@@ -73,6 +76,9 @@ where
             state: SurfaceState::new(process_generation),
             atlas: None,
             scene: None,
+            ui: None,
+            vsync: true,
+            scene_viewport: None,
         };
         renderer.resize(process_generation, width, height)?;
         Ok(renderer)
@@ -124,7 +130,7 @@ where
 
     /// Clears the surface.
     pub fn render(&mut self, generation: ProcessGeneration) -> Result<(), RendererError> {
-        self.render_frame(generation, None)
+        self.render_frame(generation, None, None)
     }
 
     /// Clears the surface, then draws the tile batch and the sprite batch over it.
@@ -134,13 +140,51 @@ where
         tiles: &TileBatch,
         sprites: &SpriteBatch,
     ) -> Result<(), RendererError> {
-        self.render_frame(generation, Some(FrameBatches { tiles, sprites }))
+        self.render_frame(generation, Some(FrameBatches { tiles, sprites }), None)
+    }
+
+    pub fn set_vsync(
+        &mut self,
+        generation: ProcessGeneration,
+        enabled: bool,
+    ) -> Result<(), RendererError> {
+        self.vsync = enabled;
+        if self.configuration.is_some() {
+            let size = self.state.size();
+            self.resize(generation, size.width(), size.height())?;
+        }
+        Ok(())
+    }
+
+    pub fn render_batches_ui(
+        &mut self,
+        generation: ProcessGeneration,
+        tiles: &TileBatch,
+        sprites: &SpriteBatch,
+        context: &egui::Context,
+        output: egui::FullOutput,
+    ) -> Result<(), RendererError> {
+        self.render_frame(
+            generation,
+            Some(FrameBatches { tiles, sprites }),
+            Some((context, output)),
+        )
+    }
+
+    pub fn render_ui(
+        &mut self,
+        generation: ProcessGeneration,
+        context: &egui::Context,
+        output: egui::FullOutput,
+    ) -> Result<(), RendererError> {
+        self.render_frame(generation, None, Some((context, output)))
     }
 
     fn render_frame(
         &mut self,
         generation: ProcessGeneration,
         batches: Option<FrameBatches<'_>>,
+        ui_output: Option<(&egui::Context, egui::FullOutput)>,
     ) -> Result<(), RendererError> {
         if batches.is_some() && self.atlas.is_none() {
             return Err(RendererError::Validation);
@@ -150,10 +194,10 @@ where
         })?;
         match frame {
             wgpu::CurrentSurfaceTexture::Success(frame) => {
-                self.present(frame, generation, false, batches)
+                self.present(frame, generation, false, batches, ui_output)
             }
             wgpu::CurrentSurfaceTexture::Suboptimal(frame) => {
-                self.present(frame, generation, true, batches)
+                self.present(frame, generation, true, batches, ui_output)
             }
             wgpu::CurrentSurfaceTexture::Timeout => {
                 let decision = self.state.apply(SurfaceEvent::Timeout { generation })?;
@@ -175,6 +219,25 @@ where
         }
     }
 
+    /// Physical-pixel scene rectangle; UI continues to use the full surface.
+    pub fn set_scene_viewport(&mut self, viewport: Option<[f32; 4]>) -> Result<(), RendererError> {
+        if let Some([x, y, width, height]) = viewport {
+            let size = self.state.size();
+            if ![x, y, width, height].iter().all(|value| value.is_finite())
+                || x < 0.0
+                || y < 0.0
+                || width <= 0.0
+                || height <= 0.0
+                || x + width > size.width() as f32
+                || y + height > size.height() as f32
+            {
+                return Err(RendererError::Validation);
+            }
+        }
+        self.scene_viewport = viewport;
+        Ok(())
+    }
+
     pub fn close(&mut self, generation: ProcessGeneration) -> Result<(), RendererError> {
         let decision = self.state.apply(SurfaceEvent::Close { generation })?;
         self.execute(decision, generation)
@@ -186,6 +249,7 @@ where
         generation: ProcessGeneration,
         suboptimal: bool,
         batches: Option<FrameBatches<'_>>,
+        ui_output: Option<(&egui::Context, egui::FullOutput)>,
     ) -> Result<(), RendererError> {
         self.prepare_scene(batches)?;
         let view = frame
@@ -196,6 +260,35 @@ where
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("oteryn-renderer-clear-encoder"),
             });
+        let mut commands = Vec::new();
+        let ui_frame = if let Some((context, output)) = ui_output {
+            let config = self
+                .configuration
+                .as_ref()
+                .ok_or(RendererError::Validation)?;
+            let renderer = self.ui.get_or_insert_with(|| {
+                egui_wgpu::Renderer::new(
+                    &self.device,
+                    config.format,
+                    egui_wgpu::RendererOptions::default(),
+                )
+            });
+            for (id, delta) in &output.textures_delta.set {
+                for patch in delta {
+                    renderer.update_texture(&self.device, &self.queue, *id, patch);
+                }
+            }
+            let jobs = context.tessellate(output.shapes, output.pixels_per_point);
+            let screen = egui_wgpu::ScreenDescriptor {
+                size_in_pixels: [config.width, config.height],
+                pixels_per_point: output.pixels_per_point,
+            };
+            commands =
+                renderer.update_buffers(&self.device, &self.queue, &mut encoder, &jobs, &screen);
+            Some((jobs, screen, output.textures_delta.free.clone()))
+        } else {
+            None
+        };
         let attachments = [Some(wgpu::RenderPassColorAttachment {
             view: &view,
             depth_slice: None,
@@ -217,10 +310,35 @@ where
                 ..wgpu::RenderPassDescriptor::default()
             });
             if let (Some(batches), Some(scene)) = (batches, &self.scene) {
+                if let Some([x, y, width, height]) = self.scene_viewport {
+                    render_pass.set_viewport(x, y, width, height, 0.0, 1.0);
+                }
                 scene.draw(&mut render_pass, batches.tiles, batches.sprites);
             }
         }
-        let _submission = self.queue.submit([encoder.finish()]);
+        if let (Some(renderer), Some((jobs, screen, _))) = (&self.ui, &ui_frame) {
+            let pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("oteryn-login-ui"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    depth_slice: None,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                ..wgpu::RenderPassDescriptor::default()
+            });
+            renderer.render(&mut pass.forget_lifetime(), jobs, screen);
+        }
+        commands.push(encoder.finish());
+        let _submission = self.queue.submit(commands);
+        if let (Some(renderer), Some((_, _, free))) = (&mut self.ui, ui_frame) {
+            for id in free {
+                renderer.free_texture(&id);
+            }
+        }
         self.queue.present(frame);
 
         let decision = self.state.apply(SurfaceEvent::Presented {
@@ -254,7 +372,11 @@ where
         if let Some(scene) = &self.scene {
             scene.upload(
                 &self.queue,
-                self.state.size(),
+                if self.scene_viewport.is_some() {
+                    SurfaceSize::new(720, 528)
+                } else {
+                    self.state.size()
+                },
                 batches.tiles,
                 batches.sprites,
             );
@@ -301,10 +423,15 @@ where
                 event: crate::SurfaceEventKind::Configured,
             });
         }
-        let configuration = self
+        let mut configuration = self
             .surface
             .get_default_config(&self.adapter, size.width(), size.height())
             .ok_or(RendererError::SurfaceUnsupported)?;
+        configuration.present_mode = if self.vsync {
+            wgpu::PresentMode::AutoVsync
+        } else {
+            wgpu::PresentMode::AutoNoVsync
+        };
         self.surface.configure(&self.device, &configuration);
         self.configuration = Some(configuration);
         let decision = self.state.apply(SurfaceEvent::Configured { generation })?;

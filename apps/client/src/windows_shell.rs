@@ -1,6 +1,5 @@
-use oteryn_client::input::{MouseActions, StepDir, arrow_step, click_tile};
+use oteryn_client::input::{MouseActions, StepDir, click_tile};
 use oteryn_client::play::{PlayLink, PlayView};
-use oteryn_client::pre_native_status;
 use oteryn_client::scene::Scene;
 use oteryn_client::world::{START, World};
 use oteryn_client::{AdmittedSession, ClientBootstrap, GameplayEntryError};
@@ -51,6 +50,13 @@ impl std::error::Error for ShellError {}
 
 struct Application {
     smoke: bool,
+    login: Option<crate::login_screen::LoginScreen>,
+    ui_state: Option<egui_winit::State>,
+    game_ui: Option<crate::login_screen::LoginScreen>,
+    hud: crate::game_ui::GameUi,
+    preferences: oteryn_client::settings::ClientSettings,
+    last_redraw: std::time::Instant,
+    focused: bool,
     window: Option<Arc<Window>>,
     renderer: Option<WindowsRenderer<Arc<Window>>>,
     /// The map, loaded once the window exists; the offline scene and the play view share it.
@@ -87,8 +93,27 @@ impl Application {
             }
             None => (None, None),
         };
+        let login = if play.is_none() && !smoke {
+            Some(crate::login_screen::LoginScreen::new())
+        } else {
+            None
+        };
+        let game_ui = play
+            .as_ref()
+            .map(|_| crate::login_screen::LoginScreen::new());
+        let preferences = login
+            .as_ref()
+            .map(|ui| ui.settings.current.clone())
+            .unwrap_or_default();
         Ok(Self {
             smoke,
+            login,
+            ui_state: None,
+            game_ui,
+            hud: crate::game_ui::GameUi::default(),
+            preferences,
+            last_redraw: std::time::Instant::now(),
+            focused: true,
             window: None,
             renderer: None,
             world: None,
@@ -109,13 +134,39 @@ impl Application {
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
+        if self.login.is_some() || self.game_ui.as_ref().is_some_and(|ui| ui.settings.open) {
+            return;
+        }
+        if self
+            .game_ui
+            .as_ref()
+            .is_some_and(|ui| ui.context.egui_wants_keyboard_input())
+        {
+            return;
+        }
+        let viewport = self.window.as_ref().and_then(|window| {
+            let size = window.inner_size();
+            oteryn_client::layout::GameViewport::fit(
+                size.width as f32,
+                size.height as f32,
+                window.scale_factor() as f32 * self.preferences.ui_scale,
+                self.preferences.show_chat,
+            )
+        });
         if let Some(play) = &mut self.play {
-            if let Some(direction) = arrow_step(events) {
+            if let Some(direction) = self.preferences.direction(events) {
                 play.view.arrow(direction);
             }
             let mut render_failed = false;
-            for click in self.actions.route(events) {
-                if let Some(tile) = click_tile(play.view.scene().view(), click.x, click.y) {
+            for click in self
+                .actions
+                .route(events)
+                .into_iter()
+                .filter(|_| self.preferences.click_to_walk)
+            {
+                if let Some((x, y)) = viewport.and_then(|view| view.scene_point(click.x, click.y))
+                    && let Some(tile) = click_tile(play.view.scene().view(), x, y)
+                {
                     render_failed |= play.view.click(tile).is_err();
                 }
             }
@@ -124,7 +175,7 @@ impl Application {
             }
             return;
         }
-        if let Some(direction) = arrow_step(events) {
+        if let Some(direction) = self.preferences.direction(events) {
             self.offline_own = direction.from(self.offline_own);
             self.offline_facing = direction;
             if self.rebuild_offline().is_err() {
@@ -163,6 +214,19 @@ impl Application {
     /// class in the title and on the console. The session task is gone with its link.
     fn return_to_login(&mut self, class: PublicClass) {
         self.play = None;
+        self.game_ui = None;
+        self.hud = crate::game_ui::GameUi::default();
+        self.login = Some(crate::login_screen::LoginScreen::new());
+        if let (Some(login), Some(window)) = (&self.login, &self.window) {
+            self.ui_state = Some(egui_winit::State::new(
+                login.context.clone(),
+                egui::ViewportId::ROOT,
+                window.as_ref(),
+                Some(window.scale_factor() as f32),
+                None,
+                None,
+            ));
+        }
         let message = GameplayEntryError::Rejected(class).to_string();
         println!("Oteryn: {message}");
         if let Some(window) = &self.window {
@@ -204,9 +268,17 @@ impl ApplicationHandler for Application {
         if self.window.is_some() {
             return;
         }
+        let title = if self.play.is_some() {
+            "Oteryn".to_owned()
+        } else {
+            "Oteryn — logowanie".to_owned()
+        };
         let attributes = WindowAttributes::default()
-            .with_title(format!("Oteryn — {}", pre_native_status()))
-            .with_inner_size(LogicalSize::new(960.0, 540.0));
+            .with_title(title)
+            .with_inner_size(LogicalSize::new(
+                self.preferences.window_width,
+                self.preferences.window_height,
+            ));
         let Ok(window) = event_loop.create_window(attributes) else {
             self.fail(event_loop, ShellError::WindowCreation);
             return;
@@ -252,6 +324,16 @@ impl ApplicationHandler for Application {
         };
         // One atlas for the offline scene and the play view, uploaded once.
         renderer.set_atlas(world.atlas().clone());
+        if let Some(login) = self.login.as_ref().or(self.game_ui.as_ref()) {
+            self.ui_state = Some(egui_winit::State::new(
+                login.context.clone(),
+                egui::ViewportId::ROOT,
+                window.as_ref(),
+                Some(window.scale_factor() as f32),
+                None,
+                None,
+            ));
+        }
         window.request_redraw();
         self.window = Some(window);
         self.renderer = Some(renderer);
@@ -282,12 +364,32 @@ impl ApplicationHandler for Application {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        let consumed = if let (Some(state), Some(window)) = (&mut self.ui_state, &self.window) {
+            state.on_window_event(window, &event).consumed
+        } else {
+            false
+        };
         // Every window event goes through the adapter and router first; select or walk is
         // triggered only by the routed gameplay action.
-        if let Ok(events) = self.input.process_window_event(&event) {
+        if let Ok(events) = self.input.process_window_event(&event)
+            && !consumed
+        {
             self.handle_input(event_loop, &events);
         }
         match event {
+            WindowEvent::Focused(focused) => {
+                self.focused = focused;
+            }
+            WindowEvent::KeyboardInput { event, .. }
+                if event.state == winit::event::ElementState::Pressed
+                    && !event.repeat
+                    && event.physical_key
+                        == winit::keyboard::PhysicalKey::Code(winit::keyboard::KeyCode::F10) =>
+            {
+                if let Some(ui) = self.login.as_mut().or(self.game_ui.as_mut()) {
+                    ui.settings.open = !ui.settings.open;
+                }
+            }
             WindowEvent::CloseRequested => {
                 if let Some(renderer) = &mut self.renderer
                     && renderer.close(self.generation).is_err()
@@ -307,6 +409,97 @@ impl ApplicationHandler for Application {
                 }
             }
             WindowEvent::RedrawRequested => {
+                if let (Some(login), Some(state), Some(window), Some(renderer)) = (
+                    &mut self.login,
+                    &mut self.ui_state,
+                    &self.window,
+                    &mut self.renderer,
+                ) {
+                    if !redraw_eligible(Some(renderer.state().phase())) {
+                        return;
+                    }
+                    let _ = renderer.set_scene_viewport(None);
+                    let size = window.inner_size();
+                    let scale = window.scale_factor() as f32;
+                    let zoom = ((size.width as f32 / scale / 900.0)
+                        .min(size.height as f32 / scale / 620.0))
+                    .clamp(1.0, 1.8);
+                    login
+                        .context
+                        .set_zoom_factor(zoom * self.preferences.ui_scale);
+                    let input = state.take_egui_input(window);
+                    let context = login.context.clone();
+                    let output = context.run_ui(input, |ui| login.show(ui.ctx()));
+                    state.handle_platform_output(window, output.platform_output.clone());
+                    if renderer
+                        .render_ui(self.generation, &context, output)
+                        .is_err()
+                    {
+                        self.fail(event_loop, ShellError::RendererRender);
+                    } else if login.quit {
+                        event_loop.exit();
+                    }
+                    return;
+                }
+                if let (Some(gui), Some(state), Some(window), Some(renderer), Some(play)) = (
+                    &mut self.game_ui,
+                    &mut self.ui_state,
+                    &self.window,
+                    &mut self.renderer,
+                    &self.play,
+                ) {
+                    if !redraw_eligible(Some(renderer.state().phase())) {
+                        return;
+                    }
+                    gui.context.set_zoom_factor(self.preferences.ui_scale);
+                    let input = state.take_egui_input(window);
+                    let context = gui.context.clone();
+                    let size = window.inner_size();
+                    let viewport = oteryn_client::layout::GameViewport::fit(
+                        size.width as f32,
+                        size.height as f32,
+                        window.scale_factor() as f32 * self.preferences.ui_scale,
+                        self.preferences.show_chat,
+                    );
+                    let Some(viewport) = viewport else {
+                        return;
+                    };
+                    if renderer
+                        .set_scene_viewport(Some([
+                            viewport.x,
+                            viewport.y,
+                            viewport.width,
+                            viewport.height,
+                        ]))
+                        .is_err()
+                    {
+                        self.fail(event_loop, ShellError::RendererRender);
+                        return;
+                    }
+                    let output = context.run_ui(input, |ui| {
+                        if !gui.settings.open
+                            && self.hud.show(ui.ctx(), &play.link, &self.preferences)
+                        {
+                            gui.settings.open = true;
+                        }
+                        gui.settings_window(ui.ctx());
+                    });
+                    state.handle_platform_output(window, output.platform_output.clone());
+                    let scene = play.view.scene();
+                    if renderer
+                        .render_batches_ui(
+                            self.generation,
+                            scene.tiles(),
+                            scene.sprites(),
+                            &context,
+                            output,
+                        )
+                        .is_err()
+                    {
+                        self.fail(event_loop, ShellError::RendererRender);
+                    }
+                    return;
+                }
                 let scene = self
                     .play
                     .as_ref()
@@ -325,7 +518,67 @@ impl ApplicationHandler for Application {
         }
     }
 
-    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if let Some(ui) = self.login.as_mut().or(self.game_ui.as_mut())
+            && ui.settings.applied
+        {
+            ui.settings.applied = false;
+            self.preferences = ui.settings.current.clone();
+            if let Some(window) = &self.window {
+                window.set_fullscreen(if self.preferences.fullscreen {
+                    Some(winit::window::Fullscreen::Borderless(None))
+                } else {
+                    None
+                });
+                if !self.preferences.fullscreen {
+                    let _ = window.request_inner_size(LogicalSize::new(
+                        self.preferences.window_width,
+                        self.preferences.window_height,
+                    ));
+                }
+            }
+            if let Some(renderer) = &mut self.renderer
+                && renderer
+                    .set_vsync(self.generation, self.preferences.vsync)
+                    .is_err()
+            {
+                self.fail(event_loop, ShellError::RendererRender);
+                return;
+            }
+            let mut visuals = ui.context.style_of(egui::Theme::Dark).visuals.clone();
+            visuals.window_fill = if self.preferences.high_contrast {
+                egui::Color32::BLACK
+            } else {
+                egui::Color32::from_rgb(10, 15, 19)
+            };
+            visuals.override_text_color = Some(if self.preferences.high_contrast {
+                egui::Color32::WHITE
+            } else {
+                egui::Color32::from_rgb(231, 235, 240)
+            });
+            ui.context.set_visuals(visuals);
+        }
+        if let Some(login) = &mut self.login
+            && let Some((client, admitted)) = login.poll()
+        {
+            match client.start_play(admitted) {
+                Ok((mut view, link)) => {
+                    if let Some(world) = &self.world
+                        && view.set_world(Arc::clone(world)).is_err()
+                    {
+                        self.fail(event_loop, ShellError::RendererInitialization);
+                        return;
+                    }
+                    self.client = Some(client);
+                    self.play = Some(Play { view, link });
+                    self.game_ui = self.login.take();
+                    if let Some(window) = &self.window {
+                        window.set_title("Oteryn");
+                    }
+                }
+                Err(_) => self.fail(event_loop, ShellError::RendererInitialization),
+            }
+        }
         if let Some(play) = &mut self.play
             && let Err(class) = play.view.tick(&play.link)
         {
@@ -338,7 +591,26 @@ impl ApplicationHandler for Application {
                     .map(|renderer| renderer.state().phase()),
             )
         {
-            window.request_redraw();
+            let fps = if self.focused {
+                self.preferences.fps
+            } else {
+                self.preferences.background_fps
+            };
+            let interval = if fps == 0 {
+                std::time::Duration::ZERO
+            } else {
+                std::time::Duration::from_secs_f64(1.0 / f64::from(fps))
+            };
+            let deadline = self.last_redraw + interval;
+            if std::time::Instant::now() >= deadline {
+                self.last_redraw = std::time::Instant::now();
+                window.request_redraw();
+                event_loop.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(
+                    self.last_redraw + interval.max(std::time::Duration::from_millis(1)),
+                ));
+            } else {
+                event_loop.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(deadline));
+            }
         }
     }
 }

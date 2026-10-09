@@ -347,6 +347,9 @@ struct Mailbox {
     stepped: Option<Box<StepOutcome>>,
     pushed: Pushed,
     ended: Option<PublicClass>,
+    game: GameState,
+    chat_pending: Option<oteryn_session::ChatIntent>,
+    chat_result: Option<oteryn_session::ChatOutcome>,
 }
 
 type SharedMailbox = Arc<Mutex<Mailbox>>;
@@ -389,7 +392,17 @@ impl Outbox {
     }
 }
 
-/// The shell's end of the session task: steps out, a bounded mailbox in, neither ever blocking.
+/// Read-only, capability-gated projections copied from the owning session.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct GameState {
+    pub vitals: Option<oteryn_session::ActorVitals>,
+    pub inventory: Option<oteryn_session::CharacterInventory>,
+    pub container: Option<oteryn_session::OpenContainer>,
+    pub chat: Option<oteryn_session::ChatLog>,
+    pub entities: Vec<oteryn_session::WorldSpatialEntity>,
+}
+
+/// The shell's end of the session task: commands out, bounded projections in.
 #[derive(Debug)]
 pub struct PlayLink {
     commands: UnboundedSender<StepDir>,
@@ -397,6 +410,26 @@ pub struct PlayLink {
 }
 
 impl PlayLink {
+    #[must_use]
+    pub fn game_state(&self) -> GameState {
+        lock(&self.mailbox).game.clone()
+    }
+
+    /// One pending chat intent: repeated UI submissions cannot grow an unbounded queue.
+    pub fn send_chat(&self, intent: oteryn_session::ChatIntent) -> bool {
+        let mut mailbox = lock(&self.mailbox);
+        if mailbox.ended.is_some() || mailbox.chat_pending.is_some() {
+            return false;
+        }
+        mailbox.chat_pending = Some(intent);
+        true
+    }
+
+    #[must_use]
+    pub fn chat_result(&self) -> Option<oteryn_session::ChatOutcome> {
+        lock(&self.mailbox).chat_result.clone()
+    }
+
     pub fn request(&self, direction: StepDir) {
         // A closed task has already reported or will report `Ended`.
         let _ = self.commands.send(direction);
@@ -420,6 +453,18 @@ impl PlayLink {
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn game_state(&self) -> GameState {
+        GameState::default()
+    }
+
+    fn chat(
+        &mut self,
+        _intent: &oteryn_session::ChatIntent,
+    ) -> impl Future<Output = Result<Option<oteryn_session::ChatOutcome>, SessionError>> + Send
+    {
+        async { Ok(None) }
+    }
+
     fn step(
         &mut self,
         direction: StepDirection,
@@ -434,6 +479,26 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn game_state(&self) -> GameState {
+        GameState {
+            vitals: self.actor_vitals().copied(),
+            inventory: self.inventory().cloned(),
+            container: self.open_container().cloned(),
+            chat: self.chat_log().cloned(),
+            entities: self
+                .world_entities()
+                .map(|world| world.iter().copied().collect())
+                .unwrap_or_default(),
+        }
+    }
+
+    async fn chat(
+        &mut self,
+        intent: &oteryn_session::ChatIntent,
+    ) -> Result<Option<oteryn_session::ChatOutcome>, SessionError> {
+        Session::chat(self, intent).await.map(Some)
+    }
+
     fn step(
         &mut self,
         direction: StepDirection,
@@ -475,12 +540,28 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<StepDir>,
     outbox: Outbox,
 ) {
+    lock(&outbox.0).game = session.game_state();
     loop {
+        let pending = lock(&outbox.0).chat_pending.take();
+        if let Some(intent) = pending {
+            match session.chat(&intent).await {
+                Ok(result) => {
+                    lock(&outbox.0).chat_result = result;
+                    outbox.push(session.drain());
+                    lock(&outbox.0).game = session.game_state();
+                }
+                Err(error) => {
+                    outbox.end(public_class(&error));
+                    return;
+                }
+            }
+        }
         let ended = match commands.try_recv() {
             Ok(direction) => match session.step(step_direction(direction)).await {
                 Ok(outcome) => {
                     outbox.stepped(outcome);
                     outbox.push(session.drain());
+                    lock(&outbox.0).game = session.game_state();
                     continue;
                 }
                 Err(error) => error,
@@ -489,6 +570,7 @@ pub async fn run_session<T: Stepper>(
                 match session.serve(IDLE_SLICE).await {
                     Ok(()) => {
                         outbox.push(session.drain());
+                        lock(&outbox.0).game = session.game_state();
                         continue;
                     }
                     Err(error) => error,
@@ -510,6 +592,38 @@ mod tests {
     };
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn chat_submission_is_bounded_and_terminal_sessions_reject_it() {
+        let (link, _commands, outbox) = play_channel();
+        let intent = oteryn_session::ChatIntent::Say {
+            mode: oteryn_session::ChatSpeechMode::Say,
+            text: "hello".into(),
+        };
+        assert!(link.send_chat(intent.clone()));
+        assert!(!link.send_chat(intent.clone()));
+        lock(&outbox.0).chat_pending.take();
+        assert!(link.send_chat(intent.clone()));
+        outbox.end(PublicClass::SessionUnavailable);
+        assert!(!link.send_chat(intent));
+    }
+
+    #[test]
+    fn hud_state_is_a_copy_and_cannot_mutate_session_projections()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let (link, _commands, outbox) = play_channel();
+        lock(&outbox.0).game.vitals = Some(oteryn_session::ActorVitals {
+            health: 37,
+            max_health: 100,
+            mana: 12,
+            max_mana: 50,
+            ..Default::default()
+        });
+        let mut displayed = link.game_state();
+        displayed.vitals.as_mut().ok_or("vitals")?.health = 100;
+        assert_eq!(link.game_state().vitals.ok_or("server copy")?.health, 37);
+        Ok(())
+    }
 
     fn key(x: u32, y: u16, floor: i16, ordinal: u8) -> Vec<u8> {
         let floor_byte = u64::from(floor.unsigned_abs());

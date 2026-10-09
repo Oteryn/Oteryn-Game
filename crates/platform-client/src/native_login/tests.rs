@@ -439,11 +439,100 @@ fn token_exchange_and_ticket_issuance() -> TestResult {
     let requests = server.requests.lock().map_err(|_| "poisoned")?.clone();
     assert!(requests[0].starts_with("POST /oauth/token "));
     assert!(request_body(&requests[0]).contains("code_verifier=verifier-1"));
-    assert!(requests[1].starts_with("POST /v1/game-auth/tickets "));
+    assert!(requests[1].starts_with("POST /api/v1/game-auth/tickets "));
     assert!(
         requests[1]
             .to_ascii_lowercase()
             .contains("authorization: bearer access-1")
     );
+    Ok(())
+}
+
+#[test]
+fn owner_character_read_uses_bearer_and_does_not_issue_ticket() -> TestResult {
+    let runtime = tokio::runtime::Runtime::new()?;
+    let body = format!(
+        r#"{{"protocol_version":2,"characters":[{{"character_id":"{CHARACTER}","world_id":"{WORLD}","name":"Local Walker","availability":"AVAILABLE"}}]}}"#
+    );
+    let server = spawn_server(&runtime, vec![(200, "", body)])?;
+    let client = client_for(&server)?;
+    let token = AccessToken(SecretText("owner-token".to_owned()));
+    let characters =
+        runtime.block_on(client.account_characters(&token, CancellationToken::new()))?;
+    assert_eq!(characters.len(), 1);
+    assert_eq!(characters[0].name, "Local Walker");
+    let requests = server.requests.lock().map_err(|_| "request log poisoned")?;
+    assert_eq!(requests.len(), 1);
+    assert!(requests[0].starts_with("GET /api/v1/game-auth/native-characters "));
+    assert!(
+        requests[0]
+            .to_ascii_lowercase()
+            .contains("authorization: bearer owner-token")
+    );
+    assert!(!format!("{token:?}").contains("owner-token"));
+    Ok(())
+}
+
+#[test]
+fn owner_character_read_rejects_unknown_duplicate_and_invalid_metadata() -> TestResult {
+    let runtime = tokio::runtime::Runtime::new()?;
+    let character = format!(
+        r#"{{"character_id":"{CHARACTER}","world_id":"{WORLD}","name":"Local Walker","availability":"AVAILABLE"}}"#
+    );
+    for body in [
+        format!(r#"{{"protocol_version":2,"characters":[{character},{character}]}}"#),
+        format!(r#"{{"protocol_version":1,"characters":[{character}]}}"#),
+        format!(r#"{{"protocol_version":2,"characters":[{character}],"extra":true}}"#),
+        format!(
+            r#"{{"protocol_version":2,"characters":[{}]}}"#,
+            character.replace("AVAILABLE", "READY")
+        ),
+        format!(
+            r#"{{"protocol_version":2,"characters":[{}]}}"#,
+            character.replace(WORLD, "invalid")
+        ),
+    ] {
+        let server = spawn_server(&runtime, vec![(200, "", body)])?;
+        let client = client_for(&server)?;
+        let token = AccessToken(SecretText("owner-token".to_owned()));
+        assert_eq!(
+            runtime.block_on(client.account_characters(&token, CancellationToken::new())),
+            Err(NativeLoginError::Platform(
+                PlatformClientError::InvalidPayload
+            ))
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn explicit_account_switch_requests_normal_oauth_login_and_consent() -> TestResult {
+    let config = PlatformClientConfig::new("http://127.0.0.1:18584")?;
+    let client = NativeLoginClient::new(&config, &config, "oteryn-native")?;
+    for (switch, expected) in [(false, "consent"), (true, "login consent")] {
+        let url = client.authorization_url_for_login(
+            "http://127.0.0.1:12345/callback",
+            "state",
+            "challenge",
+            switch,
+        )?;
+        let pairs = url.query_pairs().collect::<Vec<_>>();
+        assert_eq!(pairs.iter().filter(|(name, _)| name == "prompt").count(), 1);
+        assert!(
+            pairs
+                .iter()
+                .any(|(name, value)| name == "prompt" && value == expected)
+        );
+        assert!(
+            pairs
+                .iter()
+                .any(|(name, value)| name == "scope" && value == "game:ticket")
+        );
+        assert!(
+            pairs
+                .iter()
+                .any(|(name, value)| name == "code_challenge_method" && value == "S256")
+        );
+    }
     Ok(())
 }
