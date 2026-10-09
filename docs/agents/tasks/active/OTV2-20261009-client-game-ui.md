@@ -10,7 +10,7 @@ branch: feat/client-completion-20261009
 owner: root
 ```
 
-Status: AUTHORING on draft PR #1942; published anchor 821c0854855708de729a106db65c19083ff3469e. Not frozen or merged.
+Status: AUTHORING on draft PR #1942; published anchor 4389ad13aa1623f3b256fd1630d40c849399682f. Not frozen or merged.
 Owner scope: complete client and necessary engine/protocol functionality together.
 No production deployment or database reset. Single writer: root.
 
@@ -181,3 +181,8 @@ unknown. Settings navigation fills resized height; toolbar language propagates
 to game. Full parity still lacks expanded action rows, Wheel/perk composition,
 achievement controls and domain consumers. Rust1.94 CI rejects required1.95;
 protected migration proposal exists, active gates unchanged.
+
+Native latest111+4+5 tests/Clippy/release PASS; normal PKCE and selection entered
+local world again. Visual follow-up found default Area height clipping equipment;
+HUD sidebar now uses available height with visible scroll; missing HP/MP remain
+visible as unknown. No original proprietary UI payload redistribution.

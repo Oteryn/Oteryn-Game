@@ -214,6 +214,15 @@ impl GameUi {
                                     "Soul {} · Harmony {}",
                                     vitals.soul, vitals.harmony
                                 ));
+                            } else {
+                                ui.label(
+                                    RichText::new("HP —").color(Color32::from_rgb(174, 95, 98)),
+                                )
+                                .on_hover_text(tr("Zdrowie niedostępne", "Health unavailable"));
+                                ui.label(
+                                    RichText::new("MP —").color(Color32::from_rgb(96, 130, 179)),
+                                )
+                                .on_hover_text(tr("Mana niedostępna", "Mana unavailable"));
                             }
                             if ui
                                 .button(tr("Ustawienia · F10", "Settings · F10"))
@@ -236,13 +245,18 @@ impl GameUi {
             });
         egui::Area::new("game-sidebar".into())
             .fixed_pos(egui::pos2(rect.right() - 220.0, rect.top() + 52.0))
+            .default_size([210.0, (rect.height() - 70.0).max(10.0)])
             .show(ctx, |ui| {
+                ui.set_height((rect.height() - 70.0).max(10.0));
                 egui::Frame::group(ui.style())
                     .fill(Color32::from_rgb(12, 20, 26))
                     .show(ui, |ui| {
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
                         ui.set_width(198.0);
                         egui::ScrollArea::vertical()
+                            .scroll_bar_visibility(
+                                egui::scroll_area::ScrollBarVisibility::AlwaysVisible,
+                            )
                             .max_height((rect.height() - 70.0).max(10.0))
                             .show(ui, |ui| {
                                 if settings.show_minimap {
