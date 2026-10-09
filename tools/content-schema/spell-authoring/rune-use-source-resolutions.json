@@ -1,0 +1,85 @@
+{
+  "schema": "OTERYN_RUNE_USE_SOURCE_RESOLUTIONS/v1",
+  "reference_date": "2026-10-09",
+  "qualification": "Current reference candidate only; not a rewrite of the 2026-09-27 capture or runtime admission. S13/S24 historical resolution remains attributed.",
+  "spells": {
+    "intense healing rune": {
+      "carrier": "rune",
+      "field": "vocations",
+      "previous": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "knight",
+        "master_sorcerer",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "value": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "source": {
+        "kind": "community_capture",
+        "url": "https://api.tibiadata.com/v4/spell/intensehealingrune",
+        "title": "Intense Healing Rune — rune use",
+        "captured": "2026-10-09",
+        "content_sha256": "11d6b8df520ed63f4e767b04ebd98356b429b3785c6a9e143118cf26cad110ae"
+      },
+      "origin_kind": "current_official_reference_API",
+      "canonical_tibia_url": "https://www.tibia.com/library/?subtopic=spells&spell=intensehealingrune",
+      "api_release": "4.10.0",
+      "api_commit": "d53b603c7e235c45268bcf878ef2921b2356cf75",
+      "source_field": "spell.rune_information.vocation",
+      "response_timestamp_utc": "2026-10-09T09:08:54Z",
+      "source_value": [
+        "Knight",
+        "Druid",
+        "Monk",
+        "Paladin",
+        "Sorcerer"
+      ],
+      "client_proof": {
+        "file": "reference-client-immutable-100025/intense-healing-rune/tooltip-reference.png",
+        "sha256": "180b3c55c5b9848eceaa0679ca7e8e5860b8126a347c1048d698c55742f6d207",
+        "observed_at_utc": "2026-10-09T10:04:08Z",
+        "readback": "Monk"
+      }
+    },
+    "paralyze rune": {
+      "carrier": "rune",
+      "field": "primary_group",
+      "previous": "support",
+      "value": "attack",
+      "source": {
+        "kind": "community_capture",
+        "url": "https://api.tibiadata.com/v4/spell/paralyserune",
+        "title": "Paralyse Rune — rune use",
+        "captured": "2026-10-09",
+        "content_sha256": "f304d9bd2c2e68a2d8b41025e0722e0be4349c7d292705466eb1690b9b493f38"
+      },
+      "origin_kind": "current_official_reference_API",
+      "canonical_tibia_url": "https://www.tibia.com/library/?subtopic=spells&spell=paralyserune",
+      "api_release": "4.10.0",
+      "api_commit": "d53b603c7e235c45268bcf878ef2921b2356cf75",
+      "source_field": "spell.rune_information.group_attack",
+      "response_timestamp_utc": "2026-10-09T09:09:30Z",
+      "source_value": true,
+      "client_proof": {
+        "file": "reference-client-immutable-100025/paralyse-rune-combat.png",
+        "sha256": "0c611a8d976edbad47b6d6d6bfbc7c5c95bf14f92066d1527a12a629ac1e47bc",
+        "readback": "Attack"
+      }
+    }
+  }
+}
+

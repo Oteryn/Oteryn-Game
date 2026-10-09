@@ -443,6 +443,16 @@
     },
     {
       "source_index": 3,
+      "source_file": "data/items/items.xml",
+      "source_line": 1,
+      "source_field": "type",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/execution/conjure/effect_asset_binding",
+      "resolution": "S18: item 3191 has type=rune in the chosen source data/items/items.xml (Git blob 70358bf36344ea9fe8ee52cb0b3d4cdcead4c8ec, SHA256 bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85); Player:conjureItem overrides the declared None with magic_red. Rune registrar membership is not ItemType:isRune."
+    },
+    {
+      "source_index": 3,
       "source_file": "data/scripts/spells/conjuring/great_fireball_rune.lua",
       "source_line": 1,
       "source_field": "onCastSpell",

@@ -33,6 +33,7 @@ import json
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -61,6 +62,9 @@ CHAINS = json.loads((ROOT / 'chain-behaviours.json').read_text(encoding='utf-8')
 PARTY = json.loads((ROOT / 'party-behaviours.json').read_text(encoding='utf-8'))
 # S27 B.5/C.5/D.3: onCastSpell guards now expressed by spell fields (guard-behaviours.json).
 GUARDS = json.loads((ROOT / 'guard-behaviours.json').read_text(encoding='utf-8'))['spells']
+# Two dated rune-use details, distinct from the historical wiki/list captures.
+RUNE_USE_RESOLUTIONS_PATH = ROOT / 'rune-use-source-resolutions.json'
+RUNE_USE_RESOLUTIONS = json.loads(RUNE_USE_RESOLUTIONS_PATH.read_text(encoding='utf-8'))
 CHAIN_FIELDS = ('max_targets', 'range_tiles', 'backtracking', 'shape', 'initial_range_tiles', 'damage_step_percent')
 CANARY_DECIDES = 'S21: the Canary 15.30 branch decides a Canary/Crystal conflict no wiki or tibia.com states'
 # Damage-model corrections below are explicit offline reference proposals, not source unanimity
@@ -361,7 +365,6 @@ def uses_base_power(formula):
 # ------------------------------------------------------------------------------------------------
 
 SOUND_PREFIX = 'SOUND_EFFECT_TYPE_'
-RUNE_ITEM_IDS = set()  # S18: item ids some rune spell uses; filled from the census in main()
 LUA_ENUMS = 'src/lua/functions/core/game/lua_enums.cpp'
 
 
@@ -372,6 +375,21 @@ def source_text(root, relative):
         return path.read_text(encoding='utf-8', errors='replace')
     return subprocess.run(['git', '-C', str(root), 'show', f'HEAD:{relative}'], capture_output=True, text=True,
                           check=True).stdout
+
+
+def item_rune_types(xml_text):
+    """Project XML rune types; binary item admission remains independently qualified."""
+    types = {}
+    for node in ET.fromstring(xml_text).iter('item'):
+        ids = ([int(node.get('id'))] if node.get('id') is not None else
+               range(int(node.get('fromid')), int(node.get('toid')) + 1))
+        attributes = {a.get('key', '').lower(): a.get('value') for a in node.findall('attribute')}
+        # Matching declarations without a type use the engine's non-rune default.
+        # parseItemNode returns for an already loaded item in both pinned engines:
+        # the first loaded declaration wins, including overlapping item ranges.
+        for item_id in ids:
+            types.setdefault(item_id, attributes.get('type', '').lower() == 'rune')
+    return types
 
 
 class Execution:
@@ -403,6 +421,16 @@ class Execution:
             return None
         member = value[len(SOUND_PREFIX):]
         return f'canary.sound:{member.lower()}' if member in self.sounds else None
+
+    def conjure_effect(self, item_id, explicit):
+        """Resolve the helper's success cue from this donor's actual ItemType."""
+        if not hasattr(self, '_conjure_item_types'):
+            xml_text = source_text(self.root, 'data/items/items.xml')
+            self._conjure_item_types = item_rune_types(xml_text)
+            self._conjure_item_xml_blob = git_blob(xml_text.encode('utf-8'))
+            self._conjure_item_xml_sha = hashlib.sha256(xml_text.encode('utf-8')).hexdigest()
+        rune = self._conjure_item_types.get(item_id)
+        return ('CONST_ME_MAGIC_RED' if rune is True else explicit), rune
 
     def canonical_visuals(self, text):
         """S18: one appearance key per client effect/missile id, named by the Canary 15.30 enums, whichever source
@@ -597,6 +625,48 @@ class Bundle:
         self.rows.append(entry)
 
     # --- field resolution -----------------------------------------------------------------------
+    def current_rune_use_reference(self, field, carrier, previous, destination):
+        """Apply only the two explicitly qualified current rune-use source facts.
+
+        Historical S13/S24 rows stay attributed; instant conjuring never consumes
+        rune_information. Unexpected historical values require a fresh disposition.
+        """
+        resolution = RUNE_USE_RESOLUTIONS['spells'].get(self.name)
+        if (resolution is None or carrier != 'rune' or resolution['field'] != field
+                or any(r['spell_type'] != 'rune' for r in self.records.values())):
+            return previous
+        chosen = resolution['value']
+        if previous not in (resolution['previous'], chosen):
+            raise Unresolved(f'{self.name} rune-use {field}: unexpected resolved value {previous!r}; '
+                             'current reference does not authorize an unrelated source change')
+        date = RUNE_USE_RESOLUTIONS['reference_date']
+        proof = resolution['client_proof']
+        ledger_sha = hashlib.sha256(RUNE_USE_RESOLUTIONS_PATH.read_bytes()).hexdigest()
+        promotion = 'S8 supplies promoted vocations. ' if field == 'vocations' else ''
+        note = (f'Current rune-use reference {date}: {resolution["origin_kind"]}, '
+                'TibiaData is a third-party mirror/API; its raw payload is community_capture, '
+                f'({resolution["source"]["url"]}, response {resolution["response_timestamp_utc"]}); '
+                f'canonical publisher URL {resolution["canonical_tibia_url"]}; '
+                f'{previous!r} -> {chosen!r}. Owner-authorized client readback {proof["readback"]!r}, '
+                f'{proof["file"]}, SHA256 {proof["sha256"]}. '
+                f'{RUNE_USE_RESOLUTIONS_PATH.name} SHA256 {ledger_sha}. '
+                + promotion + 'Independent matching client observation; historical captures and S13/S24 resolution remain '
+                'attributed; this is a 2026-10-09 candidate, not pre-cut evidence or runtime admission.')
+        for entry in self.rows:
+            if entry.get('destination') == destination and entry['status'] == 'mapped':
+                entry['status'] = 'approved_omission'
+                entry.pop('destination')
+                entry['resolution'] = entry.get('resolution', '') + '; superseded for this candidate. ' + note
+        index_key = ('current-rune-use', self.name)
+        if index_key not in self.source_index:
+            self.source_index[index_key] = len(self.sources)
+            self.sources.append(copy.deepcopy(resolution['source']))
+        self.rows.append({'source_index': self.source_index[index_key],
+                          'source_file': resolution['source']['title'], 'source_line': 1,
+                          'source_field': resolution['source_field'], 'kind': 'field', 'status': 'mapped',
+                          'destination': destination, 'resolution': note})
+        return copy.deepcopy(chosen)
+
     def selected_base_power(self, carrier, base_power):
         """Apply the one explicit task decision without rewriting captured wiki facts."""
         if (' '.join(self.name.casefold().split()), carrier) != ('strong ethereal spear', 'instant'):
@@ -961,7 +1031,9 @@ class Bundle:
                 for source in present:
                     self.row('mapped', 'vocation', '/spell/spell/requirements/vocations', 'S4: source vocations.',
                              source=source, method='vocation')
-        return sorted({b for b in bases} | {VOCATIONS[b] for b in bases})
+        vocations = sorted({b for b in bases} | {VOCATIONS[b] for b in bases})
+        return self.current_rune_use_reference('vocations', carrier, vocations,
+                                               '/spell/spell/requirements/vocations')
 
     def groups(self, pages, carrier='instant'):
         groups = []
@@ -975,6 +1047,8 @@ class Bundle:
             self.row('metadata_only', 'subclass', resolution=f'The wiki category {primary!r} is not a cooldown group; '
                      f'the source group {sorted(fallback)} is used.', source=next(iter(self.records)))
             primary = sorted(fallback)[0] if len(fallback) == 1 else None
+        primary = self.current_rune_use_reference('primary_group', carrier, primary,
+                                                  '/spell/spell/groups/0/group')
         cooldown = self.field('/spell/spell/groups/0/cooldown_ms', 'cooldowngroup', 'groupCooldown', pages,
                               transform=lambda v: v[0] if isinstance(v, list) else v)
         if primary:
@@ -1081,8 +1155,20 @@ class Bundle:
             self.catalog.add(result)
             body = {'result': ref('Item', f'candidate:item/{result}'), 'count': count}
             # S18: Player:conjureItem shows magic_red for a rune, else its optional effect argument (nil: none).
-            source = next(iter(self.records))
-            effect = 'CONST_ME_MAGIC_RED' if result in RUNE_ITEM_IDS else conjure.get('effect')
+            source = next(iter(conjures))
+            engine = self.executions[source]
+            effect, is_rune = engine.conjure_effect(result, conjure.get('effect'))
+            if is_rune is None:
+                self.row('unresolved_dependency', 'ItemType:isRune', resolution=f'Item {result} is absent from '
+                         'the chosen source items.xml; no rune success cue is inferred from registrar IDs.',
+                         source=source, kind='dependency')
+            elif is_rune and effect != conjure.get('effect'):
+                self.row('mapped', 'type', '/spell/spell/execution/conjure/effect_asset_binding',
+                         f'S18: item {result} has type=rune in the chosen source data/items/items.xml '
+                         f'(Git blob {engine._conjure_item_xml_blob}, SHA256 {engine._conjure_item_xml_sha}); '
+                         f'Player:conjureItem overrides the declared {conjure.get("effect")!r} with magic_red. '
+                         'Rune registrar membership is not ItemType:isRune.', source=source)
+                self.rows[-1]['source_file'] = 'data/items/items.xml'
             if isinstance(effect, str) and effect.startswith('CONST_ME_'):
                 body['effect_asset_binding'] = json.loads(self.executions[source].canonical_visuals(json.dumps(
                     'canary.appearance:effect/' + effect[len('CONST_ME_'):].lower())))
@@ -1272,8 +1358,6 @@ def run(args):
         if head != SOURCES[source]['revision']:
             raise ValueError(f'{source}: source HEAD {head} differs from the pinned revision')
     executions = {s: Execution(s, r) for s, r in roots.items()}
-    RUNE_ITEM_IDS.update(int(r['registrar']['runeId']) for s in ('canary', 'crystal') for r in census[s]
-                         if r['spell_type'] == 'rune' and isinstance(r['registrar'].get('runeId'), int))
     for execution in executions.values():
         execution.canonical = executions['canary'].converter
     groups = {}

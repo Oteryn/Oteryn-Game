@@ -49,8 +49,21 @@ not enabled by this converter. `ready` continues to mean authoring-valid, not pl
 The schema verifier also runs the local `test_*.py` regression suites. Rune comparison joins prefer
 item ID, then explicit aliases and actual names; ambiguous identities are reported. Missing facts
 remain `no_source`, and source agreement does not establish runtime qualification. Party buffs may
-use scaled or fixed mana. This offline candidate's Enlighten regeneration follows the supplied
-owner handover; the referenced #162 decisions still need live readback before publication.
+use scaled or fixed mana. Enlighten's fixed mana 75 and regeneration of 2 mana every 2 s for
+120 s are confirmed by the live readback of [owner decision #162 comment 5914941038](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5914941038).
+The same decision requires an active Magic Shield condition for Cancel Magic Shield;
+the source declaration does not implement the runtime precondition or condition removal.
+
+The dated `rune-use-source-resolutions.json` selects two current rune-use facts:
+Intense Healing Rune includes Monk and Paralyse Rune uses the Attack group.
+Their instant conjuring requirements and groups remain unchanged. The ledger binds
+the TibiaData mirror payload hashes and independent client readbacks; it preserves
+the historical S13/S24 evidence and qualifies these as 2026-10-09 candidates.
+Successful conjuring cues follow the selected donor's `items.xml` rune type,
+including its first-loaded declaration rule, rather than rune registrar membership.
+This gives Blank Rune its magic-red cue and makes Lightest and Practise Wand
+reproduce the magic-red cue already retained in the stored catalogue. Missing XML item identities
+remain unresolved; these reference cue aliases do not qualify Oteryn render assets.
 
 The owner-requested wiki gap completion uses captured tibiopedia.pl rune `spellrange` only when
 Fandom/BR/official resolution and both engine registrars provide no range. Both engines must match
