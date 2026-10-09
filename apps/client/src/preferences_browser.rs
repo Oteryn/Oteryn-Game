@@ -99,7 +99,7 @@ impl PreferencesBrowser {
             .id("complete-preferences".into()).open(&mut self.open)
             .collapsible(false).anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
             .constrain_to(bounds).min_size(egui::Vec2::ZERO).max_size(maximum)
-            .default_size([840.0_f32.min(maximum.x), 540.0_f32.min(maximum.y)])
+            .default_size([840.0_f32.min(maximum.x), 580.0_f32.min(maximum.y)])
             .show(ctx, |ui| {
                 crate::client_chrome::surface(ui, ui.max_rect(), false);
                 ui.style_mut().spacing.item_spacing = egui::vec2(3.0, 2.0);
@@ -245,7 +245,6 @@ impl PreferencesBrowser {
                 let mut show_advanced = advanced;
                 if compact && ui.checkbox(&mut show_advanced, tr("Pokaż opcje zaawansowane", "Show advanced options")).changed() { draft.future_preferences.insert("basic.basic.advanced".into(), FutureValue::Bool(show_advanced)); }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if !self.overview && ui.button("Reset").on_hover_text(tr("Przywróć ustawienia domyślne w wersji roboczej", "Restore defaults in the settings draft")).clicked() { action = PreferenceAction::Defaults; }
                     if compact && ui.small_button(tr("Konto i połączenie", "Account and connection")).clicked() { action = PreferenceAction::QuickSettings; }
                 });
                 });
@@ -689,6 +688,7 @@ fn primary_footer_impl(
             ui.spacing_mut().button_padding = egui::vec2(6.0, 3.0);
             ui.horizontal(|ui| {
                 let compact = ui.available_width() < 520.0;
+                if ui.button("Reset").on_hover_text(if english { "Restore defaults in the settings draft" } else { "Przywróć domyślne ustawienia w wersji roboczej" }).clicked() { action = PreferenceAction::Defaults; }
                 if !compact && let Some(advanced) = advanced {
                     ui.checkbox(
                         advanced,
@@ -1089,6 +1089,22 @@ pub(crate) mod test_support {
 mod tests {
     use super::*;
     use test_support::{button_position, click, frame, scroll_geometry};
+
+    #[test]
+    fn quick_settings_hud_navigation_opens_the_requested_page() -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(900.0, 620.0);
+        let mut browser = PreferencesBrowser::new();
+        let mut draft = ClientSettings { english: true, ..Default::default() };
+        let mut output = egui::FullOutput::default();
+        for _ in 0..5 { output = frame(&ctx, size, vec![], |ctx| browser.show(ctx, &mut draft, None)).1; }
+        let target = button_position(&output, size, "Character HUD").ok_or("HUD navigation missing")?;
+        let _ = click(&ctx, size, target, |ctx| browser.show(ctx, &mut draft, None));
+        for _ in 0..3 { let _ = frame(&ctx, size, vec![], |ctx| browser.show(ctx, &mut draft, None)); }
+        assert!(!browser.overview);
+        assert_eq!(SETTINGS_SECTIONS[browser.section].id, "hud");
+        Ok(())
+    }
 
     #[test]
     fn native_default_hud_fits_status_flags_and_routes_independent_condition_cells()

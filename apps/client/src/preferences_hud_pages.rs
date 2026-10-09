@@ -16,8 +16,15 @@ pub(super) fn show(ui: &mut egui::Ui, draft: &mut ClientSettings, section: &str,
     match section {
         "hud" => {
             ui.scope(|ui| {
-                ui.spacing_mut().interact_size.y = 14.0;
-                ui.spacing_mut().item_spacing.y = 0.0;
+                ui.spacing_mut().interact_size.y = 18.0;
+                ui.spacing_mut().item_spacing = egui::vec2(8.0, 1.0);
+                ui.spacing_mut().icon_width = 14.0;
+                ui.spacing_mut().icon_width_inner = 9.0;
+                for text in [egui::TextStyle::Body, egui::TextStyle::Button] {
+                    ui.style_mut()
+                        .text_styles
+                        .insert(text, egui::FontId::proportional(13.0));
+                }
                 hud(ui, draft, en);
             });
         }
@@ -28,8 +35,31 @@ pub(super) fn show(ui: &mut egui::Ui, draft: &mut ClientSettings, section: &str,
     true
 }
 
+fn hud_frame(ui: &mut egui::Ui, body: impl FnOnce(&mut egui::Ui)) {
+    egui::Frame::new()
+        .fill(ui.visuals().extreme_bg_color)
+        .stroke(ui.visuals().window_stroke)
+        .corner_radius(5.0)
+        .inner_margin(6.0)
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            body(ui);
+        });
+    ui.add_space(5.0);
+}
+
 fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
-    boxed(ui, "", |ui| {
+    ui.label(
+        egui::RichText::new(if en {
+            "HUD and indicators"
+        } else {
+            "HUD i wskaźniki"
+        })
+        .size(21.0)
+        .color(ui.visuals().text_color()),
+    );
+    ui.add_space(4.0);
+    hud_frame(ui, |ui| {
         let top = ui.cursor().top();
         let divider = ui.max_rect().center().x;
         ui.columns(2, |columns| {
@@ -109,7 +139,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             ui.visuals().widgets.noninteractive.bg_stroke,
         );
     });
-    boxed(ui, "", |ui| {
+    hud_frame(ui, |ui| {
         ui.columns(2, |columns| {
             reference_option(
                 &mut columns[0],
@@ -144,13 +174,13 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             });
         });
     });
-    boxed(ui, "", |ui| {
+    hud_frame(ui, |ui| {
         let widths = [
             ui.available_width() * 0.48,
             ui.available_width() * 0.25,
             ui.available_width() * 0.27,
         ];
-        let row_height = 15.0;
+        let row_height = 19.0;
         let cell = |ui: &mut egui::Ui, column: usize, draw: &mut dyn FnMut(&mut egui::Ui)| {
             ui.allocate_ui_with_layout(
                 egui::vec2((widths[column] - 3.0).max(1.0), row_height),
@@ -210,18 +240,29 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             });
         }
     });
-    for (id, labels) in [
-        (
-            "custom_status_bars",
-            [
-                "Konfigurowalne paski stanu",
-                "Show Customisable Status Bars",
-            ],
-        ),
-        ("status_bars", ["Paski stanu", "Show Status Bars"]),
-    ] {
-        row(ui, draft, "hud", id, labels, en);
-    }
+    hud_frame(ui, |ui| {
+        ui.columns(2, |columns| {
+            reference_option(
+                &mut columns[0],
+                draft,
+                "hud",
+                "custom_status_bars",
+                [
+                    "Konfigurowalne paski stanu",
+                    "Show Customisable Status Bars",
+                ],
+                en,
+            );
+            reference_option(
+                &mut columns[1],
+                draft,
+                "hud",
+                "status_bars",
+                ["Paski stanu", "Show Status Bars"],
+                en,
+            );
+        });
+    });
 }
 
 fn condition_column_toggle(ui: &mut egui::Ui, draft: &mut ClientSettings, where_: &str, en: bool) {

@@ -182,3 +182,13 @@ and strict Clippy/release passed for final client-bronze-qualified-20261009;
 Linux27composition tests PASS. Overview is explicitly Quick settings with a
 direct full-HUD entry; full reference composition remains separate and intact.
 No Global settings were saved and no character actions requested.
+
+## Readable full HUD checkpoint
+
+Full groups retained; 13px labels, spaced rows, padded sections, aligned conditions
+and combined status group. Reset moved into persistent footer. Native Windows
+169tests/strictClippy/release and Linux28tests PASS, including overview-to-HUD
+navigation. Final actual Windows capture confirms all groups/footer visible at
+900x620 logical size. Artifact: oteryn-full-hud-native-20261009.png. PDB linker
+error recovered by preserving/rebuilding only the affected generated PDB.
+Whole-client visual fidelity and pending consumers remain unfinished.
