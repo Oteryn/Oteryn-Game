@@ -43,6 +43,34 @@ named captures are excluded from evidence.
 | Fragment Workshop | Modifier grid, search/filters, four grades and enhancement costs | No enhancement |
 | Premium features | Expanded benefits list | No purchase; these are benefits, not extra panels |
 
+## Follow-up with the mainland character
+
+The owner signed in normally to a different, level-313 character on 2026-10-09.
+Prey and Reward Wall now open their actual windows; the earlier beginner-character
+restrictions remain historical observations, not the current access state.
+
+Wheel of Destiny opens the actual character wheel with 263 available promotion
+points, preset controls and perk summaries, rather than the earlier level-2
+preview. On opening, the official client displayed a notice that its saved
+presets had been adjusted. The auditor dismissed the notice and did not allocate
+points or use Apply/Reset.
+
+Forge Fusion shows item inputs, convergence, success probability, tier-loss
+mitigation and resource requirements. Transfer shows source/destination and
+consumed-resource requirements. Conversion shows dust/sliver/core conversion and
+dust-limit increase. History is empty. No operation was submitted.
+
+Weapon Proficiency is a separate window from Magical Archive. The selected weapon
+shows inactive perks because the character does not meet its use requirements.
+No weapon modification, perk assignment or reset was submitted.
+
+Task Board shows difficulty, three bounty candidates, progress/rewards, preferred
+list and reroll/claim controls, plus bounty-talisman upgrades. Weekly Tasks shows
+0/6 kill and 0/6 delivery progress with a difficulty selection. Hunting Task Shop
+shows outfit/addon/mount offers. No task selection, difficulty change, reroll,
+claim, upgrade or purchase was performed. Social team access still requires
+Premium; the filter form itself is visible.
+
 ## Complete extra-shortcut inventory
 
 The original layout contained 11 buttons: Skills, Battle List, Spell List, VIP
@@ -56,19 +84,19 @@ All **17 extra shortcuts** were added; the available list became empty:
 | Wheel of Destiny | Inspected in normal preview, including both supporting tabs |
 | Quest Tracker | Visible; dedicated controls still pending |
 | Unjustified Points | Inspected: zero open points and three skull-threshold bars |
-| Prey Dialog | Opened: official restriction; character has not reached main continent |
+| Prey Dialog | Mainland character: two creature-choice slots, reroll controls/costs, locked third slot |
 | Kill Tracker | Inspected: prey creature tracking, inactive state |
-| Reward Wall | Opened: daily rewards restricted until main continent |
+| Reward Wall | Mainland character: seven-day cycle, resting bonuses, expired streak, jokers and empty history |
 | Analytics Selector | Inspected selector; individual analyser windows pending |
 | Bosstiary | Inspected through Cyclopedia; shortcut route pending |
 | Boss Slots | Inspected through Cyclopedia; shortcut route pending |
-| Bosstiary Tracker | Pending |
-| Bestiary Tracker | Pending |
-| Imbuement Tracker | Pending |
-| Weapon Proficiency | Pending; do not confuse with Magical Archive |
-| Exaltation Forge | Pending |
-| Social | Pending |
-| Task Board | Pending |
+| Bosstiary Tracker | Inspected: empty docked tracker with header controls |
+| Bestiary Tracker | Inspected: tracked creature, numeric progress and progress bar |
+| Imbuement Tracker | Inspected: equipment entry and imbuement slots |
+| Weapon Proficiency | Inspected: weapon catalogue/search/filters, XP, perk tree and requirement warning |
+| Exaltation Forge | Inspected all four tabs: Fusion, Transfer, Conversion and History |
+| Social | Team finder visible; seeing/joining/assembling teams requires Premium |
+| Task Board | Inspected Bounty Tasks, Weekly Tasks and Hunting Task Shop |
 
 Analytics Selector visibly offers Hunting, Loot, Supply, Impact, Damage Input,
 XP, Drop Tracker and Party Hunt analysis. More entries may require scrolling;
