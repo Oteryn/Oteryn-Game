@@ -134,7 +134,7 @@ impl PreferencesBrowser {
                                 let label = if !advanced && section.id == "basic" { tr("Opcje", "Options") } else if !advanced && section.id == "general_hotkeys" { tr("Skróty", "Hotkeys") } else { section.text(english) };
                                 ui.horizontal(|ui| {
                                     if advanced && matches!(section.id, "controls" | "interface" | "graphics" | "sound" | "miscellaneous") {
-                                        if ui.small_button(if self.expanded.contains(section.id) { "▾" } else { "▸" }).clicked() && !self.expanded.remove(section.id) { self.expanded.insert(section.id); }
+                                        if navigation_arrow(ui, self.expanded.contains(section.id), english).clicked() && !self.expanded.remove(section.id) { self.expanded.insert(section.id); }
                                     } else if advanced && parent.is_some() { ui.add_space(14.0); }
                                     ui.selectable_value(&mut self.section, index, label);
                                 });
@@ -201,6 +201,43 @@ impl PreferencesBrowser {
         ctx.set_style_of(egui::Theme::Dark, previous_style);
         action
     }
+}
+
+fn navigation_arrow(ui: &mut egui::Ui, expanded: bool, english: bool) -> egui::Response {
+    let label = match (expanded, english) {
+        (true, true) => "Collapse category",
+        (false, true) => "Expand category",
+        (true, false) => "Zwiń kategorię",
+        (false, false) => "Rozwiń kategorię",
+    };
+    let response = ui
+        .add_sized([12.0, 16.0], egui::Button::new("").frame(false))
+        .on_hover_text(label);
+    response.widget_info(|| {
+        egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), label)
+    });
+    // Replace the label with an independently drawn arrow: the bundled font does
+    // not provide these triangle glyphs on every native platform.
+    let centre = response.rect.center();
+    let offsets = if expanded {
+        [
+            egui::vec2(-3.0, -2.0),
+            egui::vec2(3.0, -2.0),
+            egui::vec2(0.0, 3.0),
+        ]
+    } else {
+        [
+            egui::vec2(-2.0, -3.0),
+            egui::vec2(-2.0, 3.0),
+            egui::vec2(3.0, 0.0),
+        ]
+    };
+    ui.painter().add(egui::epaint::PathShape::convex_polygon(
+        offsets.map(|offset| centre + offset).to_vec(),
+        ui.visuals().text_color(),
+        egui::Stroke::NONE,
+    ));
+    response
 }
 
 fn navigation_parent(id: &str) -> Option<&'static str> {

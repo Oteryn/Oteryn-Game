@@ -193,7 +193,8 @@ preferences store user choices without pretending to enable absent consumers.
 ## Reference fidelity repair, 2026-10-09
 
 Basic Options now has Gameplay, Interface, Graphics and Sound groups, compact
-square controls, nested advanced navigation and a pinned OK/Apply/Cancel footer. OK closes only
+square controls, nested advanced navigation with directly drawn arrow icons,
+and a pinned OK/Apply/Cancel footer. OK closes only
 after a successful save; Apply stays open and Cancel discards the draft. Mouse presets,
 antialiasing and loot-colour dropdown membership were verified live in the
 reference draft; all changes there were canceled. These choices and the volume

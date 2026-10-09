@@ -165,6 +165,8 @@ Linux core125 and actual-module headless21 tests pass. Final Windows124lib +
 bytes. Basic clip tests cover PL/EN; native PL is visible. OK/Apply/Cancel are distinct. All off/on
 visibly changes viewport and preserves raw rows; saved original layout restored.
 Own-window captures verify compact HUD/options without original UI assets.
+Final native follow-up154 tests/Clippy/release also passes after replacing missing
+font triangle glyphs with independently drawn expandable-navigation arrows.
 One admission attempt failed; a normal retry admitted the same test character.
 Its cause was not diagnosed or fixed by this UI batch.
 
