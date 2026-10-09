@@ -1,4 +1,6 @@
 #[cfg(windows)]
+mod actor_hud;
+#[cfg(windows)]
 mod login_screen;
 #[cfg(windows)]
 mod preferences_browser;

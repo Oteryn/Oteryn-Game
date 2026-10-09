@@ -132,3 +132,14 @@ alignment across differently sized condition labels. Private own-client capture:
 /workspace/artifacts/oteryn-client-hud-qualified-native-20261009.png.
 Original NAS session confirmed active; private research uses exact client window,
 never Apply/Reset or character commands. Additional unknowns remain unverified.
+
+## Own-resource renderer authoring checkpoint
+
+Published plan/options-shell head49e2a6ee. Private original client.en.qm research
+verified Small/Default/Large arc sizes and own-HUD bars/arcs dependencies. The
+new actor_hud module reads authoritative vitals, projects onto the same scene
+viewport and draws only explicitly selected HP/MP. Missing/max-zero data draw
+no fabricated resource. Native164tests/strictMSVCClippy/release PASS; Linux
+headless3geometrytests PASS. Actual live-session capture remains pending.
+Names/marks/Harmony/conditions and remaining HUD table/order are unfinished.
+Do not infer full HUD behavior from this bounded renderer checkpoint.

@@ -220,3 +220,20 @@ Outstanding reference details include modifier-only rotation/stack controls,
 Interface cursor/link-copy/expiry controls, draft-based shortcut list ordering,
 and the remaining advanced page-specific arrangements. Generic prepared feature
 panels and missing engine projections still need their own completion batches.
+
+## Own-resource HUD renderer checkpoint
+
+Own HUD master, health/mana selection and Bars/Arcs now control independently
+authored resource geometry over the own actor. Only authoritative session vitals
+are used. Missing vitals or zero/unknown maxima produce no resource overlay; no
+values or condition states are manufactured. Unset switches remain unset and
+do not enable overlays. Arcs additionally require an explicit verified size
+selection (Small/Default/Large); distance and opacity use Oteryn renderer
+fallbacks 25/100 when absent, without persisting reference defaults.
+
+Private `optionsmenu_hud_arc_size_*` labels and own-HUD help text in the original
+client.en.qm confirm those choices and bars/arcs dependencies. Original binaries,
+translations and assets are not redistributed. Native tests/Clippy/release and
+Linux headless geometry checks pass. Live-session visual acceptance is still
+required. Names, marks, Harmony, other actors and condition ordering/projection
+remain incomplete; this renderer does not complete the HUD screen.

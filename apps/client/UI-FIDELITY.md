@@ -8,13 +8,13 @@ assets remain private; the product ships independently authored code/artwork.
 
 | Reference page | Dedicated composition | Actual consumer / remaining acceptance |
 | --- | --- | --- |
-| Basic | Yes | Display controls/action-row visibility work; pending HUD/audio selections have no consumer |
+| Basic | Yes | Display controls/action-row visibility work; own-resource bars/arcs now have a vitals renderer behind explicit HUD selections; audio remains pending |
 | Controls | Yes | Movement bindings work; three modifier-only controls and grouped delay intent prepared; input consumers pending |
 | General Hotkeys | Pending | Profile/action table and conflict handling incomplete |
 | Action Bar Hotkeys | Typed nine-row editor | Slot chords and modal/held-key routing work; reference table arrangement incomplete |
 | Custom Hotkeys | Pending | Requires accepted command catalogue, not arbitrary command text |
 | Interface | Yes | Language/contrast work; cursor, link-copy warning and expiry intents prepared; consumers pending |
-| HUD | Yes, two groups/arcs/condition table | Native default-size PL/EN reachability and aligned independent condition cells verified; remaining conditions/order and actor projection consumers incomplete |
+| HUD | Yes, two groups/arcs/condition table | Native default-size PL/EN reachability and aligned independent condition cells verified; own-health/mana bars/arcs consume real session vitals (live-session visual acceptance pending); names/marks/conditions/order incomplete |
 | Console | Yes | Chat visibility works; timestamp/message filters await chat/event projection |
 | Game Window | Yes | Effect/message rows prepared; target dropdown membership unverified, legacy frame/highlight intent retained |
 | Action Bars | Yes | Three masters/nine independent rows, locks, chords and session action clearing work |

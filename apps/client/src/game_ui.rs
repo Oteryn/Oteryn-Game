@@ -147,6 +147,25 @@ impl GameUi {
             // Oversized underlying HUD Areas must not occlude the recovery button.
             return show_window_recovery(ctx, en);
         }
+        if let Some(viewport) = oteryn_client::layout::GameViewport::fit_with_action_rows(
+            rect.width(),
+            rect.height(),
+            1.0,
+            settings.show_chat,
+            settings.action_bar.visible_rows(),
+        ) {
+            let scene = egui::Rect::from_min_size(
+                egui::pos2(viewport.x, viewport.y),
+                egui::vec2(viewport.width, viewport.height),
+            );
+            crate::actor_hud::show(
+                ctx,
+                scene,
+                view.scene().view().tile_to_screen(view.own()),
+                settings,
+                state.vitals,
+            );
+        }
         let commands = self.bar(settings).map_or_else(Vec::new, |bar| {
             // Available spells need an authoritative catalogue projection.
             crate::action_bar_ui::show(ctx, bar, &state, &[], en, body, hud_enabled)

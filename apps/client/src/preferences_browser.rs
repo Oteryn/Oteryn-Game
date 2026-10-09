@@ -328,11 +328,11 @@ fn future_toggle(
     let mut value = matches!(stored, Some(FutureValue::Bool(true)));
     let response = ui
         .add(egui::Checkbox::new(&mut value, label).indeterminate(stored.is_none()))
-        .on_hover_text(if english {
-            "Saved selection; gameplay support is pending."
-        } else {
-            "Zapisany wybór; działanie w grze oczekuje na obsługę."
-        });
+        .on_hover_text(if crate::actor_hud::resource_consumer(key) {
+            if english { "Applied to the own character's available health/mana projection. Names, marks and conditions still await their consumers." }
+            else { "Obsługuje dostępne zdrowie i manę własnej postaci. Nazwy, znaczniki i stany wymagają dalszej obsługi." }
+        } else if english { "Saved selection; gameplay support is pending." }
+        else { "Zapisany wybór; działanie w grze oczekuje na obsługę." });
     #[cfg(test)]
     ui.ctx().data_mut(|data| {
         data.insert_temp(

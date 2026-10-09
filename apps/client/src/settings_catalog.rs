@@ -338,7 +338,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         n!("interface.system_cursor", "Używaj kursora systemowego", "Use system cursor", Toggle, "cursor integration", "mouseSystemCursor"),
     ]),
     section!("hud", "HUD i wskaźniki", "HUD", [
-        p!("arc_size_preset", "Rozmiar łuków", "Arc Size", Choice(&[LocalizedChoice {id:"default",pl:"Rozmiar domyślny",en:"Default Size"}]), "actor HUD"),
+        p!("arc_size_preset", "Rozmiar łuków", "Arc Size", Choice(&[LocalizedChoice {id:"default",pl:"Rozmiar domyślny",en:"Default Size"}, LocalizedChoice {id:"small",pl:"Mały rozmiar",en:"Small Size"}, LocalizedChoice {id:"large",pl:"Duży rozmiar",en:"Large Size"}]), "actor HUD"),
         p!("harmony_position", "Położenie harmonii", "Harmony Position", Choice(&[LocalizedChoice {id:"health",pl:"Obok łuku zdrowia",en:"next to Health Arc"}, LocalizedChoice {id:"mana",pl:"Obok łuku many",en:"next to Mana Arc"}]), "vocation HUD"),
         p!("show_harmony", "Pokaż harmonię", "Show Harmony", Toggle, "actor/condition projection"),
         p!("other_marks", "Znaczniki innych postaci", "Other Creature Marks", Toggle, "actor/condition projection"),
