@@ -169,3 +169,10 @@ retained as superseded evidence. The Oct1 source identity and observation date
 apply to this row; other rows retain their recorded target-date sources.
 The Wheel evidence check binds this file's digest and refuses a value/unit
 disagreement between Spell and Wheel. This does not admit a native spell effect.
+
+### Client reference qualification (2026-10-09)
+
+[Reference packet](CLIENT_REFERENCE_QUALIFICATION_2026-10-09.md) records the
+246-row comparison,26 identity dispositions and full reference frame/audio
+decoding. It includes extracted facts and hashes only; accepted Oteryn bindings,
+runtime and Global qualification remain separate.
