@@ -1,7 +1,8 @@
 # Native client fidelity execution plan
 
 Owner direction (2026-10-09): retain inspected Tibia controls, panel organization
-and observed behaviors, with a modern Oteryn visual identity. Legacy textures,
+and observed behaviors, with a modern Oteryn visual identity. The accepted visual concept uses opaque charcoal,
+warm bronze/brass, ivory text, spacious rows and restrained serif headings. Legacy textures,
 pixel-art chrome and rough procedural shortcut sketches are not the visual target. Draft #1942 remains
 AUTHORING. This plan is the execution order, not a completion declaration.
 
@@ -13,7 +14,7 @@ requirements. Unknown details remain explicitly unverified. A screen passes only
 when its compiled native capture and interactions satisfy both visual and behavior
 criteria. Serialization tests and panel/control counts do not establish parity.
 
-Visual criteria: coherent Oteryn slate/gold surfaces, legible typography, licensed
+Visual criteria: coherent Oteryn charcoal/bronze surfaces, legible typography, licensed
 consistent icons, hierarchy, group/row order, proportions, frames,
 icons, table columns, spacing, scrolling and default dialog reachability.
 Behavior criteria: selection, dependencies, add/remove/reorder, conflict checks,
@@ -80,3 +81,13 @@ Previous authoring checkpoints prepared dedicated option compositions, but most
 pending settings and several panels still lack consumers. UI-FIDELITY.md is the
 screen matrix. The current first acceptance target is the preferences shell/HUD;
 remaining phases stay open until their own evidence exists.
+
+## Live-reference correction after visual prototype
+
+The modern five-switch overview is Quick settings only, not the full HUD screen.
+The owner rejected replacing the reference's dense functional grouping with
+oversized cards. Keep own/other HUD, arc controls, condition matrix and status
+controls together; retain independent docked game panels, compact list/detail
+views and their per-panel controls. The charcoal/bronze theme is presentation,
+not permission to reduce functions or disperse related controls.
+Current native styling is still a draft, not accepted visual fidelity.

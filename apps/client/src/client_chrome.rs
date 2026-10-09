@@ -24,38 +24,38 @@ pub fn install(ctx: &Context, high_contrast: bool) {
     style.visuals.window_fill = if high_contrast {
         Color32::BLACK
     } else {
-        Color32::from_rgb(16, 25, 35)
+        Color32::from_rgb(18, 19, 19)
     };
     style.visuals.panel_fill = style.visuals.window_fill;
     style.visuals.override_text_color = Some(if high_contrast {
         Color32::WHITE
     } else {
-        Color32::from_rgb(225, 231, 235)
+        Color32::from_rgb(232, 227, 215)
     });
     style.visuals.extreme_bg_color = if high_contrast {
         Color32::BLACK
     } else {
-        Color32::from_rgb(10, 17, 24)
+        Color32::from_rgb(12, 13, 13)
     };
-    style.visuals.faint_bg_color = Color32::from_rgb(21, 33, 45);
+    style.visuals.faint_bg_color = Color32::from_rgb(28, 28, 26);
     style.visuals.window_corner_radius = egui::CornerRadius::same(8);
     style.visuals.window_stroke = Stroke::new(
         1.0,
         if high_contrast {
             Color32::WHITE
         } else {
-            Color32::from_rgb(49, 65, 78)
+            Color32::from_rgb(80, 66, 46)
         },
     );
     style.visuals.window_shadow = egui::epaint::Shadow::NONE;
-    style.visuals.selection.bg_fill = Color32::from_rgb(67, 57, 37);
-    style.visuals.selection.stroke = Stroke::new(1.0, Color32::from_rgb(233, 196, 125));
+    style.visuals.selection.bg_fill = Color32::from_rgb(98, 68, 36);
+    style.visuals.selection.stroke = Stroke::new(1.0, Color32::from_rgb(222, 180, 112));
     for (widget, fill) in [
-        (&mut style.visuals.widgets.noninteractive, [16, 25, 35]),
-        (&mut style.visuals.widgets.inactive, [24, 36, 48]),
-        (&mut style.visuals.widgets.hovered, [37, 53, 67]),
-        (&mut style.visuals.widgets.active, [49, 47, 36]),
-        (&mut style.visuals.widgets.open, [31, 45, 58]),
+        (&mut style.visuals.widgets.noninteractive, [18, 19, 19]),
+        (&mut style.visuals.widgets.inactive, [30, 30, 27]),
+        (&mut style.visuals.widgets.hovered, [52, 45, 33]),
+        (&mut style.visuals.widgets.active, [98, 68, 36]),
+        (&mut style.visuals.widgets.open, [41, 37, 29]),
     ] {
         widget.corner_radius = egui::CornerRadius::same(4);
         widget.bg_fill = if high_contrast {
@@ -69,7 +69,7 @@ pub fn install(ctx: &Context, high_contrast: bool) {
             if high_contrast {
                 Color32::WHITE
             } else {
-                Color32::from_rgb(54, 71, 84)
+                Color32::from_rgb(85, 70, 48)
             },
         );
         widget.fg_stroke = Stroke::new(
@@ -77,7 +77,7 @@ pub fn install(ctx: &Context, high_contrast: bool) {
             if high_contrast {
                 Color32::WHITE
             } else {
-                Color32::from_rgb(225, 231, 235)
+                Color32::from_rgb(232, 227, 215)
             },
         );
         widget.expansion = 0.0;

@@ -144,20 +144,11 @@ headless3geometrytests PASS. Actual live-session capture remains pending.
 Names/marks/Harmony/conditions and remaining HUD table/order are unfinished.
 Do not infer full HUD behavior from this bounded renderer checkpoint.
 
-## Owner-requested Astra pass
+## Previous Astra HUD pass
 
-Owner explicitly requested Astra. Astra specialist edited only HUD composition:
-shared own/other frame/divider, indentation, master-dependent child editing with
-retained values, arc dependencies and framed condition columns with working
-six-flag aggregate switches. Two regression tests cover disabled-click
-preservation/re-enable and bounded aggregate edits. Native166tests (124lib +
-37app +5launcher), strictalltargetMSVCClippy/release PASS. Linux26headless
-composition/behavior tests PASS. Scoped formatting and whitespace PASS.
-Actual in-world visual acceptance remains pending; mouse position changed under
-automation and its guard withheld input. No original-client changes in this pass.
-No condition reorder/icons, new condition membership or consumer completion
-claim. Root sole publisher, product draft stays AUTHORING. Model leading this
-chat cannot be switched by the assistant; user must use the app model selector.
+Shared own/other frame, dependent editing, six-flag condition aggregate controls
+and native166tests were qualified at b8cd1b0d. No condition reorder or full HUD
+consumer completion was claimed. Current qualification below supersedes this.
 
 ## Modern Oteryn visual direction
 
@@ -175,3 +166,19 @@ Options capture checked at default 900x620 logical dimensions: footer reachable,
 new chrome visible. In-world and Linux visual acceptance remain pending.
 Private evidence: artifacts/oteryn-modern-options-native-20261009.png.
 Draft1942 remains AUTHORING; no merge, production or database changes.
+
+## Owner correction: reference workflow before decorative overview
+
+Owner explicitly rejected the gap between generated concept and native window,
+then requested another live Global Tibia inspection. Live reference 3440x1174:
+Controls and Interface inspected; multiple independent dock columns, Analytics
+Selector, Battle List, Store Inbox, Drop Tracker and Spell List/details visible.
+The five-switch oversized overview is NOT an accepted replacement for the full
+HUD page (own/other groups, arcs, conditions/status controls). Retain reference
+functional grouping and density; apply modern charcoal/bronze treatment to it.
+Current overview work is an exploratory implementation, not visual
+acceptance or completion. Existing full pages remain accessible. Windows168tests
+and strict Clippy/release passed for final client-bronze-qualified-20261009;
+Linux27composition tests PASS. Overview is explicitly Quick settings with a
+direct full-HUD entry; full reference composition remains separate and intact.
+No Global settings were saved and no character actions requested.

@@ -136,6 +136,25 @@ fn shapes(
     out
 }
 
+/// Settings-only illustrative sample, painted in the dialog's own clipped layer.
+pub fn preview(ui: &egui::Ui, rect: Rect, settings: &ClientSettings) {
+    let vitals = ActorVitals {
+        health: 75,
+        max_health: 100,
+        mana: 60,
+        max_mana: 100,
+        ..Default::default()
+    };
+    ui.painter()
+        .with_clip_rect(rect.intersect(ui.clip_rect()))
+        .extend(shapes(
+            settings,
+            Some(vitals),
+            rect.center() + egui::vec2(0.0, 12.0),
+            1.0,
+        ));
+}
+
 pub fn show(
     ctx: &egui::Context,
     scene: Rect,
