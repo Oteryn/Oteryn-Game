@@ -19,6 +19,12 @@
     ".github/workflows/worldproject-v2-full-cardinality-scale.yml",
     ".github/workflows/wp5-s3a-real-interop.yml",
     ".github/workflows/wp5-s3b-composition.yml",
+    "apps/client/installer/ci-installer.ps1",
+    "tools/qualification/native_entry_room/run.sh",
+    "tools/qualification/node_boot/run.sh",
+    "tools/qualification/spells/run.sh",
+    "tools/qualification/wp5_s3a/run.sh",
+    "tools/qualification/wp5_s3b/run.sh",
     "tools/repository/test_validate_merge_group_pg_sim.py",
     "tools/repository/test_validate_pr_gate_pg_sim.py",
     "tools/repository/validate_pr_gate_pg_sim.py",
@@ -62,6 +68,189 @@
     "EXPECTED_POST_MERGE_RUST_SHA256": {
       "before": "d942814a212cd1697ca02da71c17cd0bdf29589f557b80bd0fead2a88dfba5fb",
       "proposed": "942ddf0ec317633a20113e89a91139dc56aa75630ffce28d2203437b7443039b"
+    }
+  },
+  "qualification_repair": {
+    "source_path": "tools/repository/validate_pr_gate_pg_sim.py",
+    "reason": "Full repository-policy wrapper requires exact canonical PR Linux/Windows evidence-job hashes after the authorized toolchain-only replacement. Gate blocks differ only by 1.94.0 -> 1.95.0; original gate blobs are unchanged.",
+    "hash_rotations": {
+      "EXPECTED_EVIDENCE_JOB_SHA256.rust_linux": {
+        "before": "53773732a35fc9a8948507c06e913d8c6ef6e51550be2edaa0ac4b9a1b859cb9",
+        "proposed": "1172ab6117f12a0948698d69c22d4af0accdde15ddeb820455112ea03484b570"
+      },
+      "EXPECTED_EVIDENCE_JOB_SHA256.rust_windows": {
+        "before": "948119003ae6c085408376a5dbe391b071c1d0169a0362eb12bd678d580c7533",
+        "proposed": "9d09c490c39d26abcc98e6953646149055142a36a700b31de43e2f418e4926bf"
+      }
+    }
+  },
+  "prepared_base": "1e77ca22b4fcb7869f8f1d169f4e12bc749b295d",
+  "publication_owner": "root client/CI task; guarded publication and exact-head readback reported by root; no publication by subagent",
+  "actual_source_sha256": {
+    ".github/workflows/g4-canonical-worldproject-package-seed.yml": "372275d6d538b33e40b2f8127205d865349dcb76de84a527179965a4c7d659cc",
+    ".github/workflows/g4-item-binding-pilot.yml": "ec0d1cfd6a9ef2e27c96ede28de682cb18f0fc863a1f8dce5a6afddaa2185911",
+    ".github/workflows/gameplay-server-seam.yml": "dfbbc659e4a363c01b9bc58f0ce8b053ae081563c31234c0b76226618b3e2bec",
+    ".github/workflows/item-content-continuity.yml": "40d3605f2c1915e6a9faeac440fb970bee81f9306a49240d76f2e8b25e6f22f4",
+    ".github/workflows/item-content-promotion.yml": "05361675ebb60d474f72071194696dd333f284a637cff0484eb91b4bb20a0ef2",
+    ".github/workflows/item-content-verification.yml": "71c1f019551dcb0ce87140eaba051047ea4a29cbd94f117d4bad975dd57e043a",
+    ".github/workflows/merge-authority-audit.yml": "aaf5c296af9bc942e0c9ec0f26950ab7e85e906b0a0ace1a0ff90123f623b57c",
+    ".github/workflows/merge-gate.yml": "97fe0ababb34b1bd18d1c6868bbc45b876c4472e3addf56eb8a541b726e819d5",
+    ".github/workflows/merge-group-gate.yml": "fff24a5ebd297b7f7274397b75234074308c46540a81c7ad80ed6630fa48bcd6",
+    ".github/workflows/native-entry-room-qualification.yml": "5c8bbef655257e08e07bb0252aee400663e48667a3f312e2d1ba19d5eee3439f",
+    ".github/workflows/node-boot-qualification.yml": "cc9f8b2a37a4d839d9fe839d0b777b204b77f8de90a7b4ddbb3a8f0da5d82702",
+    ".github/workflows/rust-cache-pilot.yml": "a2405542bbf0723ce280ed08a966c720078158193b7839decf6d87ddb559fc86",
+    ".github/workflows/rust.yml": "942ddf0ec317633a20113e89a91139dc56aa75630ffce28d2203437b7443039b",
+    ".github/workflows/synology-game-deploy.yml": "0449501d115ee3d7c0a2d848dd18dd770467cc1a3c7d0a87dd5afc1c3cee8e1f",
+    ".github/workflows/worldproject-v2-full-cardinality-scale.yml": "4ded9297ef4f74a2c491dbb0bbe24f64f73fc8aaeab1db577a46e1aff5df614c",
+    ".github/workflows/wp5-s3a-real-interop.yml": "79b5584af3421d42f70fb5bcaff2dd2af43861fcc4d731d36fd28c80ef39f6bc",
+    ".github/workflows/wp5-s3b-composition.yml": "14cc61b880bd652a5352c6a51e13242ae92ff72ffd1b6bc8b55eb347f9e15280",
+    "apps/client/installer/ci-installer.ps1": "69c17d56fc861107582e45b5be81d35610031e015bb68c49c97e00d5eae05d91",
+    "tools/qualification/native_entry_room/run.sh": "1b147c98e586ac3ed827a30dc658f847ed6a4d1b7363d090e20cd4db81ca1b84",
+    "tools/qualification/node_boot/run.sh": "aa1bfa62edd2a7accb145d5d79720593978131febb0705d6b809eefb64133b08",
+    "tools/qualification/spells/run.sh": "0e4b129a7a7ab202604503fc607558e488ec011bf97ffb878e89baa74c885889",
+    "tools/qualification/wp5_s3a/run.sh": "8c4eeff2324975fcf327eed92610e0d79aa220bb3826eb685a370d4a565f9d50",
+    "tools/qualification/wp5_s3b/run.sh": "3268199b1ad59dfcdc7d98060c5243d2e53634193f6f3804010384446e3fa8bd",
+    "tools/repository/test_validate_merge_group_pg_sim.py": "e2a824acb044e8cd57f58416a555386113dcc40a153b1aad0e59f8bbd0dd070b",
+    "tools/repository/test_validate_pr_gate_pg_sim.py": "568da2f43424664b20cf7df4cc485e509021ef74d52e9c49b9fbc43344afc8e8",
+    "tools/repository/validate_pr_gate_pg_sim.py": "7ea31da82eb9320d56922a79f7bafaf99aa19276c2191a370649ea299bcb708d",
+    "tools/repository/validate_repository_policy_core.py": "42b1c38ae4a57224e60fcf1f3b83a10a343d694580c741ace70a9e9e4d7172ab"
+  },
+  "schema": "oteryn.ci-rust195.frozen-proposals.v2",
+  "source_path_counts": {
+    "original_proposal": 21,
+    "necessary_helper_repair": 6,
+    "audit": 1,
+    "migration": 26,
+    "total": 27
+  },
+  "frozen_candidates": {
+    "audit": {
+      "pr": 1943,
+      "head": "4b535efc116da937bff3fa8a1fe7e064f29c2278",
+      "base": "main",
+      "source_paths": [
+        ".github/workflows/merge-authority-audit.yml"
+      ]
+    },
+    "migration": {
+      "pr": 1944,
+      "head": "eba78bf8868322d25e9a9fb1327cd3257587aae7",
+      "base": "main",
+      "source_paths": [
+        ".github/workflows/g4-canonical-worldproject-package-seed.yml",
+        ".github/workflows/g4-item-binding-pilot.yml",
+        ".github/workflows/gameplay-server-seam.yml",
+        ".github/workflows/item-content-continuity.yml",
+        ".github/workflows/item-content-promotion.yml",
+        ".github/workflows/item-content-verification.yml",
+        ".github/workflows/merge-gate.yml",
+        ".github/workflows/merge-group-gate.yml",
+        ".github/workflows/native-entry-room-qualification.yml",
+        ".github/workflows/node-boot-qualification.yml",
+        ".github/workflows/rust-cache-pilot.yml",
+        ".github/workflows/rust.yml",
+        ".github/workflows/synology-game-deploy.yml",
+        ".github/workflows/worldproject-v2-full-cardinality-scale.yml",
+        ".github/workflows/wp5-s3a-real-interop.yml",
+        ".github/workflows/wp5-s3b-composition.yml",
+        "apps/client/installer/ci-installer.ps1",
+        "tools/qualification/native_entry_room/run.sh",
+        "tools/qualification/node_boot/run.sh",
+        "tools/qualification/spells/run.sh",
+        "tools/qualification/wp5_s3a/run.sh",
+        "tools/qualification/wp5_s3b/run.sh",
+        "tools/repository/test_validate_merge_group_pg_sim.py",
+        "tools/repository/test_validate_pr_gate_pg_sim.py",
+        "tools/repository/validate_pr_gate_pg_sim.py",
+        "tools/repository/validate_repository_policy_core.py"
+      ],
+      "depends_on_pr": 1943
+    }
+  },
+  "scope_expansion": {
+    "reason": "P1 finding4230087890 showed invoked helpers explicitly selecting1.94, or implicit Cargo selecting unchanged repository1.94, after workflow installation of1.95.",
+    "authorization": "Root explicitly thawed1944 to AUTHORING for the six directly reachable helper repairs and the regression in an already owned test file; merge/activation/audit exception remain separate.",
+    "helper_paths": [
+      "apps/client/installer/ci-installer.ps1",
+      "tools/qualification/native_entry_room/run.sh",
+      "tools/qualification/node_boot/run.sh",
+      "tools/qualification/spells/run.sh",
+      "tools/qualification/wp5_s3a/run.sh",
+      "tools/qualification/wp5_s3b/run.sh"
+    ],
+    "existing_regression_path": "tools/repository/test_validate_pr_gate_pg_sim.py",
+    "protected_workflow_bytes_unchanged_by_helper_repair": true
+  },
+  "actual_source_git_modes": {
+    ".github/workflows/g4-canonical-worldproject-package-seed.yml": "100644",
+    ".github/workflows/g4-item-binding-pilot.yml": "100644",
+    ".github/workflows/gameplay-server-seam.yml": "100644",
+    ".github/workflows/item-content-continuity.yml": "100644",
+    ".github/workflows/item-content-promotion.yml": "100644",
+    ".github/workflows/item-content-verification.yml": "100644",
+    ".github/workflows/merge-authority-audit.yml": "100644",
+    ".github/workflows/merge-gate.yml": "100644",
+    ".github/workflows/merge-group-gate.yml": "100644",
+    ".github/workflows/native-entry-room-qualification.yml": "100644",
+    ".github/workflows/node-boot-qualification.yml": "100644",
+    ".github/workflows/rust-cache-pilot.yml": "100644",
+    ".github/workflows/rust.yml": "100644",
+    ".github/workflows/synology-game-deploy.yml": "100644",
+    ".github/workflows/worldproject-v2-full-cardinality-scale.yml": "100644",
+    ".github/workflows/wp5-s3a-real-interop.yml": "100644",
+    ".github/workflows/wp5-s3b-composition.yml": "100644",
+    "apps/client/installer/ci-installer.ps1": "100644",
+    "tools/qualification/native_entry_room/run.sh": "100755",
+    "tools/qualification/node_boot/run.sh": "100755",
+    "tools/qualification/spells/run.sh": "100644",
+    "tools/qualification/wp5_s3a/run.sh": "100755",
+    "tools/qualification/wp5_s3b/run.sh": "100755",
+    "tools/repository/test_validate_merge_group_pg_sim.py": "100644",
+    "tools/repository/test_validate_pr_gate_pg_sim.py": "100644",
+    "tools/repository/validate_pr_gate_pg_sim.py": "100644",
+    "tools/repository/validate_repository_policy_core.py": "100644"
+  },
+  "original_source_sha256": {
+    ".github/workflows/g4-canonical-worldproject-package-seed.yml": "b07c59b5a1f4e4ba9aa3e62bf3b816a7e0ce7410dbcd436ade62820ec9062798",
+    ".github/workflows/g4-item-binding-pilot.yml": "a47ba66299cf64c63c9fc1ac65fcd01f661d4d911f6bb6fb61b52296d7df3999",
+    ".github/workflows/gameplay-server-seam.yml": "3feab080d4cdb3785dab223a3bd65837b0225519425d20864ca857558aa9aeba",
+    ".github/workflows/item-content-continuity.yml": "50fef3c4c4122538da040ecea803ab3ba005db00a9487f3e6f34cc6559cfe075",
+    ".github/workflows/item-content-promotion.yml": "86cfe943b3cb20579d76bbac21ed3c99596c86bca7f6e7b51fd13a9ee9ea6a29",
+    ".github/workflows/item-content-verification.yml": "f2d0fcaf2966db0b82b7fc9292173ee08718adecbbc5df99bd8feb9e999db92f",
+    ".github/workflows/merge-authority-audit.yml": "8e7824c9736ce628e49c7feaef32cd79a108eb3a21ed124d6c8c75259dec7cc5",
+    ".github/workflows/merge-gate.yml": "91bd33991426b3f66caede71418313160d26f7470ac222cea18fa890f951b075",
+    ".github/workflows/merge-group-gate.yml": "ca3c9aacef4c2182da14b3b2dbbc7faef14affc452dfba7afdc4ee51851f3aaa",
+    ".github/workflows/native-entry-room-qualification.yml": "3d58a07ddd1e276df9de94227ddbc0c2fc50140c8f9a12f42f8e030bbeff57bb",
+    ".github/workflows/node-boot-qualification.yml": "77210fa1c682c287a08cf6f0db8bd62287b7b331d3c76bcdf1ed9b62fb67c08c",
+    ".github/workflows/rust-cache-pilot.yml": "8d64041b78a533506633c8ecd74baabbd52bed6b1cfc74d27292e437673f4e75",
+    ".github/workflows/rust.yml": "d942814a212cd1697ca02da71c17cd0bdf29589f557b80bd0fead2a88dfba5fb",
+    ".github/workflows/synology-game-deploy.yml": "39a1ad8511fb8ac6e60fc1df92d0994630173bd827e9126aa37f0f0ee2ff7cce",
+    ".github/workflows/worldproject-v2-full-cardinality-scale.yml": "3f6e2b715cfa7fd8c6b0d0ccbf66c0a5ceead5832f04da0052032b9c3b528575",
+    ".github/workflows/wp5-s3a-real-interop.yml": "d21fc078047f8385e80133f124859dea42362c4d8ef3ef1a22c77d4fe3b8d396",
+    ".github/workflows/wp5-s3b-composition.yml": "1222713ebfeba0edfc8ef775282133f7175f83f0807c86aae436258f45ad5095",
+    "apps/client/installer/ci-installer.ps1": "275fe97f8582227be234b09b2625e118c176ccfd6530104ee87b46f8abbcd8c4",
+    "tools/qualification/native_entry_room/run.sh": "24f9e186f536097c1f4c98531f619f39964016f4160a116cc149eadff30e988a",
+    "tools/qualification/node_boot/run.sh": "81e09959a7b25faa3ec63a33c97a09d04cb0bcaf5b18c19e140df15ee03a8b76",
+    "tools/qualification/spells/run.sh": "72345a4254cb143ebdc072afd2e8eff4449ff202bf2087a66cc7dc51f14d21d2",
+    "tools/qualification/wp5_s3a/run.sh": "83b16389d7b6a9e6a533e0d61f434fe768d691b21e352032f0d40827e71db3a8",
+    "tools/qualification/wp5_s3b/run.sh": "718278e12124114ad15e66993eca6f6559b61f36485d7182e785d299883583a1",
+    "tools/repository/test_validate_merge_group_pg_sim.py": "9a28afa16a53a93c644be2af0af48e63fc912f3359042f985bb09e04fd8f80dd",
+    "tools/repository/test_validate_pr_gate_pg_sim.py": "96ecd65ce686801b6f84bb3b356f1ac278c05f81954311beed01194a560c87c9",
+    "tools/repository/validate_pr_gate_pg_sim.py": "aa04cf476451ea809fb33c025aa92d1885df7965f9c8bc4df3ea1ea5dfb2d0ac",
+    "tools/repository/validate_repository_policy_core.py": "5d1b39888a9466e1bfa3f07f2a965412071867ba0b3582e64cd7af90063f9a28"
+  },
+  "independent_review": {
+    "audit": {
+      "head": "4b535efc116da937bff3fa8a1fe7e064f29c2278",
+      "result": "completed-clean, reported by root"
+    },
+    "migration": {
+      "head": "eba78bf8868322d25e9a9fb1327cd3257587aae7",
+      "result": "completed-clean after material helper repair",
+      "result_comment": "https://github.com/Oteryn/Oteryn-Game/pull/1944#issuecomment-6081391569",
+      "summary_comment_id": 6080807204,
+      "completed_at": "2026-10-09T13:00:24.839575Z",
+      "old_P1": "4230087890 repaired; historical finding"
     }
   }
 }

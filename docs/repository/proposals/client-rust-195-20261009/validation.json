@@ -1,26 +1,207 @@
 {
-  "schema": "oteryn.ci-migration.review-evidence.v1",
-  "publication": "none",
-  "actual_workflow_edits": [],
-  "repository_head_read_only": "0026b73299faed34bc39b1683f71e77cc6c40ca4",
+  "schema": "oteryn.ci-rust195.frozen-proposals.v2",
+  "publication_owner": "root",
+  "publication_by_subagent": "none",
+  "bound_meta": "3.1.0@1bfb5ff98c8aa156e73669a14e083a1d464c29fb",
+  "candidates": [
+    {
+      "worktree": "/workspace/ci-rust-pin-authoring",
+      "task": "OTV2-20261009-ci-rust195-audit-pins",
+      "branch": "chore/ci-rust195-audit-pins-20261009",
+      "remote_frozen_head": "4b535efc116da937bff3fa8a1fe7e064f29c2278",
+      "pr": 1943,
+      "changed_files": [
+        ".github/workflows/merge-authority-audit.yml",
+        "docs/agents/tasks/archive/OTV2-20261009-ci-rust195-audit-pins.md"
+      ],
+      "clean": true,
+      "post_record_validation": "governance,59 unit tests,full policy,staged/base-to-head/show whitespace PASS; clean isolated worktree",
+      "review_request": "https://github.com/Oteryn/Oteryn-Game/pull/1943#issuecomment-6080788224",
+      "initial_source_commit": "3e7bdc19a349bf072c4d10eb6aa8be5b11e8ed7b",
+      "initial_source_parent": "1e77ca22b4fcb7869f8f1d169f4e12bc749b295d",
+      "candidate_commit": "4b535efc116da937bff3fa8a1fe7e064f29c2278",
+      "candidate_parent": "af137f43d6018de3052b1d7e6a1a1b24b436e7e6",
+      "root_reported_guarded_publication_readback": "PASS; exact current frozen head",
+      "source_path_count": 1,
+      "review_result": "clean independent deep review on exact4b535efc head, reported by root"
+    },
+    {
+      "worktree": "/workspace/ci-rust195-authoring",
+      "task": "OTV2-20261009-ci-rust195-workflows",
+      "branch": "chore/ci-rust195-workflows-20261009",
+      "remote_frozen_head": "eba78bf8868322d25e9a9fb1327cd3257587aae7",
+      "pr": 1944,
+      "changed_files": [
+        ".github/workflows/g4-canonical-worldproject-package-seed.yml",
+        ".github/workflows/g4-item-binding-pilot.yml",
+        ".github/workflows/gameplay-server-seam.yml",
+        ".github/workflows/item-content-continuity.yml",
+        ".github/workflows/item-content-promotion.yml",
+        ".github/workflows/item-content-verification.yml",
+        ".github/workflows/merge-gate.yml",
+        ".github/workflows/merge-group-gate.yml",
+        ".github/workflows/native-entry-room-qualification.yml",
+        ".github/workflows/node-boot-qualification.yml",
+        ".github/workflows/rust-cache-pilot.yml",
+        ".github/workflows/rust.yml",
+        ".github/workflows/synology-game-deploy.yml",
+        ".github/workflows/worldproject-v2-full-cardinality-scale.yml",
+        ".github/workflows/wp5-s3a-real-interop.yml",
+        ".github/workflows/wp5-s3b-composition.yml",
+        "apps/client/installer/ci-installer.ps1",
+        "docs/agents/tasks/archive/OTV2-20261009-ci-rust195-workflows.md",
+        "tools/qualification/native_entry_room/run.sh",
+        "tools/qualification/node_boot/run.sh",
+        "tools/qualification/spells/run.sh",
+        "tools/qualification/wp5_s3a/run.sh",
+        "tools/qualification/wp5_s3b/run.sh",
+        "tools/repository/test_validate_merge_group_pg_sim.py",
+        "tools/repository/test_validate_pr_gate_pg_sim.py",
+        "tools/repository/validate_pr_gate_pg_sim.py",
+        "tools/repository/validate_repository_policy_core.py"
+      ],
+      "clean": true,
+      "post_record_validation": "governance,59 unit tests,full policy,staged/base-to-head/show whitespace PASS; clean isolated worktree",
+      "initial_source_commit": "47b3850812577eeb5ec29cafb5b583d770d7ed0c",
+      "initial_source_parent": "1e77ca22b4fcb7869f8f1d169f4e12bc749b295d",
+      "candidate_commit": "eba78bf8868322d25e9a9fb1327cd3257587aae7",
+      "candidate_parent": "781a6ab7e47af2686a7e03611cfb3cfa319ec2d6",
+      "root_reported_guarded_publication_readback": "PASS; exact current frozen head",
+      "source_path_count": 26,
+      "previous_review": {
+        "head": "781a6ab7e47af2686a7e03611cfb3cfa319ec2d6",
+        "finding": 4230087890,
+        "severity": "P1",
+        "state": "material helper repair implemented at current frozen head"
+      },
+      "repair_reply": "https://github.com/Oteryn/Oteryn-Game/pull/1944#discussion_r4230298400",
+      "initial_review_request": "https://github.com/Oteryn/Oteryn-Game/pull/1944#issuecomment-6080801703",
+      "review_request": "https://github.com/Oteryn/Oteryn-Game/pull/1944#issuecomment-6081296506",
+      "review_result": "completed-clean independent material-repair deep review on exacteba78bf head",
+      "review_result_comment": "https://github.com/Oteryn/Oteryn-Game/pull/1944#issuecomment-6081391569",
+      "review_summary_comment_id": 6080807204,
+      "review_completed_at": "2026-10-09T13:00:24.839575Z"
+    }
+  ],
   "checks": {
-    "actual_repository_policy": "pass",
-    "proposed_yaml_python_exact_delta_blob_hashes": "pass",
-    "proposed_policy_core_in_memory_overlay": "pass",
-    "existing_post_merge_routing_regressions": "pass",
-    "cargo_deny_0_20_2_licenses": "pass",
-    "font_archive_lock_hashes_full_original_notices": "pass",
-    "exact_version_exception_negative_canary": "pass",
-    "owned_source_diff_whitespace": "pass",
-    "windows_inno_installer": "not-run-cloud-has-no-windows-inno-or-pwsh",
-    "protected_audit_github_ci_merge_queue": "not-run-no-authorized-publication",
-    "world_pin_refresh": "pass-two-identical-builds-unchanged-world-payload",
-    "zero_context_durable_patch_reconstruction": "pass-all-21-proposed-files-byte-identical"
+    "each_actual_repository_policy_wrapper": "pass",
+    "each_actual_governance": "pass",
+    "each_governance_unit_tests": "pass-59",
+    "each_queue_native_error_canaries": "pass-4-positions",
+    "each_queue_workflow_mutations": "pass-28",
+    "audit_agent_pr_target_tests": "pass-16",
+    "audit_applicability_test": "pass",
+    "changed_workflows_actionlint_1_7_7": "pass-17",
+    "paired_actual_future_audit_and_gate": "pass",
+    "paired_audit_canaries": "pass-6",
+    "current_protected_self_edit_rejection": "expected-rejection-proven-kept",
+    "current_protected_migration_pin_dependency": "expected-rejection-proven-kept",
+    "owned_whitespace": "pass-staged/base-to-head/git-show-check",
+    "zero_context_durable_patch_reconstruction": "pass-all-27-source-files-full-SHA256-and-Git-mode-identical",
+    "canonical_pr_gate_regressions": {
+      "audit": "pass-31-plus-queue/routing",
+      "migration": "pass-32-plus-queue/routing"
+    },
+    "actual_helper_callgraph_negative_mutations": "pass-13; twelve stale/implicit selections in actual helper bytes and one added stale nested helper",
+    "helper_powershell_ast": "pass-2",
+    "installer_native_failure_propagation": "pass; original fixture/caller AST native23 becomes caller1; payload sentinel not reached",
+    "helper_shell_parse": "pass-5",
+    "actual_preflight_refusals": "pass-17; no service/scratch sentinels reached",
+    "actual_spell_native_cargo_failure_modes": "pass-4; runtime/client/live/map select+1.95 and propagate native23",
+    "rust_195_game_server_typecheck": "pass; lib/bins and native_admission_source_real_interop,wp5_s3b_composition,content_native_entry_room targets",
+    "rust_195_synthetic_harness_typecheck": "pass-all-targets",
+    "full_engine_no_run_link": "not-pass; first attempt stopped for storage, subsequent code generation receivedSIGKILL; typechecking does not qualify linking",
+    "spell_qualification_python_suite": "13PASS/1FAIL; same trusted-base loot_tables staging mismatch; not claimed green"
   },
+  "tools": {
+    "actionlint": "/workspace/ci-tools-rust195/actionlint-1.7.7/actionlint",
+    "powershell": "/workspace/ci-tools-rust195/powershell-7.5.4/pwsh",
+    "runner_label_config": "/workspace/ci-tools-rust195/actionlint.yaml",
+    "official_download_checksums": "verified"
+  },
+  "independent_review": {
+    "1943": {
+      "head": "4b535efc116da937bff3fa8a1fe7e064f29c2278",
+      "result": "clean, root-reported"
+    },
+    "1944": {
+      "head": "eba78bf8868322d25e9a9fb1327cd3257587aae7",
+      "old_P1": "repaired; not itself an independent clearance",
+      "request": "https://github.com/Oteryn/Oteryn-Game/pull/1944#issuecomment-6081296506",
+      "result": "completed-clean",
+      "result_comment": "https://github.com/Oteryn/Oteryn-Game/pull/1944#issuecomment-6081391569",
+      "summary_comment_id": 6080807204,
+      "completed_at": "2026-10-09T13:00:24.839575Z"
+    }
+  },
+  "merge_authority": "not-granted",
+  "audit_exception": "not-granted",
   "artifact_sha256": {
-    "02-toolchain-migration.patch": "2c3c43df41784de3def1edf93b61c365ab2dfccdc52e5e3ed0d9e4700a804e99",
-    "README.md": "3959befc20b2554b01f4383c37b9856417bdbac4f5aba6d089f989c48b2ee21f",
-    "manifest.json": "9e515e1be13a962c2e0af5ed4cb410def2e25ba7ae751b524061e74780499368",
-    "01-audit-pin-rotation.patch": "0979fca70e365b3908d0649e73a35021a1c12f766d18e13cff92796baded702b"
+    "01-audit-pin-rotation.patch": "c16c9217fcd7a4a81e28c418513d4b4ee6fd6e2cad48df7b4d514c326d668e2b",
+    "02-toolchain-migration.patch": "29ce0161eefd9205fbb6210db47dec84a570acb5bdb89aa729defbdea78ff440",
+    "manifest.json": "e0adf2efda3cfdca0f6345d29b54938308d56abbc1fdb4918aa60db9e2eee2dd"
+  },
+  "publication": "separate owner-authorized main-target PRs; root-reported guarded exact-head publication and readback",
+  "note": "Both exact frozen heads received completed-clean independent deep review. Audit source scope1 and migration source scope26 include the necessary six-helper repair. Product active workflows are unchanged by this packet. No merge, activation or audit exception is authorized; hosted CI/qualification limitations remain explicit.",
+  "standalone_qualification_failures": {
+    "g4": "Inherited exact artifact10829932700 URL/pin unchanged; HTTP410, metadata404. Original capture retention14days. Recover byte-identical originalZIP at durable immutable storage before claiming qualification; no replacement capture or arbitrary repin.",
+    "s3a": "Inherited exact-six-path original-task envelope excludes the migration26-source-path plus archive delta. Guard remains unchanged; separate owning applicability maintenance is required for reusable qualification.",
+    "canonical_aggregate": "Neither standalone lane is in canonical PR/MQ game-gate needs. Their failure is not covered by an audit exception and neither retained lane is claimed qualified."
+  },
+  "retained_staging_limitation": {
+    "suite": "python -m unittest discover -s tools/qualification/spells -p test_qualification_tools.py",
+    "result": "13PASS/1FAIL",
+    "failing_assertion": "tools/qualification/spells/test_qualification_tools.py:111",
+    "trusted_base": "1e77ca22b4fcb7869f8f1d169f4e12bc749b295d",
+    "baseline_delta": {
+      "node_only": [
+        "loot_tables"
+      ],
+      "deployment_stager_only": []
+    },
+    "unchanged_inputs": [
+      "deploy/synology-game/stage_gameplay.py",
+      "tools/qualification/spells/test_qualification_tools.py",
+      "node_boot embedded staging field selection"
+    ],
+    "canonical_runtime_dependency": "Node boot uses its own embedded stager only in spell mode; Server Seam reads the original manifest. Neither invokes deployment FIELDS or the static equality test.",
+    "scope": "separate retained deployment/test staging gap; no deployment or field-set change in this migration"
+  },
+  "helper_canary_evidence": {
+    "candidate_head": "eba78bf8868322d25e9a9fb1327cd3257587aae7",
+    "summary": {
+      "bash_parses": 5,
+      "installer_failure_canaries": 1,
+      "pass": true,
+      "powershell_ast_parses": 2,
+      "refusals": 17,
+      "spell_cargo_failure_modes": 4
+    },
+    "runner_sha256": "11a2a916e03ef476350197b903dadc813260fca942b671401e1cb131671ee045",
+    "pwsh_sha256": "e0c6c82153c6655a842602be4ea7607d4e3a137b1956668ef44d1b1b7bf939b8",
+    "source_sha256": {
+      ".github/workflows/merge-gate.yml": "97fe0ababb34b1bd18d1c6868bbc45b876c4472e3addf56eb8a541b726e819d5",
+      "apps/client/installer/ci-installer.ps1": "69c17d56fc861107582e45b5be81d35610031e015bb68c49c97e00d5eae05d91",
+      "tools/qualification/native_entry_room/run.sh": "1b147c98e586ac3ed827a30dc658f847ed6a4d1b7363d090e20cd4db81ca1b84",
+      "tools/qualification/node_boot/run.sh": "aa1bfa62edd2a7accb145d5d79720593978131febb0705d6b809eefb64133b08",
+      "tools/qualification/spells/run.sh": "0e4b129a7a7ab202604503fc607558e488ec011bf97ffb878e89baa74c885889",
+      "tools/qualification/wp5_s3a/run.sh": "8c4eeff2324975fcf327eed92610e0d79aa220bb3826eb685a370d4a565f9d50",
+      "tools/qualification/wp5_s3b/run.sh": "3268199b1ad59dfcdc7d98060c5243d2e53634193f6f3804010384446e3fa8bd"
+    },
+    "limits": [
+      "No Windows installer execution or packaging",
+      "No Rust compilation or positive composed qualification",
+      "No services, databases, remote operations, or repository source writes"
+    ]
+  },
+  "reconstruction": {
+    "base": "1e77ca22b4fcb7869f8f1d169f4e12bc749b295d",
+    "audit_head": "4b535efc116da937bff3fa8a1fe7e064f29c2278",
+    "migration_head": "eba78bf8868322d25e9a9fb1327cd3257587aae7",
+    "source_files": 27,
+    "patch_context": 0,
+    "full_sha256_match": true,
+    "git_modes_match": true,
+    "applied_outside_git": true
   }
 }

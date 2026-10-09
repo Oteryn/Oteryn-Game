@@ -121,9 +121,10 @@ impl SettingsPanel {
                 let body_size = body_rect.size().max(egui::Vec2::splat(1.0));
                 let mut body_ui = ui.new_child(egui::UiBuilder::new().max_rect(body_rect));
                 body_ui.set_clip_rect(ui.clip_rect().intersect(body_rect));
-                egui::ScrollArea::both().id_salt("quick-preferences-body")
+                let body_scroll = egui::ScrollArea::both().id_salt(("quick-preferences-body", self.tab))
                     .auto_shrink([false, false]).max_width(body_size.x).max_height(body_size.y).show(&mut body_ui, |ui| {
-                let body_width = body_size.x.max(1.0);
+                // A non-floating scrollbar reserves space before this content is laid out.
+                let body_width = ui.available_width().max(1.0);
                 ui.set_width(body_width);
                 let compact = body_width < 520.0;
                 ui.label(RichText::new(tr("OTERYN • USTAWIENIA KLIENTA", "OTERYN • CLIENT PREFERENCES")).strong());
@@ -135,7 +136,12 @@ impl SettingsPanel {
                             for (index, label) in labels.iter().enumerate() { ui.selectable_value(&mut self.tab, index, *label); }
                         });
                 }
+                // The footer is outside this viewport. Leave the final Defaults row inside
+                // it as well; screen height is unrelated to a resized dialog's body height.
+                let column_height = (ui.available_height() - ui.spacing().interact_size.y
+                    - 2.0 * ui.spacing().item_spacing.y - 6.0).max(1.0);
                 ui.horizontal_top(|ui| {
+                    if !compact { ui.set_max_height(column_height); }
                     if !compact {
                     ui.vertical(|ui| {
                         ui.set_width(140.0);
@@ -147,9 +153,9 @@ impl SettingsPanel {
                     });
                     ui.separator();
                     }
-                    egui::ScrollArea::vertical().max_height(if compact { f32::INFINITY } else { (maximum.y - 160.0).max(1.0) }).show(ui, |ui| {
+                    egui::ScrollArea::vertical().id_salt(("quick-preferences-options", self.tab)).max_height(if compact { f32::INFINITY } else { column_height }).show(ui, |ui| {
                         ui.vertical(|ui| {
-                        ui.set_width(if compact { body_width } else { (body_width - 170.0).max(1.0) });
+                        ui.set_width(ui.available_width().max(1.0));
                         match self.tab {
                             0 => {
                                 ui.heading(tr("Obraz", "Display"));
@@ -253,6 +259,12 @@ impl SettingsPanel {
                     if ui.button(tr("Domyślne", "Defaults")).clicked() { self.draft = ClientSettings::default(); self.message = None; }
                 });
                 });
+                #[cfg(test)]
+                crate::preferences_browser::test_support::record_scroll_geometry(
+                    ctx, "quick-preferences-body-geometry", &body_scroll,
+                );
+                #[cfg(not(test))]
+                let _ = body_scroll;
             });
         check_connection
     }
@@ -286,8 +298,55 @@ mod tests {
     use super::*;
     use crate::preferences_browser::{
         PreferencesBrowser,
-        test_support::{button_position, click, frame},
+        test_support::{button_position, click, frame, scroll_geometry},
     };
+
+    #[test]
+    fn quick_settings_columns_fit_the_current_body_without_outer_overflow()
+    -> Result<(), &'static str> {
+        for english in [false, true] {
+            for size in [
+                egui::vec2(1143.0, 814.0),
+                egui::vec2(1143.0, 814.0) / 1.8,
+                egui::vec2(1920.0, 1440.0),
+            ] {
+                let ctx = egui::Context::default();
+                let current = ClientSettings {
+                    english,
+                    ..Default::default()
+                };
+                let mut panel = SettingsPanel {
+                    draft: current.clone(),
+                    current,
+                    open: true,
+                    applied: false,
+                    tab: 0,
+                    message: None,
+                    browser: PreferencesBrowser::default(),
+                };
+                // In particular Controls is taller than the dialog. Its own options
+                // scrollbar must absorb that height without moving the whole body.
+                for tab in 0..7 {
+                    panel.tab = tab;
+                    for _ in 0..30 {
+                        let _ = frame(&ctx, size, Vec::new(), |ctx| panel.show(ctx, None, None));
+                    }
+                    let (viewport, content) =
+                        scroll_geometry(&ctx, "quick-preferences-body-geometry")
+                            .ok_or("Missing quick-preferences scroll geometry")?;
+                    assert!(
+                        content.x <= viewport.width() + 1.0,
+                        "Unnecessary horizontal overflow: tab={tab}, size={size:?}, {content:?} in {viewport:?}"
+                    );
+                    assert!(
+                        content.y <= viewport.height() + 1.0,
+                        "Column escaped current body height: tab={tab}, size={size:?}, {content:?} in {viewport:?}"
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn quick_settings_cancel_recovers_draft_after_tiny_window_resize() -> Result<(), &'static str> {

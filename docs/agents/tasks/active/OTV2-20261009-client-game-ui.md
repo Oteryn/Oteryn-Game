@@ -12,7 +12,7 @@ owner: root
 ```
 
 AUTHORING on draft #1942. Published anchor:
-0c3e9287eb208aad65714109874b1567f3a430a3. Not frozen or merged.
+7661702eb5ca3b622ea1edca0f80e25dbb9e4d64. Not frozen or merged.
 Root is sole publisher. Workers author disjoint client files only.
 Owner scope: complete native client/UI/settings plus necessary Platform/engine
 work. Preserve missing server values as unknown; prepare future controls without
@@ -65,13 +65,19 @@ Baseline 0c3: native 111 library+4 application+5 launcher tests, strict all-targ
 Clippy and release build pass; normal browser PKCE/consent, authoritative
 character selection and world admission visibly verified. Current pre-repair
 Linux 121 library+5 launcher tests and Windows GNU all-target strict Clippy pass.
-Final successor: native 122 library+17 application+5 launcher tests (144 total),
+Final successor: native 122 library+19 application+5 launcher tests (146 total),
 MSVC all-targets Clippy and release PASS. Linux 123 library+5 launcher tests,
 Linux strict Clippy, GNU Windows strict all-target Clippy and format PASS.
 Normal PKCE/selection entered the local world; native settings/footer verified.
 Caption/shortcut rows and per-category scrolling were corrected after actual
 screenshots and qualified again. Extra rows default hidden/unbound; final
-all-nine-row visual follow-up is pending.
+all-nine-row world HUD was visually verified after Apply saved [3,3,3].
+Final bounded two-file repair uses actual scroll viewport width and current
+body height for columns/separators. Ten actual-source headless egui tests pass,
+including PL/EN default/tall/high-scale overflow and tiny recovery checks.
+Native final tests/Clippy/release pass after rustfmt on the same staged bytes;
+final native responsive screen visually verified: no redundant outer scrollbar,
+visible Defaults/account actions, notices and Apply/Cancel footer.
 
 Local Docker portal/directory return HTTP 200 and one ready world. Runtime is
 Ubuntu-24.04 at /home/mole/oteryn-native-20261008 and preserved local deployment
@@ -118,16 +124,25 @@ and required independent deep review in this task is authorized. Root is their
 sole publisher/review dispatcher. Merge remains a separate decision.
 
 - #1943: main-targeted audit-pin rotation, frozen 4b535efc116da937bff3fa8a1fe7e064f29c2278.
-- #1944: main-targeted active Rust 1.95 workflow migration, frozen 781a6ab7e47af2686a7e03611cfb3cfa319ec2d6; depends on #1943.
+- #1944: main-targeted active Rust 1.95 workflow migration, frozen eba78bf8868322d25e9a9fb1327cd3257587aae7; depends on #1943.
 
-Protected audit self-edit rejection stays intact. No owner exception or merge
-is self-granted; audit review 4b535efc completed without major issues. Migration review 781a6ab7
-found P1 explicit/plain old helper toolchain overrides; six active/nested helper
-selector repairs are AUTHORING under the same migration scope. No workflow or
-gate blob changes; one justified material-repair re-review follows qualification.
-Full policy wrappers exposed two omitted evidence-job hashes; corrected within
-the approved 21-path validator scope. The durable proposal packet records exact
-patches, hashes, negative tests, actual authoring checks and separate PRs.
+Protected audit self-edit rejection stays intact; no owner exception or merge
+is self-granted. Both exact frozen heads received completed-clean independent
+deep reviews. Migration's original P1 stale/implicit helper overrides were
+repaired in six actual/nested helpers, with one material-repair re-review on
+eba78bf. The existing-owned regression rejects thirteen helper mutations.
+The full policy wrapper also required two omitted evidence-job hash rotations.
+Gate/audit bytes were unchanged by the helper repair. The durable proposal
+packet reconstructs all27 exact source files, full hashes and Git modes.
+Hosted migration game-gate and changed-crate Clippy/tests pass at eba78bf;
+its protected audit still depends on #1943 integration. Neither draft is merged.
+
+Real Rust1.95 engine/harness typechecks, helper parses and failure canaries pass.
+Full engine no-run code generation received SIGKILL; linking and live composed
+qualification are not claimed. The inherited spell staging suite remains13/1,
+proven on trusted main and outside normal canonical node/seam runtime. Retained
+G4 artifact HTTP410 and original S3-A exact-six-path applicability rejection are
+still visible; no custody/pin/ownership guard is weakened or owner-exempted.
 Product active workflows remain unchanged.
 
 License exception for exact epaint_default_fonts 0.36.2/full font notices and its
@@ -138,12 +153,11 @@ compiler inputs 88be0150… are stable. Original proprietary assets are excluded
 ## Next completion boundaries
 
 UI/input/settings repairs, final tests/Clippy and native release are qualified.
-Save product successor through guarded publisher, with code-only scope and this
-record; CI proposal refresh remains a separate authoring write after its helper
-repair is qualified. Complete all-nine-row visual follow-up.
+Save bounded two-file UI successor plus qualified frozen CI proposal packet
+and this record through the guarded publisher. Responsive settings and
+all-nine-row HUD have been verified on the owner PC.
 CI final archived-record heads were frozen and deduplicated; independent deep
-reviews were requested on #1943/#1944. Assess their results without moving heads
-for prose/checkpoint churn. No merge pending owner decision. Full production
+reviews completed clean on #1943/#1944. Keep their exact frozen heads stable. No merge pending owner decision. Full production
 consumers/content/audio, Linux GUI and secure remembered-device integration
 remain completion work; this draft is not a finished game client.
 
@@ -152,7 +166,7 @@ remain completion work; this draft is not a finished game client.
 - `cargo test --locked -p oteryn-client --all-targets`: pass, 123+5 Linux tests.
 - `cargo clippy --locked -p oteryn-client --lib --tests -- -D warnings`: pass.
 - `cargo clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-gnu -- -D warnings`: pass.
-- Native Windows same package/all-targets test, Clippy and release: pass,144 tests.
+- Native Windows same package/all-targets test, Clippy and release: pass,146 tests.
 - `cargo fmt --all --check`: pass.
 - Scoped source whitespace: pass.
 - `python tools/agents/validate_governance.py`: validate in clean publication clone;

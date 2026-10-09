@@ -58,16 +58,14 @@ impl PreferencesBrowser {
                 let body_size = body_rect.size().max(egui::Vec2::splat(1.0));
                 let mut body_ui = ui.new_child(egui::UiBuilder::new().max_rect(body_rect));
                 body_ui.set_clip_rect(ui.clip_rect().intersect(body_rect));
-                egui::ScrollArea::both().id_salt(("all-preferences-body", SETTINGS_SECTIONS[self.section].id))
+                let _body_output = egui::ScrollArea::both().id_salt(("all-preferences-body", SETTINGS_SECTIONS[self.section].id))
                     .auto_shrink([false, false]).max_width(body_size.x).max_height(body_size.y).show(&mut body_ui, |ui| {
-                let body_width = body_size.x.max(1.0);
+                let body_width = ui.available_width().max(1.0);
                 ui.set_width(body_width);
                 let compact = body_width < 520.0;
                 ui.add(egui::TextEdit::singleline(&mut self.search).desired_width(body_width).char_limit(120).hint_text(tr("Szukaj ustawienia…", "Search preferences…")));
                 ui.separator();
                 let sections_width = (body_width * 0.28).min(190.0);
-                let options_width = if compact { body_width } else { (body_width - sections_width - 28.0).max(1.0) };
-                let column_height = (maximum.y - 140.0).max(1.0);
                 let search = self.search.trim().to_lowercase();
                 if compact {
                     egui::ComboBox::from_id_salt("all-preferences-category").width(body_width).truncate()
@@ -79,7 +77,13 @@ impl PreferencesBrowser {
                             }
                         });
                 }
+                // Keep the columns inside the current dialog body, reserving room for
+                // availability text and secondary controls below them.
+                let column_height = (ui.available_height() - 95.0).max(1.0);
                 ui.horizontal_top(|ui| {
+                    if !compact {
+                        ui.set_max_height(column_height);
+                    }
                     if !compact {
                     egui::ScrollArea::vertical().id_salt("all-preferences-sections").scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysVisible).max_height(column_height).show(ui, |ui| {
                         ui.vertical(|ui| {
@@ -93,9 +97,10 @@ impl PreferencesBrowser {
                     });
                     ui.separator();
                     }
-                    egui::ScrollArea::vertical().id_salt(("all-preferences-options", SETTINGS_SECTIONS[self.section].id)).max_height(if compact { f32::INFINITY } else { column_height }).show(ui, |ui| {
+                    let options_width = ui.available_width().max(1.0);
+                    egui::ScrollArea::vertical().id_salt(("all-preferences-options", SETTINGS_SECTIONS[self.section].id)).max_width(options_width).max_height(if compact { f32::INFINITY } else { column_height }).show(ui, |ui| {
                         ui.vertical(|ui| {
-                        ui.set_width(options_width);
+                        ui.set_width(ui.available_width().max(1.0));
                         let section = &SETTINGS_SECTIONS[self.section];
                         ui.heading(section.text(english));
                         let mut matching = 0;
@@ -134,6 +139,8 @@ impl PreferencesBrowser {
                     if ui.button(tr("Połączenie i konto", "Connection and account")).clicked() { action = PreferenceAction::QuickSettings; }
                 });
                 });
+                #[cfg(test)]
+                test_support::record_scroll_geometry(ctx, "all-preferences-body-geometry", &_body_output);
             });
         action
     }
@@ -441,6 +448,20 @@ fn shortcut_label(code: u16) -> String {
 pub(crate) mod test_support {
     use egui::{Context, Event, FullOutput, Pos2, Rect, Vec2, epaint::Shape};
 
+    pub fn record_scroll_geometry(
+        ctx: &Context,
+        id: &str,
+        output: &egui::scroll_area::ScrollAreaOutput<()>,
+    ) {
+        ctx.data_mut(|data| {
+            data.insert_temp(egui::Id::new(id), (output.inner_rect, output.content_size));
+        });
+    }
+
+    pub fn scroll_geometry(ctx: &Context, id: &str) -> Option<(Rect, Vec2)> {
+        ctx.data(|data| data.get_temp(egui::Id::new(id)))
+    }
+
     pub fn frame<T>(
         ctx: &Context,
         size: Vec2,
@@ -516,7 +537,44 @@ pub(crate) mod test_support {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_support::{button_position, click, frame};
+    use test_support::{button_position, click, frame, scroll_geometry};
+
+    #[test]
+    fn basic_preferences_fit_the_body_at_native_and_tall_desktop_sizes() -> Result<(), &'static str>
+    {
+        for english in [false, true] {
+            for (physical_size, scale) in [
+                (egui::vec2(1143.0, 814.0), 1.0),
+                (egui::vec2(1143.0, 814.0), 1.8),
+                (egui::vec2(1920.0, 1440.0), 1.0),
+            ] {
+                let ctx = egui::Context::default();
+                let size = physical_size / scale;
+                let mut browser = PreferencesBrowser::new();
+                let mut draft = ClientSettings {
+                    english,
+                    ui_scale: scale,
+                    ..Default::default()
+                };
+                for _ in 0..30 {
+                    let _ = frame(&ctx, size, Vec::new(), |ctx| {
+                        browser.show(ctx, &mut draft, None)
+                    });
+                }
+                let (inner, content) = scroll_geometry(&ctx, "all-preferences-body-geometry")
+                    .ok_or("missing preferences body geometry")?;
+                assert!(
+                    content.x <= inner.width() + 1.0,
+                    "Basic preferences unnecessarily scroll horizontally: {content:?}, {inner:?}"
+                );
+                assert!(
+                    content.y <= inner.height() + 1.0,
+                    "Basic preferences overflow the dialog body: {content:?}, {inner:?}"
+                );
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn category_navigation_does_not_inherit_other_options_scroll() -> Result<(), &'static str> {
