@@ -137,4 +137,3 @@ qualification remain pending. Merge commit/result is pending; a future squash
 merge of #1944 requires separate owner authorization, prerequisite main readback,
 ordinary green protected audit and normal MQ proof. No integration, production
 activation or ownership-release result is claimed by this archive.
-
