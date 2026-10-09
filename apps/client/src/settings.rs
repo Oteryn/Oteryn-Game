@@ -47,11 +47,7 @@ const fn enabled() -> bool {
 }
 
 fn default_panel_shortcuts() -> Vec<String> {
-    crate::panel_catalog::PANELS
-        .iter()
-        .filter(|p| p.default_visible)
-        .map(|p| p.id.to_owned())
-        .collect()
+    crate::panel_catalog::ShortcutOrder::default().saved_ids()
 }
 
 impl Default for ClientSettings {
@@ -107,17 +103,7 @@ impl ClientSettings {
             ));
         }
         self.action_bar.validate(&self.movement_keys)?;
-        if self.panel_shortcuts.len() > crate::panel_catalog::PANELS.len()
-            || self.panel_shortcuts.iter().enumerate().any(|(index, id)| {
-                crate::panel_catalog::panel(id).is_none()
-                    || self.panel_shortcuts[..index].contains(id)
-            })
-        {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "Invalid panel shortcuts",
-            ));
-        }
+        crate::panel_catalog::ShortcutOrder::from_saved(&self.panel_shortcuts)?;
         crate::settings_catalog::validate_future_preferences(&self.future_preferences)
     }
 
@@ -238,6 +224,70 @@ mod tests {
         settings.fps = 1;
         assert!(settings.save(&path).is_err());
         assert_eq!(ClientSettings::load(&path)?.fps, 120);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_shortcuts_default_while_explicit_empty_and_custom_order_survive()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let defaults = ClientSettings::default();
+        let mut legacy = serde_json::to_value(&defaults)?;
+        let object = legacy
+            .as_object_mut()
+            .ok_or("settings must serialize as an object")?;
+        object.remove("panel_shortcuts");
+        let restored: ClientSettings = serde_json::from_value(legacy.clone())?;
+        restored.validate()?;
+        assert_eq!(restored.panel_shortcuts, defaults.panel_shortcuts);
+        legacy
+            .as_object_mut()
+            .ok_or("settings must serialize as an object")?
+            .insert("panel_shortcuts".into(), serde_json::json!([]));
+        let empty: ClientSettings = serde_json::from_value(legacy)?;
+        empty.validate()?;
+        assert!(empty.panel_shortcuts.is_empty());
+        let custom = ClientSettings {
+            english: true,
+            panel_shortcuts: vec!["forge".into(), "skills".into(), "vip".into()],
+            ..defaults
+        };
+        let loaded: ClientSettings = serde_json::from_slice(&serde_json::to_vec(&custom)?)?;
+        loaded.validate()?;
+        assert_eq!(loaded, custom);
+        Ok(())
+    }
+
+    #[test]
+    fn all_shortcuts_save_in_user_order_and_invalid_order_preserves_file() -> io::Result<()> {
+        use crate::panel_catalog::ShortcutOrder;
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-shortcut-order-test-{}.json",
+            std::process::id()
+        ));
+        let mut settings = ClientSettings {
+            english: true,
+            panel_shortcuts: ShortcutOrder::all().saved_ids(),
+            ..ClientSettings::default()
+        };
+        settings.panel_shortcuts.reverse();
+        settings.save(&path)?;
+        assert_eq!(ClientSettings::load(&path)?, settings);
+        for invalid in [
+            vec!["skills".into(), "skills".into()],
+            vec!["unknown".into()],
+            vec!["skills".into(); 29],
+        ] {
+            let mut rejected = settings.clone();
+            rejected.panel_shortcuts = invalid;
+            assert!(rejected.save(&path).is_err());
+            assert_eq!(ClientSettings::load(&path)?, settings);
+        }
+        settings.panel_shortcuts = ShortcutOrder::default().saved_ids();
+        settings.save(&path)?;
+        let restored = ClientSettings::load(&path)?;
+        assert_eq!(restored.panel_shortcuts.len(), 11);
+        assert!(restored.english);
         fs::remove_file(path)?;
         Ok(())
     }

@@ -2,16 +2,18 @@
 use egui::{Color32, RichText, Vec2};
 use oteryn_client::{
     panel_catalog::{
-        FieldKind, PANELS, PanelDefinition, PanelField, PanelLayout, fields_for_tab, panel,
+        FieldKind, PANELS, PanelDefinition, PanelField, PanelLayout, ShortcutOrder, fields_for_tab,
+        panel,
     },
     play::GameState,
 };
 use oteryn_session::{EntityDetail, EntityKind};
 use std::collections::{BTreeMap, BTreeSet};
 
+#[derive(Default)]
 pub struct ClientPanels {
     pub manage: bool,
-    pinned: BTreeSet<&'static str>,
+    pinned: ShortcutOrder,
     open: BTreeSet<&'static str>,
     contents: BTreeMap<&'static str, PanelState>,
     views: crate::panel_views::PanelViews,
@@ -19,43 +21,21 @@ pub struct ClientPanels {
     dirty: bool,
 }
 
-impl Default for ClientPanels {
-    fn default() -> Self {
-        Self {
-            manage: false,
-            pinned: PANELS
-                .iter()
-                .filter(|p| p.default_visible)
-                .map(|p| p.id)
-                .collect(),
-            open: BTreeSet::new(),
-            contents: BTreeMap::new(),
-            views: crate::panel_views::PanelViews::default(),
-            initialized: false,
-            dirty: false,
-        }
-    }
-}
-
 impl ClientPanels {
     pub fn initialize(&mut self, shortcuts: &[String]) {
         if !self.initialized {
-            self.pinned = shortcuts
-                .iter()
-                .filter_map(|id| panel(id).map(|p| p.id))
-                .collect();
+            self.pinned = ShortcutOrder::from_saved(shortcuts).unwrap_or_default();
             self.initialized = true;
         }
     }
 
     pub fn take_shortcuts(&mut self) -> Option<Vec<String>> {
-        std::mem::take(&mut self.dirty)
-            .then(|| self.pinned.iter().map(|id| (*id).to_owned()).collect())
+        std::mem::take(&mut self.dirty).then(|| self.pinned.saved_ids())
     }
     pub fn shortcuts(&mut self, ui: &mut egui::Ui, english: bool) {
         ui.horizontal_wrapped(|ui| {
             ui.spacing_mut().item_spacing = Vec2::splat(4.0);
-            for definition in PANELS.iter().filter(|p| self.pinned.contains(p.id)) {
+            for definition in self.pinned.ids().iter().filter_map(|id| panel(id)) {
                 let label = definition.label(english);
                 let selected = if definition.id == "shortcuts" {
                     self.manage
@@ -105,15 +85,11 @@ impl ClientPanels {
                 .show(ctx, |ui| {
                     ui.horizontal(|ui| {
                         if ui.button(tr("Wszystkie", "All")).clicked() {
-                            self.pinned = PANELS.iter().map(|p| p.id).collect();
+                            self.pinned = ShortcutOrder::all();
                             self.dirty = true;
                         }
                         if ui.button(tr("Domyślne", "Defaults")).clicked() {
-                            self.pinned = PANELS
-                                .iter()
-                                .filter(|p| p.default_visible)
-                                .map(|p| p.id)
-                                .collect();
+                            self.pinned = ShortcutOrder::default();
                             self.dirty = true;
                         }
                     });
@@ -121,7 +97,13 @@ impl ClientPanels {
                         .id_salt("shortcut-manager-list")
                         .max_height((ui.available_height() - 8.0).max(40.0))
                         .show(ui, |ui| {
-                            for definition in PANELS {
+                            let displayed = self.pinned.ids().to_vec();
+                            let mut change = None;
+                            ui.heading(tr("Wyświetlane skróty", "Displayed shortcuts"));
+                            for (index, id) in displayed.iter().enumerate() {
+                                let Some(definition) = panel(id) else {
+                                    continue;
+                                };
                                 ui.horizontal(|ui| {
                                     if crate::panel_icons::shortcut(
                                         ui,
@@ -133,24 +115,89 @@ impl ClientPanels {
                                     {
                                         self.open.insert(definition.id);
                                     }
-                                    let mut pinned = self.pinned.contains(definition.id);
+                                    ui.label(definition.label(english));
                                     if ui
-                                        .checkbox(&mut pinned, definition.label(english))
-                                        .changed()
+                                        .add_enabled(index > 0, egui::Button::new("↑"))
+                                        .on_hover_text(tr(
+                                            "Przenieś skrót wcześniej",
+                                            "Move shortcut earlier",
+                                        ))
+                                        .clicked()
                                     {
-                                        self.dirty = true;
-                                        if pinned {
-                                            self.pinned.insert(definition.id);
-                                        } else {
-                                            self.pinned.remove(definition.id);
-                                        }
+                                        change = Some(ShortcutChange::Move(index, true));
                                     }
-                                    if definition.id != "shortcuts"
-                                        && ui.button(tr("Otwórz", "Open")).clicked()
+                                    if ui
+                                        .add_enabled(
+                                            index + 1 < displayed.len(),
+                                            egui::Button::new("↓"),
+                                        )
+                                        .on_hover_text(tr(
+                                            "Przenieś skrót później",
+                                            "Move shortcut later",
+                                        ))
+                                        .clicked()
+                                    {
+                                        change = Some(ShortcutChange::Move(index, false));
+                                    }
+                                    if ui
+                                        .button(tr("Usuń", "Remove"))
+                                        .on_hover_text(tr(
+                                            "Ukryj skrót; panel pozostaje dostępny",
+                                            "Hide shortcut; the panel stays available",
+                                        ))
+                                        .clicked()
+                                    {
+                                        change =
+                                            Some(ShortcutChange::Visible(definition.id, false));
+                                    }
+                                });
+                            }
+                            ui.separator();
+                            ui.heading(tr("Dostępne skróty", "Available shortcuts"));
+                            let available: Vec<_> = PANELS
+                                .iter()
+                                .filter(|p| !self.pinned.contains(p.id))
+                                .collect();
+                            if available.is_empty() {
+                                ui.weak(tr(
+                                    "Wszystkie skróty są wyświetlane.",
+                                    "All shortcuts are displayed.",
+                                ));
+                            }
+                            for definition in available {
+                                ui.horizontal(|ui| {
+                                    if crate::panel_icons::shortcut(
+                                        ui,
+                                        definition.id,
+                                        definition.label(english),
+                                    )
+                                    .clicked()
+                                        && definition.id != "shortcuts"
                                     {
                                         self.open.insert(definition.id);
                                     }
+                                    ui.label(definition.label(english));
+                                    if ui
+                                        .button(tr("Dodaj", "Add"))
+                                        .on_hover_text(tr(
+                                            "Dodaj skrót na końcu paska",
+                                            "Append shortcut to the bar",
+                                        ))
+                                        .clicked()
+                                    {
+                                        change = Some(ShortcutChange::Visible(definition.id, true));
+                                    }
                                 });
+                            }
+                            if let Some(change) = change {
+                                self.dirty |= match change {
+                                    ShortcutChange::Move(index, earlier) => {
+                                        self.pinned.move_one(index, earlier)
+                                    }
+                                    ShortcutChange::Visible(id, visible) => {
+                                        self.pinned.set_visible(id, visible)
+                                    }
+                                };
                             }
                         });
                 });
@@ -190,7 +237,17 @@ impl ClientPanels {
                 self.open.remove(id);
             }
         }
+        if let Some(destination) = self.views.take_navigation()
+            && panel(destination).is_some()
+        {
+            self.open.insert(destination);
+        }
     }
+}
+
+enum ShortcutChange {
+    Move(usize, bool),
+    Visible(&'static str, bool),
 }
 
 #[derive(Default)]

@@ -197,6 +197,98 @@ pub fn panel(id: &str) -> Option<&'static PanelDefinition> {
     PANELS.iter().find(|panel| panel.id == id)
 }
 
+/// Local displayed order. The catalogue order is Oteryn's default; reference evidence
+/// establishes the original eleven's membership, not their precise physical arrangement.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ShortcutOrder {
+    ids: Vec<&'static str>,
+}
+impl Default for ShortcutOrder {
+    fn default() -> Self {
+        Self {
+            ids: PANELS
+                .iter()
+                .filter(|panel| panel.default_visible)
+                .map(|panel| panel.id)
+                .collect(),
+        }
+    }
+}
+impl ShortcutOrder {
+    pub fn from_saved(ids: &[String]) -> std::io::Result<Self> {
+        let invalid =
+            || std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid panel shortcuts");
+        if ids.len() > PANELS.len() {
+            return Err(invalid());
+        }
+        let mut order = Self {
+            ids: Vec::with_capacity(ids.len()),
+        };
+        for id in ids {
+            let definition = panel(id).ok_or_else(invalid)?;
+            if order.ids.contains(&definition.id) {
+                return Err(invalid());
+            }
+            order.ids.push(definition.id);
+        }
+        Ok(order)
+    }
+    #[must_use]
+    pub fn all() -> Self {
+        Self {
+            ids: PANELS.iter().map(|panel| panel.id).collect(),
+        }
+    }
+    #[must_use]
+    pub fn ids(&self) -> &[&'static str] {
+        &self.ids
+    }
+    #[must_use]
+    pub fn saved_ids(&self) -> Vec<String> {
+        self.ids.iter().map(|id| (*id).to_owned()).collect()
+    }
+    #[must_use]
+    pub fn contains(&self, id: &str) -> bool {
+        self.ids.contains(&id)
+    }
+    /// Append a newly shown shortcut; hiding keeps all other relative positions intact.
+    pub fn set_visible(&mut self, id: &str, visible: bool) -> bool {
+        let Some(definition) = panel(id) else {
+            return false;
+        };
+        match (
+            self.ids.iter().position(|candidate| *candidate == id),
+            visible,
+        ) {
+            (None, true) => {
+                self.ids.push(definition.id);
+                true
+            }
+            (Some(index), false) => {
+                self.ids.remove(index);
+                true
+            }
+            _ => false,
+        }
+    }
+    /// One editor step; a boundary request leaves the order unchanged.
+    pub fn move_one(&mut self, index: usize, earlier: bool) -> bool {
+        let destination = if earlier {
+            index.checked_sub(1)
+        } else {
+            index.checked_add(1)
+        };
+        let Some(destination) = destination else {
+            return false;
+        };
+        if index >= self.ids.len() || destination >= self.ids.len() {
+            return false;
+        }
+        self.ids.swap(index, destination);
+        true
+    }
+}
+
 /// Tab-specific fields replace the shared overview. This is layout metadata, not decoded
 /// domain state; unknown values must remain unknown until the owning projection supplies them.
 #[must_use]
@@ -293,5 +385,45 @@ mod tests {
             panel("help").map(|panel| panel.evidence),
             Some(Evidence::ObservedShortcut)
         );
+    }
+
+    #[test]
+    fn shortcut_editing_preserves_order_and_rejects_invalid_or_duplicate_ids() -> std::io::Result<()>
+    {
+        let mut order =
+            ShortcutOrder::from_saved(&["forge".into(), "skills".into(), "vip".into()])?;
+        assert_eq!(order.ids(), ["forge", "skills", "vip"]);
+        assert!(!order.move_one(0, true));
+        assert!(!order.move_one(usize::MAX, false));
+        assert!(order.move_one(2, true));
+        assert_eq!(order.ids(), ["forge", "vip", "skills"]);
+        assert!(order.set_visible("vip", false));
+        assert!(order.set_visible("vip", true));
+        assert!(!order.set_visible("vip", true));
+        assert!(!order.set_visible("unknown", true));
+        assert_eq!(ShortcutOrder::from_saved(&order.saved_ids())?, order);
+        assert_eq!(order.ids(), ["forge", "skills", "vip"]);
+        assert!(ShortcutOrder::from_saved(&["skills".into(), "skills".into()]).is_err());
+        assert!(ShortcutOrder::from_saved(&["unknown".into()]).is_err());
+        assert!(ShortcutOrder::from_saved(&vec!["skills".into(); 29]).is_err());
+        assert!(ShortcutOrder::from_saved(&[])?.ids().is_empty());
+        assert_eq!(ShortcutOrder::all().ids().len(), 28);
+        assert_eq!(
+            ShortcutOrder::default().ids(),
+            [
+                "skills",
+                "battle",
+                "spells",
+                "vip",
+                "help",
+                "quest-log",
+                "compendium",
+                "cyclopedia",
+                "highscores",
+                "player-guide",
+                "shortcuts"
+            ]
+        );
+        Ok(())
     }
 }

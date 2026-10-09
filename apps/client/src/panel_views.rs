@@ -19,9 +19,15 @@ struct Draft {
 #[derive(Default)]
 pub struct PanelViews {
     drafts: BTreeMap<String, Draft>,
+    navigation: Option<&'static str>,
 }
 
 impl PanelViews {
+    /// One local panel-navigation request, consumed by the shell without a Game command.
+    pub fn take_navigation(&mut self) -> Option<&'static str> {
+        self.navigation.take()
+    }
+
     /// Returns false for panels drawn by the existing live HUD/help/shortcut renderer.
     pub fn show(&mut self, ui: &mut egui::Ui, id: &str, english: bool, state: &GameState) -> bool {
         if !matches!(
@@ -52,6 +58,7 @@ impl PanelViews {
             return false;
         }
         let draft = self.drafts.entry(id.to_owned()).or_default();
+        let mut open_items = false;
         ui.push_id(("dedicated-panel", id), |ui| {
             ui.spacing_mut().item_spacing = Vec2::new(5.0, 4.0);
             match id {
@@ -65,7 +72,7 @@ impl PanelViews {
                 "task-board" => tasks(ui, draft, english),
                 "party" | "social" => social(ui, draft, english, id == "party"),
                 "reward-wall" => rewards(ui, draft, english),
-                "analytics" => analytics(ui, draft, english),
+                "analytics" => open_items = analytics(ui, draft, english),
                 "bosstiary" => bestiary(ui, draft, english, true),
                 "boss-slots" => boss_slots(ui, english),
                 "weapon-proficiency" => proficiency(ui, draft, english, state),
@@ -75,6 +82,16 @@ impl PanelViews {
                 _ => tracker(ui, draft, english, id),
             }
         });
+        if open_items {
+            // Directly observed route: Add Tracked Drop opens the item catalogue;
+            // opening it must not assign a tracked item or alter a server preference.
+            self.drafts
+                .entry("cyclopedia".to_owned())
+                .or_default()
+                .choices
+                .insert("cyclopedia.page", 1);
+            self.navigation = Some("cyclopedia");
+        }
         true
     }
 }
@@ -552,7 +569,8 @@ fn unjustified(ui: &mut egui::Ui, en: bool) {
 }
 
 #[rustfmt::skip]
-fn analytics(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
+fn analytics(ui: &mut egui::Ui, d: &mut Draft, en: bool) -> bool {
+    let mut open_items = false;
     let labels = [("Polowanie","Hunting"),("Łupy","Loot"),("Zużycie","Supply"),("Obrażenia i leczenie","Impact"),("Otrzymane obrażenia","Damage input"),("Doświadczenie","XP"),("Zdobycze","Drops"),("Polowanie drużynowe","Party hunt"),("Bossowie","Boss cooldowns")];
     choice(ui,d,"analytics.kind",en,("Analizator","Analyzer"),&labels);
     let kind=d.choices["analytics.kind"];
@@ -567,13 +585,14 @@ fn analytics(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
         3 => { values(ui,"analytics.impact",en,&[("Obrażenia","Damage"),("DPS","DPS"),("Maksymalne DPS","Maximum DPS"),("Rekord DPS","All-time DPS"),("Leczenie","Healing"),("HPS","HPS"),("Maksymalne HPS","Maximum HPS"),("Rekord HPS","All-time HPS")]); table(ui,"analytics.impact.types",en,&[("Rodzaj","Type"),("Wartość","Value")]); }
         4 => { values(ui,"analytics.received",en,&[("Otrzymane obrażenia","Damage received"),("Maksymalne DPS","Maximum incoming DPS")]); table(ui,"analytics.sources",en,&[("Źródło","Source"),("Rodzaj","Type"),("Obrażenia","Damage")]); }
         5 => { values(ui,"analytics.xp",en,&[("Zdobyte doświadczenie","Experience gained"),("Doświadczenie na godzinę","XP per hour")]); progress(ui,en,("Postęp do poziomu","Next-level progress")); }
-        6 => { table(ui,"analytics.drops",en,&[("Śledzony przedmiot","Tracked item"),("Zdobycze","Drops")]); action(ui,en,("Dodaj śledzoną zdobycz","Add tracked drop")); }
+        6 => { table(ui,"analytics.drops",en,&[("Śledzony przedmiot","Tracked item"),("Zdobycze","Drops")]); open_items = ui.button(tr(en,("Dodaj śledzoną zdobycz","Add tracked drop"))).clicked(); }
         7 => { values(ui,"analytics.party",en,&[("Czas polowania","Hunt duration"),("Wycena łupów","Loot-price mode")]); table(ui,"analytics.party.members",en,&[("Członek","Member"),("Łupy","Loot"),("Zużycie","Supply"),("Bilans","Balance")]); }
         8 => { choice(ui,d,"analytics.boss.sort",en,("Sortuj","Sort"),&[("Odnowienie","Cooldown"),("Nazwa","Name")]); table(ui,"analytics.bosses",en,&[("Boss","Boss"),("Odnowienie","Cooldown")]); }
         _ => { values(ui,"analytics.hunt",en,&[("Czas polowania","Hunt duration"),("Doświadczenie","Experience"),("Łupy","Loot"),("Zużycie","Supply"),("Bilans","Balance")]); }
     }
     if *d.flags.get("analytics.graph").unwrap_or(&false) { ui.group(|ui| { ui.label(tr(en,("Wykres sesji","Session graph"))); ui.add_space(45.0); ui.label("—"); }); }
     if *d.flags.get("analytics.gauge").unwrap_or(&false) { progress(ui,en,("Wskaźnik analizatora","Analyzer gauge")); }
+    open_items
 }
 
 #[rustfmt::skip]
@@ -588,13 +607,280 @@ fn cyclopedia(ui: &mut egui::Ui, d: &mut Draft, en: bool, state: &GameState) {
         4 => bestiary(ui,d,en,false),
         5 => { choice(ui,d,"charms.kind",en,("Talizmany","Charms"),&[("Główne","Major"),("Mniejsze","Minor")]); table(ui,"charms.list",en,&[("Talizman","Charm"),("Koszt","Cost"),("Etap","Stage")]); details(ui,"charms.rules",en,("Efekt i wymagania","Effect and requirements")); action(ui,en,("Odblokuj talizman","Unlock charm")); action(ui,en,("Przypisz do stworzenia","Assign to creature")); action(ui,en,("Usuń przypisanie","Unassign")); }
         6 => bestiary(ui,d,en,true), 7 => boss_slots(ui,en), 8 => spells(ui,d,en),
-        10 | 11 => { table(ui,"character.combat",en,&[("Składnik","Contribution"),("Wartość","Value"),("Źródło","Source")]); values(ui,"character.combat.totals",en,&[("Pancerz","Armor"),("Redukcja obrażeń","Mitigation"),("Obrażenia krytyczne","Critical damage"),("Szansa krytyczna","Critical chance")]); }
+        10 => offence(ui,en), 11 => defence(ui,en),
         12 => table(ui,"character.blessings",en,&[("Błogosławieństwo","Blessing"),("Stan","Status"),("Efekt","Effect")]),
         13 | 14 => table(ui,"character.records",en,&[("Data","Date"),("Postać","Character"),("Zdarzenie","Event")]),
         15 => { text(ui,d,"achievements.search",en,("Wyszukaj osiągnięcie","Search achievement")); table(ui,"achievements.list",en,&[("Osiągnięcie","Achievement"),("Stopień","Grade"),("Data","Date")]); details(ui,"achievements.details",en,("Opis osiągnięcia","Achievement description")); }
-        16 => { choice(ui,d,"summary.source",en,("Źródło","Source"),&[("Ekwipunek","Inventory"),("Depozyt","Depot"),("Skrzynka","Inbox"),("Magazyn","Stash")]); table(ui,"summary.items",en,&[("Przedmiot","Item"),("Ilość","Quantity"),("Miejsce","Location")]); }
+        16 => item_summary(ui,d,en,state),
         17 => { choice(ui,d,"appearance.kind",en,("Rodzaj","Type"),&[("Stroje","Outfits"),("Wierzchowce","Mounts"),("Chowańce","Familiars")]); table(ui,"appearance.list",en,&[("Wygląd","Appearance"),("Dostępność","Availability")]); action(ui,en,("Zastosuj wygląd","Apply appearance")); }
         18 => table(ui,"account.benefits",en,&[("Korzyść","Benefit"),("Dostępność","Availability"),("Pozostały czas","Time remaining")]),
-        _ => { values(ui,"titles.current",en,&[("Aktualny tytuł","Current title")]); table(ui,"titles.list",en,&[("Tytuł","Title"),("Dostępność","Availability"),("Czas","Duration")]); action(ui,en,("Ustaw tytuł","Set title")); }
+        _ => titles(ui,d,en),
+    }
+}
+
+// Directly observed fields and navigation: REFERENCE-AUDIT.md, Character stat subpages.
+fn offence(ui: &mut egui::Ui, en: bool) {
+    values(
+        ui,
+        "offence.totals",
+        en,
+        &[
+            ("Stałe obrażenia", "Flat damage"),
+            ("Stałe leczenie", "Flat healing"),
+            ("Atak", "Attack"),
+            ("Szansa krytyczna", "Critical chance"),
+            ("Dodatkowe obrażenia krytyczne", "Extra critical damage"),
+        ],
+    );
+    ui.strong(tr(en, ("Składniki ataku", "Attack contributions")));
+    table(
+        ui,
+        "offence.contributions",
+        en,
+        &[
+            ("Składnik", "Contribution"),
+            ("Wartość", "Value"),
+            ("Źródło", "Source"),
+        ],
+    );
+}
+
+fn defence(ui: &mut egui::Ui, en: bool) {
+    values(
+        ui,
+        "defence.totals",
+        en,
+        &[
+            ("Pancerz", "Armor"),
+            ("Redukcja obrażeń", "Mitigation"),
+            ("Pojemność tarczy magicznej", "Magic-shield capacity"),
+        ],
+    );
+    ui.strong(tr(en, ("Składniki obrony", "Defence contributions")));
+    values(
+        ui,
+        "defence.contributions",
+        en,
+        &[
+            ("Obrona z wyposażenia", "Equipment defence"),
+            ("Obrona z umiejętności", "Skill defence"),
+        ],
+    );
+    ui.strong(tr(
+        en,
+        (
+            "Redukcja według rodzaju obrażeń",
+            "Reduction by damage type",
+        ),
+    ));
+    values(
+        ui,
+        "defence.reductions",
+        en,
+        &[
+            ("Fizyczne", "Physical"),
+            ("Ogień", "Fire"),
+            ("Ziemia", "Earth"),
+            ("Energia", "Energy"),
+            ("Lód", "Ice"),
+            ("Świętość", "Holy"),
+            ("Śmierć", "Death"),
+        ],
+    );
+}
+
+fn titles(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
+    values(
+        ui,
+        "titles.current",
+        en,
+        &[("Aktualny tytuł", "Current title")],
+    );
+    text(
+        ui,
+        d,
+        "titles.search",
+        en,
+        ("Wyszukaj tytuł", "Search title"),
+    );
+    choice(
+        ui,
+        d,
+        "titles.duration",
+        en,
+        ("Czas dostępności", "Duration"),
+        &[ALL, ("Stałe", "Permanent"), ("Tymczasowe", "Temporary")],
+    );
+    choice(
+        ui,
+        d,
+        "titles.availability",
+        en,
+        ("Dostępność", "Availability"),
+        &[ALL, ("Zablokowane", "Locked"), ("Odblokowane", "Unlocked")],
+    );
+    table(
+        ui,
+        "titles.list",
+        en,
+        &[
+            ("Tytuł", "Title"),
+            ("Dostępność", "Availability"),
+            ("Czas", "Duration"),
+        ],
+    );
+    action(ui, en, ("Ustaw tytuł", "Set title"));
+}
+
+fn item_summary(ui: &mut egui::Ui, d: &mut Draft, en: bool, state: &GameState) {
+    choice(
+        ui,
+        d,
+        "summary.source",
+        en,
+        ("Źródło", "Source"),
+        &[
+            ("Ekwipunek", "Inventory"),
+            ("Depozyt", "Depot"),
+            ("Skrzynka", "Inbox"),
+            ("Magazyn", "Stash"),
+            ("Skrzynka sklepu", "Store inbox"),
+        ],
+    );
+    text(
+        ui,
+        d,
+        "summary.search",
+        en,
+        ("Wyszukaj przedmiot", "Search item"),
+    );
+    choice(
+        ui,
+        d,
+        "summary.view",
+        en,
+        ("Widok", "View"),
+        &[("Lista", "List"), ("Siatka", "Grid")],
+    );
+    let columns = [
+        ("Przedmiot", "Item"),
+        ("Ilość", "Quantity"),
+        ("Miejsce", "Location"),
+    ];
+    let grid = d.choices["summary.view"] == 1;
+    let inventory = (d.choices["summary.source"] == 0)
+        .then_some(state.inventory.as_ref())
+        .flatten();
+    let Some(inventory) = inventory else {
+        if grid {
+            ui.group(|ui| {
+                ui.weak(tr(
+                    en,
+                    ("Nie otrzymano wpisów.", "No entries have been received."),
+                ));
+            });
+        } else {
+            table(ui, "summary.items", en, &columns);
+        }
+        return;
+    };
+    // These are the actual known backpack and equipment entries; no depot/store rows
+    // or names are inferred from the selected source or an item definition number.
+    let items: Vec<_> = inventory
+        .entries
+        .iter()
+        .map(|item| (item, tr(en, ("Plecak", "Backpack"))))
+        .chain(
+            inventory
+                .main_backpack
+                .iter()
+                .map(|item| (item, tr(en, ("Slot plecaka", "Backpack slot")))),
+        )
+        .chain(
+            inventory
+                .equipment
+                .iter()
+                .map(|entry| (&entry.item, tr(en, ("Wyposażone", "Equipped")))),
+        )
+        .collect();
+    let selected = d.items.entry("summary.selected").or_default();
+    if selected.is_some_and(|handle| !items.iter().any(|(item, _)| item.handle.get() == handle)) {
+        *selected = None;
+    }
+    let query = d
+        .texts
+        .get("summary.search")
+        .map_or("", String::as_str)
+        .trim()
+        .to_lowercase();
+    let rows: Vec<_> = items
+        .into_iter()
+        .map(|(item, location)| {
+            let label = format!(
+                "{} #{}",
+                tr(en, ("Przedmiot", "Item")),
+                item.item_definition_ref
+            );
+            (item, location, label)
+        })
+        .filter(|(_, _, label)| query.is_empty() || label.to_lowercase().contains(&query))
+        .collect();
+    if rows.is_empty() {
+        ui.weak(tr(
+            en,
+            if query.is_empty() {
+                ("Brak przedmiotów.", "No items.")
+            } else {
+                ("Brak pasujących przedmiotów.", "No matching items.")
+            },
+        ));
+        return;
+    }
+    if grid {
+        ui.horizontal_wrapped(|ui| {
+            for (item, location, label) in rows {
+                ui.group(|ui| {
+                    ui.set_max_width(ui.available_width().min(110.0));
+                    if ui
+                        .add(
+                            egui::Button::selectable(*selected == Some(item.handle.get()), label)
+                                .wrap(),
+                        )
+                        .clicked()
+                    {
+                        *selected = Some(item.handle.get());
+                    }
+                    ui.small(format!("× {}", item.count));
+                    ui.small(location);
+                });
+            }
+        });
+    } else {
+        let width = ((ui.available_width() - 16.0) / 3.0).max(24.0);
+        egui::Grid::new("summary.items")
+            .num_columns(3)
+            .min_col_width(0.0)
+            .max_col_width(width)
+            .striped(true)
+            .show(ui, |ui| {
+                for column in columns {
+                    ui.strong(tr(en, column));
+                }
+                ui.end_row();
+                for (item, location, label) in rows {
+                    if ui
+                        .add(
+                            egui::Button::selectable(*selected == Some(item.handle.get()), label)
+                                .wrap(),
+                        )
+                        .clicked()
+                    {
+                        *selected = Some(item.handle.get());
+                    }
+                    ui.label(item.count.to_string());
+                    ui.label(location);
+                    ui.end_row();
+                }
+            });
     }
 }
