@@ -12,7 +12,8 @@ and Shortcuts; Graphics and Effects; Sound, Battle Sounds and UI Sounds;
 Miscellaneous, Gameplay, Screenshots and Help. See [SETTINGS.md](SETTINGS.md)
 for observed controls, intended Oteryn scope and owning subsystem dependencies.
 
-A private catalogue contains 213 preference field names from six sections,
+[REFERENCE-PREFERENCE-KEYS.json](REFERENCE-PREFERENCE-KEYS.json) contains 213
+preference field names from six sections,
 without account values, cookies or credentials. Field discovery does not establish
 runtime behavior. Captures were verified by visible content; stale or incorrectly
 named captures are excluded from evidence.
@@ -98,9 +99,12 @@ All **17 extra shortcuts** were added; the available list became empty:
 | Social | Team finder visible; seeing/joining/assembling teams requires Premium |
 | Task Board | Inspected Bounty Tasks, Weekly Tasks and Hunting Task Shop |
 
-Analytics Selector visibly offers Hunting, Loot, Supply, Impact, Damage Input,
-XP, Drop Tracker and Party Hunt analysis. More entries may require scrolling;
-this checkpoint does not claim the complete analyser inventory.
+Analytics Selector shows nine entries, including Boss Cooldowns. Hunting opens
+the Premium Store on this account. Loot and Supply open docked value/per-hour
+panels. Supply's header menu exposes Reset Data and per-hour gauge/graph controls,
+with those graphical controls labelled Premium. Impact shows damage totals, DPS,
+maximum DPS and all-time high, damage-type breakdown, healing totals, HPS and
+maximum/all-time values. Remaining entries are being inspected separately.
 
 Backpack context controls and remaining chat/navigation controls also need
 inspection. Empty or account-restricted states must be reported as such.
