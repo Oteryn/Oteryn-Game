@@ -12,7 +12,7 @@ owner: root
 ```
 
 AUTHORING on draft #1942. Published anchor:
-487cb644c137adad7e4983265af0307a0e036391. Not frozen or merged.
+1ec067ff5900d535ef79c75f35c9f40519e17005. Not frozen or merged.
 Root is sole publisher. No new worker delegation in this increment.
 Owner scope: complete native client/UI/settings plus necessary Platform/engine
 work. Preserve missing server values as unknown; prepare future controls without
@@ -52,6 +52,23 @@ Server HP/MP/inventory/chat absence stays unknown. Wheel topology is unverified;
 no fabricated allocations, progression or records. Gem/Fragment private captures
 establish their group compositions only. User wants missing engine mechanisms
 completed later; accepted authority/projection contracts still govern that work.
+
+## Display/input authoring batch
+
+Dedicated Controls, Interface, Graphics, Game Window and Gameplay compositions
+replace generic fields. Rotation has separate Ctrl/Shift/Alt modifier intent,
+not a required letter key. Whole-stack Ctrl intent, link COPY warning and three
+expiry destinations have distinct bounded bool keys; legacy intent remains valid
+and is not silently repurposed. Delay range and target-dropdown membership are
+still unverified. No input/clipboard/expiry consumer is falsely asserted.
+Graphics consumes existing fullscreen/VSync/FPS/window fields. Unlimited toggle
+restores the previous draft frame limit; FPS range follows existing30..360 bound.
+Current FPS stays unknown because diagnostics are not supplied to preferences.
+Existing JSON schema/read compatibility is preserved. Compact encoding saves
+all new choices inside the unchanged32KiB bound; maximal escaped-text roundtrip
+regression covers actual save/load. Native124 library+30 application+5 launcher
+tests(159 total), strict all-target MSVC Clippy/release PASS. Private actual Windows Graphics/Shortcuts captures verify current layouts;
+clean publication governance/policy and59 regression tests PASS.
 
 ## Related PRs and authority
 

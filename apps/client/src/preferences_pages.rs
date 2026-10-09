@@ -1,5 +1,7 @@
 //! Dedicated compositions from private reference captures; no reference assets shipped.
 use super::{boxed, reference_option};
+#[path = "preferences_display_pages.rs"]
+mod display;
 use oteryn_client::{
     panel_catalog::{PANELS, ShortcutOrder, panel},
     settings::ClientSettings,
@@ -10,6 +12,7 @@ use oteryn_client::{
 pub(super) struct PageState {
     displayed: Option<String>,
     available: Option<String>,
+    last_frame_limit: Option<u16>,
 }
 
 pub(super) fn show(
@@ -26,7 +29,7 @@ pub(super) fn show(
         "sound" => sound(ui, draft, english),
         "battle_sounds" => battle(ui, draft, english),
         "ui_sounds" => ui_sound(ui, draft, english),
-        _ => return false,
+        _ => return display::show(ui, draft, section, english, state),
     }
     true
 }
@@ -620,6 +623,11 @@ mod tests {
                 "battle_sounds",
                 "ui_sounds",
                 "shortcuts",
+                "controls",
+                "interface",
+                "graphics",
+                "game_window",
+                "gameplay",
             ] {
                 let ctx = egui::Context::default();
                 crate::client_chrome::install(&ctx, false);

@@ -208,7 +208,7 @@ impl ClientSettings {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
-        let bytes = serde_json::to_vec_pretty(self)?;
+        let bytes = serde_json::to_vec(self)?;
         if bytes.len() > 32768 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -599,7 +599,7 @@ mod tests {
             }
         }
         settings.validate()?;
-        let normal_bytes = serde_json::to_vec_pretty(&settings)?.len();
+        let normal_bytes = serde_json::to_vec(&settings)?.len();
         assert!(
             normal_bytes <= 32768,
             "normal complete preferences are {normal_bytes} bytes"
@@ -618,7 +618,7 @@ mod tests {
             }
         }
         settings.validate()?;
-        let max_text_bytes = serde_json::to_vec_pretty(&settings)?.len();
+        let max_text_bytes = serde_json::to_vec(&settings)?.len();
         assert!(
             max_text_bytes <= 32768,
             "complete preferences at text limits are {max_text_bytes} bytes"
@@ -630,7 +630,7 @@ mod tests {
             }
         }
         settings.validate()?;
-        let escaped_text_bytes = serde_json::to_vec_pretty(&settings)?.len();
+        let escaped_text_bytes = serde_json::to_vec(&settings)?.len();
         assert!(
             escaped_text_bytes <= 32768,
             "escaped text preferences are {escaped_text_bytes} bytes"

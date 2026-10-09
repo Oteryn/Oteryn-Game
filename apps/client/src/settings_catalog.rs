@@ -284,6 +284,10 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         r!("basic.ui_scale", "Skala interfejsu", "Interface scale", Decimal { min: 0.8, max: 1.8 }, "ui_scale"),
     ]),
     section!("controls", "Sterowanie", "Controls", [
+        p!("controls.turn_ctrl", "Obracanie: Ctrl", "Turn: Ctrl", Toggle, "movement actions"),
+        p!("controls.turn_shift", "Obracanie: Shift", "Turn: Shift", Toggle, "movement actions"),
+        p!("controls.turn_alt", "Obracanie: Alt", "Turn: Alt", Toggle, "movement actions"),
+        p!("controls.complete_stack_ctrl", "Ctrl do przenoszenia całych stosów", "Press CTRL to Drag Complete Stacks", Toggle, "item-move amount intent"),
         p!("controls.mouse_preset", "Schemat sterowania myszą", "Mouse control preset", Choice(MOUSE_PRESETS), "input router"),
         r!("controls.movement", "Klawisze kierunków", "Movement keys", Binding, "movement_keys"),
         q!("controls.rotation", "Modyfikator obracania postaci", "Turn modifier", Binding, "movement actions"),
@@ -318,6 +322,12 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         q!("hotkeys.custom_binding", "Skrót własnej czynności", "Custom-action shortcut", Binding, "supported action commands"),
     ]),
     section!("interface", "Interfejs", "Interface", [
+        p!("interface.highlight_mouse", "Wyróżnij cel myszy", "Highlight Mouse Target", Toggle, "target presentation"),
+        p!("interface.big_cursor", "Duży kursor myszy", "Show Big Mouse Cursor", Toggle, "cursor integration"),
+        p!("interface.link_copy_warning", "Ostrzeżenie przy kopiowaniu linku", "Show Link Copy Warning", Toggle, "safe clipboard UI"),
+        p!("interface.expiry_inventory", "Wygaśnięcie w ekwipunku", "Show Expiry in Inventory", Toggle, "item expiry projection"),
+        p!("interface.expiry_containers", "Wygaśnięcie w pojemnikach", "Show Expiry in Containers", Toggle, "item expiry projection"),
+        p!("interface.expiry_unused", "Wygaśnięcie nieużywanych przedmiotów", "Show Expiry on Unused Items", Toggle, "item expiry projection"),
         p!("interface.colourise_loot_value", "Koloruj wartość łupu", "Colourise Loot Value", Choice(LOOT_COLOUR), "item value presentation"),
         r!("interface.english", "Interfejs po angielsku", "English interface", Toggle, "english"),
         r!("interface.contrast", "Wyższy kontrast paneli", "Higher panel contrast", Toggle, "high_contrast"),
@@ -366,6 +376,8 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         n!("console.join_leave", "Komunikaty wejścia i wyjścia z kanału", "Channel join/leave messages", Toggle, "chat membership projection", "consoleShowJoinLeaveMessages"),
     ]),
     section!("game_window", "Okno gry", "Game Window", [
+        p!("window.textual_effects", "Efekty tekstowe", "Show Textual Effects", Toggle, "effect projection"),
+        p!("window.potion_sounds", "Efekty dźwiękowe mikstur", "Show Potion Sound Effects", Toggle, "effect projection"),
         q!("window.fit", "Dopasowanie obszaru gry", "Game viewport fit", UNKNOWN_CHOICES, "scene layout"),
         q!("window.top_pane", "Panel nad obszarem gry", "Top game pane", Toggle, "scene layout"),
         q!("window.bottom_pane", "Panel pod obszarem gry", "Bottom game pane", Toggle, "scene layout"),
