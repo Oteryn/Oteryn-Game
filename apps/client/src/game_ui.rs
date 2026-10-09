@@ -1,8 +1,6 @@
 //! In-world UI consumes session projections; it never invents character state.
 use egui::{Color32, RichText};
-use oteryn_client::action_bar::{
-    ACTION_BAR_SLOTS, ActionBar, ActionBarCommand, ActionBarOutcome, SlotAssignment,
-};
+use oteryn_client::action_bar::{ActionBar, ActionBarCommand, ActionBarOutcome};
 use oteryn_client::minimap::{LoadedMinimap, MINIMAP_SIDE, MinimapZoom};
 use oteryn_client::{
     play::{PlayLink, PlayView},
@@ -71,7 +69,9 @@ impl GameUi {
                 return;
             }
             for command in bar.route(events) {
-                let _ = link.send_action(command);
+                if !link.send_action(command) {
+                    self.notice = Some(action_busy(settings.english).into());
+                }
             }
         }
     }
@@ -88,6 +88,7 @@ impl GameUi {
         let en = settings.english;
         let tr = |pl, english| if en { english } else { pl };
         let mut open_settings = false;
+        let hud_enabled = !self.blocks_game_input();
         self.panels.initialize(&settings.panel_shortcuts);
         let now = ctx.input(|input| input.time);
         if settings.show_minimap && self.minimap.is_none() && now >= self.minimap_retry_at {
@@ -106,81 +107,37 @@ impl GameUi {
                 self.minimap = Some((map, texture));
             }
         }
-        if settings.action_bar.visible {
-            let chat_height = if settings.show_chat { 160.0 } else { 12.0 };
-            let commands = {
-                let bar = self.bar(settings);
-                let mut commands = Vec::new();
-                egui::Area::new("game-actionbar".into())
-                    .fixed_pos(egui::pos2(
-                        rect.left() + 12.0,
-                        rect.bottom() - chat_height - 50.0,
-                    ))
-                    .show(ctx, |ui| {
-                        egui::Frame::group(ui.style())
-                            .fill(Color32::from_rgb(12, 20, 26))
-                            .show(ui, |ui| {
-                                if let Some(bar) = bar {
-                                    ui.horizontal(|ui| {
-                                        for slot in 0..ACTION_BAR_SLOTS {
-                                            let label = bar
-                                                .assignment(slot)
-                                                .map_or("—", |a| a.label.as_str());
-                                            let response = ui
-                                                .add_sized(
-                                                    [38.0, 34.0],
-                                                    egui::Button::new(format!("{}", slot + 1)),
-                                                )
-                                                .on_hover_text(label);
-                                            if response.clicked()
-                                                && let Some(command) = bar.activate(slot)
-                                            {
-                                                commands.push(command);
-                                            }
-                                            response.context_menu(|ui| {
-                                                ui.label(tr("Przypisz akcję", "Assign action"));
-                                                if bar.preferences().locked {
-                                                    ui.disable();
-                                                }
-                                                for (name, room) in [
-                                                    (tr("Pomoc", "Help"), ChatRoom::Help),
-                                                    (tr("Świat", "World"), ChatRoom::World),
-                                                    ("English", ChatRoom::English),
-                                                    (
-                                                        tr("Reklamy", "Advertising"),
-                                                        ChatRoom::Advertising,
-                                                    ),
-                                                ] {
-                                                    if ui.button(name).clicked() {
-                                                        let _ = bar.assign(
-                                                            slot,
-                                                            Some(SlotAssignment {
-                                                                label: name.into(),
-                                                                command: ActionBarCommand::Chat(
-                                                                    ChatIntent::OpenRoom(room),
-                                                                ),
-                                                            }),
-                                                        );
-                                                        ui.close();
-                                                    }
-                                                }
-                                                if ui.button(tr("Wyczyść", "Clear")).clicked() {
-                                                    let _ = bar.assign(slot, None);
-                                                    ui.close();
-                                                }
-                                            });
-                                        }
-                                    });
-                                }
-                            });
-                    });
-                commands
-            };
-            for command in commands {
-                let _ = link.send_action(command);
+        let chat_height = if settings.show_chat { 160.0 } else { 12.0 };
+        let body = egui::Rect::from_min_max(
+            egui::pos2(rect.left() + 12.0, rect.top() + 52.0),
+            egui::pos2(
+                (rect.right() - 220.0).max(rect.left() + 13.0),
+                (rect.bottom() - chat_height).max(rect.top() + 53.0),
+            ),
+        );
+        let usable_scene = oteryn_client::layout::GameViewport::fit_with_action_rows(
+            rect.width(),
+            rect.height(),
+            1.0,
+            settings.show_chat,
+            settings.action_bar.visible_rows(),
+        )
+        .is_some();
+        if !usable_scene {
+            // Oversized underlying HUD Areas must not occlude the recovery button.
+            return show_window_recovery(ctx, en);
+        }
+        let commands = self.bar(settings).map_or_else(Vec::new, |bar| {
+            // Available spells need an authoritative catalogue projection.
+            crate::action_bar_ui::show(ctx, bar, &state, &[], en, body, hud_enabled)
+        });
+        for command in commands {
+            if !link.send_action(command) {
+                self.notice = Some(action_busy(en).into());
             }
         }
         egui::Area::new("game-header".into())
+            .enabled(hud_enabled)
             .fixed_pos(rect.min)
             .show(ctx, |ui| {
                 egui::Frame::group(ui.style())
@@ -244,6 +201,7 @@ impl GameUi {
                     });
             });
         egui::Area::new("game-sidebar".into())
+            .enabled(hud_enabled)
             .fixed_pos(egui::pos2(rect.right() - 220.0, rect.top() + 52.0))
             .default_size([210.0, (rect.height() - 70.0).max(10.0)])
             .show(ctx, |ui| {
@@ -392,6 +350,7 @@ impl GameUi {
             });
         if settings.show_chat {
             egui::Area::new("game-console".into())
+                .enabled(hud_enabled)
                 .fixed_pos(egui::pos2(rect.left(), rect.bottom() - 160.0))
                 .show(ctx, |ui| {
                     egui::Frame::group(ui.style())
@@ -616,11 +575,42 @@ impl GameUi {
     }
 }
 
+fn show_window_recovery(ctx: &egui::Context, english: bool) -> bool {
+    let rect = ctx.content_rect();
+    let tr = |pl, en| if english { en } else { pl };
+    let mut open_settings = false;
+    egui::Window::new(tr("Za małe okno", "Small window"))
+        .id("game-window-size-help".into())
+        .collapsible(false)
+        .resizable(false)
+        .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+        .constrain_to(rect)
+        .max_width((rect.width() - 24.0).max(1.0))
+        .show(ctx, |ui| {
+            open_settings = ui
+                .button(tr("Ustawienia · F10", "Settings · F10"))
+                .on_hover_text(tr(
+                    "Powiększ okno albo zmniejsz skalę interfejsu lub liczbę pasków akcji.",
+                    "Enlarge the window, or reduce interface scale or the number of action rows.",
+                ))
+                .clicked();
+        });
+    open_settings
+}
+
 fn ratio(value: u32, maximum: u32) -> f32 {
     if maximum == 0 {
         0.0
     } else {
         (value as f32 / maximum as f32).clamp(0.0, 1.0)
+    }
+}
+
+fn action_busy(english: bool) -> &'static str {
+    if english {
+        "Wait for the previous action to finish"
+    } else {
+        "Poczekaj na zakończenie poprzedniej czynności"
     }
 }
 
@@ -740,6 +730,10 @@ fn item_description(item: &ItemEntry, english: bool) -> String {
 }
 
 fn item_menu(response: egui::Response, item: &ItemEntry, link: &PlayLink, english: bool) {
+    if !response.enabled() {
+        egui::Popup::close_id(&response.ctx, egui::Popup::default_response_id(&response));
+        return;
+    }
     response.context_menu(|ui| {
         if ui
             .button(if english {
@@ -833,4 +827,37 @@ fn chat_feedback(value: ChatDisposition, english: bool) -> &'static str {
         ChatDisposition::Rejected => ("Wiadomość odrzucona", "Message was rejected"),
     };
     if english { en } else { pl }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::show_window_recovery;
+    use crate::preferences_browser::test_support::{button_position, click, frame};
+
+    #[test]
+    fn a_scene_too_small_for_action_rows_keeps_settings_clickable() -> Result<(), &'static str> {
+        for english in [false, true] {
+            let ctx = egui::Context::default();
+            for size in [egui::vec2(900.0, 620.0), egui::vec2(300.0, 200.0) / 1.8] {
+                let mut output = egui::FullOutput::default();
+                for _ in 0..4 {
+                    output = frame(&ctx, size, Vec::new(), |ctx| {
+                        show_window_recovery(ctx, english)
+                    })
+                    .1;
+                }
+                let label = if english {
+                    "Settings · F10"
+                } else {
+                    "Ustawienia · F10"
+                };
+                let position =
+                    button_position(&output, size, label).ok_or("recovery control clipped")?;
+                assert!(click(&ctx, size, position, |ctx| show_window_recovery(
+                    ctx, english
+                )));
+            }
+        }
+        Ok(())
+    }
 }

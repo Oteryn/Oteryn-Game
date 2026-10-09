@@ -172,14 +172,17 @@ impl Application {
         }
         let viewport = self.window.as_ref().and_then(|window| {
             let size = window.inner_size();
-            oteryn_client::layout::GameViewport::fit_with_actions(
+            oteryn_client::layout::GameViewport::fit_with_action_rows(
                 size.width as f32,
                 size.height as f32,
                 window.scale_factor() as f32 * self.preferences.ui_scale,
                 self.preferences.show_chat,
-                self.preferences.action_bar.visible,
+                self.preferences.action_bar.visible_rows(),
             )
         });
+        if viewport.is_none() {
+            return;
+        }
         if let Some(play) = &mut self.play {
             if let Some(direction) = self.preferences.direction(events) {
                 play.view.arrow(direction);
@@ -478,23 +481,17 @@ impl ApplicationHandler for Application {
                     let input = state.take_egui_input(window);
                     let context = gui.context.clone();
                     let size = window.inner_size();
-                    let viewport = oteryn_client::layout::GameViewport::fit_with_actions(
+                    let viewport = oteryn_client::layout::GameViewport::fit_with_action_rows(
                         size.width as f32,
                         size.height as f32,
                         window.scale_factor() as f32 * self.preferences.ui_scale,
                         self.preferences.show_chat,
-                        self.preferences.action_bar.visible,
+                        self.preferences.action_bar.visible_rows(),
                     );
-                    let Some(viewport) = viewport else {
-                        return;
-                    };
                     if renderer
-                        .set_scene_viewport(Some([
-                            viewport.x,
-                            viewport.y,
-                            viewport.width,
-                            viewport.height,
-                        ]))
+                        .set_scene_viewport(viewport.map(|viewport| {
+                            [viewport.x, viewport.y, viewport.width, viewport.height]
+                        }))
                         .is_err()
                     {
                         self.fail(event_loop, ShellError::RendererRender);
@@ -522,16 +519,18 @@ impl ApplicationHandler for Application {
                     }
                     state.handle_platform_output(window, output.platform_output.clone());
                     let scene = play.view.scene();
-                    if renderer
-                        .render_batches_ui(
+                    let rendered = if viewport.is_some() {
+                        renderer.render_batches_ui(
                             self.generation,
                             scene.tiles(),
                             scene.sprites(),
                             &context,
                             output,
                         )
-                        .is_err()
-                    {
+                    } else {
+                        renderer.render_ui(self.generation, &context, output)
+                    };
+                    if rendered.is_err() {
                         self.fail(event_loop, ShellError::RendererRender);
                     }
                     return;

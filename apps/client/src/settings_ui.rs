@@ -1,4 +1,4 @@
-use egui::{Align2, RichText, Vec2};
+use egui::{Align2, RichText};
 use oteryn_client::settings::ClientSettings;
 
 pub struct SettingsPanel {
@@ -93,32 +93,63 @@ impl SettingsPanel {
             return false;
         }
         let mut check_connection = false;
-        let available = ctx.content_rect().size();
+        let bounds = ctx.content_rect().shrink(4.0);
+        let maximum = bounds.size().max(egui::Vec2::splat(1.0));
+        let labels = [
+            tr("Obraz", "Display"),
+            tr("Interfejs", "Interface"),
+            tr("Sterowanie", "Controls"),
+            tr("Dźwięk", "Audio"),
+            tr("Gra i czat", "Game and chat"),
+            tr("Połączenie", "Connection"),
+            tr("Prywatność", "Privacy"),
+        ];
         egui::Window::new(tr("Ustawienia", "Settings"))
             .id(egui::Id::new("client-settings"))
             .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
-            .resizable(false).collapsible(false)
-            .fixed_size(Vec2::new(available.x.min(730.0) - 35.0, available.y.min(510.0) - 60.0))
+            .resizable(true).collapsible(false).constrain_to(bounds)
+            .min_size(egui::Vec2::ZERO).max_size(maximum)
+            .default_size([maximum.x.min(730.0), maximum.y.min(510.0)])
             .show(ctx, |ui| {
+                use crate::preferences_browser::PreferenceAction;
+                let (footer_action, body_rect) = crate::preferences_browser::primary_footer(ui, "quick-preferences-footer", en);
+                match footer_action {
+                    PreferenceAction::Apply => self.save_preferences(),
+                    PreferenceAction::Cancel => { self.draft = self.current.clone(); self.open = false; self.message = None; }
+                    _ => {}
+                }
+                let body_size = body_rect.size().max(egui::Vec2::splat(1.0));
+                let mut body_ui = ui.new_child(egui::UiBuilder::new().max_rect(body_rect));
+                body_ui.set_clip_rect(ui.clip_rect().intersect(body_rect));
+                egui::ScrollArea::both().id_salt("quick-preferences-body")
+                    .auto_shrink([false, false]).max_width(body_size.x).max_height(body_size.y).show(&mut body_ui, |ui| {
+                let body_width = body_size.x.max(1.0);
+                ui.set_width(body_width);
+                let compact = body_width < 520.0;
                 ui.label(RichText::new(tr("OTERYN • USTAWIENIA KLIENTA", "OTERYN • CLIENT PREFERENCES")).strong());
                 if ui.button(tr("Wszystkie ustawienia", "All preferences")).clicked() { self.browser.open = true; }
                 ui.separator();
+                if compact {
+                    egui::ComboBox::from_id_salt("quick-preferences-category").width(body_width).truncate()
+                        .selected_text(labels[self.tab]).show_ui(ui, |ui| {
+                            for (index, label) in labels.iter().enumerate() { ui.selectable_value(&mut self.tab, index, *label); }
+                        });
+                }
                 ui.horizontal_top(|ui| {
+                    if !compact {
                     ui.vertical(|ui| {
                         ui.set_width(140.0);
-                        for (index, label) in [tr("Obraz", "Display"), tr("Interfejs", "Interface"),
-                            tr("Sterowanie", "Controls"), tr("Dźwięk", "Audio"),
-                            tr("Gra i czat", "Game and chat"), tr("Połączenie", "Connection"),
-                            tr("Prywatność", "Privacy")].iter().enumerate() {
+                        for (index, label) in labels.iter().enumerate() {
                             ui.selectable_value(&mut self.tab, index, *label);
                         }
                         ui.add_space(16.0);
                         ui.small(tr("F10 — ustawienia w grze", "F10 — settings in game"));
                     });
                     ui.separator();
-                    egui::ScrollArea::vertical().max_height(290.0).show(ui, |ui| {
+                    }
+                    egui::ScrollArea::vertical().max_height(if compact { f32::INFINITY } else { (maximum.y - 160.0).max(1.0) }).show(ui, |ui| {
                         ui.vertical(|ui| {
-                        ui.set_min_width(available.x.min(730.0) - 230.0);
+                        ui.set_width(if compact { body_width } else { (body_width - 170.0).max(1.0) });
                         match self.tab {
                             0 => {
                                 ui.heading(tr("Obraz", "Display"));
@@ -175,20 +206,8 @@ impl SettingsPanel {
                                 ui.checkbox(&mut self.draft.click_to_walk, tr("Chodzenie lewym kliknięciem", "Walk with left mouse click"));
                                 ui.small(tr("Każdy kierunek wymaga innego klawisza. F10 otwiera ustawienia.", "Each direction requires a different key. F10 opens settings."));
                                 ui.separator();
-                                ui.heading(tr("Pasek akcji", "Action bar"));
-                                ui.checkbox(&mut self.draft.action_bar.visible, tr("Pokaż pasek", "Show bar"));
-                                ui.checkbox(&mut self.draft.action_bar.locked, tr("Zablokuj przypisania", "Lock assignments"));
-                                for slot in 0..oteryn_client::action_bar::ACTION_BAR_SLOTS {
-                                    let shortcut = &mut self.draft.action_bar.shortcuts[slot];
-                                    egui::ComboBox::from_id_salt(("action-shortcut", slot))
-                                        .selected_text(format!("{}: {}", slot + 1, shortcut.map_or_else(|| tr("Brak", "None").into(), |s| action_key_label(s.key))))
-                                        .show_ui(ui, |ui| {
-                                            ui.selectable_value(shortcut, None, tr("Brak", "None"));
-                                            for key in (4..=39).chain(58..=66).chain(68..=69) {
-                                                ui.selectable_value(shortcut, Some(oteryn_client::action_bar::SlotShortcut { key, modifiers: 0 }), action_key_label(key));
-                                            }
-                                        });
-                                }
+                                ui.heading(tr("Paski akcji", "Action bars"));
+                                crate::action_bar_ui::preferences_editor(ui, &mut self.draft.action_bar, en);
                                 ui.small(tr("Prawy przycisk na polu paska pozwala przypisać akcję. Przypisania przedmiotów i czarów dotyczą bieżącej sesji.", "Right-click an action slot to assign it. Item and spell assignments belong to the current session."));
                             }
                             3 => {
@@ -232,19 +251,7 @@ impl SettingsPanel {
                 if let Some(message) = &self.message { ui.label(message); }
                 ui.horizontal(|ui| {
                     if ui.button(tr("Domyślne", "Defaults")).clicked() { self.draft = ClientSettings::default(); self.message = None; }
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button(tr("Anuluj", "Cancel")).clicked() {
-                            self.draft = self.current.clone(); self.open = false; self.message = None;
-                        }
-                        if ui.button(tr("Zastosuj i zapisz", "Apply and save")).clicked() {
-                            let result = ClientSettings::path().ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
-                                .and_then(|path| self.draft.save(&path));
-                            match result {
-                                Ok(()) => { self.current = self.draft.clone(); self.applied = true; self.message = Some(tr("Zapisano ustawienia.", "Preferences saved.").into()); }
-                                Err(_) => self.message = Some(tr("Nie zapisano. Sprawdź różne klawisze kierunków i dostęp do folderu ustawień.", "Not saved. Check distinct movement keys and preferences directory access.").into()),
-                            }
-                        }
-                    });
+                });
                 });
             });
         check_connection
@@ -274,11 +281,62 @@ fn key_label(code: u16) -> String {
     }
 }
 
-fn action_key_label(code: u16) -> String {
-    match code {
-        30..=38 => (code - 29).to_string(),
-        39 => "0".into(),
-        58..=69 => format!("F{}", code - 57),
-        _ => key_label(code),
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::preferences_browser::{
+        PreferencesBrowser,
+        test_support::{button_position, click, frame},
+    };
+
+    #[test]
+    fn quick_settings_cancel_recovers_draft_after_tiny_window_resize() -> Result<(), &'static str> {
+        for english in [false, true] {
+            let ctx = egui::Context::default();
+            for size in [
+                egui::vec2(900.0, 620.0),
+                egui::vec2(300.0, 200.0) / 1.8,
+                egui::vec2(800.0, 600.0) / 1.8,
+            ] {
+                let current = ClientSettings {
+                    english,
+                    ui_scale: 1.8,
+                    ..Default::default()
+                };
+                let mut panel = SettingsPanel {
+                    draft: ClientSettings {
+                        fullscreen: true,
+                        ..current.clone()
+                    },
+                    current,
+                    open: true,
+                    applied: false,
+                    tab: 2,
+                    message: Some("A long error must not hide Apply or Cancel. ".repeat(40)),
+                    browser: PreferencesBrowser::default(),
+                };
+                let mut output = egui::FullOutput::default();
+                for _ in 0..4 {
+                    output = frame(&ctx, size, Vec::new(), |ctx| panel.show(ctx, None, None)).1;
+                }
+                let apply_label = match (english, size.x < 560.0) {
+                    (true, true) => "Apply",
+                    (false, true) => "Zapisz",
+                    (true, false) => "Apply and save",
+                    (false, false) => "Zastosuj i zapisz",
+                };
+                assert!(
+                    button_position(&output, size, apply_label).is_some(),
+                    "Apply is clipped or outside viewport"
+                );
+                let cancel =
+                    button_position(&output, size, if english { "Cancel" } else { "Anuluj" })
+                        .ok_or("Cancel is clipped or outside viewport")?;
+                let _ = click(&ctx, size, cancel, |ctx| panel.show(ctx, None, None));
+                assert!(!panel.open);
+                assert_eq!(panel.draft, panel.current);
+            }
+        }
+        Ok(())
     }
 }

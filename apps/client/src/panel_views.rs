@@ -5,6 +5,52 @@ use oteryn_client::play::GameState;
 use std::collections::BTreeMap;
 
 type Label = (&'static str, &'static str);
+type Route = (&'static str, Option<usize>);
+
+/// Client-owned names only. No allocation, gem or server preset is inferred from these drafts.
+#[derive(Default)]
+struct LocalPresets {
+    names: Vec<String>,
+    selected: Option<usize>,
+}
+impl LocalPresets {
+    fn create(&mut self, name: &str) -> bool {
+        let name: String = name.trim().chars().take(96).collect();
+        if name.is_empty() || self.names.len() >= 16 {
+            return false;
+        }
+        self.selected = Some(self.names.len());
+        self.names.push(name);
+        true
+    }
+    fn rename(&mut self, name: &str) -> bool {
+        let name: String = name.trim().chars().take(96).collect();
+        let Some(current) = self.selected.and_then(|index| self.names.get_mut(index)) else {
+            return false;
+        };
+        if name.is_empty() {
+            return false;
+        }
+        *current = name;
+        true
+    }
+    fn copy(&mut self) -> bool {
+        let Some(name) = self
+            .selected
+            .and_then(|index| self.names.get(index))
+            .cloned()
+        else {
+            return false;
+        };
+        self.create(&name)
+    }
+    fn remove(&mut self) {
+        if let Some(index) = self.selected.filter(|index| *index < self.names.len()) {
+            self.names.remove(index);
+            self.selected = (!self.names.is_empty()).then(|| index.min(self.names.len() - 1));
+        }
+    }
+}
 
 #[derive(Default)]
 struct Draft {
@@ -14,6 +60,7 @@ struct Draft {
     choices: BTreeMap<&'static str, usize>,
     flags: BTreeMap<&'static str, bool>,
     items: BTreeMap<&'static str, Option<u64>>,
+    wheel: LocalPresets,
 }
 
 #[derive(Default)]
@@ -58,13 +105,17 @@ impl PanelViews {
             return false;
         }
         let draft = self.drafts.entry(id.to_owned()).or_default();
-        let mut open_items = false;
+        let mut route: Option<Route> = None;
         ui.push_id(("dedicated-panel", id), |ui| {
             ui.spacing_mut().item_spacing = Vec2::new(5.0, 4.0);
             match id {
                 "spells" => spells(ui, draft, english),
                 "vip" => vip(ui, draft, english),
-                "quest-log" => quests(ui, draft, english),
+                "quest-log" => {
+                    if quests(ui, draft, english) {
+                        route = Some(("quest-tracker", None));
+                    }
+                }
                 "highscores" => highscores(ui, draft, english),
                 "wheel" => wheel(ui, draft, english),
                 "prey" => prey(ui, draft, english),
@@ -72,25 +123,30 @@ impl PanelViews {
                 "task-board" => tasks(ui, draft, english),
                 "party" | "social" => social(ui, draft, english, id == "party"),
                 "reward-wall" => rewards(ui, draft, english),
-                "analytics" => open_items = analytics(ui, draft, english),
+                "analytics" => {
+                    if analytics(ui, draft, english) {
+                        route = Some(("cyclopedia", Some(1)));
+                    }
+                }
                 "bosstiary" => bestiary(ui, draft, english, true),
                 "boss-slots" => boss_slots(ui, english),
                 "weapon-proficiency" => proficiency(ui, draft, english, state),
                 "imbuement-tracker" => imbuements(ui, draft, english, state),
                 "unjustified-points" => unjustified(ui, english),
                 "cyclopedia" => cyclopedia(ui, draft, english, state),
-                _ => tracker(ui, draft, english, id),
+                _ => route = tracker(ui, draft, english, id),
             }
         });
-        if open_items {
-            // Directly observed route: Add Tracked Drop opens the item catalogue;
-            // opening it must not assign a tracked item or alter a server preference.
-            self.drafts
-                .entry("cyclopedia".to_owned())
-                .or_default()
-                .choices
-                .insert("cyclopedia.page", 1);
-            self.navigation = Some("cyclopedia");
+        if let Some((target, page)) = route {
+            if let Some(page) = page {
+                self.drafts
+                    .entry("cyclopedia".to_owned())
+                    .or_default()
+                    .choices
+                    .insert("cyclopedia.page", page);
+            }
+            // Local navigation never assigns a tracked item/quest or sends a Game command.
+            self.navigation = Some(target);
         }
         true
     }
@@ -340,16 +396,19 @@ fn vip(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
 }
 
 #[rustfmt::skip]
-fn quests(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
+fn quests(ui: &mut egui::Ui, d: &mut Draft, en: bool) -> bool {
     text(ui,d,"quest.search",en,("Wyszukaj zadanie lub misję","Search quest or mission"));
     choice(ui,d,"quest.state",en,("Stan","State"),&[ALL,("Aktywne","Active"),("Ukończone","Completed")]);
     choice(ui,d,"quest.sort",en,("Kolejność","Order"),&[("Nazwa","Name"),("Stan","State")]);
+    ui.horizontal_wrapped(|ui| { flag(ui,d,"quest.completed",en,("Pokaż ukończone","Show completed")); flag(ui,d,"quest.hidden",en,("Pokaż ukryte","Show hidden")); });
+    values(ui,"quest.counts",en,&[("Ukończone zadania","Completed quests"),("Ukryte zadania","Hidden quests")]);
     ui.columns(2,|columns| {
         table(&mut columns[0],"quest.tree",en,&[("Zadanie","Quest"),("Stan","State")]);
         table(&mut columns[1],"quest.missions",en,&[("Misja","Mission"),("Postęp","Progress")]);
     });
     details(ui,"quest.description",en,("Opis wybranej misji","Selected mission description"));
     ui.horizontal_wrapped(|ui| { action(ui,en,("Poprzednia misja","Previous mission")); action(ui,en,("Następna misja","Next mission")); action(ui,en,("Śledź misję","Track mission")); action(ui,en,("Usuń śledzenie","Stop tracking")); });
+    ui.button(tr(en,("Śledzenie zadań","Quest Tracker"))).clicked()
 }
 
 #[rustfmt::skip]
@@ -368,58 +427,408 @@ fn wheel(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
     tabs(ui,d,en,&[("Koło","Wheel"),("Pracownia klejnotów","Gem Atelier"),("Warsztat fragmentów","Fragment Workshop")]);
     match d.tab {
         0 => {
-            text(ui,d,"wheel.preset",en,("Nazwa profilu","Preset name"));
+            local_presets(ui,d,en);
+            table(ui,"wheel.server-presets",en,&[("Zapisany profil koła","Saved wheel preset"),("Dostępność","Availability")]);
             values(ui,"wheel.points",en,&[("Dostępne punkty awansu","Available promotion points"),("Przydzielone punkty","Allocated points")]);
-            ui.horizontal_wrapped(|ui| { for (index,label) in [("Lewy górny","Upper left"),("Prawy górny","Upper right"),("Lewy dolny","Lower left"),("Prawy dolny","Lower right")].iter().enumerate() { ui.selectable_value(&mut d.sector,index,tr(en,*label)); } });
-            wheel_partition(ui,d.sector);
-            table(ui,"wheel.perks",en,&[("Korzyść","Perk"),("Ranga","Rank"),("Punkty","Points")]);
-            details(ui,"wheel.requirements",en,("Wymagania i naczynia","Requirements and vessels"));
+            choice(ui,d,"wheel.view",en,("Widok","View"),&[("Układ koła","Wheel layout"),("Korzyści","Perks"),("Naczynia","Vessels")]);
+            match d.choices["wheel.view"] {
+                0 => {
+                    ui.group(|ui| { ui.strong(tr(en,("Układ koła","Wheel layout"))); ui.add_space(35.0);
+                        ui.weak(tr(en,("Nie otrzymano układu koła.","No wheel layout has been received."))); ui.add_space(35.0); });
+                    values(ui,"wheel.summary",en,&[("Wybrana korzyść","Selected perk"),("Ranga korzyści","Perk rank")]);
+                }
+                1 => {
+                    text(ui,d,"wheel.perk-search",en,("Wyszukaj korzyść","Search perk"));
+                    table(ui,"wheel.perks",en,&[("Korzyść","Perk"),("Ranga","Rank"),("Punkty","Points")]);
+                    details(ui,"wheel.perk-details",en,("Opis i wymagania wybranej korzyści","Selected-perk description and requirements"));
+                }
+                _ => {
+                    table(ui,"wheel.vessels",en,&[("Naczynie","Vessel"),("Klejnot","Gem"),("Dostępność","Availability")]);
+                    details(ui,"wheel.vessel-details",en,("Wybrane naczynie i wymagania","Selected vessel and requirements"));
+                    if ui.button(tr(en,("Otwórz pracownię klejnotów","Open Gem Atelier"))).clicked() { d.tab=1; }
+                }
+            }
             ui.horizontal_wrapped(|ui| { action(ui,en,("Przydziel punkty","Allocate points")); action(ui,en,("Zastosuj profil","Apply preset")); action(ui,en,("Wyzeruj koło","Reset wheel")); });
         }
-        1 => {
-            text(ui,d,"gems.affinity",en,("Powinowactwo","Affinity")); text(ui,d,"gems.quality",en,("Jakość","Quality"));
-            table(ui,"gems.collection",en,&[("Klejnot","Gem"),("Powinowactwo","Affinity"),("Jakość","Quality")]);
-            values(ui,"gems.cost",en,&[("Koszt odkrycia","Revelation cost")]); details(ui,"gems.modifiers",en,("Modyfikatory klejnotu","Gem modifiers"));
-            action(ui,en,("Odkryj klejnot","Reveal gem"));
-        }
-        _ => {
-            text(ui,d,"fragments.search",en,("Wyszukaj modyfikator","Search modifier")); text(ui,d,"fragments.grade",en,("Klasa fragmentu","Fragment grade"));
-            table(ui,"fragments.modifiers",en,&[("Modyfikator","Modifier"),("Klasa","Grade"),("Efekt","Effect")]);
-            values(ui,"fragments.cost",en,&[("Koszt ulepszenia","Enhancement cost")]); action(ui,en,("Ulepsz fragment","Enhance fragment"));
-        }
+        1 => atelier_columns(ui,d,en,145.0,gem_revelation,gem_collection),
+        _ => atelier_columns(ui,d,en,(ui.available_width()*0.34).clamp(145.0,230.0),fragment_grades,fragment_collection),
     }
 }
 
-fn wheel_partition(ui: &mut egui::Ui, selected: usize) {
-    let side = ui.available_width().min(170.0);
-    let (rect, _) = ui.allocate_exact_size(Vec2::splat(side), egui::Sense::hover());
-    let center = rect.center();
-    let radius = side * 0.43;
-    for index in 0..4 {
-        let start = [-2.0, -1.0, 1.0, 0.0][index] * std::f32::consts::FRAC_PI_2;
-        let points: Vec<_> = std::iter::once(center)
-            .chain((0..=20).map(|step| {
-                let angle = start + step as f32 / 20.0 * std::f32::consts::FRAC_PI_2;
-                center + Vec2::angled(angle) * radius
-            }))
-            .collect();
-        ui.painter().add(egui::Shape::convex_polygon(
-            points,
-            if index == selected {
-                Color32::from_rgb(37, 47, 57)
-            } else {
-                Color32::from_rgb(20, 25, 31)
-            },
-            Stroke::new(1.0, Color32::from_rgb(156, 135, 89)),
-        ));
-    }
-    ui.painter().text(
-        center,
-        egui::Align2::CENTER_CENTER,
-        "—",
-        egui::FontId::proportional(18.0),
-        Color32::GRAY,
+fn local_presets(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
+    egui::CollapsingHeader::new(tr(en, ("Szkice profili", "Preset drafts")))
+        .id_salt("wheel.local-presets")
+        .default_open(true)
+        .show(ui, |ui| {
+            let previous = d.wheel.selected;
+            let selected = previous
+                .and_then(|index| d.wheel.names.get(index))
+                .map_or("—", String::as_str);
+            egui::ComboBox::from_id_salt("wheel.local-preset")
+                .width(ui.available_width())
+                .truncate()
+                .selected_text(selected)
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut d.wheel.selected, None, "—");
+                    for (index, name) in d.wheel.names.iter().enumerate() {
+                        ui.selectable_value(
+                            &mut d.wheel.selected,
+                            Some(index),
+                            format!("{} · {name}", index + 1),
+                        );
+                    }
+                });
+            if previous != d.wheel.selected {
+                d.texts.insert(
+                    "wheel.preset",
+                    d.wheel
+                        .selected
+                        .and_then(|index| d.wheel.names.get(index))
+                        .cloned()
+                        .unwrap_or_default(),
+                );
+            }
+            text(ui, d, "wheel.preset", en, ("Nazwa szkicu", "Draft name"));
+            let name = d.texts.get("wheel.preset").cloned().unwrap_or_default();
+            let has_selected = d.wheel.selected.is_some();
+            let valid_name = !name.trim().is_empty();
+            let can_create = d.wheel.names.len() < 16;
+            let mut changed = false;
+            ui.horizontal_wrapped(|ui| {
+                if ui
+                    .add_enabled(
+                        valid_name && can_create,
+                        egui::Button::new(tr(en, ("Dodaj", "Add"))),
+                    )
+                    .clicked()
+                {
+                    changed = d.wheel.create(&name);
+                }
+                if ui
+                    .add_enabled(
+                        has_selected && can_create,
+                        egui::Button::new(tr(en, ("Kopiuj", "Copy"))),
+                    )
+                    .clicked()
+                {
+                    changed = d.wheel.copy();
+                }
+                if ui
+                    .add_enabled(
+                        has_selected && valid_name,
+                        egui::Button::new(tr(en, ("Zmień nazwę", "Rename"))),
+                    )
+                    .clicked()
+                {
+                    changed = d.wheel.rename(&name);
+                }
+                if ui
+                    .add_enabled(has_selected, egui::Button::new(tr(en, ("Usuń", "Remove"))))
+                    .clicked()
+                {
+                    d.wheel.remove();
+                    changed = true;
+                }
+            });
+            if changed {
+                d.texts.insert(
+                    "wheel.preset",
+                    d.wheel
+                        .selected
+                        .and_then(|index| d.wheel.names.get(index))
+                        .cloned()
+                        .unwrap_or_default(),
+                );
+            }
+        });
+}
+
+// Layout follows the privately verified Gem/Fragment captures, not the unverified wheel.
+fn atelier_columns(
+    ui: &mut egui::Ui,
+    d: &mut Draft,
+    en: bool,
+    left_width: f32,
+    left: fn(&mut egui::Ui, &mut Draft, bool),
+    right: fn(&mut egui::Ui, &mut Draft, bool),
+) {
+    // Leave room for frame/font pixel rounding at narrow scales.
+    let width = (ui.available_width() - 2.0).max(1.0);
+    ui.scope(|ui| {
+        ui.set_max_width(width);
+        if width < 360.0 {
+            left(ui, d, en);
+            ui.separator();
+            right(ui, d, en);
+            return;
+        }
+        let right_width = (width - left_width - ui.spacing().item_spacing.x).max(1.0);
+        ui.horizontal_top(|ui| {
+            ui.allocate_ui_with_layout(
+                Vec2::new(left_width, 0.0),
+                egui::Layout::top_down(egui::Align::Min),
+                |ui| {
+                    ui.set_width(left_width);
+                    left(ui, d, en);
+                },
+            );
+            ui.allocate_ui_with_layout(
+                Vec2::new(right_width, 0.0),
+                egui::Layout::top_down(egui::Align::Min),
+                |ui| {
+                    ui.set_width(right_width);
+                    right(ui, d, en);
+                },
+            );
+        });
+    });
+}
+
+fn atelier_search(ui: &mut egui::Ui, d: &mut Draft, key: &'static str, en: bool) {
+    ui.add(
+        egui::TextEdit::singleline(d.texts.entry(key).or_default())
+            .hint_text(tr(en, ("Szukaj", "Search")))
+            .char_limit(96)
+            .desired_width(ui.available_width().min(155.0)),
     );
+    if ui
+        .button("×")
+        .on_hover_text(tr(en, ("Wyczyść wyszukiwanie", "Clear search")))
+        .clicked()
+    {
+        d.texts.remove(key);
+    }
+}
+
+fn atelier_filter(
+    ui: &mut egui::Ui,
+    d: &mut Draft,
+    key: &'static str,
+    en: bool,
+    all: Label,
+    label: Label,
+) {
+    // The captures expose only the closed "All" selector. Exact enum choices are unknown.
+    let selected = d
+        .texts
+        .get(key)
+        .filter(|value| !value.trim().is_empty())
+        .cloned()
+        .unwrap_or_else(|| tr(en, all).to_owned());
+    let width = ui.available_width().min(125.0);
+    ui.allocate_ui_with_layout(
+        Vec2::new(width, ui.spacing().interact_size.y),
+        egui::Layout::left_to_right(egui::Align::Center),
+        |ui| {
+            egui::ComboBox::from_id_salt(key)
+                .width(width)
+                .truncate()
+                .selected_text(selected)
+                .show_ui(ui, |ui| {
+                    if ui
+                        .selectable_label(!d.texts.contains_key(key), tr(en, all))
+                        .clicked()
+                    {
+                        d.texts.remove(key);
+                        ui.close();
+                    }
+                    text(ui, d, key, en, label);
+                });
+        },
+    );
+}
+
+fn unknown_region(ui: &mut egui::Ui, en: bool, title: Label, height: f32) {
+    ui.group(|ui| {
+        ui.set_min_width((ui.available_width() - 1.0).max(1.0));
+        ui.strong(tr(en, title));
+        ui.allocate_ui_with_layout(
+            Vec2::new(ui.available_width(), height),
+            egui::Layout::centered_and_justified(egui::Direction::TopDown),
+            |ui| {
+                ui.weak(tr(
+                    en,
+                    ("Nie otrzymano danych.", "No data has been received."),
+                ));
+            },
+        );
+    });
+}
+
+fn gem_revelation(ui: &mut egui::Ui, _d: &mut Draft, en: bool) {
+    ui.group(|ui| {
+        ui.strong(tr(en, ("Naczynia", "Vessels")));
+        let side = ui.available_width().min(92.0);
+        let (rect, response) = ui.allocate_exact_size(Vec2::splat(side), egui::Sense::hover());
+        let color = Color32::from_rgb(184, 154, 101);
+        let painter = ui.painter();
+        let c = rect.center();
+        for offset in [
+            Vec2::new(-0.32, -0.32),
+            Vec2::new(0.32, -0.32),
+            Vec2::new(-0.32, 0.32),
+            Vec2::new(0.32, 0.32),
+        ] {
+            painter.circle_stroke(c + offset * side, side * 0.13, Stroke::new(1.0, color));
+        }
+        painter.text(
+            c,
+            egui::Align2::CENTER_CENTER,
+            "—",
+            egui::FontId::proportional(16.0),
+            Color32::GRAY,
+        );
+        response.on_hover_text(tr(
+            en,
+            ("Dane naczyń są niedostępne.", "Vessel data is unavailable."),
+        ));
+    });
+    ui.strong(tr(en, ("Odkrywanie klejnotów", "Gem Revelation")));
+    // Three observed revelation tiers; target item identities and quantities are not known.
+    for tier in [
+        ("Mniejszy klejnot", "Lesser Gem"),
+        ("Klejnot", "Gem"),
+        ("Większy klejnot", "Greater Gem"),
+    ] {
+        ui.push_id(tier.1, |ui| {
+            ui.group(|ui| {
+                ui.add(egui::Label::new(tr(en, tier)).wrap());
+                values(
+                    ui,
+                    "gem.revelation",
+                    en,
+                    &[("Ilość", "Quantity"), ("Koszt", "Cost")],
+                );
+                action(ui, en, ("Odkryj", "Reveal"));
+            });
+        });
+    }
+}
+
+fn gem_collection(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
+    unknown_region(
+        ui,
+        en,
+        ("Modyfikatory wybranego klejnotu", "Selected gem modifiers"),
+        65.0,
+    );
+    ui.horizontal_wrapped(|ui| {
+        atelier_search(ui, d, "gems.search", en);
+        atelier_filter(
+            ui,
+            d,
+            "gems.affinity",
+            en,
+            ("Wszystkie powinowactwa", "All affinities"),
+            ("Filtr powinowactwa", "Affinity filter"),
+        );
+        atelier_filter(
+            ui,
+            d,
+            "gems.quality",
+            en,
+            ("Wszystkie jakości", "All qualities"),
+            ("Filtr jakości", "Quality filter"),
+        );
+        flag(
+            ui,
+            d,
+            "gems.locked",
+            en,
+            ("Tylko zablokowane", "Locked only"),
+        );
+    });
+    pagination(ui, d, "gems.page", en);
+    unknown_region(ui, en, ("Kolekcja klejnotów", "Gem collection"), 170.0);
+    if ui
+        .button(tr(
+            en,
+            ("Otwórz warsztat fragmentów", "Open Fragment Workshop"),
+        ))
+        .clicked()
+    {
+        d.tab = 2;
+    }
+}
+
+fn fragment_grades(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
+    ui.strong(tr(
+        en,
+        ("Ulepszanie klasy modyfikatora", "Enhance modifier grade"),
+    ));
+    ui.weak(tr(en, ("Wybrany modyfikator: —", "Selected modifier: —")));
+    let mut centers = Vec::new();
+    for (ordinal, roman) in [(4, "IV"), (3, "III"), (2, "II"), (1, "I")] {
+        ui.horizontal(|ui| {
+            let (rect, response) = ui.allocate_exact_size(Vec2::splat(32.0), egui::Sense::click());
+            let center = rect.center();
+            centers.push(center);
+            let chosen = d.choices.get("fragments.grade") == Some(&ordinal);
+            let color = if chosen {
+                Color32::from_rgb(184, 154, 101)
+            } else {
+                Color32::from_gray(100)
+            };
+            ui.painter()
+                .circle_stroke(center, 12.0, Stroke::new(1.5, color));
+            ui.painter().text(
+                center,
+                egui::Align2::CENTER_CENTER,
+                "—",
+                egui::FontId::proportional(11.0),
+                Color32::GRAY,
+            );
+            if response
+                .on_hover_text(tr(
+                    en,
+                    ("Wybierz klasę do podglądu", "Select grade to preview"),
+                ))
+                .clicked()
+            {
+                d.choices.insert("fragments.grade", ordinal);
+            }
+            ui.vertical(|ui| {
+                ui.label(format!("{} {roman}", tr(en, ("Klasa", "Grade"))));
+                ui.weak("—");
+            });
+        });
+        ui.add_space(25.0);
+    }
+    for segment in centers.windows(2) {
+        ui.painter().line_segment(
+            [
+                segment[0] + Vec2::new(0.0, 13.0),
+                segment[1] - Vec2::new(0.0, 13.0),
+            ],
+            Stroke::new(1.5, Color32::from_gray(80)),
+        );
+    }
+    values(
+        ui,
+        "fragment.enhancement-cost",
+        en,
+        &[
+            ("Koszt ulepszenia", "Enhancement cost"),
+            ("Wymagane zasoby", "Required resources"),
+        ],
+    );
+    action(ui, en, ("Ulepsz", "Enhance"));
+}
+
+fn fragment_collection(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
+    ui.horizontal_wrapped(|ui| {
+        atelier_search(ui, d, "fragments.search", en);
+        atelier_filter(
+            ui,
+            d,
+            "fragments.effect",
+            en,
+            ALL,
+            ("Filtr modyfikatora", "Modifier filter"),
+        );
+    });
+    pagination(ui, d, "fragments.page", en);
+    unknown_region(ui, en, ("Modyfikatory", "Modifiers"), 270.0);
 }
 
 #[rustfmt::skip]
@@ -530,7 +939,7 @@ fn boss_slots(ui: &mut egui::Ui, en: bool) {
 }
 
 #[rustfmt::skip]
-fn tracker(ui: &mut egui::Ui, d: &mut Draft, en: bool, id: &str) {
+fn tracker(ui: &mut egui::Ui, d: &mut Draft, en: bool, id: &str) -> Option<Route> {
     text(ui,d,"tracker.search",en,("Wyszukaj śledzony wpis","Search tracked entry"));
     ui.menu_button(tr(en,("Opcje śledzenia","Tracking options")),|ui| {
         flag(ui,d,"tracker.completed",en,("Pokaż ukończone","Show completed entries"));
@@ -539,7 +948,13 @@ fn tracker(ui: &mut egui::Ui, d: &mut Draft, en: bool, id: &str) {
     });
     table(ui,"tracker.list",en,&[("Wpis","Entry"),("Postęp","Progress"),("Stan","Status")]);
     progress(ui,en,("Postęp wybranego wpisu","Selected-entry progress"));
-    action(ui,en,if id=="quest-tracker" {("Otwórz dziennik zadań","Open quest log")} else {("Wybierz wpis do śledzenia","Choose entry to track")});
+    let (label,target,page) = match id {
+        "quest-tracker" => (("Otwórz dziennik zadań","Open quest log"),"quest-log",None),
+        "bestiary-tracker" => (("Otwórz bestiariusz","Open Bestiary"),"cyclopedia",Some(4)),
+        "bosstiary-tracker" => (("Otwórz bestiariusz bossów","Open Bosstiary"),"cyclopedia",Some(6)),
+        _ => (("Otwórz łowy","Open Prey"),"prey",None),
+    };
+    ui.button(tr(en,label)).clicked().then_some((target,page))
 }
 
 #[rustfmt::skip]
@@ -609,13 +1024,73 @@ fn cyclopedia(ui: &mut egui::Ui, d: &mut Draft, en: bool, state: &GameState) {
         6 => bestiary(ui,d,en,true), 7 => boss_slots(ui,en), 8 => spells(ui,d,en),
         10 => offence(ui,en), 11 => defence(ui,en),
         12 => table(ui,"character.blessings",en,&[("Błogosławieństwo","Blessing"),("Stan","Status"),("Efekt","Effect")]),
-        13 | 14 => table(ui,"character.records",en,&[("Data","Date"),("Postać","Character"),("Zdarzenie","Event")]),
-        15 => { text(ui,d,"achievements.search",en,("Wyszukaj osiągnięcie","Search achievement")); table(ui,"achievements.list",en,&[("Osiągnięcie","Achievement"),("Stopień","Grade"),("Data","Date")]); details(ui,"achievements.details",en,("Opis osiągnięcia","Achievement description")); }
+        13 => recent_records(ui,d,en,false), 14 => recent_records(ui,d,en,true),
+        15 => achievements(ui,d,en),
         16 => item_summary(ui,d,en,state),
         17 => { choice(ui,d,"appearance.kind",en,("Rodzaj","Type"),&[("Stroje","Outfits"),("Wierzchowce","Mounts"),("Chowańce","Familiars")]); table(ui,"appearance.list",en,&[("Wygląd","Appearance"),("Dostępność","Availability")]); action(ui,en,("Zastosuj wygląd","Apply appearance")); }
         18 => table(ui,"account.benefits",en,&[("Korzyść","Benefit"),("Dostępność","Availability"),("Pozostały czas","Time remaining")]),
         _ => titles(ui,d,en),
     }
+}
+
+// The page cursor is a local selection. It is never a claim about loaded records or totals.
+fn pagination(ui: &mut egui::Ui, d: &mut Draft, key: &'static str, en: bool) {
+    let page = d.choices.entry(key).or_default();
+    *page = (*page).min(65_534);
+    ui.horizontal_wrapped(|ui| {
+        if ui
+            .add_enabled(
+                *page > 0,
+                egui::Button::new(tr(en, ("Poprzednia", "Previous"))),
+            )
+            .clicked()
+        {
+            *page -= 1;
+        }
+        ui.label(tr(en, ("Wybrana strona", "Selected page")));
+        let mut selected = (*page).min(65_534) as u16 + 1;
+        if ui
+            .add(egui::DragValue::new(&mut selected).range(1..=u16::MAX))
+            .changed()
+        {
+            *page = usize::from(selected.saturating_sub(1));
+        }
+        if ui
+            .add_enabled(
+                *page < 65_534,
+                egui::Button::new(tr(en, ("Następna", "Next"))),
+            )
+            .clicked()
+        {
+            *page += 1;
+        }
+        ui.weak(tr(en, ("Liczba stron: —", "Total pages: —")));
+    });
+}
+
+#[rustfmt::skip]
+fn achievements(ui: &mut egui::Ui, d: &mut Draft, en: bool) {
+    ui.strong(tr(en,("Liczba osiągnięć według stopnia","Achievement counts by grade")));
+    table(ui,"achievements.counts",en,&[("Stopień","Grade"),("Łącznie","Total"),("Zdobyte","Accomplished")]);
+    text(ui,d,"achievements.search",en,("Wyszukaj osiągnięcie","Search achievement"));
+    text(ui,d,"achievements.grade",en,("Filtr stopnia","Grade filter"));
+    choice(ui,d,"achievements.accomplished",en,("Stan","Accomplishment"),&[ALL,("Zdobyte","Accomplished"),("Nie zdobyte","Not accomplished")]);
+    choice(ui,d,"achievements.sort",en,("Sortuj","Sort"),&[("Nazwa","Name"),("Stopień","Grade"),("Data","Date")]);
+    flag(ui,d,"achievements.descending",en,("Malejąco","Descending"));
+    egui::ScrollArea::vertical().id_salt("achievements.entries").max_height(150.0).show(ui,|ui| {
+        table(ui,"achievements.list",en,&[("Osiągnięcie","Achievement"),("Stopień","Grade"),("Data","Date")]);
+    });
+    pagination(ui,d,"achievements.page",en);
+    values(ui,"achievements.selected",en,&[("Wybrane osiągnięcie","Selected achievement"),("Data zdobycia","Date accomplished")]);
+    details(ui,"achievements.details",en,("Opis osiągnięcia","Achievement description"));
+}
+
+#[rustfmt::skip]
+fn recent_records(ui: &mut egui::Ui, d: &mut Draft, en: bool, pvp: bool) {
+    ui.strong(tr(en,if pvp {("Ostatnie zabójstwa PvP","Recent PvP kills")} else {("Ostatnie śmierci","Recent deaths")}));
+    table(ui,if pvp {"records.pvp"} else {"records.deaths"},en,&[("Data","Date"),("Postać","Character"),("Zdarzenie","Event")]);
+    pagination(ui,d,if pvp {"records.pvp.page"} else {"records.deaths.page"},en);
+    details(ui,if pvp {"records.pvp.detail"} else {"records.deaths.detail"},en,("Szczegóły wybranego wpisu","Selected-entry details"));
 }
 
 // Directly observed fields and navigation: REFERENCE-AUDIT.md, Character stat subpages.
@@ -882,5 +1357,107 @@ fn item_summary(ui: &mut egui::Ui, d: &mut Draft, en: bool, state: &GameState) {
                     ui.end_row();
                 }
             });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LocalPresets;
+
+    #[test]
+    fn atelier_regions_fit_narrow_and_two_column_widths() {
+        type Region = fn(&mut egui::Ui, &mut super::Draft, bool);
+        for english in [false, true] {
+            for width in [320.0_f32, 560.0] {
+                for gems in [false, true] {
+                    let context = egui::Context::default();
+                    let mut draft = super::Draft::default();
+                    let input = egui::RawInput {
+                        screen_rect: Some(egui::Rect::from_min_size(
+                            egui::Pos2::ZERO,
+                            egui::vec2(900.0, 620.0),
+                        )),
+                        ..Default::default()
+                    };
+                    let mut output = context.run_ui(input, |root| {
+                        root.allocate_ui_with_layout(
+                            egui::vec2(width, 600.0),
+                            egui::Layout::top_down(egui::Align::Min),
+                            |ui| {
+                                let right = ui.max_rect().right();
+                                let (left, main): (Region, Region) = if gems {
+                                    (super::gem_revelation, super::gem_collection)
+                                } else {
+                                    (super::fragment_grades, super::fragment_collection)
+                                };
+                                super::atelier_columns(
+                                    ui,
+                                    &mut draft,
+                                    english,
+                                    if gems { 145.0 } else { 190.0 },
+                                    left,
+                                    main,
+                                );
+                                assert!(
+                                    ui.min_rect().right() <= right + 1.0,
+                                    "gems={gems}, english={english}, width={width}, region={:?}",
+                                    ui.min_rect()
+                                );
+                            },
+                        );
+                    });
+                    // The headless check intentionally has no renderer to apply font textures.
+                    output.textures_delta.clear();
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn local_preset_names_and_count_are_bounded() {
+        let mut presets = LocalPresets::default();
+        assert!(!presets.create(" \u{2003}\t"));
+        assert!(presets.names.is_empty());
+        assert!(presets.create(&"ą".repeat(150)));
+        assert_eq!(presets.names[0].chars().count(), 96);
+        for index in 1..16 {
+            assert!(presets.create(&format!("Draft {index}")));
+        }
+        let original = presets.names.clone();
+        assert!(!presets.create("Overflow"));
+        assert!(!presets.copy());
+        assert_eq!(presets.names, original);
+    }
+
+    #[test]
+    fn removing_selected_preset_keeps_selection_valid() {
+        let mut presets = LocalPresets::default();
+        for name in ["First", "Second", "Third"] {
+            assert!(presets.create(name));
+        }
+        presets.remove();
+        assert_eq!(presets.selected, Some(1));
+        assert_eq!(presets.names, ["First", "Second"]);
+        presets.remove();
+        assert_eq!(presets.selected, Some(0));
+        presets.remove();
+        assert_eq!(presets.selected, None);
+        assert!(presets.names.is_empty());
+        presets.remove();
+        assert!(presets.names.is_empty());
+    }
+
+    #[test]
+    fn invalid_rename_cannot_replace_a_local_draft() {
+        let mut presets = LocalPresets::default();
+        assert!(presets.create("Original"));
+        assert!(presets.copy());
+        assert!(presets.rename("  Renamed  "));
+        assert_eq!(presets.names, ["Original", "Renamed"]);
+        assert!(!presets.rename(" \t"));
+        presets.selected = Some(usize::MAX);
+        assert!(!presets.rename("Replacement"));
+        assert!(!presets.copy());
+        assert_eq!(presets.names, ["Original", "Renamed"]);
     }
 }

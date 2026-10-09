@@ -78,6 +78,51 @@ impl Default for ClientSettings {
 }
 
 impl ClientSettings {
+    /// Local count control enables the first N rows of the chosen edge, preserving
+    /// every row's locks and chords. The detailed editor can select arbitrary rows.
+    pub fn set_action_row_count(&mut self, edge: usize, count: u8) -> io::Result<()> {
+        if edge >= 3 || count > 3 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Invalid action row count",
+            ));
+        }
+        for offset in 0..3 {
+            let index = edge * 3 + offset;
+            let mut row = self
+                .action_bar
+                .row(index)
+                .ok_or_else(|| io::Error::other("Missing action row"))?;
+            row.visible = offset < usize::from(count);
+            self.action_bar.set_row(index, row)?;
+        }
+        Ok(())
+    }
+
+    /// Previously inert count choices acquire their supported local consumer on load.
+    /// Stored choices take precedence over visibility; bindings/locks remain untouched.
+    fn migrate_legacy_action_rows(&mut self) -> io::Result<()> {
+        for (edge, key) in [
+            "action_bars.bars.bottom_rows",
+            "action_bars.bars.left_rows",
+            "action_bars.bars.right_rows",
+        ]
+        .iter()
+        .enumerate()
+        {
+            if let Some(value) = self.future_preferences.remove(*key) {
+                let crate::settings_catalog::FutureValue::Int(count @ 0..=3) = value else {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid legacy action row count",
+                    ));
+                };
+                self.set_action_row_count(edge, count as u8)?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn validate(&self) -> io::Result<()> {
         let keys_valid = self
             .movement_keys
@@ -125,7 +170,8 @@ impl ClientSettings {
                 "Preferences too large",
             ));
         }
-        let settings: Self = serde_json::from_slice(&fs::read(path)?)?;
+        let mut settings: Self = serde_json::from_slice(&fs::read(path)?)?;
+        settings.migrate_legacy_action_rows()?;
         settings.validate()?;
         Ok(settings)
     }
@@ -288,6 +334,208 @@ mod tests {
         let restored = ClientSettings::load(&path)?;
         assert_eq!(restored.panel_shortcuts.len(), 11);
         assert!(restored.english);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_future_row_counts_migrate_without_losing_chords_locks_or_other_choices()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::settings_catalog::FutureValue;
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-legacy-action-rows-{}.json",
+            std::process::id()
+        ));
+        let mut old = ClientSettings::default();
+        old.action_bar.locked = true;
+        old.future_preferences.extend([
+            ("action_bars.bars.bottom_rows".into(), FutureValue::Int(2)),
+            ("action_bars.bars.left_rows".into(), FutureValue::Int(1)),
+            ("action_bars.bars.right_rows".into(), FutureValue::Int(3)),
+            ("sound.sound.master".into(), FutureValue::Int(40)),
+        ]);
+        let mut legacy = serde_json::to_value(&old)?;
+        legacy["action_bar"]
+            .as_object_mut()
+            .ok_or("action bar must be an object")?
+            .remove("extra_rows");
+        fs::write(&path, serde_json::to_vec(&legacy)?)?;
+        let migrated = ClientSettings::load(&path)?;
+        assert_eq!(migrated.action_bar.visible_rows(), [2, 1, 3]);
+        assert_eq!(migrated.action_bar.shortcuts, old.action_bar.shortcuts);
+        assert!(migrated.action_bar.locked);
+        assert_eq!(migrated.future_preferences.len(), 1);
+        assert_eq!(
+            migrated.future_preferences["sound.sound.master"],
+            FutureValue::Int(40)
+        );
+        migrated.save(&path)?;
+        assert_eq!(ClientSettings::load(&path)?, migrated);
+        // Invalid former intent fails closed rather than becoming a fabricated count.
+        legacy["future_preferences"]["action_bars.bars.bottom_rows"] =
+            serde_json::to_value(FutureValue::Int(4))?;
+        fs::write(&path, serde_json::to_vec(&legacy)?)?;
+        assert!(ClientSettings::load(&path).is_err());
+        legacy["future_preferences"]["action_bars.bars.bottom_rows"] =
+            serde_json::to_value(FutureValue::Bool(true))?;
+        fs::write(&path, serde_json::to_vec(&legacy)?)?;
+        assert!(ClientSettings::load(&path).is_err());
+        legacy["future_preferences"]["action_bars.bars.bottom_rows"] =
+            serde_json::to_value(FutureValue::Int(-1))?;
+        fs::write(&path, serde_json::to_vec(&legacy)?)?;
+        assert!(ClientSettings::load(&path).is_err());
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn zero_legacy_count_preserves_hidden_row_chords_and_other_edges() -> io::Result<()> {
+        use crate::{action_bar::SlotShortcut, settings_catalog::FutureValue};
+        let mut settings = ClientSettings::default();
+        let mut left = settings
+            .action_bar
+            .row(4)
+            .ok_or_else(|| io::Error::other("missing action row"))?;
+        left.visible = true;
+        left.locked = true;
+        left.shortcuts[0] = Some(SlotShortcut {
+            key: 4,
+            modifiers: 2,
+        });
+        settings.action_bar.set_row(4, left)?;
+        let mut right = settings
+            .action_bar
+            .row(8)
+            .ok_or_else(|| io::Error::other("missing action row"))?;
+        right.visible = true;
+        settings.action_bar.set_row(8, right)?;
+        settings
+            .future_preferences
+            .insert("action_bars.bars.left_rows".into(), FutureValue::Int(0));
+        settings.migrate_legacy_action_rows()?;
+        assert_eq!(settings.action_bar.visible_rows(), [1, 0, 1]);
+        left.visible = false;
+        assert_eq!(settings.action_bar.row(4), Some(left));
+        assert_eq!(settings.action_bar.row(8), Some(right));
+        assert!(settings.future_preferences.is_empty());
+        settings.validate()?;
+        let before = settings.clone();
+        assert!(settings.set_action_row_count(3, 1).is_err());
+        assert!(settings.set_action_row_count(0, 4).is_err());
+        assert_eq!(settings, before);
+        Ok(())
+    }
+
+    #[test]
+    fn expanded_chords_and_all_configurable_future_choices_fit_existing_file_bounds()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::{
+            action_bar::{ACTION_BAR_ROWS, SlotShortcut},
+            settings_catalog::{
+                FutureValue, Implementation, OptionKind, SETTINGS_SECTIONS, ShortcutBinding,
+            },
+        };
+        let mut settings = ClientSettings {
+            panel_shortcuts: crate::panel_catalog::ShortcutOrder::all().saved_ids(),
+            ..Default::default()
+        };
+        for row_index in 0..ACTION_BAR_ROWS {
+            let mut row = settings
+                .action_bar
+                .row(row_index)
+                .ok_or("missing action row")?;
+            row.visible = true;
+            row.shortcuts = std::array::from_fn(|slot| {
+                let index = row_index * 12 + slot;
+                Some(SlotShortcut {
+                    key: 4 + (index % 36) as u16,
+                    modifiers: (index / 36) as u8,
+                })
+            });
+            settings.action_bar.set_row(row_index, row)?;
+        }
+        for section in SETTINGS_SECTIONS {
+            for option in section.options {
+                if !matches!(option.implementation, Implementation::Pending { .. }) {
+                    continue;
+                }
+                let value = match option.kind {
+                    OptionKind::Toggle => Some(FutureValue::Bool(true)),
+                    OptionKind::Integer { min, max } => {
+                        Some(FutureValue::Int(50_i32.clamp(min, max)))
+                    }
+                    OptionKind::Decimal { min, max } => {
+                        Some(FutureValue::Decimal((min + max) / 2.0))
+                    }
+                    OptionKind::Text { max_bytes } => Some(FutureValue::Text(
+                        "example".chars().take(max_bytes).collect(),
+                    )),
+                    OptionKind::Choice(choices) => choices
+                        .first()
+                        .map(|choice| FutureValue::Choice(choice.id.into())),
+                    OptionKind::Binding => Some(FutureValue::Binding(ShortcutBinding {
+                        key: 4,
+                        ctrl: true,
+                        alt: false,
+                        shift: false,
+                        meta: false,
+                    })),
+                    OptionKind::Action => None,
+                };
+                if let Some(value) = value {
+                    settings
+                        .future_preferences
+                        .insert(format!("{}.{}", section.id, option.id), value);
+                }
+            }
+        }
+        settings.validate()?;
+        let normal_bytes = serde_json::to_vec_pretty(&settings)?.len();
+        assert!(
+            normal_bytes <= 32768,
+            "normal complete preferences are {normal_bytes} bytes"
+        );
+        // Also cover every text field at its established ASCII byte limit.
+        for section in SETTINGS_SECTIONS {
+            for option in section.options {
+                if let OptionKind::Text { max_bytes } = option.kind {
+                    let key = format!("{}.{}", section.id, option.id);
+                    if let Some(FutureValue::Text(value)) =
+                        settings.future_preferences.get_mut(&key)
+                    {
+                        *value = "x".repeat(max_bytes);
+                    }
+                }
+            }
+        }
+        settings.validate()?;
+        let max_text_bytes = serde_json::to_vec_pretty(&settings)?.len();
+        assert!(
+            max_text_bytes <= 32768,
+            "complete preferences at text limits are {max_text_bytes} bytes"
+        );
+        for value in settings.future_preferences.values_mut() {
+            if let FutureValue::Text(text) = value {
+                // An escaped quote occupies one allowed raw byte and two JSON bytes.
+                *text = "\"".repeat(text.len());
+            }
+        }
+        settings.validate()?;
+        let escaped_text_bytes = serde_json::to_vec_pretty(&settings)?.len();
+        assert!(
+            escaped_text_bytes <= 32768,
+            "escaped text preferences are {escaped_text_bytes} bytes"
+        );
+        eprintln!(
+            "complete preferences: {} future choices, 108 chords; normal={normal_bytes} bytes, max_ascii_text={max_text_bytes} bytes, escaped_text={escaped_text_bytes} bytes",
+            settings.future_preferences.len()
+        );
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-expanded-preferences-{}.json",
+            std::process::id()
+        ));
+        settings.save(&path)?;
+        assert_eq!(ClientSettings::load(&path)?, settings);
         fs::remove_file(path)?;
         Ok(())
     }

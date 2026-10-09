@@ -178,6 +178,14 @@ macro_rules! r {
         }
     };
 }
+macro_rules! i {
+    ($id:literal, $pl:literal, $en:literal, $kind:expr, $field:literal) => {
+        SettingOption {
+            implementation: Implementation::Implemented { field: $field },
+            ..p!($id, $pl, $en, $kind, "local action bar layout")
+        }
+    };
+}
 macro_rules! q {
     ($id:literal, $pl:literal, $en:literal, $kind:expr, $consumer:literal) => {
         SettingOption {
@@ -327,9 +335,9 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         n!("window.boosted_creatures", "Komunikaty wzmocnionych stworzeń", "Boosted-creature messages", Toggle, "world notices", "gameWindowShowBoostedCreatureMessages"),
     ]),
     section!("action_bars", "Paski akcji", "Action Bars", [
-        p!("bars.bottom_rows", "Dolne paski akcji", "Bottom action rows", Integer { min: 0, max: 3 }, "action bar"),
-        p!("bars.left_rows", "Lewe paski akcji", "Left action rows", Integer { min: 0, max: 3 }, "action bar"),
-        p!("bars.right_rows", "Prawe paski akcji", "Right action rows", Integer { min: 0, max: 3 }, "action bar"),
+        i!("bars.bottom_rows", "Dolne paski akcji", "Bottom action rows", Integer { min: 0, max: 3 }, "action_bottom_rows"),
+        i!("bars.left_rows", "Lewe paski akcji", "Left action rows", Integer { min: 0, max: 3 }, "action_left_rows"),
+        i!("bars.right_rows", "Prawe paski akcji", "Right action rows", Integer { min: 0, max: 3 }, "action_right_rows"),
         q!("bars.locked", "Zablokuj układ pasków", "Lock action bars", Toggle, "action bar layout"),
         p!("bars.labels", "Etykiety skrótów", "Hotkey labels", Toggle, "action bar"),
         p!("bars.item_amounts", "Liczba przedmiotów", "Item amounts", Toggle, "inventory projection"),
@@ -619,5 +627,16 @@ mod tests {
             FutureValue::Choice("amount_descending".into()))]);
         assert!(validate_future_preferences(&value).is_ok());
         Ok(())
+    }
+    #[test]
+    fn observed_action_row_counts_have_real_local_fields() {
+        let counts: Vec<_> = SETTINGS_SECTIONS.iter().flat_map(|section| section.options)
+            .filter(|option| matches!(option.id, "bars.bottom_rows" | "bars.left_rows" | "bars.right_rows")).collect();
+        assert_eq!(counts.len(), 3);
+        for option in counts {
+            assert_eq!(option.evidence, Evidence::ObservedReferenceUi);
+            assert_eq!(option.kind, Integer { min: 0, max: 3 });
+            assert!(matches!(option.implementation, Implementation::Implemented { .. }));
+        }
     }
 }
