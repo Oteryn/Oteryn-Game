@@ -29,7 +29,7 @@ named captures are excluded from evidence.
 | Quest Log | Quest/mission details, search, sorting and tracker controls | Only character's available quest content |
 | Compendium | Player guide, client features, useful information, updates and support tabs | Not every historical/documentation leaf |
 | Cyclopedia / Map | Thais map, layers, filters and navigation | Not all map locations |
-| Cyclopedia / Items | Categories, search, level/vocation and hand filters | Detailed item and container management pending |
+| Cyclopedia / Items | Categories/search/filters; item stats, trade offers, valuation and drop/loot switches | No preference or tracking assignment |
 | Cyclopedia / Houses | House/guildhall categories and state/sort controls | Character owns no houses |
 | Cyclopedia / Character | General information and section navigation | Character subpages pending |
 | Cyclopedia / Bestiary | Creature categories, counts, search and tracking | Not all creature entries |
@@ -88,7 +88,7 @@ All **17 extra shortcuts** were added; the available list became empty:
 | Prey Dialog | Mainland character: two creature-choice slots, reroll controls/costs, locked third slot |
 | Kill Tracker | Inspected: prey creature tracking, inactive state |
 | Reward Wall | Mainland character: seven-day cycle, resting bonuses, expired streak, jokers and empty history |
-| Analytics Selector | Inspected selector; individual analyser windows pending |
+| Analytics Selector | All nine entries opened; visible panels/menus and Premium/empty-state restrictions recorded below |
 | Bosstiary | Inspected through Cyclopedia; shortcut route pending |
 | Boss Slots | Inspected through Cyclopedia; shortcut route pending |
 | Bosstiary Tracker | Inspected: empty docked tracker with header controls |
@@ -104,10 +104,44 @@ the Premium Store on this account. Loot and Supply open docked value/per-hour
 panels. Supply's header menu exposes Reset Data and per-hour gauge/graph controls,
 with those graphical controls labelled Premium. Impact shows damage totals, DPS,
 maximum DPS and all-time high, damage-type breakdown, healing totals, HPS and
-maximum/all-time values. Remaining entries are being inspected separately.
+maximum/all-time values. Damage Input opens received-damage totals, maximum DPS, a minutes graph and
+source/type breakdown. Its menu includes session values, graph/type/source
+visibility, reset and clipboard copy. XP shows gain, XP/hour and next-level
+progress; its menu has raw-XP display and Premium gauge/graph controls. Drop
+Tracker opens Cyclopedia Items to choose a tracked item; the item page contains
+the Track drops checkbox. The audit left it unchanged. Party Hunt shows session duration and
+loot-price mode, with last-session reset and clipboard copy. Boss Cooldowns
+opens an empty-state panel explaining that only bosses killed at least once
+are displayed. All nine selector entries have now been opened; empty-state and
+Premium restrictions do not establish behavior with populated hunt data.
 
 Backpack context controls and remaining chat/navigation controls also need
 inspection. Empty or account-restricted states must be reported as such.
+
+### Analyser menu details
+
+- Impact: reset data/all-time high, session values, damage types; DPS/HPS gauges
+  and graphs carry Premium labels.
+- Damage Input: reset data, session values, damage graph/types/sources and copy.
+- XP: reset data, raw XP, Premium XP/hour gauge and graph.
+- Party Hunt: reset data of last session and copy.
+- Boss Cooldowns: sort by cooldown or name.
+- Drop Tracker: no additional header menu appeared; Add Tracked Drop navigates
+  to the item catalogue instead of immediately enabling tracking.
+
+## Item and container controls
+
+An armor detail was opened directly: armor, imbuement slots, weight, market
+eligibility, body position and classification; NPC sell/buy offers; average
+market price and optional own loot value; NPC-versus-market valuation; track
+item drops and skip-when-quick-looting switches. No valuation, drop tracking or
+skip preference was changed.
+
+Manage Containers exposes a per-category Loot/Obtain assignment matrix with
+clear controls, use-main-container fallback, skipped/accepted loot filters,
+search, clear/add list controls and Premium availability explanations. Categories
+were scrolled to inspect the bounded list. No container assignment or list
+mutation was submitted.
 
 ## Evidence and preservation
 
@@ -121,7 +155,11 @@ layout after the audit and checked against the scoped preference snapshot.
 No purchase, reset, profile deletion, spell assignment, enhancement, party invite
 or gameplay action was required for this audit. Shortcut visibility was saved
 through the normal UI with the owner's authorization. Inspection is ongoing;
-this checkpoint does not claim every panel or behavior is complete.
+this checkpoint does not claim every panel or behavior is complete. Closing
+Manage Containers closed the shared Cyclopedia modal; one subsequent stale
+navigation click landed in the game viewport. That capture is excluded and
+modal navigation now verifies the actual title before each click. No gameplay
+action was intended as an audit step.
 
 ## Oteryn implementation consequence
 

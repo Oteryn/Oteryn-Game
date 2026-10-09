@@ -13,6 +13,7 @@ older private implementation edits remain separate and must not be discarded.
 - `apps/client/SETTINGS.md`: actual private implementation status and intended scope.
 - `apps/client/REFERENCE-AUDIT.md`: verified coverage, complete extra-shortcut list,
   restrictions, outstanding inspection and evidence handling.
+- `apps/client/REFERENCE-PREFERENCE-KEYS.json`: 213 names only, across six sections.
 - This task packet: preservation boundary and next work.
 
 ## Publication boundary
