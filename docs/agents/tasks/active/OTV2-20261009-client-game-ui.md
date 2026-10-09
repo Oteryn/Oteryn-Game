@@ -158,3 +158,20 @@ automation and its guard withheld input. No original-client changes in this pass
 No condition reorder/icons, new condition membership or consumer completion
 claim. Root sole publisher, product draft stays AUTHORING. Model leading this
 chat cannot be switched by the assistant; user must use the app model selector.
+
+## Modern Oteryn visual direction
+
+Owner clarified: reference functionality/controls and panel organization, modern
+Oteryn presentation rather than legacy chrome. Shared chrome now uses slate
+surfaces, restrained gold selection, rounded controls and larger text; procedural
+gray noise/bevels removed. All 28 shortcut symbols use pinned Lucide 0.468.0
+assets with upstream license, source SVG hashes and lossless high-DPI atlas.
+License is embedded and readable in Help. Empty equipment silhouettes remain
+explicitly empty-slot symbols, not item art. Actual item rendering and modules
+are unfinished. No new gameplay behavior or full-reference-parity claim.
+Native Windows167tests (124lib+38app+5launcher), strict Clippy and release PASS.
+Linux26composition tests PASS; repository governance/policy PASS. Actual Windows
+Options capture checked at default 900x620 logical dimensions: footer reachable,
+new chrome visible. In-world and Linux visual acceptance remain pending.
+Private evidence: artifacts/oteryn-modern-options-native-20261009.png.
+Draft1942 remains AUTHORING; no merge, production or database changes.

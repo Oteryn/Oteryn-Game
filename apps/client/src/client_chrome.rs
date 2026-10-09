@@ -1,18 +1,18 @@
-//! Compact client chrome, independently drawn from the reference's proportions.
+//! Modern Oteryn chrome; reference behavior does not require legacy artwork.
 //! No original client textures, fonts or icons are embedded here.
 use egui::{Color32, Context, FontId, Painter, Rect, Stroke};
 
 pub fn install(ctx: &Context, high_contrast: bool) {
     let mut style = (*ctx.style_of(egui::Theme::Dark)).clone();
     for text in [egui::TextStyle::Body, egui::TextStyle::Button] {
-        style.text_styles.insert(text, FontId::proportional(11.0));
+        style.text_styles.insert(text, FontId::proportional(12.0));
     }
     style
         .text_styles
-        .insert(egui::TextStyle::Small, FontId::proportional(9.0));
+        .insert(egui::TextStyle::Small, FontId::proportional(10.0));
     style
         .text_styles
-        .insert(egui::TextStyle::Heading, FontId::proportional(12.0));
+        .insert(egui::TextStyle::Heading, FontId::proportional(14.0));
     style.spacing.item_spacing = egui::vec2(3.0, 2.0);
     style.spacing.button_padding = egui::vec2(4.0, 2.0);
     style.spacing.interact_size = egui::vec2(18.0, 18.0);
@@ -24,90 +24,86 @@ pub fn install(ctx: &Context, high_contrast: bool) {
     style.visuals.window_fill = if high_contrast {
         Color32::BLACK
     } else {
-        Color32::from_gray(57)
+        Color32::from_rgb(16, 25, 35)
     };
     style.visuals.panel_fill = style.visuals.window_fill;
     style.visuals.override_text_color = Some(if high_contrast {
         Color32::WHITE
     } else {
-        Color32::from_gray(215)
+        Color32::from_rgb(225, 231, 235)
     });
-    style.visuals.window_corner_radius = egui::CornerRadius::ZERO;
-    style.visuals.window_stroke = Stroke::new(1.0, Color32::from_gray(125));
+    style.visuals.extreme_bg_color = if high_contrast {
+        Color32::BLACK
+    } else {
+        Color32::from_rgb(10, 17, 24)
+    };
+    style.visuals.faint_bg_color = Color32::from_rgb(21, 33, 45);
+    style.visuals.window_corner_radius = egui::CornerRadius::same(8);
+    style.visuals.window_stroke = Stroke::new(
+        1.0,
+        if high_contrast {
+            Color32::WHITE
+        } else {
+            Color32::from_rgb(49, 65, 78)
+        },
+    );
     style.visuals.window_shadow = egui::epaint::Shadow::NONE;
-    style.visuals.selection.bg_fill = Color32::from_gray(91);
-    style.visuals.selection.stroke = Stroke::new(1.0, Color32::from_gray(235));
+    style.visuals.selection.bg_fill = Color32::from_rgb(67, 57, 37);
+    style.visuals.selection.stroke = Stroke::new(1.0, Color32::from_rgb(233, 196, 125));
     for (widget, fill) in [
-        (&mut style.visuals.widgets.noninteractive, 51),
-        (&mut style.visuals.widgets.inactive, 62),
-        (&mut style.visuals.widgets.hovered, 78),
-        (&mut style.visuals.widgets.active, 41),
-        (&mut style.visuals.widgets.open, 70),
+        (&mut style.visuals.widgets.noninteractive, [16, 25, 35]),
+        (&mut style.visuals.widgets.inactive, [24, 36, 48]),
+        (&mut style.visuals.widgets.hovered, [37, 53, 67]),
+        (&mut style.visuals.widgets.active, [49, 47, 36]),
+        (&mut style.visuals.widgets.open, [31, 45, 58]),
     ] {
-        widget.corner_radius = egui::CornerRadius::ZERO;
-        widget.bg_fill = Color32::from_gray(if high_contrast { 0 } else { fill });
+        widget.corner_radius = egui::CornerRadius::same(4);
+        widget.bg_fill = if high_contrast {
+            Color32::BLACK
+        } else {
+            Color32::from_rgb(fill[0], fill[1], fill[2])
+        };
         widget.weak_bg_fill = widget.bg_fill;
         widget.bg_stroke = Stroke::new(
             1.0,
-            Color32::from_gray(if high_contrast { 255 } else { 113 }),
+            if high_contrast {
+                Color32::WHITE
+            } else {
+                Color32::from_rgb(54, 71, 84)
+            },
         );
-        widget.fg_stroke = Stroke::new(1.0, Color32::from_gray(220));
+        widget.fg_stroke = Stroke::new(
+            1.0,
+            if high_contrast {
+                Color32::WHITE
+            } else {
+                Color32::from_rgb(225, 231, 235)
+            },
+        );
         widget.expansion = 0.0;
     }
     ctx.set_style_of(egui::Theme::Dark, style);
-}
-
-fn texture(ctx: &Context) -> egui::TextureHandle {
-    let id = egui::Id::new("oteryn-owned-chrome-grain");
-    if let Some(texture) = ctx.data(|data| data.get_temp::<egui::TextureHandle>(id)) {
-        return texture;
-    }
-    let pixels = (0..64 * 64)
-        .map(|index| {
-            let mut hash = (index as u32).wrapping_add(0x9e37_79b9);
-            hash = (hash ^ (hash >> 16)).wrapping_mul(0x7feb_352d);
-            hash = (hash ^ (hash >> 15)).wrapping_mul(0x846c_a68b);
-            hash ^= hash >> 16;
-            let tone = 51 + (hash % 11) as u8;
-            Color32::from_gray(tone)
-        })
-        .collect();
-    let texture = ctx.load_texture(
-        "oteryn-owned-chrome-grain",
-        egui::ColorImage::new([64, 64], pixels),
-        egui::TextureOptions {
-            wrap_mode: egui::TextureWrapMode::Repeat,
-            ..egui::TextureOptions::NEAREST
-        },
-    );
-    ctx.data_mut(|data| data.insert_temp(id, texture.clone()));
-    texture
 }
 
 fn paint(ctx: &Context, painter: &Painter, rect: Rect, inset: bool) {
     if !rect.is_positive() || !rect.is_finite() {
         return;
     }
-    if ctx.style_of(egui::Theme::Dark).visuals.window_fill == Color32::BLACK {
-        painter.rect_filled(rect, 0.0, Color32::BLACK);
+    let style = ctx.style_of(egui::Theme::Dark);
+    let fill = if inset {
+        style.visuals.extreme_bg_color
     } else {
-        painter.image(
-            texture(ctx).id(),
+        style.visuals.panel_fill
+    };
+    painter.rect_filled(rect, if inset { 4.0 } else { 0.0 }, fill);
+    if inset {
+        painter.rect_stroke(
             rect,
-            Rect::from_min_max(
-                egui::Pos2::ZERO,
-                egui::pos2(rect.width() / 64.0, rect.height() / 64.0),
-            ),
-            Color32::WHITE,
+            4.0,
+            style.visuals.window_stroke,
+            egui::StrokeKind::Inside,
         );
     }
-    let light = Stroke::new(1.0, Color32::from_gray(117));
-    let dark = Stroke::new(1.0, Color32::from_gray(27));
-    let (top, bottom) = if inset { (dark, light) } else { (light, dark) };
-    painter.line_segment([rect.left_bottom(), rect.left_top()], top);
-    painter.line_segment([rect.left_top(), rect.right_top()], top);
-    painter.line_segment([rect.right_top(), rect.right_bottom()], bottom);
-    painter.line_segment([rect.right_bottom(), rect.left_bottom()], bottom);
 }
 
 pub fn surface(ui: &egui::Ui, rect: Rect, inset: bool) {

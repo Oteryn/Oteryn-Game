@@ -679,10 +679,11 @@ fn action_busy(english: bool) -> &'static str {
 fn panel_heading(ui: &mut egui::Ui, label: &str) {
     egui::Frame::NONE
         .fill(ui.visuals().widgets.inactive.bg_fill)
-        .inner_margin(1.0)
+        .corner_radius(4.0)
+        .inner_margin(egui::Margin::symmetric(5, 3))
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
-            ui.label(RichText::new(label).size(10.0).strong());
+            ui.label(RichText::new(label).size(11.0).strong());
         });
 }
 

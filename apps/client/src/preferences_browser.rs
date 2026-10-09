@@ -191,6 +191,11 @@ impl PreferencesBrowser {
                                 }
                             }
                         }
+                        if section.id == "help" {
+                            ui.collapsing(tr("Licencje ikon interfejsu", "Interface icon licenses"), |ui| {
+                                ui.label(include_str!("../assets/icons/LICENSE.txt"));
+                            });
+                        }
                         if matching == 0 { ui.weak(tr("Brak wyników w tej kategorii. Wybierz kategorię z listy.", "No matches in this category. Choose a category from the list.")); }
                         if section.id == "action_hotkeys" && (matching > 0 || search.is_empty()) {
                             ui.separator();

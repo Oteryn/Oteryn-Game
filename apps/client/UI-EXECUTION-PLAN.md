@@ -1,7 +1,8 @@
 # Native client fidelity execution plan
 
-Owner request: reproduce the inspected reference UI and all observed options and
-behaviors, rather than ship a catalogue of generic controls. Draft #1942 remains
+Owner direction (2026-10-09): retain inspected Tibia controls, panel organization
+and observed behaviors, with a modern Oteryn visual identity. Legacy textures,
+pixel-art chrome and rough procedural shortcut sketches are not the visual target. Draft #1942 remains
 AUTHORING. This plan is the execution order, not a completion declaration.
 
 ## Acceptance rule
@@ -12,7 +13,8 @@ requirements. Unknown details remain explicitly unverified. A screen passes only
 when its compiled native capture and interactions satisfy both visual and behavior
 criteria. Serialization tests and panel/control counts do not establish parity.
 
-Visual criteria: hierarchy, group/row order, proportions, typography, frames,
+Visual criteria: coherent Oteryn slate/gold surfaces, legible typography, licensed
+consistent icons, hierarchy, group/row order, proportions, frames,
 icons, table columns, spacing, scrolling and default dialog reachability.
 Behavior criteria: selection, dependencies, add/remove/reorder, conflict checks,
 Apply/Cancel/reset, failed save, restart, modal focus and actual effect in game.
