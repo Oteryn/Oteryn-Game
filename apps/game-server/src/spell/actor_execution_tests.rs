@@ -498,3 +498,35 @@ fn channel_cost_or_parameter_refusal_leaves_harmony_vitals_and_revision_unchange
         Some((3, 0))
     );
 }
+
+#[test]
+fn ordinary_gain_reuses_exact_focus_profile_amount_and_sustain_distribution() {
+    let profile = harmony_gain_profile().expect("closed shared profile");
+    assert_eq!(
+        profile["harmony_gain_healing"],
+        parameters("Focus Harmony")["harmony_gain_healing"]
+    );
+    assert_eq!(
+        profile["harmony_gain_healing"],
+        parameters("Focus Serenity")["harmony_gain_healing"]
+    );
+    let plan = |charges, serene, sustain| {
+        crate::spell::native_actor_states::plan_harmony_gain_healing(
+            profile, charges, 200, serene, sustain,
+        )
+        .expect("accepted profile")
+    };
+    assert_eq!(plan(0, false, false), None);
+    let base = plan(1, false, false).expect("gained charge");
+    assert_eq!((base.bounds.minimum, base.bounds.maximum), (84, 97));
+    let normal = plan(1, false, true).expect("Sustain");
+    let serene = plan(1, true, true).expect("Serene Sustain");
+    for roll in [base.bounds.minimum, base.bounds.maximum] {
+        assert_eq!(normal.finish_draw(roll).expect("normal"), roll * 135 / 100);
+        assert_eq!(serene.finish_draw(roll).expect("serene"), roll * 170 / 100);
+    }
+    assert!(
+        crate::spell::native_actor_states::plan_harmony_gain_healing(profile, 6, 200, false, false)
+            .is_err()
+    );
+}
