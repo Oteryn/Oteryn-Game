@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import copy
 import json
+from decimal import Decimal
 
 import charm_authoring as ca
 
@@ -142,6 +143,95 @@ def test_validate_negatives() -> None:
         mutate(catalogue)
         errors = ca.validate(catalogue)
         assert any(fragment in e for e in errors), f"{fragment!r} not in {errors}"
+
+
+def test_numeric_values_fit_runtime_without_rounding() -> None:
+    cases = [
+        ("chance precision", lambda c: c["stages"][0].update(value=0.001)),
+        ("cost overflow", lambda c: c["stages"][2].update(cost=2**32)),
+        ("duration overflow", lambda c: c["effect"].update(duration_ms=2**32)),
+    ]
+    for label, mutate in cases:
+        catalogue = committed()
+        mutate(catalogue["charms"][0])
+        assert ca.validate(catalogue), label
+    catalogue = committed()
+    catalogue["charms"][0]["stages"][0]["value"] = Decimal("0.2900000000000000001")
+    assert ca.validate(catalogue), "decimal precision must not round to 0.29"
+    catalogue["charms"][0]["stages"][0]["value"] = float("nan")
+    assert ca.validate(catalogue), "non-finite percentages fail closed"
+    for effect_type in ("attack_proc_damage", "kill_area_damage"):
+        catalogue = committed()
+        charm = next(
+            c for c in catalogue["charms"] if c["effect"]["type"] == effect_type
+        )
+        charm["effect"]["damage_cap_level_multiplier"] = 2**32
+        assert ca.validate(catalogue), effect_type
+    for effect_type, field in (
+        ("attack_proc_damage", "percent_of_creature_max_health"),
+        ("kill_area_damage", "percent_of_creature_max_health"),
+        ("attack_proc_resource_damage", "percent_of_own_maximum"),
+        ("attack_proc_resource_damage", "damage_cap_percent_of_creature_max_health"),
+    ):
+        catalogue = committed()
+        charm = next(
+            c for c in catalogue["charms"] if c["effect"]["type"] == effect_type
+        )
+        charm["effect"][field] = 0.001
+        assert ca.validate(catalogue), field
+
+
+def test_exact_hundredths_and_uint32_boundaries_are_valid() -> None:
+    # 0.29 is a valid hundredth even though float division by 0.01 is inexact.
+    catalogue = committed()
+    charm = catalogue["charms"][0]
+    charm["stages"][0]["value"] = 0.29
+    charm["stages"][2]["cost"] = 2**32 - 1
+    charm["effect"]["duration_ms"] = 2**32 - 1
+    assert ca.validate(catalogue) == []
+    for effect_type in ("attack_proc_damage", "kill_area_damage"):
+        catalogue = committed()
+        charm = next(
+            c for c in catalogue["charms"] if c["effect"]["type"] == effect_type
+        )
+        charm["effect"]["damage_cap_level_multiplier"] = 2**32 - 1
+        charm["effect"]["percent_of_creature_max_health"] = 0.29
+        assert ca.validate(catalogue) == []
+
+
+def test_decimal_extremes_fail_closed_without_arithmetic_exceptions() -> None:
+    for value in (
+        Decimal("1e100"),
+        Decimal("1e-1000000"),
+        Decimal("0.2900000000000000000000000000000000001"),
+        Decimal("NaN"),
+        Decimal("Infinity"),
+        Decimal("-Infinity"),
+    ):
+        catalogue = committed()
+        catalogue["charms"][0]["stages"][0]["value"] = value
+        assert ca.validate(catalogue), str(value)
+    for value in (Decimal("0.0100"), Decimal("2.9e-1")):
+        catalogue = committed()
+        catalogue["charms"][0]["stages"][0]["value"] = value
+        assert ca.validate(catalogue) == [], str(value)
+
+
+def test_generated_keys_fit_durable_character_state_byte_bound() -> None:
+    # Unicode lowercasing expands İ to i + combining dot before ASCII key folding.
+    # These names still fit 64 characters, while their generated keys reach 128/129 bytes.
+    for suffix, expected_bytes in (("a", 128), ("ab", 129)):
+        catalogue = committed()
+        charm = catalogue["charms"][0]
+        charm["name"] = "İ" * 57 + suffix
+        charm["key"] = ca.charm_key(charm["name"])
+        assert len(charm["name"]) <= 64
+        assert len(charm["key"].encode("ascii")) == expected_bytes
+        errors = ca.validate(catalogue)
+        if expected_bytes == 128:
+            assert errors == []
+        else:
+            assert errors, "129-byte generated key cannot enter Character Charm state"
 
 
 def test_content_tree_is_current_and_registered() -> None:

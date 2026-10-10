@@ -25,7 +25,8 @@
     "percent": {
       "type": "number",
       "exclusiveMinimum": 0,
-      "maximum": 1000
+      "maximum": 1000,
+      "multipleOf": 0.01
     },
     "element": {
       "enum": [
@@ -40,7 +41,8 @@
     },
     "duration_ms": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 1,
+      "maximum": 4294967295
     },
     "stage": {
       "type": "object",
@@ -59,6 +61,7 @@
         "cost": {
           "type": "integer",
           "minimum": 1,
+          "maximum": 4294967295,
           "description": "Unlock cost of this stage in the category's currency (cost_currency)."
         },
         "value": {
@@ -94,6 +97,7 @@
             "damage_cap_level_multiplier": {
               "type": "integer",
               "minimum": 1,
+              "maximum": 4294967295,
               "description": "Damage is capped at this multiple of the character's level, before resistances."
             },
             "ignores_resistances": {
@@ -179,6 +183,7 @@
             "damage_cap_level_multiplier": {
               "type": "integer",
               "minimum": 1,
+              "maximum": 4294967295,
               "description": "Damage to each creature is capped at this multiple of the character's level."
             }
           }
@@ -331,7 +336,7 @@
         "key": {
           "type": "string",
           "pattern": "^oteryn:charm\\.[a-z0-9_]+$",
-          "maxLength": 512,
+          "maxLength": 128,
           "description": "Proposed authoring key: lowercase name, non-alphanumerics folded to _. Not minted until content population."
         },
         "name": {
