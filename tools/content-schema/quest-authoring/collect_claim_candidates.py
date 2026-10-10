@@ -25,6 +25,15 @@ CLASS_AMBIGUOUS = "AMBIGUOUS_OR_PARTIAL_SAME_QUEST_CLAIM_MATCH"
 CLASS_NO_MATCH = "NO_SAME_QUEST_REWARD_CLAIM_MATCH"
 CLASS_TARGET_INCOMPLETE = "TARGET_IDENTITY_INCOMPLETE"
 
+# Every donor RewardClaim in the canonical corpus pins its Quest reference to this
+# source revision; a claim whose complete Quest reference differs is not same-Quest.
+DONOR_QUEST_REVISION = "canary-04b83b51+crystalserver-9f5a72c6"
+
+
+def ref_id(ref) -> str:
+    """Complete canonical reference identity: family, key and revision."""
+    return f"{ref['family']}:{ref['key']}@{ref.get('revision')}"
+
 
 def read(root: Path, path: str):
     return json.loads((root / path).read_text(encoding="utf-8"))
@@ -43,8 +52,11 @@ def encoded(value) -> bytes:
 
 def claim_rows(root: Path, crosswalk):
     donor_to_canonical = collections.defaultdict(set)
+    claim_refs_by_owner = collections.defaultdict(set)
     for row in crosswalk["quests"]:
         donor_to_canonical[row["donor_quest_key"]].add(row["quest_key"])
+        for ref in row.get("native_reward_refs") or []:
+            claim_refs_by_owner[row["quest_key"]].add(ref_id(ref))
 
     index = read(root, CLAIM_INDEX)
     claims = []
@@ -56,22 +68,38 @@ def claim_rows(root: Path, crosswalk):
         raw = read(root, shard)
         for record_index, record in enumerate(raw["records"]):
             definition = record["definition"]
-            source_quest = (definition.get("quest") or {}).get("key")
+            quest_ref = definition.get("quest") or {}
+            source_quest = quest_ref.get("key")
+            claim_ref = {
+                "family": "RewardClaim",
+                "key": definition["identity"]["key"],
+                "revision": definition["identity"].get("revision"),
+            }
             owners = set()
-            if isinstance(source_quest, str):
+            if (
+                isinstance(source_quest, str)
+                and quest_ref.get("family") == "Quest"
+                and quest_ref.get("revision") == DONOR_QUEST_REVISION
+            ):
+                candidates = set(donor_to_canonical.get(source_quest, ()))
                 if source_quest.startswith("oteryn:quest."):
-                    owners.add(source_quest)
-                owners.update(donor_to_canonical.get(source_quest, ()))
-            items = collections.Counter()
+                    candidates.add(source_quest)
+                # The crosswalk's exact claim reference must bind the claim to the Quest.
+                owners = {
+                    owner
+                    for owner in candidates
+                    if ref_id(claim_ref) in claim_refs_by_owner.get(owner, ())
+                }
             placements = []
             for placement_index, placement in enumerate(definition.get("placements") or []):
                 reward_items = []
+                placement_counts = collections.Counter()
                 for item in ((placement.get("reward") or {}).get("items") or []):
                     ref = item.get("item") or {}
                     if ref.get("family") != "Item" or not ref.get("key"):
                         continue
                     count = int(item.get("count", 1))
-                    items[ref["key"]] += count
+                    placement_counts[ref_id(ref)] += count
                     reward_items.append(
                         {
                             "item": dict(ref),
@@ -83,6 +111,7 @@ def claim_rows(root: Path, crosswalk):
                         {
                             "placement_index": placement_index,
                             "items": reward_items,
+                            "counts_by_item": dict(sorted(placement_counts.items())),
                             "source_binding": placement.get("source_binding"),
                         }
                     )
@@ -92,7 +121,6 @@ def claim_rows(root: Path, crosswalk):
                     "readiness": definition.get("readiness"),
                     "source_quest": source_quest,
                     "canonical_quest_candidates": sorted(owners),
-                    "items": dict(sorted(items.items())),
                     "placements": placements,
                     "canonical_ref": {
                         "path": shard,
@@ -166,42 +194,52 @@ def build(root: Path):
             if intent.get("kind") != "collect":
                 continue
             exact_targets, incomplete_targets = exact_item_targets(intent)
-            exact_item_keys = sorted({row["item"]["key"] for row in exact_targets})
+            exact_item_keys = sorted({ref_id(row["item"]) for row in exact_targets})
             matches_by_item = {}
             for item_key in exact_item_keys:
                 rows = []
                 for claim in local_claims:
-                    if item_key not in claim["items"]:
-                        continue
-                    rows.append(
-                        {
-                            "claim": claim["key"],
-                            "claim_readiness": claim["readiness"],
-                            "delivered_count": claim["items"][item_key],
-                            "source_quest": claim["source_quest"],
-                            "canonical_ref": claim["canonical_ref"],
-                        }
-                    )
-                matches_by_item[item_key] = sorted(rows, key=lambda row: row["claim"])
+                    for placement in claim["placements"]:
+                        if item_key not in placement["counts_by_item"]:
+                            continue
+                        rows.append(
+                            {
+                                "claim": claim["key"],
+                                "claim_readiness": claim["readiness"],
+                                "placement_index": placement["placement_index"],
+                                "delivered_count": placement["counts_by_item"][item_key],
+                                "source_quest": claim["source_quest"],
+                                "canonical_ref": claim["canonical_ref"],
+                            }
+                        )
+                matches_by_item[item_key] = sorted(
+                    rows, key=lambda row: (row["claim"], row["placement_index"])
+                )
 
             target_set = set(exact_item_keys)
             claims_covering_all = []
             if target_set:
                 for claim in local_claims:
-                    if target_set <= set(claim["items"]):
-                        claims_covering_all.append(
-                            {
-                                "claim": claim["key"],
-                                "claim_readiness": claim["readiness"],
-                                "delivered_counts": {
-                                    item_key: claim["items"][item_key]
-                                    for item_key in sorted(target_set)
-                                },
-                                "source_quest": claim["source_quest"],
-                                "canonical_ref": claim["canonical_ref"],
-                            }
-                        )
-            claims_covering_all.sort(key=lambda row: row["claim"])
+                    # One placement must deliver every target: items spread over
+                    # different placements (chests) are not one acquisition.
+                    for placement in claim["placements"]:
+                        if target_set <= set(placement["counts_by_item"]):
+                            claims_covering_all.append(
+                                {
+                                    "claim": claim["key"],
+                                    "claim_readiness": claim["readiness"],
+                                    "placement_index": placement["placement_index"],
+                                    "delivered_counts": {
+                                        item_key: placement["counts_by_item"][item_key]
+                                        for item_key in sorted(target_set)
+                                    },
+                                    "source_quest": claim["source_quest"],
+                                    "canonical_ref": claim["canonical_ref"],
+                                }
+                            )
+            claims_covering_all.sort(
+                key=lambda row: (row["claim"], row["placement_index"])
+            )
 
             if incomplete_targets:
                 classification = CLASS_TARGET_INCOMPLETE
@@ -237,6 +275,7 @@ def build(root: Path):
                     "kind": "SAME_QUEST_REWARD_CLAIM_ACQUISITION_CANDIDATE",
                     "claim": claims_covering_all[0]["claim"],
                     "claim_readiness": claims_covering_all[0]["claim_readiness"],
+                    "placement_index": claims_covering_all[0]["placement_index"],
                     "quantity_semantics_proven": False,
                     "quest_transition_cause_binding_proven": False,
                 }

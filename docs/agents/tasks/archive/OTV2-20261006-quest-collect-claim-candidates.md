@@ -4,14 +4,15 @@
 task_id: OTV2-20261006-quest-collect-claim-candidates
 title: Qualify exact same-Quest RewardClaim acquisition candidates for collect stages
 mode: MIGRATE
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
+pr: 1888
 branch: codex/quest-collect-claim-candidates-20261006
 base_sha: 97c46d0e63fefe8a22a2053de7b596c50b7253a6
 owner: chatgpt-quest-completion
 created_at: 2026-10-06
-updated_at: 2026-10-06
+updated_at: 2026-10-10
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/quest-authoring/collect_claim_candidates.py
@@ -19,6 +20,8 @@ owned_paths:
   - tools/content-schema/quest-authoring/samples/server-completion/collect-claim-candidates.json
   - tools/content-schema/quest-authoring/run_checks.py
   - docs/agents/tasks/OTV2-20261006-quest-collect-claim-candidates.md
+  - docs/agents/tasks/archive/OTV2-20261006-quest-collect-claim-candidates.md
+  - tools/content-schema/quest-authoring/test_chosen_source_progress.py
 depends_on:
   - PR #1875
   - PR #1876
@@ -81,11 +84,13 @@ Polling inventory after the fact is not an accepted replacement.
 
 ## Validation
 
-- `python collect_claim_candidates.py`: generated deterministic packet.
-- `python -m unittest test_collect_claim_candidates.py`: 3/3 PASS.
-- `python collect_claim_candidates.py --check`: PASS.
-- Drift check is added to the existing Quest `run_checks.py`.
-- No runtime/content activation is performed.
+- `python3.12 collect_claim_candidates.py --check`: pass
+- `python3.12 -m unittest test_collect_claim_candidates`: 6 tests OK
+- `python3.12 -m unittest test_chosen_source_progress`: OK
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: 59 tests OK
+
+Review state: Codex P1/P2 findings addressed on this head (complete Item and Quest reference matching, placement-level coverage, archived record, `test_chosen_source_progress.py` declared as owned).
 
 ## Next action
 
