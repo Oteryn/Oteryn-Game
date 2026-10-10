@@ -3,7 +3,7 @@
 - Decision: `PVP0-PVP-GAP-CLOSURE-V1`
 - Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (combat,
   persistence, security and protocol) and protected integration. Owner questions Q1-Q4 (§10) are
-  open.
+  answered: control plane D971 accepts 1a 2a 3a 4a.
 - Answers: coordination #1622, "mechanic missing on `main`: PvP rules". Inventories what PvP code
   exists on `main`, checks the accepted PvP contract against the reference evidence in this
   repository, closes five gaps the accepted contract leaves open, and fixes the slice plan.
@@ -102,7 +102,7 @@ Rookgaard ("no PvP on every World type") is G3 applied to map data: the map mark
 
 ## 6. Amendments to PARTY-PVP-0 (pending on acceptance of PVP-0)
 
-### 6.1 White skull after an unjustified kill (G1, Q1 recommended a)
+### 6.1 White skull after an unjustified kill (G1, Q1 a, D971)
 
 PARTY-PVP-0 §8.2 "White skull" gains: on an `OPEN` World, an unjustified kill (§9) sets each
 unjustified contributor's `white_skull_until` to at least its `kill_block_until` in the victim's
@@ -110,7 +110,7 @@ death transaction. Aggression without a kill keeps the 60 s rule. A red or black
 shows instead of white. No new column: `white_skull_until` exists (§6.2) and is restored at
 admission (§8.1).
 
-### 6.2 One World PvP type (G2, Q2 recommended a)
+### 6.2 One World PvP type (G2, Q2 a, D971)
 
 - `rulesets/pvp/` `pvp_type` stays the only authority for PvP legality, skulls and death.
 - The published field World policy is a projection of it, checked, not a second authority:
@@ -121,7 +121,7 @@ admission (§8.1).
   the three. No missing row grants PvP (migration 0048 rule kept).
 - PVP-1 writes the check; no migration of migration 0048's table.
 
-### 6.3 No-PvP tiles (G3, Q3 recommended a)
+### 6.3 No-PvP tiles (G3, Q3 a, D971)
 
 PARTY-PVP-0 §7.2 gains rule **3b, no-PvP tile**: an offensive effect from a character (or its
 summon) to a character is refused when either stands on a `no_pvp_zone` tile, on every World type.
@@ -130,7 +130,7 @@ A no-PvP tile does not stop regeneration or logout and sets no PZ semantics; PvE
 Single target: `PVP_REFUSED {NO_PVP_TILE}`; an area effect skips the actor. Fields keep the
 §8.2 safe variant on such a tile.
 
-### 6.4 PvP-zone tiles until ARENA-0 (G4, Q4 recommended a)
+### 6.4 PvP-zone tiles until ARENA-0 (G4, Q4 a, D971)
 
 A `pvp_zone` tile grants nothing until an arena decision: World rules apply on it unchanged.
 PVP-RT-1 moves the player-made field hit in `field_step_ingress.rs` onto the legality stage
@@ -255,7 +255,9 @@ Each is a focused test in the named slice; "O" = `OPEN`, "P" = `OPTIONAL`, "H" =
 | PVP-CC-31 | RT-1, WIRE-1 | black-skulled actor selects Red Fist → `REJECTED`; actor in Red Fist gains a black skull → mode Dove; H → mode fixed at Red Fist |
 | PVP-CC-32 | WIRE-1 | viewer sees the safe variant of a player field; the owner attacks the viewer → that entry republished as the harmful variant in the next update; the relation expires → safe variant again; after a node restart restoring the relation → harmful variant |
 
-## 10. Owner questions (for the control plane)
+## 10. Owner questions (answered: D971, 1a 2a 3a 4a)
+
+Each recommended option is adopted; §6.1-§6.4 are written to it.
 
 1. **White skull after an unjustified kill (G1).** a) It lasts the 15-minute kill block, as the
    manual and the OTS evidence say (recommended); b) keep PARTY-PVP-0's 60 s.
