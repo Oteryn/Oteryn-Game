@@ -325,8 +325,15 @@ def semantic(e, catalog):
                 if (action['operation'] == 'add') != ('ms' in action):
                     errors.append(f'{at}: a timer add needs exactly its ms')
             if ak == 'attribute':
-                if (action['operation'] == 'add') != ('value' in action):
-                    errors.append(f'{at}: an attribute add needs a value, a reset takes none')
+                if (action['operation'] in ('add', 'set')) != ('value' in action):
+                    errors.append(f'{at}: an attribute add/set needs a value, a reset takes none')
+                if action['attribute'] == 'max_health':
+                    if action['operation'] not in ('set', 'reset'):
+                        errors.append(f'{at}: max_health supports only set/reset')
+                    if action['operation'] == 'set' and (type(action.get('value')) is not int or not 1 <= action['value'] <= 4294967295):
+                        errors.append(f'{at}: max_health set needs an absolute u32 value')
+                elif action['operation'] == 'set':
+                    errors.append(f'{at}: only max_health supports set')
                 if isinstance(action.get('value'), dict):
                     need('counter', action['value']['counter'], counters, at)
             if ak == 'set_phase':

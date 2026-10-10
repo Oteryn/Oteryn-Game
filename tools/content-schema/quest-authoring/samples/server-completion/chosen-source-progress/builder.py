@@ -10,6 +10,12 @@ import hashlib
 import json
 import pathlib
 import re
+import sys
+
+TOOL_DIR = pathlib.Path(__file__).resolve().parents[3]
+if str(TOOL_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOL_DIR))
+import quest_terminal_stage_refinements as terminal_refinements
 
 BASIS = "CHOSEN_OTERYN_APPROXIMATION"
 PROFILE = "chosen_source_completion_v1"
@@ -46,13 +52,14 @@ def completion_state(quest):
     return value if isinstance(value, str) else value["state"]
 
 
-def recipe_of(quest):
+def recipe_of(root, quest):
     wrapper = quest.get("oteryn_recipe") or {}
     if wrapper.get("profile") != PROFILE or not wrapper.get("chosen_data_complete"):
-        return None
+        return None, None
     payload = wrapper.get("payload") or {}
-    recipe = payload.get("recipe")
-    return recipe if isinstance(recipe, dict) else None
+    normalized, provenance = terminal_refinements.normalize_payload(root, payload)
+    recipe = normalized.get("recipe")
+    return (recipe if isinstance(recipe, dict) else None), provenance
 
 
 def validate_recipe(quest, recipe):
@@ -80,8 +87,7 @@ def validate_recipe(quest, recipe):
     req((recipe.get("repeat") or {}).get("kind") in {"once", "daily"}, "Unsupported repeat")
 
 
-def project(quest, canonical_ref, state=NEW_STATE, source_completion_state=None):
-    recipe = recipe_of(quest)
+def project(root, quest, canonical_ref, recipe, normalization, state=NEW_STATE, source_completion_state=None):
     req(recipe is not None, "Not a chosen source recipe")
     validate_recipe(quest, recipe)
     owner = quest["identity"]["key"]
@@ -167,6 +173,8 @@ def project(quest, canonical_ref, state=NEW_STATE, source_completion_state=None)
             "bindings remain unresolved."
         ),
     }
+    if normalization is not None:
+        completion["terminal_stage_normalization"] = copy.deepcopy(normalization)
     if source_completion_state is not None:
         completion.update(
             {
@@ -200,7 +208,7 @@ def build(root):
         authoring_sources.append({"path": relative, "sha256": packet_sha})
         for index, row in enumerate(json.loads(raw)["records"]):
             quest = row["definition"]
-            recipe = recipe_of(quest)
+            recipe, normalization = recipe_of(root, quest)
             if recipe is None:
                 continue
             ref = {
@@ -213,7 +221,9 @@ def build(root):
             source_state = completion_state(existing) if existing is not None else None
             try:
                 if existing is None:
-                    quests.append(project(quest, ref))
+                    quests.append(
+                        project(root, quest, ref, recipe, normalization)
+                    )
                 elif source_state == "LOWERED":
                     validate_recipe(quest, recipe)
                     skipped_source_lowered.append(
@@ -222,8 +232,11 @@ def build(root):
                 elif source_state in OVERLAYABLE_SOURCE_STATES:
                     overlays.append(
                         project(
+                            root,
                             quest,
                             ref,
+                            recipe,
+                            normalization,
                             state=OVERLAY_STATE,
                             source_completion_state=source_state,
                         )
@@ -245,21 +258,17 @@ def build(root):
     skipped_source_lowered.sort(key=lambda row: row["quest"])
     held.sort(key=lambda row: row["quest"])
 
-    req(len(quests) == 139, "Qualified new chosen source recipe count changed")
-    req(len(overlays) == 88, "Qualified chosen source overlay count changed")
+    req(len(quests) == 146, "Qualified new chosen source recipe count changed")
+    req(len(overlays) == 90, "Qualified chosen source overlay count changed")
     req(
         len(skipped_source_lowered) == 6
         and all(row["source_completion_state"] == "LOWERED" for row in skipped_source_lowered),
         "Source-lowered skip set changed",
     )
-    req(
-        len(held) == 9
-        and all(row["reason"] == "Terminal completion count must be one" for row in held),
-        "Chosen source hold set changed",
-    )
+    req(len(held) == 0, "Chosen source hold set changed")
     projected = quests + overlays
     return {
-        "schema": "OTERYN_CHOSEN_SOURCE_QUEST_PROGRESS_IMPORT/v2",
+        "schema": "OTERYN_CHOSEN_SOURCE_QUEST_PROGRESS_IMPORT/v3",
         "basis": BASIS,
         "native_admission": False,
         "runtime_enabled": False,
@@ -328,7 +337,7 @@ def validate_projected(quest, expected_state):
 
 def validate_packet(packet):
     req(
-        packet.get("schema") == "OTERYN_CHOSEN_SOURCE_QUEST_PROGRESS_IMPORT/v2",
+        packet.get("schema") == "OTERYN_CHOSEN_SOURCE_QUEST_PROGRESS_IMPORT/v3",
         "Packet schema",
     )
     req(
@@ -342,25 +351,21 @@ def validate_packet(packet):
     held = packet.get("held") or []
     skipped = packet.get("skipped_source_lowered") or []
     req(
-        len(quests) == 139 and len({quest["quest"] for quest in quests}) == 139,
-        "All139 unique new owners",
+        len(quests) == 146 and len({quest["quest"] for quest in quests}) == 146,
+        "All146 unique new owners",
     )
     req(
-        len(overlays) == 88
-        and len({quest["quest"] for quest in overlays}) == 88
+        len(overlays) == 90
+        and len({quest["quest"] for quest in overlays}) == 90
         and not ({quest["quest"] for quest in quests} & {quest["quest"] for quest in overlays}),
-        "All88 unique overlay owners",
+        "All90 unique overlay owners",
     )
     req(
         len(skipped) == 6
         and all(row["source_completion_state"] == "LOWERED" for row in skipped),
         "All6 Source-lowered owners retained",
     )
-    req(
-        len(held) == 9
-        and all(row["reason"] == "Terminal completion count must be one" for row in held),
-        "All9 holds retained",
-    )
+    req(len(held) == 0, "No terminal-count holds remain")
     for quest in quests:
         validate_projected(quest, NEW_STATE)
     for quest in overlays:

@@ -242,6 +242,38 @@ pub(crate) async fn load_owned_cast_facts_in_transaction(
     runtime
         .player_control_facts(actor, fence.game_session_id)
         .map_err(|_| AccessFactsError::Unavailable("current player owner"))?;
+    check_content_pin(runtime, active)?;
+    let read =
+        read_owned_cast_facts_in_transaction(tx, root, recovery, node, fence, command, active)
+            .await?;
+    qualify_owned_cast_read(
+        &read,
+        command,
+        fence,
+        runtime,
+        actor,
+        state,
+        active,
+        access_owner,
+        now_micros,
+    )
+}
+
+/// The durable part of [`load_owned_cast_facts_in_transaction`]: it reads under the cast's
+/// transaction without any Channel guard. Only [`qualify_owned_cast_read`], under the guards,
+/// turns it into cast facts (ARCH-SPELL-LOCK-2 §1.6).
+pub(crate) struct OwnedCastRead {
+    raw: crate::durability::character_equipment::RawCastDurableFacts,
+    wheel: Option<(
+        crate::durability::character_wheel::CurrentWheelCastRead,
+        crate::durability::character_wheel::WheelRuleset,
+    )>,
+}
+
+fn check_content_pin(
+    runtime: &ChannelRuntimeV1,
+    active: &ActiveGeneration,
+) -> Result<(), AccessFactsError> {
     let native = active
         .native_gameplay()
         .ok_or(AccessFactsError::Unavailable("active gameplay artifact"))?;
@@ -250,6 +282,21 @@ pub(crate) async fn load_owned_cast_facts_in_transaction(
     {
         return Err(AccessFactsError::Unavailable("current native Content pin"));
     }
+    Ok(())
+}
+
+pub(crate) async fn read_owned_cast_facts_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+    recovery: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    active: &ActiveGeneration,
+) -> Result<OwnedCastRead, AccessFactsError> {
+    let native = active
+        .native_gameplay()
+        .ok_or(AccessFactsError::Unavailable("active gameplay artifact"))?;
     let authority = assert_equipment_authority_in_transaction(
         tx,
         root,
@@ -268,18 +315,40 @@ pub(crate) async fn load_owned_cast_facts_in_transaction(
     let ruleset = crate::wheel_gem_data::WheelGemData::embedded()
         .ok()
         .and_then(|data| data.wheel_ruleset().ok());
-    let wheel = match ruleset.as_ref() {
+    let wheel = match ruleset {
         Some(ruleset) => retain_wheel_read(
             crate::durability::character_wheel::read_current_allocation_in_transaction(
-                tx, &authority, ruleset,
+                tx, &authority, &ruleset,
             )
             .await,
-        )?,
+        )?
+        .map(|read| (read, ruleset)),
         None => None,
     };
-    if let (Some(read), Some(ruleset)) = (wheel.as_ref(), ruleset.as_ref()) {
+    Ok(OwnedCastRead { raw, wheel })
+}
+
+/// The guarded part of [`load_owned_cast_facts_in_transaction`]: no await, so the caller holds
+/// the Channel guards across it and the facts it reads.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn qualify_owned_cast_read(
+    read: &OwnedCastRead,
+    command: CommandRef,
+    fence: &CurrentCharacterItemFence,
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+    state: &PlayerSpellState,
+    active: &ActiveGeneration,
+    access_owner: &impl CurrentSpellAccessOwner,
+    now_micros: u64,
+) -> Result<OwnedCastFacts, AccessFactsError> {
+    runtime
+        .player_control_facts(actor, fence.game_session_id)
+        .map_err(|_| AccessFactsError::Unavailable("current player owner"))?;
+    check_content_pin(runtime, active)?;
+    if let Some((wheel, ruleset)) = read.wheel.as_ref() {
         return qualify_current_cast_facts(
-            &raw,
+            &read.raw,
             command,
             fence,
             runtime,
@@ -288,8 +357,8 @@ pub(crate) async fn load_owned_cast_facts_in_transaction(
             active,
             &WheelCastAccess {
                 other: access_owner,
-                read,
-                raw: &raw,
+                read: wheel,
+                raw: &read.raw,
                 ruleset,
             },
             now_micros,
@@ -297,7 +366,7 @@ pub(crate) async fn load_owned_cast_facts_in_transaction(
         );
     }
     qualify_raw_owned_cast_facts(
-        &raw,
+        &read.raw,
         command,
         fence,
         runtime,

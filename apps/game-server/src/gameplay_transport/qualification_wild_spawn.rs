@@ -69,8 +69,16 @@ pub(super) async fn realize_rat_in_transaction(
     .map_err(str::to_owned)?;
     let scope =
         RuntimeScopeRefV1::channel(runtime.binding().world_id(), runtime.binding().channel_id());
+    // Qualification-only spawn: the topology's seam owns the real lane and is out of reach
+    // here, so this test path proves the scope under a fresh lane permit for the same Channel.
+    let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_lane(
+        runtime.binding().world_id(),
+        runtime.binding().channel_id(),
+    )
+    .await;
     let owned = crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(
         tx,
+        &permit,
         root,
         recovery,
         node,
