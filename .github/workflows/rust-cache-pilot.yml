@@ -46,7 +46,7 @@ jobs:
           cp "$RUNNER_TEMP/pilot-controller/benchmark_rust_cache.py" tools/repository/benchmark_rust_cache.py
 
       - name: Install fixed Rust compiler
-        run: rustup toolchain install 1.94.0 --profile minimal
+        run: rustup toolchain install 1.95.0 --profile minimal
 
       - name: Install verified sccache binary
         shell: bash
@@ -58,7 +58,7 @@ jobs:
 
       - name: Measure compilation with repeated isolated cold and warm targets
         env:
-          RUSTUP_TOOLCHAIN: 1.94.0
+          RUSTUP_TOOLCHAIN: 1.95.0
           BENCHMARK_CONTROLLER_SHA: ${{ github.sha }}
         run: >-
           python tools/repository/benchmark_rust_cache.py

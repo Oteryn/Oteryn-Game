@@ -63,14 +63,14 @@ jobs:
           test "$(sha256sum tools/reference-world-corridor-census/item_field_verification.py | awk '{print $1}')" = "84edcb2f2ebf70d6c6101a92f50a8e5f207604eff5ade71125db4a7543de457c"
 
       - name: Install Rust toolchain
-        run: rustup toolchain install 1.94.0 --profile minimal
+        run: rustup toolchain install 1.95.0 --profile minimal
 
       - name: Reproduce protected identity and #763 crosswalk
         run: |
           set -euo pipefail
           ROOT="$RUNNER_TEMP/item-target-continuity"
           mkdir -p "$ROOT"
-          cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
+          cargo +1.95.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
           python tools/reference-world-corridor-census/item_classification_crosswalk_self_test.py --native-map "$ROOT/native-map.json"
           python tools/reference-world-corridor-census/item_classification_crosswalk.py \
             --game-root . \
@@ -169,11 +169,11 @@ jobs:
       - name: Run focused canonical promotion and artifact v4 tests
         run: |
           set -euo pipefail
-          cargo +1.94.0 test --locked -p oteryn-game-server \
+          cargo +1.95.0 test --locked -p oteryn-game-server \
             --test content_world_cw2_b1_import \
             protected_semantic_promotion_changes_exactly_14643_atoms_with_only_the_r7_p04_identity_rename_as_incidental_drift -- --exact \
             | tee /dev/stderr | grep 'test result: ok\. 1 passed' >/dev/null
-          cargo +1.94.0 test --locked -p oteryn-game-server \
+          cargo +1.95.0 test --locked -p oteryn-game-server \
             --test content_reference_artifact \
             protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v4_server_and_client -- --exact \
             | tee /dev/stderr | grep 'test result: ok\. 1 passed' >/dev/null

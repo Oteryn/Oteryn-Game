@@ -184,7 +184,7 @@ $setupA = New-Installer $ReleaseId $payloadA
 
 # Fixture installer B: the same commit rebuilt with another release id.
 $env:OTERYN_RELEASE_ID = $FixtureId
-& cargo +1.94.0 build --locked --release -p oteryn-client --target $Target
+& cargo +1.95.0 build --locked --release -p oteryn-client --target $Target
 Check ($LASTEXITCODE -eq 0) "fixture build failed with exit code $LASTEXITCODE"
 $payloadB = New-Payload $FixtureId $GameCommit
 $fixtureOutput = Join-Path $WorkDir 'fixture'
