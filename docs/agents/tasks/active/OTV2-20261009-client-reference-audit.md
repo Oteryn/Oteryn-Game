@@ -1,5 +1,35 @@
 # OTV2-20261009 — native client reference audit checkpoint
 
+```yaml
+task_id: OTV2-20261009-client-reference-audit
+title: Preserve native client settings and sidebar reference audit
+mode: IMPLEMENT
+status: implementing
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: docs/client-reference-audit-20261009
+pr: 1941
+issue: 1622
+base_sha: null
+head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
+owner: root agent, single writer
+created_at: 2026-10-09
+updated_at: 2026-10-10
+execution_policy: continuous_progress
+owned_paths:
+  - apps/client/SETTINGS.md
+  - apps/client/REFERENCE-AUDIT.md
+  - apps/client/REFERENCE-PREFERENCE-KEYS.json
+  - docs/agents/tasks/active/OTV2-20261009-client-reference-audit.md
+public_contracts: []
+depends_on: []
+blocks: []
+cross_repository_coordination_id: null
+external_repositories: []
+```
+
 Status: authoring, not frozen. Owner explicitly requested repository preservation
 and allowed a draft PR on 2026-10-09. No deployment, merge or database reset.
 
