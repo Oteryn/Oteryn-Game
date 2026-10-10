@@ -5,7 +5,9 @@ use super::super::connection::{
     FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS, ResumeAttempt,
     SessionContinuity, StepOutcome, admit_frame, serve_admitted,
 };
-use super::super::item_view::{InventoryItems, ItemKey, ItemTargetObservation, ViewItem};
+use super::super::item_view::{
+    InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity, SessionItemView, ViewItem,
+};
 use super::super::world_object::{
     SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
 };
@@ -16,9 +18,10 @@ use super::super::world_spatial::{
 };
 use super::*;
 use crate::foundation::{
-    AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, GameSessionId, MessageType,
-    ServerAcceptedValue, ServerResumeAcceptedValue, WorldId, decode_wire_envelope,
-    encode_server_accepted, encode_server_resume_accepted,
+    AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, FoundationProtocolError,
+    GameSessionId, MessageType, ServerAcceptedValue, ServerResumeAcceptedValue, WorldId,
+    decode_wire_envelope, encode_protocol_error, encode_server_accepted,
+    encode_server_resume_accepted,
 };
 use crate::foundation::{DomainSnapshot, encode_single_chunk_snapshot};
 use oteryn_protocol_oteryn::achievement_notices::{
@@ -116,24 +119,34 @@ fn the_production_offered_set_is_the_registry_offered_set_and_registered()
             offered.push((id, ids(&capability["requires"])?));
         }
     }
-    let production: Vec<(u32, Vec<u32>)> = PRODUCTION_OFFERED_CAPABILITIES
+    let pairs = |set: &[OfferedCapability]| -> Vec<(u32, Vec<u32>)> {
+        set.iter()
+            .map(|capability| (capability.id, capability.requires.to_vec()))
+            .collect()
+    };
+    // The registry offered set is the set a generation pinning a non-empty Item key set offers;
+    // without one, production falls back to that set without capability 4.
+    assert_eq!(pairs(ITEM_VIEW_OFFERED_CAPABILITIES), offered);
+    let fallback: Vec<(u32, Vec<u32>)> = offered
         .iter()
-        .map(|capability| (capability.id, capability.requires.to_vec()))
+        .filter(|(id, _)| *id != CAPABILITY_ITEM_VIEW_MOVE_V1)
+        .cloned()
         .collect();
-    assert_eq!(production, offered);
-    assert!(
-        PRODUCTION_OFFERED_CAPABILITIES
-            .windows(2)
-            .all(|pair| pair[0].id < pair[1].id)
-    );
-    assert!(PRODUCTION_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
-    for capability in PRODUCTION_OFFERED_CAPABILITIES {
-        assert!(
-            capability
-                .requires
-                .iter()
-                .all(|required| registered.contains(required))
-        );
+    assert_eq!(pairs(PRODUCTION_OFFERED_CAPABILITIES), fallback);
+    for set in [
+        PRODUCTION_OFFERED_CAPABILITIES,
+        ITEM_VIEW_OFFERED_CAPABILITIES,
+    ] {
+        assert!(set.windows(2).all(|pair| pair[0].id < pair[1].id));
+        assert!(set.len() <= SELECTED_CAPACITY);
+        for capability in set {
+            assert!(
+                capability
+                    .requires
+                    .iter()
+                    .all(|required| registered.contains(required))
+            );
+        }
     }
     // `REGISTERED_CAPABILITY_IDS_V1` is what the acceptance encoder checks a selected set
     // against: the whole offered set, selected at once, is accepted, and an unregistered ID is
@@ -258,6 +271,19 @@ fn the_production_set_selects_only_capabilities_6_13_and_17_whatever_the_client_
             .map(SelectedCapabilities::as_slice),
         Some(&[6, 13, 17][..])
     );
+    // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
+    assert_eq!(
+        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
+            .as_ref()
+            .map(SelectedCapabilities::as_slice),
+        Some(&[4, 6, 13, 17][..])
+    );
+    assert_eq!(
+        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
+            .as_ref()
+            .map(SelectedCapabilities::as_slice),
+        Some(&[13][..])
+    );
     Ok(())
 }
 
@@ -331,6 +357,8 @@ impl ConnectionIdentifiers for Identifiers {
 /// connection's own refusal is observable. `offered` is `None` for the production set.
 struct NegotiatingAuthority {
     offered: Option<&'static [OfferedCapability]>,
+    /// MAP-CUTOVER-1b: the capability a bundle World requires at fresh admission.
+    required: Option<u32>,
     lost: Cell<Option<AdmittedSession>>,
     steps: Cell<u32>,
     /// ITEM-USE-WIRE-1: what an item USE observes; the backpack it serves under capability 4.
@@ -341,6 +369,7 @@ impl NegotiatingAuthority {
     fn new(offered: Option<&'static [OfferedCapability]>) -> Self {
         Self {
             offered,
+            required: None,
             lost: Cell::new(None),
             steps: Cell::new(0),
             item_target: RefCell::new(None),
@@ -383,6 +412,10 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
 
     fn offered_capabilities(&self) -> &'static [OfferedCapability] {
         self.offered.unwrap_or(PRODUCTION_OFFERED_CAPABILITIES)
+    }
+
+    fn required_capability(&self) -> Option<u32> {
+        self.required
     }
 
     async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
@@ -613,6 +646,125 @@ fn production_admission_selects_capabilities_6_13_and_17_and_nothing_else()
             admitted.continuity.selected_capabilities,
             SelectedCapabilities::NONE
         );
+        Ok(())
+    })
+}
+
+#[test]
+fn the_bundle_world_offered_set_is_the_item_view_set_plus_18_requiring_4_and_6()
+-> Result<(), Box<dyn Error>> {
+    // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) plus 18, whose crate
+    // and registry `requires` stay [4, 6]; the registry keeps 18 `offered: false`.
+    let (last, item_view) = BUNDLE_WORLD_OFFERED_CAPABILITIES
+        .split_last()
+        .ok_or("empty bundle set")?;
+    assert_eq!(item_view, ITEM_VIEW_OFFERED_CAPABILITIES);
+    assert_eq!(last.id, CAPABILITY_WORLD_MAP_VIEW_V1);
+    assert_eq!(last.requires, [4, 6]);
+    assert!(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES
+            .windows(2)
+            .all(|pair| pair[0].id < pair[1].id)
+    );
+    assert!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
+    let registry = registry_capabilities()?;
+    let entry = registry
+        .iter()
+        .find(|capability| capability["id"].as_u64() == Some(18))
+        .ok_or("capability 18")?;
+    assert_eq!(ids(&entry["requires"])?, [4, 6]);
+    assert_eq!(entry["offered"].as_bool(), Some(false));
+    Ok(())
+}
+
+#[test]
+fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn Error>> {
+    run(async {
+        let mut authority = NegotiatingAuthority::new(Some(BUNDLE_WORLD_OFFERED_CAPABILITIES));
+        authority.required = Some(CAPABILITY_WORLD_MAP_VIEW_V1);
+        let mismatch = encode_protocol_error(FoundationProtocolError::CapabilityMismatch, 0)?;
+        // 4, 6 and 18 select 18 with the rest of the production set the client supports.
+        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [4, 6, 13, 17, 18]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        assert!(
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_WORLD_MAP_VIEW_V1)
+        );
+        // A client without 18, and one selecting 18 without its required 4, are refused with
+        // exactly one CAPABILITY_MISMATCH before the owner admits anything.
+        for supported in [&[4, 6, 13, 17][..], &[6, 13, 17, 18], &[]] {
+            let (refused, frames) = admit(&authority, &bootstrap(supported)?).await?;
+            assert!(matches!(
+                refused,
+                Err(ConnectionEnd::AdmissionRefused(
+                    AdmissionRefusal::Classified(FoundationProtocolError::CapabilityMismatch)
+                ))
+            ));
+            assert_eq!(frames, std::slice::from_ref(&mismatch));
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn a_fixture_world_offers_exactly_the_production_set_and_never_18() -> Result<(), Box<dyn Error>> {
+    run(async {
+        // MAP-CUTOVER-1b: a World without a bundle keeps the production set and domain 2.
+        let authority = NegotiatingAuthority::new(None);
+        assert_eq!(
+            authority.offered_capabilities(),
+            PRODUCTION_OFFERED_CAPABILITIES
+        );
+        assert_eq!(authority.required_capability(), None);
+        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
+        let selected = accepted_selection(&frames)?;
+        assert!(!selected.contains(&CAPABILITY_WORLD_MAP_VIEW_V1));
+        admitted.map_err(|end| format!("{end:?}"))?;
+        Ok(())
+    })
+}
+
+#[test]
+fn item_view_admission_selecting_4_sends_domain_9_and_without_4_none() -> Result<(), Box<dyn Error>>
+{
+    run(async {
+        // MAP-ITEM-REF-1: the Item view offered set selects 4 with its required 6, and the
+        // admitted session is sent domain 9; a session admitted without 4 is sent none. The
+        // fixture serves no combat state, so the client here does not support 17.
+        let authority = NegotiatingAuthority::new(Some(ITEM_VIEW_OFFERED_CAPABILITIES));
+        let inventory = authority
+            .observe_character_inventory(
+                ExactActorRef::transport_fixture(
+                    WorldId::decode(&WORLD)?,
+                    ChannelId::decode(&CHANNEL)?,
+                ),
+                GameSessionId::decode(&SESSION)?,
+            )
+            .await
+            .ok_or("inventory")?;
+        let [nine, _] = SessionItemView::resume(ItemViewContinuity::default())
+            .snapshot(inventory, None)
+            .map_err(|error| format!("{error:?}"))?;
+        let carries_nine = |frames: &[Vec<u8>]| {
+            frames
+                .concat()
+                .windows(nine.payload.len())
+                .any(|w| w == nine.payload)
+        };
+        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [4, 6, 13]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        let (_, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(carries_nine(&frames));
+        let (admitted, frames) = admit(&authority, &bootstrap(&[6, 13])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [6, 13]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        let (_, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(!frames.is_empty());
+        assert!(!carries_nine(&frames));
         Ok(())
     })
 }

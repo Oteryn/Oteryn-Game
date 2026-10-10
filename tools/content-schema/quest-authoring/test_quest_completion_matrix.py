@@ -54,26 +54,34 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             [row["key"] for row in by_title["To Outfox a Fox Quest"]["canonical"]],
         )
         self.assertEqual(
-            "DEFINITION_READY_RUNTIME_UNKNOWN",
+            "REWARD_ONLY_RUNTIME_PENDING",
             by_title["To Outfox a Fox Quest"]["work_state"],
+        )
+        reward_only = [
+            row for row in self.result["records"]
+            if row["work_state"] == "REWARD_ONLY_RUNTIME_PENDING"
+        ]
+        self.assertEqual(42, len(reward_only))
+        self.assertTrue(
+            all(
+                {definition["kind"] for definition in row["canonical"]} == {"reward_only"}
+                for row in reward_only
+            )
         )
         self.assertEqual(
             {
-                "DEFINITION_READY_RUNTIME_UNKNOWN": 42,
-                "NATIVE_BINDINGS_PENDING": 322,
-                "NATIVE_LOWERING_PENDING": 9,
+                "NATIVE_BINDINGS_PENDING": 331,
+                "REWARD_ONLY_RUNTIME_PENDING": 42,
             },
             self.result["summary"]["implementation_state"],
         )
         self.assertEqual(
             {
-                "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 139,
+                "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 146,
                 "CHOSEN_TYPED_PROGRESS_ONLY": 68,
                 "LOWERED": 7,
-                "NOT_LOWERED_MULTI_TRACK": 1,
-                "NOT_LOWERED_NO_MISSIONS": 1,
-                "NO_CANDIDATE": 49,
-                "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY": 108,
+                "NO_CANDIDATE": 42,
+                "SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY": 110,
             },
             self.result["summary"]["typed_progress_state"],
         )

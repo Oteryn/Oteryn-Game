@@ -402,7 +402,7 @@ A normal update/restart/settings migration MUST NOT silently re-enable diagnosti
 
 Reusable credentials, gameplay admission material and reconnect secrets MUST NOT be written to general configuration, logs, content cache or crash spool.
 
-Exact directories, registry behavior, install scope, physical account-profile synchronization mechanism and credential-vault technology are deferred.
+Exact directories, registry behavior, install scope, physical account-profile synchronization mechanism and credential-vault technology are deferred, except the install scope and the install/per-user data directories, which `CLIENT-INSTALLER-0` specifies.
 
 ## 16. Logging and crash diagnostics contract
 
@@ -450,7 +450,7 @@ Rollback MUST NOT bypass current Platform/protocol/content compatibility policy 
 
 Update/install/uninstall mechanics MUST keep release payload identity separate from per-user settings/cache/diagnostics. Destruction/migration of user data requires an explicit product/retention action rather than being an accidental side effect of binary replacement.
 
-Installer/updater technology remains deferred.
+Installer technology, install layout and the updater model are specified by `docs/architecture/CLIENT-INSTALLER-0_WINDOWS_CLIENT_INSTALLER_CONTRACT_CANDIDATE.md`.
 
 ## 18. Windows-first platform contract
 
@@ -617,7 +617,7 @@ Implementation claiming conformance to this candidate should prove at minimum:
 
 **YES** for composition/authority/projection/scene-presentation/content/filesystem/settings-scope/Studio-sharing/update/test/audio-ownership boundaries. Client implementation would otherwise hard-code cross-domain ownership, create ambiguous account/device persistence or allow product-specific types to become an accidental Studio API before the missing gameplay runtime exists.
 
-**NO** for the concrete GUI/scene/render/network/updater/installer/content-packaging/audio libraries, exact shared crate names or account-profile synchronization mechanism. Those choices remain safely reversible and require implementation evidence.
+**NO** for the concrete GUI/scene/render/network/audio libraries, exact shared crate names or account-profile synchronization mechanism. Those choices remain safely reversible and require implementation evidence. The installer technology, install layout, client package manifest and updater model are decided by `CLIENT-INSTALLER-0`, which is authoritative for them.
 
 ### Downstream work blocked without this contract
 
@@ -678,9 +678,9 @@ This candidate intentionally does not select:
 - QUIC library/profile/fallback timing/default;
 - Game Gateway/admission/reconnect credential/API representation;
 - protocol/TLS/protobuf implementation libraries;
-- client bundle/patch/CDN format;
-- installer/updater framework or code-signing provider;
-- Windows directory/registry/install-scope details;
+- client patch/CDN format (the installer bundle and package manifest are specified by `CLIENT-INSTALLER-0`);
+- code-signing provider (installer framework and updater model: `CLIENT-INSTALLER-0`);
+- Windows registry details beyond `CLIENT-INSTALLER-0` (which specifies install scope and directories);
 - credential vault technology;
 - crash backend/retention/legal text;
 - audio library, codec/mixer stack, device backend/vendor or exact category taxonomy;

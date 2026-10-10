@@ -1,10 +1,12 @@
 //! Source-backed world Item casts in the existing Channel and durable Item owners.
 //! The original normalized grant survives an uncertain COMMIT. Neither a planner
 //! result nor a historical receipt can supply current player or Content authority.
-use super::native_combat_cast::NativeCastDispatch;
+use super::native_combat_cast::{
+    NativeCastDispatch, ParkedMarker, ParkedMarkerKind, UnresolvedSpellCommit,
+};
 use super::{
-    ChannelSpellStates, PlayerBatchPreflight, SpellCastIntent, SpellCastOutcome,
-    commit_owner_batch, stage_player_batch,
+    ChannelSpellStates, PlayerBatchPreflight, SpellCastIntent, SpellCastOutcome, check_owner_batch,
+    install_owner_batch, stage_player_batch,
 };
 use crate::ability::{AbilityOccurrence, RevisionSet};
 use crate::content::{QualifiedNativeEntryRoom, native_gameplay::NativeGameplayState};
@@ -12,6 +14,7 @@ use crate::durability::character_build::{BuildCommitOutcome, BuildOccurrence};
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::spell_items_abi::*;
+use crate::durability::spell_owner_commit::{SpellLanePermit, SpellWriterPass};
 use crate::durability::{DurabilityError, spell_item_transaction as items};
 use crate::foundation::{
     ChannelRuntimeV1, CommandRef, ExactActorRef, GameSessionId, StagedSpellBatch,
@@ -36,15 +39,15 @@ pub(crate) struct PreparedWorldItemCast {
     intent: SpellCastIntent,
     fence: CurrentCharacterGameplayFence,
     before: PlayerSpellState,
-    paid: Option<PlayerSpellState>,
+    paid: PlayerSpellState,
     position: crate::foundation::MovementPositionSnapshot,
     owned: OwnedCastFacts,
     batch: OwnerCombatBatch,
     request: SpellItemTransactionRequest,
     training: PreparedPlayerTraining,
-    physical: Option<StagedSpellBatch>,
-    player: Option<PlayerBatchPreflight>,
-    presentation: Option<super::super::spell_presentations::PreparedPresentation>,
+    physical: StagedSpellBatch,
+    player: PlayerBatchPreflight,
+    presentation: super::super::spell_presentations::PreparedPresentation,
 }
 
 fn nonce(
@@ -67,6 +70,9 @@ fn nonce(
     result[8] = (result[8] & 63) | 0x80;
     result
 }
+/// The verdict refusal of a new grant; the guarded writer returns it only without a receipt.
+const WORLD_ITEM_NEW_GRANT_REFUSED: &str = "current new grant access";
+
 fn denied<T>() -> Result<T, SpellCastDisposition> {
     Err(SpellCastDisposition::Rejected)
 }
@@ -647,15 +653,15 @@ async fn prepare_item_grant(
         intent,
         fence,
         before,
-        paid: Some(paid.next),
+        paid: paid.next,
         position,
         owned,
         batch,
         request,
         training,
-        physical: Some(physical),
-        player: Some(player),
-        presentation: Some(presentation),
+        physical,
+        player,
+        presentation,
     })
 }
 
@@ -667,13 +673,41 @@ impl ChannelSpellStates {
     ) -> bool {
         self.pending_world_items
             .iter()
-            .any(|p| p.actor == actor && p.session == session)
+            .any(|p| p.is_for(actor, session))
+    }
+}
+
+/// Moves a parked world-item attempt into its caster's marker for the resolution (§1.6).
+pub(crate) fn restore_parked_world_items(
+    states: &mut ChannelSpellStates,
+    attempt: PreparedWorldItemCast,
+) -> ParkedMarker {
+    let (actor, session, intent, command) = (
+        attempt.actor,
+        attempt.session,
+        attempt.intent,
+        attempt.batch.command,
+    );
+    super::PendingSpellMarker::restore(
+        &mut states.pending_world_items,
+        actor,
+        session,
+        command,
+        intent,
+        attempt,
+    );
+    ParkedMarker {
+        kind: ParkedMarkerKind::WorldItem,
+        actor,
+        session,
     }
 }
 
 impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     /// Background recovery consumes only the privately retained original
     /// occurrence. It cannot allocate a new grant when no pending source exists.
+    /// The lane comes first, so an attempt parked in `unresolved` is resolved before the marker
+    /// is read.
     pub(in crate::gameplay_transport) async fn reconcile_pending_world_items<
         A: super::super::spell_access_facts::CurrentSpellAccessOwner + Sync,
     >(
@@ -682,19 +716,30 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         access: &A,
     ) -> NativeCastDispatch {
+        let Some(mut permit) = self.spell_lane_permit().await else {
+            return NativeCastDispatch::Pending;
+        };
         let original = {
             let states = self.spell_states.lock().await;
             states
                 .pending_world_items
                 .iter()
-                .find(|p| p.actor == actor && p.session == session)
-                .map(|p| (p.intent, p.request.command.command_id().get()))
+                .find(|p| p.is_for(actor, session))
+                .map(|p| (p.intent, p.command.command_id().get()))
         };
         let Some((intent, command)) = original else {
             return NativeCastDispatch::NotApplicable;
         };
-        self.cast_world_items_inner(actor, session, command, &intent, access, true)
-            .await
+        self.cast_world_items_inner(
+            actor,
+            session,
+            command,
+            &intent,
+            access,
+            true,
+            Some(&mut permit),
+        )
+        .await
     }
     /// Only this Item lane returns NotApplicable. A missing wire Item-instance
     /// handle remains unavailable; it is never supplied by target position.
@@ -708,9 +753,55 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         intent: &SpellCastIntent,
         access: &A,
     ) -> NativeCastDispatch {
-        self.cast_world_items_inner(actor, session, command_id, intent, access, false)
+        self.cast_world_items_inner(actor, session, command_id, intent, access, false, None)
             .await
     }
+    /// The resolver of a world-item attempt parked in `unresolved` (ARCH-SPELL-LOCK-2 §1.6). It
+    /// resumes the writer's retained retry path with the original attempt: the AlreadyCommitted
+    /// branch when committed, the `Applied` branch in a new commit window when not. An attempt
+    /// the pass does not install or release goes back into `unresolved`. The caller moved the
+    /// attempt into the caster's marker.
+    pub(in crate::gameplay_transport) async fn resolve_parked_world_items(
+        &self,
+        permit: &mut SpellLanePermit,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> &'static str {
+        let original = super::PendingSpellMarker::take_original(
+            &mut self.spell_states.lock().await.pending_world_items,
+            actor,
+            session,
+        );
+        let Some((command, intent)) = original else {
+            return "consumed";
+        };
+        let access = self.refresh_spell_access(actor, session).await;
+        let dispatch = self
+            .cast_world_items_inner(
+                actor,
+                session,
+                command,
+                &intent,
+                &access,
+                true,
+                Some(permit),
+            )
+            .await;
+        let leftover = {
+            let mut states = self.spell_states.lock().await;
+            super::PendingSpellMarker::take_attempt(&mut states.pending_world_items, actor, session)
+        };
+        if let Some(attempt) = leftover {
+            permit
+                .open_commit_window(attempt, UnresolvedSpellCommit::park_world_item)
+                .park();
+        }
+        super::native_combat_cast::dispatch_outcome_token(&dispatch)
+    }
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the lane is the caller's when it resolves a parked attempt"
+    )]
     async fn cast_world_items_inner<
         A: super::super::spell_access_facts::CurrentSpellAccessOwner + Sync,
     >(
@@ -721,6 +812,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         intent: &SpellCastIntent,
         access: &A,
         reconcile_only: bool,
+        lane: Option<&mut SpellLanePermit>,
     ) -> NativeCastDispatch {
         use super::super::spell_access_facts::load_owned_cast_facts_in_transaction;
         use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -794,6 +886,18 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let Ok(command) = CommandId::new(command_id).map(|id| CommandRef::new(session, id)) else {
             return rejected();
         };
+        // Lock order (§1.2): the lane before any Channel guard.
+        let mut acquired;
+        let permit = match lane {
+            Some(permit) => permit,
+            None => {
+                let Some(permit) = self.spell_lane_permit().await else {
+                    return NativeCastDispatch::Pending;
+                };
+                acquired = permit;
+                &mut acquired
+            }
+        };
         let mut runtime = self.runtime.lock().await;
         let mut states = self.spell_states.lock().await;
         if runtime.player_control_facts(actor, session).is_err()
@@ -823,43 +927,73 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => {}
             Err(_) => return rejected(),
         }
-        let retained_index = states
+        // The marker (§1.4) stays for the whole pass; the pass holds the attempt itself.
+        let retained = match states
             .pending_world_items
-            .iter()
-            .position(|p| p.actor == actor && p.session == session);
-        if reconcile_only && retained_index.is_none() {
-            return NativeCastDispatch::NotApplicable;
-        }
-        if let Some(i) = retained_index {
-            if states.pending_world_items[i].intent != *intent
-                || states.pending_world_items[i].batch.command != command
-            {
-                return NativeCastDispatch::Pending;
+            .iter_mut()
+            .find(|p| p.is_for(actor, session))
+        {
+            Some(marker) => {
+                if marker.intent != *intent || marker.command != command {
+                    return NativeCastDispatch::Pending;
+                }
+                match marker.attempt.take() {
+                    Some(attempt) => Some(attempt),
+                    // The lane is held and holds nothing, so no pass or parked record owns it.
+                    None => return NativeCastDispatch::Pending,
+                }
             }
-        } else if states.pending_world_items.try_reserve(1).is_err() {
-            return rejected();
-        }
-        let retained = retained_index.map(|i| states.pending_world_items.remove(i));
-        let Ok(pass) = self.root.try_issue_semantic_pass() else {
-            if let Some(p) = retained {
-                states.pending_world_items.push(p);
+            None => {
+                if reconcile_only {
+                    return NativeCastDispatch::NotApplicable;
+                }
+                if states.pending_world_items.try_reserve(1).is_err() {
+                    return rejected();
+                }
+                states.pending_world_items.push(super::PendingSpellMarker {
+                    actor,
+                    session,
+                    command,
+                    intent: *intent,
+                    attempt: None,
+                });
+                None
             }
-            return NativeCastDispatch::Pending;
         };
         let intent = *intent;
-        // The descriptor is outside the bounded callback before any committing
-        // await. Deadline cancellation cannot discard the original occurrence.
-        let objects = self.door.lock().await;
-        let mut context = (
-            self,
-            access,
-            &mut *runtime,
-            &mut *states,
-            &*objects,
+        // A cancelled pass parks what it holds, so the marker is always settled (§1.6).
+        let writer = SpellWriterPass::new(
+            permit,
             retained,
+            super::native_combat_cast::UnresolvedSpellCommit::park_world_item,
+            super::native_combat_cast::UnresolvedSpellCommit::park_vacant(
+                super::native_combat_cast::ParkedMarkerKind::WorldItem,
+                actor,
+                session,
+            ),
         );
+        let Ok(pass) = self.root.try_issue_semantic_pass() else {
+            let (leftover, parked) = writer.finish();
+            super::PendingSpellMarker::settle(
+                &mut states.pending_world_items,
+                actor,
+                session,
+                command,
+                intent,
+                leftover,
+                parked,
+            );
+            return NativeCastDispatch::Pending;
+        };
+        // The descriptor is outside the bounded callback before any committing
+        // await. Deadline cancellation cannot discard the original occurrence:
+        // before the commit window it stays in the context, after it the window
+        // parks it in the lane.
+        let objects = self.door.lock().await;
+        let mut context = (self, access, writer, Some((runtime, states, objects)));
         let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
-            let (owner,access,runtime,states,objects,pending)=ctx;
+            let (owner,access,writer,guards)=ctx;
+            let (permit,pending)=writer.parts();
             let active=owner.active_generation.ok_or(DurabilityError::Unavailable)?;
             let content=active.native_gameplay().ok_or(DurabilityError::Unavailable)?;
             let room=owner.qualified_room.ok_or(DurabilityError::Unavailable)?;
@@ -868,92 +1002,166 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 connection_generation:fence.connection_generation,character_lease_generation:fence.character_lease_generation,
                 runtime_scope:fence.runtime_scope,scope_ownership_generation:fence.scope_ownership_generation};
             let mut tx=items::begin_spell_owner_transaction(holder,deadline).await?;
-            let authority=items::assert_spell_item_authority_in_transaction(&mut tx,owner.root,owner.character,
+            let authority=items::assert_spell_item_authority_in_transaction(&mut tx,permit,owner.root,owner.character,
                 owner.holder,&item_fence,command,content.source_digest()).await.map_err(|_|DurabilityError::Unavailable)?;
-            let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
-            let owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&item_fence,
-                command,runtime,actor,state,active,*access,owner.owner_now().get()).await.map_err(|_|DurabilityError::Unavailable)?;
-            if pending.is_none(){
-                let decision=oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(nonce(
-                    b"oteryn:world-item-draw:v1",actor,session,command_id,&[]));
-                let stream=oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(content.source_digest());
-                let mut ordinal=0_u64;let mut invalid_draw=false;
-                let mut draw=|minimum,maximum|{
-                    let sample=oteryn_simulation_determinism::deterministic_decision_u64(&stream,decision,
-                        "spell.cast.draw",ordinal);
-                    let next=ordinal.checked_add(1);
-                    match (sample,next){
-                        (Ok(sample),Some(next))=>{ordinal=next;crate::spell::uniform_draw(sample,minimum,maximum)},
-                        _=>{invalid_draw=true;minimum},
-                    }
+            // S (§1.1): the guarded span, through the staged installation and the verdict.
+            let verdict={
+                let (runtime,states,objects)=match guards.as_mut(){
+                    Some((runtime,states,objects))=>(&mut **runtime,&mut **states,&**objects),
+                    None=>return Err(DurabilityError::Unavailable),
                 };
-                let prepared=match prepare_item_grant(&mut tx,&authority,runtime,states,room,objects,content,owned.clone(),
-                    spell,intent,fence,command,owner.owner_now(),&mut draw).await{
-                    Ok(p)=>p,Err(disposition)=>return Ok(NativeCastDispatch::Outcome(SpellCastOutcome{disposition,vitals:None})),
-                };
-                if invalid_draw{return Err(DurabilityError::Unavailable);}
-                *pending=Some(prepared);
-            }
-            let attempt=pending.as_mut().ok_or(DurabilityError::Unavailable)?;
-            let reconnect=crate::durability::admission_journal::spell_reconnect::prove_pending_spell_reconnect(
-                &mut tx,&authority,&attempt.fence,&item_fence).await?;
-            if states.get(runtime,actor,session)!=Some(&attempt.before)
-                || runtime.read_actor_position(actor).map_err(|_|DurabilityError::Unavailable)?!=attempt.position
-                || !current_facts_match(attempt,&owned,reconnect.as_ref())
-                || attempt.fence.character_lease_generation!=fence.character_lease_generation {
-                return Err(DurabilityError::Unavailable);
-            }
-            states.presentations.as_mut().ok_or(DurabilityError::Unavailable)?
-                .hold_prepared_before_sql(runtime,attempt.presentation.as_ref().ok_or(DurabilityError::Unavailable)?,&attempt.batch)
-                .map_err(|_|DurabilityError::Unavailable)?;
-            states.presentations.as_ref().ok_or(DurabilityError::Unavailable)?
-                .validate_prepared(runtime,attempt.presentation.as_ref().ok_or(DurabilityError::Unavailable)?,&attempt.batch)
-                .map_err(|_|DurabilityError::Unavailable)?;
-            attempt.player.as_ref().ok_or(DurabilityError::Unavailable)?
-                .validate_current(runtime,states).map_err(|_|DurabilityError::Unavailable)?;
-            let outcome=items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,
-                ||owned.check_current_access(spell,owner.owner_now().get())
-                    .map_err(|_|items::SpellItemError::Rejected("current new grant access")))
-                .await.map_err(|_|DurabilityError::Unavailable)?;
-            let formula=content.training_formula().ok_or(DurabilityError::Unavailable)?;
-            let training=match attempt.training.request(){
-                Some(request)=>Some(crate::durability::character_build::prepare_character_build_in_transaction(
-                    owner.root,&mut tx,owner.character,owner.holder,attempt.fence,request.clone(),formula)
-                    .await.map_err(|_|DurabilityError::Unavailable)?),None=>None,
+                let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
+                let owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&item_fence,
+                    command,runtime,actor,state,active,*access,owner.owner_now().get()).await.map_err(|_|DurabilityError::Unavailable)?;
+                if pending.is_none(){
+                    let decision=oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(nonce(
+                        b"oteryn:world-item-draw:v1",actor,session,command_id,&[]));
+                    let stream=oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(content.source_digest());
+                    let mut ordinal=0_u64;let mut invalid_draw=false;
+                    let mut draw=|minimum,maximum|{
+                        let sample=oteryn_simulation_determinism::deterministic_decision_u64(&stream,decision,
+                            "spell.cast.draw",ordinal);
+                        let next=ordinal.checked_add(1);
+                        match (sample,next){
+                            (Ok(sample),Some(next))=>{ordinal=next;crate::spell::uniform_draw(sample,minimum,maximum)},
+                            _=>{invalid_draw=true;minimum},
+                        }
+                    };
+                    let prepared=match prepare_item_grant(&mut tx,&authority,runtime,states,room,objects,content,owned.clone(),
+                        spell,intent,fence,command,owner.owner_now(),&mut draw).await{
+                        Ok(p)=>p,Err(disposition)=>return Ok(NativeCastDispatch::Outcome(SpellCastOutcome{disposition,vitals:None})),
+                    };
+                    if invalid_draw{return Err(DurabilityError::Unavailable);}
+                    *pending=Some(prepared);
+                }
+                let attempt=pending.as_mut().ok_or(DurabilityError::Unavailable)?;
+                let reconnect=crate::durability::admission_journal::spell_reconnect::prove_pending_spell_reconnect(
+                    &mut tx,&authority,&attempt.fence,&item_fence).await?;
+                if states.get(runtime,actor,session)!=Some(&attempt.before)
+                    || runtime.read_actor_position(actor).map_err(|_|DurabilityError::Unavailable)?!=attempt.position
+                    || !current_facts_match(attempt,&owned,reconnect.as_ref())
+                    || attempt.fence.character_lease_generation!=fence.character_lease_generation {
+                    return Err(DurabilityError::Unavailable);
+                }
+                states.presentations.as_mut().ok_or(DurabilityError::Unavailable)?
+                    .hold_prepared_before_sql(runtime,&attempt.presentation,&attempt.batch)
+                    .map_err(|_|DurabilityError::Unavailable)?;
+                states.presentations.as_ref().ok_or(DurabilityError::Unavailable)?
+                    .validate_prepared(runtime,&attempt.presentation,&attempt.batch)
+                    .map_err(|_|DurabilityError::Unavailable)?;
+                attempt.player.validate_current(runtime,states).map_err(|_|DurabilityError::Unavailable)?;
+                runtime.reserve_spell_batch(&mut attempt.physical).map_err(|_|DurabilityError::Unavailable)?;
+                owned.check_current_access(spell,owner.owner_now().get())
+                    .map_err(|_|items::SpellItemError::Rejected(WORLD_ITEM_NEW_GRANT_REFUSED))
             };
-            let proof=match outcome{
+            // Release after S: the COMMIT and the post-commit transaction hold only the lane.
+            *guards=None;
+            let attempt=pending.as_ref().ok_or(DurabilityError::Unavailable)?;
+            let outcome=match items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,verdict).await{
+                Ok(outcome)=>outcome,
+                Err(items::SpellItemError::Rejected(WORLD_ITEM_NEW_GRANT_REFUSED))=>{
+                    // The writer holds the exact-command lock and found no historical receipt.
+                    // Only a successful rollback proves this attempt cannot later COMMIT.
+                    tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
+                    let mut runtime=owner.runtime.lock().await;
+                    let mut states=owner.spell_states.lock().await;
+                    if attempt.physical.will_apply(){
+                        runtime.release_definitely_uncommitted_spell_batch(&attempt.physical)
+                            .map_err(|_|DurabilityError::Unavailable)?;
+                    }
+                    states.presentations.as_mut().ok_or(DurabilityError::Unavailable)?
+                        .release_definitely_uncommitted(&attempt.presentation);
+                    *pending=None;
+                    return Ok(NativeCastDispatch::Outcome(SpellCastOutcome{disposition:SpellCastDisposition::Rejected,
+                        vitals:super::observe_vitals(&runtime,&states,actor,session)}));
+                }
+                Err(_)=>return Err(DurabilityError::Unavailable),
+            };
+            let historical=matches!(outcome,SpellItemTransactionOutcome::AlreadyCommitted(_));
+            let attempt=pending.take().ok_or(DurabilityError::Unavailable)?;
+            let mut window=permit.open_commit_window(attempt,UnresolvedSpellCommit::park_world_item);
+            // A historical outcome is marked before any fallible follow-up, so each later
+            // failure parks the attempt and keeps the lane fenced.
+            if historical{window.mark_already_committed();}
+            let training=async{
+                let attempt=window.attempt();
+                let formula=content.training_formula().ok_or(DurabilityError::Unavailable)?;
+                Ok::<_,DurabilityError>(match attempt.training.request(){
+                    Some(request)=>Some(crate::durability::character_build::prepare_character_build_in_transaction(
+                        owner.root,&mut tx,owner.character,owner.holder,attempt.fence,request.clone(),formula)
+                        .await.map_err(|_|DurabilityError::Unavailable)?),None=>None,
+                })
+            }.await;
+            let training=match training{
+                Ok(training)=>training,
+                Err(error)=>{
+                    if !historical && let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}
+                    return Err(error);
+                },
+            };
+            let committed=match outcome{
                 SpellItemTransactionOutcome::Applied(descriptor)=>{
-                    let pending=items::stage_spell_owner_commit(&mut tx,&authority,descriptor,None,None,deadline)
-                        .await.map_err(|_|DurabilityError::Unavailable)?;
-                    crate::durability::spell_owner_commit::commit_spell_owner_transaction(tx,pending).await?
+                    match items::stage_spell_owner_commit(&mut tx,&authority,descriptor,None,None,deadline).await{
+                        Ok(staged)=>crate::durability::spell_owner_commit::commit_spell_owner_transaction(tx,staged,&mut window).await,
+                        Err(_)=>Err(DurabilityError::Unavailable),
+                    }
                 },
                 SpellItemTransactionOutcome::AlreadyCommitted(descriptor)=>{
                     let proof=items::reconcile_spell_owner_commit_in_transaction(&mut tx,&authority,descriptor,None)
-                        .await.map_err(|_|DurabilityError::Unavailable)?;drop(tx);proof
+                        .await.map_err(|_|DurabilityError::Unavailable);drop(tx);proof
                 },
             };
+            let proof=match committed{
+                Ok(proof)=>proof,
+                Err(error)=>{
+                    // Proven uncommitted: the attempt goes back to the marker. Otherwise the
+                    // window parks it.
+                    if let Ok(attempt)=window.reclaim_uncommitted(){*pending=Some(attempt);}
+                    return Err(error);
+                },
+            };
+            // From here every early return parks the attempt through the window's Drop.
             let training=training.map(|p|p.after_commit(&proof)).transpose().map_err(|_|DurabilityError::InvalidStoredState)?;
             let receipt=training.as_ref().map(|r|match r{BuildCommitOutcome::Committed(r)|BuildCommitOutcome::AlreadyCommitted(r)=>r});
-            // No awaited work, allocation or new random draw after real COMMIT.
-            let mut paid=attempt.paid.take().ok_or(DurabilityError::InvalidStoredState)?;
-            attempt.training.prepare_install(&attempt.before,&mut paid,
-                attempt.batch.anchor.as_ref().ok_or(DurabilityError::InvalidStoredState)?,receipt)
-                .map_err(|_|DurabilityError::InvalidStoredState)?;
-            let mut player=attempt.player.take().ok_or(DurabilityError::InvalidStoredState)?;
-            player.rebind_training(runtime,states,paid).map_err(|_|DurabilityError::InvalidStoredState)?;
-            let physical=attempt.physical.take().ok_or(DurabilityError::InvalidStoredState)?;
-            let receipt=commit_owner_batch(runtime,states,physical,Some(player)).map_err(|_|DurabilityError::InvalidStoredState)?;
-            if receipt.applied{
-                states.presentations.as_mut().ok_or(DurabilityError::InvalidStoredState)?
-                    .install_preflighted(attempt.presentation.take().ok_or(DurabilityError::InvalidStoredState)?,&receipt);
+            let mut runtime=owner.runtime.lock().await;
+            let mut states=owner.spell_states.lock().await;
+            // Phase 1: every fallible check borrows the attempt; nothing moves.
+            let checked={
+                let attempt=window.attempt();
+                let anchor=attempt.batch.anchor.as_ref().ok_or(DurabilityError::InvalidStoredState)?;
+                attempt.training.check_install(&attempt.before,&attempt.paid,anchor,receipt)
+                    .map_err(|_|DurabilityError::InvalidStoredState)?;
+                let preview=attempt.training.qualified_preview(&attempt.paid).map_err(|_|DurabilityError::InvalidStoredState)?;
+                attempt.player.check_rebind_training(&runtime,&states,&preview).map_err(|_|DurabilityError::InvalidStoredState)?;
+                let checked=check_owner_batch(&runtime,&states,&attempt.physical,Some(&attempt.player))
+                    .map_err(|_|DurabilityError::InvalidStoredState)?;
+                if states.presentations.is_none(){return Err(DurabilityError::InvalidStoredState);}
+                checked
+            };
+            // Phase 2: no awaited work, allocation, new random draw or fallible branch.
+            let mut attempt=window.install();
+            attempt.training.install_into(&mut attempt.paid);
+            attempt.player.install_rebind_training(attempt.paid);
+            let receipt=install_owner_batch(&mut runtime,&mut states,attempt.physical,Some(attempt.player),checked);
+            if receipt.applied && let Some(presentations)=states.presentations.as_mut(){
+                presentations.install_preflighted(attempt.presentation,&receipt);
             }
-            *pending=None;
             Ok(NativeCastDispatch::Outcome(SpellCastOutcome{disposition:SpellCastDisposition::Cast,
-                vitals:super::observe_vitals(runtime,states,actor,session)}))
+                vitals:super::observe_vitals(&runtime,&states,actor,session)}))
         })).await;
-        if let Some(p) = context.5.take() {
-            context.3.pending_world_items.push(p);
-        }
+        let (_, _, writer, guards) = context;
+        drop(guards);
+        let mut states = self.spell_states.lock().await;
+        let (leftover, parked) = writer.finish();
+        super::PendingSpellMarker::settle(
+            &mut states.pending_world_items,
+            actor,
+            session,
+            command,
+            intent,
+            leftover,
+            parked,
+        );
         match result {
             Ok(result) => result,
             Err(_) => NativeCastDispatch::Pending,
