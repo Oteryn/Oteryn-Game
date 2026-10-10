@@ -1649,6 +1649,353 @@ mod tests {
             .unwrap();
         crate::spell::authoring::spell_from_bundle(&row["bundle"], &row["dependencies"]).unwrap()
     }
+
+    struct CmsOwnerFixture {
+        runtime: ChannelRuntimeV1,
+        states: ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        spell: SpellDefinition,
+        book: crate::spell::SpellBook,
+        before: PlayerSpellState,
+    }
+
+    fn cms_owner_fixture(shield: bool) -> CmsOwnerFixture {
+        let (mut runtime, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(32);
+        runtime.initialize_first_entry_position(actor).unwrap();
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                crate::spell::cast::CharacterCastFacts {
+                    vocation: crate::spell::Vocation::Sorcerer,
+                    level: 200,
+                    magic_level: 0,
+                    max_health: 2000,
+                    max_mana: 2000,
+                    max_soul: 100,
+                },
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        if shield {
+            crate::spell::actor_conditions::apply_combat_change(
+                states.get_mut(&runtime, actor, session).unwrap(),
+                &OwnerCombatChange::ManaShield(crate::spell::combat_batch::ManaShieldState {
+                    capacity: 300,
+                    expires_ms: 2000,
+                }),
+                0,
+            )
+            .unwrap();
+        }
+        let before = states.get(&runtime, actor, session).unwrap().clone();
+        let spell = source("candidate:spell/cancel_magic_shield");
+        assert!(spell.authored.is_some());
+        assert!(matches!(spell.execution, Execution::Effects(_)));
+        assert!(spell.premium);
+        let book = crate::spell::SpellBook::canonical(vec![spell.clone()]).unwrap();
+        CmsOwnerFixture {
+            runtime,
+            states,
+            actor,
+            session,
+            spell,
+            book,
+            before,
+        }
+    }
+
+    fn cms_source_prepare(
+        f: &CmsOwnerFixture,
+        now: u64,
+        draw: &mut dyn FnMut(i64, i64) -> i64,
+    ) -> Result<PaidOrdinaryCast, SpellCastDisposition> {
+        let before = f.states.get(&f.runtime, f.actor, f.session).unwrap();
+        let facts = before.character_facts();
+        // Pure entitlement input for this numerical/condition consumer test;
+        // the actual canonical source header is intact. Not premium admission proof.
+        let caster = crate::spell::CasterState {
+            harmony_multiplier: before.owned_harmony_multiplier(&f.spell).unwrap(),
+            vocation: facts.vocation,
+            level: facts.level,
+            magic_level: 0,
+            premium: true,
+            mana: before.vitals().mana,
+            max_mana: facts.max_mana,
+            soul: before.vitals().soul,
+            learned: BTreeSet::new(),
+            attack_skill: 10,
+            attack_value: 7,
+            attack_factor: 1.0,
+            shielding_skill: 10,
+            melee_weapon: false,
+            shield_defense: None,
+        };
+        let p = f.runtime.read_actor_position(f.actor).unwrap().position();
+        let operational = OperationalCastFacts {
+            caster_position: TilePosition {
+                x: p.x,
+                y: p.y,
+                floor: p.floor,
+            },
+            target_position: None,
+            target: None,
+            line_of_sight_clear: Some(true),
+            direction_available: false,
+            wheel_unlocked: None,
+            in_protection_zone: false,
+            target_tile_solid: Some(false),
+            target_tile_creature: Some(true),
+        };
+        prepare_ordinary_owner_cast_with_caster(
+            &f.book,
+            before,
+            &f.spell,
+            &operational,
+            SemanticTimeMicros::from_micros(now),
+            &caster,
+            None,
+            None,
+            draw,
+        )
+    }
+
+    /// Calls the actual source condition-lowering consumer used by production
+    /// lower, then returns its genuine PlayerConditions + paid batch to real owners.
+    fn cms_source_condition_batch(
+        f: &CmsOwnerFixture,
+        paid: &PaidOrdinaryCast,
+        now: u64,
+    ) -> Result<OwnerCombatBatch, SpellCastDisposition> {
+        let expected = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .owned_conditions()
+            .clone();
+        let mut next = expected.clone();
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([31; 32]);
+        let facts = crate::ability::condition::ApplicationFacts {
+            now,
+            base_speed: 110,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([32; 16]),
+        };
+        modify_conditions(
+            &mut next,
+            &paid.resolution.effects,
+            Some(crate::spell::combat_execution::actor_atom(f.actor)),
+            &[],
+            &facts,
+            true,
+        )?;
+        Ok(OwnerCombatBatch {
+            caster: f.actor,
+            attacker: CharacterId::decode(&[
+                1, 0x90, 0, 0, 0, 40, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 40,
+            ])
+            .unwrap(),
+            current_lease_generation: 1,
+            command: CommandRef::new(f.session, crate::foundation::CommandId::new(1).unwrap()),
+            occurrence: AbilityOccurrence::new(
+                "spell-cast:cms-owner",
+                crate::ability::RevisionSet::new(
+                    "rules:1",
+                    "content:1",
+                    "world:1",
+                    "formula:1",
+                    "sim:1",
+                )
+                .unwrap(),
+            )
+            .unwrap()
+            .into(),
+            binding: b"{\"canonical_cms_condition_consumer\":true}".to_vec(),
+            anchor: Some(paid.anchor.clone()),
+            now_ms: now / 1000,
+            deferred: None,
+            effects: vec![OwnerCombatEffect {
+                target: f.actor,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::PlayerConditions {
+                    expected: Box::new(expected),
+                    next: Box::new(next),
+                },
+            }],
+        })
+    }
+
+    #[test]
+    fn ordinary_cms_source_prepare_requires_active_shield_before_draw_or_payment() {
+        for scenario in 0..4 {
+            let mut f = cms_owner_fixture(scenario != 0);
+            if scenario == 2 {
+                crate::spell::actor_conditions::apply_combat_change(
+                    f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+                    &OwnerCombatChange::ConsumeManaShield {
+                        expected_capacity: 300,
+                        amount: 300,
+                    },
+                    1000,
+                )
+                .unwrap();
+            }
+            if scenario == 3 {
+                // A real condition application in the future of the cast clock.
+                crate::spell::actor_conditions::remove_condition(
+                    f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+                    "manashield",
+                )
+                .unwrap();
+                crate::spell::actor_conditions::apply_combat_change(
+                    f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+                    &OwnerCombatChange::ManaShield(crate::spell::combat_batch::ManaShieldState {
+                        capacity: 300,
+                        expires_ms: 2000,
+                    }),
+                    1500,
+                )
+                .unwrap();
+            }
+            let before = f
+                .states
+                .get(&f.runtime, f.actor, f.session)
+                .unwrap()
+                .clone();
+            let mut draws = 0;
+            let now = if scenario == 1 { 2_000_000 } else { 1_000_000 };
+            let result = cms_source_prepare(&f, now, &mut |minimum, _| {
+                draws += 1;
+                minimum
+            });
+            assert_eq!(
+                result.err(),
+                Some(if scenario == 3 {
+                    SpellCastDisposition::Rejected
+                } else {
+                    SpellCastDisposition::TargetIllegal
+                })
+            );
+            assert_eq!(draws, 0);
+            assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&before));
+        }
+    }
+
+    #[test]
+    fn ordinary_cms_source_lower_rechecks_current_capacity_without_owner_mutation() {
+        for scenario in 0..3 {
+            let mut f = cms_owner_fixture(true);
+            let paid =
+                cms_source_prepare(&f, 1_000_000, &mut |_, _| panic!("CMS has no RNG")).unwrap();
+            if scenario == 0 {
+                crate::spell::actor_conditions::remove_condition(
+                    f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+                    "manashield",
+                )
+                .unwrap();
+            } else if scenario == 2 {
+                crate::spell::actor_conditions::apply_combat_change(
+                    f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+                    &OwnerCombatChange::ConsumeManaShield {
+                        expected_capacity: 300,
+                        amount: 300,
+                    },
+                    1000,
+                )
+                .unwrap();
+            }
+            let before = f
+                .states
+                .get(&f.runtime, f.actor, f.session)
+                .unwrap()
+                .clone();
+            let now = if scenario == 1 { 2_000_000 } else { 1_000_000 };
+            assert_eq!(
+                cms_source_condition_batch(&f, &paid, now).err(),
+                Some(SpellCastDisposition::TargetIllegal)
+            );
+            assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&before));
+        }
+    }
+
+    #[test]
+    fn ordinary_cms_source_removes_active_shield_pays_once_and_replays() {
+        let mut f = cms_owner_fixture(true);
+        let paid = cms_source_prepare(&f, 1_000_000, &mut |_, _| panic!("CMS has no RNG")).unwrap();
+        assert_eq!(paid.anchor.paid_mana, 50);
+        let batch = cms_source_condition_batch(&f, &paid, 1_000_000).unwrap();
+        let staged = f.runtime.stage_spell_batch(&batch).unwrap();
+        let proof =
+            stage_player_batch(&f.runtime, &f.states, &batch, Some(paid.next.clone())).unwrap();
+        assert_eq!(
+            f.states.get(&f.runtime, f.actor, f.session),
+            Some(&f.before)
+        );
+        assert!(
+            commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+                .unwrap()
+                .applied
+        );
+        let after = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .clone();
+        assert_eq!(after.vitals().mana, 1950);
+        assert_eq!(after.revision(), f.before.revision() + 1);
+        assert_eq!(after.owned_conditions().mana_shield_at(1_000_000), None);
+        let replay = f.runtime.stage_spell_batch(&batch).unwrap();
+        assert!(
+            !commit_owner_batch(&mut f.runtime, &mut f.states, replay, None)
+                .unwrap()
+                .applied
+        );
+        assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&after));
+    }
+
+    #[test]
+    fn ordinary_cms_source_stale_condition_predecessor_rolls_back_removal_and_payment() {
+        let mut f = cms_owner_fixture(true);
+        let paid = cms_source_prepare(&f, 1_000_000, &mut |_, _| panic!("CMS has no RNG")).unwrap();
+        let batch = cms_source_condition_batch(&f, &paid, 1_000_000).unwrap();
+        let staged = f.runtime.stage_spell_batch(&batch).unwrap();
+        let proof = stage_player_batch(&f.runtime, &f.states, &batch, Some(paid.next)).unwrap();
+        crate::spell::actor_conditions::apply_combat_change(
+            f.states.get_mut(&f.runtime, f.actor, f.session).unwrap(),
+            &OwnerCombatChange::ConsumeManaShield {
+                expected_capacity: 300,
+                amount: 1,
+            },
+            1000,
+        )
+        .unwrap();
+        let current = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .clone();
+        assert!(matches!(
+            commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof)),
+            Err(Error::SnapshotChanged)
+        ));
+        assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&current));
+        assert_eq!(current.vitals().mana, 1999);
+        assert_eq!(
+            current.owned_conditions().mana_shield_at(1_000_000),
+            Some(299)
+        );
+        assert_eq!(current.revision(), f.before.revision());
+    }
+
     #[test]
     fn genuine_lightning_selects_and_pays_once_without_cast_time_draw_then_uses_due_stats() {
         use crate::spell::cast::CharacterCastFacts;
