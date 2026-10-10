@@ -152,7 +152,8 @@ other viewer receives the real one. The server decides every step and every fiel
 independently of what the viewer was sent. The variant rides the existing item entry; no new
 domain and no PVP-WIRE-1 element. When an input of that predicate changes for a viewer and an
 owner (a skull or mark, an aggression relation (§8.2) starting, expiring or ending by logout,
-party or guild membership, a war, the level threshold, the viewer's or owner's tile zone),
+party or guild membership, a war, the level threshold, the viewer's or owner's tile zone, the
+viewer's or owner's post-login immunity (rule 4) expiring),
 PVP-BLOCK-1 republishes every affected entry in that viewer's view in the next projection update,
 as an item update on the same entry. A channel
 restart clears both the relations (runtime only, §8.2) and player fields and walls
@@ -209,8 +210,10 @@ PVP-RT-1 enforces it; PVP-BLOCK-1 uses the same predicate for blocking.
 
 Each slice is one PR in its own owned paths, test-first, and tests `OPTIONAL` and `OPEN` (and
 the `HARDCORE` branch it touches). PvP goes live on a World only when PVP-1, PVP-RT-1,
-PVP-DEATH-1, PVP-WIRE-1 and PVP-CLIENT-1 have merged (without the client's expert mode control a
-character stays in the default Dove mode and cannot start aggression, §6.6); until then `attackable_kind` stays creature-only. The
+PVP-DEATH-1, PVP-WIRE-1, PVP-BLOCK-1 and PVP-CLIENT-1 have merged (without the client's expert
+mode control a character stays in the default Dove mode and cannot start aggression, §6.6;
+without PVP-BLOCK-1 a viewer whom field legality protects, or one it exposes, could be sent a
+variant that disagrees with the server, §6.5); until then `attackable_kind` stays creature-only. The
 first World is `OPTIONAL`, so it shows no PvP until GUILD-WAR-0.
 
 | Slice | Worker / review | Builds | Depends on (state on `main`) |
@@ -263,7 +266,7 @@ Each is a focused test in the named slice; "O" = `OPEN`, "P" = `OPTIONAL`, "H" =
 | PVP-CC-29 | WIRE-1 | client-supplied skull, CharacterId or PartyId never changes a server decision; unknown `expert_mode` value → `REJECTED` |
 | PVP-CC-30 | RT-1 | O, secure off: Dove, unmarked non-aggressor → `PVP_REFUSED {EXPERT_MODE}`, aggressor → allowed; White Hand, character aggressive to a party member → allowed; Yellow Hand, white-skulled stranger → allowed, skulled party member → refused (rule 5); Red Fist → any; area effect skips a filtered actor; field damage not filtered |
 | PVP-CC-31 | RT-1, WIRE-1 | black-skulled actor selects Red Fist → `REJECTED`; actor in Red Fist gains a black skull → mode Dove; H → mode fixed at Red Fist |
-| PVP-CC-32 | BLOCK-1 | O, viewer in the owner's party sees the safe variant of the owner's field; the viewer leaves the party → that entry republished as the real variant in the next update; the viewer moves onto a `no_pvp_zone` tile → safe variant again |
+| PVP-CC-32 | BLOCK-1 | O, viewer in the owner's party sees the safe variant of the owner's field; the viewer leaves the party → that entry republished as the real variant in the next update; the viewer moves onto a `no_pvp_zone` tile → safe variant again; an owner creates a field during an unrelated viewer's post-login immunity → safe variant, and the immunity expiring → real variant in the next update |
 
 ## 10. Owner questions (answered: D971, 1a 2a 3a 4a)
 
