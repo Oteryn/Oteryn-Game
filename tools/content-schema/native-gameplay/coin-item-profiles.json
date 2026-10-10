@@ -1,0 +1,450 @@
+{
+  "schema": "OTERYN_NATIVE_COIN_ITEM_PROFILES/v1",
+  "sources": [
+    {
+      "server": "canary",
+      "revision": "99902524e052f37574194466c2949c576e4ab269",
+      "path": "data/items/items.xml",
+      "sha256": "bf773d2c8f1d2767b31a20749fd5278ae48f2ed5b05757a678e3788e2a70bf85"
+    },
+    {
+      "server": "crystal",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data/items/items.xml",
+      "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+    }
+  ],
+  "producer": "tools/content-schema/native-gameplay/build_source_item_profiles.py",
+  "item_profiles_sha256": "150a104487d0e18322755fc4a8a00f474eef3ccebc2877ab3771294342c486e1",
+  "records": [
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/3031",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "gold coin"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 10
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "3031",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3031",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3031",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/3035",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "platinum coin"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 10
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "3035",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3035",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3035",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/3043",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "crystal coin"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 10
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "3043",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i3043",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i3043",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    }
+  ]
+}
