@@ -12,22 +12,12 @@ use oteryn_client::{
     settings_catalog::FutureValue,
 };
 
+#[derive(Default)]
 pub(super) struct PageState {
     displayed: Option<String>,
     available: Option<String>,
     last_frame_limit: Option<u16>,
     hotkeys: hotkeys::State,
-}
-
-impl Default for PageState {
-    fn default() -> Self {
-        Self {
-            displayed: None,
-            available: None,
-            last_frame_limit: None,
-            hotkeys: hotkeys::State::default(),
-        }
-    }
 }
 
 pub(super) fn show(
