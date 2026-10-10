@@ -80,7 +80,7 @@ Do not use the older Otheryn migration map `3bd40d14...` for this quest. It pred
 | s8 | laboratory / Crystal Plinth / Large Crystal Apparatus | Note Pinned on the Wall = donor `6121` at exact `33881,32684,9` (optional lore); Crystal Plinth `i54515`; Apparatus `i53514` | Plinth directly yields `lab_access_sequence_learned`; no manual colour-code UI/input; sealed-room gate + apparatus interaction still need native trigger/gate adapters |
 | s9 | Niral explains Rakesh / sealing | Niral NPC + Dialogue candidate | exact branch + progress write |
 | s10 | kill Rakesh Moonfang | Creature `oteryn:creature.rakesh_moonfang` with abilities/Behavior | encounter admission + kill-credit â†’ quest transition |
-| s11 | Moon Mirror + Empty Crystal Flask at blue lava | Moon Mirror `i25975`; Empty Flask `i53696`; Blue Lava Flask `i54564`; volcano position exists | materialization/use-transform + source-qualified night-time predicate |
+| s11 | Moon Mirror + Empty Crystal Flask at blue lava | Moon Mirror `i25975`; Empty Flask `i53696`; Blue Lava Flask `i54564`; volcano position exists | materialization/use-transform + night-time predicate (held: SOURCE_CONFLICT) |
 | s12 | Niral consecrates blue lava | Niral dialogue content exists; Blessed Flask `i54566` identity exists | exact branch + item transform `54564 â†’ 54566` |
 | s13 | draw four runes by four crystal constructs | 4 exact physical ritual tiles present; Blessed Flask identity; base `54637` is Terrain only | four placement-driven `USE_ITEM_ON_POSITION` transitions; do not create a WorldObject identity for `54637` |
 | s14 | The Moonsnow Magnolia encounter | Magnolia + Furious Jaracal Creature/Behavior/Ability records exist | complete special Encounter: Jaracal mechanics, Bone Fiddle, Moonsilver Drift, heal-on-Death, revive/phase 2, permanent kill credit |
@@ -142,17 +142,11 @@ The quest also unlocks the True Feverbloom hunting route. Current quest completi
 
 ## Blue Lava night requirement â€” source disposition
 
-The pinned post-release Fandom spoiler revision `1202455` (2026-08-20) explicitly requires taking the Empty Crystal Flask to the active volcano **during the night time** with a Moon Mirror.
+The pinned post-release Fandom spoiler revision `1202455` (2026-08-20) explicitly requires taking the Empty Crystal Flask to the active volcano **during the night time** with a Moon Mirror, and current Fandom content carries the same instruction.
 
-Current Fandom content still carries the same explicit night-time instruction.
+TibiaWiki BR and post-release player guides describe Moon Mirror + Empty Crystal Flask but do **not** state that daytime use succeeds. The supplied walkthrough narrator says the wiki claims night-only, is unsure the restriction is necessary, believes it is currently night, and then fills the flask successfully; that recording does not independently discriminate day from night.
 
-TibiaWiki BR and post-release player guides describe Moon Mirror + Empty Crystal Flask but do **not** state that daytime use succeeds. Under the project's conflict policy, omission is not an atomic contradiction.
-
-The supplied walkthrough narrator explicitly says the wiki claims night-only, is unsure whether the restriction is truly necessary, believes it is currently night, and then fills the flask successfully. That recording is supporting evidence but does not independently discriminate day from night.
-
-Status: **STRUCTURED_REFERENCE_CANDIDATE / night_time_required**.
-
-This remains unverified by a controlled Global day-vs-night test, but it is no longer classified as `SOURCE_CONFLICT` because no retrieved source positively demonstrates successful daytime filling.
+Status: **SOURCE_CONFLICT**. No runtime night guard is selected (`binding-plan.json` and the correction candidate retain this disposition). A controlled Global day-vs-night test is required before any `night_time_required` guard is authorized.
 
 ## Required implementation slices
 

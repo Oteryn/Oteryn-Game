@@ -40,6 +40,7 @@
       "compiled_workspace_bytes_sha256": "2de592428d838c42e5cc1c86014da2d994d1e750fd4d3071dae823e03ddadb81"
     }
   ],
+  "source_files_hash_basis": "compiled_workspace_bytes_sha256 is the SHA-256 of the cited git_blob content with every line ending normalized to CRLF (the Windows workspace checkout that was compiled); the git blob itself has LF endings, so hash the blob after LF->CRLF conversion to reproduce each value. Verified for every listed file.",
   "command": "python run_q1_candidate.py --adversarial",
   "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
   "baseline": {

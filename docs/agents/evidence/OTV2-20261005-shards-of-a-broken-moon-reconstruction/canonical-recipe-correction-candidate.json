@@ -342,8 +342,8 @@
       ],
       "direct_quest_reward": false,
       "success_chance": "UNKNOWN_DO_NOT_INVENT",
-      "failure_item_consumed": false,
-      "failure_retry_same_item": true
+      "failure_item_consumed": "UNKNOWN",
+      "failure_retry_same_item": "UNKNOWN"
     }
   ],
   "required_owner_sequence": [

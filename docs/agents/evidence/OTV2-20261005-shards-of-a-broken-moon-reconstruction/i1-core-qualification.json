@@ -41,6 +41,7 @@
       "compiled_workspace_bytes_sha256": "3ff3356f51ee1f8b840ed9ac5a6dd4341b2c34ac0ff2b09c00eedd5e3d8ed6bb"
     }
   ],
+  "source_files_hash_basis": "compiled_workspace_bytes_sha256 is the SHA-256 of the cited git_blob content with every line ending normalized to CRLF (the Windows workspace checkout that was compiled); the git blob itself has LF endings, so hash the blob after LF->CRLF conversion to reproduce each value. Verified for every listed file.",
   "positive": {
     "result": "PASS",
     "definitions": 3,
