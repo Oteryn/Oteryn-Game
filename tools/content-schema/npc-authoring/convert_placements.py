@@ -60,7 +60,11 @@ def cell_of(position: dict) -> tuple[int, int, int]:
 
 
 def provenance(candidate: dict, placement: dict) -> list[dict]:
-    arbitration = sorted(candidate.get("arbitration", []), key=dump)
+    # Only the placement decisions are evidence for the cell; offer or trade arbitration is not.
+    arbitration = sorted(
+        (row for row in candidate.get("arbitration", []) if row.get("fact") == "placements"), key=dump
+    )
+    chosen = {row["chosen"] for row in arbitration}
     if placement.get("origin") == "wiki":
         return [
             {
@@ -75,7 +79,8 @@ def provenance(candidate: dict, placement: dict) -> list[dict]:
     rows = []
     for origin in ("canary", "crystal"):
         source = candidate["provenance"].get(origin)
-        if source is None:
+        # An arbitrated cell is attributed to the chosen source only; agreeing sources keep both rows.
+        if source is None or (chosen and origin not in chosen):
             continue
         repository, revision, source_key = SOURCES[origin]
         rows.append(

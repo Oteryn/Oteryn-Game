@@ -93,6 +93,18 @@ fn is_successor_shard(locator: &str) -> bool {
     SHARED_DIRECTORY_SUCCESSOR_SHARDS.contains(&locator)
         || is_unshared_successor_shard(locator)
         || is_spawn_family_file(locator)
+        || is_npc_placement_family_file(locator)
+}
+/// The `Npc.Placement` family (NPC-PLACE-1a): its index, held list and shards sit in
+/// `npc-placements/`, a successor directory that holds no legacy locator.
+/// `convert_placements.py --check` pins their bytes and `validate_materialized_game_tree.py`
+/// pins the index against the files on disk.
+fn is_npc_placement_family_file(locator: &str) -> bool {
+    locator.strip_prefix("npc-placements/").is_some_and(|name| {
+        name == "index.json"
+            || name == "held.json"
+            || (name.starts_with("placements-") && name.ends_with(".json"))
+    })
 }
 /// The `Spawn.Source` family (SPAWN-CONTENT-1; CREATURE-AI-0 section 6.1): its index and shards
 /// sit in `spawns/`, a successor directory that is not a contract tree node and holds no legacy
@@ -189,7 +201,9 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // branch's spell imports the capture scans that sibling twice more: 2 more, measured.
         // The reviewed World pins (`pins/`, WORLD-BUNDLE-CI-1) add one sibling to the package root, seen by
         // each of the 11 locator lookups: 11 more, measured.
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11,
+        // The `npc-placements/` family directory adds one more sibling to the package root, which
+        // the capture scans: 1 more, measured.
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 1,
     }
 }
 
