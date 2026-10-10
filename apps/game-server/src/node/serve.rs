@@ -1718,9 +1718,18 @@ fn boot_bundle_world(
     let booted = checked
         .boot(world, channel, item)
         .map_err(BootError::WorldBundle)?;
+    // MAP-DOOR-1: a bundle without a usable door is not a playable preprod World.
+    let doors = booted.facts().doors();
+    if doors.is_empty() {
+        return Err(BootError::WorldBundle(
+            crate::map::boot::BootRefusal::NoDoors,
+        ));
+    }
     event(&format!(
-        "event=world_bundle state=booted map_revision={}",
-        booted.map_revision()
+        "event=world_bundle state=booted map_revision={} doors={} doors_sealed={}",
+        booted.map_revision(),
+        doors.len(),
+        doors.sealed()
     ));
     Ok(booted)
 }
@@ -2332,8 +2341,27 @@ mod tests {
     fn map_cutover_b_a_bundle_with_items_boots_from_the_active_generation() {
         const KEYS: &[u8] =
             include_bytes!("../../../../tools/content-schema/native-gameplay/item-keys.json");
-        let (boxed, coin) = ("oteryn:item.tibia.i100", "oteryn:item.tibia.i1000");
-        let (bytes, pins) = crate::map::boot::tests::bundle_with_items(boxed, coin);
+        // MAP-DOOR-1: the solid entry is the plain closed door 1629, whose open item 1630 the
+        // generation also serves.
+        let (boxed, coin) = ("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
+        let probe = crate::content::native_gameplay::tests::activated_with_item_keys(Some(KEYS));
+        let probe_index = probe
+            .active()
+            .expect("active")
+            .native_gameplay()
+            .and_then(|state| state.item_index())
+            .expect("index");
+        let compact_id = |key: &str| {
+            let revision = probe_index.revision(key).expect("revision");
+            probe_index
+                .definition_ref("Item", key, revision)
+                .expect("reference")
+                .get()
+                - 1
+        };
+        let (boxed_id, coin_id) = (compact_id(boxed), compact_id(coin));
+        let (bytes, pins) =
+            crate::map::boot::tests::bundle_with_item_ids((boxed, boxed_id), (coin, coin_id));
         let mut revision = String::from("sha256:");
         for byte in pins.digest {
             revision.push_str(&format!("{byte:02x}"));
@@ -2358,7 +2386,9 @@ mod tests {
             .and_then(|state| state.item_index())
             .expect("index");
         let booted = boot_bundle_world(checked(), world, channel, gameplay).expect("booted");
-        for (key, x, compact) in [(boxed, 6, 0), (coin, 7, 1)] {
+        assert_eq!(booted.facts().doors().len(), 1);
+        assert_eq!(booted.facts().doors().sealed(), 0);
+        for (key, x, compact) in [(boxed, 6, boxed_id), (coin, 7, coin_id)] {
             use crate::map::view::MapFacts;
             let reference = index
                 .definition_ref("Item", key, index.revision(key).expect("revision"))
@@ -2400,6 +2430,33 @@ mod tests {
             booted.frame_binding_digest(other),
             booted.frame_binding_digest(world)
         );
+        // MAP-DOOR-1: the same bundle with a plain solid box in place of the door places no door,
+        // and a preprod node refuses to serve it.
+        let (plain, plain_pins) = crate::map::boot::tests::bundle_with_items(
+            "oteryn:item.tibia.i100",
+            "oteryn:item.tibia.i1000",
+        );
+        let plain_revision: String = plain_pins
+            .digest
+            .iter()
+            .fold(String::from("sha256:"), |text, byte| {
+                format!("{text}{byte:02x}")
+            });
+        let plain_checked = crate::map::boot::check(
+            plain,
+            crate::map::boot::BootPins {
+                bundle: plain_pins,
+                map_revision: plain_revision,
+                start: boot_pins.start,
+            },
+        )
+        .expect("check");
+        assert!(matches!(
+            boot_bundle_world(plain_checked, world, channel, gameplay),
+            Err(BootError::WorldBundle(
+                crate::map::boot::BootRefusal::NoDoors
+            ))
+        ));
         // A generation without an Item key set names no Item: the same bundle fails closed.
         let without = crate::content::native_gameplay::tests::activated_with_item_keys(None);
         let gameplay = without.active().expect("active").native_gameplay();

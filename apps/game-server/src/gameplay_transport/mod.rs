@@ -13,6 +13,7 @@ mod item_move;
 mod item_ref_admission;
 mod item_view;
 mod kill_reward;
+mod map_door;
 mod monk_save;
 mod monster_ai_cycle;
 #[allow(
@@ -1994,6 +1995,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|candidate| candidate.key.as_str().as_bytes() == placement)
     }
 
+    /// MAP-DOOR-1: one `USE_INTENT` on a door of a bundle World. Under the Channel-owner lock
+    /// that `step` takes, so the actor and every other committed position cannot move between
+    /// the occupancy read and the door's compare-and-swap.
+    async fn use_bundle_door(
+        &self,
+        actor: ExactActorRef,
+        map: &crate::map::boot::BundleMap,
+        target: &world_object::WorldObjectTarget,
+    ) -> UseOutcome {
+        let mut runtime = self.runtime.lock().await;
+        if self.spell_states.lock().await.is_dead(actor) {
+            return UseOutcome::rejected();
+        }
+        let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
+            return UseOutcome::rejected();
+        };
+        let native = |position: crate::foundation::MovementLocalPosition| {
+            Some(crate::map::overlay::TilePos {
+                x: u16::try_from(position.x).ok()?,
+                y: u16::try_from(position.y).ok()?,
+                floor: i8::try_from(position.floor).ok()?.checked_neg()?,
+            })
+        };
+        let Some(actor_tile) = native(expected.position()) else {
+            return UseOutcome::rejected();
+        };
+        let positions: Vec<_> = runtime
+            .committed_player_positions()
+            .into_iter()
+            .filter_map(native)
+            .collect();
+        map_door::use_door(
+            &map.overlay,
+            &map.facts,
+            runtime.content_pin().client_artifact_digest(),
+            actor_tile,
+            &positions,
+            target,
+        )
+    }
+
     /// C2: one `USE_INTENT` on the entry chest (USE-WIRE-V1 field 1, #162 5914960502). Reach is
     /// the door's rule (same floor, Chebyshev distance <=1 from the chest's cell), read under
     /// the Channel-owner lock, which is released before the durable MINT so the Channel is
@@ -2516,9 +2558,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if self
             .qualified_room
             .is_some_and(|room| room.source_world().is_some())
-            || self.bundle_map().is_some()
         {
             return UseOutcome::rejected();
+        }
+        if let Some(map) = self.bundle_map() {
+            return self.use_bundle_door(actor, map, &target).await;
         }
         if let Some(chest) = Self::chest_target(self.chest, &target.placement) {
             return self.use_chest(actor, command, chest).await;
