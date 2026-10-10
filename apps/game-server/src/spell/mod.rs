@@ -23,8 +23,8 @@ pub(crate) mod companion_lifecycle;
 pub(crate) mod delayed_execution;
 pub(crate) mod executable_catalog;
 pub(crate) mod field_history;
-pub(crate) mod food_regeneration;
 pub(crate) mod find_person_execution;
+pub(crate) mod food_regeneration;
 pub(crate) mod formula;
 pub(crate) mod harmony;
 #[cfg(test)]

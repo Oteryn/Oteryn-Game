@@ -87,8 +87,9 @@ mod tests {
         state
     }
 
-    fn run(state: &mut PlayerSpellState, seconds: u64, facts: TickFacts) {
-        for second in 1..=seconds {
+    /// Ticks seconds `from + 1 ..= to` (time stays monotonic across calls).
+    fn run(state: &mut PlayerSpellState, from: u64, to: u64, facts: TickFacts) {
+        for second in from + 1..=to {
             tick(state, second * 1_000, facts).expect("tick");
         }
     }
@@ -126,9 +127,9 @@ mod tests {
     fn fed_knight_regenerates_per_vocation_period_and_stops_when_the_food_ends() {
         let mut state = actor(Vocation::Knight);
         eat_food(&mut state, 10, 0).expect("eat");
-        run(&mut state, 5, TickFacts::default());
+        run(&mut state, 0, 5, TickFacts::default());
         assert_eq!((state.health, state.mana), (100, 100));
-        run(&mut state, 10, TickFacts::default());
+        run(&mut state, 5, 15, TickFacts::default());
         // 10 fed seconds: one health credit (6 s), one mana credit (6 s).
         assert_eq!((state.health, state.mana), (101, 102));
         assert!(state.conditions.instances().is_empty());
@@ -142,8 +143,8 @@ mod tests {
         let mut druid = actor(Vocation::Druid);
         let mut unfed = actor(Vocation::Druid);
         eat_food(&mut druid, 12, 0).expect("eat");
-        run(&mut druid, 12, TickFacts::default());
-        run(&mut unfed, 12, TickFacts::default());
+        run(&mut druid, 0, 12, TickFacts::default());
+        run(&mut unfed, 0, 12, TickFacts::default());
         assert_eq!((druid.health, druid.mana), (101, 108));
         assert_eq!((unfed.health, unfed.mana), (100, 100));
     }
@@ -156,7 +157,7 @@ mod tests {
             in_protection_zone: true,
             standing_on_field: None,
         };
-        run(&mut state, 6, pz);
+        run(&mut state, 0, 6, pz);
         assert_eq!((state.health, state.mana), (100, 100));
         assert!(state.conditions.instances().is_empty());
     }
@@ -167,7 +168,7 @@ mod tests {
         full.health = full.facts.max_health;
         full.mana = full.facts.max_mana;
         eat_food(&mut full, 30, 0).expect("eat");
-        run(&mut full, 30, TickFacts::default());
+        run(&mut full, 0, 30, TickFacts::default());
         assert_eq!((full.health, full.mana), (1000, 500));
         let mut dead = actor(Vocation::Sorcerer);
         dead.health = 0;
