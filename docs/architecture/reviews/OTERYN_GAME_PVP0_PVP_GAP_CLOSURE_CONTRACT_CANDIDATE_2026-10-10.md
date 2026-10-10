@@ -183,7 +183,9 @@ to harm:
 Single target: `PVP_REFUSED {EXPERT_MODE}`; an area effect skips the actor. As with rule 6, rule 6b
 does not filter a player-made field's damage to a character who enters or stands in it. The mode
 is server state from the last accepted fight modes intent; a client-shown mode is never authority.
-PVP-RT-1 enforces it; PVP-BLOCK-1 uses the same predicate for blocking.
+PARTY-PVP-0 §7.4 Join Aggression gains the same check: with secure mode on, it succeeds only if
+every character the member is fighting is marked and also allowed under the actor's expert mode;
+otherwise it is `PVP_REFUSED {EXPERT_MODE}` and no relation changes. PVP-RT-1 enforces it; PVP-BLOCK-1 uses the same predicate for blocking.
 
 ## 7. Model summary (from PARTY-PVP-0, unchanged unless §6 says)
 
@@ -226,6 +228,10 @@ until then `attackable_kind` stays creature-only. The
 first World is `OPTIONAL`, so it shows no PvP until GUILD-WAR-0. PvP going live does not activate
 player-made field or wall effects on players: they stay inactive until WORLDINT-ADMIT-1 and
 FIELD-2 have merged (WORLD-INTERACTION-0 §8.6, ADMIT-0), and PVP-BLOCK-1 variants apply from then.
+In the other landing order, WORLDINT-ADMIT-1 and FIELD-2 do not activate those effects on players
+either until PVP-RT-1 (which moves field hits onto the legality stage and removes the `NoPvp`
+`pvp_zone` exception, §6.4) and PVP-BLOCK-1 (§6.5 variants) have merged: player-made field and
+wall effects on players need all four, whichever lands last.
 
 | Slice | Worker / review | Builds | Depends on (state on `main`) |
 |---|---|---|---|
@@ -250,14 +256,14 @@ Each is a focused test in the named slice; "O" = `OPEN`, "P" = `OPTIONAL`, "H" =
 | PVP-CC-02 | RT-1 | O, attacker level 7 (or target level 7) → `PVP_REFUSED`; area skips |
 | PVP-CC-03 | RT-1 | either on a PZ tile → refused; PZ-blocked character cannot step onto a PZ tile |
 | PVP-CC-04 | RT-1 | either on a `no_pvp_zone` tile, O and H → `PVP_REFUSED {NO_PVP_TILE}`; P before GUILD-WAR-0 → the rule 1 World-type refusal (rule 3b is unreachable without a war); PvE on the same tile works; unknown zone facts → refused |
-| PVP-CC-05 | RT-1 | `pvp_zone` tile → behaves as an ordinary tile (§6.4); P, no war, field owner and target both on `pvp_zone` tiles, target steps into the owner's field → no damage |
+| PVP-CC-05 | RT-1 | `pvp_zone` tile → behaves as an ordinary tile (§6.4); P, no war, field owner and target both on `pvp_zone` tiles, target steps into the owner's field → no damage; with WORLDINT-ADMIT-1 and FIELD-2 merged but PVP-RT-1 or PVP-BLOCK-1 absent, no player-made field affects a player |
 | PVP-CC-06 | RT-1 | P, no war → every character target refused; H → allowed with no skull |
 | PVP-CC-07 | RT-1 | admitted 9 s ago starts aggression → refused; answers an aggressor → allowed |
 | PVP-CC-08 | RT-1 | same party, no shared enemy → refused; both aggressive to one enemy → area hits ally, no skull, no block, no points |
 | PVP-CC-09 | RT-1 | secure mode on, unmarked target → refused; marked target → allowed |
 | PVP-CC-10 | RT-1 | black skull attacker, unmarked target → refused |
 | PVP-CC-11 | RT-1 | O, hit on unmarked → attacker white for 60 s, PZ block 60 s; refreshed by the next hit; a marked character that attacks a viewer first shows yellow to that viewer only |
-| PVP-CC-12 | RT-1, 1 | O, unjustified kill → killer kill block 15 min and white skull 15 min (§6.1): an online killer still shows white, is still a justified target and still passes secure mode for others 2 min after its last hit; also across logout and node restart |
+| PVP-CC-12 | RT-1, 1 | O, unjustified kill → killer kill block 15 min and white skull 15 min (§6.1): an online killer still shows white, is still a justified target and still passes secure mode for others 2 min after its last hit; also across same-session reconnect and node restart; a contributor offline at commit gets the extended skull at admission |
 | PVP-CC-13 | 1 | 3,000 milli in 24 h → red, `skull_until` +30 d; 6,000 → black +45 d; a new point resets the end; a skull never drops by evaluation |
 | PVP-CC-14 | 1 | 7 unjustified damage contributors → each 714 milli (`1,000 × 5 / 7`, rounded down); assist-only → 500 |
 | PVP-CC-15 | 1 | victim with white/red/black, or yellow toward the killer, or orange toward the killer → justified, no points |
@@ -275,7 +281,7 @@ Each is a focused test in the named slice; "O" = `OPEN`, "P" = `OPTIONAL`, "H" =
 | PVP-CC-27 | 1 | field policy `world_type` or `protection_level` or `in_fight_ms` disagrees with the ruleset → World not ready (`WORLD_POLICY_MISMATCH`) |
 | PVP-CC-28 | BLOCK-1 | P, no war: bystander receives the safe field variant and stepping onto it causes no damage; O, eligible unmarked bystander: real variant, the step hurts and the owner gains a white skull; a spoofed step into a real wall is refused; O, viewer in the owner's party receives the real, blocking Magic Wall and its step is refused; P, every viewer receives the walkable wall variant and a step removes the wall and moves |
 | PVP-CC-29 | WIRE-1 | client-supplied skull, CharacterId or PartyId never changes a server decision; unknown `expert_mode` value → `REJECTED` |
-| PVP-CC-30 | RT-1 | O, secure off: Dove, unmarked non-aggressor → `PVP_REFUSED {EXPERT_MODE}`, aggressor → allowed; White Hand, character aggressive to a party member → allowed; Yellow Hand, white-skulled stranger → allowed, skulled party member → refused (rule 5); Red Fist → any; area effect skips a filtered actor; field damage not filtered |
+| PVP-CC-30 | RT-1 | O, secure off: Dove, unmarked non-aggressor → `PVP_REFUSED {EXPERT_MODE}`, aggressor → allowed; White Hand, character aggressive to a party member → allowed; Yellow Hand, white-skulled stranger → allowed, skulled party member → refused (rule 5); Red Fist → any; area effect skips a filtered actor; field damage not filtered; secure on, Dove, Join Aggression on a member fighting a marked non-aggressor → `PVP_REFUSED {EXPERT_MODE}` and no relation change |
 | PVP-CC-31 | PVP-1, RT-1, WIRE-1 | black-skulled actor selects Red Fist → `REJECTED`; online actor in Red Fist gains a black skull through a committed PVP-1 death transaction → mode Dove before its next input is processed, and the client receives the mode; H → mode fixed at Red Fist |
 | PVP-CC-32 | BLOCK-1 | O, viewer in the owner's party sees the safe variant of the owner's field; the viewer leaves the party → that entry republished as the real variant in the next update; the viewer moves onto a `no_pvp_zone` tile → safe variant again; an owner creates a field during its own post-login immunity → an unrelated viewer receives the safe variant, and the owner's immunity expiring → real variant in the next update; a viewer inside its own post-login immunity receives the real variant of an unrelated owner's field |
 | PVP-CC-33 | WIRE-1, ADMIT-CAP-1 | O, PvP live: the channel scope requires `PVP_V1`; a session that does not negotiate it is refused at admission, reconnect and recovery (ADMIT-0 required-capability check) |
