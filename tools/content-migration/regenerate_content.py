@@ -222,9 +222,48 @@ def document_locators(text: str | None = None) -> list[str]:
     return re.findall(r'\(\s*"([^"]+)",', block.group(1))
 
 
+# The from-scratch materializer chain cannot produce the #1807 monster/spell delta or the D3-7
+# corpse admission, so the package is reproduced from this pinned predecessor (the parent of #1830;
+# the materializer digest-verifies it). Keep in step with g4-canonical-worldproject-package-seed.yml.
+PREDECESSOR_PIN = "d78f0c80e6efe7b5d2fea6dae010eaf236ccd7a1"
+PREDECESSOR_DOCUMENTS = (
+    "project.json",
+    "manifest.json",
+    "content.lock.json",
+    "assets/catalog.json",
+    "definitions/declarations.json",
+    "definitions/reference.json",
+    "editor/author.json",
+    "presentations/bindings.json",
+    "provenance/imports.json",
+    "provenance/sources.json",
+    "worlds/world.json",
+)
+
+
+def export_predecessor(destination: Path) -> None:
+    """Write exactly the pinned predecessor's package documents; tracked content/world is never an input."""
+    if subprocess.run(
+        ["git", "cat-file", "-e", f"{PREDECESSOR_PIN}^{{commit}}"], cwd=ROOT, capture_output=True
+    ).returncode:
+        run(["git", "fetch", "--no-tags", "--depth=1", "origin", PREDECESSOR_PIN])
+    for locator in PREDECESSOR_DOCUMENTS:
+        target = destination / locator
+        target.parent.mkdir(parents=True, exist_ok=True)
+        blob = subprocess.run(
+            ["git", "show", f"{PREDECESSOR_PIN}:content/world/{locator}"],
+            cwd=ROOT,
+            capture_output=True,
+            check=True,
+        ).stdout
+        target.write_bytes(blob)
+
+
 def materialize_world() -> None:
     with tempfile.TemporaryDirectory() as temp:
         output = Path(temp) / "world"
+        predecessor = Path(temp) / "predecessor"
+        export_predecessor(predecessor)
         run(
             [
                 "cargo",
@@ -238,6 +277,8 @@ def materialize_world() -> None:
                 "--",
                 "--output-root",
                 str(output),
+                "--predecessor-root",
+                str(predecessor),
             ]
         )
         produced = sorted(
