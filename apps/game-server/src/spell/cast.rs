@@ -680,7 +680,11 @@ fn cast_resolved(
     for effect in &plan.side_effects {
         match effect {
             ResolvedEffect::RemoveCondition { condition } => {
-                super::actor_conditions::remove_condition(&mut next, condition)?;
+                super::actor_conditions::remove_condition_at(
+                    &mut next,
+                    condition,
+                    context.now.get(),
+                )?;
             }
             ResolvedEffect::ResolvedOther { profile, .. }
                 if qualified.is_some()
@@ -968,6 +972,9 @@ pub(crate) fn prepare_ordinary_owner_cast_with_caster(
         return Err(SpellCastDisposition::Rejected);
     }
     super::check_operational_rules(spell, operational, false).map_err(|e| disposition(&e))?;
+    if spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield" {
+        super::actor_conditions::require_active_mana_shield(&state.conditions, now.get())?;
+    }
     let resolution = if matches!(spell.execution, super::Execution::PartyBuff(_)) {
         super::resolve_party_cast(
             spell,
