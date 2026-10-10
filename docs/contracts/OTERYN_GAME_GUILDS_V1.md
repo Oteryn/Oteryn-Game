@@ -90,7 +90,7 @@ deferred guard) and not only by application code.
 | GI-08 | State moves only `FORMING`→`ACTIVE`, `FORMING`/`ACTIVE`→`DISBANDING`→`DISBANDED`; a guild row is never deleted. | §3.1, §3.4 |
 | GI-09 | `DISBANDED` holds no member, invitation, leadership row, balance, guildhall or open guildhall bid (fail closed; the step retries). | §3.4 |
 | GI-10 | Every guild transaction writes exactly one guild event (§4.4) in the same transaction; a refused or fenced-out command writes none. | §4.4 |
-| GI-11 | Every guild `revision` and the public projection revision advance in the same committed transaction as the change. | PUBLIC-PROJ §2.3 |
+| GI-11 | Every guild `revision` advances in the same committed transaction as the change; a public projection revision advances in that transaction only when a field it projects changes (PUBLIC-PROJ §5). | PUBLIC-PROJ §2.3, §5 |
 
 - **Session-generation fence.** Every player command takes the acting Character's session fence
   and root FOR UPDATE in its transaction (composition rule 2, `GUILD0-LO-01` position 2). A stale
@@ -122,9 +122,11 @@ found ─► FORMING ──(4 vices before formation_deadline)──► ACTIVE
 - **Deadline gate** (`GUILD0-RL-18`): past `formation_deadline` in `FORMING`, or with
   `vice_deficit_since` older than 14 days in `ACTIVE`, no accept or rank change may activate or
   cure the guild (`GUILD_DEADLINE_PASSED`).
-- **Premium** (owner answer G1 a): while `premium_current` reports Premium not activated, no
-  Premium rule applies and the Premium job writes nothing; once activated, founding and every
-  move into levels 1 and 2 require it (`NOT_PREMIUM`), and a lapse keeps the rank.
+- **Premium** (owner answer G1 a, PREMIUM-ACTIVATION-0 §1.2 and §2.2): only `NotActivated`
+  bypasses the rule; then no Premium rule applies and the Premium job writes nothing. Once
+  activated, founding and every move into levels 1 and 2 require `Current`; `NotCurrent`,
+  including an unavailable source or clock, is refused `NOT_PREMIUM` and counts as a deficit for
+  the Premium job. A lapse keeps the rank.
 - **Effect time.** Every committed change applies at once on every Channel (declared difference
   from the manual's logout and server-save rules, GUILD-0 §3.2).
 
@@ -170,7 +172,9 @@ expected guild `revision` (`STALE_REVISION` on mismatch).
 
 Paged per `GUILD0-RL-16`: sections `SUMMARY`, `ROSTER`, `INVITATIONS`, `ACTIVITY`,
 `DISBAND_CLAIMS` (reserved for GUILD-BANK-1) and `PUBLIC` (another guild by name). A list page has
-at most 100 entries of at most 512 encoded bytes and a keyset `next_cursor`; a malformed cursor or
+at most 100 entries of at most 512 encoded bytes each, excluding each entry's field tag and
+length prefix (a page is bounded by 100 × 512 B plus a 1,024 B header for that framing, the cursor
+and the section fields), and a keyset `next_cursor`; a malformed cursor or
 one of another guild or section is `REJECTED`.
 
 | Section | Reader | Contents |
@@ -194,9 +198,11 @@ The client shows, for each visible player character, whether and how it belongs 
   `emblem` (`NONE`, `OWN_GUILD`, `OTHER_GUILD`; GUILD-0 §4.3), and, unless `NONE`, `guild_name`
   and `rank_name` (§12 Q1). `WorldSpatialEntityV1` is unchanged, so its 128-byte bound and every
   existing session without `GUILD_V1` are unaffected.
-- Each badge is at most 96 encoded bytes; one snapshot covers at most the 256 visibility
-  entities (MOVE-RL-11), so at most 24,576 bytes; deltas follow the visibility enter, update and
-  leave sets.
+- Each badge message is at most 96 encoded bytes, excluding its field tag and length prefix; one
+  snapshot covers at most the 256 visibility entities (MOVE-RL-11), so at most 25,600 bytes
+  (256 × 96 B + 1,024 B header for the per-badge tags and length prefixes, 2 B each, and the
+  snapshot's own fields), as `world_spatial_v1.proto` budgets visibility; deltas follow the
+  visibility enter, update and leave sets under the same per-badge bound.
 - **Source.** The Channel runtime derives a badge from the committed membership read, never from
   client data. A committed membership, rank-name or state change makes the World guild owner
   notify each Channel of the World; each Channel refreshes the badges of the affected visible
@@ -209,9 +215,11 @@ The client shows, for each visible player character, whether and how it belongs 
 ### 6.3 Public read model
 
 `PublishGuildV1` and the guild member of `character_profile` follow
-`OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md` §4.4 and §4.2 unchanged. Each guild transaction advances the
-guild's projection revision and the affected members' profile revisions in its transaction
-(GI-11). `DISBANDED` publishes `guild: []`.
+`OTERYN_GAME_PUBLIC_PROJECTIONS_V1.md` §4.4 and §4.2 unchanged. A guild transaction advances the
+`guild` revision only for a change in its §5 row (state, name, ranks, roster, a member's rank),
+and a member's `character_profile` revision only for a join, leave or rank change, in its
+transaction (GI-11). Invite, revoke, decline, set title and set message change no projected
+field and advance no public revision. `DISBANDED` publishes `guild: []`.
 
 ### 6.4 Activity log
 
@@ -241,7 +249,8 @@ under `CHAT0-RL-06`.
 | A World job crashes mid-disband | each step is keyed (guild, step) and idempotent; the next pass resumes; `DISBANDED` refuses while GI-09 does not hold |
 | A late World job | it re-checks under the guild lock; the deadline gate keeps a due guild due |
 | Command replayed after an ambiguous result | the stored outcome by occurrence; another binding is `REJECTED` |
-| Premium seam unavailable or not activated | Premium rules do not apply (G1 a); the Premium job writes nothing |
+| Premium not activated | Premium rules do not apply (G1 a); the Premium job writes nothing |
+| Premium activated, source or clock unavailable | `NotCurrent` (PREMIUM-ACTIVATION-0 §1.2): founding and moves into levels 1 and 2 are `NOT_PREMIUM`; the Premium job counts the deficit; ranks held are kept |
 | Relay node cannot read membership | the guild line is dropped and counted; never delivered on stale data |
 | Badge resolution fails | `NONE` (§6.2) |
 | Public publisher down | Platform keeps its last snapshot; the next snapshot replaces it (PUBLIC-PROJ §2.1) |
@@ -259,7 +268,7 @@ GC-23 to GC-28, GUILD-CHAT-1 GC-29 to GC-31, the public publisher GC-32.
 | GC-03 | found by a Character whose Account leads or vices on another World | `ACCOUNT_HAS_POSITION` |
 | GC-04 | found with a name taken by a live guild of the World | `NAME_TAKEN`; the same name on another World or of a `DISBANDED` guild is `OK` |
 | GC-05 | found with 30 letters or an invalid character | `NAME_INVALID` |
-| GC-06 | found while Premium not activated, then after activation without Premium | `OK`, then `NOT_PREMIUM` |
+| GC-06 | found while Premium not activated, then after activation without Premium, then after activation with the Premium source unavailable | `OK`, then `NOT_PREMIUM`, then `NOT_PREMIUM` |
 | GC-07 | invite by level 3 | `NOT_ALLOWED` |
 | GC-08 | the 501st invitation of a guild; the 51st row for one target | `INVITATION_LIMIT` |
 | GC-09 | accept of an expired invitation | `NOT_INVITED` |
