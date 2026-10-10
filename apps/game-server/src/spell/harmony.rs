@@ -196,6 +196,16 @@ impl MonkState {
         self.next_evaluation = None;
     }
 
+    /// SPELL-D8 §8.2 lethal successor: clear Harmony and automatic/forced Serene.
+    /// The existing respawn owner performs the next initialization evaluation.
+    pub(crate) fn clear_on_death(&mut self) {
+        self.harmony = 0;
+        self.serene = false;
+        self.serene_forced_until = None;
+        self.loaded_forced_micros = 0;
+        self.next_evaluation = None;
+    }
+
     /// Whether the owner may accept a command from the actor.
     pub(crate) fn accept_command(&self) -> Result<(), MonkStateError> {
         self.next_evaluation

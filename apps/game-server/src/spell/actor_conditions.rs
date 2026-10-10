@@ -440,6 +440,36 @@ pub(crate) fn apply_appearance(
     *state = staged;
     Ok(())
 }
+/// Cancel Magic Shield requires an active shield before committing the cast payment.
+pub(crate) fn remove_condition_at(
+    state: &mut PlayerSpellState,
+    name: &str,
+    now_us: u64,
+) -> Result<bool, SpellCastDisposition> {
+    if name == "manashield" {
+        require_active_mana_shield(&state.conditions, now_us)?;
+    }
+    remove_condition(state, name)
+}
+
+/// The same real store predicate is shared by both cast consumers. It neither
+/// removes the condition nor grants current actor or payment authority.
+pub(crate) fn require_active_mana_shield<S: Clone>(
+    store: &crate::ability::condition::ConditionStore<S>,
+    now_us: u64,
+) -> Result<(), SpellCastDisposition> {
+    if !store.accepts_time(now_us) {
+        return rejected();
+    }
+    if store
+        .mana_shield_at(now_us)
+        .is_none_or(|capacity| capacity == 0)
+    {
+        return Err(SpellCastDisposition::TargetIllegal);
+    }
+    Ok(())
+}
+
 pub(crate) fn remove_condition(
     state: &mut PlayerSpellState,
     name: &str,
@@ -455,6 +485,7 @@ pub(crate) fn remove_condition(
         "dazzled" => ConditionType::DamageOverTime(DotElement::Dazzled),
         "cursed" => ConditionType::DamageOverTime(DotElement::Cursed),
         "paralysis" | "paralyze" => ConditionType::Paralysis,
+        "manashield" => ConditionType::ManaShield,
         _ => return rejected(),
     };
     Ok(state.conditions.remove_type(kind))
@@ -515,6 +546,9 @@ fn tick_inner(
 pub(crate) fn clear_on_lifecycle(state: &mut PlayerSpellState) {
     state.field_attack_history.clear_on_lifecycle();
     state.conditions.clear_on_death();
+    if let Some(monk) = state.monk.as_mut() {
+        monk.clear_on_death();
+    }
 }
 
 /// The existing creature-bite vitals owner applies its already qualified damage to the
@@ -603,6 +637,167 @@ mod tests {
         )
         .unwrap()
     }
+    #[test]
+    fn cancel_mana_shield_requires_active_capacity_and_removes_it() {
+        let mut state = actor();
+        apply_combat_change(
+            &mut state,
+            &OwnerCombatChange::ManaShield(ManaShieldState {
+                capacity: 300,
+                expires_ms: 2000,
+            }),
+            0,
+        )
+        .unwrap();
+        let vitals = (state.health, state.mana, state.soul, state.revision);
+        assert_eq!(
+            remove_condition_at(&mut state, "manashield", 1_000_000),
+            Ok(true)
+        );
+        assert_eq!(state.conditions.mana_shield_at(1_000_000), None);
+        assert_eq!(
+            (state.health, state.mana, state.soul, state.revision),
+            vitals
+        );
+        let before = state.clone();
+        assert_eq!(
+            remove_condition_at(&mut state, "manashield", 1_000_000),
+            Err(SpellCastDisposition::TargetIllegal)
+        );
+        assert_eq!(state, before);
+    }
+
+    #[test]
+    fn cancel_mana_shield_refuses_absent_expired_and_depleted_without_mutation() {
+        for scenario in 0..3 {
+            let mut state = actor();
+            if scenario != 0 {
+                apply_combat_change(
+                    &mut state,
+                    &OwnerCombatChange::ManaShield(ManaShieldState {
+                        capacity: 300,
+                        expires_ms: 2000,
+                    }),
+                    0,
+                )
+                .unwrap();
+            }
+            if scenario == 2 {
+                apply_combat_change(
+                    &mut state,
+                    &OwnerCombatChange::ConsumeManaShield {
+                        expected_capacity: 300,
+                        amount: 300,
+                    },
+                    1000,
+                )
+                .unwrap();
+            }
+            let before = state.clone();
+            let now = if scenario == 1 { 2_000_000 } else { 1_000_000 };
+            assert_eq!(
+                remove_condition_at(&mut state, "manashield", now),
+                Err(SpellCastDisposition::TargetIllegal)
+            );
+            assert_eq!(state, before);
+        }
+    }
+
+    #[test]
+    fn cancel_magic_shield_cast_guard_is_atomic_with_payment_and_revision() {
+        use super::super::cast::{CastContext, cast, v1_spell_book};
+        use super::super::{Execution, ManaCost, SpellBook, SpellEffect};
+        use crate::ability::{AbilityOccurrence, RevisionSet};
+        use oteryn_protocol_oteryn::actor_spell::{SpellCastIntent, SpellTarget};
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+        use std::num::NonZeroU32;
+        let mut spell = v1_spell_book()
+            .unwrap()
+            .indexed(NonZeroU32::new(1).unwrap())
+            .unwrap()
+            .clone();
+        // Header-isolated actor test: preserve the real cast/condition/payment
+        // path while source entitlement and content binding qualify separately.
+        spell.authored = None;
+        spell.vocations = std::collections::BTreeSet::from([Vocation::Knight]);
+        spell.premium = false;
+        spell.learning_required = false;
+        spell.needs_target = false;
+        spell.target_or_direction = false;
+        spell.self_target = true;
+        spell.mana = ManaCost::Fixed(17);
+        spell.soul = 3;
+        spell.execution = Execution::Effects(vec![SpellEffect::RemoveCondition {
+            condition: "manashield".into(),
+        }]);
+        let book = SpellBook::new(vec![spell]).unwrap();
+        let intent = SpellCastIntent {
+            spell: NonZeroU32::new(1).unwrap(),
+            target: SpellTarget::None,
+            aim_at_target: false,
+        };
+        for scenario in 0..4 {
+            let mut state = actor();
+            if scenario != 0 {
+                apply_combat_change(
+                    &mut state,
+                    &OwnerCombatChange::ManaShield(ManaShieldState {
+                        capacity: 300,
+                        expires_ms: 2000,
+                    }),
+                    0,
+                )
+                .unwrap();
+            }
+            if scenario == 2 {
+                apply_combat_change(
+                    &mut state,
+                    &OwnerCombatChange::ConsumeManaShield {
+                        expected_capacity: 300,
+                        amount: 300,
+                    },
+                    1000,
+                )
+                .unwrap();
+            }
+            let before = state.clone();
+            let micros = if scenario == 1 { 2_000_000 } else { 1_000_000 };
+            let result = cast(
+                &book,
+                &state,
+                &intent,
+                CastContext {
+                    caster: "actor:cms-test",
+                    owner_scope: "channel:cms-test",
+                    occurrence: AbilityOccurrence::new(
+                        "cms-test",
+                        RevisionSet::new("r", "c", "w", "f", "s").unwrap(),
+                    )
+                    .unwrap(),
+                    now: SemanticTimeMicros::from_micros(micros),
+                    draw: &mut |_, _| panic!("Cancel Magic Shield has no random roll"),
+                },
+            );
+            assert_eq!(state, before);
+            if scenario != 3 {
+                assert_eq!(result, Err(SpellCastDisposition::TargetIllegal));
+            } else {
+                let next = result.unwrap();
+                assert_eq!(next.conditions.mana_shield_at(micros), None);
+                assert_eq!(
+                    (next.health, next.mana, next.soul, next.revision),
+                    (
+                        state.health,
+                        state.mana - 17,
+                        state.soul - 3,
+                        state.revision + 1
+                    )
+                );
+                assert_ne!(next.cooldowns, state.cooldowns);
+            }
+        }
+    }
+
     #[test]
     fn all_qualified_catalog_condition_shapes_convert_to_actual_store_definitions() {
         let catalog: serde_json::Value = serde_json::from_str(include_str!(

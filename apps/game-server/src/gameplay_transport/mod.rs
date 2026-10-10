@@ -1577,6 +1577,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                 }
                 Ok(ExpiredLossReleaseV1::NotExpired { deadline, now }) => {
+                    #[cfg(test)]
+                    monk_save::postgres_tests::record_not_expired();
                     match self.settle_unended(&store, actor, hold).await {
                         UnendedSettle::Lifted => {
                             self.settle_kill_release(kills, ReleaseEnd::Retryable).await;
@@ -4109,6 +4111,10 @@ fn respawn_cell(bytes: &[u8]) -> Option<crate::foundation::MovementLocalPosition
 }
 
 fn unix_seconds() -> Option<i64> {
+    #[cfg(test)]
+    if let Some(now) = monk_save::postgres_tests::host_now() {
+        return Some(now);
+    }
     let elapsed = SystemTime::now().duration_since(UNIX_EPOCH).ok()?;
     i64::try_from(elapsed.as_secs()).ok()
 }
