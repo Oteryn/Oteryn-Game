@@ -18,14 +18,14 @@ design must follow the completed interaction inventory, not the current forms.
 | --- | --- | --- |
 | Basic | Yes | Display controls/action-row visibility work; own-resource bars/arcs now have a vitals renderer behind explicit HUD selections; audio remains pending |
 | Controls | Yes | Movement bindings work; three modifier-only controls and grouped delay intent prepared; input consumers pending |
-| General Hotkeys | Pending | Profile/action table and conflict handling incomplete |
-| Action Bar Hotkeys | Typed nine-row editor | Slot chords and modal/held-key routing work; reference table arrangement incomplete |
-| Custom Hotkeys | Pending | Requires accepted command catalogue, not arbitrary command text |
+| General Hotkeys | Partial: dedicated profile/action table | Add/copy/rename/remove, two chat contexts, search, two bindings and cross-family conflict validation persist; most general-action runtime consumers and automatic character-profile switching remain pending |
+| Action Bar Hotkeys | Dedicated 9 × 50 table | Two chords per slot, migration from 12 slots, modal/held-key routing and both-chord activation work; compiled Windows visual acceptance remains pending |
+| Custom Hotkeys | Partial: spell/object/text editors | All three reference editor routes, six object-use modes, two chat contexts and persistence exist; authoritative live spell/item pickers and runtime command consumers remain pending |
 | Interface | Yes | Language/contrast work; cursor, link-copy warning and expiry intents prepared; consumers pending |
 | HUD | Partial: groups/arcs and only 6 of 35 observed conditions | Native PL/EN reachability, master-dependent editing and six-flag header batch edits verified; complete inventory, ordering and visual acceptance pending; own-health/mana bars/arcs consume real session vitals (live-session visual acceptance pending); names/marks/conditions/order incomplete |
 | Console | Yes | Chat visibility works; timestamp/message filters await chat/event projection |
 | Game Window | Yes | Effect/message rows prepared; target dropdown membership unverified, legacy frame/highlight intent retained |
-| Action Bars | Yes | Three masters/nine independent rows, locks, chords and session action clearing work |
+| Action Bars | Yes | Three masters/nine independent 50-slot rows, locks, two chords per slot and session action clearing work |
 | Shortcuts | Yes, two lists | Add/remove/order edits affect draft only; Apply updates live registry, Cancel discards |
 | Graphics | Yes | Fullscreen/VSync/FPS work; reference arrangement prepared; engine/AA consumers pending |
 | Effects | Yes, lighting + opacity groups | Bounded stored percentages; lighting/effect renderer consumers pending |

@@ -4,6 +4,7 @@
 pub mod action_bar;
 pub mod cyclopedia;
 pub mod device_store;
+pub mod hotkeys;
 pub mod input;
 pub mod layout;
 pub mod minimap;

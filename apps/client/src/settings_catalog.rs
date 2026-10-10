@@ -111,7 +111,14 @@ pub fn validate_future_preferences(
             "invalid future preferences",
         )
     };
-    if values.len() > 256 {
+    // Bound the map by the finite catalogue. Expanding HUD conditions must not
+    // make an otherwise valid complete set of preferences impossible to save.
+    // Unknown keys and the existing serialized byte limit are still rejected below.
+    let catalogue_capacity: usize = SETTINGS_SECTIONS
+        .iter()
+        .map(|section| section.options.len())
+        .sum();
+    if values.len() > catalogue_capacity {
         return Err(invalid());
     }
     for (key, value) in values {
@@ -356,6 +363,67 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("condition_agony_bar", "Agonia: bar", "Agony: bar", Toggle, "actor/condition projection"),
         p!("condition_powerless_hud", "Bezsilność: hud", "Powerless: hud", Toggle, "actor/condition projection"),
         p!("condition_powerless_bar", "Bezsilność: bar", "Powerless: bar", Toggle, "actor/condition projection"),
+        p!("condition_rooted_hud", "Unieruchomienie: hud", "Rooted: hud", Toggle, "actor/condition projection"),
+        p!("condition_rooted_bar", "Unieruchomienie: bar", "Rooted: bar", Toggle, "actor/condition projection"),
+        p!("condition_feared_hud", "Strach: hud", "Feared: hud", Toggle, "actor/condition projection"),
+        p!("condition_feared_bar", "Strach: bar", "Feared: bar", Toggle, "actor/condition projection"),
+        p!("condition_drunk_hud", "Upicie: hud", "Drunk: hud", Toggle, "actor/condition projection"),
+        p!("condition_drunk_bar", "Upicie: bar", "Drunk: bar", Toggle, "actor/condition projection"),
+        p!("condition_magic_shield_hud", "Tarcza magiczna: hud", "Magic Shield: hud", Toggle, "actor/condition projection"),
+        p!("condition_magic_shield_bar", "Tarcza magiczna: bar", "Magic Shield: bar", Toggle, "actor/condition projection"),
+        p!("condition_monk_virtue_hud", "Bonus cnót mnicha: hud", "Monk’s Virtue bonus: hud", Toggle, "actor/condition projection"),
+        p!("condition_monk_virtue_bar", "Bonus cnót mnicha: bar", "Monk’s Virtue bonus: bar", Toggle, "actor/condition projection"),
+        p!("condition_slowed_hud", "Spowolnienie: hud", "Slowed: hud", Toggle, "actor/condition projection"),
+        p!("condition_slowed_bar", "Spowolnienie: bar", "Slowed: bar", Toggle, "actor/condition projection"),
+        p!("condition_haste_hud", "Przyspieszenie: hud", "Haste: hud", Toggle, "actor/condition projection"),
+        p!("condition_haste_bar", "Przyspieszenie: bar", "Haste: bar", Toggle, "actor/condition projection"),
+        p!("condition_logout_block_hud", "Blokada wylogowania: hud", "Logout Block: hud", Toggle, "actor/condition projection"),
+        p!("condition_logout_block_bar", "Blokada wylogowania: bar", "Logout Block: bar", Toggle, "actor/condition projection"),
+        p!("condition_drowning_hud", "Tonięcie: hud", "Drowning: hud", Toggle, "actor/condition projection"),
+        p!("condition_drowning_bar", "Tonięcie: bar", "Drowning: bar", Toggle, "actor/condition projection"),
+        p!("condition_freezing_hud", "Zamarzanie: hud", "Freezing: hud", Toggle, "actor/condition projection"),
+        p!("condition_freezing_bar", "Zamarzanie: bar", "Freezing: bar", Toggle, "actor/condition projection"),
+        p!("condition_dazzled_hud", "Oślepienie: hud", "Dazzled: hud", Toggle, "actor/condition projection"),
+        p!("condition_dazzled_bar", "Oślepienie: bar", "Dazzled: bar", Toggle, "actor/condition projection"),
+        p!("condition_cursed_hud", "Klątwa: hud", "Cursed: hud", Toggle, "actor/condition projection"),
+        p!("condition_cursed_bar", "Klątwa: bar", "Cursed: bar", Toggle, "actor/condition projection"),
+        p!("condition_strengthened_hud", "Wzmocnienie: hud", "Strengthened: hud", Toggle, "actor/condition projection"),
+        p!("condition_strengthened_bar", "Wzmocnienie: bar", "Strengthened: bar", Toggle, "actor/condition projection"),
+        p!("condition_pz_block_hud", "Blokada strefy ochronnej: hud", "Protection Zone Block: hud", Toggle, "actor/condition projection"),
+        p!("condition_pz_block_bar", "Blokada strefy ochronnej: bar", "Protection Zone Block: bar", Toggle, "actor/condition projection"),
+        p!("condition_in_pz_hud", "W strefie ochronnej: hud", "In Protection Zone: hud", Toggle, "actor/condition projection"),
+        p!("condition_in_pz_bar", "W strefie ochronnej: bar", "In Protection Zone: bar", Toggle, "actor/condition projection"),
+        p!("condition_resting_hud", "Strefa odpoczynku: hud", "Resting Area: hud", Toggle, "actor/condition projection"),
+        p!("condition_resting_bar", "Strefa odpoczynku: bar", "Resting Area: bar", Toggle, "actor/condition projection"),
+        p!("condition_lesser_hex_hud", "Słabszy urok: hud", "Lesser Hex: hud", Toggle, "actor/condition projection"),
+        p!("condition_lesser_hex_bar", "Słabszy urok: bar", "Lesser Hex: bar", Toggle, "actor/condition projection"),
+        p!("condition_intense_hex_hud", "Silny urok: hud", "Intense Hex: hud", Toggle, "actor/condition projection"),
+        p!("condition_intense_hex_bar", "Silny urok: bar", "Intense Hex: bar", Toggle, "actor/condition projection"),
+        p!("condition_greater_hex_hud", "Potężny urok: hud", "Greater Hex: hud", Toggle, "actor/condition projection"),
+        p!("condition_greater_hex_bar", "Potężny urok: bar", "Greater Hex: bar", Toggle, "actor/condition projection"),
+        p!("condition_goshnar_taint_hud", "Skaza Goshnara: hud", "Goshnar’s Taint: hud", Toggle, "actor/condition projection"),
+        p!("condition_goshnar_taint_bar", "Skaza Goshnara: bar", "Goshnar’s Taint: bar", Toggle, "actor/condition projection"),
+        p!("condition_bakragore_taint_hud", "Skaza Bakragore: hud", "Bakragore’s Taint: hud", Toggle, "actor/condition projection"),
+        p!("condition_bakragore_taint_bar", "Skaza Bakragore: bar", "Bakragore’s Taint: bar", Toggle, "actor/condition projection"),
+        p!("condition_yellow_skull_hud", "Żółta czaszka: hud", "Yellow Skull: hud", Toggle, "actor/condition projection"),
+        p!("condition_yellow_skull_bar", "Żółta czaszka: bar", "Yellow Skull: bar", Toggle, "actor/condition projection"),
+        p!("condition_party_mode_hud", "Tryb drużyny: hud", "Party Mode: hud", Toggle, "actor/condition projection"),
+        p!("condition_party_mode_bar", "Tryb drużyny: bar", "Party Mode: bar", Toggle, "actor/condition projection"),
+        p!("condition_white_skull_hud", "Biała czaszka: hud", "White Skull: hud", Toggle, "actor/condition projection"),
+        p!("condition_white_skull_bar", "Biała czaszka: bar", "White Skull: bar", Toggle, "actor/condition projection"),
+        p!("condition_red_skull_hud", "Czerwona czaszka: hud", "Red Skull: hud", Toggle, "actor/condition projection"),
+        p!("condition_red_skull_bar", "Czerwona czaszka: bar", "Red Skull: bar", Toggle, "actor/condition projection"),
+        p!("condition_black_skull_hud", "Czarna czaszka: hud", "Black Skull: hud", Toggle, "actor/condition projection"),
+        p!("condition_black_skull_bar", "Czarna czaszka: bar", "Black Skull: bar", Toggle, "actor/condition projection"),
+        p!("condition_orange_skull_hud", "Pomarańczowa czaszka: hud", "Orange Skull: hud", Toggle, "actor/condition projection"),
+        p!("condition_orange_skull_bar", "Pomarańczowa czaszka: bar", "Orange Skull: bar", Toggle, "actor/condition projection"),
+        p!("condition_guild_war_hud", "Wojna gildii: hud", "In Guild War: hud", Toggle, "actor/condition projection"),
+        p!("condition_guild_war_bar", "Wojna gildii: bar", "In Guild War: bar", Toggle, "actor/condition projection"),
+        p!("condition_hungry_hud", "Głód: hud", "Hungry: hud", Toggle, "actor/condition projection"),
+        p!("condition_hungry_bar", "Głód: bar", "Hungry: bar", Toggle, "actor/condition projection"),
+        p!("conditions_hud_enabled", "Stany na HUD", "Conditions in HUD", Toggle, "actor/condition projection"),
+        p!("conditions_bar_enabled", "Stany na pasku", "Conditions in bar", Toggle, "actor/condition projection"),
+        p!("condition_order", "Kolejność stanów", "Condition order", Text { max_bytes: 1024 }, "actor/condition projection"),
         p!("hud.owner_name", "Nazwa własnej postaci", "Own character name", Toggle, "actor HUD"),
         p!("hud.other_names", "Nazwy innych postaci i stworzeń", "Other actor names", Toggle, "actor HUD"),
         p!("hud.owner_health", "Własny pasek zdrowia", "Own health bar", Toggle, "actor HUD"),

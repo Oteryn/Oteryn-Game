@@ -7,6 +7,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// Bound hostile or corrupt local input while leaving room for all 32 complete
+/// hotkey profiles, their two bindings per action, and custom actions.
+const MAX_SETTINGS_BYTES: u64 = 8 * 1024 * 1024;
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ClientSettings {
@@ -21,6 +25,9 @@ pub struct ClientSettings {
     pub background_fps: u16,
     pub ui_scale: f32,
     pub high_contrast: bool,
+    /// Background transparency of the settings window, in percent.
+    #[serde(default = "default_settings_transparency")]
+    pub settings_transparency: u8,
     pub reduced_motion: bool,
     /// North, east, south, west; stable physical key codes.
     pub movement_keys: [u16; 4],
@@ -35,11 +42,17 @@ pub struct ClientSettings {
     pub show_minimap: bool,
     #[serde(default)]
     pub action_bar: crate::action_bar::ActionBarPreferences,
+    #[serde(default)]
+    pub hotkeys: crate::hotkeys::HotkeyPreferences,
     #[serde(default = "default_panel_shortcuts")]
     pub panel_shortcuts: Vec<String>,
     #[serde(default)]
     pub future_preferences:
         std::collections::BTreeMap<String, crate::settings_catalog::FutureValue>,
+}
+
+const fn default_settings_transparency() -> u8 {
+    10
 }
 
 const fn enabled() -> bool {
@@ -63,6 +76,7 @@ impl Default for ClientSettings {
             background_fps: 30,
             ui_scale: 1.0,
             high_contrast: false,
+            settings_transparency: default_settings_transparency(),
             reduced_motion: false,
             movement_keys: [82, 79, 81, 80],
             click_to_walk: true,
@@ -71,6 +85,7 @@ impl Default for ClientSettings {
             show_chat: true,
             show_minimap: true,
             action_bar: crate::action_bar::ActionBarPreferences::default(),
+            hotkeys: crate::hotkeys::HotkeyPreferences::default(),
             panel_shortcuts: default_panel_shortcuts(),
             future_preferences: std::collections::BTreeMap::new(),
         }
@@ -148,6 +163,31 @@ impl ClientSettings {
         Ok(())
     }
 
+    pub(crate) fn reconcile_active_hotkey_profile(&mut self) -> io::Result<()> {
+        let active = self
+            .hotkeys
+            .active_mut()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing hotkey profile"))?;
+        active.action_bar = self.action_bar.clone();
+        Ok(())
+    }
+
+    pub fn select_hotkey_profile(&mut self, index: usize) -> io::Result<()> {
+        if index >= self.hotkeys.profiles.len() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Unknown hotkey profile",
+            ));
+        }
+        self.hotkeys
+            .active_mut()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing hotkey profile"))?
+            .action_bar = self.action_bar.clone();
+        self.hotkeys.selected = index;
+        self.action_bar = self.hotkeys.profiles[index].action_bar.clone();
+        Ok(())
+    }
+
     pub fn validate(&self) -> io::Result<()> {
         let keys_valid = self
             .movement_keys
@@ -165,6 +205,7 @@ impl ClientSettings {
             || !(5..=60).contains(&self.background_fps)
             || !self.ui_scale.is_finite()
             || !(0.8..=1.8).contains(&self.ui_scale)
+            || self.settings_transparency > 70
             || !keys_valid
         {
             return Err(io::Error::new(
@@ -173,6 +214,7 @@ impl ClientSettings {
             ));
         }
         self.action_bar.validate(&self.movement_keys)?;
+        self.hotkeys.validate(&self.movement_keys)?;
         crate::panel_catalog::ShortcutOrder::from_saved(&self.panel_shortcuts)?;
         crate::settings_catalog::validate_future_preferences(&self.future_preferences)
     }
@@ -189,7 +231,7 @@ impl ClientSettings {
     }
 
     pub fn load(path: &Path) -> io::Result<Self> {
-        if fs::metadata(path)?.len() > 32768 {
+        if fs::metadata(path)?.len() > MAX_SETTINGS_BYTES {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "Preferences too large",
@@ -198,6 +240,7 @@ impl ClientSettings {
         let mut settings: Self = serde_json::from_slice(&fs::read(path)?)?;
         settings.migrate_legacy_action_rows()?;
         settings.migrate_legacy_action_edge_masters()?;
+        settings.reconcile_active_hotkey_profile()?;
         settings.validate()?;
         Ok(settings)
     }
@@ -208,8 +251,10 @@ impl ClientSettings {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
-        let bytes = serde_json::to_vec(self)?;
-        if bytes.len() > 32768 {
+        let mut persisted = self.clone();
+        persisted.reconcile_active_hotkey_profile()?;
+        let bytes = serde_json::to_vec(&persisted)?;
+        if bytes.len() as u64 > MAX_SETTINGS_BYTES {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "Client preferences exceed their size bound",
@@ -248,6 +293,26 @@ impl ClientSettings {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn settings_transparency_migrates_and_round_trips() -> Result<(), Box<dyn std::error::Error>> {
+        let mut value = serde_json::to_value(ClientSettings::default())?;
+        value
+            .as_object_mut()
+            .ok_or("settings object")?
+            .remove("settings_transparency");
+        let mut settings: ClientSettings = serde_json::from_value(value)?;
+        assert_eq!(settings.settings_transparency, 10);
+        for transparency in [0, 10, 70] {
+            settings.settings_transparency = transparency;
+            settings.validate()?;
+            let restored: ClientSettings = serde_json::from_slice(&serde_json::to_vec(&settings)?)?;
+            assert_eq!(restored, settings);
+        }
+        settings.settings_transparency = 71;
+        assert!(settings.validate().is_err());
+        Ok(())
+    }
 
     #[test]
     fn invalid_preferences_and_duplicate_bindings_are_rejected() {
@@ -502,10 +567,11 @@ mod tests {
         migrated.save(&path)?;
         assert_eq!(ClientSettings::load(&path)?, migrated);
         let saved = fs::read(&path)?;
-        assert!(saved.len() <= 32768);
+        assert!(saved.len() as u64 <= MAX_SETTINGS_BYTES);
         assert!(!String::from_utf8(saved)?.contains("bars.bottom_visible"));
         let mut reenabled = migrated.clone();
         reenabled.action_bar.edge_enabled[0] = true;
+        reenabled.reconcile_active_hotkey_profile()?;
         assert!(reenabled.action_bar.row_is_visible(0));
         assert!(!reenabled.action_bar.row_is_visible(1));
         assert!(reenabled.action_bar.row_is_visible(2));
@@ -539,7 +605,7 @@ mod tests {
     fn expanded_chords_and_all_configurable_future_choices_fit_existing_file_bounds()
     -> Result<(), Box<dyn std::error::Error>> {
         use crate::{
-            action_bar::{ACTION_BAR_ROWS, SlotShortcut},
+            action_bar::{ACTION_BAR_ROWS, ACTION_BAR_SLOTS, SlotShortcut},
             settings_catalog::{
                 FutureValue, Implementation, OptionKind, SETTINGS_SECTIONS, ShortcutBinding,
             },
@@ -555,7 +621,7 @@ mod tests {
                 .ok_or("missing action row")?;
             row.visible = true;
             row.shortcuts = std::array::from_fn(|slot| {
-                let index = row_index * 12 + slot;
+                let index = row_index * ACTION_BAR_SLOTS + slot;
                 Some(SlotShortcut {
                     key: 4 + (index % 36) as u16,
                     modifiers: (index / 36) as u8,
@@ -601,7 +667,7 @@ mod tests {
         settings.validate()?;
         let normal_bytes = serde_json::to_vec(&settings)?.len();
         assert!(
-            normal_bytes <= 32768,
+            normal_bytes as u64 <= MAX_SETTINGS_BYTES,
             "normal complete preferences are {normal_bytes} bytes"
         );
         // Also cover every text field at its established ASCII byte limit.
@@ -620,7 +686,7 @@ mod tests {
         settings.validate()?;
         let max_text_bytes = serde_json::to_vec(&settings)?.len();
         assert!(
-            max_text_bytes <= 32768,
+            max_text_bytes as u64 <= MAX_SETTINGS_BYTES,
             "complete preferences at text limits are {max_text_bytes} bytes"
         );
         for value in settings.future_preferences.values_mut() {
@@ -632,17 +698,19 @@ mod tests {
         settings.validate()?;
         let escaped_text_bytes = serde_json::to_vec(&settings)?.len();
         assert!(
-            escaped_text_bytes <= 32768,
+            escaped_text_bytes as u64 <= MAX_SETTINGS_BYTES,
             "escaped text preferences are {escaped_text_bytes} bytes"
         );
         eprintln!(
-            "complete preferences: {} future choices, 108 chords; normal={normal_bytes} bytes, max_ascii_text={max_text_bytes} bytes, escaped_text={escaped_text_bytes} bytes",
-            settings.future_preferences.len()
+            "complete preferences: {} future choices, {} chords; normal={normal_bytes} bytes, max_ascii_text={max_text_bytes} bytes, escaped_text={escaped_text_bytes} bytes",
+            settings.future_preferences.len(),
+            ACTION_BAR_ROWS * ACTION_BAR_SLOTS,
         );
         let path = std::env::temp_dir().join(format!(
             "oteryn-expanded-preferences-{}.json",
             std::process::id()
         ));
+        settings.reconcile_active_hotkey_profile()?;
         settings.save(&path)?;
         assert_eq!(ClientSettings::load(&path)?, settings);
         fs::remove_file(path)?;

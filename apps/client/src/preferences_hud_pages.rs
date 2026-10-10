@@ -3,31 +3,50 @@ use super::{boxed, percent, reference_option, row};
 use oteryn_client::settings::ClientSettings;
 use oteryn_client::settings_catalog::FutureValue;
 
-const CONDITIONS: [(&str, [&str; 2]); 6] = [
+const CONDITIONS: [(&str, [&str; 2]); 35] = [
     ("poison", ["Zatrucie", "Poisoned"]),
     ("burning", ["Płonięcie", "Burning"]),
     ("electric", ["Porażenie", "Electrified"]),
     ("bleeding", ["Krwawienie", "Bleeding"]),
     ("agony", ["Agonia", "Agony"]),
     ("powerless", ["Bezsilność", "Powerless"]),
+    ("rooted", ["Unieruchomienie", "Rooted"]),
+    ("feared", ["Strach", "Feared"]),
+    ("drunk", ["Upicie", "Drunk"]),
+    ("magic_shield", ["Tarcza magiczna", "Magic Shield"]),
+    ("monk_virtue", ["Bonus cnót mnicha", "Monk’s Virtue bonus"]),
+    ("slowed", ["Spowolnienie", "Slowed"]),
+    ("haste", ["Przyspieszenie", "Haste"]),
+    ("logout_block", ["Blokada wylogowania", "Logout Block"]),
+    ("drowning", ["Tonięcie", "Drowning"]),
+    ("freezing", ["Zamarzanie", "Freezing"]),
+    ("dazzled", ["Oślepienie", "Dazzled"]),
+    ("cursed", ["Klątwa", "Cursed"]),
+    ("strengthened", ["Wzmocnienie", "Strengthened"]),
+    (
+        "pz_block",
+        ["Blokada strefy ochronnej", "Protection Zone Block"],
+    ),
+    ("in_pz", ["W strefie ochronnej", "In Protection Zone"]),
+    ("resting", ["Strefa odpoczynku", "Resting Area"]),
+    ("lesser_hex", ["Słabszy urok", "Lesser Hex"]),
+    ("intense_hex", ["Silny urok", "Intense Hex"]),
+    ("greater_hex", ["Potężny urok", "Greater Hex"]),
+    ("goshnar_taint", ["Skaza Goshnara", "Goshnar’s Taint"]),
+    ("bakragore_taint", ["Skaza Bakragore", "Bakragore’s Taint"]),
+    ("yellow_skull", ["Żółta czaszka", "Yellow Skull"]),
+    ("party_mode", ["Tryb drużyny", "Party Mode"]),
+    ("white_skull", ["Biała czaszka", "White Skull"]),
+    ("red_skull", ["Czerwona czaszka", "Red Skull"]),
+    ("black_skull", ["Czarna czaszka", "Black Skull"]),
+    ("orange_skull", ["Pomarańczowa czaszka", "Orange Skull"]),
+    ("guild_war", ["Wojna gildii", "In Guild War"]),
+    ("hungry", ["Głód", "Hungry"]),
 ];
 
 pub(super) fn show(ui: &mut egui::Ui, draft: &mut ClientSettings, section: &str, en: bool) -> bool {
     match section {
-        "hud" => {
-            ui.scope(|ui| {
-                ui.spacing_mut().interact_size.y = 18.0;
-                ui.spacing_mut().item_spacing = egui::vec2(8.0, 1.0);
-                ui.spacing_mut().icon_width = 14.0;
-                ui.spacing_mut().icon_width_inner = 9.0;
-                for text in [egui::TextStyle::Body, egui::TextStyle::Button] {
-                    ui.style_mut()
-                        .text_styles
-                        .insert(text, egui::FontId::proportional(13.0));
-                }
-                hud(ui, draft, en);
-            });
-        }
+        "hud" => hud(ui, draft, en),
         "miscellaneous" => miscellaneous(ui, draft, en),
         "screenshots" => screenshots(ui, draft, en),
         _ => return false,
@@ -35,262 +54,331 @@ pub(super) fn show(ui: &mut egui::Ui, draft: &mut ClientSettings, section: &str,
     true
 }
 
-fn hud_frame(ui: &mut egui::Ui, body: impl FnOnce(&mut egui::Ui)) {
+fn hud_card(
+    ui: &mut egui::Ui,
+    draft: &mut ClientSettings,
+    id: &str,
+    labels: [&str; 2],
+    en: bool,
+    body: impl FnOnce(&mut egui::Ui, &mut ClientSettings),
+) {
     egui::Frame::new()
-        .fill(ui.visuals().extreme_bg_color)
-        .stroke(ui.visuals().window_stroke)
-        .corner_radius(5.0)
-        .inner_margin(6.0)
+        .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(58, 61, 61)))
+        .corner_radius(4.0)
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
-            body(ui);
+            egui::Frame::new()
+                .fill(egui::Color32::from_rgba_unmultiplied(35, 39, 42, 160))
+                .inner_margin(egui::Margin::symmetric(12, 5))
+                .show(ui, |ui| {
+                    ui.set_width(ui.available_width());
+                    reference_option(ui, draft, "hud", id, labels, en);
+                });
+            egui::Frame::new()
+                .inner_margin(egui::Margin::symmetric(12, 10))
+                .show(ui, |ui| {
+                    ui.set_width(ui.available_width());
+                    body(ui, draft);
+                });
         });
-    ui.add_space(5.0);
+    ui.add_space(8.0);
 }
 
 fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
-    ui.label(
-        egui::RichText::new(if en {
-            "HUD and indicators"
-        } else {
-            "HUD i wskaźniki"
-        })
-        .size(21.0)
-        .color(ui.visuals().text_color()),
-    );
-    ui.add_space(4.0);
-    hud_frame(ui, |ui| {
-        let top = ui.cursor().top();
-        let divider = ui.max_rect().center().x;
-        ui.columns(2, |columns| {
-            reference_option(
-                &mut columns[0],
-                draft,
-                "hud",
-                "hud.player_enabled",
-                ["HUD własnej postaci", "Show HUD for Own Character"],
-                en,
-            );
-            dependents(
-                &mut columns[0],
-                enabled(draft, "hud.player_enabled"),
-                |ui| {
-                    for (id, labels) in [
-                        ("hud.resource_bars", ["Paski zasobów", "Show Bars"]),
-                        ("hud.owner_name", ["Nazwa", "Show Name"]),
-                        ("hud.owner_health", ["Zdrowie", "Show Health"]),
-                        ("hud.owner_mana", ["Mana", "Show Mana"]),
-                        ("show_harmony", ["Harmonia", "Show Harmony"]),
-                    ] {
-                        reference_option(ui, draft, "hud", id, labels, en);
-                    }
-                    dependents(ui, enabled(draft, "show_harmony"), |ui| {
-                        let key = "hud.harmony_position";
-                        let stored = draft.future_preferences.get(key).cloned();
-                        for (id, labels) in [
-                            ("health", ["Obok łuku zdrowia", "next to Health Arc"]),
-                            ("mana", ["Obok łuku many", "next to Mana Arc"]),
+    let tr = |pl, en_| if en { en_ } else { pl };
+    ui.columns(2, |columns| {
+        hud_card(
+            &mut columns[0],
+            draft,
+            "hud.player_enabled",
+            ["Własna postać", "Own character"],
+            en,
+            |ui, draft| {
+                ui.add_enabled_ui(enabled(draft, "hud.player_enabled"), |ui| {
+                    ui.columns(2, |cols| {
+                        for (column, id, labels) in [
+                            (0, "hud.resource_bars", ["Paski zasobów", "Show Bars"]),
+                            (1, "hud.owner_name", ["Nazwa", "Show Name"]),
+                            (0, "hud.owner_health", ["Zdrowie", "Show Health"]),
+                            (1, "hud.owner_mana", ["Mana", "Show Mana"]),
+                            (0, "show_harmony", ["Harmonia", "Show Harmony"]),
+                            (1, "hud.marks", ["Znaczniki", "Show Marks"]),
                         ] {
-                            let selected =
-                                matches!(&stored, Some(FutureValue::Choice(value)) if value == id);
-                            if ui.radio(selected, labels[usize::from(en)]).clicked() {
-                                draft
-                                    .future_preferences
-                                    .insert(key.into(), FutureValue::Choice(id.into()));
-                            }
+                            reference_option(&mut cols[column], draft, "hud", id, labels, en);
                         }
                     });
-                    reference_option(
-                        ui,
-                        draft,
-                        "hud",
-                        "hud.marks",
-                        ["Znaczniki", "Show Marks"],
-                        en,
-                    );
-                },
-            );
-            reference_option(
-                &mut columns[1],
-                draft,
-                "hud",
-                "hud.creatures_enabled",
-                ["HUD innych stworzeń", "Show HUD for Other Creatures"],
-                en,
-            );
-            dependents(
-                &mut columns[1],
-                enabled(draft, "hud.creatures_enabled"),
-                |ui| {
-                    for (id, labels) in [
-                        ("hud.other_names", ["Nazwa", "Show Name"]),
-                        ("hud.other_health", ["Zdrowie", "Show Health"]),
-                        ("other_marks", ["Znaczniki", "Show Marks"]),
-                        ("hud.npc_icons", ["Ikony NPC", "Show NPC Icons"]),
-                    ] {
-                        reference_option(ui, draft, "hud", id, labels, en);
-                    }
-                },
-            );
-        });
-        ui.painter().vline(
-            divider,
-            top..=ui.min_rect().bottom(),
-            ui.visuals().widgets.noninteractive.bg_stroke,
-        );
-    });
-    hud_frame(ui, |ui| {
-        ui.columns(2, |columns| {
-            reference_option(
-                &mut columns[0],
-                draft,
-                "hud",
-                "hud.arcs",
-                ["Pokaż łuki", "Show Arcs"],
-                en,
-            );
-            // Default/Small/Large verified in the private optionsmenu_hud_arc_size translations.
-            let arcs_enabled = enabled(draft, "hud.arcs");
-            dependents(&mut columns[0], arcs_enabled, |ui| {
-                reference_option(ui, draft, "hud", "arc_size_preset", ["", ""], en);
-            });
-            columns[1].add_enabled_ui(arcs_enabled, |ui| {
-                percent(
-                    ui,
-                    draft,
-                    "hud",
-                    "hud.arc_distance",
-                    ["Odległość:", "Distance:"],
-                    en,
-                );
-                percent(
-                    ui,
-                    draft,
-                    "hud",
-                    "hud.arc_opacity",
-                    ["Widoczność:", "Opacity:"],
-                    en,
-                );
-            });
-        });
-    });
-    hud_frame(ui, |ui| {
-        let widths = [
-            ui.available_width() * 0.48,
-            ui.available_width() * 0.25,
-            ui.available_width() * 0.27,
-        ];
-        let row_height = 19.0;
-        let cell = |ui: &mut egui::Ui, column: usize, draw: &mut dyn FnMut(&mut egui::Ui)| {
-            ui.allocate_ui_with_layout(
-                egui::vec2((widths[column] - 3.0).max(1.0), row_height),
-                if column == 0 {
-                    egui::Layout::left_to_right(egui::Align::Center)
-                } else {
-                    egui::Layout::right_to_left(egui::Align::Center)
-                },
-                |ui| {
-                    ui.set_min_size(egui::vec2((widths[column] - 3.0).max(1.0), row_height));
-                    draw(ui);
-                },
-            );
-        };
-        ui.horizontal(|ui| {
-            cell(ui, 0, &mut |ui| {
-                ui.label(if en {
-                    "Special Condition"
-                } else {
-                    "Stan postaci"
-                });
-            });
-            cell(ui, 1, &mut |ui| {
-                condition_column_toggle(ui, draft, "hud", en);
-                ui.label(if en { "Show in HUD" } else { "Pokaż w HUD" });
-            });
-            cell(ui, 2, &mut |ui| {
-                condition_column_toggle(ui, draft, "bar", en);
-                ui.label(if en { "Show in Bar" } else { "Pokaż na pasku" });
-            });
-        });
-        for (index, (id, labels)) in CONDITIONS.into_iter().enumerate() {
-            ui.horizontal(|ui| {
-                if index % 2 == 0 {
-                    let rect = egui::Rect::from_min_size(
-                        ui.cursor().min,
-                        egui::vec2(ui.available_width(), row_height),
-                    );
-                    ui.painter()
-                        .rect_filled(rect, 0.0, ui.visuals().faint_bg_color);
-                }
-                cell(ui, 0, &mut |ui| {
-                    ui.label(labels[usize::from(en)]);
-                });
-                for (column, where_) in [(1, "hud"), (2, "bar")] {
-                    cell(ui, column, &mut |ui| {
+                    ui.add_enabled_ui(enabled(draft, "show_harmony"), |ui| {
                         reference_option(
                             ui,
                             draft,
                             "hud",
-                            &format!("condition_{id}_{where_}"),
-                            ["", ""],
+                            "harmony_position",
+                            ["Harmonia obok", "Harmony beside"],
                             en,
                         );
                     });
-                }
+                });
+            },
+        );
+        hud_card(
+            &mut columns[1],
+            draft,
+            "hud.creatures_enabled",
+            ["Inne stworzenia", "Other creatures"],
+            en,
+            |ui, draft| {
+                ui.add_enabled_ui(enabled(draft, "hud.creatures_enabled"), |ui| {
+                    ui.columns(2, |cols| {
+                        for (column, id, labels) in [
+                            (0, "hud.other_names", ["Nazwa", "Show Name"]),
+                            (1, "hud.other_health", ["Zdrowie", "Show Health"]),
+                            (0, "other_marks", ["Znaczniki", "Show Marks"]),
+                            (1, "hud.npc_icons", ["Ikony NPC", "Show NPC Icons"]),
+                        ] {
+                            reference_option(&mut cols[column], draft, "hud", id, labels, en);
+                        }
+                    });
+                });
+                ui.add_space(8.0);
+                ui.weak(tr(
+                    "Postacie, potwory i NPC widoczne na ekranie.",
+                    "Characters, monsters and NPCs on screen.",
+                ));
+            },
+        );
+    });
+    hud_card(
+        ui,
+        draft,
+        "hud.arcs",
+        ["Łuki zasobów", "Resource arcs"],
+        en,
+        |ui, draft| {
+            let active = enabled(draft, "hud.arcs") || enabled(draft, "conditions_hud_enabled");
+            ui.add_enabled_ui(active, |ui| {
+                ui.columns(3, |cols| {
+                    reference_option(
+                        &mut cols[0],
+                        draft,
+                        "hud",
+                        "arc_size_preset",
+                        ["Rozmiar", "Size"],
+                        en,
+                    );
+                    percent(
+                        &mut cols[1],
+                        draft,
+                        "hud",
+                        "hud.arc_distance",
+                        ["Odległość:", "Distance:"],
+                        en,
+                    );
+                    percent(
+                        &mut cols[2],
+                        draft,
+                        "hud",
+                        "hud.arc_opacity",
+                        ["Krycie:", "Opacity:"],
+                        en,
+                    );
+                });
             });
-        }
+        },
+    );
+    boxed(
+        ui,
+        tr("Stany specjalne · 35", "Special conditions · 35"),
+        |ui| {
+            let selection_id = egui::Id::new("selected-hud-condition");
+            let mut selected = ui
+                .ctx()
+                .data(|d| d.get_temp::<String>(selection_id))
+                .unwrap_or_else(|| "poison".into());
+            let mut order: Vec<&str> = match draft.future_preferences.get("hud.condition_order") {
+                Some(FutureValue::Text(text)) => text
+                    .split(',')
+                    .filter(|id| CONDITIONS.iter().any(|(known, _)| known == id))
+                    .collect(),
+                _ => Vec::new(),
+            };
+            let mut unique = Vec::new();
+            for id in order.drain(..).chain(CONDITIONS.iter().map(|(id, _)| *id)) {
+                if !unique.contains(&id) {
+                    unique.push(id);
+                }
+            }
+            let mut order: Vec<String> = unique.into_iter().map(str::to_owned).collect();
+            let table_width = (ui.available_width() - 44.0).max(100.0);
+            let col_width = table_width * 0.25;
+            let row = |ui: &mut egui::Ui,
+                       label: &str,
+                       draft: &mut ClientSettings,
+                       id: Option<&str>,
+                       selected: &mut String| {
+                ui.horizontal(|ui| {
+                    ui.allocate_ui_with_layout(
+                        egui::vec2(table_width * 0.5 - 16.0, 28.0),
+                        egui::Layout::left_to_right(egui::Align::Center),
+                        |ui| {
+                            ui.set_min_width(table_width * 0.5 - 16.0);
+                            if let Some(id) = id {
+                                if ui.selectable_label(selected == id, label).clicked() {
+                                    *selected = id.into();
+                                }
+                            } else {
+                                ui.label(label);
+                            }
+                        },
+                    );
+                    for where_ in ["hud", "bar"] {
+                        ui.allocate_ui_with_layout(
+                            egui::vec2(col_width - 8.0, 28.0),
+                            egui::Layout::left_to_right(egui::Align::Center),
+                            |ui| {
+                                ui.set_min_width(col_width - 8.0);
+                                if let Some(id) = id {
+                                    ui.add_enabled_ui(
+                                        enabled(draft, &format!("conditions_{where_}_enabled")),
+                                        |ui| {
+                                            reference_option(
+                                                ui,
+                                                draft,
+                                                "hud",
+                                                &format!("condition_{id}_{where_}"),
+                                                ["", ""],
+                                                en,
+                                            );
+                                        },
+                                    );
+                                } else {
+                                    reference_option(
+                                        ui,
+                                        draft,
+                                        "hud",
+                                        &format!("conditions_{where_}_enabled"),
+                                        if where_ == "hud" {
+                                            ["Na HUD", "In HUD"]
+                                        } else {
+                                            ["Na pasku", "In bar"]
+                                        },
+                                        en,
+                                    );
+                                }
+                            },
+                        );
+                    }
+                });
+            };
+            row(ui, tr("Stan", "Condition"), draft, None, &mut selected);
+            ui.horizontal_top(|ui| {
+                egui::ScrollArea::vertical()
+                    .id_salt("hud-conditions")
+                    .max_height(180.0)
+                    .max_width(table_width)
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        ui.vertical(|ui| {
+                            ui.set_width(table_width);
+                            for (index, id) in order.iter().enumerate() {
+                                if let Some((_, labels)) =
+                                    CONDITIONS.iter().find(|(known, _)| *known == id)
+                                {
+                                    if index % 2 == 1 {
+                                        ui.painter().rect_filled(
+                                            egui::Rect::from_min_size(
+                                                ui.cursor().min,
+                                                egui::vec2(table_width, 34.0),
+                                            ),
+                                            0.0,
+                                            ui.visuals().faint_bg_color,
+                                        );
+                                    }
+                                    row(
+                                        ui,
+                                        labels[usize::from(en)],
+                                        draft,
+                                        Some(id),
+                                        &mut selected,
+                                    );
+                                }
+                            }
+                        });
+                    });
+                ui.vertical(|ui| {
+                    ui.add_space(45.0);
+                    let index = order.iter().position(|id| id == &selected).unwrap_or(0);
+                    for (label, target, allowed) in [
+                        ("↑", index.saturating_sub(1), index > 0),
+                        (
+                            "↓",
+                            (index + 1).min(order.len() - 1),
+                            index + 1 < order.len(),
+                        ),
+                    ] {
+                        let response = ui.add_enabled(
+                            allowed,
+                            egui::Button::new("").min_size(egui::vec2(30.0, 30.0)),
+                        );
+                        #[cfg(test)]
+                        ui.ctx().data_mut(|d| {
+                            d.insert_temp(egui::Id::new(("condition-order", label)), response.rect)
+                        });
+                        let center = response.rect.center();
+                        let direction = if label == "↑" { -1.0 } else { 1.0 };
+                        let color = if allowed {
+                            ui.visuals().text_color()
+                        } else {
+                            ui.visuals().weak_text_color()
+                        };
+                        ui.painter().add(egui::Shape::line(
+                            vec![
+                                center + egui::vec2(-4.0, -2.0 * direction),
+                                center + egui::vec2(0.0, 2.0 * direction),
+                                center + egui::vec2(4.0, -2.0 * direction),
+                            ],
+                            egui::Stroke::new(1.5, color),
+                        ));
+                        if response
+                            .on_hover_text(if label == "↑" {
+                                tr("Przenieś w górę", "Move up")
+                            } else {
+                                tr("Przenieś w dół", "Move down")
+                            })
+                            .clicked()
+                        {
+                            order.swap(index, target);
+                            draft.future_preferences.insert(
+                                "hud.condition_order".into(),
+                                FutureValue::Text(order.join(",")),
+                            );
+                        }
+                    }
+                });
+            });
+            ui.ctx().data_mut(|d| d.insert_temp(selection_id, selected));
+        },
+    );
+    ui.columns(2, |cols| {
+        reference_option(
+            &mut cols[0],
+            draft,
+            "hud",
+            "custom_status_bars",
+            [
+                "Konfigurowalne paski stanu",
+                "Show Customisable Status Bars",
+            ],
+            en,
+        );
+        reference_option(
+            &mut cols[1],
+            draft,
+            "hud",
+            "status_bars",
+            ["Paski stanu", "Show Status Bars"],
+            en,
+        );
     });
-    hud_frame(ui, |ui| {
-        ui.columns(2, |columns| {
-            reference_option(
-                &mut columns[0],
-                draft,
-                "hud",
-                "custom_status_bars",
-                [
-                    "Konfigurowalne paski stanu",
-                    "Show Customisable Status Bars",
-                ],
-                en,
-            );
-            reference_option(
-                &mut columns[1],
-                draft,
-                "hud",
-                "status_bars",
-                ["Paski stanu", "Show Status Bars"],
-                en,
-            );
-        });
-    });
-}
-
-fn condition_column_toggle(ui: &mut egui::Ui, draft: &mut ClientSettings, where_: &str, en: bool) {
-    let keys = CONDITIONS.map(|(id, _)| format!("hud.condition_{id}_{where_}"));
-    let all = |value| {
-        keys.iter()
-            .all(|key| draft.future_preferences.get(key) == Some(&FutureValue::Bool(value)))
-    };
-    let mut selected = all(true);
-    let mixed = !selected && !all(false);
-    let response = ui.push_id(where_, |ui| {
-        ui.add(egui::Checkbox::new(&mut selected, "").indeterminate(mixed))
-    }).inner.on_hover_text(if en {
-        "Set this column for the six listed conditions. Saved selections; gameplay support is pending."
-    } else {
-        "Ustaw tę kolumnę dla sześciu widocznych stanów. Zapisane wybory; obsługa w grze jest w przygotowaniu."
-    });
-    #[cfg(test)]
-    ui.ctx().data_mut(|data| {
-        data.insert_temp(egui::Id::new(("condition-column", where_)), response.rect)
-    });
-    if response.changed() {
-        for key in keys {
-            draft
-                .future_preferences
-                .insert(key, FutureValue::Bool(selected));
-        }
-    }
 }
 
 fn enabled(draft: &ClientSettings, id: &str) -> bool {
@@ -298,15 +386,6 @@ fn enabled(draft: &ClientSettings, id: &str) -> bool {
         draft.future_preferences.get(&format!("hud.{id}")),
         Some(FutureValue::Bool(true))
     )
-}
-
-fn dependents(ui: &mut egui::Ui, enabled: bool, body: impl FnOnce(&mut egui::Ui)) {
-    ui.add_enabled_ui(enabled, |ui| {
-        ui.horizontal_top(|ui| {
-            ui.add_space(14.0);
-            ui.vertical(body);
-        });
-    });
 }
 
 fn miscellaneous(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
@@ -504,13 +583,20 @@ mod tests {
     }
 
     #[test]
-    fn hud_condition_headers_edit_only_the_six_existing_column_flags() -> Result<(), &'static str> {
+    fn hud_column_master_preserves_all_individual_choices() -> Result<(), &'static str> {
         let ctx = egui::Context::default();
-        let size = egui::vec2(560.0, 500.0);
+        let size = egui::vec2(1100.0, 900.0);
         let mut draft = ClientSettings::default();
+        for (index, (id, _)) in CONDITIONS.iter().enumerate() {
+            draft.future_preferences.insert(
+                format!("hud.condition_{id}_hud"),
+                FutureValue::Bool(index % 2 == 0),
+            );
+        }
+        let choices = draft.future_preferences.clone();
         let draw = |ctx: &egui::Context, draft: &mut ClientSettings| {
             egui::Window::new("HUD test")
-                .default_size([510.0, 450.0])
+                .fixed_size([1050.0, 850.0])
                 .show(ctx, |ui| {
                     show(ui, draft, "hud", true);
                 });
@@ -518,25 +604,44 @@ mod tests {
         for _ in 0..3 {
             let _ = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft));
         }
-        assert!(draft.future_preferences.is_empty());
-        for value in [true, false] {
-            let rect = ctx
+        for value in [true, false, true] {
+            let (rect, clip) = ctx
                 .data(|data| {
-                    data.get_temp::<egui::Rect>(egui::Id::new(("condition-column", "hud")))
+                    data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                        "preference-toggle",
+                        "hud.conditions_hud_enabled",
+                    )))
                 })
                 .ok_or("header")?;
+            assert!(clip.contains_rect(rect));
             click(&ctx, size, rect.center(), |ctx| draw(ctx, &mut draft));
-            assert_eq!(draft.future_preferences.len(), CONDITIONS.len());
-            for (id, _) in CONDITIONS {
-                assert_eq!(
-                    draft
-                        .future_preferences
-                        .get(&format!("hud.condition_{id}_hud")),
-                    Some(&FutureValue::Bool(value))
-                );
+            assert_eq!(
+                draft.future_preferences.get("hud.conditions_hud_enabled"),
+                Some(&FutureValue::Bool(value))
+            );
+            for (key, expected) in &choices {
+                assert_eq!(draft.future_preferences.get(key), Some(expected));
             }
         }
+        let down = ctx
+            .data(|d| d.get_temp::<egui::Rect>(egui::Id::new(("condition-order", "↓"))))
+            .ok_or("reorder control")?;
+        click(&ctx, size, down.center(), |ctx| draw(ctx, &mut draft));
+        match draft.future_preferences.get("hud.condition_order") {
+            Some(FutureValue::Text(order)) => {
+                assert!(order.starts_with("burning,poison,"));
+                assert_eq!(order.split(',').count(), 35);
+            }
+            _ => return Err("order not saved"),
+        }
+        for (key, expected) in &choices {
+            assert_eq!(draft.future_preferences.get(key), Some(expected));
+        }
         draft.validate().map_err(|_| "valid condition flags")?;
+        let restored: ClientSettings =
+            serde_json::from_str(&serde_json::to_string(&draft).map_err(|_| "serialize")?)
+                .map_err(|_| "deserialize")?;
+        assert_eq!(restored, draft);
         Ok(())
     }
 }

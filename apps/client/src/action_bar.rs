@@ -15,8 +15,8 @@ use oteryn_session::{
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, io, num::NonZeroU32};
 
-/// Local capacity, not a claim about the reference client's capacity.
-pub const ACTION_BAR_SLOTS: usize = 12;
+/// The reference client exposes fifty independently bindable positions per row.
+pub const ACTION_BAR_SLOTS: usize = 50;
 pub const ACTION_BAR_ROWS: usize = 9;
 pub const TOTAL_ACTION_BAR_SLOTS: usize = ACTION_BAR_ROWS * ACTION_BAR_SLOTS;
 pub const ACTION_ROW_HEIGHT: f32 = 38.0;
@@ -67,7 +67,18 @@ pub struct ActionBarPreferences {
     pub visible: bool,
     /// Locks assignment editing, never command activation.
     pub locked: bool,
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
     pub shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub secondary_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
     /// Three bottom, three left, three right rows; the legacy fields remain bottom row 1.
     #[serde(default)]
     pub extra_rows: [ActionRowPreferences; ACTION_BAR_ROWS - 1],
@@ -81,21 +92,79 @@ const fn default_edge_enabled() -> [bool; 3] {
     [true; 3]
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ActionRowPreferences {
     pub visible: bool,
     pub locked: bool,
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
     pub shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub secondary_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+}
+
+const fn empty_shortcuts() -> [Option<SlotShortcut>; ACTION_BAR_SLOTS] {
+    [None; ACTION_BAR_SLOTS]
+}
+
+impl Default for ActionRowPreferences {
+    fn default() -> Self {
+        Self {
+            visible: false,
+            locked: false,
+            shortcuts: empty_shortcuts(),
+            secondary_shortcuts: empty_shortcuts(),
+        }
+    }
+}
+
+fn serialize_shortcuts<S>(
+    shortcuts: &[Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    shortcuts.as_slice().serialize(serializer)
+}
+
+fn deserialize_shortcuts<'de, D>(
+    deserializer: D,
+) -> Result<[Option<SlotShortcut>; ACTION_BAR_SLOTS], D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let saved = Vec::<Option<SlotShortcut>>::deserialize(deserializer)?;
+    if saved.len() > ACTION_BAR_SLOTS {
+        return Err(serde::de::Error::custom("too many action-bar shortcuts"));
+    }
+    let mut shortcuts = empty_shortcuts();
+    for (index, shortcut) in saved.into_iter().enumerate() {
+        shortcuts[index] = shortcut;
+    }
+    Ok(shortcuts)
 }
 
 impl Default for ActionBarPreferences {
     fn default() -> Self {
         let keys = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 68, 69];
+        let mut shortcuts = [None; ACTION_BAR_SLOTS];
+        for (slot, key) in keys.into_iter().enumerate() {
+            shortcuts[slot] = Some(SlotShortcut { key, modifiers: 0 });
+        }
         Self {
             visible: true,
             locked: false,
-            shortcuts: keys.map(|key| Some(SlotShortcut { key, modifiers: 0 })),
+            shortcuts,
+            secondary_shortcuts: empty_shortcuts(),
             extra_rows: [ActionRowPreferences::default(); ACTION_BAR_ROWS - 1],
             edge_enabled: default_edge_enabled(),
         }
@@ -130,6 +199,7 @@ impl ActionBarPreferences {
                 visible: self.visible,
                 locked: self.locked,
                 shortcuts: self.shortcuts,
+                secondary_shortcuts: self.secondary_shortcuts,
             })
         } else {
             self.extra_rows.get(row - 1).copied()
@@ -141,6 +211,7 @@ impl ActionBarPreferences {
             self.visible = preferences.visible;
             self.locked = preferences.locked;
             self.shortcuts = preferences.shortcuts;
+            self.secondary_shortcuts = preferences.secondary_shortcuts;
         } else {
             *self.extra_rows.get_mut(row - 1).ok_or_else(|| {
                 io::Error::new(io::ErrorKind::InvalidInput, "Unknown action row")
@@ -152,7 +223,12 @@ impl ActionBarPreferences {
     pub fn all_shortcuts(&self) -> impl Iterator<Item = &Option<SlotShortcut>> {
         self.shortcuts
             .iter()
-            .chain(self.extra_rows.iter().flat_map(|row| row.shortcuts.iter()))
+            .chain(self.secondary_shortcuts.iter())
+            .chain(
+                self.extra_rows
+                    .iter()
+                    .flat_map(|row| row.shortcuts.iter().chain(row.secondary_shortcuts.iter())),
+            )
     }
 
     /// Reserve application Escape/Enter/F10 and the configured movement chords. Reject
@@ -262,14 +338,24 @@ impl ActionBar {
         let text = ContextId::new("actionbar-text".into())?;
         let modal = ContextId::new("actionbar-modal".into())?;
         let mut bindings = Vec::new();
-        for (index, shortcut) in preferences.all_shortcuts().enumerate() {
-            if let Some(shortcut) = shortcut {
-                bindings.push(Binding::new(
-                    gameplay.clone(),
-                    shortcut.chord()?,
-                    ActionId::new(format!("{PREFIX}{index}"))?,
-                    RepeatPolicy::Ignore,
-                ));
+        for row in 0..ACTION_BAR_ROWS {
+            if let Some(row_preferences) = preferences.row(row) {
+                for (slot, shortcut) in row_preferences
+                    .shortcuts
+                    .iter()
+                    .zip(row_preferences.secondary_shortcuts.iter())
+                    .enumerate()
+                    .flat_map(|(slot, pair)| [(slot, pair.0), (slot, pair.1)])
+                {
+                    if let Some(shortcut) = shortcut {
+                        bindings.push(Binding::new(
+                            gameplay.clone(),
+                            shortcut.chord()?,
+                            ActionId::new(format!("{PREFIX}{}", row * ACTION_BAR_SLOTS + slot))?,
+                            RepeatPolicy::Ignore,
+                        ));
+                    }
+                }
             }
         }
         let map = BindingMap::new(
@@ -703,6 +789,27 @@ mod tests {
     }
 
     #[test]
+    fn secondary_shortcut_activates_the_same_action_slot() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let mut preferences = ActionBarPreferences::default();
+        preferences.shortcuts[0] = None;
+        preferences.secondary_shortcuts[0] = Some(SlotShortcut {
+            key: 30,
+            modifiers: 0,
+        });
+        let mut bar = ActionBar::new(preferences, &[])?;
+        bar.assign(
+            0,
+            Some(SlotAssignment {
+                label: "Help".into(),
+                command: ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::Help)),
+            }),
+        )?;
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        Ok(())
+    }
+
+    #[test]
     fn legacy_json_keeps_primary_defaults_and_bounds_extra_rows()
     -> Result<(), Box<dyn std::error::Error>> {
         let mut json = serde_json::to_value(ActionBarPreferences::default())?;
@@ -824,6 +931,44 @@ mod tests {
     }
 
     #[test]
+    fn twelve_slot_preferences_migrate_to_fifty_without_losing_bindings()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let shortcut = serde_json::json!({"key": 30, "modifiers": 0});
+        let mut primary = vec![serde_json::Value::Null; 12];
+        primary[0] = shortcut.clone();
+        let rows = (0..ACTION_BAR_ROWS - 1)
+            .map(|_| {
+                serde_json::json!({
+                    "visible": false,
+                    "locked": false,
+                    "shortcuts": vec![serde_json::Value::Null; 12]
+                })
+            })
+            .collect::<Vec<_>>();
+        let restored: ActionBarPreferences = serde_json::from_value(serde_json::json!({
+            "visible": true,
+            "locked": false,
+            "shortcuts": primary,
+            "extra_rows": rows,
+            "edge_enabled": [true, true, true]
+        }))?;
+        assert_eq!(
+            restored.shortcuts[0],
+            Some(SlotShortcut {
+                key: 30,
+                modifiers: 0
+            })
+        );
+        assert!(restored.shortcuts[12..].iter().all(Option::is_none));
+        assert!(restored.secondary_shortcuts.iter().all(Option::is_none));
+        assert!(restored.extra_rows.iter().all(|row| {
+            row.shortcuts.iter().all(Option::is_none)
+                && row.secondary_shortcuts.iter().all(Option::is_none)
+        }));
+        Ok(())
+    }
+
+    #[test]
     fn rows_lock_independently_and_session_reset_clears_all_assignments() -> io::Result<()> {
         let mut bar = assigned_bar()?;
         let assignment = bar.assignment(0).cloned();
@@ -857,7 +1002,7 @@ mod tests {
         assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
         let mut preferences = bar.preferences().clone();
         preferences.shortcuts[0] = None;
-        preferences.extra_rows[7].shortcuts[11] = Some(SlotShortcut {
+        preferences.extra_rows[7].shortcuts[ACTION_BAR_SLOTS - 1] = Some(SlotShortcut {
             key: 30,
             modifiers: 0,
         });
@@ -882,7 +1027,7 @@ mod tests {
         };
         bar.route(&[key(ButtonState::Pressed)?]); // Unbound key still has physical held state.
         let mut preferences = bar.preferences().clone();
-        preferences.extra_rows[7].shortcuts[11] = Some(SlotShortcut {
+        preferences.extra_rows[7].shortcuts[ACTION_BAR_SLOTS - 1] = Some(SlotShortcut {
             key: 4,
             modifiers: 0,
         });

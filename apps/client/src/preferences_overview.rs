@@ -1,6 +1,7 @@
 //! Readable Oteryn settings overview. Edits only the existing settings draft.
+#[cfg(test)]
 use super::PreferenceAction;
-use egui::{Color32, RichText};
+use egui::RichText;
 use oteryn_client::{settings::ClientSettings, settings_catalog::FutureValue};
 
 pub(super) fn show(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
@@ -259,53 +260,6 @@ fn toggle(ui: &mut egui::Ui, draft: &mut ClientSettings, key: &str, label: &str,
     ui.separator();
 }
 
-pub(super) fn footer(ui: &mut egui::Ui, en: bool) -> (PreferenceAction, egui::Rect) {
-    let available = ui.available_rect_before_wrap();
-    let mut action = PreferenceAction::None;
-    let footer = egui::Panel::bottom("oteryn-overview-footer")
-        .frame(egui::Frame::NONE)
-        .exact_size(50.0)
-        .show(ui, |ui| {
-            ui.spacing_mut().button_padding = egui::vec2(10.0, 6.0);
-            ui.style_mut()
-                .text_styles
-                .insert(egui::TextStyle::Button, egui::FontId::proportional(14.0));
-            ui.separator();
-            ui.horizontal(|ui| {
-                if ui
-                    .button(if en { "Defaults" } else { "Domyślne" })
-                    .clicked()
-                {
-                    action = PreferenceAction::Defaults;
-                }
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui
-                        .add(
-                            egui::Button::new(if en { "Save changes" } else { "Zapisz zmiany" })
-                                .fill(Color32::from_rgb(116, 78, 38)),
-                        )
-                        .clicked()
-                    {
-                        action = PreferenceAction::Ok;
-                    }
-                    if ui.button(if en { "Cancel" } else { "Anuluj" }).clicked() {
-                        action = PreferenceAction::Cancel;
-                    }
-                });
-            });
-        });
-    (
-        action,
-        egui::Rect::from_min_max(
-            available.min,
-            egui::pos2(
-                available.right(),
-                footer.response.rect.top().max(available.top()),
-            ),
-        ),
-    )
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -321,6 +275,7 @@ mod tests {
             let ctx = egui::Context::default();
             ctx.set_theme(egui::Theme::Dark);
             let mut browser = PreferencesBrowser::new();
+            browser.overview = true;
             let mut draft = ClientSettings {
                 english: en,
                 ..Default::default()
@@ -335,12 +290,7 @@ mod tests {
                     .1;
                 }
                 assert_eq!(draft.future_preferences, original);
-                let save = button_position(
-                    &output,
-                    size,
-                    if en { "Save changes" } else { "Zapisz zmiany" },
-                )
-                .ok_or("Save is clipped")?;
+                let save = button_position(&output, size, "OK").ok_or("Save is clipped")?;
                 let action = click(&ctx, size, save, |ctx| browser.show(ctx, &mut draft, None));
                 assert!(matches!(action, PreferenceAction::Ok));
                 let output = frame(&ctx, size, Vec::new(), |ctx| {

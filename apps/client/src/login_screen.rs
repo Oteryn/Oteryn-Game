@@ -324,6 +324,8 @@ impl LoginScreen {
             .fixed_size(Vec2::new(width, 0.0))
             .frame(
                 egui::Frame::window(&ctx.style_of(egui::Theme::Dark))
+                    // 90% opacity: only the panel background is translucent.
+                    .fill(Color32::from_rgba_unmultiplied(10, 15, 19, 230))
                     .inner_margin(20.0)
                     .stroke(egui::Stroke::new(1.0, BORDER)),
             )
@@ -354,12 +356,16 @@ impl LoginScreen {
             let size = background.size_vec2();
             let scale = (rect.width() / size.x).max(rect.height() / size.y);
             let visible = rect.size() / (size * scale);
-            painter.image(
-                background.id(),
-                rect,
-                egui::Rect::from_center_size(egui::pos2(0.5, 0.5), visible),
-                Color32::WHITE,
-            );
+            if self.settings.current.reduced_motion {
+                painter.image(
+                    background.id(),
+                    rect,
+                    egui::Rect::from_center_size(egui::pos2(0.5, 0.5), visible),
+                    Color32::WHITE,
+                );
+            } else {
+                crate::login_backdrop::paint(&painter, background, rect, ctx.input(|i| i.time));
+            }
         }
         let darkness = if matches!(
             self.screen,

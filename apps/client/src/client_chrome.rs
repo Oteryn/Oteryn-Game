@@ -85,6 +85,49 @@ pub fn install(ctx: &Context, high_contrast: bool) {
     ctx.set_style_of(egui::Theme::Dark, style);
 }
 
+/// Settings-only design tokens. Text and interactive controls remain opaque.
+pub fn install_preferences(ctx: &Context, high_contrast: bool, transparency: u8) {
+    install(ctx, high_contrast);
+    let mut style = (*ctx.style_of(egui::Theme::Dark)).clone();
+    for text in [egui::TextStyle::Body, egui::TextStyle::Button] {
+        style.text_styles.insert(text, FontId::proportional(14.0));
+    }
+    style
+        .text_styles
+        .insert(egui::TextStyle::Small, FontId::proportional(12.0));
+    style
+        .text_styles
+        .insert(egui::TextStyle::Heading, FontId::proportional(22.0));
+    style.spacing.item_spacing = egui::vec2(8.0, 6.0);
+    style.spacing.button_padding = egui::vec2(10.0, 6.0);
+    style.spacing.interact_size = egui::vec2(28.0, 28.0);
+    style.visuals.widgets.inactive.bg_fill = Color32::from_rgb(18, 21, 24);
+    style.visuals.widgets.inactive.weak_bg_fill = Color32::from_rgb(18, 21, 24);
+    style.visuals.widgets.inactive.bg_stroke = Stroke::new(1.0, Color32::from_rgb(80, 84, 78));
+    style.spacing.scroll.foreground_color = true;
+    style.spacing.icon_width = 16.0;
+    style.spacing.icon_width_inner = 10.0;
+    style.spacing.icon_spacing = 7.0;
+    let alpha = ((100 - transparency.min(70)) as f32 * 2.55).round() as u8;
+    style.visuals.window_fill = if high_contrast {
+        Color32::from_rgba_unmultiplied(0, 0, 0, alpha)
+    } else {
+        Color32::from_rgba_unmultiplied(25, 28, 31, alpha)
+    };
+    // One translucent backing avoids stacking opacity under nested sections.
+    style.visuals.panel_fill = Color32::TRANSPARENT;
+    style.visuals.extreme_bg_color = Color32::from_rgba_unmultiplied(18, 21, 24, 24);
+    style.visuals.faint_bg_color = Color32::from_rgba_unmultiplied(35, 39, 42, 24);
+    if !high_contrast {
+        style.visuals.override_text_color = Some(Color32::from_rgb(236, 232, 223));
+        style.visuals.selection.bg_fill = Color32::from_rgb(52, 45, 34);
+        style.visuals.selection.stroke.color = Color32::from_rgb(217, 185, 120);
+        style.visuals.window_stroke.color = Color32::from_rgb(121, 100, 68);
+        style.visuals.widgets.noninteractive.bg_stroke.color = Color32::from_rgb(58, 61, 61);
+    }
+    ctx.set_style_of(egui::Theme::Dark, style);
+}
+
 fn paint(ctx: &Context, painter: &Painter, rect: Rect, inset: bool) {
     if !rect.is_positive() || !rect.is_finite() {
         return;
@@ -143,6 +186,19 @@ fn surrounding(bounds: Rect, scene: Option<Rect>) -> Vec<Rect> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn preferences_transparency_only_fades_surfaces() {
+        let ctx = Context::default();
+        install_preferences(&ctx, false, 10);
+        let style = ctx.style_of(egui::Theme::Dark);
+        assert_eq!(style.visuals.window_fill.a(), 230);
+        assert_eq!(style.visuals.text_color().a(), 255);
+        assert_eq!(style.visuals.widgets.inactive.bg_fill.a(), 255);
+        assert_eq!(style.visuals.panel_fill, Color32::TRANSPARENT);
+        install_preferences(&ctx, false, 70);
+        assert_eq!(ctx.style_of(egui::Theme::Dark).visuals.window_fill.a(), 77);
+    }
+
     #[test]
     fn chrome_never_covers_the_rendered_scene() {
         let bounds = Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(900.0, 620.0));

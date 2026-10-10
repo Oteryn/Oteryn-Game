@@ -2,6 +2,8 @@
 use super::{boxed, reference_option};
 #[path = "preferences_display_pages.rs"]
 mod display;
+#[path = "preferences_hotkey_pages.rs"]
+mod hotkeys;
 #[path = "preferences_hud_pages.rs"]
 mod hud;
 use oteryn_client::{
@@ -10,11 +12,22 @@ use oteryn_client::{
     settings_catalog::FutureValue,
 };
 
-#[derive(Default)]
 pub(super) struct PageState {
     displayed: Option<String>,
     available: Option<String>,
     last_frame_limit: Option<u16>,
+    hotkeys: hotkeys::State,
+}
+
+impl Default for PageState {
+    fn default() -> Self {
+        Self {
+            displayed: None,
+            available: None,
+            last_frame_limit: None,
+            hotkeys: hotkeys::State::default(),
+        }
+    }
 }
 
 pub(super) fn show(
@@ -32,7 +45,8 @@ pub(super) fn show(
         "battle_sounds" => battle(ui, draft, english),
         "ui_sounds" => ui_sound(ui, draft, english),
         _ => {
-            return hud::show(ui, draft, section, english)
+            return hotkeys::show(ui, draft, section, english, &mut state.hotkeys)
+                || hud::show(ui, draft, section, english)
                 || display::show(ui, draft, section, english, state);
         }
     }
@@ -48,13 +62,10 @@ fn row(
     en: bool,
 ) {
     egui::Frame::new()
-        .stroke(egui::Stroke::new(
-            1.0,
-            ui.visuals().widgets.noninteractive.bg_stroke.color,
-        ))
-        .inner_margin(3.0)
+        .inner_margin(egui::Margin::symmetric(0, 3))
         .show(ui, |ui| {
-            ui.set_min_width((ui.available_width() - 1.0).max(1.0));
+            ui.set_width(ui.available_width());
+            ui.set_min_height(28.0);
             reference_option(ui, draft, section, id, labels, en);
         });
 }

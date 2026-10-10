@@ -128,9 +128,7 @@ pub fn show(
                         let width = if vertical {
                             ACTION_COLUMN_WIDTH - 4.0
                         } else {
-                            ((size.x - 2.0 * (ACTION_BAR_SLOTS - 1) as f32)
-                                / ACTION_BAR_SLOTS as f32)
-                                .max(1.0)
+                            48.0
                         };
                         let mut slots = |ui: &mut egui::Ui| {
                             for index in 0..ACTION_BAR_SLOTS {
@@ -186,7 +184,14 @@ pub fn show(
                                 .max_height((size.y - 16.0).max(1.0))
                                 .show(ui, slots);
                         } else {
-                            ui.horizontal(&mut slots);
+                            egui::ScrollArea::horizontal()
+                                .id_salt(("action-row-scroll", row))
+                                .scroll_bar_visibility(
+                                    egui::scroll_area::ScrollBarVisibility::AlwaysVisible,
+                                )
+                                .show(ui, |ui| {
+                                    ui.horizontal(&mut slots);
+                                });
                         }
                     });
             });

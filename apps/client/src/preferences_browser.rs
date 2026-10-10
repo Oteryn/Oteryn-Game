@@ -1,8 +1,8 @@
 //! Complete preference navigation with explicit future-consumer configuration.
-#[path = "preferences_pages.rs"]
-mod pages;
 #[path = "preferences_overview.rs"]
 mod overview;
+#[path = "preferences_pages.rs"]
+mod pages;
 
 use oteryn_client::{
     settings::ClientSettings,
@@ -20,8 +20,6 @@ pub struct PreferencesBrowser {
     page_state: pages::PageState,
     action_bar_available: bool,
     clear_action_row: Option<usize>,
-    expanded: std::collections::BTreeSet<&'static str>,
-    navigation_section: Option<usize>,
 }
 
 #[derive(Default)]
@@ -48,7 +46,7 @@ impl PreferencesBrowser {
     pub fn new() -> Self {
         Self {
             open: true,
-            overview: true,
+            overview: false,
             ..Self::default()
         }
     }
@@ -62,149 +60,112 @@ impl PreferencesBrowser {
             return PreferenceAction::None;
         }
         let previous_style = ctx.style_of(egui::Theme::Dark);
-        crate::client_chrome::install(ctx, draft.high_contrast);
+        crate::client_chrome::install_preferences(
+            ctx,
+            draft.high_contrast,
+            draft.settings_transparency,
+        );
         let mut action = PreferenceAction::None;
         let english = draft.english;
         let tr = |pl, en| if english { en } else { pl };
-        let advanced = matches!(
-            draft.future_preferences.get("basic.basic.advanced"),
-            Some(FutureValue::Bool(true))
-        );
-        if advanced
-            && self.section == 0
-            && let Some(index) = SETTINGS_SECTIONS
-                .iter()
-                .position(|section| section.id == "controls")
-        {
-            self.section = index;
-        }
-        if !advanced && !category_visible(SETTINGS_SECTIONS[self.section].id, false) {
-            self.section = 0;
-        }
-        if self.navigation_section != Some(self.section) {
-            let id = SETTINGS_SECTIONS[self.section].id;
-            if let Some(parent) = navigation_parent(id) {
-                self.expanded.insert(parent);
-            } else if matches!(
-                id,
-                "controls" | "interface" | "graphics" | "sound" | "miscellaneous"
-            ) {
-                self.expanded.insert(id);
-            }
-            self.navigation_section = Some(self.section);
-        }
-        let bounds = ctx.content_rect().shrink(4.0);
+        let bounds = ctx.content_rect().shrink(12.0);
         let maximum = bounds.size().max(egui::Vec2::splat(1.0));
+        let size = egui::vec2(1180.0_f32.min(maximum.x), 880.0_f32.min(maximum.y));
+        let style = ctx.style_of(egui::Theme::Dark);
         egui::Window::new(tr("Ustawienia", "Settings"))
-            .id("complete-preferences".into()).open(&mut self.open)
-            .collapsible(false).anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .id("complete-preferences".into())
+            .title_bar(false).collapsible(false).resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
             .constrain_to(bounds).min_size(egui::Vec2::ZERO).max_size(maximum)
-            .default_size([840.0_f32.min(maximum.x), 580.0_f32.min(maximum.y)])
+            .fixed_size(size)
+            .frame(egui::Frame::new().fill(style.visuals.window_fill)
+                .stroke(style.visuals.window_stroke).corner_radius(7.0))
             .show(ctx, |ui| {
-                crate::client_chrome::surface(ui, ui.max_rect(), false);
-                ui.style_mut().spacing.item_spacing = egui::vec2(3.0, 2.0);
-                ui.style_mut().spacing.button_padding = egui::vec2(4.0, 2.0);
+                ui.set_min_size(size);
                 ui.style_mut().spacing.scroll.floating = false;
-                let mut advanced_setting = advanced;
-                let (footer_action, body_rect) = if self.overview { overview::footer(ui, english) } else { primary_footer_impl(ui, "all-preferences-footer", english, Some(&mut advanced_setting)) };
-                if advanced_setting != advanced { draft.future_preferences.insert("basic.basic.advanced".into(), FutureValue::Bool(advanced_setting)); }
+                let (footer_action, body_rect) = primary_footer_impl(ui, "all-preferences-footer", english, None);
                 action = footer_action;
-                let body_size = body_rect.size().max(egui::Vec2::splat(1.0));
                 let mut body_ui = ui.new_child(egui::UiBuilder::new().max_rect(body_rect));
-                body_ui.set_clip_rect(ui.clip_rect().intersect(body_rect));
-                let _body_output = egui::ScrollArea::both().id_salt(("all-preferences-body", SETTINGS_SECTIONS[self.section].id))
-                    .auto_shrink([false, false]).max_width(body_size.x).max_height(body_size.y).show(&mut body_ui, |ui| {
-                let body_width = ui.available_width().max(1.0);
-                ui.set_width(body_width);
-                let compact = body_width < 520.0;
-                let basic = SETTINGS_SECTIONS[self.section].id == "basic";
-                let reference = self.overview || reference_page(SETTINGS_SECTIONS[self.section].id);
-                if !reference { ui.add(egui::TextEdit::singleline(&mut self.search).desired_width(body_width).char_limit(120).hint_text(tr("Szukaj ustawienia…", "Search preferences…"))); ui.separator(); }
-                let sections_width = if self.overview { 155.0 } else { 125.0 };
-                let search = if reference { String::new() } else { self.search.trim().to_lowercase() };
-                if compact {
-                    if ui.selectable_label(self.overview, tr("Szybkie ustawienia", "Quick settings")).clicked() { self.overview = true; }
-                    egui::ComboBox::from_id_salt("all-preferences-category").width(body_width).truncate()
-                        .selected_text(SETTINGS_SECTIONS[self.section].text(english)).show_ui(ui, |ui| {
-                            for (index, section) in SETTINGS_SECTIONS.iter().enumerate() {
-                                if category_visible(section.id, advanced) && (search.is_empty() || section.text(english).to_lowercase().contains(&search) || section.options.iter().any(|option| option.text(english).to_lowercase().contains(&search))) && ui.selectable_value(&mut self.section, index, section.text(english)).clicked() { self.overview = false; }
-                            }
-                        });
-                }
-                // Keep the columns inside the current dialog body, reserving room for
-                // availability text and secondary controls below them.
-                let column_height = (ui.available_height() - if basic && !compact { 30.0 } else if reference && !compact { 25.0 } else if compact { 52.0 } else { 45.0 }).max(1.0);
-                ui.horizontal_top(|ui| {
-                    if !compact {
-                        ui.set_max_height(column_height);
-                    }
-                    if !compact {
-                    ui.vertical(|ui| {
-                    ui.set_width(sections_width);
-                    egui::ScrollArea::vertical().id_salt("all-preferences-sections").scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded).max_height((column_height - 25.0).max(1.0)).show(ui, |ui| {
-                        ui.vertical(|ui| {
-                        ui.set_width(sections_width);
-                        ui.add_space(8.0);
-                        ui.label(egui::RichText::new("OTERYN").size(18.0).color(ui.visuals().selection.stroke.color));
-                        ui.add_space(12.0);
-                        if ui.add_sized([sections_width, 32.0], egui::Button::new(tr("Szybkie ustawienia", "Quick settings")).selected(self.overview)).clicked() { self.overview = true; }
-                        ui.add_space(10.0);
-                        if self.overview {
-                            for (group, entries) in [
-                                (tr("STEROWANIE", "CONTROLS"), vec![("controls", tr("Mysz i klawiatura", "Mouse and keyboard")), ("general_hotkeys", tr("Skróty klawiszowe", "Hotkeys"))]),
-                                (tr("INTERFEJS", "INTERFACE"), vec![("hud", tr("HUD postaci", "Character HUD")), ("panels", tr("Panele i minimapa", "Panels and minimap")), ("action_bars", tr("Paski akcji", "Action bars")), ("console", tr("Czat", "Chat"))]),
-                                (tr("SYSTEM", "SYSTEM"), vec![("graphics", tr("Grafika", "Graphics")), ("sound", tr("Dźwięk", "Sound")), ("help", tr("Pomoc", "Help"))]),
-                            ] {
-                                ui.add_space(8.0);
-                                ui.label(egui::RichText::new(group).size(10.0).color(ui.visuals().selection.stroke.color));
-                                ui.separator();
-                                for (id, label) in entries {
-                                    if ui.add_sized([sections_width, 28.0], egui::Button::new(label).frame(false)).clicked()
-                                        && let Some(index) = SETTINGS_SECTIONS.iter().position(|section| section.id == id) {
-                                        self.section = index;
-                                        self.overview = false;
-                                        draft.future_preferences.insert("basic.basic.advanced".into(), FutureValue::Bool(true));
-                                    }
+                body_ui.set_clip_rect(body_rect.intersect(ui.clip_rect()));
+                egui::Panel::top("preferences-brand-header").exact_size(70.0)
+                    .frame(egui::Frame::new().fill(egui::Color32::from_rgba_unmultiplied(35,39,42,100)).inner_margin(egui::Margin::symmetric(20,12)))
+                    .show(&mut body_ui, |ui| {
+                        ui.horizontal_centered(|ui| {
+                            if size.x>650.0 {ui.label(egui::RichText::new("OTERYN").size(26.0).color(egui::Color32::from_rgb(231,205,153)));
+                            ui.add_space(12.0); ui.separator(); ui.add_space(12.0);}
+                            ui.vertical(|ui| {
+                                ui.label(egui::RichText::new(tr("Ustawienia", "Settings")).size(20.0).strong());
+                                if size.x>650.0 {ui.weak(tr("Twój świat. Twój sposób gry.", "Your world. Your way to play."));}
+                            });
+                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                if ui.add_sized([30.0,30.0], egui::Button::new("×")).clicked() { action = PreferenceAction::Cancel; }
+                                if size.x > 650.0 {
+                                    ui.spacing_mut().slider_width = 90.0;
+                                    ui.add(egui::Slider::new(&mut draft.settings_transparency, 0..=70).suffix("%").text(tr("Przezroczystość", "Transparency")));
                                 }
-                            }
-                        } else {
-                        for (index, section) in SETTINGS_SECTIONS.iter().enumerate() {
-                            let parent = navigation_parent(section.id);
-                            if advanced && search.is_empty() && parent.is_some_and(|parent| !self.expanded.contains(parent)) { continue; }
-                            if category_visible(section.id, advanced) && (search.is_empty() || section.text(english).to_lowercase().contains(&search) || section.options.iter().any(|option| option.text(english).to_lowercase().contains(&search))) {
-                                if section.id == "panels" { ui.separator(); ui.small("OTERYN"); }
-                                let label = if !advanced && section.id == "basic" { tr("Opcje", "Options") } else if !advanced && section.id == "general_hotkeys" { tr("Skróty", "Hotkeys") } else { section.text(english) };
-                                ui.horizontal(|ui| {
-                                    if advanced && matches!(section.id, "controls" | "interface" | "graphics" | "sound" | "miscellaneous") {
-                                        if navigation_arrow(ui, self.expanded.contains(section.id), english).clicked() && !self.expanded.remove(section.id) { self.expanded.insert(section.id); }
-                                    } else if advanced && parent.is_some() { ui.add_space(14.0); }
-                                    if ui.selectable_label(!self.overview && self.section == index, label).clicked() { self.section = index; self.overview = false; }
-                                });
-                            }
-                        }
-                        }
+                            });
                         });
                     });
-                    ui.separator();
-                    if self.overview && ui.button(tr("Wszystkie ustawienia", "All settings")).clicked() {
-                        self.overview = false;
-                        draft.future_preferences.insert("basic.basic.advanced".into(), FutureValue::Bool(true));
-                    }
-                    if ui.small_button(tr("Konto i sieć", "Account/network")).on_hover_text(tr("OTERYN: konto i połączenie", "OTERYN: account and connection")).clicked() { action = PreferenceAction::QuickSettings; }
+                let nav_width = if size.x >= 1100.0 {222.0} else if size.x >= 700.0 {190.0} else {135.0};
+                if size.x>=650.0 {egui::Panel::left("preferences-navigation").exact_size(nav_width).resizable(false)
+                    .frame(egui::Frame::new().fill(egui::Color32::from_rgba_unmultiplied(15,19,22,110)).inner_margin(12))
+                    .show(&mut body_ui, |ui| {
+                        ui.spacing_mut().item_spacing.y=2.0;
+                        ui.add(egui::TextEdit::singleline(&mut self.search).desired_width(ui.available_width()).char_limit(120).hint_text(tr("Szukaj ustawienia…", "Search preferences…")));
+                        ui.add_space(8.0);
+                        egui::Panel::bottom("preferences-account-link").exact_size(34.0).show(ui, |ui| {
+                            if ui.button(tr("Konto i sieć", "Account/network")).clicked() {action=PreferenceAction::QuickSettings;}
+                        });
+                        egui::ScrollArea::vertical().id_salt("all-preferences-sections").auto_shrink([false,false]).show(ui, |ui| {
+                            if ui.selectable_label(self.overview,tr("Szybkie ustawienia", "Quick settings")).clicked() {self.overview=true;}
+                            let search = self.search.trim().to_lowercase();
+                            for (index, section) in SETTINGS_SECTIONS.iter().enumerate() {
+                                if !search.is_empty() && !section.text(english).to_lowercase().contains(&search) && !section.options.iter().any(|option| option.text(english).to_lowercase().contains(&search)) {continue;}
+                                if let Some(group) = match section.id {
+                                    "basic" => Some(tr("NA SKRÓTY", "QUICK ACCESS")),
+                                    "controls" => Some(tr("STEROWANIE", "CONTROLS")),
+                                    "interface" => Some(tr("INTERFEJS", "INTERFACE")),
+                                    "graphics" => Some(tr("OBRAZ I DŹWIĘK", "VIDEO AND AUDIO")),
+                                    "miscellaneous" => Some(tr("POZOSTAŁE", "OTHER")),
+                                    "panels" => Some("OTERYN"), _ => None,
+                                } {
+                                    ui.add_space(16.0);
+                                    ui.label(egui::RichText::new(group).size(10.0).color(egui::Color32::from_rgb(183,169,141)));
+                                    ui.add_space(3.0);
+                                }
+                                let selected = !self.overview && self.section==index;
+                                let label = if section.id=="hud" {tr("HUD postaci", "Character HUD")} else {section.text(english)};
+                                let response = ui.add_sized([ui.available_width(),30.0],egui::Button::new("").selected(selected).frame(selected));
+                                ui.painter().text(response.rect.left_center()+egui::vec2(10.0,0.0),egui::Align2::LEFT_CENTER,label,egui::FontId::proportional(13.0),if selected {egui::Color32::from_rgb(240,211,148)} else {ui.visuals().text_color()});
+                                if selected {ui.painter().rect_filled(egui::Rect::from_min_size(response.rect.min,egui::vec2(3.0,response.rect.height())),1.0,ui.visuals().selection.stroke.color);}
+                                if response.clicked() {self.section=index;self.overview=false;}
+                            }
+
+                        });
                     });
-                    ui.separator();
-                    }
-                    let options_width = ui.available_width().max(1.0);
-                    egui::ScrollArea::vertical().id_salt(("all-preferences-options", SETTINGS_SECTIONS[self.section].id)).max_width(options_width).max_height(if compact { f32::INFINITY } else { column_height }).show(ui, |ui| {
-                        ui.vertical(|ui| {
-                        ui.set_width(ui.available_width().max(1.0));
+                } else {
+                    egui::Panel::top("preferences-compact-navigation").show(&mut body_ui, |ui| {
+                        egui::ComboBox::from_id_salt("preferences-category").selected_text(SETTINGS_SECTIONS[self.section].text(english)).show_ui(ui, |ui| {
+                            for (index,section) in SETTINGS_SECTIONS.iter().enumerate() {if ui.selectable_value(&mut self.section,index,section.text(english)).clicked() {self.overview=false;}}
+                        });
+                    });
+                }
+                egui::CentralPanel::default().frame(egui::Frame::new().inner_margin(if size.x<700.0 {12} else {22}))
+                    .show(&mut body_ui, |ui| {
+                        let search = self.search.trim().to_lowercase();
+                        let _body_output = egui::ScrollArea::vertical().id_salt(("all-preferences-options", SETTINGS_SECTIONS[self.section].id)).auto_shrink([false,false]).show(ui, |ui| {
+                            ui.set_width(ui.available_width());
+                            ui.label(egui::RichText::new(tr("USTAWIENIA KLIENTA", "CLIENT SETTINGS")).size(10.0).color(egui::Color32::from_rgb(185,164,130)));
+                            ui.add_space(3.0);
+                            if !self.overview {ui.label(egui::RichText::new(if SETTINGS_SECTIONS[self.section].id=="hud" {tr("HUD postaci", "Character HUD")} else {SETTINGS_SECTIONS[self.section].text(english)}).size(24.0));}
+                            ui.add_space(16.0);
                         let section = &SETTINGS_SECTIONS[self.section];
                         if self.overview { overview::show(ui, draft, english); }
                         else if section.id == "basic" { basic_page(ui, draft, english); }
                         else if section.id == "action_bars" { action_bars_page(ui, draft, english, self.action_bar_available, &mut self.clear_action_row); }
                         else if search.is_empty() && pages::show(ui, draft, section.id, english, &mut self.page_state) {}
                         else {
-                        ui.heading(section.text(english));
+
                         let mut matching = 0;
                         for option in section.options {
                             if !search.is_empty() && !section.text(english).to_lowercase().contains(&search) && !option.text(english).to_lowercase().contains(&search) { continue; }
@@ -236,122 +197,45 @@ impl PreferencesBrowser {
                             crate::action_bar_ui::preferences_editor(ui, &mut draft.action_bar, english);
                         }
                         }
+                            if let Some(message) = message {ui.add_space(12.0);ui.label(message);}
                         });
+                        #[cfg(test)]
+                        test_support::record_scroll_geometry(ctx, "all-preferences-body-geometry", &_body_output);
                     });
-                });
-                ui.separator();
-                if !reference { ui.small(tr("Opcje bez obsługi zapisują wybór do przyszłego użycia; nie zmieniają jeszcze gry.", "Preferences awaiting support save your choice for future use; they do not change gameplay yet.")); }
-                if let Some(message) = message { ui.label(message); }
-                let mut show_advanced = advanced;
-                if compact && ui.checkbox(&mut show_advanced, tr("Pokaż opcje zaawansowane", "Show advanced options")).changed() { draft.future_preferences.insert("basic.basic.advanced".into(), FutureValue::Bool(show_advanced)); }
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if compact && ui.small_button(tr("Konto i połączenie", "Account and connection")).clicked() { action = PreferenceAction::QuickSettings; }
-                });
-                });
-                #[cfg(test)]
-                test_support::record_scroll_geometry(ctx, "all-preferences-body-geometry", &_body_output);
             });
+        let active_action_bar = draft.action_bar.clone();
+        if let Some(profile) = draft.hotkeys.active_mut() {
+            profile.action_bar = active_action_bar;
+        }
         ctx.set_style_of(egui::Theme::Dark, previous_style);
         action
     }
 }
 
-fn navigation_arrow(ui: &mut egui::Ui, expanded: bool, english: bool) -> egui::Response {
-    let label = match (expanded, english) {
-        (true, true) => "Collapse category",
-        (false, true) => "Expand category",
-        (true, false) => "Zwiń kategorię",
-        (false, false) => "Rozwiń kategorię",
-    };
-    let response = ui
-        .add_sized([12.0, 16.0], egui::Button::new("").frame(false))
-        .on_hover_text(label);
-    response.widget_info(|| {
-        egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), label)
-    });
-    // Replace the label with an independently drawn arrow: the bundled font does
-    // not provide these triangle glyphs on every native platform.
-    let centre = response.rect.center();
-    let offsets = if expanded {
-        [
-            egui::vec2(-3.0, -2.0),
-            egui::vec2(3.0, -2.0),
-            egui::vec2(0.0, 3.0),
-        ]
-    } else {
-        [
-            egui::vec2(-2.0, -3.0),
-            egui::vec2(-2.0, 3.0),
-            egui::vec2(3.0, 0.0),
-        ]
-    };
-    ui.painter().add(egui::epaint::PathShape::convex_polygon(
-        offsets.map(|offset| centre + offset).to_vec(),
-        ui.visuals().text_color(),
-        egui::Stroke::NONE,
-    ));
-    response
-}
-
-fn reference_page(id: &str) -> bool {
-    matches!(
-        id,
-        "basic"
-            | "controls"
-            | "general_hotkeys"
-            | "action_hotkeys"
-            | "custom_hotkeys"
-            | "interface"
-            | "hud"
-            | "console"
-            | "game_window"
-            | "action_bars"
-            | "shortcuts"
-            | "graphics"
-            | "effects"
-            | "sound"
-            | "battle_sounds"
-            | "ui_sounds"
-            | "miscellaneous"
-            | "gameplay"
-            | "screenshots"
-            | "help"
-    )
-}
-
-fn navigation_parent(id: &str) -> Option<&'static str> {
-    match id {
-        "general_hotkeys" | "action_hotkeys" | "custom_hotkeys" => Some("controls"),
-        "hud" | "console" | "game_window" | "action_bars" | "shortcuts" => Some("interface"),
-        "effects" => Some("graphics"),
-        "battle_sounds" | "ui_sounds" => Some("sound"),
-        "gameplay" | "screenshots" | "help" => Some("miscellaneous"),
-        _ => None,
-    }
-}
-
-fn category_visible(id: &str, advanced: bool) -> bool {
-    if advanced {
-        id != "basic"
-    } else {
-        matches!(id, "basic" | "general_hotkeys" | "shortcuts" | "help")
-    }
-}
-
 fn boxed(ui: &mut egui::Ui, title: &str, body: impl FnOnce(&mut egui::Ui)) {
-    egui::Frame::group(ui.style())
-        .inner_margin(2.0)
+    let line = egui::Color32::from_rgb(58, 61, 61);
+    egui::Frame::new()
+        .stroke(egui::Stroke::new(1.0, line))
+        .corner_radius(4.0)
         .show(ui, |ui| {
-            crate::client_chrome::surface(ui, ui.max_rect(), true);
             ui.set_width(ui.available_width());
             if !title.is_empty() {
-                ui.vertical_centered(|ui| {
-                    ui.label(egui::RichText::new(title).strong());
-                });
+                egui::Frame::new()
+                    .fill(egui::Color32::from_rgba_unmultiplied(35, 39, 42, 160))
+                    .inner_margin(egui::Margin::symmetric(12, 8))
+                    .show(ui, |ui| {
+                        ui.set_width(ui.available_width());
+                        ui.label(egui::RichText::new(title).size(13.0).strong());
+                    });
             }
-            body(ui);
+            egui::Frame::new()
+                .inner_margin(egui::Margin::symmetric(12, 10))
+                .show(ui, |ui| {
+                    ui.set_width(ui.available_width());
+                    body(ui);
+                });
         });
-    ui.add_space(1.0);
+    ui.add_space(12.0);
 }
 
 fn future_toggle(
@@ -370,6 +254,47 @@ fn future_toggle(
             else { "Obsługuje dostępne zdrowie i manę własnej postaci. Nazwy, znaczniki i stany wymagają dalszej obsługi." }
         } else if english { "Saved selection; gameplay support is pending." }
         else { "Zapisany wybór; działanie w grze oczekuje na obsługę." });
+    // Keep egui's input/accessibility behavior and paint the project's compact square control.
+    let icon = egui::Rect::from_center_size(
+        egui::pos2(response.rect.left() + 8.0, response.rect.center().y),
+        egui::vec2(16.0, 16.0),
+    );
+    let accent = ui.visuals().selection.stroke.color;
+    let fill = if value {
+        accent
+    } else {
+        egui::Color32::from_rgb(18, 21, 24)
+    };
+    ui.painter().rect(
+        icon,
+        2.0,
+        fill,
+        egui::Stroke::new(
+            1.0,
+            if value {
+                accent
+            } else {
+                egui::Color32::from_rgb(92, 97, 89)
+            },
+        ),
+        egui::StrokeKind::Inside,
+    );
+    if value {
+        ui.painter().add(egui::Shape::line(
+            vec![
+                icon.left_center() + egui::vec2(3.0, 0.0),
+                icon.center() + egui::vec2(-1.0, 4.0),
+                icon.right_top() + egui::vec2(-3.0, 4.0),
+            ],
+            egui::Stroke::new(2.0, egui::Color32::from_rgb(45, 43, 34)),
+        ));
+    } else if stored.is_none() {
+        ui.painter().hline(
+            icon.left() + 4.0..=icon.right() - 4.0,
+            icon.center().y,
+            egui::Stroke::new(1.0, ui.visuals().weak_text_color()),
+        );
+    }
     #[cfg(test)]
     ui.ctx().data_mut(|data| {
         data.insert_temp(
@@ -512,7 +437,7 @@ fn basic_page(ui: &mut egui::Ui, draft: &mut ClientSettings, english: bool) {
         }
     });
     boxed(ui, if english { "Interface" } else { "Interfejs" }, |ui| {
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             ui.label(if english { "HUD Style:" } else { "Styl HUD:" });
             future_toggle(
                 ui,
@@ -680,15 +605,40 @@ fn primary_footer_impl(
 ) -> (PreferenceAction, egui::Rect) {
     let mut action = PreferenceAction::None;
     let available = ui.available_rect_before_wrap();
-    let height = ui.spacing().interact_size.y + 8.0;
+    let compact_footer = available.width() < 520.0;
+    let height = ui.spacing().interact_size.y + if compact_footer { 8.0 } else { 24.0 };
     let footer = egui::Panel::bottom(egui::Id::new(id))
-        .frame(egui::Frame::NONE)
+        .frame(
+            egui::Frame::new()
+                .fill(egui::Color32::from_rgba_unmultiplied(29, 32, 33, 140))
+                .inner_margin(egui::Margin::symmetric(
+                    if compact_footer { 2 } else { 18 },
+                    if compact_footer { 2 } else { 10 },
+                )),
+        )
         .exact_size(height)
         .show(ui, |ui| {
-            ui.spacing_mut().button_padding = egui::vec2(6.0, 3.0);
+            ui.spacing_mut().button_padding =
+                egui::vec2(if compact_footer { 2.0 } else { 6.0 }, 3.0);
+            if available.width() < 300.0 {
+                ui.spacing_mut().item_spacing.x = 2.0;
+                ui.style_mut()
+                    .text_styles
+                    .insert(egui::TextStyle::Button, egui::FontId::proportional(10.0));
+            }
             ui.horizontal(|ui| {
                 let compact = ui.available_width() < 520.0;
-                if ui.button("Reset").on_hover_text(if english { "Restore defaults in the settings draft" } else { "Przywróć domyślne ustawienia w wersji roboczej" }).clicked() { action = PreferenceAction::Defaults; }
+                if ui
+                    .button("Reset")
+                    .on_hover_text(if english {
+                        "Restore defaults in the settings draft"
+                    } else {
+                        "Przywróć domyślne ustawienia w wersji roboczej"
+                    })
+                    .clicked()
+                {
+                    action = PreferenceAction::Defaults;
+                }
                 if !compact && let Some(advanced) = advanced {
                     ui.checkbox(
                         advanced,
@@ -705,32 +655,45 @@ fn primary_footer_impl(
                 let apply = if english { "Apply" } else { "Zastosuj" };
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
-                        .button(if english { "Cancel" } else { "Anuluj" })
+                        .add_sized(
+                            [
+                                if compact { 0.0 } else { 78.0 },
+                                if compact { 18.0 } else { 32.0 },
+                            ],
+                            egui::Button::new(
+                                egui::RichText::new("OK")
+                                    .color(egui::Color32::from_rgb(25, 24, 20))
+                                    .strong(),
+                            )
+                            .fill(egui::Color32::from_rgb(207, 177, 119)),
+                        )
                         .clicked()
                     {
-                        action = PreferenceAction::Cancel;
+                        action = PreferenceAction::Ok;
                     }
                     if ui
-                        .button(apply)
-                        .on_hover_text(if english {
-                            "Apply and save preferences"
-                        } else {
-                            "Zastosuj i zapisz ustawienia"
-                        })
+                        .add_sized(
+                            [
+                                if compact { 0.0 } else { 78.0 },
+                                if compact { 18.0 } else { 32.0 },
+                            ],
+                            egui::Button::new(apply),
+                        )
                         .clicked()
                     {
                         action = PreferenceAction::Apply;
                     }
                     if ui
-                        .button("OK")
-                        .on_hover_text(if english {
-                            "Save preferences and close"
-                        } else {
-                            "Zapisz ustawienia i zamknij"
-                        })
+                        .add_sized(
+                            [
+                                if compact { 0.0 } else { 78.0 },
+                                if compact { 18.0 } else { 32.0 },
+                            ],
+                            egui::Button::new(if english { "Cancel" } else { "Anuluj" }),
+                        )
                         .clicked()
                     {
-                        action = PreferenceAction::Ok;
+                        action = PreferenceAction::Cancel;
                     }
                 });
             });
@@ -1052,6 +1015,43 @@ pub(crate) mod test_support {
             .find_map(|shape| find(&shape.shape, shape.clip_rect, viewport, label))
     }
 
+    pub fn reveal<T>(
+        ctx: &Context,
+        size: Vec2,
+        label: &str,
+        pointer: Pos2,
+        mut draw: impl FnMut(&Context) -> T,
+    ) -> FullOutput {
+        let mut output = frame(ctx, size, vec![], &mut draw).1;
+        if button_position(&output, size, label).is_some() {
+            return output;
+        }
+        for delta in std::iter::once(4000.0).chain(std::iter::repeat_n(-100.0, 40)) {
+            output = frame(
+                ctx,
+                size,
+                vec![
+                    Event::PointerMoved(pointer),
+                    Event::MouseWheel {
+                        unit: egui::MouseWheelUnit::Point,
+                        delta: egui::vec2(0.0, delta),
+                        phase: egui::TouchPhase::Move,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                ],
+                &mut draw,
+            )
+            .1;
+            for _ in 0..12 {
+                output = frame(ctx, size, vec![], &mut draw).1;
+            }
+            if button_position(&output, size, label).is_some() {
+                break;
+            }
+        }
+        output
+    }
+
     pub fn click<T>(
         ctx: &Context,
         size: Vec2,
@@ -1088,19 +1088,35 @@ pub(crate) mod test_support {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_support::{button_position, click, frame, scroll_geometry};
+    use test_support::{button_position, click, frame, reveal, scroll_geometry};
 
     #[test]
     fn quick_settings_hud_navigation_opens_the_requested_page() -> Result<(), &'static str> {
         let ctx = egui::Context::default();
         let size = egui::vec2(900.0, 620.0);
         let mut browser = PreferencesBrowser::new();
-        let mut draft = ClientSettings { english: true, ..Default::default() };
+        browser.overview = true;
+        let mut draft = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
         let mut output = egui::FullOutput::default();
-        for _ in 0..5 { output = frame(&ctx, size, vec![], |ctx| browser.show(ctx, &mut draft, None)).1; }
-        let target = button_position(&output, size, "Character HUD").ok_or("HUD navigation missing")?;
-        let _ = click(&ctx, size, target, |ctx| browser.show(ctx, &mut draft, None));
-        for _ in 0..3 { let _ = frame(&ctx, size, vec![], |ctx| browser.show(ctx, &mut draft, None)); }
+        for _ in 0..5 {
+            output = frame(&ctx, size, vec![], |ctx| {
+                browser.show(ctx, &mut draft, None)
+            })
+            .1;
+        }
+        let target =
+            button_position(&output, size, "Character HUD").ok_or("HUD navigation missing")?;
+        let _ = click(&ctx, size, target, |ctx| {
+            browser.show(ctx, &mut draft, None)
+        });
+        for _ in 0..3 {
+            let _ = frame(&ctx, size, vec![], |ctx| {
+                browser.show(ctx, &mut draft, None)
+            });
+        }
         assert!(!browser.overview);
         assert_eq!(SETTINGS_SECTIONS[browser.section].id, "hud");
         Ok(())
@@ -1111,7 +1127,7 @@ mod tests {
     -> Result<(), &'static str> {
         for english in [false, true] {
             let ctx = egui::Context::default();
-            let size = egui::vec2(900.0, 620.0);
+            let size = egui::vec2(1440.0, 1000.0);
             let mut browser = PreferencesBrowser::new();
             browser.overview = false;
             browser.section = SETTINGS_SECTIONS
@@ -1125,6 +1141,12 @@ mod tests {
             draft
                 .future_preferences
                 .insert("basic.basic.advanced".into(), FutureValue::Bool(true));
+            draft
+                .future_preferences
+                .insert("hud.conditions_hud_enabled".into(), FutureValue::Bool(true));
+            draft
+                .future_preferences
+                .insert("hud.conditions_bar_enabled".into(), FutureValue::Bool(true));
             let mut output = egui::FullOutput::default();
             for _ in 0..4 {
                 output = frame(&ctx, size, vec![], |ctx| {
@@ -1155,6 +1177,13 @@ mod tests {
                     "Anuluj",
                 ]
             } {
+                output = reveal(
+                    &ctx,
+                    size,
+                    label,
+                    egui::pos2(size.x * 0.7, size.y * 0.7),
+                    |ctx| browser.show(ctx, &mut draft, None),
+                );
                 assert!(
                     button_position(&output, size, label).is_some(),
                     "default HUD clips {label}"
@@ -1194,6 +1223,13 @@ mod tests {
                     .show(ctx, &mut draft, None)),
                 PreferenceAction::QuickSettings
             ));
+            let _ = reveal(
+                &ctx,
+                size,
+                if english { "Powerless" } else { "Bezsilność" },
+                egui::pos2(size.x * 0.7, size.y * 0.7),
+                |ctx| browser.show(ctx, &mut draft, None),
+            );
             for where_ in ["hud", "bar"] {
                 let key = format!("hud.condition_powerless_{where_}");
                 let (rect, clip) = ctx
@@ -1229,7 +1265,7 @@ mod tests {
                         "Szukaj ustawienia…"
                     }
                 )
-                .is_none()
+                .is_some()
             );
         }
         Ok(())
@@ -1285,7 +1321,8 @@ mod tests {
     }
 
     #[test]
-    fn advanced_action_bars_fit_all_clear_buttons_without_scrolling() -> Result<(), &'static str> {
+    fn advanced_action_bars_scroll_to_clear_buttons_and_route_actions() -> Result<(), &'static str>
+    {
         for english in [false, true] {
             let ctx = egui::Context::default();
             ctx.set_theme(egui::Theme::Dark);
@@ -1305,13 +1342,24 @@ mod tests {
             draft
                 .future_preferences
                 .insert("basic.basic.advanced".into(), FutureValue::Bool(true));
-            let mut output = egui::FullOutput::default();
+            let mut output;
             for _ in 0..4 {
-                output = frame(&ctx, size, Vec::new(), |ctx| {
+                let _ = frame(&ctx, size, Vec::new(), |ctx| {
                     browser.show(ctx, &mut draft, None)
                 })
                 .1;
             }
+            output = reveal(
+                &ctx,
+                size,
+                if english {
+                    "Clear Right Action Bars:"
+                } else {
+                    "Wyczyść prawe paski:"
+                },
+                egui::pos2(size.x * 0.75, size.y * 0.6),
+                |ctx| browser.show(ctx, &mut draft, None),
+            );
             assert!(
                 button_position(
                     &output,
@@ -1411,7 +1459,7 @@ mod tests {
         crate::client_chrome::install(&ctx, false);
         let size = egui::vec2(900.0, 620.0);
         let mut browser = PreferencesBrowser::new();
-            browser.overview = false;
+        browser.overview = false;
         let mut draft = ClientSettings {
             english: true,
             ..Default::default()
@@ -1426,16 +1474,33 @@ mod tests {
             .action_bar
             .set_row(2, third)
             .map_err(|_| "invalid row")?;
-        let mut output = egui::FullOutput::default();
+        let mut output;
         for _ in 0..4 {
-            output = frame(&ctx, size, Vec::new(), |ctx| {
+            let _ = frame(&ctx, size, Vec::new(), |ctx| {
                 browser.show(ctx, &mut draft, None)
             })
             .1;
         }
         for title in ["Gameplay", "Interface", "Graphics", "Sound"] {
-            assert!(output.shapes.iter().any(|shape| matches!(&shape.shape, egui::epaint::Shape::Text(text) if text.galley.job.text == title)), "reference group {title} not rendered");
+            output = reveal(
+                &ctx,
+                size,
+                title,
+                egui::pos2(size.x * 0.75, size.y * 0.6),
+                |ctx| browser.show(ctx, &mut draft, None),
+            );
+            assert!(
+                button_position(&output, size, title).is_some(),
+                "reference group {title} unreachable"
+            );
         }
+        output = reveal(
+            &ctx,
+            size,
+            "Bar 3",
+            egui::pos2(size.x * 0.75, size.y * 0.6),
+            |ctx| browser.show(ctx, &mut draft, None),
+        );
         let position =
             button_position(&output, size, "Bar 3").ok_or("individual row control clipped")?;
         let _ = click(&ctx, size, position, |ctx| {
@@ -1473,24 +1538,13 @@ mod tests {
             browser.show(ctx, &mut draft, None)
         })
         .1;
-        assert!(button_position(&output, size, "Effects").is_none());
-        let advanced = button_position(&output, size, "Show advanced options")
-            .ok_or("advanced switch clipped")?;
-        let _ = click(&ctx, size, advanced, |ctx| {
-            browser.show(ctx, &mut draft, None)
-        });
-        assert_eq!(
-            draft.future_preferences.get("basic.basic.advanced"),
-            Some(&FutureValue::Bool(true))
-        );
-        for _ in 0..4 {
-            output = frame(&ctx, size, Vec::new(), |ctx| {
-                browser.show(ctx, &mut draft, None)
-            })
-            .1;
-        }
+        // Full settings no longer need the old advanced-mode toggle.
         assert!(button_position(&output, size, "Controls").is_some());
-        assert!(button_position(&output, size, "Effects").is_none());
+        assert!(
+            !draft
+                .future_preferences
+                .contains_key("basic.basic.advanced")
+        );
         assert!(draft.validate().is_ok());
         Ok(())
     }
@@ -1502,7 +1556,7 @@ mod tests {
         crate::client_chrome::install(&ctx, false);
         let size = egui::vec2(900.0, 620.0);
         let mut browser = PreferencesBrowser::new();
-            browser.overview = false;
+        browser.overview = false;
         let mut draft = ClientSettings {
             english: true,
             ..Default::default()
@@ -1550,8 +1604,8 @@ mod tests {
     }
 
     #[test]
-    fn basic_preferences_fit_the_body_at_native_and_tall_desktop_sizes() -> Result<(), &'static str>
-    {
+    fn basic_preferences_remain_reachable_at_native_and_scaled_desktop_sizes()
+    -> Result<(), &'static str> {
         for english in [false, true] {
             for (physical_size, scale) in [
                 (egui::vec2(1143.0, 814.0), 1.0),
@@ -1563,7 +1617,7 @@ mod tests {
                 crate::client_chrome::install(&ctx, false);
                 let size = physical_size / scale;
                 let mut browser = PreferencesBrowser::new();
-            browser.overview = false;
+                browser.overview = false;
                 let mut draft = ClientSettings {
                     english,
                     ui_scale: scale,
@@ -1593,10 +1647,39 @@ mod tests {
                         "Głośność główna: —",
                     ]
                 } {
+                    // Larger type may require scrolling at high UI scale, but every
+                    // option must remain reachable without moving the fixed footer.
+                    for _ in 0..8 {
+                        if button_position(&output, size, label).is_some() {
+                            break;
+                        }
+                        output = frame(
+                            &ctx,
+                            size,
+                            vec![
+                                egui::Event::PointerMoved(egui::pos2(size.x * 0.75, size.y * 0.6)),
+                                egui::Event::MouseWheel {
+                                    unit: egui::MouseWheelUnit::Point,
+                                    delta: egui::vec2(0.0, -100.0),
+                                    phase: egui::TouchPhase::Move,
+                                    modifiers: egui::Modifiers::NONE,
+                                },
+                            ],
+                            |ctx| browser.show(ctx, &mut draft, None),
+                        )
+                        .1;
+                        for _ in 0..10 {
+                            output = frame(&ctx, size, vec![], |ctx| {
+                                browser.show(ctx, &mut draft, None)
+                            })
+                            .1;
+                        }
+                    }
                     assert!(
                         button_position(&output, size, label).is_some(),
-                        "Basic control is clipped: {label}, {size:?}"
+                        "Basic control unreachable: {label}, {size:?}"
                     );
+                    assert!(button_position(&output, size, "OK").is_some());
                 }
                 let (inner, content) = scroll_geometry(&ctx, "all-preferences-body-geometry")
                     .ok_or("missing preferences body geometry")?;
@@ -1605,8 +1688,12 @@ mod tests {
                     "Basic preferences unnecessarily scroll horizontally: {content:?}, {inner:?}"
                 );
                 assert!(
-                    content.y <= inner.height() + 1.0,
-                    "Basic preferences overflow the dialog body: {content:?}, {inner:?}"
+                    inner.bottom() < size.y,
+                    "Page viewport must stay within the window"
+                );
+                assert!(
+                    button_position(&output, size, "OK").is_some(),
+                    "Fixed footer must remain reachable after page scrolling"
                 );
             }
         }
@@ -1629,7 +1716,6 @@ mod tests {
             draft
                 .future_preferences
                 .insert("basic.basic.advanced".into(), FutureValue::Bool(true));
-            browser.expanded.extend(["graphics", "interface"]);
             let effects = SETTINGS_SECTIONS
                 .iter()
                 .find(|section| section.id == "game_window")
@@ -1638,13 +1724,20 @@ mod tests {
                 .iter()
                 .find(|section| section.id == "action_bars")
                 .ok_or("missing action bars")?;
-            let mut output = egui::FullOutput::default();
+            let mut output;
             for _ in 0..4 {
-                output = frame(&ctx, size, Vec::new(), |ctx| {
+                let _ = frame(&ctx, size, Vec::new(), |ctx| {
                     browser.show(ctx, &mut draft, None)
                 })
                 .1;
             }
+            output = reveal(
+                &ctx,
+                size,
+                effects.text(english),
+                egui::pos2(110.0, size.y * 0.6),
+                |ctx| browser.show(ctx, &mut draft, None),
+            );
             let position = button_position(&output, size, effects.text(english))
                 .ok_or("effects navigation not visible")?;
             let _ = click(&ctx, size, position, |ctx| {
@@ -1685,6 +1778,13 @@ mod tests {
             assert!(
                 button_position(&output, size, first_effect).is_none(),
                 "effects did not scroll"
+            );
+            output = reveal(
+                &ctx,
+                size,
+                action_bars.text(english),
+                egui::pos2(110.0, size.y * 0.6),
+                |ctx| browser.show(ctx, &mut draft, None),
             );
             let position = button_position(&output, size, action_bars.text(english))
                 .ok_or("action bars navigation not visible")?;
