@@ -25,6 +25,7 @@ use crate::combat::{
     check_inflight_loot_mint_capacity, loot_plan_seed, plan_creature_loot,
     settle_creature_death_rewards_with_bestiary,
 };
+use crate::content::character_progression_content::CHARACTER_EXPERIENCE_TABLE_LEVELS;
 use crate::content::creature_reward::{CreatureRewardRow, CreatureRewardTable};
 use crate::durability::bestiary_progress::BestiaryProgressError;
 use crate::durability::character_progression::CharacterProgressionError;
@@ -1025,7 +1026,7 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
             expected_character_revision,
             ..self.fence
         };
-        let input = CreatureDeathRewardInput::<1> {
+        let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             corpse_item: entry.row.corpse_item.clone(),
             loot_table_ref: entry.row.loot_table_ref.clone(),
             loot_table: entry.row.loot_table.clone(),
@@ -1035,7 +1036,11 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
                 gameplay_fence: fence,
             }],
             xp_amount: entry.row.xp_amount,
-            progression: super::player_death_progression().cloned(),
+            // ARCH-PROGRESSION-SOURCE-0 §1.4: the principal's own session binding; an unbound
+            // session settles corpse and loot only (`no_progression_binding`).
+            progression: admission
+                .progression_binding(self.fence.game_session_id)
+                .map(|binding| (*binding).clone()),
         };
         let session = DurabilitySession {
             root: admission.root,
