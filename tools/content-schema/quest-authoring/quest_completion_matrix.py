@@ -150,11 +150,15 @@ def states(definitions, mapping_state, candidate_states, held_keys):
         implementation = "NATIVE_LOWERING_PENDING"
     else:
         readiness = {d.get("readiness", "UNKNOWN") for d in definitions}
-        implementation = (
-            "DEFINITION_READY_RUNTIME_UNKNOWN"
-            if readiness == {"definition_ready"}
-            else "REVIEW_REQUIRED"
-        )
+        kinds = {d.get("kind") for d in definitions}
+        if readiness == {"definition_ready"} and kinds == {"reward_only"}:
+            implementation = "REWARD_ONLY_RUNTIME_PENDING"
+        else:
+            implementation = (
+                "DEFINITION_READY_RUNTIME_UNKNOWN"
+                if readiness == {"definition_ready"}
+                else "REVIEW_REQUIRED"
+            )
     progress_state = next(iter(progress_states)) if len(progress_states) == 1 else "MULTIPLE"
     return source_state, progress_state, implementation
 

@@ -25,6 +25,20 @@ pub enum StepDir {
     West,
 }
 
+impl StepDir {
+    /// The tile one step from `tile` in this direction.
+    #[must_use]
+    pub const fn from(self, tile: TileCoord) -> TileCoord {
+        let (dx, dy) = match self {
+            Self::North => (0, -1),
+            Self::East => (1, 0),
+            Self::South => (0, 1),
+            Self::West => (-1, 0),
+        };
+        TileCoord::new(tile.x.saturating_add(dx), tile.y.saturating_add(dy))
+    }
+}
+
 /// Tile under a physical mouse position, or `None` outside the drawn view.
 #[must_use]
 pub fn click_tile(view: &TileView, x: f64, y: f64) -> Option<TileCoord> {
@@ -361,6 +375,14 @@ mod tests {
 
     fn view() -> Result<TileView, oteryn_renderer::BatchError> {
         TileView::new(t(-7, -5), 48, 15, 11)
+    }
+
+    #[test]
+    fn a_step_moves_one_tile_north_is_y_minus_one() {
+        assert_eq!(StepDir::North.from(t(5, 5)), t(5, 4));
+        assert_eq!(StepDir::East.from(t(5, 5)), t(6, 5));
+        assert_eq!(StepDir::South.from(t(5, 5)), t(5, 6));
+        assert_eq!(StepDir::West.from(t(i32::MIN, 0)), t(i32::MIN, 0));
     }
 
     #[test]

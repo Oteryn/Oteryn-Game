@@ -259,7 +259,12 @@ impl Harness {
             .map_err(debug)?;
         match self
             .root
-            .commit_item_mint(&authority, &self.node, candidate)
+            .commit_item_mint(
+                &candidate.fresh_death_lane_permit().await,
+                &authority,
+                &self.node,
+                candidate,
+            )
             .await
             .map_err(debug)?
         {

@@ -10,6 +10,7 @@ use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_f
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, scope_of};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::spell_items_abi::*;
+use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::durability::item_mint::{GroundPlacement, TypedDefinitionRef};
 use crate::foundation::CommandRef;
@@ -91,6 +92,7 @@ impl DurabilityRoot {
     /// the same immutable source schedule on the next pass.
     pub(crate) async fn drain_spell_item_deadlines(
         &self,
+        permit: &SpellLanePermit,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         scope: crate::foundation::RuntimeScopeRefV1,
@@ -101,13 +103,15 @@ impl DurabilityRoot {
             .map_err(|_| SpellItemError::Rejected("due pass recovery authority"))?;
         let root = self.clone();
         let node = node.clone();
+        let mut context = permit;
         root.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
+                    let permit: &SpellLanePermit = permit;
                     let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
                     let outcome: Result<usize> = async {
                         let authority = assert_spell_item_scope_with_recovery(
-                            &mut tx, &record, &node, scope, generation,
+                            &mut tx, permit, &record, &node, scope, generation,
                         )
                         .await?;
                         let fields =
@@ -141,6 +145,7 @@ impl DurabilityRoot {
     }
     pub(crate) async fn read_standing_player_tile(
         &self,
+        permit: &SpellLanePermit,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
@@ -152,12 +157,15 @@ impl DurabilityRoot {
             .map_err(|_| SpellItemError::Rejected("standing read recovery authority"))?;
         let root = self.clone();
         let node = node.clone();
+        let mut context = permit;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
+                    let permit: &SpellLanePermit = permit;
                     let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
                     let result = match read_standing_player_tile_with_recovery(
                         &mut tx,
+                        permit,
                         &root,
                         &record,
                         &node,
@@ -181,8 +189,9 @@ impl DurabilityRoot {
     /// caster-cost receipt and optional Character training/companion source.
     /// The outer Channel compositor must retain its physical preflight/owner
     /// lock and install only after this returns a genuine COMMIT capability.
-    pub(crate) async fn commit_world_item_spell(
+    pub(crate) async fn commit_world_item_spell<T: Send + 'static>(
         &self,
+        window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
         recovery_authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
@@ -194,12 +203,14 @@ impl DurabilityRoot {
             .map_err(|_| SpellItemError::Rejected("unbound Character recovery authority"))?;
         let root = self.clone();
         let node = node.clone();
+        let mut context = window;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, window| {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     let authority = match assert_spell_item_authority_with_recovery(
                         &mut tx,
+                        window.permit(),
                         &root,
                         &recovery,
                         &node,
@@ -341,9 +352,10 @@ impl DurabilityRoot {
                         Ok(value) => value,
                         Err(error) => return Ok(Err(SpellItemError::Durability(error))),
                     };
-                    let committed =
-                        super::spell_owner_commit::commit_spell_owner_transaction(tx, pending)
-                            .await?;
+                    let committed = super::spell_owner_commit::commit_spell_owner_transaction(
+                        tx, pending, window,
+                    )
+                    .await?;
                     let training = match training
                         .map(|pending| pending.after_commit(&committed))
                         .transpose()
@@ -716,6 +728,7 @@ impl DueSpellItemReadAuthority {
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn assert_due_spell_item_read_authority_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
     root: &DurabilityRoot,
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
@@ -736,6 +749,7 @@ pub(crate) async fn assert_due_spell_item_read_authority_in_transaction(
     }
     let mut authority = assert_spell_item_authority_in_transaction(
         tx,
+        permit,
         root,
         recovery,
         node,
@@ -856,6 +870,7 @@ impl StandingTileRead {
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn read_standing_player_tile_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
     root: &DurabilityRoot,
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
@@ -866,12 +881,23 @@ pub(crate) async fn read_standing_player_tile_in_transaction(
     let record = recovery
         .record_for(root)
         .map_err(|_| SpellItemError::Rejected("standing read recovery authority"))?;
-    read_standing_player_tile_with_recovery(tx, root, &record, node, fence, content_digest, target)
-        .await
+    read_standing_player_tile_with_recovery(
+        tx,
+        permit,
+        root,
+        &record,
+        node,
+        fence,
+        content_digest,
+        target,
+    )
+    .await
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn read_standing_player_tile_with_recovery(
     tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
     root: &DurabilityRoot,
     record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -886,6 +912,7 @@ async fn read_standing_player_tile_with_recovery(
     }
     let authority = assert_spell_item_scope_with_recovery(
         tx,
+        permit,
         record,
         node,
         fence.runtime_scope,
@@ -930,6 +957,7 @@ async fn read_standing_player_tile_with_recovery(
 
 pub(crate) async fn assert_spell_item_scope_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
     root: &DurabilityRoot,
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
@@ -939,11 +967,12 @@ pub(crate) async fn assert_spell_item_scope_in_transaction(
     let record = recovery
         .record_for(root)
         .map_err(|_| SpellItemError::Rejected("recovery authority"))?;
-    assert_spell_item_scope_with_recovery(tx, &record, node, scope, generation).await
+    assert_spell_item_scope_with_recovery(tx, permit, &record, node, scope, generation).await
 }
 
 pub(crate) async fn assert_spell_item_scope_with_recovery(
     tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
     record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
     scope: crate::foundation::RuntimeScopeRefV1,
@@ -956,6 +985,7 @@ pub(crate) async fn assert_spell_item_scope_with_recovery(
     else {
         return Err(SpellItemError::Rejected("timer requires Channel scope"));
     };
+    permit.check_channel(world_id, channel_id)?;
     assert_recovery_fence(tx, record).await?;
     super::db::lock_admission_relations(tx).await?;
     let fact = node.fact();
@@ -1077,8 +1107,10 @@ impl SpellItemAuthority {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn assert_spell_item_authority_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
     root: &DurabilityRoot,
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
@@ -1091,6 +1123,7 @@ pub(crate) async fn assert_spell_item_authority_in_transaction(
         .map_err(|_| SpellItemError::Rejected("recovery authority"))?;
     assert_spell_item_authority_with_recovery(
         tx,
+        permit,
         root,
         &record,
         node,
@@ -1101,8 +1134,10 @@ pub(crate) async fn assert_spell_item_authority_in_transaction(
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn assert_spell_item_authority_with_recovery(
     tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
     _root: &DurabilityRoot,
     record: &crate::character_recovery_fence::CharacterRecoveryFenceV1,
     node: &NodeIncarnationProof,
@@ -1115,10 +1150,11 @@ pub(super) async fn assert_spell_item_authority_with_recovery(
             "missing compatible Content binding",
         ));
     }
-    assert_recovery_fence(tx, record).await?;
-    super::db::lock_admission_relations(tx).await?;
     let (world, channel) =
         scope_of(fence).map_err(|_| SpellItemError::Rejected("Channel scope"))?;
+    permit.check_channel(world, channel)?;
+    assert_recovery_fence(tx, record).await?;
+    super::db::lock_admission_relations(tx).await?;
     if !character_item_fence_is_current(
         tx,
         node,
@@ -1754,21 +1790,20 @@ pub(crate) async fn apply_spell_items_in_transaction(
     authority: &SpellItemAuthority,
     request: &SpellItemTransactionRequest,
 ) -> Result<SpellItemTransactionOutcome> {
-    apply_spell_items_in_transaction_guarded(tx, authority, request, || Ok(())).await
+    apply_spell_items_in_transaction_guarded(tx, authority, request, Ok(())).await
 }
 
 /// Current eligibility gates new source writes. An exact prior occurrence is
 /// classified first and still requires its original sealed COMMIT proof before
 /// physical reconciliation; historical success does not reacquire authority.
-pub(crate) async fn apply_spell_items_in_transaction_guarded<F>(
+/// `new_write_verdict` is the `validate_new_write` verdict the caller computed in its stage
+/// section S (ARCH-SPELL-LOCK-2 §1.1); it is never re-read from the runtime here.
+pub(crate) async fn apply_spell_items_in_transaction_guarded(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
     request: &SpellItemTransactionRequest,
-    new_write_guard: F,
-) -> Result<SpellItemTransactionOutcome>
-where
-    F: FnOnce() -> Result<()>,
-{
+    new_write_verdict: Result<()>,
+) -> Result<SpellItemTransactionOutcome> {
     if authority.due_read_only {
         return Err(SpellItemError::Rejected(
             "due callback cannot grant a new cast or Item mutation",
@@ -1828,7 +1863,7 @@ where
         }
         return Ok(SpellItemTransactionOutcome::AlreadyCommitted(receipt));
     }
-    new_write_guard()?;
+    new_write_verdict?;
     let occurred_at: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint")
             .fetch_one(&mut **tx)
