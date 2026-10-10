@@ -104,6 +104,32 @@ pub(crate) async fn exchange_with_status(
 ) -> Result<(u16, Vec<u8>), SourceError> {
     exchange_status(desc, operation, body, permit, false).await
 }
+/// Request head bound: the fixed request line and fields, the longest
+/// operation path, a 253-byte host and a 20-digit `Content-Length`.
+const REQUEST_HEAD_BYTES: usize = 512;
+/// Request envelope (head and body) for every other operation.
+const REQUEST_ENVELOPE_BYTES: usize = 10_240;
+/// Per-operation envelope cap: the projection snapshot (`LCA-REQUEST-BYTES`)
+/// gets its own head allowance; every other operation keeps the shared cap.
+const fn request_envelope_max(operation: Operation) -> usize {
+    match operation {
+        Operation::PublishAccountCharactersV1 => {
+            super::account_characters::SNAPSHOT_BYTES + REQUEST_HEAD_BYTES
+        }
+        _ => REQUEST_ENVELOPE_BYTES,
+    }
+}
+const _: () = assert!(
+    super::account_characters::WATERMARK_BYTES + REQUEST_HEAD_BYTES <= REQUEST_ENVELOPE_BYTES
+);
+fn request_head(operation: Operation, host_header: &str, body_len: usize) -> String {
+    format!(
+        "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        operation.path(),
+        host_header,
+        body_len
+    )
+}
 async fn exchange_status(
     desc: &ProducerDescriptor,
     operation: Operation,
@@ -131,14 +157,9 @@ async fn exchange_status(
         .await
         .map_err(|_| SourceError::Unavailable)??;
         tls.get_mut().0.finish_handshake();
-        let request = format!(
-            "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-            operation.path(),
-            desc.host_header,
-            body.len(),
-            body
-        );
-        if request.len() > 10_240 {
+        let mut request = request_head(operation, &desc.host_header, body.len());
+        request.push_str(body);
+        if request.len() > request_envelope_max(operation) {
             return Err(SourceError::CapacityExceeded);
         }
         tls.write_all(request.as_bytes()).await?;
@@ -156,6 +177,19 @@ async fn exchange_status(
                 super::scope_assignment::RESPONSE_BYTES,
                 false,
                 &super::scope_assignment::RESPONSE_STATUSES,
+            )
+            .await
+        } else if matches!(
+            operation,
+            Operation::PublishAccountCharactersV1 | Operation::PublishProjectionWatermarkV1
+        ) {
+            // §3: every projection response, success or empty failure, fits 256 bytes.
+            read_response_bounded(
+                &mut tls,
+                require_ok,
+                super::account_characters::RESPONSE_BYTES,
+                false,
+                &[],
             )
             .await
         } else if require_ok {
@@ -445,6 +479,43 @@ mod tests {
                 Ok::<(), io::Error>(())
             })?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod envelope_tests {
+    use super::*;
+    const OPERATIONS: [Operation; 11] = [
+        Operation::ReadAccountSecurityV1,
+        Operation::ReadFreshSigningTrustV1,
+        Operation::ReadRecoveryAccountSecurityV2,
+        Operation::ReadRecoverySigningTrustV2,
+        Operation::ReadCharacterBootstrapIntentV1,
+        Operation::ReadPremiumSnapshotV1,
+        Operation::ReportRuntimeStatusV1,
+        Operation::PublishAccountCharactersV1,
+        Operation::PublishProjectionWatermarkV1,
+        Operation::ReportScopeAssignmentV1,
+        Operation::ReportScopeRevocationV1,
+    ];
+    #[test]
+    fn every_maximum_body_fits_its_envelope_and_only_the_snapshot_widens_it() {
+        let host = "h".repeat(253);
+        for operation in OPERATIONS {
+            let head = request_head(operation, &host, usize::MAX).len();
+            assert!(head <= REQUEST_HEAD_BYTES, "{operation:?} {head}");
+            assert!(
+                head + operation.request_bytes_max() <= request_envelope_max(operation),
+                "{operation:?}"
+            );
+            if operation != Operation::PublishAccountCharactersV1 {
+                assert_eq!(request_envelope_max(operation), REQUEST_ENVELOPE_BYTES);
+            }
+        }
+        assert_eq!(
+            request_envelope_max(Operation::PublishAccountCharactersV1),
+            super::super::account_characters::SNAPSHOT_BYTES + REQUEST_HEAD_BYTES
+        );
     }
 }
 

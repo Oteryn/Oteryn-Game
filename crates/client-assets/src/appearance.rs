@@ -11,12 +11,18 @@ pub const MAX_APPEARANCE_ID: u32 = 65_535;
 /// 15.30 appearances (frame group 0, phase 0, all layers) is 16, the bound is at least 16.
 pub const MAX_ENTRY_CELLS: usize = 16;
 
+/// The largest displacement (in pixels, per axis) an appearance may carry; an entry beyond it is
+/// unusable, so draw-offset arithmetic stays in range.
+pub const MAX_DISPLACEMENT_PX: u32 = 1024;
+
 // Hand-written messages with the field numbers of Canary's `appearances.proto` at the 15.30
 // pin. They carry only the fields this crate reads; unknown fields are skipped.
 #[derive(Clone, PartialEq, Message)]
 struct AppearancesMsg {
     #[prost(message, repeated, tag = "1")]
     object: Vec<AppearanceMsg>,
+    #[prost(message, repeated, tag = "2")]
+    outfit: Vec<AppearanceMsg>,
 }
 
 #[derive(Clone, PartialEq, Message)]
@@ -76,6 +82,10 @@ struct FlagsMsg {
     liquidpool: Option<bool>,
     #[prost(bool, optional, tag = "19")]
     liquidcontainer: Option<bool>,
+    #[prost(bool, optional, tag = "20")]
+    hang: Option<bool>,
+    #[prost(message, optional, tag = "21")]
+    hook: Option<HookMsg>,
     #[prost(message, optional, tag = "26")]
     shift: Option<ShiftMsg>,
     #[prost(message, optional, tag = "27")]
@@ -84,6 +94,13 @@ struct FlagsMsg {
 
 #[derive(Clone, PartialEq, Message)]
 struct BankMsg {}
+
+#[derive(Clone, PartialEq, Message)]
+struct HookMsg {
+    /// `HOOK_TYPE`: 1 south, 2 east.
+    #[prost(int32, optional, tag = "1")]
+    direction: Option<i32>,
+}
 
 #[derive(Clone, PartialEq, Message)]
 struct ShiftMsg {
@@ -119,6 +136,32 @@ pub struct Appearance {
     pub on_top: bool,
     pub stackable: bool,
     pub fluid: bool,
+    /// Hangs on a wall hook; its pattern follows the hook of the tile it is on.
+    pub hangable: bool,
+    /// The hook this entry gives the tile it is on.
+    pub hook: Hook,
+}
+
+/// The wall hook of a tile, which picks the pattern of a hangable entry on it.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Hook {
+    #[default]
+    None,
+    South,
+    East,
+}
+
+/// The pattern colour of each fluid sub-type in the modern client; unknown sub-types are empty.
+const FLUID_COLORS: [u32; 21] = [
+    0, 1, 7, 3, 3, 2, 4, 3, 5, 6, 7, 2, 5, 3, 5, 6, 3, 3, 8, 10, 9,
+];
+
+fn fluid_color(sub_type: u32) -> u32 {
+    usize::try_from(sub_type)
+        .ok()
+        .and_then(|index| FLUID_COLORS.get(index))
+        .copied()
+        .unwrap_or(0)
 }
 
 /// Where an entry sits and what it holds; these pick its pattern.
@@ -132,6 +175,8 @@ pub struct Placement {
     pub y: i32,
     /// Native floor `-15..=0`.
     pub floor: i32,
+    /// The hook given by the entries of the same tile.
+    pub hook: Hook,
 }
 
 impl Placement {
@@ -143,6 +188,7 @@ impl Placement {
             x,
             y,
             floor,
+            hook: Hook::None,
         }
     }
 }
@@ -169,10 +215,11 @@ pub struct ResolvedEntry {
     pub on_top: bool,
 }
 
-/// Object id to frame group 0, from the pinned `appearances` file.
+/// Object and outfit id to frame group 0, from the pinned `appearances` file.
 #[derive(Debug, Clone)]
 pub struct AppearanceIndex {
     objects: HashMap<u32, Appearance>,
+    outfits: HashMap<u32, Appearance>,
 }
 
 impl AppearanceIndex {
@@ -185,19 +232,25 @@ impl AppearanceIndex {
                 file: file.to_owned(),
                 reason: error.to_string(),
             })?;
-        let mut objects = HashMap::with_capacity(message.object.len());
-        for object in message.object {
-            let Some(id) = object.id.filter(|id| (1..=MAX_APPEARANCE_ID).contains(id)) else {
-                return Err(AssetError::Malformed {
-                    file: file.to_owned(),
-                    reason: "object without a valid id".into(),
-                });
-            };
-            if let Some(appearance) = convert(id, object) {
-                objects.insert(id, appearance);
+        let convert_all = |entries: Vec<AppearanceMsg>| {
+            let mut converted = HashMap::with_capacity(entries.len());
+            for entry in entries {
+                let Some(id) = entry.id.filter(|id| (1..=MAX_APPEARANCE_ID).contains(id)) else {
+                    return Err(AssetError::Malformed {
+                        file: file.to_owned(),
+                        reason: "object without a valid id".into(),
+                    });
+                };
+                if let Some(appearance) = convert(id, entry) {
+                    converted.insert(id, appearance);
+                }
             }
-        }
-        Ok(Self { objects })
+            Ok(converted)
+        };
+        Ok(Self {
+            objects: convert_all(message.object)?,
+            outfits: convert_all(message.outfit)?,
+        })
     }
 
     #[must_use]
@@ -224,6 +277,28 @@ impl AppearanceIndex {
         self.objects.values()
     }
 
+    /// Frame group 0 (standing) of an outfit (look type).
+    #[must_use]
+    pub fn outfit(&self, look_type: u32) -> Option<&Appearance> {
+        self.outfits.get(&look_type)
+    }
+
+    /// The cells of an outfit's base layer, standing, facing `direction` (0 north, 1 east,
+    /// 2 south, 3 west), without addons or mount. The colour-mask layer is not drawn.
+    pub fn resolve_outfit(
+        &self,
+        sheets: &SpriteSheets,
+        look_type: u32,
+        direction: u32,
+    ) -> Result<ResolvedEntry, AssetError> {
+        let appearance = self
+            .outfits
+            .get(&look_type)
+            .ok_or(AssetError::UnknownAppearance { id: look_type })?;
+        let pattern_x = direction % appearance.pattern_width;
+        entry(appearance, sheets, (pattern_x, 0, 0), 0..1)
+    }
+
     /// The cells to draw for one entry, chosen as the Tibia client does. `floor` is the native
     /// floor `-15..=0`; the depth pattern is selected from `z = -floor`, never from a negative
     /// index.
@@ -233,92 +308,125 @@ impl AppearanceIndex {
         appearance_id: u32,
         placement: Placement,
     ) -> Result<ResolvedEntry, AssetError> {
-        let Placement {
-            count,
-            sub_type,
-            x,
-            y,
-            floor,
-        } = placement;
         if !(1..=MAX_APPEARANCE_ID).contains(&appearance_id) {
             return Err(AssetError::InvalidAppearanceId { id: appearance_id });
         }
-        if !(-15..=0).contains(&floor) {
-            return Err(AssetError::InvalidFloor { floor });
+        if !(-15..=0).contains(&placement.floor) {
+            return Err(AssetError::InvalidFloor {
+                floor: placement.floor,
+            });
         }
         let appearance = self
             .objects
             .get(&appearance_id)
             .ok_or(AssetError::UnknownAppearance { id: appearance_id })?;
-        let z = floor.unsigned_abs();
-        let (pattern_x, pattern_y) = if appearance.fluid {
-            (
-                sub_type % 4 % appearance.pattern_width,
-                sub_type / 4 % appearance.pattern_height,
-            )
-        } else if appearance.stackable {
-            // Count thresholds 1, 2, 3, 4, 5, 10, 25, 50 select patterns 0..=7.
-            let step = match count {
-                0..=4 => count.saturating_sub(1),
-                5..=9 => 4,
-                10..=24 => 5,
-                25..=49 => 6,
-                _ => 7,
-            };
-            (
-                step % appearance.pattern_width,
-                step / appearance.pattern_width % appearance.pattern_height,
-            )
-        } else {
-            (
-                x.rem_euclid(appearance.pattern_width as i32) as u32,
-                y.rem_euclid(appearance.pattern_height as i32) as u32,
-            )
-        };
-        let pattern_z = z % appearance.pattern_depth;
-        let mut cells = Vec::new();
-        for layer in 0..appearance.layers {
-            let index = ((pattern_z * appearance.pattern_height + pattern_y)
-                * appearance.pattern_width
-                + pattern_x)
-                * appearance.layers
-                + layer;
-            // Phase 0 is the first block, so the index needs no phase term.
-            let sprite_id = appearance
-                .sprite_ids
-                .get(index as usize)
-                .copied()
-                .ok_or(AssetError::UnknownSprite { sprite_id: 0 })?;
-            if sprite_id == 0 {
-                continue;
-            }
-            let (cells_x, cells_y) = sheets.layout(sprite_id)?.cells();
-            for cell_y in 0..cells_y {
-                for cell_x in 0..cells_x {
-                    cells.push(DrawCell {
-                        sprite_id,
-                        cell_x,
-                        cell_y,
-                        offset_x: (cell_x as i32 + 1 - cells_x as i32) * CELL_PX as i32
-                            - appearance.displacement_x as i32,
-                        offset_y: (cell_y as i32 + 1 - cells_y as i32) * CELL_PX as i32
-                            - appearance.displacement_y as i32,
-                    });
-                }
-            }
-        }
-        if cells.len() > MAX_ENTRY_CELLS {
-            return Err(AssetError::TooManyCells { cells: cells.len() });
-        }
-        Ok(ResolvedEntry {
-            cells,
-            elevation: appearance.elevation,
-            ground: appearance.ground,
-            ground_border: appearance.ground_border,
-            on_bottom: appearance.on_bottom,
-            on_top: appearance.on_top,
-        })
+        let (pattern_x, pattern_y, pattern_z) = pattern(appearance, placement);
+        entry(
+            appearance,
+            sheets,
+            (pattern_x, pattern_y, pattern_z),
+            0..appearance.layers,
+        )
     }
+}
+
+/// The `(x, y, z)` pattern of `appearance` at `placement`, chosen as the Tibia client does. The
+/// depth pattern is selected from `z = -floor`, never from a negative index.
+fn pattern(appearance: &Appearance, placement: Placement) -> (u32, u32, u32) {
+    let Placement {
+        count,
+        sub_type,
+        x,
+        y,
+        floor,
+        hook,
+    } = placement;
+    let z = floor.unsigned_abs();
+    let (pattern_x, pattern_y) = if appearance.fluid {
+        let color = fluid_color(sub_type);
+        (
+            color % 4 % appearance.pattern_width,
+            color / 4 % appearance.pattern_height,
+        )
+    } else if appearance.stackable {
+        // Count thresholds 1, 2, 3, 4, 5, 10, 25, 50 select patterns 0..=7.
+        let step = match count {
+            0..=4 => count.saturating_sub(1),
+            5..=9 => 4,
+            10..=24 => 5,
+            25..=49 => 6,
+            _ => 7,
+        };
+        (
+            step % appearance.pattern_width,
+            step / appearance.pattern_width % appearance.pattern_height,
+        )
+    } else if appearance.hangable {
+        // Pattern 1 hangs on a south hook and 2 on an east hook; 0 lies on the floor.
+        let hooked = match hook {
+            Hook::South if appearance.pattern_width >= 2 => 1,
+            Hook::East if appearance.pattern_width >= 3 => 2,
+            _ => 0,
+        };
+        return (hooked, 0, 0);
+    } else {
+        (
+            x.rem_euclid(appearance.pattern_width as i32) as u32,
+            y.rem_euclid(appearance.pattern_height as i32) as u32,
+        )
+    };
+    (pattern_x, pattern_y, z % appearance.pattern_depth)
+}
+
+/// The cells of one pattern of `appearance`, phase 0, over `layers`.
+fn entry(
+    appearance: &Appearance,
+    sheets: &SpriteSheets,
+    (pattern_x, pattern_y, pattern_z): (u32, u32, u32),
+    layers: std::ops::Range<u32>,
+) -> Result<ResolvedEntry, AssetError> {
+    let mut cells = Vec::new();
+    for layer in layers {
+        let index = ((pattern_z * appearance.pattern_height + pattern_y)
+            * appearance.pattern_width
+            + pattern_x)
+            * appearance.layers
+            + layer;
+        // Phase 0 is the first block, so the index needs no phase term.
+        let sprite_id = appearance
+            .sprite_ids
+            .get(index as usize)
+            .copied()
+            .ok_or(AssetError::UnknownSprite { sprite_id: 0 })?;
+        if sprite_id == 0 {
+            continue;
+        }
+        let (cells_x, cells_y) = sheets.layout(sprite_id)?.cells();
+        for cell_y in 0..cells_y {
+            for cell_x in 0..cells_x {
+                cells.push(DrawCell {
+                    sprite_id,
+                    cell_x,
+                    cell_y,
+                    offset_x: (cell_x as i32 + 1 - cells_x as i32) * CELL_PX as i32
+                        - appearance.displacement_x as i32,
+                    offset_y: (cell_y as i32 + 1 - cells_y as i32) * CELL_PX as i32
+                        - appearance.displacement_y as i32,
+                });
+            }
+        }
+    }
+    if cells.len() > MAX_ENTRY_CELLS {
+        return Err(AssetError::TooManyCells { cells: cells.len() });
+    }
+    Ok(ResolvedEntry {
+        cells,
+        elevation: appearance.elevation,
+        ground: appearance.ground,
+        ground_border: appearance.ground_border,
+        on_bottom: appearance.on_bottom,
+        on_top: appearance.on_top,
+    })
 }
 
 fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
@@ -341,6 +449,10 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         return None;
     }
     let shift = flags.shift.unwrap_or_default();
+    let (displacement_x, displacement_y) = (shift.x.unwrap_or(0), shift.y.unwrap_or(0));
+    if displacement_x.max(displacement_y) > MAX_DISPLACEMENT_PX {
+        return None;
+    }
     Some(Appearance {
         id,
         pattern_width: width,
@@ -349,8 +461,8 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         layers,
         phases,
         sprite_ids: info.sprite_id,
-        displacement_x: shift.x.unwrap_or(0),
-        displacement_y: shift.y.unwrap_or(0),
+        displacement_x,
+        displacement_y,
         elevation: flags.height.unwrap_or_default().elevation.unwrap_or(0),
         ground: flags.bank.is_some(),
         ground_border: flags.clip.unwrap_or(false),
@@ -358,5 +470,100 @@ fn convert(id: u32, object: AppearanceMsg) -> Option<Appearance> {
         on_top: flags.top.unwrap_or(false),
         stackable: flags.cumulative.unwrap_or(false),
         fluid: flags.liquidcontainer.unwrap_or(false) || flags.liquidpool.unwrap_or(false),
+        hangable: flags.hang.unwrap_or(false),
+        hook: match flags.hook.and_then(|hook| hook.direction) {
+            Some(1) => Hook::South,
+            Some(2) => Hook::East,
+            _ => Hook::None,
+        },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn shifted(x: u32, y: u32) -> AppearanceMsg {
+        AppearanceMsg {
+            id: Some(1),
+            frame_group: vec![FrameGroupMsg {
+                sprite_info: Some(SpriteInfoMsg {
+                    sprite_id: vec![1],
+                    ..SpriteInfoMsg::default()
+                }),
+            }],
+            flags: Some(FlagsMsg {
+                shift: Some(ShiftMsg {
+                    x: Some(x),
+                    y: Some(y),
+                }),
+                ..FlagsMsg::default()
+            }),
+        }
+    }
+
+    #[test]
+    fn an_oversized_displacement_makes_the_entry_unusable() {
+        let kept = convert(1, shifted(8, MAX_DISPLACEMENT_PX));
+        assert_eq!(
+            kept.map(|kept| (kept.displacement_x, kept.displacement_y)),
+            Some((8, MAX_DISPLACEMENT_PX))
+        );
+        assert!(convert(1, shifted(u32::MAX, 0)).is_none());
+        assert!(convert(1, shifted(0, MAX_DISPLACEMENT_PX + 1)).is_none());
+    }
+
+    fn with_flags(width: u32, flags: FlagsMsg) -> Option<Appearance> {
+        let message = AppearanceMsg {
+            id: Some(1),
+            frame_group: vec![FrameGroupMsg {
+                sprite_info: Some(SpriteInfoMsg {
+                    pattern_width: Some(width),
+                    sprite_id: vec![1; width as usize],
+                    ..SpriteInfoMsg::default()
+                }),
+            }],
+            flags: Some(flags),
+        };
+        convert(1, message)
+    }
+
+    #[test]
+    fn a_hangable_entry_follows_the_hook_of_its_tile() {
+        let hook = |direction| FlagsMsg {
+            hook: Some(HookMsg {
+                direction: Some(direction),
+            }),
+            ..FlagsMsg::default()
+        };
+        let hooks: Vec<_> = [hook(1), hook(2), hook(7)]
+            .into_iter()
+            .map(|flags| with_flags(1, flags).map(|wall| wall.hook))
+            .collect();
+        assert_eq!(
+            hooks,
+            [Some(Hook::South), Some(Hook::East), Some(Hook::None)]
+        );
+
+        let hanging = FlagsMsg {
+            hang: Some(true),
+            ..FlagsMsg::default()
+        };
+        let on = |width, hook, x| {
+            with_flags(width, hanging.clone()).map(|item| {
+                pattern(
+                    &item,
+                    Placement {
+                        hook,
+                        ..Placement::at(x, 5, -7)
+                    },
+                )
+            })
+        };
+        assert_eq!(on(3, Hook::None, 1), Some((0, 0, 0)));
+        assert_eq!(on(3, Hook::South, 1), Some((1, 0, 0)));
+        assert_eq!(on(3, Hook::East, 1), Some((2, 0, 0)));
+        assert_eq!(on(2, Hook::East, 1), Some((0, 0, 0)));
+        assert_eq!(on(1, Hook::South, 0), Some((0, 0, 0)));
+    }
 }

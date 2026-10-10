@@ -107,7 +107,7 @@ Encounter
 | `ability_cast(role, AbilityRef)` | a monster spell script with fight effects (D29); a spell whose script only summons is converted as an ability that points to its encounter, and the encounter does the summon (D45) |
 | `damage_taken(role, source: player/any)` | `onHealthChange` per hit |
 | `heal_received(role, source: player/any)` | `onHealthChange` per heal (Canary runs the handler for heals too) (D31) |
-| `damage_accumulated(role, amount or percent)` | `onHealthChange` damage counters: fires each time one creature of the role has taken `amount` damage, or `percent` of its maximum health (the resolved creature definition's, after wiki adoption), since it appeared or since it last fired; the count then restarts at 0 and heals do not count (D34) |
+| `damage_accumulated(role, amount or percent)` | `onHealthChange` damage counters: fires each time one creature of the role has taken `amount` damage, or `percent` of its maximum health (the maximum in force: the resolved creature definition's, after wiki adoption, or a `max_health` override, ENCOUNTER-RT-0 §17.2), since it appeared or since it last fired; the count then restarts at 0 and heals do not count (D34) |
 | `timer_elapsed(timer)` | `addEvent` delays, `onThink` countdowns |
 | `counter_reached(counter, value)` | global kill/stage counters |
 | `area_entered(anchor, role or player)` / `area_left` | zone crossing (`izcandarThink`) |
@@ -158,7 +158,7 @@ rules.
 | `message` | text to every player in an anchor area (D31) |
 | `one_of` | two or more weighted branches, each a list of actions; the encounter instance draws one (D31) |
 | `drop_item` | ItemRef, chance, at role position |
-| `attribute` | role, `outgoing_damage_percent` (extra percent on the primary damage the role deals to players) or `defense`, `add` a value or a counter's value, or `reset` to the creature type's value (D34) |
+| `attribute` | role, `outgoing_damage_percent` (extra percent on the primary damage the role deals to players) or `defense`, `add` a value or a counter's value, or `reset` to the creature type's value (D34); `max_health` `set` to an absolute integer in 1..=4,294,967,295 (`u32::MAX`, the Creature health range) or `reset` (ENCOUNTER-RT-0 §17.2) |
 | `move_lock` | role, `locked`: a locked creature keeps fighting and casting but does not move (D34) |
 | `emit_outcome` | named outcome for quests, cooldowns and rewards (§2.5), `credited`: `damage_contributors`, `killer`, `players_in_anchor(anchor)` or `party`: the party of the top damage contributor, wherever its members are (D31) |
 
@@ -214,7 +214,9 @@ rules.
    counts, heal and damage amounts, rule delays and timer durations) is drawn uniformly by the
    encounter instance, so a fight can be audited and replayed from its seed.
 4. Health carried by `transform`/`spawn` is explicit (`keep_percent`, `keep_absolute`, `full`,
-   percent, or `remembered` for a spawn into a named role); nothing is implied.
+   percent, or `remembered` for a spawn into a named role); nothing is implied. A `max_health`
+   attribute never heals: a lower maximum clamps health, and only an explicit `heal` raises it
+   (ENCOUNTER-RT-0 §17.2).
 5. Anchors are typed (point or area) and must all be bound by the map project before the encounter is
    activated by a runtime; an unbound anchor blocks activation, never falls back to raw coordinates. Content
    admission into WorldProject/v2 takes the anchor's location in the project frame (E2,

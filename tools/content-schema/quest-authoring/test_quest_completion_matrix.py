@@ -57,6 +57,17 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             "REWARD_CLAIM_USE_PENDING",
             by_title["To Outfox a Fox Quest"]["work_state"],
         )
+        reward_only = [
+            row for row in self.result["records"]
+            if row["work_state"] == "REWARD_CLAIM_USE_PENDING"
+        ]
+        self.assertEqual(42, len(reward_only))
+        self.assertTrue(
+            all(
+                {definition["kind"] for definition in row["canonical"]} == {"reward_only"}
+                for row in reward_only
+            )
+        )
         self.assertEqual(
             {
                 "NATIVE_BINDINGS_PENDING": 331,

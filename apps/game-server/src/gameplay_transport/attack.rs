@@ -162,6 +162,14 @@ impl ActorAttack {
 #[derive(Debug, Default)]
 pub(crate) struct ChannelAttackStates {
     entries: Vec<ActorAttack>,
+    /// The Channel's unsettled creature kills (ARCH-KILL-REWARD-LOGOUT-1 §1.3).
+    kills: super::kill_reward::KillSettlementQueue,
+}
+
+impl ChannelAttackStates {
+    pub(crate) const fn kills(&self) -> &super::kill_reward::KillSettlementQueue {
+        &self.kills
+    }
 }
 
 /// Why an `ATTACK_TARGET` intent was refused before any owner state changed.
@@ -621,8 +629,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let states = self.spell_states.lock().await;
         let mut attack = self.attack.lock().await;
         attack.prune(&runtime);
+        let ChannelAttackStates { entries, kills } = &mut *attack;
+        let sink = super::kill_reward::KillSink {
+            queue: kills,
+            rewards: self.reward_table(),
+        };
         let root = GameplayDecisionRoot::from_bytes(digest);
-        for entry in &mut attack.entries {
+        for entry in entries.iter_mut() {
             let Some(target) = entry.state.target() else {
                 continue;
             };
@@ -631,6 +644,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             if states.is_dead(entry.actor) {
                 entry.clear_target();
+                continue;
+            }
+            // SPELL-LOCK-2 §1.3: while the attacker's own slot is reserved by a pending spell
+            // batch, its swing defers to a later turn; the held target and swing clock stay.
+            if runtime.assert_actor_spell_unreserved(entry.actor).is_err() {
                 continue;
             }
             let character_facts = player.character_facts();
@@ -765,9 +783,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ),
             );
             if result.health_after <= 0 {
-                let _ = crate::combat::project_fixed_one_creature_death(
-                    &mut runtime.borrow_combat_death(),
+                let lethal = crate::combat::CapturedRewardPrincipal {
+                    character: lease.character_id(),
+                    lease_generation: lease.generation(),
+                    session: entry.session,
+                    actor: entry.actor,
+                };
+                super::kill_reward::record_creature_kill(
+                    &mut runtime,
+                    sink,
                     target,
+                    lethal,
+                    now.get() / 1_000,
                 );
                 entry.clear_target();
             }

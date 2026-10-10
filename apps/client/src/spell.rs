@@ -4,7 +4,6 @@
 //! (N3 `InputRouter`). While the server gate is closed every cast is `Rejected`, shown as
 //! "spells unavailable"; no vitals arrive either, so no bar is drawn.
 
-use crate::input::Targetable;
 use oteryn_input_actions::{
     ActionId, ActionPhase, Binding, BindingMap, ContextDefinition, ContextId, ContextKind,
     InputAtom, InputChord, InputError, InputRouter, KeyCode, Modifiers, NormalizedInputEvent,
@@ -113,15 +112,15 @@ impl SpellFeedback {
     }
 }
 
-/// Casts `spell` at the selected target (aimed) or without one, and records the disposition.
+/// Casts `spell` at the attack target (`aimed`) or without one, and records the disposition.
 /// Vitals after a `Cast` are read from `Session::actor_vitals`.
 pub async fn cast_selected<S: SessionStream>(
     session: &mut Session<S>,
     feedback: &mut SpellFeedback,
     spell: NonZeroU32,
-    target: Option<Targetable>,
+    aimed: bool,
 ) -> Result<CastOutcome, SessionError> {
-    let (intent, aim) = if target.is_some() {
+    let (intent, aim) = if aimed {
         (SpellTarget::AttackTarget, true)
     } else {
         (SpellTarget::None, false)
@@ -186,7 +185,6 @@ pub fn vitals_bars(
 mod tests {
     use super::*;
     use oteryn_input_actions::ButtonState;
-    use oteryn_placeholder_assets::{PlaceholderCell, placeholder_atlas};
 
     fn key(code: u16, state: ButtonState) -> Result<NormalizedInputEvent, InputError> {
         Ok(NormalizedInputEvent::Key {
@@ -230,13 +228,8 @@ mod tests {
 
     #[test]
     fn bars_draw_track_and_fill_per_vital_and_nothing_without_vitals() -> Result<(), BatchError> {
-        let source = placeholder_atlas();
-        let atlas = AtlasImage::new(source.cell_px, source.columns, source.rows, source.rgba)?;
-        let cells = (
-            PlaceholderCell::Stone.index(),
-            PlaceholderCell::Grass.index(),
-            PlaceholderCell::Water.index(),
-        );
+        let atlas = AtlasImage::new(2, 3, 1, vec![0; 3 * 2 * 2 * 4])?;
+        let cells = (0, 1, 2);
         assert!(vitals_bars(&atlas, None, [0.0, 0.0], cells)?.is_empty());
         let vitals = ActorVitals {
             health: 75,

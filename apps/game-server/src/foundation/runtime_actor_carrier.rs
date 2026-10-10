@@ -823,6 +823,20 @@ pub(crate) enum TopDamagePrincipal {
     Present(TopDamageContributor),
 }
 
+impl TopDamagePrincipal {
+    /// The tracked winner, if any; callers outside Foundation cannot name this enum.
+    pub(crate) const fn present(self) -> Option<TopDamageContributor> {
+        match self {
+            Self::Present(winner) => Some(winner),
+            Self::Untracked | Self::Gone => None,
+        }
+    }
+
+    pub(crate) const fn is_gone(self) -> bool {
+        matches!(self, Self::Gone)
+    }
+}
+
 /// Stable identity of the one committed lethal occurrence. Construction stays
 /// private to the physical Channel owner; callers cannot supply occurrence
 /// bytes, HP facts or actor generation.
@@ -1412,6 +1426,9 @@ struct ChannelActorCarrier {
     /// reserved at bootstrap for every slot, so taking a slot never reallocates it; `remove`, the
     /// companion rollback and the spawn rollbacks keep it equal to those slots (Codex 4178855592).
     occupied: Vec<u32>,
+    /// MAP-ITEM-REF-1 Part B: the corpse Item bound to each retained corpse projection, at most
+    /// one per projection; [`ChannelRuntimeV1::bind_corpse_item`] drops the evicted ones.
+    corpse_item_bindings: Vec<CorpseItemBinding>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -2904,6 +2921,7 @@ impl ChannelActorCarrier {
             fence_transitions: 0,
             attackers: Vec::new(),
             occupied,
+            corpse_item_bindings: Vec::new(),
         })
     }
 
@@ -2975,6 +2993,8 @@ impl ChannelActorCarrier {
         reservation: PlayerActorReservation,
     ) -> Result<ExactActorRef, CarrierError> {
         let index = self.validate_ref(continuity, reservation.actor_ref)?;
+        // SPELL-LOCK-2 §1.3: a slot reserved by a pending spell batch refuses retryably.
+        self.assert_slot_spell_unreserved(index)?;
         match &mut self.slots[index] {
             Slot::Occupied {
                 generation,
@@ -3181,6 +3201,60 @@ impl ChannelActorCarrier {
         if let Some(at) = self.occupied.iter().position(|entry| *entry == index) {
             self.occupied.swap_remove(at);
         }
+    }
+
+    /// The borrowing check of [`Self::remove`] (ARCH-SPELL-LOCK-2 §1.6): it changes nothing.
+    /// `released` names slots whose owner reservation the same owner turn releases first.
+    pub(super) fn check_remove(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        released: &[usize],
+    ) -> Result<(), CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        match &self.slots[index] {
+            Slot::Occupied {
+                generation,
+                spell_combat,
+                ..
+            }
+            | Slot::CreatureOccupied {
+                generation,
+                spell_combat,
+                ..
+            } if *generation == actor_ref.actor_local_generation.0 => {
+                if spell_combat.pending_source.is_some()
+                    || (spell_combat.pending_owner.is_some() && !released.contains(&index))
+                {
+                    return Err(CarrierError::PlanConflict);
+                }
+            }
+            Slot::Occupied { .. } | Slot::CreatureOccupied { .. } => {
+                return Err(CarrierError::StaleActorGeneration);
+            }
+            Slot::CreatureReserved { .. }
+            | Slot::VacantReusable { .. }
+            | Slot::Exhausted { .. } => {
+                return Err(CarrierError::PlanConflict);
+            }
+        }
+        let mut child_count = 0;
+        for link in &self.native_summons {
+            if link.parent == ExactActorRef(actor_ref) {
+                if child_count == 16 {
+                    return Err(CarrierError::CapacityExceeded);
+                }
+                self.validate_summon_actor(continuity, link.child)?;
+                child_count += 1;
+            }
+        }
+        for link in &self.native_summons {
+            if link.parent == ExactActorRef(actor_ref) {
+                self.check_remove(continuity, link.child.0, released)?;
+            }
+        }
+        u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+        Ok(())
     }
 
     fn remove(
@@ -4514,6 +4588,10 @@ impl ChannelActorCarrier {
         successor: GameSessionId,
         lease: CharacterLease,
     ) -> Result<(), CarrierError> {
+        // SPELL-LOCK-2 §1.3: a slot reserved by a pending spell batch keeps its session binding
+        // until that batch installs or releases; the rebind refuses retryably before any write.
+        let index = self.player_slot_index(continuity, actor_ref, terminal)?;
+        self.assert_slot_spell_unreserved(index)?;
         let authority = self.attacker_authority_mut(continuity, actor_ref, terminal)?;
         // Only a newer lease of the same Character, under a different session, is a successor.
         match authority.lease {
@@ -4528,7 +4606,6 @@ impl ChannelActorCarrier {
             lease: Some(lease),
             fence: None,
         };
-        let index = self.player_slot_index(continuity, actor_ref, terminal)?;
         if let Slot::Occupied {
             game_session_id,
             lifecycle,
@@ -4874,6 +4951,182 @@ fn allocate_slots(explicit_capacity: usize) -> Result<Vec<Slot>, CarrierError> {
     Ok(slots)
 }
 
+/// MAP-ITEM-REF-1 Part B: the durable corpse Item a projected death materialized as. The Channel
+/// owner binds it once the corpse's MINT has committed: KILL-REWARD part B calls
+/// [`ChannelRuntimeV1::bind_corpse_item`] with the item instance id `commit_corpse_mint` returned
+/// and the corpse's typed definition. Not durable, like the projection it belongs to: an unbound
+/// corpse is neither shown nor usable, so nothing ever names a corpse Item by a made-up id.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct RuntimeCorpseItem {
+    pub(crate) item_instance_id: [u8; 16],
+    pub(crate) family: String,
+    pub(crate) production_key: String,
+    pub(crate) revision_ref: String,
+}
+
+/// MAP-ITEM-REF-1 Part B: one bound corpse of [`ChannelRuntimeV1::visible_corpses`], at its
+/// projected position. `identity` is [`ExactActorRef::corpse_identity`] of the dead actor.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct VisibleRuntimeCorpse {
+    pub(crate) identity: [u8; 16],
+    pub(crate) position: MovementLocalPosition,
+    pub(crate) revision: u64,
+    pub(crate) item: RuntimeCorpseItem,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CorpseItemBinding {
+    actor: ExactActorRef,
+    item: RuntimeCorpseItem,
+}
+
+impl ExactActorRef {
+    /// MAP-ITEM-REF-1 Part B: the stable opaque identity of this actor's corpse, separate from
+    /// [`Self::placement_identity`] so a corpse never shares an identity with the actor it was.
+    pub(crate) fn corpse_identity(self) -> [u8; 16] {
+        use sha2::{Digest, Sha256};
+        let ActorRef {
+            world_id,
+            channel_id,
+            scope_generation,
+            actor_local_id,
+            actor_local_generation,
+        } = self.0;
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:runtime-corpse-placement:v1")
+            .chain_update(world_id.as_bytes())
+            .chain_update(channel_id.as_bytes())
+            .chain_update(scope_generation.get().to_be_bytes())
+            .chain_update(actor_local_id.0.to_be_bytes())
+            .chain_update(actor_local_generation.0.to_be_bytes())
+            .finalize();
+        let mut identity = [0_u8; 16];
+        identity.copy_from_slice(&digest[..16]);
+        identity
+    }
+}
+
+impl ChannelActorCarrier {
+    fn bind_corpse_item_inner(
+        &mut self,
+        actor: ExactActorRef,
+        item: RuntimeCorpseItem,
+    ) -> Result<(), CarrierError> {
+        if actor.world_id() != self.world_id
+            || actor.channel_id() != self.channel_id
+            || actor.scope_generation() != self.scope_generation
+            || !self
+                .corpse_projections
+                .iter()
+                .any(|projection| projection.occurrence.actor == actor)
+        {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        }
+        if let Some(bound) = self
+            .corpse_item_bindings
+            .iter()
+            .find(|binding| binding.actor == actor)
+        {
+            return if bound.item == item {
+                Ok(())
+            } else {
+                Err(CarrierError::CorpseProjectionConflict)
+            };
+        }
+        if self
+            .corpse_item_bindings
+            .iter()
+            .any(|binding| binding.item.item_instance_id == item.item_instance_id)
+        {
+            return Err(CarrierError::CorpseProjectionConflict);
+        }
+        let projections = &self.corpse_projections;
+        self.corpse_item_bindings.retain(|binding| {
+            projections
+                .iter()
+                .any(|projection| projection.occurrence.actor == binding.actor)
+        });
+        self.corpse_item_bindings
+            .try_reserve(1)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        self.corpse_item_bindings
+            .push(CorpseItemBinding { actor, item });
+        Ok(())
+    }
+
+    fn bound_corpses(
+        &self,
+        context: Option<PreProductionPositionContext>,
+    ) -> Vec<VisibleRuntimeCorpse> {
+        self.corpse_projections
+            .iter()
+            .filter(|projection| {
+                context.is_none_or(|context| projection.position.context == context)
+            })
+            .filter_map(|projection| {
+                let actor = projection.occurrence.actor;
+                let binding = self
+                    .corpse_item_bindings
+                    .iter()
+                    .find(|binding| binding.actor == actor)?;
+                Some(VisibleRuntimeCorpse {
+                    identity: actor.corpse_identity(),
+                    position: projection.position(),
+                    revision: projection.position_revision(),
+                    item: binding.item.clone(),
+                })
+            })
+            .collect()
+    }
+}
+
+impl ChannelRuntimeV1 {
+    /// MAP-ITEM-REF-1 Part B: bind `actor`'s projected corpse to the corpse Item its committed
+    /// MINT created (`item_instance_id` and the typed definition `commit_corpse_mint` was given).
+    /// The projection must be retained in this generation (`CommittedLethalUnavailable`
+    /// otherwise); binding the same Item again is a no-op and another Item, or an Item bound to
+    /// another corpse, is `CorpseProjectionConflict`. Bindings whose projection was evicted are
+    /// dropped here, so there is at most one per retained projection.
+    #[allow(
+        dead_code,
+        reason = "the interface KILL-REWARD part B calls after commit_corpse_mint"
+    )]
+    pub(crate) fn bind_corpse_item(
+        &mut self,
+        actor: ExactActorRef,
+        item_instance_id: [u8; 16],
+        family: &str,
+        production_key: &str,
+        revision_ref: &str,
+    ) -> Result<(), CarrierError> {
+        self.carrier.bind_corpse_item_inner(
+            actor,
+            RuntimeCorpseItem {
+                item_instance_id,
+                family: family.to_owned(),
+                production_key: production_key.to_owned(),
+                revision_ref: revision_ref.to_owned(),
+            },
+        )
+    }
+
+    /// MAP-ITEM-REF-1 Part B: every bound corpse of this generation under the pinned Movement
+    /// context, in projection order. A corpse without a binding, or whose projection is gone, is
+    /// left out. Read-only.
+    pub(crate) fn visible_corpses(&self) -> Vec<VisibleRuntimeCorpse> {
+        self.carrier
+            .bound_corpses(Some(self.pinned_position_context()))
+    }
+
+    /// MAP-ITEM-REF-1 Part B: the bound corpse whose [`ExactActorRef::corpse_identity`] is
+    /// `identity`, as [`Self::visible_corpses`] shows it. Read-only.
+    pub(crate) fn bound_corpse(&self, identity: [u8; 16]) -> Option<VisibleRuntimeCorpse> {
+        self.visible_corpses()
+            .into_iter()
+            .find(|corpse| corpse.identity == identity)
+    }
+}
+
 #[cfg(test)]
 const TEST_ALLOCATION_FAILURE_CAPACITY: usize = u32::MAX as usize;
 
@@ -5211,6 +5464,34 @@ impl CombatDeathFixture {
 
     /// Combat's idempotent projection of the committed lethal occurrence and
     /// the durable death key it names, with the corpse position.
+    /// MAP-ITEM-REF-1 Part B: [`ChannelRuntimeV1::bind_corpse_item`] for the fixture's corpse.
+    pub(crate) fn bind_corpse_item(
+        &mut self,
+        item_instance_id: [u8; 16],
+        family: &str,
+        production_key: &str,
+        revision_ref: &str,
+    ) -> Result<(), CarrierError> {
+        self.carrier.bind_corpse_item_inner(
+            self.actor,
+            RuntimeCorpseItem {
+                item_instance_id,
+                family: family.to_owned(),
+                production_key: production_key.to_owned(),
+                revision_ref: revision_ref.to_owned(),
+            },
+        )
+    }
+
+    /// MAP-ITEM-REF-1 Part B: the fixture's bound corpse Item, if bound.
+    pub(crate) fn bound_corpse_item_instance_id(&self) -> Option<[u8; 16]> {
+        self.carrier
+            .bound_corpses(None)
+            .into_iter()
+            .find(|corpse| corpse.identity == self.actor.corpse_identity())
+            .map(|corpse| corpse.item.item_instance_id)
+    }
+
     pub(crate) fn project_death(
         &mut self,
     ) -> Result<(CreatureDeathOccurrenceKey, MovementLocalPosition), CarrierError> {

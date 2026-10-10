@@ -21,13 +21,14 @@ OUTPUT = 'content/quests/missions/quest-state-completion-candidate.json'
 RECEIPT = 'content/quests/missions/completion-candidate.json'
 STAGES = TOOL + 'samples/server-completion/chosen-progress/builder.py'
 SOURCE_STAGES = TOOL + 'samples/server-completion/chosen-source-progress/builder.py'
+TERMINAL_REFINEMENTS = TOOL + 'quest_terminal_stage_refinements.py'
 REFINE = TOOL + 'samples/state-effect-refinements/effect_refinements.py'
 EVENTS = TOOL + 'samples/server-completion/events-rewards/packet.json'
 EVENTS_SHA = '4b77071f3e44e90c64260c4db6830c5acab7f0142627d9819d2b4266c6d100a1'
 EVENT_CORRECTIONS = TOOL + 'samples/server-completion/events-rewards/corrections.json'
 EVENT_CORRECTIONS_SHA = 'a68d889f319fec1221cf86c92d4a354ca53acb301935834992ddf23fd0373902'
 SOURCE_EVENTS = TOOL + 'samples/server-completion/chosen-source-events-rewards/packet.json'
-SOURCE_EVENTS_SHA = '1219badd0163147d357fda0bd4fe0c624f0d0c7924af1629a92856440a2f1c14'
+SOURCE_EVENTS_SHA = 'dc417dd195e6d66293df115a6b86c424fe1bc6841d967e10411e4adbf522f847'
 NPC = TOOL + 'samples/server-completion/npc-dialogue/candidates.json'
 NPC_SHA = 'e72477218339f8c2527706ec877750823014843566e13bc0a134ccaf6e4b2286'
 PLAN = 'content/quests/missions/completion-binding-plan.json'
@@ -197,7 +198,7 @@ def expected(root):
     base = dict(source, quests=refined)
     candidate = stages.merge(base, choices)
     candidate = source_stages.merge(candidate, source_choices)
-    inputs = [BASE, STAGES, SOURCE_STAGES, REFINE, proof['path'],
+    inputs = [BASE, STAGES, SOURCE_STAGES, TERMINAL_REFINEMENTS, REFINE, proof['path'],
               TOOL + 'samples/state-effect-refinements/effect_refinements.schema.json',
               EVENTS, event_followup['path'], SOURCE_EVENTS, NPC,
               TOOL + 'quest_completion_import.py']
@@ -259,7 +260,7 @@ def main():
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(raw)
-    print('Completion import: 310 quests; 3219 tracks; 5154 transitions; 382 unsupported; 0 chosen-source holds; activation=false')
+    print('Completion import: 310 quests; 3221 tracks; 5154 transitions; 382 unsupported; 0 chosen-source holds; activation=false')
 
 
 if __name__ == '__main__':

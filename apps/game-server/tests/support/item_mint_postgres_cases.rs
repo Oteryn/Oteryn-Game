@@ -384,7 +384,12 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
         let result = committed(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut candidate)
+                .commit_item_mint(
+                    &candidate.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut candidate,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -425,7 +430,12 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
         let replay = already(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut candidate)
+                .commit_item_mint(
+                    &candidate.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut candidate,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -448,7 +458,12 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
         let duplicate = already(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut refrozen)
+                .commit_item_mint(
+                    &refrozen.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut refrozen,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -507,7 +522,12 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
         let max_result = committed(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut max)
+                .commit_item_mint(
+                    &max.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut max,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -547,7 +567,12 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
         assert_eq!(
             already(
                 restarted
-                    .commit_item_mint(&restart_authority, &harness.node, &mut after_restart)
+                    .commit_item_mint(
+                        &after_restart.fresh_death_lane_permit().await,
+                        &restart_authority,
+                        &harness.node,
+                        &mut after_restart
+                    )
                     .await
                     .map_err(debug)?
             )?,
@@ -567,7 +592,12 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
             .map_err(debug)?;
         assert!(matches!(
             restarted
-                .commit_item_mint(&authority, &harness.node, &mut foreign)
+                .commit_item_mint(
+                    &foreign.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut foreign
+                )
                 .await,
             Err(ItemMintError::AuthorityRejected)
         ));
@@ -648,7 +678,12 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
         let result = committed(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut minted)
+                .commit_item_mint(
+                    &minted.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut minted,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -711,14 +746,24 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
         assert!(matches!(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut pending)
+                .commit_item_mint(
+                    &pending.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut pending
+                )
                 .await,
             Err(ItemMintError::AuthorityRejected)
         ));
         assert!(matches!(
             harness
                 .root
-                .commit_item_mint(&authority, &node2, &mut pending)
+                .commit_item_mint(
+                    &pending.fresh_death_lane_permit().await,
+                    &authority,
+                    &node2,
+                    &mut pending
+                )
                 .await,
             Err(ItemMintError::AuthorityRejected)
         ));
@@ -763,7 +808,12 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
             already(
                 harness
                     .root
-                    .commit_item_mint(&authority, &node2, &mut replay)
+                    .commit_item_mint(
+                        &replay.fresh_death_lane_permit().await,
+                        &authority,
+                        &node2,
+                        &mut replay
+                    )
                     .await
                     .map_err(debug)?
             )?,
@@ -786,14 +836,24 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
         assert!(matches!(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut second)
+                .commit_item_mint(
+                    &second.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut second
+                )
                 .await,
             Err(ItemMintError::AuthorityRejected)
         ));
         committed(
             harness
                 .root
-                .commit_item_mint(&authority, &node2, &mut second)
+                .commit_item_mint(
+                    &second.fresh_death_lane_permit().await,
+                    &authority,
+                    &node2,
+                    &mut second,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -821,7 +881,12 @@ fn d52_ended_generation_refuses_and_committed_result_stays() -> TestResult {
         assert!(matches!(
             harness
                 .root
-                .commit_item_mint(&authority, &node2, &mut reserved_before_revoke)
+                .commit_item_mint(
+                    &reserved_before_revoke.fresh_death_lane_permit().await,
+                    &authority,
+                    &node2,
+                    &mut reserved_before_revoke
+                )
                 .await,
             Err(ItemMintError::AuthorityRejected)
         ));
@@ -898,7 +963,12 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
         assert!(matches!(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut aborted)
+                .commit_item_mint(
+                    &aborted.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut aborted
+                )
                 .await,
             Err(ItemMintError::Unavailable(DurabilityError::Database(_)))
         ));
@@ -920,7 +990,12 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
         let retried = committed(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut aborted)
+                .commit_item_mint(
+                    &aborted.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut aborted,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -938,7 +1013,12 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
             .map_err(debug)?;
         let outcome = harness
             .root
-            .commit_item_mint(&authority, &harness.node, &mut unknown)
+            .commit_item_mint(
+                &unknown.fresh_death_lane_permit().await,
+                &authority,
+                &harness.node,
+                &mut unknown,
+            )
             .await;
         eprintln!("ITEM-MINT-PG: ambiguous (server-aborted) COMMIT outcome {outcome:?}");
         assert!(matches!(
@@ -961,7 +1041,12 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
         let resolved = committed(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut unknown)
+                .commit_item_mint(
+                    &unknown.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut unknown,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -978,7 +1063,12 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
             .map_err(debug)?;
         let outcome = harness
             .root
-            .commit_item_mint(&authority, &harness.node, &mut late)
+            .commit_item_mint(
+                &late.fresh_death_lane_permit().await,
+                &authority,
+                &harness.node,
+                &mut late,
+            )
             .await;
         eprintln!("ITEM-MINT-PG: ambiguous (server-committed) COMMIT outcome {outcome:?}");
         assert!(matches!(
@@ -1000,7 +1090,12 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
             already(
                 harness
                     .root
-                    .commit_item_mint(&authority, &harness.node, &mut late)
+                    .commit_item_mint(
+                        &late.fresh_death_lane_permit().await,
+                        &authority,
+                        &harness.node,
+                        &mut late
+                    )
                     .await
                     .map_err(debug)?
             )?,
@@ -1017,7 +1112,12 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
         let first = committed(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut lost)
+                .commit_item_mint(
+                    &lost.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut lost,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -1033,7 +1133,12 @@ fn known_abort_ambiguous_commit_and_lost_ack_reconcile_to_one_result() -> TestRe
             already(
                 harness
                     .root
-                    .commit_item_mint(&authority, &harness.node, &mut lost)
+                    .commit_item_mint(
+                        &lost.fresh_death_lane_permit().await,
+                        &authority,
+                        &harness.node,
+                        &mut lost
+                    )
                     .await
                     .map_err(debug)?
             )?,
@@ -1111,7 +1216,12 @@ fn rl08_budget_is_durable_per_cause_across_refreeze_and_process_restart() -> Tes
             assert!(matches!(
                 harness
                     .root
-                    .commit_item_mint(&authority, &harness.node, &mut candidate)
+                    .commit_item_mint(
+                        &candidate.fresh_death_lane_permit().await,
+                        &authority,
+                        &harness.node,
+                        &mut candidate
+                    )
                     .await,
                 Err(ItemMintError::Unavailable(DurabilityError::Database(_)))
             ));
@@ -1160,7 +1270,12 @@ fn rl08_budget_is_durable_per_cause_across_refreeze_and_process_restart() -> Tes
         // max=3: the third unit commits under the original TransactionId.
         let result = committed(
             restarted
-                .commit_item_mint(&authority, &harness.node, &mut resumed)
+                .commit_item_mint(
+                    &resumed.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut resumed,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -1172,7 +1287,12 @@ fn rl08_budget_is_durable_per_cause_across_refreeze_and_process_restart() -> Tes
         // or a reconciliation, on the held candidate or a re-frozen one.
         assert!(matches!(
             restarted
-                .commit_item_mint(&authority, &harness.node, &mut resumed)
+                .commit_item_mint(
+                    &resumed.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut resumed
+                )
                 .await,
             Err(ItemMintError::CapacityExceeded)
         ));
@@ -1196,7 +1316,12 @@ fn rl08_budget_is_durable_per_cause_across_refreeze_and_process_restart() -> Tes
         ));
         assert!(matches!(
             restarted
-                .commit_item_mint(&authority, &harness.node, &mut refrozen)
+                .commit_item_mint(
+                    &refrozen.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut refrozen
+                )
                 .await,
             Err(ItemMintError::CapacityExceeded)
         ));
@@ -1214,7 +1339,12 @@ fn rl08_budget_is_durable_per_cause_across_refreeze_and_process_restart() -> Tes
         for _ in 0..2 {
             assert!(matches!(
                 restarted
-                    .commit_item_mint(&authority, &harness.node, &mut first_holder)
+                    .commit_item_mint(
+                        &first_holder.fresh_death_lane_permit().await,
+                        &authority,
+                        &harness.node,
+                        &mut first_holder
+                    )
                     .await,
                 Err(ItemMintError::Unavailable(DurabilityError::Database(_)))
             ));
@@ -1228,7 +1358,12 @@ fn rl08_budget_is_durable_per_cause_across_refreeze_and_process_restart() -> Tes
         assert_eq!(second_holder.work_units_used(), 2);
         assert!(matches!(
             restarted
-                .commit_item_mint(&authority, &harness.node, &mut second_holder)
+                .commit_item_mint(
+                    &second_holder.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut second_holder
+                )
                 .await,
             Err(ItemMintError::Unavailable(DurabilityError::Database(_)))
         ));
@@ -1240,7 +1375,12 @@ fn rl08_budget_is_durable_per_cause_across_refreeze_and_process_restart() -> Tes
         assert_eq!(third_holder.transaction_id(), &unresolved);
         assert!(matches!(
             restarted
-                .commit_item_mint(&authority, &harness.node, &mut third_holder)
+                .commit_item_mint(
+                    &third_holder.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut third_holder
+                )
                 .await,
             Err(ItemMintError::CapacityExceeded)
         ));
@@ -1309,7 +1449,12 @@ fn rl08_concurrent_freezers_and_passes_share_one_reservation_and_budget() -> Tes
                 passes.push(commit_pass(
                     harness
                         .root
-                        .commit_item_mint(&authority, &harness.node, &mut first)
+                        .commit_item_mint(
+                            &first.fresh_death_lane_permit().await,
+                            &authority,
+                            &harness.node,
+                            &mut first,
+                        )
                         .await,
                 ));
                 passes.push(
@@ -1321,7 +1466,12 @@ fn rl08_concurrent_freezers_and_passes_share_one_reservation_and_budget() -> Tes
                 passes.push(commit_pass(
                     harness
                         .root
-                        .commit_item_mint(&authority, &harness.node, &mut first)
+                        .commit_item_mint(
+                            &first.fresh_death_lane_permit().await,
+                            &authority,
+                            &harness.node,
+                            &mut first,
+                        )
                         .await,
                 ));
                 passes
@@ -1330,7 +1480,12 @@ fn rl08_concurrent_freezers_and_passes_share_one_reservation_and_budget() -> Tes
                 let mut passes: Vec<PassResult> = Vec::new();
                 passes.push(commit_pass(
                     second_root
-                        .commit_item_mint(&second_authority, &harness.node, &mut second)
+                        .commit_item_mint(
+                            &second.fresh_death_lane_permit().await,
+                            &second_authority,
+                            &harness.node,
+                            &mut second,
+                        )
                         .await,
                 ));
                 passes.push(
@@ -1340,7 +1495,12 @@ fn rl08_concurrent_freezers_and_passes_share_one_reservation_and_budget() -> Tes
                 );
                 passes.push(commit_pass(
                     second_root
-                        .commit_item_mint(&second_authority, &harness.node, &mut second)
+                        .commit_item_mint(
+                            &second.fresh_death_lane_permit().await,
+                            &second_authority,
+                            &harness.node,
+                            &mut second,
+                        )
                         .await,
                 ));
                 passes
@@ -1441,7 +1601,12 @@ fn rl08_reconciliation_work_is_measured_on_real_postgresql() -> TestResult {
             let result = committed(
                 harness
                     .root
-                    .commit_item_mint(&authority, &harness.node, &mut candidate)
+                    .commit_item_mint(
+                        &candidate.fresh_death_lane_permit().await,
+                        &authority,
+                        &harness.node,
+                        &mut candidate,
+                    )
                     .await
                     .map_err(debug)?,
             )?;
@@ -1461,7 +1626,12 @@ fn rl08_reconciliation_work_is_measured_on_real_postgresql() -> TestResult {
                 already(
                     harness
                         .root
-                        .commit_item_mint(&authority, &harness.node, &mut candidate)
+                        .commit_item_mint(
+                            &candidate.fresh_death_lane_permit().await,
+                            &authority,
+                            &harness.node,
+                            &mut candidate
+                        )
                         .await
                         .map_err(debug)?
                 )?,
@@ -1534,10 +1704,18 @@ fn concurrent_same_cause_on_two_roots_mints_exactly_once() -> TestResult {
             .await
             .map_err(debug)?;
         let (first_outcome, second_outcome) = join_two(
-            harness
-                .root
-                .commit_item_mint(&authority, &harness.node, &mut first),
-            second_root.commit_item_mint(&second_authority, &harness.node, &mut second),
+            harness.root.commit_item_mint(
+                &first.fresh_death_lane_permit().await,
+                &authority,
+                &harness.node,
+                &mut first,
+            ),
+            second_root.commit_item_mint(
+                &second.fresh_death_lane_permit().await,
+                &second_authority,
+                &harness.node,
+                &mut second,
+            ),
         )
         .await;
         let results = match (
@@ -1659,7 +1837,12 @@ async fn d1_mint_death(
         .map_err(debug)?;
     let outcome = harness
         .root
-        .commit_item_mint(authority, node, &mut candidate)
+        .commit_item_mint(
+            &candidate.fresh_death_lane_permit().await,
+            authority,
+            node,
+            &mut candidate,
+        )
         .await
         .map_err(debug)?;
     Ok((candidate, outcome))
@@ -1754,7 +1937,12 @@ fn d1_one_creature_death_mints_exactly_one_item() -> TestResult {
         let result = committed(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut candidate)
+                .commit_item_mint(
+                    &candidate.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut candidate,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -1808,7 +1996,12 @@ fn d1_replayed_or_refrozen_death_resolves_to_the_same_item() -> TestResult {
         let result = committed(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut first)
+                .commit_item_mint(
+                    &first.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut first,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -1816,7 +2009,12 @@ fn d1_replayed_or_refrozen_death_resolves_to_the_same_item() -> TestResult {
             already(
                 harness
                     .root
-                    .commit_item_mint(&authority, &harness.node, &mut refrozen)
+                    .commit_item_mint(
+                        &refrozen.fresh_death_lane_permit().await,
+                        &authority,
+                        &harness.node,
+                        &mut refrozen
+                    )
                     .await
                     .map_err(debug)?
             )?,
@@ -1888,7 +2086,12 @@ fn d1_stale_generation_death_is_refused_after_the_scope_moves() -> TestResult {
             assert!(matches!(
                 harness
                     .root
-                    .commit_item_mint(&authority, holder, &mut pending)
+                    .commit_item_mint(
+                        &pending.fresh_death_lane_permit().await,
+                        &authority,
+                        holder,
+                        &mut pending
+                    )
                     .await,
                 Err(ItemMintError::AuthorityRejected)
             ));
@@ -2120,7 +2323,13 @@ async fn mint_corpse(
         .map_err(debug)?;
     let outcome = harness
         .root
-        .commit_corpse_mint(authority, &harness.node, &mut candidate, top_damage)
+        .commit_corpse_mint(
+            &candidate.fresh_death_lane_permit().await,
+            authority,
+            &harness.node,
+            &mut candidate,
+            top_damage,
+        )
         .await
         .map_err(debug)?;
     committed(outcome)
@@ -2174,7 +2383,13 @@ fn corpse_mint_writes_top_damage_and_materialized_at_only_via_trigger() -> TestR
         let result = committed(
             harness
                 .root
-                .commit_corpse_mint(&authority, &harness.node, &mut candidate, top_damage)
+                .commit_corpse_mint(
+                    &candidate.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut candidate,
+                    top_damage,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -2248,7 +2463,13 @@ fn commit_corpse_mint_rejects_a_non_corpse_cause() -> TestResult {
             .map_err(debug)?;
         let outcome = harness
             .root
-            .commit_corpse_mint(&authority, &harness.node, &mut candidate, id(150))
+            .commit_corpse_mint(
+                &candidate.fresh_death_lane_permit().await,
+                &authority,
+                &harness.node,
+                &mut candidate,
+                id(150),
+            )
             .await;
         assert!(matches!(outcome, Err(ItemMintError::InvalidInput)));
         harness.assert_minted(0).await?;
@@ -2306,13 +2527,24 @@ fn concurrent_corpse_mints_at_capacity_produce_exactly_one_success() -> TestResu
             candidates.push((candidate, top_damage));
         }
 
+        let mut permits = Vec::new();
+        for (candidate, _) in &candidates {
+            permits.push(candidate.fresh_death_lane_permit().await);
+        }
         let mut tasks = Vec::new();
-        for ((root, authority), (candidate, top_damage)) in roots
+        for (((root, authority), (candidate, top_damage)), permit) in roots
             .iter()
             .zip(authorities.iter())
             .zip(candidates.iter_mut())
+            .zip(permits.iter())
         {
-            tasks.push(root.commit_corpse_mint(authority, &harness.node, candidate, *top_damage));
+            tasks.push(root.commit_corpse_mint(
+                permit,
+                authority,
+                &harness.node,
+                candidate,
+                *top_damage,
+            ));
         }
         let outcomes = join_all(tasks).await;
 
@@ -2520,7 +2752,12 @@ fn corpse_container_entry_requires_a_live_parent_receipt_for_the_same_death() ->
         let plain_result = committed(
             harness
                 .root
-                .commit_item_mint(&authority, &harness.node, &mut plain)
+                .commit_item_mint(
+                    &plain.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut plain,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -2711,7 +2948,13 @@ fn commit_corpse_mint_rejects_a_replay_with_a_different_top_damage_winner() -> T
         let first = committed(
             harness
                 .root
-                .commit_corpse_mint(&authority, &harness.node, &mut candidate, top_damage)
+                .commit_corpse_mint(
+                    &candidate.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut candidate,
+                    top_damage,
+                )
                 .await
                 .map_err(debug)?,
         )?;
@@ -2719,7 +2962,13 @@ fn commit_corpse_mint_rejects_a_replay_with_a_different_top_damage_winner() -> T
         let other_winner = id(151);
         let replay = harness
             .root
-            .commit_corpse_mint(&authority, &harness.node, &mut candidate, other_winner)
+            .commit_corpse_mint(
+                &candidate.fresh_death_lane_permit().await,
+                &authority,
+                &harness.node,
+                &mut candidate,
+                other_winner,
+            )
             .await;
         assert!(
             matches!(replay, Err(ItemMintError::ConflictingCause)),
@@ -2740,7 +2989,13 @@ fn commit_corpse_mint_rejects_a_replay_with_a_different_top_damage_winner() -> T
         // fresh commit.
         let replay_same = harness
             .root
-            .commit_corpse_mint(&authority, &harness.node, &mut candidate, top_damage)
+            .commit_corpse_mint(
+                &candidate.fresh_death_lane_permit().await,
+                &authority,
+                &harness.node,
+                &mut candidate,
+                top_damage,
+            )
             .await
             .map_err(debug)?;
         assert_eq!(already(replay_same)?, first);
@@ -2830,7 +3085,13 @@ fn corpse_mint_draw_ordinal_must_be_zero() -> TestResult {
             .map_err(debug)?;
         let outcome = harness
             .root
-            .commit_corpse_mint(&authority, &harness.node, &mut candidate, top_damage)
+            .commit_corpse_mint(
+                &candidate.fresh_death_lane_permit().await,
+                &authority,
+                &harness.node,
+                &mut candidate,
+                top_damage,
+            )
             .await;
         assert!(
             matches!(outcome, Err(ItemMintError::InvalidInput)),

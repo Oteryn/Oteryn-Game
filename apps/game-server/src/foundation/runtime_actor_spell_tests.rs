@@ -1204,3 +1204,65 @@ fn master_assignment_payment_requires_real_player_preflight_and_cannot_be_deferr
         None
     );
 }
+
+/// SPELL-LOCK-2 §1.3: a condition commit on a reserved slot refuses retryably and writes
+/// nothing, so the reserving batch's whole-slot equality still holds at its install.
+#[test]
+fn condition_commit_on_a_reserved_slot_refuses_until_the_batch_ends() {
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, SemanticTimeMicros};
+    let mut f = fixture(1);
+    let plan = f
+        .runtime
+        .prepare_actor_condition_expiry(
+            f.targets[0],
+            None,
+            DecisionOccurrenceId::from_bytes([3; 16]),
+            SemanticTimeMicros::from_micros(0),
+        )
+        .expect("prepared before the reservation");
+    let original = batch(&f, 1, vec![damage(f.targets[0], 0, 3)]);
+    let mut staged = f.runtime.stage_spell_batch(&original).unwrap();
+    f.runtime.reserve_spell_batch(&mut staged).unwrap();
+    assert_eq!(
+        f.runtime
+            .commit_actor_condition(&plan, SemanticTimeMicros::from_micros(0)),
+        Err(crate::foundation::ConditionOwnerError::Actor(
+            CarrierError::PlanConflict
+        ))
+    );
+    assert_eq!(f.runtime.validate_staged_spell_batch(&staged), Ok(()));
+    f.runtime
+        .commit_spell_batch(staged)
+        .expect("the batch installs");
+    assert_eq!(health(&f, 0), 17);
+}
+
+/// SPELL-LOCK-2 §1.3: a cure-only actor of a source creature heal-and-cure is checked like a
+/// healed one, so a reserved slot refuses retryably and neither HP nor any condition moves.
+#[test]
+fn cure_only_actor_on_a_reserved_slot_refuses_heal_and_cure() {
+    let mut f = fixture(1);
+    let original = batch(&f, 1, vec![damage(f.targets[0], 0, 3)]);
+    let mut staged = f.runtime.stage_spell_batch(&original).unwrap();
+    f.runtime.reserve_spell_batch(&mut staged).unwrap();
+    let before = f
+        .runtime
+        .actor_conditions(f.targets[0], None)
+        .unwrap()
+        .clone();
+    let content = f.runtime.content_pin().server_artifact_digest();
+    assert_eq!(
+        f.runtime
+            .commit_source_creature_heal_and_cure(content, &[], &[f.targets[0]], 100),
+        Err(CarrierError::PlanConflict)
+    );
+    assert_eq!(
+        f.runtime.actor_conditions(f.targets[0], None).unwrap(),
+        &before
+    );
+    assert_eq!(f.runtime.validate_staged_spell_batch(&staged), Ok(()));
+    f.runtime
+        .commit_spell_batch(staged)
+        .expect("the batch installs");
+    assert_eq!(health(&f, 0), 17);
+}

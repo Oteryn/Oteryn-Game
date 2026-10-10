@@ -302,6 +302,13 @@ pub(crate) trait FreshAdmissionAuthority {
         PRODUCTION_OFFERED_CAPABILITIES
     }
 
+    /// A capability every fresh admission must select, or `None`. A bundle World requires 18
+    /// `WORLD_MAP_VIEW_V1` (MAP-CUTOVER-1b): it serves its map only as domain 17, so a client
+    /// without it is refused with `CAPABILITY_MISMATCH` before the owner admits anything.
+    fn required_capability(&self) -> Option<u32> {
+        None
+    }
+
     /// The admitted actor's current own-actor observation for the initial snapshot, or `None`
     /// when this authority serves no gameplay (transport-only fixtures).
     fn observe(
@@ -908,6 +915,16 @@ where
             AdmissionRefusal::Unavailable,
         ));
     };
+    if let Some(required) = authority.required_capability()
+        && !selected.contains(required)
+    {
+        let error = FoundationProtocolError::CapabilityMismatch;
+        let _ =
+            tokio::time::timeout(ADMISSION_REFUSAL_WRITE_BOUND, send_error(stream, error, 0)).await;
+        return Err(ConnectionEnd::AdmissionRefused(
+            AdmissionRefusal::Classified(error),
+        ));
+    }
     let attempt = FreshAdmissionAttempt {
         character_id: bootstrap.character_id,
         admission_material: bootstrap.admission_material,
@@ -1196,7 +1213,7 @@ where
         let Some(channel) = authority.observe_visible_entities(actor).await else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
-        let mut view = SessionVisibility::default();
+        let mut view = SessionVisibility::with_objects(item_view.is_some());
         let snapshot = view.snapshot(&channel, &mut |entities| {
             attach_spatial_handles(item_view.as_mut(), entities)
         });

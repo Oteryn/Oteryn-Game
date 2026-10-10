@@ -73,6 +73,17 @@ class CompletionImportTests(unittest.TestCase):
         self.assertEqual(90, len(overlays))
         self.assertEqual(len(changed), 5)
 
+
+    def test_terminal_refinement_helper_is_pinned_in_candidate_provenance(self):
+        outputs = tool.expected(ROOT)
+        receipt = json.loads(outputs[tool.RECEIPT])
+        by_path = {row['path']: row['sha256'] for row in receipt['input_provenance']}
+        self.assertIn(tool.TERMINAL_REFINEMENTS, by_path)
+        self.assertEqual(
+            tool.sha((ROOT / tool.TERMINAL_REFINEMENTS).read_bytes()),
+            by_path[tool.TERMINAL_REFINEMENTS],
+        )
+
     def test_make_believe_post_release_counts_are_finite_overlay(self):
         outputs = tool.expected(ROOT)
         plan = json.loads(outputs[tool.PLAN])
