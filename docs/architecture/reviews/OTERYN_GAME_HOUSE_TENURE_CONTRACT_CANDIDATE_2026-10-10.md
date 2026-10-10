@@ -110,11 +110,13 @@ The resolution (owner answer Q1a, §10) keeps one owner per fact:
 - `game_house_properties` (HOUSE-1a) is the property and owner authority. `0038` and `0047` do
   not stay unchanged. `game_house_ownership.owner_character_id` is `NOT NULL`, and the `0047`
   instance binding has a foreign key to that row and an immutability trigger, so the row can be
-  neither deleted nor left naming a former owner. HOUSE-1a therefore migrates the pair. Either the
-  binding's foreign key moves to `game_house_properties`, or the ownership row stays as the
-  binding anchor and its owner becomes nullable with release in the same transaction. Whichever
-  it picks, `house_spell_acl.rs` reads its owner from the property authority. A `VACANT` or
-  released house then grants no owner access, and no former owner keeps rights.
+  neither deleted nor left naming a former owner. The `0038` tables `game_house_acl`,
+  `game_house_editors` and `game_house_acl_receipts` also reference that row, and receipts
+  cannot be deleted. So the ownership row stays as the anchor of every one of those references.
+  HOUSE-1a makes its owner nullable and clears it in the same transaction as each release.
+  `house_spell_acl.rs` reads its owner from the property authority. A `VACANT` or released house
+  then grants no owner access, and no former owner keeps rights. Release never deletes the row.
+  So it does not depend on whether HOUSE-ACL-1 or HOUSE-1b merges first.
 - HOUSE-ACL-1 migrates `game_house_acl` to the accepted ACL model, not just its bound, and creates
   no second ACL table. The accepted model has:
   - doors keyed by catalogue position `[x,y,z]` (catalogue §2.2), not by numeric `list_id`;
@@ -149,10 +151,15 @@ The resolution (owner answer Q1a, §10) keeps one owner per fact:
 |---|---|
 | HOUSE-RUNTIME-1a/1b/1c | 1-4, 26 (interior parts); 19 (1b revocation and revalidation of present occupants); 25 (interior parts) |
 | HOUSE-1a | 5, 6, 7, 8 (two physical houses), 28, 34, 35; 25 (settlement fails closed when Character or Premium authority is out); plus the packet §2.3 tests |
-| HOUSE-1b | 10, 11, 40; 25 (rent, move-out and eviction fail closed); the voluntary relinquishment and eviction parts of 43; plus the packet §2.4 tests. It supplies the disposition primitive that 23, 24 and the rest of 43 use |
+| HOUSE-1b | 10, 40; 25 (rent, move-out and eviction fail closed); plus the packet §2.4 tests. Scenario 11 and the relinquishment and eviction parts of 43 are credited only after the gate below. It supplies the disposition primitive that 23, 24 and the rest of 43 use |
 | HOUSE-ACL-1 | 19 (the revision bump and stale-edit refusal), 20; 21 as amended by §10 Q2a; 25 (ACL edits fail closed) |
 | HOUSE-WIRE-1 | 20, 21 and 25 at the wire |
 | Later decisions (Residence, Bazaar, transfer, Character lifecycle, World transfer) | 9, 12-18, 22, 23 (Character finalization), 24 (World transfer), 27, 29-33, 36-39, 41, 42; 43 for Bazaar buyer release, Residence replacement, physical house to Residence, Character deletion and World transfer |
+
+**Gate HOUSE-1B-RECLAIM.** SOCIAL-MAP-PACKETS-1 §2.4 has a test that moves the whole interior to
+the owner's CharacterInbox. Scenario 11 and HOUSE-OWN-0 §7 instead route each item to its
+placement-time reclaim subject. HOUSE-1b is not allocated until a SOCIAL-MAP-PACKETS-1 amendment
+changes that test to route by reclaim subject. This candidate does not make the amendment.
 
 ## 7. Slice plan and critical path
 
@@ -167,7 +174,13 @@ The resolution (owner answer Q1a, §10) keeps one owner per fact:
 5. **HOUSE-WIRE-1**: `HOUSE_V1`, house list, bid, move-out, panel, rent warning at login.
 6. Playability: a player can bid only with gold in the bank. **BANK-NPC-1** (or a bank wire) is a
    playability dependency, not a contract dependency: HOUSE-1a reads BANK-1's balance and
-   needs no NPC. It must merge before HOUSE-WIRE-1 is called playable.
+   needs no NPC. It must merge before HOUSE-WIRE-1 is called playable. HOUSE-WIRE-1 alone gives
+   tenure administration only. Seeing and furnishing the interior also needs two slices
+   (HOUSE-RUNTIME-0 §6.4):
+   - HOUSE-VIEW-1;
+   - HOUSE-ITEM-WIRE-1, which comes after its own wire decision and after HOUSE-VIEW-1.
+
+   Until both land, a client cannot place, take or move house items.
 7. Later, each with its own decision: direct transfer (Q3), Residence, Bazaar disposition, beds
    (BED-0), guildhalls (GUILDHALL-1), Lakeside Mansion 15.33 layout (only if a 15.33 map update
    is authorized).
