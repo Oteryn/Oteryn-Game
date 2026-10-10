@@ -547,6 +547,8 @@ pub(crate) fn eat_food(
 pub(crate) fn clear_on_lifecycle(state: &mut PlayerSpellState) {
     state.field_attack_history.clear_on_lifecycle();
     state.conditions.clear_on_death();
+    state.regen_health_ms = 0;
+    state.regen_mana_ms = 0;
 }
 
 /// The existing creature-bite vitals owner applies its already qualified damage to the

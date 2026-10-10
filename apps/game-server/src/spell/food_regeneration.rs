@@ -17,6 +17,22 @@ pub(crate) struct RegenerationRate {
     pub(crate) mana_period_ms: u32,
 }
 
+/// A promoted vocation keeps its promotion benefit only while Premium is current (D76); without
+/// it the base vocation's rate applies.
+const fn effective(vocation: Vocation, premium_current: bool) -> Vocation {
+    if premium_current {
+        return vocation;
+    }
+    match vocation {
+        Vocation::ElderDruid => Vocation::Druid,
+        Vocation::MasterSorcerer => Vocation::Sorcerer,
+        Vocation::EliteKnight => Vocation::Knight,
+        Vocation::RoyalPaladin => Vocation::Paladin,
+        Vocation::ExaltedMonk => Vocation::Monk,
+        base => base,
+    }
+}
+
 /// Owner-decided Canary 15.30 values (`vocation-vitals-candidate-2026-09-28.json`,
 /// `regeneration`, D5b); a test keeps this table equal to that file.
 pub(crate) const fn rate(vocation: Vocation) -> RegenerationRate {
@@ -41,7 +57,7 @@ pub(crate) fn credit_fed_second(state: &mut PlayerSpellState) {
     if state.health == 0 {
         return;
     }
-    let rate = rate(state.facts.vocation);
+    let rate = rate(effective(state.facts.vocation, state.premium_current));
     state.regen_health_ms = state.regen_health_ms.saturating_add(FOOD_TICK_MS);
     if state.regen_health_ms >= rate.health_period_ms {
         state.regen_health_ms -= rate.health_period_ms;
@@ -139,6 +155,43 @@ mod tests {
     }
 
     #[test]
+    fn expired_premium_regenerates_at_the_base_vocation_rate() {
+        for (promoted, base) in [
+            (Vocation::ElderDruid, Vocation::Druid),
+            (Vocation::MasterSorcerer, Vocation::Sorcerer),
+            (Vocation::EliteKnight, Vocation::Knight),
+            (Vocation::RoyalPaladin, Vocation::Paladin),
+            (Vocation::ExaltedMonk, Vocation::Monk),
+        ] {
+            assert_eq!(effective(promoted, false), base);
+            assert_eq!(effective(promoted, true), promoted);
+            assert_eq!(effective(base, false), base);
+        }
+        let mut lapsed = actor(Vocation::EliteKnight);
+        lapsed.premium_current = false;
+        eat_food(&mut lapsed, 6, 0).expect("eat");
+        run(&mut lapsed, 0, 6, TickFacts::default());
+        // Knight rate: one health credit in 6 s (Elite Knight would need 4 s).
+        assert_eq!(lapsed.health, 101);
+        assert_eq!(lapsed.regen_health_ms, 0);
+        let mut current = actor(Vocation::EliteKnight);
+        current.premium_current = true;
+        eat_food(&mut current, 4, 0).expect("eat");
+        run(&mut current, 0, 4, TickFacts::default());
+        assert_eq!(current.health, 101);
+    }
+
+    #[test]
+    fn lifecycle_clearing_drops_regeneration_progress() {
+        let mut state = actor(Vocation::Knight);
+        eat_food(&mut state, 10, 0).expect("eat");
+        run(&mut state, 0, 5, TickFacts::default());
+        assert_eq!(state.regen_health_ms, 5_000);
+        super::super::actor_conditions::clear_on_lifecycle(&mut state);
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
+    }
+
+    #[test]
     fn vocations_differ_and_unfed_actors_do_not_regenerate() {
         let mut druid = actor(Vocation::Druid);
         let mut unfed = actor(Vocation::Druid);
@@ -152,6 +205,7 @@ mod tests {
     #[test]
     fn protection_zone_suppresses_regeneration_but_food_is_consumed() {
         let mut state = actor(Vocation::EliteKnight);
+        state.premium_current = true;
         eat_food(&mut state, 6, 0).expect("eat");
         let pz = TickFacts {
             in_protection_zone: true,
