@@ -93,10 +93,10 @@ fill_manifest; render; sub "$REPORT_CONFIG" "s|^\"$NODE\" = |\"CN=other\" = |"; 
 fill_manifest; render; sub "$REPORT_CONFIG" "s|^node_identities = .*|node_identities = [\"CN=other\"]|"; expect_refused "report.toml node_identities"
 fill_manifest; render; sub "$REPORT_CONFIG" "s|^node_identities = .*|node_identities = [\"$NODE\", \"CN=other\"]|"; expect_refused "report.toml extra node identity"
 fill_manifest; render; sub "$REPORT_CONFIG" "s|^\(\"$NODE\" = .*\)|\1\n\"CN=other\" = \"/x\"|"; expect_refused "report.toml extra certificate key"
-# World Bundle opt-in: enabled needs map_revision sha256:<digest> and the manifest's table in node.toml.
+# World Bundle opt-in: enabled needs the bare digest as map_revision and the manifest's table in node.toml.
 D=$(sed -n 's/^digest = "\(.*\)"/\1/p' "$here/preprod-topology.toml")
 fill_manifest; render; printf '[world_bundle]\npath = "x"\n' >> "$NODE_CONFIG"; expect_refused "node.toml table without opt-in"
-fill_manifest; sub "$MANIFEST" "s|^enabled = false|enabled = true|;s|^map_revision = .*|map_revision = \"sha256:$D\"|"; render
+fill_manifest; sub "$MANIFEST" "s|^enabled = false|enabled = true|;s|^map_revision = .*|map_revision = \"$D\"|"; render
 { echo "[world_bundle]"; sed -n '/^\[world_bundle\]/,/^$/p' "$MANIFEST" | grep -v '^\[\|^enabled\|^#\|^$' | sed "s|<BASE>|$BASE|"; } >> "$NODE_CONFIG"
 good_node="$(cat "$NODE_CONFIG")"; good_manifest="$(cat "$MANIFEST")"
 run || { echo "FAIL enabled world bundle: $(cat "$tmp/err")" >&2; exit 1; }

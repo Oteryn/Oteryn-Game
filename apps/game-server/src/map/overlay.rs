@@ -305,6 +305,33 @@ pub fn map_revision(base: &WorldBase) -> String {
     revision
 }
 
+/// The readiness- and grant-facing form of a `map_revision`: the bare 64 hex digits, which fit the
+/// 64-character grant cap. The internal form ([`map_revision`]) keeps its `sha256:` prefix.
+pub fn bare_map_revision(revision: &str) -> &str {
+    revision.strip_prefix("sha256:").unwrap_or(revision)
+}
+
+/// The internal `map_revision` of a configured bare readiness value.
+pub fn internal_map_revision(bare: &str) -> String {
+    format!("sha256:{bare}")
+}
+
+#[cfg(test)]
+mod map_revision_forms {
+    use super::{bare_map_revision, internal_map_revision};
+
+    #[test]
+    fn the_internal_form_is_prefixed_and_the_readiness_form_is_bare() {
+        let hex = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff";
+        let internal = internal_map_revision(hex);
+        assert_eq!(internal, format!("sha256:{hex}"));
+        assert_eq!(internal.len(), 71);
+        assert_eq!(bare_map_revision(&internal), hex);
+        assert_eq!(bare_map_revision(&internal).len(), 64);
+        assert_eq!(bare_map_revision("map-1"), "map-1");
+    }
+}
+
 /// One Channel's overlay over its World's shared base.
 #[derive(Debug)]
 pub struct ChannelOverlay {

@@ -1664,7 +1664,8 @@ fn world_bundle_gate(
             content_revision: bundle.content_revision.clone(),
             production: bundle.production,
         },
-        map_revision: config.readiness.map_revision.clone(),
+        // Readiness carries the bare digest; the bundle check compares the internal `sha256:` form.
+        map_revision: crate::map::overlay::internal_map_revision(&config.readiness.map_revision),
         start: crate::map::overlay::TilePos {
             x: bundle.start_x,
             y: bundle.start_y,
@@ -2293,7 +2294,7 @@ mod tests {
             .replace("start_y = 200", "start_y = 0");
         let bundle = configured.replace(
             "map_revision = \"map-1\"",
-            &format!("map_revision = \"sha256:{digest}\""),
+            &format!("map_revision = \"{digest}\""),
         );
         assert!(matches!(gate(&bundle, &bytes), Ok(Some(_))));
         // Each check that needs no item definition refuses before any durable step.

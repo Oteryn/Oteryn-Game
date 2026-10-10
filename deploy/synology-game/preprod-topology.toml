@@ -42,7 +42,7 @@ route_revision = "<ROUTE_REVISION>"
 runtime_observation_revision = "obs.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
-map_revision = "map.<MAP_SHA256_16HEX>"  # with [world_bundle] enabled: "sha256:<digest>" below
+map_revision = "map.<MAP_SHA256_16HEX>"  # with [world_bundle] enabled: the bare 64-hex bundle digest below
 world_policy_revision = "wp.1"
 offer_revision = "offer.1"
 
@@ -50,7 +50,7 @@ offer_revision = "offer.1"
 # Opt-in (D246 derived content): `enabled = true` makes the node boot the pinned World Bundle instead of
 # the fixture room. Every value below is `content/world/pins/oteryn.json` (digest, content_revision,
 # project_format_version, world_schema_version, entry_start) and test_pin_check proves they agree. When
-# enabled, [readiness] map_revision is "sha256:<digest>" and node.toml carries the same [world_bundle].
+# enabled, [readiness] map_revision is the bare 64-hex digest and node.toml carries the same [world_bundle].
 # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
 enabled = false
 path = "<BASE>/world/world.otbundle"

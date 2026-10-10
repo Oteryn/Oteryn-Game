@@ -522,7 +522,7 @@ sudo install -o root -m 0600 "$WORK/report.toml" "$BASE/ops/report.toml"
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
 write_node_config() {
   MAP_REVISION=map-ll-1
-  [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" != 1 ]] || MAP_REVISION="sha256:$WB_DIGEST"
+  [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" != 1 ]] || MAP_REVISION="$WB_DIGEST"
   cat > "$WORK/node.toml" <<TOML
 [listener]
 address = "$LL_HOST:$GAME_PORT"
