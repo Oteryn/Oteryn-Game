@@ -12,7 +12,7 @@ use oteryn_world_bundle_compiler::bundle::{
 use oteryn_world_bundle_compiler::compile::{Compiled, Input, KeyResolver, Resolution, compile};
 use oteryn_world_bundle_compiler::project::Families;
 use oteryn_world_bundle_compiler::sector::{self, Attrs, Budget, Item, Tile};
-use oteryn_world_bundle_compiler::spawn;
+use oteryn_world_bundle_compiler::{npc, spawn};
 use sha2::{Digest, Sha256};
 
 type TestResult = Result<(), Box<dyn StdError>>;
@@ -223,7 +223,7 @@ fn pins(compiled: &Compiled, production: bool) -> BundlePins {
 fn resealed(mut bytes: Vec<u8>) -> (Vec<u8>, [u8; 32]) {
     let body = bytes.len() - 32;
     let digest: [u8; 32] = Sha256::new()
-        .chain_update(b"OTERYN_WORLD_BUNDLE/v3\0")
+        .chain_update(b"OTERYN_WORLD_BUNDLE/v4\0")
         .chain_update(&bytes[..body])
         .finalize()
         .into();
@@ -248,14 +248,16 @@ fn assemble(
         frames.push((raw.len(), compress(raw)?));
     }
     let spawn_frame = compress(spawn_raw)?;
+    let npc_raw = npc::encode(&npc::Table::default());
+    let npc_frame = compress(&npc_raw)?;
     let u32_of = |value: usize| (value as u32).to_le_bytes();
     let mut out = b"OTWB".to_vec();
-    out.extend_from_slice(&3u16.to_le_bytes());
+    out.extend_from_slice(&4u16.to_le_bytes());
     out.extend_from_slice(&[0, 0]);
     out.extend_from_slice(&u32_of(json.len()));
     out.extend_from_slice(&u32_of(sectors.len()));
     out.extend_from_slice(&json);
-    let mut offset = out.len() + 50 * sectors.len() + 44;
+    let mut offset = out.len() + 50 * sectors.len() + 44 + 44;
     for ((floor, sx, sy, _), (raw_length, frame)) in sectors.iter().zip(&frames) {
         out.extend_from_slice(&[*floor as u8, 0]);
         out.extend_from_slice(&sx.to_le_bytes());
@@ -270,10 +272,15 @@ fn assemble(
     out.extend_from_slice(&u32_of(spawn_frame.len()));
     out.extend_from_slice(&u32_of(spawn_raw.len()));
     out.extend_from_slice(&Sha256::digest(&spawn_frame));
+    out.extend_from_slice(&u32_of(offset + spawn_frame.len()));
+    out.extend_from_slice(&u32_of(npc_frame.len()));
+    out.extend_from_slice(&u32_of(npc_raw.len()));
+    out.extend_from_slice(&Sha256::digest(&npc_frame));
     frames
         .iter()
         .for_each(|(_, frame)| out.extend_from_slice(frame));
     out.extend_from_slice(&spawn_frame);
+    out.extend_from_slice(&npc_frame);
     out.extend_from_slice(&[0; 32]);
     Ok(resealed(out))
 }
@@ -591,14 +598,17 @@ fn with_manifest(bytes: &[u8], json: &[u8]) -> Result<(Vec<u8>, [u8; 32]), Box<d
     out.extend_from_slice(&(json.len() as u32).to_le_bytes());
     out.extend_from_slice(&bytes[12..16]);
     out.extend_from_slice(json);
-    let rows = &bytes[table..table + 50 * count + 44];
+    let rows = &bytes[table..table + 50 * count + 44 + 44];
     let mut rows = rows.to_vec();
-    for at in (0..count).map(|i| 50 * i + 6).chain([50 * count]) {
+    for at in (0..count)
+        .map(|i| 50 * i + 6)
+        .chain([50 * count, 50 * count + 44])
+    {
         let moved = (word(&rows, at) as i64 + delta) as u32;
         rows[at..at + 4].copy_from_slice(&moved.to_le_bytes());
     }
     out.extend_from_slice(&rows);
-    out.extend_from_slice(&bytes[table + 50 * count + 44..]);
+    out.extend_from_slice(&bytes[table + 50 * count + 44 + 44..]);
     Ok(resealed(out))
 }
 
@@ -698,7 +708,7 @@ fn map_load_bundle_caps_accept_the_maximum_and_refuse_one_more() -> TestResult {
     let raws: Vec<usize> = (0..count)
         .map(|i| word(bytes, table + 50 * i + 14))
         .collect();
-    let spawn = word(bytes, table + 50 * count + 8);
+    let spawn = word(bytes, table + 50 * count + 8) + word(bytes, table + 50 * count + 44 + 8);
     let largest = *raws.iter().max().ok_or("rows")?;
     let total = raws.iter().sum::<usize>() + spawn;
     let base = map::load(bytes, &pins)?;
@@ -811,7 +821,7 @@ fn map_load_reader_property_never_panics() -> TestResult {
     }
     // Header and table words set to boundary values, deterministically seeded.
     let table = 16 + word(&bytes, 8);
-    let rows = table + 50 * word(&bytes, 12) + 44;
+    let rows = table + 50 * word(&bytes, 12) + 44 + 44;
     let mut state = 0x9E37_79B9_7F4A_7C15u64;
     let mut next = || {
         state ^= state << 13;

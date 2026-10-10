@@ -1439,7 +1439,7 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
 const GOLDEN: (usize, usize, &str) = (
     324,
     5_431_963,
-    "d9f1866f0a425c14443e5b16339cc4856be3fb4dc29679ae4da1f2efc80b5a01",
+    "2920e8ef47cb4578c6481a9824ae755fbdb99abdd0ac141034abe81e657d86df",
 );
 
 // --- MAP01-VIEWPORT-US -------------------------------------------------------------------------

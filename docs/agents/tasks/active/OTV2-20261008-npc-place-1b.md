@@ -29,6 +29,9 @@ owned_paths:
   - apps/game-server/src/movement/speed.rs
   - apps/game-server/tests/map_cutover_boot.rs
   - apps/game-server/tests/map_cutover_view.rs
+  - apps/game-server/tests/map_load_base.rs
+  - apps/game-server/tests/map_overlay_channel.rs
+  - apps/game-server/tests/support/map_item_mint_postgres_cases.rs
   - content/world/pins/oteryn.json
   - content/world/pins/README.md
   - docs/agents/tasks/active/OTV2-20261008-npc-place-1b.md
@@ -46,3 +49,7 @@ depends_on: [NPC-PLACE-1, NPC-PLACE-1a]
   same single `npcs: Default::default(),` line only.
 - Control plane Q2 (a): `apps/game-server/tests/npc_placement_parity.rs`, a new file on existing
   pub APIs only.
+- Control plane D967 (4a 5a): `gameplay_transport/world_map_tests.rs` also for its `GOLDEN` digest
+  (the v4 bundle moves `map_revision`); `tests/map_load_base.rs`, `tests/map_overlay_channel.rs`
+  and `tests/support/map_item_mint_postgres_cases.rs` for their hand-built bundle assemblers' v4
+  update only (NPC row and frame, format 4, v4 digest domain), assertions unchanged.
