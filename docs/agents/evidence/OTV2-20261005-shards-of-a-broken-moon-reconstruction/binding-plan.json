@@ -1,0 +1,2193 @@
+{
+  "schema": "OTERYN_SHARDS_OF_A_BROKEN_MOON_BINDING_PLAN/v1",
+  "status": "EVIDENCE_ONLY_NOT_RUNTIME_AUTHORITY",
+  "quest": {
+    "key": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+    "revision": "authored-r1",
+    "visible_stages": 16,
+    "activation": "WAITING_IMPLEMENTATION"
+  },
+  "source_pins": {
+    "crystal_summer": {
+      "repository": "zimbadev/crystalserver",
+      "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "world_path": "data-global/world/world.otbm",
+      "world_sha256": "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7"
+    }
+  },
+  "rules": {
+    "do_not_invent": [
+      "Asura Citadel key key_number",
+      "Blue Lava night-only predicate",
+      "Magnolia timers/damage without qualified evidence",
+      "post-Magnolia exact skeleton/icicle/north-wall/Rope Spot placement ids/coordinates",
+      "direct QuestState writes from NPC or WorldObject handlers"
+    ],
+    "target_writer": "existing QUEST-STATE-1 QuestTransitionRequest writer",
+    "visible_stage_policy": "Keep 16 Quest Log stages where possible; use internal native sub-tracks/transitions for source-parity execution."
+  },
+  "events": [
+    {
+      "id": "start_saraki",
+      "visible_stage": "s1",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.saraki",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.saraki"
+      },
+      "outcome": "started",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ],
+      "route_fact": "start_route_saraki"
+    },
+    {
+      "id": "start_nilavarna_alt",
+      "visible_stage": "s1",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.nilavarna",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.nilavarna"
+      },
+      "outcome": "started",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "note": "Source-parity alternate start; current authored summary chooses Saraki.",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ],
+      "route_fact": "start_route_nilavarna"
+    },
+    {
+      "id": "clue_yukti_sundara",
+      "visible_stage": "s2",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.sundara",
+        "branch_sequence": [
+          "hi",
+          "yukti"
+        ]
+      },
+      "outcome": "yukti_done",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "alternate_route": {
+        "npc": "oteryn:npc.nipuna",
+        "semantic_keyword": "yukti",
+        "branch_sequence": [
+          "hi",
+          "yukti"
+        ],
+        "when": "quest started through Nilavarna route"
+      },
+      "completion_semantics": "Dialogue branch completion immediately yields yukti_done; no follow-up collection/use task.",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ],
+      "requires_route": "start_route_saraki"
+    },
+    {
+      "id": "clue_yukti_nipuna_alt",
+      "visible_stage": "s2",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.nipuna",
+        "branch_sequence": [
+          "hi",
+          "yukti"
+        ]
+      },
+      "outcome": "yukti_done",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "note": "Source-parity alternate Yukti route.",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ],
+      "requires_route": "start_route_nilavarna",
+      "completion_semantics": "Dialogue branch completion immediately yields yukti_done; no follow-up task."
+    },
+    {
+      "id": "tides_tarisu",
+      "visible_stage": "s3",
+      "kind": "NPC_DIALOGUE_PLUS_ITEM_GRANT",
+      "trigger": {
+        "npc": "oteryn:npc.tarisu",
+        "branch_sequence": [
+          "hi",
+          "tides"
+        ],
+        "dialogue": "oteryn:dialogue.npc.tarisu"
+      },
+      "item": {
+        "key": "oteryn:item.tibia.i53783",
+        "name": "shell gauge"
+      },
+      "outcome": "tides_started",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1 + Item/Durability",
+      "note": "Crystal prose says take the gauge but performs no addItem.",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
+    },
+    {
+      "id": "tide_marker_1",
+      "visible_stage": "s3",
+      "kind": "USE_PLACEMENT",
+      "position": {
+        "x": 33901,
+        "y": 32839,
+        "z": 7
+      },
+      "requires_item": "oteryn:item.tibia.i53783",
+      "outcome": "tide_marker_lagoon_a",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World/Item"
+    },
+    {
+      "id": "tide_marker_2",
+      "visible_stage": "s3",
+      "kind": "USE_PLACEMENT",
+      "position": {
+        "x": 33907,
+        "y": 32784,
+        "z": 7
+      },
+      "requires_item": "oteryn:item.tibia.i53783",
+      "outcome": "tide_marker_lagoon_b",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World/Item"
+    },
+    {
+      "id": "tide_marker_3",
+      "visible_stage": "s3",
+      "kind": "USE_PLACEMENT",
+      "position": {
+        "x": 33900,
+        "y": 32765,
+        "z": 7
+      },
+      "requires_item": "oteryn:item.tibia.i53783",
+      "outcome": "tide_marker_emerald",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World/Item"
+    },
+    {
+      "id": "tides_join",
+      "visible_stage": "s3",
+      "kind": "JOIN",
+      "predicates": [
+        "tide_marker_lagoon_a",
+        "tide_marker_lagoon_b",
+        "tide_marker_emerald"
+      ],
+      "outcome": "tides_done",
+      "evidence": "DERIVED",
+      "owner": "QUEST-CONTENT-2"
+    },
+    {
+      "id": "plants_dhira",
+      "visible_stage": "s4",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.dhira",
+        "branch_sequence": [
+          "hi",
+          "moon",
+          "plants"
+        ],
+        "dialogue": "oteryn:dialogue.npc.dhira"
+      },
+      "outcome": "plants_started",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
+    },
+    {
+      "id": "plant_tide_veil",
+      "visible_stage": "s4",
+      "kind": "USE_PLACEMENT_ITEM_GRANT",
+      "position": {
+        "x": 33862,
+        "y": 32838,
+        "z": 7
+      },
+      "result_item": "oteryn:item.tibia.i53692",
+      "outcome": "tide_veil_sample_obtained",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + Item/Durability"
+    },
+    {
+      "id": "plant_whisper_reed",
+      "visible_stage": "s4",
+      "kind": "USE_PLACEMENT_ITEM_GRANT",
+      "position": {
+        "x": 33882,
+        "y": 32823,
+        "z": 7
+      },
+      "result_item": "oteryn:item.tibia.i53693",
+      "outcome": "whisper_reed_sample_obtained",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + Item/Durability"
+    },
+    {
+      "id": "refine_tide_veil",
+      "visible_stage": "s4",
+      "kind": "USE_ITEM_ON_WORLD_OBJECT",
+      "position": {
+        "x": 33774,
+        "y": 32853,
+        "z": 7
+      },
+      "world_object": {
+        "key": "oteryn:item.tibia.i34338",
+        "routed_owner": "WorldObject",
+        "name": "refiner of magic"
+      },
+      "input_item": "oteryn:item.tibia.i53692",
+      "outcome": "tide_veil_refined",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + WorldObject/Item"
+    },
+    {
+      "id": "refine_whisper_reed",
+      "visible_stage": "s4",
+      "kind": "USE_ITEM_ON_WORLD_OBJECT",
+      "position": {
+        "x": 33774,
+        "y": 32853,
+        "z": 7
+      },
+      "world_object": {
+        "key": "oteryn:item.tibia.i34338",
+        "routed_owner": "WorldObject",
+        "name": "refiner of magic"
+      },
+      "input_item": "oteryn:item.tibia.i53693",
+      "outcome": "whisper_reed_refined",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + WorldObject/Item"
+    },
+    {
+      "id": "plants_join",
+      "visible_stage": "s4",
+      "kind": "JOIN",
+      "predicates": [
+        "tide_veil_refined",
+        "whisper_reed_refined"
+      ],
+      "outcome": "plants_done",
+      "evidence": "DERIVED",
+      "owner": "QUEST-CONTENT-2"
+    },
+    {
+      "id": "three_clues_join",
+      "visible_stage": "s5",
+      "kind": "JOIN",
+      "predicates": [
+        "yukti_done",
+        "tides_done",
+        "plants_done"
+      ],
+      "outcome": "three_clues_done",
+      "evidence": "FACT_SEMANTICS_DERIVED_REPRESENTATION",
+      "owner": "QUEST-GATE-1 / NPC-QUEST-1",
+      "note": "QUEST-GATE-0 allows conjunction of up to four predicates."
+    },
+    {
+      "id": "report_saraki",
+      "visible_stage": "s5",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.saraki",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.saraki"
+      },
+      "requires": [
+        "three_clues_done",
+        "start_route_saraki"
+      ],
+      "outcome": "report_done",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
+    },
+    {
+      "id": "report_nilavarna_alt",
+      "visible_stage": "s5",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.nilavarna",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.nilavarna"
+      },
+      "requires": [
+        "three_clues_done",
+        "start_route_nilavarna"
+      ],
+      "outcome": "report_done",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
+    },
+    {
+      "id": "udu_moon",
+      "visible_stage": "s5",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.udu",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.udu"
+      },
+      "requires": [
+        "report_done"
+      ],
+      "outcome": "impact_location_known",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
+    },
+    {
+      "id": "crater_discovery",
+      "visible_stage": "s6",
+      "kind": "ON_ENTER_OR_INSPECT",
+      "position": {
+        "x": 33877,
+        "y": 32678,
+        "z": 7
+      },
+      "requires": [
+        "impact_location_known"
+      ],
+      "outcome": "crater_discovered",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World"
+    },
+    {
+      "id": "sharai_first",
+      "visible_stage": "s6",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.sharai",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.sharai"
+      },
+      "requires": [
+        "crater_discovered"
+      ],
+      "outcome": "sharai_route_known",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
+    },
+    {
+      "id": "secret_entrance",
+      "visible_stage": "s6",
+      "kind": "USE_OR_ENTER_PLACEMENT",
+      "position": {
+        "x": 33894,
+        "y": 32713,
+        "z": 7
+      },
+      "requires": [
+        "sharai_route_known"
+      ],
+      "outcome": "secret_entrance_opened",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World"
+    },
+    {
+      "id": "sealed_stone_door_observation",
+      "visible_stage": "s7",
+      "kind": "USE_PLACEMENT",
+      "position": {
+        "x": 33899,
+        "y": 32666,
+        "z": 8
+      },
+      "requires": [
+        "secret_entrance_opened"
+      ],
+      "outcome": "stone_door_observed",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + Door"
+    },
+    {
+      "id": "voice_approach_update",
+      "visible_stage": "s7",
+      "kind": "ON_ENTER",
+      "position": {
+        "x": 33880,
+        "y": 32668,
+        "z": 8
+      },
+      "requires": [
+        "stone_door_observed"
+      ],
+      "outcome": "javala_route_revealed",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + World"
+    },
+    {
+      "id": "javala_moon",
+      "visible_stage": "s7",
+      "kind": "NPC_DIALOGUE_PLUS_ITEM_GRANT",
+      "trigger": {
+        "npc": "oteryn:npc.javala",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.javala",
+        "room": {
+          "x": 33892,
+          "y": 32666,
+          "z": 8
+        }
+      },
+      "requires": [
+        "javala_route_revealed"
+      ],
+      "outcome": "javala_alliance",
+      "item_candidate": {
+        "donor_id": 54262,
+        "canonical_key": "oteryn:item.tibia.i54262",
+        "status": "EXACT_CROSS_SOURCE",
+        "evidence": [
+          "Fandom Item IDs: Key (SU26) -> 54262",
+          "TibiaWiki 15.30: Key (Asura Citadel) is the update quest key for door 33899,32666,8",
+          "Crystal Summer 00ce02a5 items.xml: id=54262 name=key weight=100"
+        ],
+        "key_number": null,
+        "key_number_status": "SOURCE_ABSENT_DO_NOT_INVENT"
+      },
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1 + Item/Durability + KEY-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ]
+    },
+    {
+      "id": "javala_lost_key_regrant",
+      "visible_stage": "s7",
+      "kind": "NPC_DIALOGUE_REGRANT",
+      "trigger": {
+        "npc": "oteryn:npc.javala",
+        "dialogue": "oteryn:dialogue.npc.javala",
+        "branch_sequence": [
+          "hi",
+          "lost"
+        ]
+      },
+      "requires": [
+        "javala_alliance",
+        "does_not_hold_asura_citadel_key"
+      ],
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1 + Item/Durability + KEY-1",
+      "item_effect": {
+        "grant": "oteryn:item.tibia.i54262",
+        "count": 1,
+        "guard": "quest eligible AND character does not currently hold the Asura Citadel key"
+      },
+      "source_notes": [
+        "Post-release TibiaWiki Key (Asura Citadel) and 15.30 update pages explicitly document Javala Hi -> Lost regrant.",
+        "After Shards completion the key is no longer required for the door."
+      ]
+    },
+    {
+      "id": "asura_citadel_key_door",
+      "visible_stage": "s7",
+      "kind": "KEY_DOOR",
+      "position": {
+        "x": 33899,
+        "y": 32666,
+        "z": 8
+      },
+      "evidence": "FACT_BEHAVIOR_EXACT_ITEM_IDENTITY",
+      "owner": "DOOR-1 + KEY-1",
+      "blocker": "Implement identity-based DOOR-1/KEY-1 check and post-completion bypass; do not invent a numeric keyNumber.",
+      "key_identity": "oteryn:item.tibia.i54262",
+      "key_number": null,
+      "key_number_status": "SOURCE_ABSENT_DO_NOT_INVENT",
+      "runtime_dependencies": [
+        "ITEM-USE-1",
+        "DOOR-1/KEY-1 identity-key amendment",
+        "QUEST-GATE-1 read-only QuestCompleted bypass"
+      ],
+      "note": " Current gameplay transport rejects use_with fail-closed until ITEM-USE-1; do not add a quest-private USE-WITH dispatcher.",
+      "world_object": {
+        "source_item_id": 53380,
+        "name": "closed door",
+        "attrs": {
+          "type": "door",
+          "blockProjectile": "1"
+        }
+      },
+      "key_admission": {
+        "canonical_key": "oteryn:item.tibia.i54262",
+        "current_materializable": false,
+        "successor_status": "PROOF_COMPLETE_NOT_ADMITTED",
+        "item_facts": {
+          "stackable": false,
+          "capacity": null,
+          "charges": null,
+          "holds": []
+        }
+      }
+    },
+    {
+      "id": "laboratory_note",
+      "visible_stage": "s8",
+      "kind": "OPTIONAL_READABLE_DOCUMENT",
+      "position": {
+        "x": 33881,
+        "y": 32684,
+        "z": 9
+      },
+      "object_semantics": "generic Note Pinned on the Wall placement; do not mint a new portable quest item",
+      "outcome": null,
+      "evidence": "FACT_EXACT_PLACEMENT_OPTIONAL_LORE",
+      "owner": "WorldObject + Document",
+      "world_object": {
+        "donor_id": 6121,
+        "name": "note pinned on the wall",
+        "source_attributes": {
+          "allowDistRead": "1"
+        }
+      },
+      "note": "Pinned OTBM exact placement. Continuous walkthrough from room entry to Crystal Plinth shows no note interaction before successful Plinth progression; do not require lab_note_read for quest advancement."
+    },
+    {
+      "id": "crystal_plinth",
+      "visible_stage": "s8",
+      "kind": "USE_WORLD_OBJECT",
+      "room_position": {
+        "x": 33881,
+        "y": 32687,
+        "z": 9
+      },
+      "world_object": {
+        "key": "oteryn:item.tibia.i54515",
+        "routed_owner": "WorldObject",
+        "name": "crystal plinth"
+      },
+      "outcome": "lab_access_sequence_learned",
+      "evidence": "FACT_VIDEO_VERIFIED",
+      "owner": "WorldObject + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_approx": "00:11:25",
+        "observation": "Using the Crystal Plinth reports that the character learns the shard-room access sequence."
+      },
+      "note": "Dense visual inspection through 00:11:32\u201300:11:42 shows no separate code UI, manual colour entry or panel-click sequence before the door is crossed. Video review additionally shows no required Note Pinned on the Wall interaction before this event.",
+      "requires": []
+    },
+    {
+      "id": "laboratory_sealed_door",
+      "visible_stage": "s8",
+      "kind": "GATED_DOOR",
+      "position": {
+        "x": 33874,
+        "y": 32686,
+        "z": 9
+      },
+      "requires": [
+        "lab_access_sequence_learned"
+      ],
+      "evidence": "FACT_VIDEO_VERIFIED_GATE",
+      "owner": "QUEST-GATE-1 + Door",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_window": "00:11:40-00:11:41",
+        "observation": "Character crosses the shard-room door after learning the access sequence from the Plinth; no separate player input is observed."
+      }
+    },
+    {
+      "id": "crystal_apparatus",
+      "visible_stage": "s8",
+      "kind": "USE_WORLD_OBJECT",
+      "position": {
+        "x": 33874,
+        "y": 32677,
+        "z": 9
+      },
+      "world_object": {
+        "key": "oteryn:item.tibia.i53514",
+        "routed_owner": "WorldObject",
+        "name": "crystal apparatus"
+      },
+      "outcome": "laboratory_done",
+      "evidence": "FACT",
+      "owner": "WorldObject + QUEST-TRIGGER-1"
+    },
+    {
+      "id": "sharai_machines",
+      "visible_stage": "s8_s9_boundary",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.sharai",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ],
+        "dialogue": "oteryn:dialogue.npc.sharai"
+      },
+      "requires": [
+        "laboratory_done"
+      ],
+      "outcome": "sharai_machines_reported",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express/story flow used as runtime-dispatch authority for this branch.",
+        "Crystal Summer dialogue labels are supporting donor evidence only when they differ."
+      ],
+      "semantic_name": "post_laboratory_sharai_report",
+      "note": "Post-release Reference uses Hi -> Moon here; donor Crystal branch label `machines` is not dispatch authority."
+    },
+    {
+      "id": "niral_first",
+      "visible_stage": "s9",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.niral",
+        "dialogue": "oteryn:dialogue.npc.niral",
+        "semantic_keyword": "moon",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ]
+      },
+      "requires": [
+        "sharai_machines_reported"
+      ],
+      "outcome": "niral_rakesh_task",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express and story flows use Hi -> Moon for this Niral state.",
+        "Crystal Summer branch labels such as seal/consecrate are donor implementation hints only and are not Reference dispatch authority."
+      ]
+    },
+    {
+      "id": "rakesh_kill",
+      "visible_stage": "s10",
+      "kind": "CREATURE_DEATH",
+      "arena_entry": {
+        "x": 33039,
+        "y": 32964,
+        "z": 8
+      },
+      "creature": "oteryn:creature.rakesh_moonfang",
+      "requires": [
+        "niral_rakesh_task"
+      ],
+      "outcome": "rakesh_defeated",
+      "evidence": "FACT",
+      "owner": "Encounter/Combat -> Quest transition adapter"
+    },
+    {
+      "id": "niral_post_rakesh",
+      "visible_stage": "s10",
+      "kind": "NPC_DIALOGUE",
+      "trigger": {
+        "npc": "oteryn:npc.niral",
+        "dialogue": "oteryn:dialogue.npc.niral",
+        "semantic_keyword": "moon",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ]
+      },
+      "requires": [
+        "rakesh_defeated"
+      ],
+      "outcome": "niral_seal_instructions",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1",
+      "source_notes": [
+        "Post-release TibiaWiki express and story flows use Hi -> Moon for this Niral state.",
+        "Crystal Summer branch labels such as seal/consecrate are donor implementation hints only and are not Reference dispatch authority."
+      ]
+    },
+    {
+      "id": "empty_flask_pickup",
+      "visible_stage": "s11",
+      "kind": "USE_PLACEMENT_ITEM_GRANT",
+      "position": {
+        "x": 32971,
+        "y": 32981,
+        "z": 7
+      },
+      "result_item": "oteryn:item.tibia.i53696",
+      "outcome": "empty_flask_obtained",
+      "evidence": "FACT",
+      "owner": "QUEST-TRIGGER-1 + Item/Durability"
+    },
+    {
+      "id": "blue_lava_fill",
+      "visible_stage": "s11",
+      "kind": "USE_ITEM_ON_PLACEMENT_TRANSFORM",
+      "position": {
+        "x": 33098,
+        "y": 32947,
+        "z": 6
+      },
+      "input_item": "oteryn:item.tibia.i53696",
+      "required_equipped_item": "oteryn:item.tibia.i25975",
+      "result_item": "oteryn:item.tibia.i54564",
+      "requires": [
+        "niral_seal_instructions",
+        "empty_flask_obtained",
+        "holds Moon Mirror",
+        "holds oteryn:item.tibia.i25975",
+        "holds oteryn:item.tibia.i53696",
+        "holds:oteryn:item.tibia.i25975",
+        "holds:oteryn:item.tibia.i53696"
+      ],
+      "outcome": "blue_lava_obtained",
+      "evidence": "FACT_ITEM_PLACEMENT_REQUIREMENTS_WITH_SOURCE_CONFLICT_TIME_OF_DAY",
+      "owner": "QUEST-TRIGGER-1 + Item/Durability",
+      "night_guard": false,
+      "source_arbitration": {
+        "disposition": "SOURCE_CONFLICT_OWNER_HOLD_NO_NIGHT_GUARD",
+        "stale_fandom": {
+          "statement": "active volcano during the night time",
+          "warning": "page still carries Future Update Information / pre-release warning"
+        },
+        "post_release_tibiawiki": {
+          "statement": "with Moon Mirror equipped, use Empty Crystal Flask at 33098,32947,6 to obtain Crystal Flask with Blue Lava",
+          "night_requirement": false
+        },
+        "post_release_itemlevel": {
+          "statement": "with Moon Mirror in inventory the correct lava section turns blue; use Empty Crystal Flask on the blue lava",
+          "night_requirement": false
+        },
+        "supplied_video": {
+          "statement": "narrator says wiki claims night-only but explicitly says he does not know whether it is true",
+          "disposition": "NOT_USED_TO_PROVE_NIGHT"
+        }
+      },
+      "note": "Preserve Moon Mirror/flask/placement requirements. Night necessity remains SOURCE_CONFLICT, with no controlled daytime witness; do not enforce night-only.",
+      "time_predicate": {
+        "kind": "night_time",
+        "required": null,
+        "selected_source": {
+          "provider": "tibia_fandom",
+          "pageid": 110936,
+          "revid": 1202455,
+          "revision_timestamp": "2026-08-20T20:11:41Z",
+          "wording": "active volcano ... during the night time"
+        },
+        "continuity_support": "Current Fandom page/search snapshot still contains the same explicit night-time instruction after the pinned post-release revision.",
+        "crosschecks": [
+          {
+            "provider": "tibiawiki_br",
+            "disposition": "OMISSION_NOT_CONTRADICTION",
+            "note": "Describes Moon Mirror + Empty Crystal Flask use but does not state that daytime succeeds."
+          },
+          {
+            "provider": "post_release_guides",
+            "disposition": "OMISSION_NOT_CONTRADICTION",
+            "note": "Guides omit time-of-day but do not provide a successful daytime witness."
+          },
+          {
+            "provider": "walkthrough_Zz-7UyufXbU",
+            "disposition": "SUPPORTING_NOT_DISCRIMINATING",
+            "note": "Narrator cites wiki night-only requirement, is unsure whether it is necessary, believes it is night, then successfully fills the flask."
+          }
+        ],
+        "confidence": "SOURCE_CONFLICT_NOT_RUNTIME_AUTHORITY",
+        "controlled_global_observation": false,
+        "runtime_enforcement": false
+      },
+      "requirements": [],
+      "source_disposition": {
+        "night_time_required": null,
+        "pinned_fandom_revision": 1202455,
+        "controlled_global_day_vs_night_test": "NOT_VERIFIED",
+        "disposition": "SOURCE_CONFLICT_OWNER_HOLD_NO_RUNTIME_GUARD"
+      }
+    },
+    {
+      "id": "niral_consecrate",
+      "visible_stage": "s12",
+      "kind": "NPC_DIALOGUE_ITEM_TRANSFORM",
+      "trigger": {
+        "npc": "oteryn:npc.niral",
+        "dialogue": "oteryn:dialogue.npc.niral",
+        "semantic_keyword": "moon",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ]
+      },
+      "input_item": "oteryn:item.tibia.i54564",
+      "result_item": "oteryn:item.tibia.i54566",
+      "outcome": "blue_lava_blessed",
+      "evidence": "FACT_POST_RELEASE_DIALOGUE_BRANCH",
+      "owner": "NPC-QUEST-1 + Item/Durability",
+      "requires": [
+        "blue_lava_obtained"
+      ],
+      "source_notes": [
+        "Post-release TibiaWiki express and story flows use Hi -> Moon for this Niral state.",
+        "Crystal Summer branch labels such as seal/consecrate are donor implementation hints only and are not Reference dispatch authority."
+      ],
+      "item_effect": {
+        "input": "oteryn:item.tibia.i54564",
+        "output": "oteryn:item.tibia.i54566",
+        "semantics": "qualified dialogue branch transforms Blue Lava Flask to Blessed Blue Lava Flask"
+      }
+    },
+    {
+      "id": "rune_silent_moon",
+      "visible_stage": "s13",
+      "kind": "USE_ITEM_ON_POSITION",
+      "position": {
+        "x": 33868,
+        "y": 32664,
+        "z": 9
+      },
+      "placement_appearance_id": 54637,
+      "display_semantic": "Sigil of the Silent Moon",
+      "input_item": "oteryn:item.tibia.i54566",
+      "outcome": "rune_silent_moon",
+      "evidence": "FACT_EXACT_POSITION",
+      "owner": "QUEST-TRIGGER-1 + World/Item",
+      "note": "Base appearance 54637 is Terrain:ground_or_border only. Quest semantics are bound to the exact placement, not to a promoted WorldObject identity."
+    },
+    {
+      "id": "rune_silverflow",
+      "visible_stage": "s13",
+      "kind": "USE_ITEM_ON_POSITION",
+      "position": {
+        "x": 33880,
+        "y": 32664,
+        "z": 9
+      },
+      "placement_appearance_id": 54637,
+      "display_semantic": "Silverflow Rune",
+      "input_item": "oteryn:item.tibia.i54566",
+      "outcome": "rune_silverflow",
+      "evidence": "FACT_EXACT_POSITION",
+      "owner": "QUEST-TRIGGER-1 + World/Item",
+      "note": "Base appearance 54637 is Terrain:ground_or_border only. Quest semantics are bound to the exact placement, not to a promoted WorldObject identity."
+    },
+    {
+      "id": "rune_veiled_night",
+      "visible_stage": "s13",
+      "kind": "USE_ITEM_ON_POSITION",
+      "position": {
+        "x": 33868,
+        "y": 32676,
+        "z": 9
+      },
+      "placement_appearance_id": 54637,
+      "display_semantic": "Mark of the Veiled Night",
+      "input_item": "oteryn:item.tibia.i54566",
+      "outcome": "rune_veiled_night",
+      "evidence": "FACT_EXACT_POSITION",
+      "owner": "QUEST-TRIGGER-1 + World/Item",
+      "note": "Base appearance 54637 is Terrain:ground_or_border only. Quest semantics are bound to the exact placement, not to a promoted WorldObject identity."
+    },
+    {
+      "id": "rune_fallen_star",
+      "visible_stage": "s13",
+      "kind": "USE_ITEM_ON_POSITION",
+      "position": {
+        "x": 33880,
+        "y": 32676,
+        "z": 9
+      },
+      "placement_appearance_id": 54637,
+      "display_semantic": "Fallen Star Glyph",
+      "input_item": "oteryn:item.tibia.i54566",
+      "outcome": "rune_fallen_star",
+      "evidence": "FACT_EXACT_POSITION",
+      "owner": "QUEST-TRIGGER-1 + World/Item",
+      "note": "Base appearance 54637 is Terrain:ground_or_border only. Quest semantics are bound to the exact placement, not to a promoted WorldObject identity."
+    },
+    {
+      "id": "ritual_join",
+      "visible_stage": "s13",
+      "kind": "JOIN_AND_ITEM_TRANSFORM",
+      "predicates": [
+        "rune_silent_moon",
+        "rune_silverflow",
+        "rune_veiled_night",
+        "rune_fallen_star"
+      ],
+      "input_item": "oteryn:item.tibia.i54566",
+      "result_item": "oteryn:item.tibia.i53696",
+      "outcome": "ritual_done",
+      "evidence": "FACT",
+      "owner": "Quest + Item/Durability"
+    },
+    {
+      "id": "magnolia_admission",
+      "visible_stage": "s14",
+      "kind": "ENCOUNTER_ADMISSION",
+      "portal_position": {
+        "x": 33901,
+        "y": 32718,
+        "z": 9
+      },
+      "creature": "oteryn:creature.the_moonsnow_magnolia",
+      "requires": [
+        "ritual_done"
+      ],
+      "outcome": "magnolia_admitted",
+      "evidence": "FACT",
+      "owner": "Encounter + QUEST-TRIGGER-1",
+      "encounter_evidence_ref": "magnolia-encounter-evidence.json",
+      "blocker": "Shards Encounter not admitted; max_health schema/ProjectV2 catch-up and generic ENC-RT-1/ENC-COMBAT-1/ENC-OUTCOME-1 remain. #1807 is merged."
+    },
+    {
+      "id": "magnolia_phase1",
+      "visible_stage": "s14",
+      "kind": "SPECIAL_ENCOUNTER_PHASE",
+      "mechanics": [
+        "initial 2 Furious Jaracal",
+        "phase-1 Furious Jaracal pressure + Bone Fiddle suppression",
+        "Frost Flower Asura / Midnight Asura encounter adds",
+        "Moonsilver Drift player/asura step callbacks",
+        "Death-element damage heals Magnolia"
+      ],
+      "evidence": "FACT_MECHANICS_PACKETED_EXACT_AND_APPROX_SEPARATED",
+      "owner": "Encounter",
+      "blocker": "Shards Encounter not admitted; max_health schema/ProjectV2 catch-up and generic ENC-RT-1/ENC-COMBAT-1/ENC-OUTCOME-1 remain. #1807 is merged.",
+      "encounter_evidence_ref": "magnolia-encounter-evidence.json",
+      "note": "Base Creature behavior can reuse accepted Monster runtime only where source-qualified. Special scheduling/state is Encounter-owned; do not copy Crystal's ordinary summon table as the quest encounter."
+    },
+    {
+      "id": "magnolia_revive",
+      "visible_stage": "s14",
+      "kind": "SPECIAL_ENCOUNTER_THRESHOLD",
+      "outcome": "magnolia_phase_2",
+      "evidence": "FACT_CURRENT_REFERENCE_PHASE2_60000 + APPROX_ICE_BURST",
+      "owner": "Encounter",
+      "encounter_evidence_ref": "magnolia-encounter-evidence.json",
+      "note": "Current reference publishes immediate return at 60000 HP after first defeat; Ice burst is only approximately 5000 and stays approximate. First lethal is non-terminal.",
+      "blocker": "Shards Encounter not admitted; max_health schema/ProjectV2 catch-up and generic ENC-RT-1/ENC-COMBAT-1/ENC-OUTCOME-1 remain. #1807 is merged."
+    },
+    {
+      "id": "magnolia_final_kill",
+      "visible_stage": "s14",
+      "kind": "ENCOUNTER_COMPLETION",
+      "requires": [
+        "magnolia_phase_2"
+      ],
+      "outcome": "magnolia_defeated",
+      "evidence": "FACT",
+      "owner": "Encounter -> Quest transition adapter",
+      "encounter_evidence_ref": "magnolia-encounter-evidence.json",
+      "blocker": "Shards Encounter not admitted; max_health schema/ProjectV2 catch-up and generic ENC-RT-1/ENC-COMBAT-1/ENC-OUTCOME-1 remain. #1807 is merged."
+    },
+    {
+      "id": "prison_skeleton",
+      "visible_stage": "s15",
+      "kind": "INSPECT_PLACEMENT_ITEM_GRANT",
+      "result_item_semantic": "Lit Torch",
+      "outcome": "prison_torch_obtained",
+      "evidence": "FACT_VIDEO_SOURCE + HIGH_CONFIDENCE_DERIVED_POSITION",
+      "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_approx": "00:22:47.5",
+        "observation": "Client reports: You have found a torch."
+      },
+      "result_item_donor": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "donor_item_id": 54610,
+        "donor_key": "donor:crystalserver@00ce02a5:item/54610",
+        "name": "lit torch",
+        "family_profile": "light_source",
+        "canonical_oteryn_identity": "PENDING_SEPARATE_ITEM_ADMISSION",
+        "alias_to_i34017": "REJECTED_BY_CROSS_SOURCE_DISTINCT_IDENTITY",
+        "identity_evidence": {
+          "fandom_item_ids": {
+            "Lit Torch (Quest)": 34017,
+            "Lit Torch (SU26)": 54610,
+            "Torch (SU26)": 54609
+          },
+          "pinned_donor": {
+            "34017": {
+              "name": "lit torch",
+              "weight": "500"
+            },
+            "54609": {
+              "name": "torch",
+              "stopduration": "1",
+              "weight": "500"
+            },
+            "54610": {
+              "name": "lit torch",
+              "weight": "500"
+            }
+          },
+          "conclusion": "SU26 quest torch is a distinct source identity even though donor attributes overlap with the old quest lit torch."
+        }
+      },
+      "position": {
+        "x": 31920,
+        "y": 31360,
+        "z": 9
+      },
+      "position_status": "HIGH_CONFIDENCE_DERIVED_UNIQUE_TOPOLOGY",
+      "position_evidence": {
+        "pinned_world": "zimbadev/crystalserver@00ce02a5:data-global/world/world.otbm",
+        "object": {
+          "id": 8606,
+          "name": "skeleton"
+        },
+        "uniqueness": "1 of 1012 static skeleton placements matches both required topology facts: icicles to the southwest and an ice wall immediately north.",
+        "independent_visual": "ItemLevel escape screenshot places the skeleton southeast of the indicated icicles, matching this OTBM cluster."
+      },
+      "lit_torch_successor": {
+        "canonical_key": "oteryn:item.tibia.i54610",
+        "identity_state": "PROOF_COMPLETE_SUCCESSOR_NOT_ADMITTED",
+        "donor": {
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "item_id": 54610,
+          "name": "lit torch",
+          "primarytype": "light sources",
+          "weight": 500
+        },
+        "client_15_30": {
+          "take": true,
+          "usable": true,
+          "multiuse": true,
+          "light": true,
+          "light_brightness": 7,
+          "light_color": 206,
+          "clothes_slot": 10,
+          "cyclopedia_type": 54610
+        },
+        "existing_quest_item_admission_validation": {
+          "stackable": false,
+          "capacity": null,
+          "charges": null,
+          "holds": []
+        },
+        "timed_lifecycle": "UNPROVEN_NOT_REQUIRED",
+        "forbidden": [
+          "alias to i34017",
+          "rewrite frozen epoch2 hold",
+          "invent decay/duration/54609 transform"
+        ]
+      }
+    },
+    {
+      "id": "prison_icicles",
+      "visible_stage": "s15",
+      "kind": "INSPECT_PLACEMENT_ITEM_GRANT",
+      "result_item": "oteryn:item.tibia.i39578",
+      "outcome": "prison_chisel_obtained",
+      "evidence": "FACT_VIDEO_SOURCE + HIGH_CONFIDENCE_DERIVED_POSITION",
+      "owner": "WorldObject + Item/Durability + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_approx": "00:22:40",
+        "observation": "Client reports: With all your strength, you manage to break off one of the massive icicles."
+      },
+      "position": {
+        "x": 31914,
+        "y": 31364,
+        "z": 9
+      },
+      "position_status": "HIGH_CONFIDENCE_DERIVED_UNIQUE_ROOM_MATCH",
+      "world_object_donor": {
+        "id": 6966,
+        "name": "icicles"
+      },
+      "position_evidence": {
+        "relative_to_skeleton": {
+          "dx": -6,
+          "dy": 4,
+          "semantic": "southwest"
+        },
+        "alternate_nearer_candidate": {
+          "x": 31916,
+          "y": 31362,
+          "z": 9,
+          "status": "REJECTED_BY_FAR_SW_VISUAL_MATCH"
+        },
+        "independent_visual": "ItemLevel screenshot points to the far southwest corner for the icicle interaction while the skeleton is farther east."
+      }
+    },
+    {
+      "id": "prison_wall_torch",
+      "visible_stage": "s15",
+      "kind": "USE_ITEM_ON_PLACEMENT",
+      "required_semantic_item": "Lit Torch",
+      "target_semantic": "north crumbling wall",
+      "outcome": "prison_wall_prepared",
+      "evidence": "FACT_REPARSED_PINNED_OTBM + RETAINED_VIDEO_AXIS_WITNESS",
+      "owner": "World Interaction + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_approx": "00:22:48.5",
+        "observation": "After an earlier failed chisel attempt, use of the torch produces a clear fire effect on the north-wall crack."
+      },
+      "position_status": "EXACT_CROSS_VIDEO_OTBM",
+      "position": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9
+      },
+      "world_target": {
+        "base_ground_id": 6869,
+        "base_ground_name": "ice",
+        "debris_id": 6374,
+        "debris_name": "debris",
+        "wall_id": 6729,
+        "wall_name": "ice wall",
+        "stacked_base_id": 4728,
+        "stacked_base_name": "swamp"
+      },
+      "position_evidence": {
+        "pinned_world": "zimbadev/crystalserver@00ce02a5:data-global/world/world.otbm",
+        "tile_stack": [
+          {
+            "id": 6869,
+            "name": "ice"
+          },
+          {
+            "id": 4728,
+            "name": "swamp"
+          },
+          {
+            "id": 6374,
+            "name": "debris"
+          },
+          {
+            "id": 6729,
+            "name": "ice wall"
+          },
+          {
+            "id": 6926,
+            "name": "ice"
+          },
+          {
+            "id": 6928,
+            "name": "ice"
+          }
+        ],
+        "relation_to_skeleton": {
+          "dx": 0,
+          "dy": -1,
+          "skeleton": {
+            "x": 31920,
+            "y": 31360,
+            "z": 9
+          }
+        },
+        "video": "22:47\u201322:51 fire and subsequent crumbling effects occur directly north of the skeleton/player axis; side candidates do not match the observed center target.",
+        "rejected_side_tiles": [
+          {
+            "x": 31919,
+            "y": 31359,
+            "z": 9,
+            "reason": "left-side debris variant"
+          },
+          {
+            "x": 31921,
+            "y": 31359,
+            "z": 9,
+            "reason": "different wall orientation/stack"
+          }
+        ]
+      },
+      "world_stack": {
+        "ground_or_base": [
+          6869,
+          4728
+        ],
+        "debris": 6374,
+        "ice_wall": 6729,
+        "overlays": [
+          6926,
+          6928
+        ]
+      },
+      "lit_torch_successor": {
+        "canonical_key": "oteryn:item.tibia.i54610",
+        "identity_state": "PROOF_COMPLETE_SUCCESSOR_NOT_ADMITTED",
+        "donor": {
+          "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+          "item_id": 54610,
+          "name": "lit torch",
+          "primarytype": "light sources",
+          "weight": 500
+        },
+        "client_15_30": {
+          "take": true,
+          "usable": true,
+          "multiuse": true,
+          "light": true,
+          "light_brightness": 7,
+          "light_color": 206,
+          "clothes_slot": 10,
+          "cyclopedia_type": 54610
+        },
+        "existing_quest_item_admission_validation": {
+          "stackable": false,
+          "capacity": null,
+          "charges": null,
+          "holds": []
+        },
+        "timed_lifecycle": "UNPROVEN_NOT_REQUIRED",
+        "forbidden": [
+          "alias to i34017",
+          "rewrite frozen epoch2 hold",
+          "invent decay/duration/54609 transform"
+        ]
+      },
+      "fresh_static_readback": "prison-source-readback-20261007.json"
+    },
+    {
+      "id": "prison_wall_chisel",
+      "visible_stage": "s15",
+      "kind": "USE_ITEM_ON_PLACEMENT",
+      "input_item": "oteryn:item.tibia.i39578",
+      "target_semantic": "prepared north crumbling wall",
+      "requires": [
+        "prison_wall_prepared"
+      ],
+      "outcome": "prison_wall_open",
+      "evidence": "FACT_REPARSED_PINNED_OTBM + RETAINED_VIDEO_AXIS_WITNESS",
+      "owner": "World Interaction + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_approx": "00:22:50.5",
+        "observation": "After the torch action, the second chisel use produces an ice/crumbling effect and the route opens."
+      },
+      "failure_path": {
+        "when": "prison_wall_prepared is false",
+        "result": "REJECT_WITHOUT_STATE_CHANGE",
+        "video_timestamp_approx": "00:22:48.0",
+        "observed_message": "You try to pry open the crack in the wall with the icicle. But it doesn't work. You'll have to find a way to widen the crack first using some other method."
+      },
+      "position_status": "EXACT_CROSS_VIDEO_OTBM",
+      "position": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9
+      },
+      "world_target": {
+        "base_ground_id": 6869,
+        "base_ground_name": "ice",
+        "debris_id": 6374,
+        "debris_name": "debris",
+        "wall_id": 6729,
+        "wall_name": "ice wall",
+        "stacked_base_id": 4728,
+        "stacked_base_name": "swamp"
+      },
+      "position_evidence": {
+        "pinned_world": "zimbadev/crystalserver@00ce02a5:data-global/world/world.otbm",
+        "tile_stack": [
+          {
+            "id": 6869,
+            "name": "ice"
+          },
+          {
+            "id": 4728,
+            "name": "swamp"
+          },
+          {
+            "id": 6374,
+            "name": "debris"
+          },
+          {
+            "id": 6729,
+            "name": "ice wall"
+          },
+          {
+            "id": 6926,
+            "name": "ice"
+          },
+          {
+            "id": 6928,
+            "name": "ice"
+          }
+        ],
+        "relation_to_skeleton": {
+          "dx": 0,
+          "dy": -1,
+          "skeleton": {
+            "x": 31920,
+            "y": 31360,
+            "z": 9
+          }
+        },
+        "video": "22:47\u201322:51 fire and subsequent crumbling effects occur directly north of the skeleton/player axis; side candidates do not match the observed center target.",
+        "rejected_side_tiles": [
+          {
+            "x": 31919,
+            "y": 31359,
+            "z": 9,
+            "reason": "left-side debris variant"
+          },
+          {
+            "x": 31921,
+            "y": 31359,
+            "z": 9,
+            "reason": "different wall orientation/stack"
+          }
+        ]
+      },
+      "world_stack": {
+        "ground_or_base": [
+          6869,
+          4728
+        ],
+        "debris": 6374,
+        "ice_wall": 6729,
+        "overlays": [
+          6926,
+          6928
+        ]
+      },
+      "fresh_static_readback": "prison-source-readback-20261007.json"
+    },
+    {
+      "id": "prison_passage",
+      "visible_stage": "s15",
+      "kind": "ON_ENTER_OR_RELOCATION",
+      "requires": [
+        "prison_wall_open"
+      ],
+      "outcome": "prison_escaped_from_chamber",
+      "evidence": "FACT_VIDEO_VERIFIED + HIGH_CONFIDENCE_DERIVED_OPENING_TILE",
+      "owner": "World Interaction + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_window": "00:22:51-00:22:52",
+        "observation": "Character crosses the newly opened north-wall passage."
+      },
+      "room_anchor": {
+        "skeleton": {
+          "x": 31920,
+          "y": 31360,
+          "z": 9
+        },
+        "north_wall_y": 31359
+      },
+      "position_status": "EXACT_OPENING_TILE",
+      "position": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9
+      },
+      "note": "Opening/crossing begins at exact wall target 31920,31359,9 after chisel succeeds; downstream Rope Spot is separately resolved."
+    },
+    {
+      "id": "prison_rope_exit",
+      "visible_stage": "s15",
+      "kind": "USE_GENERIC_ROPE_SPOT",
+      "target_semantic": "Rope Spot",
+      "requires": [
+        "prison_escaped_from_chamber"
+      ],
+      "outcome": "prison_escaped",
+      "evidence": "FACT_PINNED_WORLD + FACT_GENERIC_ROPE_RUNTIME + UNIQUE_TOPOLOGY",
+      "owner": "World Interaction + QUEST-TRIGGER-1",
+      "video": {
+        "walkthrough": "Zz-7UyufXbU",
+        "timestamp_window": "00:22:53-00:22:59",
+        "observation": "Character follows the escape corridor and uses/reaches the Rope Spot route; exact source ground 386 is at 31923,31377,9. Generic south-default destination 31923,31378,8 is conditional on walkability, not a qualified active relocation."
+      },
+      "position": {
+        "x": 31923,
+        "y": 31377,
+        "z": 9
+      },
+      "ground": {
+        "id": 386,
+        "name": "rope spot ground"
+      },
+      "position_status": "EXACT_DERIVED_CROSS_SOURCE",
+      "runtime_semantics": {
+        "owner": "Generic Rope/Tool runtime",
+        "quest_observer": "QUEST-TRIGGER-1 after World-authoritative successful relocation, not merely callback acceptance",
+        "donor_pin": "zimbadev/crystalserver@00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "donor_global_rope_spots_includes_386": true,
+        "donor_on_use": "onUseRope -> toPosition:moveUpstairs() -> player:teleportTo(toPosition,false)",
+        "destination": {
+          "x": 31923,
+          "y": 31378,
+          "z": 8
+        },
+        "destination_evidence": "Position:moveUpstairs first decrements z, then prefers one tile south when walkable; pinned OTBM destination tile 31923,31378,8 is a normal ice tile.",
+        "tile_above_rope": {
+          "x": 31923,
+          "y": 31377,
+          "z": 8,
+          "item_id": 610,
+          "name": "hole",
+          "floorchange": "down"
+        },
+        "destination_status": "DERIVED_CONDITIONAL_SOUTH_DEFAULT",
+        "success_witness": "Actual admitted relocation outcome with root command provenance and active placement; donor callback true is insufficient.",
+        "provider_pack_difference": "Global/custom handlers both recognize 386; only custom-pack branch adds destination PZ-lock refusal. See prison-source-readback-20261007.json."
+      },
+      "note": "No Shards-specific teleport callback is required. Completion observes the actual successful generic Rope Spot relocation through QuestTransitionRequest; Movement/World owns destination selection and refusal.",
+      "fresh_static_readback": "prison-source-readback-20261007.json"
+    },
+    {
+      "id": "complete_saraki",
+      "visible_stage": "s16",
+      "kind": "NPC_DIALOGUE_TERMINAL",
+      "trigger": {
+        "npc": "oteryn:npc.saraki",
+        "dialogue": "oteryn:dialogue.npc.saraki",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ]
+      },
+      "requires": [
+        "prison_escaped"
+      ],
+      "outcome": "completed",
+      "evidence": "FACT_POST_RELEASE_TERMINAL_ROUTE",
+      "owner": "NPC-QUEST-1 + RewardClaim/Durability + QuestState",
+      "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+      "reward_evidence_ref": "terminal-reward-evidence.json",
+      "follow_up_taming": {
+        "reward_item": "oteryn:item.tibia.i54638",
+        "target_creature": "oteryn:creature.jaracal",
+        "target_mount": "PENDING_MOUNT_OWNER_ADMISSION",
+        "on_success": [
+          "ACCOUNT_MOUNT_UNLOCK",
+          "oteryn:achievement/six_steps_ahead@1"
+        ],
+        "chance_semantics": "UNKNOWN_DO_NOT_INVENT",
+        "note": "s16 grants Skewered Fish only; Jaracal mount is a later tame interaction, not a direct quest-completion grant."
+      },
+      "reward_claim": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal",
+      "reward_claim_semantics": {
+        "key": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal",
+        "per": "character",
+        "repeat": "once",
+        "item": {
+          "key": "oteryn:item.tibia.i54638",
+          "count": 1
+        },
+        "achievement": "oteryn:achievement/amati_s_echo@1",
+        "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+        "execution_owner": "NPC-QUEST-1 + RewardClaim/Durability",
+        "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only.",
+        "route_invariant": "All qualified completion routes must resolve to the same once-per-character claim key; route choice must not create a second claim identity."
+      },
+      "note": "Both terminal NPC routes must use the same once-per-character claim identity.",
+      "source_notes": [
+        "Post-release TibiaWiki explicitly permits Saraki or Nilavarna for quest completion with Hi -> Moon.",
+        "Both completion routes grant the same quest completion, Amati's Echo and one Skewered Fish.",
+        "Independent ItemLevel guide confirms Saraki completion and Skewered Fish reward."
+      ],
+      "converges_with": "complete_nilavarna_alt"
+    },
+    {
+      "id": "complete_nilavarna_alt",
+      "visible_stage": "s16",
+      "kind": "NPC_DIALOGUE_TERMINAL",
+      "trigger": {
+        "npc": "oteryn:npc.nilavarna",
+        "dialogue": "oteryn:dialogue.npc.nilavarna",
+        "branch_sequence": [
+          "hi",
+          "moon"
+        ]
+      },
+      "requires": [
+        "prison_escaped"
+      ],
+      "outcome": "completed",
+      "evidence": "FACT_POST_RELEASE_TERMINAL_ROUTE",
+      "owner": "NPC-QUEST-1 + RewardClaim/Durability + QuestState",
+      "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+      "reward_evidence_ref": "terminal-reward-evidence.json",
+      "reward_claim": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal",
+      "reward_claim_semantics": {
+        "key": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal",
+        "per": "character",
+        "repeat": "once",
+        "item": {
+          "key": "oteryn:item.tibia.i54638",
+          "count": 1
+        },
+        "achievement": "oteryn:achievement/amati_s_echo@1",
+        "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+        "execution_owner": "NPC-QUEST-1 + RewardClaim/Durability",
+        "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only."
+      },
+      "note": "Must use the same once-per-character terminal transition and reward claim as Saraki; route choice cannot create a second reward.",
+      "converges_with": "complete_saraki"
+    },
+    {
+      "id": "reward_skewered_fish",
+      "visible_stage": "s16",
+      "kind": "REWARD_ITEM",
+      "item_candidate": "oteryn:item.tibia.i54638",
+      "count": 1,
+      "evidence": "FACT_IDENTITY_PROFILED",
+      "owner": "Reward/Item/Durability",
+      "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+      "materializable": false,
+      "blocker": "Item i54638 must become materializable; delivery itself is the accepted NPC dialogue RewardClaim path under NPC-QUEST-1.",
+      "reward_evidence_ref": "terminal-reward-evidence.json",
+      "delivery_via": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal"
+    },
+    {
+      "id": "reward_amatis_echo",
+      "visible_stage": "s16",
+      "kind": "REWARD_ACHIEVEMENT",
+      "achievement": "oteryn:achievement/amati_s_echo@1",
+      "evidence": "FACT_IDENTITY",
+      "owner": "Achievement",
+      "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+      "blocker": "No separate Achievement dispatcher needed; grant rides inside the accepted NPC dialogue RewardClaim transaction under NPC-QUEST-1.",
+      "reward_evidence_ref": "terminal-reward-evidence.json",
+      "delivery_via": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal"
+    },
+    {
+      "id": "forbidden_gardens_gate",
+      "visible_stage": "post_completion_access",
+      "kind": "ACCESS_GATE",
+      "predicates": [
+        "quest_completed(oteryn:quest.authored.shards_of_a_broken_moon_quest)",
+        "account_achievement(oteryn:achievement/forbidden_fruit@1)"
+      ],
+      "evidence": "FACT_SEMANTICS_RUNTIME_COMPOSITION_MISSING",
+      "owner": "QuestGate + Achievement",
+      "blocker": "AccountHasAchievement predicate is missing; World/QUEST-GATE-1 must bind/confirm the served placement_key for qualified door 54613@33873,32620,8 before activation.",
+      "reward_evidence_ref": "terminal-reward-evidence.json",
+      "source_reference": {
+        "title": "Shards of a Broken Moon Quest",
+        "oldid": 445614
+      },
+      "placement": {
+        "x": 33873,
+        "y": 32620,
+        "z": 8
+      },
+      "placement_status": "QUALIFIED_EXACT_CROSS_SOURCE_TOPOLOGY_ACTIVE_WORLD_CONFIRMATION_REQUIRED",
+      "placement_owner": "World / QUEST-GATE-1 content binding",
+      "note": "Door coordinate is now qualified by exact pinned OTBM + independent porelease screenshot + current TibiaMaps topology at the same coordinate. Activation still requires the World/QUEST-GATE-1 owner to bind the served placement_key for the current world generation.",
+      "door": {
+        "donor_item_id": 54613,
+        "donor_name": "closed door",
+        "donor_attributes": {
+          "type": "door",
+          "blockProjectile": "1"
+        }
+      },
+      "adjacent_anchor": {
+        "position": {
+          "x": 33872,
+          "y": 32620,
+          "z": 8
+        },
+        "item_id": 2023,
+        "item_name": "sign"
+      },
+      "placement_evidence": {
+        "pinned_world": "zimbadev/crystalserver@00ce02a5:data-global/world/world.otbm",
+        "uniqueness": "Only northern closed-door placement in the active Asura Citadel sector; other Summer doors map to already-qualified quest interiors farther south.",
+        "screenshot": "Post-release ItemLevel screenshot 'Door that leads to Forbidden Gardens in Tibia' shows a red/ornate door at the single narrow northern connector to the circular garden area.",
+        "topology": "Candidate is on dirt/earth terrain inside a mountain-framed choke point, with vegetation/dry-grass decoration north of the door, matching the screenshot.",
+        "raw_tibiawiki_forbidden_gardens_oldid_438014": "mapa is empty and rotaLocal is empty; no exact coordinate is published there.",
+        "current_tibiamaps_corroboration": {
+          "source": "github.com/tibiamaps/tibia-map-data main/data/floor-08-map.png",
+          "fetched": "2026-10-07",
+          "bounds_sha256": "2217fc32695d1302b6864d078b86247a93aa0cf673a4d9f7740947221c6d4414",
+          "floor08_map_sha256": "f23b0f5e8f58eb910eeec2c16108b77e80c6befb1d80bf13d86f9dabb64cc954",
+          "frame": {
+            "x_min": 31744,
+            "y_min": 30976,
+            "width": 2560,
+            "height": 2048
+          },
+          "candidate_pixel": {
+            "x": 2129,
+            "y": 1644
+          },
+          "observation": "A 220x220-tile crop centered on the candidate reproduces the ItemLevel minimap topology: large Asura Citadel complex south, narrow blue connector/gate at center, circular Forbidden Gardens north."
+        },
+        "itemlevel_screenshot": {
+          "source": "https://itemlevel.net/wp-content/uploads/2026/07/Door-that-leads-to-Forbidden-Gardens-in-Tibia-1920x946.jpg",
+          "sha256": "18e33d415b5f68aef866dda2042e068df6f3db229df9ede6724b3b9a0fcb242d",
+          "observation": "Screenshot labels the door as the Forbidden Gardens gate and its minimap geometry matches the TibiaMaps crop centered on 33873,32620,8."
+        },
+        "pinned_world_sha256": "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7"
+      }
+    }
+  ],
+  "blockers": [
+    "QUEST-GATE-1 is dependency-ready on current main but executable child is not yet integrated",
+    "QUEST-TRIGGER-1 durable-cause architecture is resolved and merged by #1886 (root CommandRef + distinct transition_key invariant); executable runtime is still unallocated and remains serialized after QUEST-GATE-1",
+    "NPC placement/talk implementation remains pending; NPC-WIRE-1 and #1890 are merged; MAP-CUTOVER-1b #1916 is now merged, but native Shards interactions/placement bindings are not admitted",
+    "Asura Citadel exact door 53380@33899,32666,8 and key i54262 are resolved; key Item admission is proof-complete but not merged; runtime still needs ITEM-USE-1 USE-WITH + identity-key Door/Key binding + QuestCompleted bypass",
+    "Magnolia 60k phase-2 semantics are architect-resolved and merged by #1891 (`attribute max_health set 60000` -> queued `heal full` -> phase 2); current Rust ProjectV2/schema still needs the accepted max_health implementation and ENC-RT-1/ENC-COMBAT-1 -> ENC-OUTCOME-1 runtime",
+    "Blue Lava time-of-day is SOURCE_CONFLICT; no controlled daytime/nighttime comparison and no night-only runtime guard authorized",
+    "Escape geometry/Rope Spot are resolved end-to-end; Lit Torch i54610 successor identity/admission is proof-complete (holds=[]), but the Item successor has not yet been admitted/materialized",
+    "Forbidden Gardens door 54613@33873,32620,8 is qualified by pinned OTBM + porelease ItemLevel screenshot + TibiaMaps floor-08 topology. Remaining blockers: AccountHasAchievement(forbidden_fruit) predicate and World/QUEST-GATE-1 served placement_key binding for the active world generation.",
+    "No full real-character start\u2192reward\u2192relog/restart E2E qualification",
+    "Jaracal Mount exact donor identity is resolved; Skewered Fish i54638 has exact identity but lacks active materializable Item admission. Tame failure semantics are now qualified as item-retaining/retryable; exact success chance remains UNKNOWN and must not be invented."
+  ],
+  "readback": {
+    "refreshed_main": "3bacc59e6adbf138655e6f0c1cf0b4fdf9a36096",
+    "quest_runtime_dependencies": {
+      "quest_gate_1": "NOT_INTEGRATED_NO_IMPLEMENTATION_PR_FOUND",
+      "quest_trigger_1": "SERIALIZE_AFTER_QUEST_GATE_1",
+      "npc_quest_1": "BLOCKED_BY_NPC_TALK_1",
+      "npc_wire_1_pr": 1866,
+      "monster_encounter_owner_pr": 1807,
+      "monster_encounter_owner_state": "MERGED_NO_ACTIVE_LEASE_INFERRED_FROM_OLD_PR",
+      "map_cutover_1b": "MERGED_1916_BUNDLE_SERVING_ONLY"
+    },
+    "laboratory_note": {
+      "donor_id": 6121,
+      "exact_position": {
+        "x": 33881,
+        "y": 32684,
+        "z": 9
+      },
+      "required_for_progress": false,
+      "status": "OPTIONAL_LORE_EXACT_PLACEMENT",
+      "walkthrough_observation": "Continuous pre-Plinth sequence shows successful Plinth use without a visible note interaction."
+    },
+    "prison_room_candidate": {
+      "status": "SUPERSEDED_BY_EXACT_STACK_READBACK",
+      "skeleton": {
+        "x": 31920,
+        "y": 31360,
+        "z": 9,
+        "item_id": 8606
+      },
+      "icicles": {
+        "x": 31914,
+        "y": 31364,
+        "z": 9,
+        "item_id": 6966
+      },
+      "north_wall_candidates": [
+        {
+          "x": 31919,
+          "y": 31359,
+          "z": 9
+        },
+        {
+          "x": 31920,
+          "y": 31359,
+          "z": 9
+        },
+        {
+          "x": 31921,
+          "y": 31359,
+          "z": 9
+        }
+      ],
+      "uniqueness_scan": "1012 static skeletons scanned; exactly one placement had both SW icicles and an immediate north ice wall.",
+      "note": "Historical candidate list only. Current exact north wall and Rope Spot are qualified in prison_escape and prison-source-readback-20261007.json."
+    },
+    "su26_lit_torch": {
+      "donor_id": 54610,
+      "status": "PENDING_SEPARATE_ITEM_ADMISSION",
+      "alias_i34017": "REJECTED",
+      "reason": "Distinct SU26 54610 identity; frozen PROBABLE_MATCH history is retained. No 54609-to-54610 timed/decay/transform relation is proven."
+    },
+    "magnolia_evidence_packet": {
+      "path": "docs/agents/evidence/OTV2-20261005-shards-of-a-broken-moon-reconstruction/magnolia-encounter-evidence.json",
+      "status": "READY_FOR_ENCOUNTER_OWNER",
+      "bone_fiddle": "oteryn:item.tibia.i28493",
+      "moonsilver_drift": "oteryn:item.tibia.i54235",
+      "blocker": "GENERIC_ENCOUNTER_RUNTIME_AND_MAX_HEALTH_CATCH_UP_NOT_INTEGRATED",
+      "spec": "magnolia-encounter-spec.md"
+    },
+    "terminal_reward_evidence": "terminal-reward-evidence.json",
+    "jaracal_mount_catalogue_status": "ABSENT_FROM_252_CANONICAL_MOUNTS",
+    "prison_topology_qualification": {
+      "status": "HIGH_CONFIDENCE_DERIVED_CROSS_SOURCE",
+      "anchor": {
+        "x": 31920,
+        "y": 31360,
+        "z": 9
+      },
+      "skeleton": {
+        "x": 31920,
+        "y": 31360,
+        "z": 9,
+        "item_id": 8606
+      },
+      "icicles": {
+        "x": 31914,
+        "y": 31364,
+        "z": 9,
+        "item_id": 6966
+      },
+      "north_wall": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9,
+        "wall_id": 6729,
+        "debris_id": 6374
+      },
+      "rope_spot": {
+        "x": 31923,
+        "y": 31377,
+        "z": 9,
+        "ground_id": 386
+      },
+      "rope_destination": {
+        "x": 31923,
+        "y": 31378,
+        "z": 8
+      },
+      "basis": "Unique full-world topology match plus supplied-video geometry and pinned generic Rope Spot runtime semantics.",
+      "hold": null
+    },
+    "jaracal_mount": {
+      "status": "EXACT_SOURCE_IDENTITY_READY_CONTENT_ADMISSION_MISSING",
+      "exact_donor": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "path": "data/XML/mounts.xml",
+        "git_blob": "1c93421c1141265988eb32afb9c56238eae30716",
+        "mount_id": 250,
+        "clientid": 1962,
+        "name": "Jaracal",
+        "speed_bonus": 10,
+        "premium": true,
+        "type": "quest"
+      },
+      "creature_key": "oteryn:creature.jaracal",
+      "taming_item": "oteryn:item.tibia.i54638",
+      "canonical_achievement": "oteryn:achievement/six_steps_ahead@1",
+      "current_mount_catalogue_present": false,
+      "current_mount_record_count": 252,
+      "chance_semantics": "UNKNOWN_DO_NOT_INVENT",
+      "required_work": [
+        "Admit Jaracal Mount from exact pinned donor into canonical Mount catalogue.",
+        "Bind use of oteryn:item.tibia.i54638 on canonical Jaracal creature through existing Mount/Item/Interaction owners.",
+        "On successful tame grant account-scoped mount unlock plus existing Six Steps Ahead achievement.",
+        "Qualify item consumption, idempotence and relog/restart persistence.",
+        "Do not grant the mount directly from Shards s16."
+      ],
+      "failure_semantics": {
+        "item_consumed_on_failure": false,
+        "item_breaks_on_failure": false,
+        "retry_same_item": true,
+        "evidence_class": "POST_RELEASE_COMMUNITY_OBSERVATION",
+        "source": "TibiaQA question 40059, answered 2026-07-14",
+        "observation": "Responder reports many failed Jaracal tame attempts and none broke the Skewered Fish.",
+        "confidence": "QUALIFIED_COMMUNITY_REPORT_NOT_CONTROLLED_RATE_MEASUREMENT"
+      },
+      "success_semantics": {
+        "result": [
+          "ACCOUNT_MOUNT_UNLOCK",
+          "oteryn:achievement/six_steps_ahead@1"
+        ],
+        "item_consumption": "REQUIRES_OWNER_CONFIRMATION_ON_SUCCESS",
+        "chance": "UNKNOWN"
+      }
+    },
+    "forbidden_gardens_predicate": {
+      "required": [
+        "quest_completed(Shards of a Broken Moon)",
+        "account_has_achievement(oteryn:achievement/forbidden_fruit@1)"
+      ],
+      "current_quest_predicate_support": {
+        "quest_completed": true,
+        "achievement": false
+      },
+      "achievement_owner_read": "DurabilityRoot::read_account_achievements",
+      "proposed_minimal_shape": "AccountHasAchievement(String) + QuestPredicateFacts::account_has_achievement; read-only owner fact, fail closed",
+      "forbidden": [
+        "copy Achievement fact into QuestState",
+        "treat Area identity as executable capability"
+      ]
+    },
+    "magnolia_schema_fit": {
+      "encounter_record_present": false,
+      "encounter_runtime_general_interpreter_present": false,
+      "supported_primitives": [
+        "lethal_damage",
+        "prevent_death",
+        "item_used",
+        "timer_elapsed",
+        "spawn",
+        "heal",
+        "convert_damage_to_heal",
+        "stepped_on",
+        "emit_outcome"
+      ],
+      "phase_model": {
+        "docs": "phases[] ordered named phases; multi-form bosses move by set_phase",
+        "project_v2_field": "phases: Vec<String>",
+        "set_phase_action_present": true,
+        "status": "PRESENT_IN_SCHEMA_AND_PROJECT_V2_NOT_GENERIC_RUNTIME"
+      },
+      "phase2_health": {
+        "source_exact_hp": 60000,
+        "base_creature_hp": 52000,
+        "health_model": [
+          "full",
+          "keep_percent",
+          "keep_absolute",
+          "remembered",
+          "percent"
+        ],
+        "absolute_or_max_hp_setter": false,
+        "status": "ACCEPTED_MAX_HEALTH_AMENDMENT_NOT_IMPLEMENTED"
+      },
+      "forbidden_shortcut": "Do not silently heal above max, alias phase 2 to ordinary full health, or emit magnolia_defeated on first lethal.",
+      "selected_architecture": "Merged #1891 option B: inline prevent_death + max_health set 60000 + phase counter; queued heal(full). No second Creature form."
+    },
+    "skewered_fish_identity": {
+      "donor_id": 54638,
+      "canonical_key": "oteryn:item.tibia.i54638",
+      "revision": "definition-r1",
+      "materializable": false,
+      "source_pipeline": "CW2-B1 donor epoch-2 opaque registry allocation",
+      "status": "EXACT_IDENTITY_PROMOTION_REQUIRED",
+      "forbidden": "Use current canonical oteryn:item.tibia.i54638; retired alias i00038475 is not canonical."
+    },
+    "achievement_identities": {
+      "oteryn:achievement/amati_s_echo@1": {
+        "status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+        "staticdata_source_id": 594,
+        "tibiawiki": {
+          "pageid": 110746,
+          "revid": 1200473
+        }
+      },
+      "oteryn:achievement/forbidden_fruit@1": {
+        "status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+        "staticdata_source_id": null,
+        "tibiawiki": {
+          "pageid": 79651,
+          "revid": 849801
+        }
+      },
+      "oteryn:achievement/six_steps_ahead@1": {
+        "status": "EXACT_EXISTING_CANONICAL_IDENTITY",
+        "staticdata_source_id": 592,
+        "tibiawiki": {
+          "pageid": 110744,
+          "revid": 1200472
+        }
+      }
+    },
+    "prison_escape": {
+      "status": "GEOMETRY_AND_GENERIC_EXIT_RESOLVED",
+      "skeleton": {
+        "x": 31920,
+        "y": 31360,
+        "z": 9,
+        "item_id": 8606
+      },
+      "icicles": {
+        "x": 31914,
+        "y": 31364,
+        "z": 9,
+        "item_id": 6966
+      },
+      "north_wall": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9,
+        "wall_id": 6729,
+        "debris_id": 6374
+      },
+      "rope_spot": {
+        "x": 31923,
+        "y": 31377,
+        "z": 9,
+        "ground_id": 386
+      },
+      "rope_destination": {
+        "x": 31923,
+        "y": 31378,
+        "z": 8
+      },
+      "lit_torch_donor_id": 54610,
+      "lit_torch_status": "PENDING_SEPARATE_CANONICAL_ITEM_ADMISSION"
+    },
+    "magnolia_representation": {
+      "set_phase": "SCHEMA_AND_PROJECT_V2_PRESENT_GENERIC_RUNTIME_PENDING",
+      "prevent_death": "AVAILABLE",
+      "lethal_damage": "AVAILABLE",
+      "convert_damage_to_heal": "AVAILABLE",
+      "phase2_hp": "ARCHITECTURE_ACCEPTED_60000_IMPLEMENTATION_PENDING",
+      "runtime": "BLOCKED_ON_ENC_RT_1_ENC_COMBAT_1_ENC_OUTCOME_1"
+    },
+    "quest_trigger_1": {
+      "architecture_pr": 1886,
+      "disposition": "OPTION_A_ROOT_COMMAND_REF",
+      "runtime_status": "ARCHITECTURE_MERGED_IMPLEMENTATION_NOT_FOUND_SERIALIZE_AFTER_GATE",
+      "invariant": "Under one root CommandRef, quest children/claim obligations use distinct transition keys."
+    },
+    "prison_north_wall": {
+      "exact_position": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9
+      },
+      "target_stack": {
+        "debris_id": 6374,
+        "wall_id": 6729
+      },
+      "status": "EXACT_CROSS_VIDEO_OTBM"
+    },
+    "blue_lava_runtime_disposition": {
+      "moon_mirror_required": true,
+      "empty_crystal_flask_required": true,
+      "night_required": null,
+      "status": "SOURCE_CONFLICT_NO_NIGHT_GUARD_AUTHORIZED",
+      "source": {
+        "fandom_pinned_revision": 1202455,
+        "fandom_date": "2026-08-20",
+        "explicit_requirement": "during the night time with a Moon Mirror"
+      },
+      "corroboration": {
+        "current_fandom": "same explicit night-time instruction",
+        "tibiawiki_br": "Moon Mirror + Empty Crystal Flask; no affirmative daytime-success statement",
+        "postrelease_guides": "Moon Mirror + Empty Crystal Flask; omission of time-of-day is not an atomic contradiction",
+        "supplied_video": "Narrator states wiki says night-only, is unsure, believes it is currently night, then fills successfully."
+      },
+      "controlled_global_day_vs_night_test": "NOT_VERIFIED",
+      "note": "Unknown necessity is not proof that daytime succeeds. No night-only runtime guard is selected by this evidence packet.",
+      "night_guard": false
+    },
+    "terminal_reward_execution": {
+      "status": "ARCHITECTURE_ACCEPTED_IMPLEMENTATION_PENDING",
+      "claim": {
+        "key": "oteryn:reward-claim.authored.shards_of_a_broken_moon_quest.terminal",
+        "per": "character",
+        "repeat": "once",
+        "item": {
+          "key": "oteryn:item.tibia.i54638",
+          "count": 1
+        },
+        "achievement": "oteryn:achievement/amati_s_echo@1",
+        "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
+        "execution_owner": "NPC-QUEST-1 + RewardClaim/Durability",
+        "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only."
+      },
+      "evidence_ref": "terminal-npc-reward-claim-boundary.md",
+      "warning": "Do not invent a synthetic chest placement."
+    },
+    "npc_talk_dependency_refresh": {
+      "npc_wire_1": "MERGED",
+      "npc_place_1_decision": "#1890 merged",
+      "npc_place_1b": "NOT_IMPLEMENTED",
+      "map_cutover_1a": "#1825 merged",
+      "map_cutover_1b": "#1916 merged; NPC placement/talk and Shards bindings still absent",
+      "npc_talk_1": "BLOCKED"
+    },
+    "magnolia_architect_disposition": {
+      "pr": 1891,
+      "head": "b8f3d605b1f5cc4cb1a6aaccdb56d8fa93015624",
+      "status": "MERGED",
+      "option": "B",
+      "representation": "attribute(max_health set 60000) then queued heal(full), then phase_2",
+      "implementation_owner": "ENC-COMBAT-1",
+      "runtime_dependencies": [
+        "ENC-RT-1",
+        "ENC-COMBAT-1",
+        "ENC-OUTCOME-1"
+      ],
+      "range": "u32::MAX",
+      "merge_commit": "739e75821bbee3740aa8ee6166ac297fb577eb09"
+    },
+    "blue_lava_night_disposition": {
+      "state": "SOURCE_CONFLICT",
+      "required": true,
+      "evidence_class": "STRUCTURED_REFERENCE_CANDIDATE",
+      "reason": "Owner continuation retains night-only as SOURCE_CONFLICT; Fandom states it, other guides omit it, video narrator is uncertain. Neither necessity nor daytime success is proved.",
+      "runtime_enforcement": false,
+      "controlled_global_observation": false
+    },
+    "item_binding_refresh": {
+      "lit_torch_54610": {
+        "binding_on_main": false,
+        "historical_state": "PROBABLE_MATCH hold against 34017",
+        "required": [
+          "EXACT donor binding to oteryn:item.tibia.i54610",
+          "canonical Item admission",
+          "materializable/light-source semantics"
+        ],
+        "forbidden": [
+          "alias to i34017",
+          "appearance-only admission helper"
+        ]
+      },
+      "skewered_fish_54638": {
+        "binding_on_main": true,
+        "disposition": "EXACT",
+        "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+        "target": "oteryn:item.tibia.i54638@definition-r1",
+        "family_profile": "tool",
+        "remaining": [
+          "active Item record/materialization",
+          "tame runtime"
+        ]
+      }
+    },
+    "item_successor_candidate": {
+      "evidence_file": "docs/agents/evidence/OTV2-20261005-shards-of-a-broken-moon-reconstruction/item-successor-admission-candidate.json",
+      "lit_torch_54610": "PROOF_COMPLETE_NOT_ADMITTED",
+      "skewered_fish_54638": "EXISTING_IDENTITY_PROMOTION_VALIDATED_NOT_ADMITTED"
+    },
+    "current_main": "3bacc59e6adbf138655e6f0c1cf0b4fdf9a36096",
+    "merged_architecture": {
+      "quest_trigger_cause_pr": 1886,
+      "magnolia_max_health_pr": 1891
+    },
+    "npc_dispatch_postrelease_pass": {
+      "source": "TibiaWiki post-release Shards express/story flow",
+      "route_pairing": {
+        "saraki": "Sundara Yukti",
+        "nilavarna": "Nipuna Yukti"
+      },
+      "corrected_legacy_labels": {
+        "report_saraki": "report -> moon",
+        "sharai_post_laboratory": "machines -> moon",
+        "niral_post_rakesh": "seal -> moon",
+        "niral_consecrate": "consecrate -> moon"
+      }
+    },
+    "postrelease_reference_revision": {
+      "tibiawiki_shards_oldid": 445614,
+      "note": "Use this revision for Shards route/dialogue semantics instead of Crystal Summer callback labels when they differ."
+    },
+    "fresh_read_20261007": {
+      "main": "3bacc59e6adbf138655e6f0c1cf0b4fdf9a36096",
+      "merged_prs": {
+        "monster_encounter_source_mechanics": 1807,
+        "quest_trigger_durable_cause_architecture": 1886,
+        "npc_place_architecture": 1890,
+        "magnolia_max_health_architecture": 1891,
+        "map_cutover_1b": 1916
+      },
+      "executable_runtime": {
+        "quest_gate_1": "NOT_IMPLEMENTED",
+        "quest_trigger_1": "NOT_IMPLEMENTED",
+        "npc_place_1b": "NOT_IMPLEMENTED",
+        "npc_talk_1": "NOT_IMPLEMENTED",
+        "npc_quest_1": "NOT_IMPLEMENTED",
+        "enc_rt_1": "NOT_IMPLEMENTED",
+        "enc_outcome_1": "NOT_IMPLEMENTED",
+        "encounter_max_health_project_v2_action": "NOT_IMPLEMENTED",
+        "map_cutover_1b": "MERGED_BUNDLE_SERVING_NOT_SHARDS_ACTIVATION"
+      },
+      "source_ownership": {
+        "monster_encounter_pr_1807": "MERGED_RELEASED",
+        "npc_wire_1_pr_1866": "MERGED",
+        "evidence_pr_1852": "OPEN_DRAFT_EVIDENCE_ONLY"
+      }
+    },
+    "checked_date": "2026-10-07",
+    "ownership": {
+      "coordination_issue": 1622,
+      "state_comment": 5969258663,
+      "prior_request_comment": 6034444955,
+      "runtime_content_lease": "NOT_FOUND_FOR_THIS_SHARDS_LEAD",
+      "allowed_write_scope": "existing #1852 evidence packet only",
+      "publication_predecessor": "8b8b7f76024f280c35c64b0efa2a87c3c248eab7",
+      "publication_status": "AUTHORING_OWNER_DESIGNATED_SINGLE_EVIDENCE_PUBLISHER",
+      "writer_chat": "01a11799-db07-7601-a91c-ad726ad2c86a",
+      "owner_authorization": "Direct user reply: this chat takes publication after stopping the other writer",
+      "stop_write_coordination_comment": 6044330369,
+      "stop_write_pr_comment": 6044330646,
+      "concurrent_commit_reconciliation": "8b8b7f76 was committed at 18:32:36Z, before the owner STOP-WRITE notice at 18:33:57Z; its canonical-recipe candidate is preserved with the owner night-only hold and merged map dependency corrected."
+    },
+    "historical_readbacks": {
+      "runtime_dependency_refresh_20261006": {
+        "historical_only": true,
+        "superseded_by_main": "3bacc59e6adbf138655e6f0c1cf0b4fdf9a36096",
+        "data": {
+          "npc_wire_1": "MERGED",
+          "npc_talk_1": "NOT_YET_INTEGRATED",
+          "npc_place_1": "REMAINING_DEPENDENCY",
+          "map_cutover_1": "PARTIAL_1A_ONLY",
+          "quest_gate_1": "DEPENDENCY_READY_NOT_YET_INTEGRATED",
+          "quest_trigger_1": "SERIALIZE_AFTER_QUEST_GATE_1",
+          "encounter_owner_pr_1807": "OPEN_NO_MAGNOLIA_ENCOUNTER"
+        }
+      }
+    },
+    "map_cutover_1b": {
+      "pr": 1916,
+      "state": "MERGED",
+      "merge_commit": "0e834533323a032893b51b9bca748d3ba8d56aa6",
+      "confirmed_in_main": true,
+      "limitations": [
+        "Bundle serving requires capability 18; no proof of deployed Summer world.",
+        "Bundle use_object/field paths remain refused; USE-WITH remains fail-closed pending ITEM-USE-1.",
+        "No native Shards placement_key/event bindings follow from this merge."
+      ]
+    }
+  },
+  "reference_witnesses": {
+    "tibiawiki_shards_postrelease": {
+      "title": "Shards of a Broken Moon Quest",
+      "oldid": 445614,
+      "url": "https://www.tibiawiki.com.br/index.php?title=Shards_of_a_Broken_Moon_Quest&oldid=445614",
+      "role": "post-release quest route/dialogue/access reference",
+      "captured_readback_date": "2026-10-07"
+    }
+  }
+}

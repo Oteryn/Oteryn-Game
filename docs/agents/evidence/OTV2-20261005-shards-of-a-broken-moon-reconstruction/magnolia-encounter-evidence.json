@@ -1,0 +1,481 @@
+{
+  "schema": "OTERYN_SHARDS_MAGNOLIA_ENCOUNTER_EVIDENCE/v1",
+  "scope": "EVIDENCE_ONLY_NOT_ADMITTED",
+  "quest": "Shards of a Broken Moon Quest",
+  "visible_stage": "s14",
+  "purpose": "Pre-qualified source packet for SHARDS-E1. This file is not runtime/content authority and must not be loaded by the server.",
+  "source_policy": {
+    "crystal_static": "May qualify creature/item/map identity and donor statblock facts only. Crystal Summer has no executable Magnolia encounter script.",
+    "current_reference": "Current Global-facing mechanics source. Approximate values remain approximate and may not be promoted to exact constants without a stronger witness.",
+    "video": "Corroboration of observed path/mechanics only; narrator uncertainty is preserved and never promoted to Reference fact. The supplied video predates the official 2026-07-28 Magnolia HP reduction, so video HP pacing is not current-stat authority.",
+    "unknown": "Fail closed. Do not infer from donor TODO/balance comments or narration guesses."
+  },
+  "sources": {
+    "crystal_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "crystal_magnolia": {
+      "path": "data-global/monster/summer_update_2026/bosses/the_moonsnow_magnolia.lua",
+      "git_blob": "b812aafd6ff2cba1f90bcfcf53efb2c193d1bf3b"
+    },
+    "crystal_furious_jaracal": {
+      "path": "data-global/monster/summer_update_2026/furious_jaracal.lua",
+      "git_blob": "34912d1a50b7e19756d81e7ee503349f7ca784d4"
+    },
+    "reference_magnolia": {
+      "title": "The Moonsnow Magnolia",
+      "url": "https://www.tibiawiki.com.br/index.php?redirect=no&stable=0&title=The_Moonsnow_Magnolia",
+      "retrieved_utc": "2026-10-06",
+      "stability": "CURRENT_WEB_REFERENCE_NOT_IMMUTABLE",
+      "verified_facts": [
+        "base HP 52000; XP 240000; timeout 10 minutes; cooldown 20 hours",
+        "summons 2-4 Furious Jaracal",
+        "Bone Fiddle approximately every 30 seconds during phase 1; about 70 seconds without it leads to four Furious Jaracal",
+        "Moonsilver Drift deals approximately 350-400 Death damage to player and strengthens/transforms an asura that crosses it",
+        "first defeat causes approximately 5000 Ice damage and immediate return with 60000 HP",
+        "Bone Fiddle no longer required in phase 2",
+        "Death attacks heal Magnolia"
+      ]
+    },
+    "reference_quest": {
+      "title": "Shards of a Broken Moon Quest",
+      "url": "https://tibiawiki.com.br/wiki/Shards_of_a_Broken_Moon",
+      "retrieved_utc": "2026-10-06",
+      "stability": "CURRENT_WEB_REFERENCE_NOT_IMMUTABLE",
+      "verified_facts": [
+        "fight is solo",
+        "initial two Furious Jaracal",
+        "Frost Flower Asuras and Midnight Asuras appear during the fight",
+        "Bone Fiddle and Moonsilver Drift mechanics match the boss page",
+        "portal route is 33901,32718,9"
+      ]
+    },
+    "supplied_video": {
+      "youtube_id": "Zz-7UyufXbU",
+      "title": "Shards of a Broken Moon: Step-by-Step Quest Walkthrough",
+      "duration_seconds": 1449,
+      "inspected_visuals": true,
+      "transcript_used_as_secondary_corroboration": true
+    },
+    "official_post_release": {
+      "authority": "CIPSOFT_OFFICIAL",
+      "retrieved_utc": "2026-10-06",
+      "changes": [
+        {
+          "date": "2026-07-28",
+          "source": "https://www.tibia.com/news/?id=8905&subtopic=newsarchive",
+          "facts": [
+            "Moonsnow Magnolia HP was reduced by approximately 15%."
+          ],
+          "consequence": "Do not infer current phase-1 HP from the supplied release-day July 13 video. Current 52000 base HP must come from post-balance current Reference evidence."
+        },
+        {
+          "date": "2026-08-25",
+          "facts": [
+            "Furious Jaracals now spawn close to the noxious catnip instead of the centre of the room.",
+            "Noxious catnip expire time was reduced.",
+            "Minions spawning in the south of the boss room now spawn closer to the teleporter."
+          ],
+          "consequence": "Do not reproduce release-day spawn placement from the supplied July video."
+        },
+        {
+          "date": "2026-09-15",
+          "facts": [
+            "Leaving the Moonsnow Magnolia boss room during phase two previously could cause excessive monster spawns and performance issues; this was fixed."
+          ],
+          "consequence": "Encounter cleanup/leave must cancel or fence phase-owned spawn schedules so no phase-two spawns continue after the actor leaves."
+        }
+      ]
+    },
+    "community_magnolia": {
+      "title": "How to kill The Moonsnow Magnolia?",
+      "publisher": "TibiaQA",
+      "asked": "2026-07-12",
+      "answered": "2026-07-14",
+      "evidence_class": "POST_RELEASE_COMMUNITY_CORROBORATION",
+      "verified_corroboration": [
+        "Bone Fiddle is used during phase 1 after the initial Furious Jaracals; approximately 30-second use cadence is recommended.",
+        "Approximately 70 seconds without suppression leads to four Furious Jaracals.",
+        "Moonsilver Drift damages the player and strengthens/transforms asuras that cross it.",
+        "First lethal is non-terminal; the second phase returns with 60000 HP and Bone Fiddle is no longer required."
+      ],
+      "authority_limit": "Corroboration only. Approximate cadence/damage remains approximate; exact 60000 phase-2 HP is independently carried by current reference evidence."
+    }
+  },
+  "admission": {
+    "portal_position": {
+      "x": 33901,
+      "y": 32718,
+      "z": 9
+    },
+    "solo": {
+      "value": true,
+      "provenance": "REFERENCE_CURRENT"
+    },
+    "boss_time_limit_seconds": {
+      "value": 600,
+      "provenance": "REFERENCE_CURRENT_CATEGORY",
+      "precision": "EXACT_AS_PUBLISHED_CURRENT_REFERENCE",
+      "note": "Requires Encounter/admission owner confirmation before runtime admission."
+    },
+    "repeat_cooldown_seconds": {
+      "value": 72000,
+      "provenance": "REFERENCE_CURRENT_CATEGORY",
+      "precision": "EXACT_AS_PUBLISHED_CURRENT_REFERENCE",
+      "note": "Requires Encounter/admission owner confirmation before runtime admission."
+    },
+    "prerequisite_fact": "ritual_done",
+    "quest_outcome_on_permanent_kill": "magnolia_defeated"
+  },
+  "participants": [
+    {
+      "role": "boss",
+      "slug": "the_moonsnow_magnolia",
+      "runtime_candidate": "oteryn:creature.the_moonsnow_magnolia",
+      "population_status": "PRESENT",
+      "crystal_source_bound": true,
+      "donor_static": {
+        "hp": 52000,
+        "xp": 240000,
+        "corpse_item_id": 54670,
+        "speed": 190,
+        "reward_boss": true
+      },
+      "donor_limits": [
+        "Donor attack magnitudes contain explicit TODO(balance) non-official estimates.",
+        "Donor defenses/armor/mitigation contain explicit TODO(balance) non-official estimates.",
+        "Donor file has no phase/revive/Bone-Fiddle/Moonsilver-Drift encounter runtime.",
+        "The supplied July 13 walkthrough predates the official July 28 HP reduction; release-day fight duration/HP pacing is not current Reference stat evidence."
+      ]
+    },
+    {
+      "role": "furious_jaracal",
+      "slug": "furious_jaracal",
+      "population_status": "PRESENT",
+      "crystal_source_bound": true,
+      "donor_static": {
+        "hp": 8330,
+        "xp": 0,
+        "corpse_item_id": 0,
+        "speed": 190,
+        "loot": "NONE"
+      },
+      "donor_limits": [
+        "Donor damage magnitudes are explicitly non-official balance estimates.",
+        "Donor file has no Magnolia encounter registration/timer ownership."
+      ]
+    },
+    {
+      "role": "ordinary_asura_add",
+      "slug": "frost_flower_asura",
+      "population_status": "PRESENT",
+      "reference_behavior": "Appears during Magnolia fight.",
+      "exact_encounter_spawn_cadence": "UNKNOWN"
+    },
+    {
+      "role": "ordinary_asura_add",
+      "slug": "midnight_asura",
+      "population_status": "PRESENT",
+      "reference_behavior": "Appears during Magnolia fight.",
+      "exact_encounter_spawn_cadence": "UNKNOWN"
+    }
+  ],
+  "world_objects": [
+    {
+      "role": "moonsilver_drift",
+      "canonical_candidate": "oteryn:item.tibia.i54235",
+      "donor_item_id": 54235,
+      "owner": "WorldObject",
+      "donor_route_reason": "immovable_unclassified",
+      "exact_spawn_positions": "UNKNOWN",
+      "exact_spawn_cadence": "UNKNOWN"
+    },
+    {
+      "role": "bone_fiddle",
+      "identity_status": "EXACT_EXISTING_ITEM",
+      "exact_inventory_identity_binding": "RESOLVED",
+      "phase_1_interaction": "REFERENCE_CURRENT",
+      "phase_2_interaction": "NOT_REQUIRED_BY_REFERENCE",
+      "canonical_key": "oteryn:item.tibia.i28493",
+      "identity_evidence": {
+        "oteryn_evidence": "docs/agents/evidence/OTV2-20261001-quest-item-category-continuation.md",
+        "fandom_page_id": 85463,
+        "fandom_revision": 1148282,
+        "category": "equipment_offhand",
+        "slot": "Extra Slot"
+      }
+    }
+  ],
+  "phases": [
+    {
+      "key": "phase_1",
+      "boss_hp": {
+        "value": 52000,
+        "provenance": [
+          "CRYSTAL_STATIC",
+          "REFERENCE_CURRENT_BASE_HP"
+        ]
+      },
+      "start_actions": [
+        {
+          "kind": "spawn",
+          "role": "furious_jaracal",
+          "count": 2,
+          "provenance": "REFERENCE_CURRENT"
+        }
+      ],
+      "continuing_adds": [
+        {
+          "role": "frost_flower_asura",
+          "provenance": "REFERENCE_CURRENT",
+          "cadence": "UNKNOWN"
+        },
+        {
+          "role": "midnight_asura",
+          "provenance": "REFERENCE_CURRENT",
+          "cadence": "UNKNOWN"
+        }
+      ],
+      "fiddle": {
+        "activation_precondition": "initial two Furious Jaracal defeated",
+        "recommended_player_cadence_seconds": 30,
+        "recommended_cadence_precision": "APPROXIMATE_REFERENCE",
+        "effect": "Suppress/prevent further Furious Jaracal pressure in phase 1.",
+        "exact_timer_reset_semantics": "UNKNOWN",
+        "video_corroboration": {
+          "timestamp_window": "00:19:43-00:20:24",
+          "observation": "Narrator says a friend reported the Bone Fiddle prevents additional spawns and later says his use appeared to work.",
+          "authority": "SECONDARY_CORROBORATION_ONLY"
+        }
+      },
+      "jaracal_pressure": {
+        "no_fiddle_window_seconds": 70,
+        "window_precision": "APPROXIMATE_REFERENCE",
+        "on_expiry": {
+          "spawn_role": "furious_jaracal",
+          "count": 4,
+          "boss_voice_semantic": "calls the adds to feast"
+        },
+        "exact_start_point": "UNKNOWN",
+        "exact_reschedule_after_fiddle": "UNKNOWN"
+      },
+      "lethal_transition": "phase_1_first_lethal"
+    },
+    {
+      "key": "phase_2",
+      "entry": {
+        "trigger": "first lethal damage to Magnolia",
+        "terminal_death_prevented": true,
+        "ice_burst_to_player": {
+          "damage_type": "ICE",
+          "amount_approx": 5000,
+          "provenance": "REFERENCE_CURRENT",
+          "exact_amount": "UNKNOWN",
+          "precision": "APPROXIMATE_AS_PUBLISHED_CURRENT_REFERENCE"
+        },
+        "boss_hp_after_return": {
+          "value": 60000,
+          "provenance": "REFERENCE_CURRENT",
+          "precision": "EXACT_AS_PUBLISHED_CURRENT_REFERENCE",
+          "representation_status": "BLOCKED_ONLY_ON_ENCOUNTER_LOCAL_MAX_HEALTH_OVERRIDE",
+          "set_phase_available": true,
+          "prevent_death_available": true
+        },
+        "transition_ordering": {
+          "source_semantic": "Ice hit then immediate return at 60000 HP.",
+          "exact_callback_order_if_ice_hit_kills_player": "UNKNOWN"
+        }
+      },
+      "bone_fiddle_required": false,
+      "permanent_lethal_outcome": "magnolia_defeated"
+    }
+  ],
+  "cross_phase_rules": [
+    {
+      "key": "death_damage_heals_magnolia",
+      "trigger": "Death-element attack/damage against Magnolia",
+      "outcome": "Boss is healed rather than taking ordinary Death damage.",
+      "provenance": "REFERENCE_CURRENT",
+      "exact_heal_conversion_formula": "UNKNOWN",
+      "warning": "Do not infer 1:1 healing amount without a stronger witness."
+    },
+    {
+      "key": "moonsilver_drift_player_step",
+      "trigger": "player enters active Moonsilver Drift",
+      "outcome": {
+        "damage_type": "DEATH",
+        "amount_range_approx": [
+          350,
+          400
+        ]
+      },
+      "provenance": "REFERENCE_CURRENT",
+      "exact_roll_distribution": "UNKNOWN"
+    },
+    {
+      "key": "moonsilver_drift_asura_step",
+      "trigger": "eligible asura enters active Moonsilver Drift",
+      "outcome": "Transforms into a stronger asura version.",
+      "provenance": "REFERENCE_CURRENT",
+      "exact_source_to_target_mapping": "UNKNOWN",
+      "exact_eligibility_set": "UNKNOWN",
+      "warning": "Do not assume true_* target identities from naming alone."
+    }
+  ],
+  "permanent_kill": {
+    "encounter_outcome": "completed",
+    "quest_transition_outcome": "magnolia_defeated",
+    "post_boss_world_effect": "Relocate/admit player into the ice-prison escape sequence.",
+    "prison_room_candidate": {
+      "status": "RESOLVED_END_TO_END",
+      "skeleton": {
+        "x": 31920,
+        "y": 31360,
+        "z": 9,
+        "item_id": 8606
+      },
+      "southwest_icicles": {
+        "x": 31914,
+        "y": 31364,
+        "z": 9,
+        "item_id": 6966
+      },
+      "north_wall": {
+        "x": 31920,
+        "y": 31359,
+        "z": 9,
+        "wall_id": 6729,
+        "debris_id": 6374
+      },
+      "rope_spot": {
+        "x": 31923,
+        "y": 31377,
+        "z": 9,
+        "ground_id": 386
+      },
+      "generic_rope_destination": {
+        "x": 31923,
+        "y": 31378,
+        "z": 8
+      },
+      "note": "Quest-specific prison geometry is resolved. Final movement remains owned by generic rope/multitool semantics; Shards only observes successful escape.",
+      "static_readback": "prison-source-readback-20261007.json"
+    }
+  },
+  "crystal_gap": {
+    "status": "CONFIRMED",
+    "facts": [
+      "Crystal Magnolia file contains a static Creature statblock and ordinary summon table only.",
+      "Crystal Furious Jaracal file is a static Creature statblock only.",
+      "No dedicated Bone Fiddle, Moonsilver Drift, first-lethal revive or Magnolia phase encounter script was found at the pinned Summer revision.",
+      "Crystal's static Magnolia Creature file has an ordinary maxSummons=4 table for Frost Flower Asura/Midnight Asura, but it does not encode the Reference Furious-Jaracal pressure, Bone-Fiddle suppression, Moonsilver-Drift callbacks or two-phase lethal semantics."
+    ],
+    "consequence": "SHARDS-E1 must be an Oteryn Encounter implementation; copying Crystal Creature Lua is insufficient."
+  },
+  "held_unknowns": [
+    "Exact Moonsilver Drift spawn positions.",
+    "Exact Moonsilver Drift spawn cadence/lifetime/cleanup semantics.",
+    "Exact asura transformation eligibility and target mapping.",
+    "Exact Death-damage-to-heal conversion formula.",
+    "Exact Bone Fiddle timer start/reset/reschedule semantics.",
+    "Whether the ~30 s recommendation is merely safe player cadence or a server cooldown.",
+    "Exact ~70 s pressure timer value if the reference is rounded.",
+    "Exact phase-transition ordering if the ~5000 Ice burst kills the player.",
+    "Exact cleanup implementation details remain owner-defined, but current Global behavior must not continue Magnolia phase-owned spawn schedules after room leave; Sep 15 fix is authoritative on that outcome."
+  ],
+  "implementation_fence": {
+    "owner": "Encounter",
+    "current_collision": null,
+    "no_runtime_or_content_mutation": true,
+    "required_output_after_allocation": [
+      "Dedicated two-phase Encounter state.",
+      "Furious Jaracal pressure timer and Bone Fiddle interaction.",
+      "Moonsilver Drift WorldObject/Encounter callbacks.",
+      "First-lethal prevent-death/phase transition.",
+      "Permanent-kill occurrence -> QuestTransitionRequest for magnolia_defeated.",
+      "Post-kill prison relocation under World/Encounter ownership.",
+      "Crash/restart/relog cleanup and idempotence qualification."
+    ],
+    "runtime_blocker": "Architecture is resolved (#1891 merged), but Encounter schema/ProjectV2 still lacks max_health on current main and no ENC-RT-1/ENC-OUTCOME-1 runtime interpreter is allocated/integrated."
+  },
+  "runtime_partition": {
+    "reusable_existing_creature_runtime": [
+      "Magnolia canonical Creature identity and ordinary actor lifecycle",
+      "ordinary attacks/targeting/resistances/immunities only where source-qualified by the Monster owner",
+      "Furious Jaracal canonical Creature identity and ordinary actor lifecycle",
+      "Frost Flower Asura and Midnight Asura canonical Creature identities and ordinary actor lifecycle"
+    ],
+    "encounter_owned": [
+      "solo admission, 10-minute arena timeout and 20-hour boss cooldown",
+      "initial two Furious Jaracal",
+      "phase-1 Furious Jaracal pressure timer",
+      "Bone Fiddle phase-1 interaction and suppression/reset behavior",
+      "Frost Flower/Midnight Asura encounter spawn scheduling",
+      "Moonsilver Drift spawn/lifetime/step callbacks",
+      "first-lethal prevention, approximately 5000 Ice burst and immediate 60000-HP phase-2 return",
+      "permanent second lethal and one-shot Magnolia encounter completion",
+      "post-kill relocation into the prison escape",
+      "current post-release spawn placement policy: Furious Jaracals near noxious catnip; south minions nearer the teleporter",
+      "phase-owned spawn cancellation/fencing on room leave, including phase 2; no post-leave spawn leak"
+    ],
+    "forbidden_shortcuts": [
+      "Do not copy Crystal's static ordinary summon table as the Magnolia encounter implementation.",
+      "Do not promote donor TODO(balance) damage/defense estimates to Reference parity.",
+      "Do not persist phase timers or drift cells as durable QuestState tracks.",
+      "Do not emit magnolia_defeated on the first lethal.",
+      "Do not reproduce July release-day spawn positions where later official balancing moved the spawns."
+    ]
+  },
+  "representation_readback": {
+    "main_sha": "3bacc59e6adbf138655e6f0c1cf0b4fdf9a36096",
+    "architect_disposition": {
+      "pr": 1891,
+      "merged": true,
+      "merge_commit": "739e75821bbee3740aa8ee6166ac297fb577eb09",
+      "selected_option": "B",
+      "semantics": [
+        "first lethal: prevent_death",
+        "attribute max_health set 60000",
+        "set phase counter/phase 2",
+        "queued heal full to 60000",
+        "no completion outcome on first lethal",
+        "phase-2 lethal kills normally and emits completion"
+      ]
+    },
+    "trigger_cause_disposition": {
+      "pr": 1886,
+      "merged": true,
+      "note": "QUEST-TRIGGER durable-cause ambiguity is resolved independently; Magnolia quest progress still waits for ENC-OUTCOME-1."
+    },
+    "authoring_schema": {
+      "lethal_damage": true,
+      "prevent_death": true,
+      "set_phase": true,
+      "heal_full": true,
+      "convert_damage_to_heal": true,
+      "item_used": true,
+      "timers": true,
+      "max_health_attribute": "ARCHITECT_ACCEPTED_IMPLEMENTATION_PENDING"
+    },
+    "project_v2": {
+      "lethal_damage": true,
+      "prevent_death": true,
+      "set_phase": true,
+      "heal_full": true,
+      "convert_damage_to_heal": true,
+      "phase_names": true,
+      "current_rust_attribute_variants": [
+        "outgoing_damage_percent",
+        "defense"
+      ],
+      "max_health_attribute_present_on_main": false,
+      "runtime_status": "CANDIDATE_ONLY_NOT_INTERPRETED"
+    },
+    "exact_remaining_representation_gap": {
+      "key": "phase_2_max_health_override",
+      "status": "DECIDED_NOT_IMPLEMENTED",
+      "accepted_shape": "attribute(max_health set 60000) followed by queued heal(full), then phase_2 semantics",
+      "implementation_owner": "ENC-COMBAT-1 / Encounter schema + ProjectV2 catch-up",
+      "forbidden": "Do not use a fake second Magnolia Creature or 52k ordinary heal as a workaround."
+    },
+    "authoring_spec": "magnolia-encounter-spec.md"
+  }
+}

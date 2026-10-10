@@ -1,0 +1,131 @@
+{
+  "schema": "OTERYN_SHARDS_JARACAL_MOUNT_ADMISSION_EVIDENCE/v1",
+  "scope": "EVIDENCE_ONLY_NOT_ADMITTED",
+  "quest": "oteryn:quest.authored.shards_of_a_broken_moon_quest",
+  "purpose": "Bounded successor-population packet for the Jaracal mount unlocked after Shards via taming. This file is not canonical Mount content and is not runtime authority.",
+  "historical_mount_population": {
+    "canonical_records": 252,
+    "immutable_input": "docs/agents/evidence/OTV2-20260925-g4-mount-252-selected.json",
+    "schema": "OTERYN_G4_MOUNT_252_SELECTED/v1",
+    "policy": {
+      "typed_speed_bonus": "UNKNOWN",
+      "typed_premium": "UNKNOWN"
+    },
+    "invariant": "Do not edit, rehash or reinterpret the historical 252-row TibiaWiki packet in order to admit Jaracal."
+  },
+  "exact_donor": {
+    "source_key": "oteryn:source.crystalserver",
+    "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+    "path": "data/XML/mounts.xml",
+    "git_blob": "1c93421c1141265988eb32afb9c56238eae30716",
+    "row": {
+      "mount_id": 250,
+      "clientid": 1962,
+      "name": "Jaracal",
+      "speed": 10,
+      "premium": true,
+      "type": "quest"
+    },
+    "status": "EXACT_PINNED_DONOR"
+  },
+  "proposed_canonical": {
+    "family": "Mount",
+    "key": "oteryn:content.mount.jaracal",
+    "revision": "definition-r1",
+    "display_name": "Jaracal",
+    "typed_fields": {
+      "speed_bonus": 10,
+      "premium": true,
+      "taming_item": "oteryn:item.tibia.i54638"
+    },
+    "presentation": {
+      "clientid": 1962,
+      "canonical_ref": null,
+      "status": "PRESENTATION_OWNER_ADMISSION_PENDING",
+      "warning": "Do not invent a Presentation key from clientid alone."
+    },
+    "acquisition_interactions": [],
+    "acquisition_interaction_status": "PENDING_TYPED_INTERACTION_OWNER",
+    "source_binding": {
+      "source_key": "oteryn:source.tibiawiki",
+      "source_revision": "tibiawiki:Jaracal_(Montaria)@440479",
+      "external_id": "67553",
+      "identity_namespace": "mediawiki/page_id",
+      "disposition": "EXACT"
+    }
+  },
+  "taming_semantics": {
+    "direct_terminal_reward": false,
+    "quest_terminal_reward": "oteryn:item.tibia.i54638",
+    "target_creature": "oteryn:creature.jaracal",
+    "on_success": {
+      "account_mount_unlock": "oteryn:content.mount.jaracal",
+      "achievement": "oteryn:achievement/six_steps_ahead@1"
+    },
+    "chance_or_failure_semantics": "UNKNOWN_DO_NOT_INVENT",
+    "item_consumption_semantics": "PENDING_REFERENCE_RUNTIME_QUALIFICATION",
+    "idempotence_requirement": "Repeated/replayed successful tame must not duplicate account unlock or achievement.",
+    "persistence_requirement": "Mount unlock and achievement survive relog/server restart.",
+    "on_success_achievement_provenance": {
+      "canonical_shard": "content/achievements/achievements-00000-00499.json",
+      "staticdata": {
+        "client_version": "15.30",
+        "source_id": 592
+      },
+      "tibiawiki": {
+        "pageid": 110744,
+        "revid": 1200472
+      },
+      "points": 2,
+      "grade": 1,
+      "premium": true,
+      "secret": false,
+      "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY"
+    }
+  },
+  "current_architecture": {
+    "mount_declaration_fields": [
+      "presentation",
+      "speed_bonus",
+      "premium",
+      "taming_item",
+      "acquisition_interactions"
+    ],
+    "account_unlock_owner": "GAME-CHAR Character Appearance / AccountUnlock",
+    "pure_validation": "APP-a merged",
+    "durable_account_unlock_writer": "NOT_IMPLEMENTED",
+    "taming_producer": "NOT_IMPLEMENTED"
+  },
+  "required_owner_work": [
+    "Add a one-row successor Mount population using TibiaWiki page_id 67553/revision 440479; do not modify the immutable G4 252 selection.",
+    "Admit canonical Jaracal Mount as the 253rd active Mount record through a successor population composed after the historical 252.",
+    "Resolve clientid 1962 through the Presentation owner; do not synthesize a Presentation identity in Mount code.",
+    "Bind oteryn:item.tibia.i54638 use-on oteryn:creature.jaracal through the accepted Item/Interaction owner.",
+    "On qualified success, call the account-scoped Mount unlock owner and Achievement grant owner.",
+    "Qualify consumption, duplicate use, relog and restart semantics.",
+    "Do not invent RNG or success/failure chance."
+  ],
+  "item_identity_note": {
+    "donor_id": 54638,
+    "canonical_key": "oteryn:item.tibia.i54638",
+    "revision": "definition-r1",
+    "status": "EXACT_CURRENT_A12_IDENTITY_NON_MATERIALIZABLE",
+    "retired_alias": "oteryn:item.registry.i00038475",
+    "retired_alias_target": "oteryn:item.tibia.i54638",
+    "active_record_state": {
+      "materializable": false,
+      "physical": "KNOWN_MOVABLE_PICKUPABLE_WEIGHT_200",
+      "stackable": false
+    },
+    "required_change": "PROMOTE_CURRENT_CANONICAL_ITEM_IN_PLACE; DO_NOT REMINT"
+  },
+  "current_reference_source": {
+    "source_key": "oteryn:source.tibiawiki",
+    "identity_namespace": "mediawiki/page_id",
+    "page_id": 67553,
+    "revision_id": 440479,
+    "revision_timestamp": "2026-07-14T02:57:52Z",
+    "raw_utf8_sha256": "a3a5ce1a344c4848829e8551a40f72483086a27b5e5b4d931cac7f038bb96311",
+    "status": "EXACT_POST_RELEASE_REFERENCE_SOURCE"
+  }
+}

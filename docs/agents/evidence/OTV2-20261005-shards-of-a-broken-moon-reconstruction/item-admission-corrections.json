@@ -1,0 +1,83 @@
+{
+  "schema": "OTERYN_SHARDS_ITEM_ADMISSION_CORRECTIONS/v1",
+  "scope": "EVIDENCE_ONLY_NOT_ADMITTED",
+  "purpose": "Resolve the two SU26 Item identities that block Shards rewards/escape without reminting or false aliasing.",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "items": [
+    {
+      "donor_id": 54638,
+      "source_name": "skewered fish",
+      "source_profile": "tool",
+      "current_identity": {
+        "key": "oteryn:item.tibia.i54638",
+        "revision": "definition-r1",
+        "identity_rule": "A12-ITEM-IDENTITY-TIBIA-ID-V1",
+        "retired_alias": "oteryn:item.registry.i00038475",
+        "retired_alias_state": "ALIAS_TO_CURRENT_KEY",
+        "materializable": false,
+        "status": "CURRENT_CANONICAL_IDENTITY"
+      },
+      "required_change": {
+        "kind": "PROMOTE_EXISTING_CANONICAL_IDENTITY_IN_PLACE",
+        "preserve_key": true,
+        "materializable": true,
+        "semantic_role": "Shards terminal reward and Jaracal taming item"
+      },
+      "forbidden": [
+        "Do not mint a second Item identity for donor 54638.",
+        "Do not use retired alias oteryn:item.registry.i00038475 as the current canonical key.",
+        "Do not bind quest rewards to the raw donor id instead of oteryn:item.tibia.i54638."
+      ]
+    },
+    {
+      "donor_id": 54610,
+      "source_name": "lit torch",
+      "source_profile": "light_source",
+      "current_identity": {
+        "donor_key": "donor:crystalserver@00ce02a5:item/54610",
+        "canonical_key": "oteryn:item.tibia.i54610",
+        "alias_gate_state": "PROBABLE_MATCH",
+        "held_against": "oteryn:item.tibia.i34017",
+        "materializable": false,
+        "canonical_identity_basis": "CURRENT_CLIENT_15_30_A12_MEMBERSHIP",
+        "active_record": "ABSENT_NEEDS_PROOF_BACKED_SUCCESSOR_ADMISSION"
+      },
+      "independent_identity_evidence": {
+        "fandom_item_ids": {
+          "Lit Torch (Quest)": 34017,
+          "Lit Torch (SU26)": 54610,
+          "Torch (SU26)": 54609
+        },
+        "donor_pair": {
+          "unlit_id": 54609,
+          "lit_id": 54610
+        },
+        "conclusion": "54610 is a distinct SU26 source identity, not an alias of historical 34017."
+      },
+      "required_change": {
+        "kind": "ADMIT_A12_CURRENT_IDENTITY_FROM_RESOLVED_HISTORICAL_HOLD",
+        "preserve_source_identity": true,
+        "semantic_role": "Post-Magnolia prison Lit Torch",
+        "canonical_key": "oteryn:item.tibia.i54610"
+      },
+      "forbidden": [
+        "Do not alias 54610 to i34017.",
+        "Do not rewrite the frozen historical B1b hold/crosswalk in place.",
+        "Do not classify 54610 as appearance-only; a pinned donor source row exists."
+      ]
+    }
+  ],
+  "quest_bindings": {
+    "terminal_reward_item": "oteryn:item.tibia.i54638",
+    "jaracal_taming_item": "oteryn:item.tibia.i54638",
+    "prison_lit_torch": "DONOR_54610_CANONICAL_ADMISSION_PENDING"
+  },
+  "owner": "Item",
+  "qualification": [
+    "canonical identity uniqueness",
+    "materialization/mint path",
+    "inventory transfer/use",
+    "relog/restart persistence",
+    "no duplicate identity or alias binding"
+  ]
+}

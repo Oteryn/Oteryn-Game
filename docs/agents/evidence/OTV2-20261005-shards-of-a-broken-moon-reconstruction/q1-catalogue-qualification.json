@@ -1,0 +1,79 @@
+{
+  "schema": "OTERYN_SHARDS_Q1_CATALOGUE_QUALIFICATION/v1",
+  "scope": "OFFLINE_NATIVE_LOADER_AND_PURE_EVALUATOR_ONLY",
+  "main_readback": "76ccad94b618b930166b4c1f66475dbcdafd9ac5",
+  "evidence_predecessor": "5f8ce419228d1f78e28c75b8aecf8ca01373da7b",
+  "qualified_utc": "2026-10-07T20:22:18.720397+00:00",
+  "candidate": {
+    "path": "q1-native-catalogue-candidate.json",
+    "sha256": "3eefdabd4f6261f8a801efac16d1940189e05c6b0f1078ae1baa4c25f78e1500",
+    "quests": 1,
+    "tracks": 17,
+    "transitions": 18,
+    "canonical_key_allocation": false,
+    "admitted_to_served_catalogue": false
+  },
+  "source_files": [
+    {
+      "path": "apps/game-server/src/quest/mod.rs",
+      "git_blob": "28f2d05fe9720892d78938968e5cd9c9a0fd1538",
+      "compiled_workspace_bytes_sha256": "aaa6cdad33184b895124b46b47058237835e882860533b850a487fafd466fe08"
+    },
+    {
+      "path": "apps/game-server/src/quest/loader.rs",
+      "git_blob": "506758497bbe438a400313062710f62efff244e1",
+      "compiled_workspace_bytes_sha256": "148445bc3ca0bda299e630da2789fcb437a71aaccd82b0f40dc0f3f5bf64a6dd"
+    },
+    {
+      "path": "apps/game-server/src/quest/predicate.rs",
+      "git_blob": "8689ec92b174a49ba1e8fc8d0a85b3bba9552ad3",
+      "compiled_workspace_bytes_sha256": "784c9e525cc57ded6389c1d99c0046639e808df368a68920cba7480aa7b5873d"
+    },
+    {
+      "path": "apps/game-server/src/quest/log.rs",
+      "git_blob": "2871c8346e37f5fc42275003e67653e3b8254ecb",
+      "compiled_workspace_bytes_sha256": "f822d668acc9e037bdeb3efab9562a946b648dc1133ce5496628909317ce612c"
+    },
+    {
+      "path": "apps/game-server/src/quest/log_tests.rs",
+      "git_blob": "dc5e8e62f87941ceabf5b0bc6ea6fb07812ffc69",
+      "compiled_workspace_bytes_sha256": "2de592428d838c42e5cc1c86014da2d994d1e750fd4d3071dae823e03ddadb81"
+    }
+  ],
+  "command": "python run_q1_candidate.py --adversarial",
+  "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
+  "baseline": {
+    "result": "PASS",
+    "tests": 38,
+    "candidate_tests": 6,
+    "existing_quest_tests": 32,
+    "branch_order_route_cases": 12,
+    "incomplete_subset_route_cases": 14,
+    "not_supported_transitions": 0,
+    "inexact_effects": 0
+  },
+  "mutation": {
+    "operator": "REMOVE_ONLY_PLANTS_DONE_PREREQUISITE_FROM_THREE_CLUES_JOIN",
+    "result": "EXPECTED_TEST_FAILURE_OBSERVED",
+    "detected_by": [
+      "every_incomplete_subset_refuses_join_without_state_changes",
+      "stale_positive_session_copy_does_not_bypass_locked_join"
+    ],
+    "restored_candidate_result": "PASS_38_TESTS"
+  },
+  "negative_observations": [
+    "Repeated use of one marker cannot replace other placements",
+    "Wrong route report and a second start route refuse",
+    "Absent locked prerequisite refuses without candidate state changes"
+  ],
+  "not_qualified": [
+    "Durable QuestTransitionRequest or RevisionSlot execution",
+    "PostgreSQL receipts, fencing or character revisions",
+    "NPC dialogue dispatch or physical marker placement",
+    "Item mint, transfer, consumption or atomicity",
+    "World mutation or relocation",
+    "Relog/restart or full quest completion",
+    "Magnolia, prison or terminal RewardClaim runtime"
+  ],
+  "limits": "The helper map only applies changes returned by the existing evaluator. It is not a QuestState store, persistence simulation, producer implementation or second engine. Keys are explicitly unallocated evidence candidates."
+}

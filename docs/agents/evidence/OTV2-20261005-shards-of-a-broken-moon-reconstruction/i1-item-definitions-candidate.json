@@ -1,0 +1,277 @@
+{
+  "schema": "OTERYN_SHARDS_I1_CORE_CANDIDATE/v1",
+  "status": "EVIDENCE_ONLY_NOT_ADMITTED",
+  "source_pin": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "client": {
+    "path": "content/assets/files/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat",
+    "sha256": "2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2",
+    "bytes": 5017996
+  },
+  "source_xml": {
+    "path": "data/items/items.xml",
+    "git_blob": "5530bb76d896d31fb75d6cad23969e1cc463b1c5",
+    "sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+  },
+  "records": [
+    {
+      "definition": {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i54262",
+          "revision": "definition-r1"
+        },
+        "kind": "Item",
+        "materializable": true,
+        "semantics": {
+          "charges": {
+            "state": "UNKNOWN"
+          },
+          "classification": {
+            "state": "UNKNOWN"
+          },
+          "container": {
+            "state": "UNKNOWN"
+          },
+          "equipment": {
+            "state": "UNKNOWN"
+          },
+          "fluid": {
+            "state": "UNKNOWN"
+          },
+          "imbuement": {
+            "state": "UNKNOWN"
+          },
+          "physical": {
+            "state": "KNOWN",
+            "value": {
+              "movable": {
+                "state": "KNOWN",
+                "value": true
+              },
+              "pickupable": {
+                "state": "KNOWN",
+                "value": true
+              },
+              "weight": {
+                "state": "KNOWN",
+                "value": 100
+              }
+            }
+          },
+          "presentation": {
+            "state": "UNKNOWN"
+          },
+          "protection": {
+            "state": "UNKNOWN"
+          },
+          "readable_writeable": {
+            "state": "UNKNOWN"
+          },
+          "skill_modifiers": {
+            "state": "UNKNOWN"
+          },
+          "stack": {
+            "state": "KNOWN",
+            "value": {
+              "stackable": {
+                "state": "KNOWN",
+                "value": false
+              },
+              "stack_max": {
+                "state": "UNKNOWN"
+              }
+            }
+          },
+          "temporal": {
+            "state": "UNKNOWN"
+          },
+          "trade_restrictions": {
+            "state": "UNKNOWN"
+          },
+          "use_transform": {
+            "state": "UNKNOWN"
+          },
+          "weapon": {
+            "state": "UNKNOWN"
+          }
+        },
+        "stack_class": "NonStackable"
+      }
+    },
+    {
+      "definition": {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i54610",
+          "revision": "definition-r1"
+        },
+        "kind": "Item",
+        "materializable": true,
+        "semantics": {
+          "charges": {
+            "state": "UNKNOWN"
+          },
+          "classification": {
+            "state": "UNKNOWN"
+          },
+          "container": {
+            "state": "UNKNOWN"
+          },
+          "equipment": {
+            "state": "UNKNOWN"
+          },
+          "fluid": {
+            "state": "UNKNOWN"
+          },
+          "imbuement": {
+            "state": "UNKNOWN"
+          },
+          "physical": {
+            "state": "KNOWN",
+            "value": {
+              "weight": {
+                "state": "KNOWN",
+                "value": 500
+              },
+              "movable": {
+                "state": "KNOWN",
+                "value": true
+              },
+              "pickupable": {
+                "state": "KNOWN",
+                "value": true
+              }
+            }
+          },
+          "presentation": {
+            "state": "UNKNOWN"
+          },
+          "protection": {
+            "state": "UNKNOWN"
+          },
+          "readable_writeable": {
+            "state": "UNKNOWN"
+          },
+          "skill_modifiers": {
+            "state": "UNKNOWN"
+          },
+          "stack": {
+            "state": "KNOWN",
+            "value": {
+              "stackable": {
+                "state": "KNOWN",
+                "value": false
+              },
+              "stack_max": {
+                "state": "UNKNOWN"
+              }
+            }
+          },
+          "temporal": {
+            "state": "UNKNOWN"
+          },
+          "trade_restrictions": {
+            "state": "UNKNOWN"
+          },
+          "use_transform": {
+            "state": "UNKNOWN"
+          },
+          "weapon": {
+            "state": "UNKNOWN"
+          }
+        },
+        "stack_class": "NonStackable"
+      }
+    },
+    {
+      "definition": {
+        "client_projection": "ClientSafe",
+        "identity": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i54638",
+          "revision": "definition-r1"
+        },
+        "kind": "Item",
+        "materializable": true,
+        "semantics": {
+          "charges": {
+            "state": "UNKNOWN"
+          },
+          "classification": {
+            "state": "UNKNOWN"
+          },
+          "container": {
+            "state": "UNKNOWN"
+          },
+          "equipment": {
+            "state": "UNKNOWN"
+          },
+          "fluid": {
+            "state": "UNKNOWN"
+          },
+          "imbuement": {
+            "state": "UNKNOWN"
+          },
+          "physical": {
+            "state": "KNOWN",
+            "value": {
+              "movable": {
+                "state": "KNOWN",
+                "value": true
+              },
+              "pickupable": {
+                "state": "KNOWN",
+                "value": true
+              },
+              "weight": {
+                "state": "KNOWN",
+                "value": 200
+              }
+            }
+          },
+          "presentation": {
+            "state": "UNKNOWN"
+          },
+          "protection": {
+            "state": "UNKNOWN"
+          },
+          "readable_writeable": {
+            "state": "UNKNOWN"
+          },
+          "skill_modifiers": {
+            "state": "UNKNOWN"
+          },
+          "stack": {
+            "state": "KNOWN",
+            "value": {
+              "stack_max": {
+                "state": "UNKNOWN"
+              },
+              "stackable": {
+                "state": "KNOWN",
+                "value": false
+              }
+            }
+          },
+          "temporal": {
+            "state": "UNKNOWN"
+          },
+          "trade_restrictions": {
+            "state": "UNKNOWN"
+          },
+          "use_transform": {
+            "state": "UNKNOWN"
+          },
+          "weapon": {
+            "state": "UNKNOWN"
+          }
+        },
+        "stack_class": "NonStackable"
+      }
+    }
+  ],
+  "identity_admission_54610": "REQUIRED_BEFORE_APPLICATION",
+  "runtime_use": "NOT_QUALIFIED"
+}

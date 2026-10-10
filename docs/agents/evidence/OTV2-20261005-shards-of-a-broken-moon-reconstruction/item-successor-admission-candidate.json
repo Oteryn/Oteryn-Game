@@ -1,0 +1,247 @@
+{
+  "schema": "OTERYN_SHARDS_ITEM_SUCCESSOR_ADMISSION_CANDIDATE/v1",
+  "scope": "EVIDENCE_ONLY_NOT_ADMITTED",
+  "base_main": "f80428d57660fce078ed4a4c37739d3383664c23",
+  "source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+  "policy": {
+    "frozen_epoch2": "PRESERVE_BYTE_EXACT",
+    "historical_54610_hold": "PRESERVE_AS_HISTORY",
+    "identity_rule": "A12-ITEM-IDENTITY-TIBIA-ID-V1",
+    "semantic_admission_pipeline": "tools/content-migration/quest_reward_item_semantics.py"
+  },
+  "items": [
+    {
+      "item_id": 54262,
+      "item_key": "oteryn:item.tibia.i54262",
+      "role": "Shards Asura Citadel identity-key granted/re-granted by Javala",
+      "identity_state": "CURRENT_CANONICAL_IDENTITY_PRESENT",
+      "current_record": {
+        "path": "content/items/definitions/items-28500-28999.json",
+        "materializable": false,
+        "stack_class": "Unknown",
+        "physical": {
+          "movable": true,
+          "pickupable": true,
+          "weight": 100
+        }
+      },
+      "client_name": "key",
+      "client_flags": {
+        "flags.usable": true,
+        "flags.multiuse": true,
+        "flags.take": true,
+        "flags.cyclopediaitem": true,
+        "cyclopediaitem.cyclopedia_type": 54262
+      },
+      "xml": {
+        "crystal-summer": {
+          "article": "a",
+          "attrs": {
+            "primarytype": "others",
+            "weight": "100"
+          },
+          "item_id": 54262,
+          "name": "key",
+          "plural": null
+        }
+      },
+      "wiki": [],
+      "owning_donors": [
+        "crystal-summer"
+      ],
+      "derived_item_facts": {
+        "stackable": false,
+        "capacity": null,
+        "charges": null,
+        "holds": []
+      },
+      "exact_quest_identity": {
+        "source_name": "Key (Asura Citadel)",
+        "source_binding": "cross-source Shards key identity already resolved in key-identity-addendum.md",
+        "key_number": null,
+        "key_number_status": "SOURCE_ABSENT_DO_NOT_INVENT"
+      },
+      "required_sequence": [
+        "keep existing canonical A12 identity",
+        "run quest interaction Item admission successor on existing canonical record",
+        "bind Javala grant/regrant through NPC/Item owner",
+        "bind use-with against exact identity-based door through ITEM-USE + Door/Key owner"
+      ]
+    },
+    {
+      "item_id": 54610,
+      "item_key": "oteryn:item.tibia.i54610",
+      "role": "Shards prison Lit Torch",
+      "identity_state": "SUCCESSOR_IDENTITY_REQUIRED",
+      "client_name": "lit torch",
+      "client_flags": {
+        "flags.usable": true,
+        "flags.multiuse": true,
+        "flags.take": true,
+        "flags.light": true,
+        "light.brightness": 7,
+        "light.color": 206,
+        "flags.clothes": true,
+        "clothes.slot": 10,
+        "flags.cyclopediaitem": true,
+        "cyclopediaitem.cyclopedia_type": 54610
+      },
+      "xml": {
+        "crystal-summer": {
+          "article": "a",
+          "attrs": {
+            "primarytype": "light sources",
+            "weight": "500"
+          },
+          "item_id": 54610,
+          "name": "lit torch",
+          "plural": null
+        }
+      },
+      "wiki": [],
+      "owning_donors": [
+        "crystal-summer"
+      ],
+      "derived_item_facts": {
+        "stackable": false,
+        "capacity": null,
+        "charges": null,
+        "holds": []
+      },
+      "client_membership_entry": [
+        54610,
+        "438e64d0f37ee71c3db866a31f20a75df01d7f1bc6dde3df2b9b957070f62c9f",
+        "2feacd4cca91233fc8ecc9c336b92f206898ba33df9d68b3e57a889dbcd1671c"
+      ],
+      "required_sequence": [
+        "add proof-backed post-A12 canonical identity successor for the resolved historical donor hold",
+        "emit current exact Crystal 00ce02a5 binding to oteryn:item.tibia.i54610",
+        "run quest interaction Item admission semantics on the canonical record",
+        "qualify client-proven light/pickup/use facts and the Shards wall use under existing Item/ITEM-USE owners; add timed/decay behavior only if separately sourced"
+      ],
+      "forbidden": [
+        "do not rewrite frozen epoch-2 crosswalk or allocation digest",
+        "do not remove 54610 from historical HELD_DONOR_IDS as if history never happened",
+        "do not alias 54610 to i34017",
+        "do not put 54610 into appearance-only cohort",
+        "do not infer decay/duration/54609<->54610 transform from the old torch family or name similarity"
+      ],
+      "source_lifecycle_readback": {
+        "crystal_summer": {
+          "item_54609": {
+            "name": "torch",
+            "attrs": {
+              "primarytype": "light sources",
+              "stopduration": "1",
+              "weight": "500"
+            }
+          },
+          "item_54610": {
+            "name": "lit torch",
+            "attrs": {
+              "primarytype": "light sources",
+              "weight": "500"
+            }
+          },
+          "script_references_to_54609_or_54610": 0
+        },
+        "comparison": {
+          "item_34017": {
+            "name": "lit torch",
+            "attrs": {
+              "primarytype": "light sources",
+              "weight": "500"
+            }
+          },
+          "conclusion": "No donor duration/decay/use-transform binding exists for 54610. Do not inherit timed lifecycle from an older same-name torch."
+        },
+        "status": "NO_TIMED_LIFECYCLE_PROVEN"
+      }
+    },
+    {
+      "item_id": 54638,
+      "item_key": "oteryn:item.tibia.i54638",
+      "role": "Shards terminal reward and later Jaracal taming item",
+      "identity_state": "CURRENT_CANONICAL_IDENTITY_PRESENT",
+      "client_name": "skewered fish",
+      "client_flags": {
+        "flags.usable": true,
+        "flags.multiuse": true,
+        "flags.take": true,
+        "flags.cyclopediaitem": true,
+        "cyclopediaitem.cyclopedia_type": 54638
+      },
+      "xml": {
+        "crystal-summer": {
+          "article": "a",
+          "attrs": {
+            "weight": "200"
+          },
+          "item_id": 54638,
+          "name": "skewered fish",
+          "plural": null
+        }
+      },
+      "wiki": [],
+      "owning_donors": [
+        "crystal-summer"
+      ],
+      "derived_item_facts": {
+        "stackable": false,
+        "capacity": null,
+        "charges": null,
+        "holds": []
+      },
+      "current_record": {
+        "path": "content/items/definitions/items-29000-29499.json",
+        "materializable": false,
+        "stack_class": "Unknown",
+        "physical": {
+          "movable": true,
+          "pickupable": true,
+          "weight": 200
+        }
+      },
+      "validated_successor_result": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "physical": {
+          "movable": true,
+          "pickupable": true,
+          "weight": 200
+        },
+        "stackable": false
+      },
+      "required_sequence": [
+        "keep existing exact identity and Crystal binding",
+        "run quest reward Item admission successor on existing canonical record"
+      ]
+    }
+  ],
+  "local_validation": {
+    "module": "tools/content-migration/quest_reward_item_semantics.py",
+    "result": {
+      "54262": {
+        "holds": [],
+        "stackable": false,
+        "capacity": null,
+        "charges": null,
+        "existing_identity": true
+      },
+      "54610": {
+        "holds": [],
+        "stackable": false,
+        "capacity": null,
+        "charges": null
+      },
+      "54638": {
+        "holds": [],
+        "stackable": false,
+        "capacity": null,
+        "charges": null,
+        "enrich_materializable": true,
+        "enrich_stack_class": "NonStackable"
+      }
+    }
+  }
+}
