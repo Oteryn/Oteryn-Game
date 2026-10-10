@@ -24,6 +24,7 @@ use super::attack::{COMBAT_REFRESH, CombatContinuity};
 use super::capabilities::{
     OfferedCapability, PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
+use super::chat_intent::CHAT_REFRESH;
 use super::container_view::{
     ContainerObservation, ContainerPlan, ContainerViewState, PendingOpen, ViewCommandWindow,
 };
@@ -68,6 +69,11 @@ use oteryn_protocol_oteryn::attack::{
     COMMAND_TYPE_FIGHT_MODES_INTENT, FightModes, SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
     STATE_DOMAIN_ACTOR_COMBAT_STATE, decode_attack_target_intent, decode_fight_modes_intent,
     encode_attack_intent_result,
+};
+use oteryn_protocol_oteryn::chat::{
+    COMMAND_TYPE_CHAT_INTENT, ChatIntent, ChatIntentResult, ChatLine, ChatRoomSet,
+    DELTA_TYPE_CHAT_LINE_V1, SNAPSHOT_TYPE_CHAT_V1, STATE_DOMAIN_CHAT, decode_chat_intent,
+    encode_chat_intent_result, encode_chat_line, encode_chat_rooms,
 };
 use oteryn_protocol_oteryn::container_tree::CAPABILITY_CONTAINER_TREE_V1;
 use oteryn_protocol_oteryn::container_tree::{
@@ -181,6 +187,10 @@ pub(crate) struct SessionContinuity {
     /// MAP-WIRE-2: the last domain 17 revision sent. Used only with capability 18; a resume or
     /// channel transfer carries it, and the next connection's snapshot follows it.
     pub(crate) world_map_revision: u64,
+    /// CHAT-WIRE-1: the last domain 12 revision sent. Used only with capability 7; it is
+    /// cumulative per GameSession, so a resume or channel transfer carries it and the next
+    /// snapshot follows it.
+    pub(crate) chat_revision: u64,
 }
 
 impl SessionContinuity {
@@ -207,6 +217,7 @@ impl SessionContinuity {
         quest_log: QuestLogContinuity::FRESH,
         combat: CombatContinuity::FRESH,
         world_map_revision: 0,
+        chat_revision: 0,
     };
 }
 
@@ -461,6 +472,36 @@ pub(crate) trait FreshAdmissionAuthority {
         _since: Option<u64>,
     ) -> impl Future<Output = QuestLogObservation> {
         async { QuestLogObservation::Unavailable }
+    }
+
+    /// CHAT-WIRE-1: a session with capability 7 starts chatting. Returns the rooms it has open
+    /// (none before CHAT-2); the authority loads the speaker name and drops undelivered lines.
+    fn chat_admit(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = ChatRoomSet> {
+        async { ChatRoomSet::default() }
+    }
+
+    /// CHAT-WIRE-1: one `CHAT_INTENT` (command 13) of the admitted actor.
+    fn chat_intent(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _intent: ChatIntent,
+    ) -> impl Future<Output = ChatIntentResult> {
+        async {
+            ChatIntentResult {
+                disposition: oteryn_protocol_oteryn::chat::ChatDisposition::ChatUnavailable,
+                wait_seconds: 0,
+            }
+        }
+    }
+
+    /// CHAT-WIRE-1: every line queued for the session since the last call, oldest first.
+    fn chat_drain(&self, _session: GameSessionId) -> impl Future<Output = Vec<ChatLine>> {
+        async { Vec::new() }
     }
 
     /// The admitted actor's current `ACTOR_VITALS` revision and value for the initial snapshot,
@@ -1301,6 +1342,27 @@ where
         });
         quest_log = Some(state);
     }
+    // CHAT-WIRE-1: with capability 7, domain 12 with the open rooms, above every revision the
+    // session has seen. Lines are never replayed.
+    let chat_snapshot: Vec<u8>;
+    let chat_active = admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(STATE_DOMAIN_CHAT);
+    if chat_active {
+        let rooms = authority.chat_admit(actor, admitted.game_session_id).await;
+        let Some(revision) = admitted.continuity.chat_revision.checked_add(1) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        admitted.continuity.chat_revision = revision;
+        chat_snapshot = encode_chat_rooms(rooms);
+        domains.push(DomainSnapshot {
+            domain_id: STATE_DOMAIN_CHAT,
+            revision,
+            snapshot_type: SNAPSHOT_TYPE_CHAT_V1,
+            payload: &chat_snapshot,
+        });
+    }
     // ATTACK-1b: with capability 17, domain 10 above every revision the session has seen. The
     // target was cleared by the reconnect or transfer; the in-fight deadline survives it.
     let combat_snapshot = if admitted
@@ -1404,6 +1466,13 @@ where
         refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         refresh
     });
+    // CHAT-WIRE-1: only a session with domain 12 drains its queued lines.
+    let mut chat_refresh = chat_active.then(|| {
+        let mut refresh =
+            tokio::time::interval_at(tokio::time::Instant::now() + CHAT_REFRESH, CHAT_REFRESH);
+        refresh.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        refresh
+    });
     // ATTACK-1b: only a session with domain 10 drives swings and follows its combat state.
     let mut combat_refresh = combat_snapshot.is_some().then(|| {
         let mut refresh =
@@ -1438,6 +1507,7 @@ where
             Probe,
             Serene,
             QuestLog,
+            Chat,
             Visibility,
             Combat,
         }
@@ -1474,6 +1544,12 @@ where
                     None => std::future::pending().await,
                 }
             });
+            let mut chat_tick = std::pin::pin!(async {
+                match chat_refresh.as_mut() {
+                    Some(refresh) => refresh.tick().await,
+                    None => std::future::pending().await,
+                }
+            });
             let mut visibility_tick = std::pin::pin!(async {
                 match visibility_refresh.as_mut() {
                     Some(refresh) => refresh.tick().await,
@@ -1495,6 +1571,9 @@ where
                 }
                 if quest_log_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::QuestLog);
+                }
+                if chat_tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::Chat);
                 }
                 if visibility_tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Visibility);
@@ -1573,6 +1652,27 @@ where
                 admitted.continuity.server_sequence = sequence;
                 if write_frame(stream, &frame).await.is_err() {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+                continue;
+            }
+            Next::Chat => {
+                // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
+                // delta; an empty queue sends nothing.
+                for line in authority.chat_drain(admitted.game_session_id).await {
+                    let Some((delta_sequence, frame, revision)) = chat_line_delta(
+                        generation,
+                        sequence,
+                        admitted.continuity.chat_revision,
+                        &line,
+                    ) else {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    };
+                    sequence = delta_sequence;
+                    admitted.continuity.server_sequence = sequence;
+                    admitted.continuity.chat_revision = revision;
+                    if write_frame(stream, &frame).await.is_err() {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
                 }
                 continue;
             }
@@ -1773,6 +1873,8 @@ where
             QuestLog(QuestLogDomain),
             /// ATTACK-1b: commands 11 and 12; the domain 10 delta follows the result.
             Attack(AttackIntentDisposition),
+            /// CHAT-WIRE-1: command 13; lines reach the hearers' domain 12 on their own ticks.
+            Chat(ChatIntentResult),
             Unregistered,
         }
         // CAP-NEG-1: a command type owned by a capability the session did not select is refused
@@ -2013,6 +2115,17 @@ where
                 }
                 _ => Dispatch::Unregistered,
             }
+        } else if command.command_type == COMMAND_TYPE_CHAT_INTENT {
+            // CHAT-WIRE-1: spam control is the speaker's limiter inside the authority; a
+            // malformed intent is REJECTED with an empty payload like any unregistered command.
+            match decode_chat_intent(command.payload) {
+                Ok(intent) => Dispatch::Chat(
+                    authority
+                        .chat_intent(actor, admitted.game_session_id, intent)
+                        .await,
+                ),
+                Err(_) => Dispatch::Unregistered,
+            }
         } else if command.command_type == COMMAND_TYPE_ATTACK_TARGET_INTENT {
             // ATTACK-1b: over ATTACK0-RL-01 (25 per second per GameSession, sliding window) it is
             // REJECTED with an empty payload before decoding, as is a malformed intent.
@@ -2124,6 +2237,20 @@ where
                 (CommandStatus::Accepted, payload)
             }
             Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
+            Dispatch::Chat(result) => {
+                let Ok(payload) = encode_chat_intent_result(result) else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                (
+                    if result.disposition == oteryn_protocol_oteryn::chat::ChatDisposition::Rejected
+                    {
+                        CommandStatus::Rejected
+                    } else {
+                        CommandStatus::Accepted
+                    },
+                    payload,
+                )
+            }
             Dispatch::Attack(disposition) => (
                 if *disposition == AttackIntentDisposition::Rejected {
                     CommandStatus::Rejected
@@ -2447,6 +2574,8 @@ where
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 }
             }
+            // CHAT-WIRE-1: the lines reach the hearers' domain 12 on their own ticks.
+            Dispatch::Chat(_) => {}
             Dispatch::Attack(_) => {
                 // The changed target or modes reach domain 10 right after the result.
                 let Some(state) = authority
@@ -2567,6 +2696,30 @@ fn quest_log_delta(
     )
     .ok()?;
     Some((delta_sequence, frame))
+}
+
+/// The domain 12 line delta from `revision` at the sequence after `sequence`, with the new
+/// revision; `None` on an encoding fault.
+fn chat_line_delta(
+    generation: u64,
+    sequence: u64,
+    revision: u64,
+    line: &ChatLine,
+) -> Option<(u64, Vec<u8>, u64)> {
+    let delta_sequence = sequence.checked_add(1)?;
+    let to = revision.checked_add(1)?;
+    let payload = encode_chat_line(line).ok()?;
+    let frame = encode_state_delta(
+        generation,
+        delta_sequence,
+        STATE_DOMAIN_CHAT,
+        revision,
+        to,
+        DELTA_TYPE_CHAT_LINE_V1,
+        &payload,
+    )
+    .ok()?;
+    Some((delta_sequence, frame, to))
 }
 
 async fn close_admitted<S: AsyncWrite + Unpin>(
@@ -3371,6 +3524,7 @@ mod tests {
                     quest_log: QuestLogContinuity::FRESH,
                     combat: CombatContinuity::FRESH,
                     world_map_revision: 0,
+                    chat_revision: 0,
                 }
             );
             // The unregistered type and the replayed ID never reached Movement.
