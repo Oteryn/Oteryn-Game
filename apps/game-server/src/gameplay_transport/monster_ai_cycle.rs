@@ -41,7 +41,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass. A refusal leaves the occurrences pending.
-        let _ = runtime.drive_spawn_respawns(now.get());
+        let _ = runtime.drive_spawn_respawns(now.get(), |observer, cell| {
+            use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
+            match (
+                VisibilityPosition::new(observer.x, observer.y, observer.floor),
+                VisibilityPosition::new(cell.x, cell.y, cell.floor),
+            ) {
+                (Ok(observer), Ok(cell)) => VisibilitySettings::REFERENCE.can_see(observer, cell),
+                _ => false,
+            }
+        });
         let mut states = self.spell_states.lock().await;
         if now.get() < states.next_monster_ai_pass_us {
             return;

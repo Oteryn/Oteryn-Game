@@ -1458,7 +1458,12 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let spawned_monsters = runtime
         .lock()
         .await
-        .realize_activation_spawns(&spawn_source.into_iter().collect::<Vec<_>>())
+        .realize_activation_spawns(
+            spawn_source
+                .map(|source| source.activation_facts())
+                .into_iter()
+                .collect(),
+        )
         .map_err(|e| format!("creature spawn realization: {e:?}"))?;
     evidence(&format!(
         "creature_spawns state=realized spawned_monsters={spawned_monsters}"

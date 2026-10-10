@@ -276,13 +276,22 @@ mod tests {
         assert_eq!(windows[1].len(), 1);
         let flat = windows.concat();
         assert!(flat.windows(2).all(|pair| pair[0] < pair[1]));
-        assert_eq!(flat[0], SpawnPoint { source: 0, ordinal: 0 });
+        assert_eq!(
+            flat[0],
+            SpawnPoint {
+                source: 0,
+                ordinal: 0
+            }
+        );
     }
 
     #[test]
     fn a_gone_creature_warns_one_full_delay_later_and_admits_after_the_warning() {
         let mut schedule = RespawnSchedule::default();
-        assert_eq!(schedule.creature_gone(POINT, timing(false), 10).unwrap(), 10 + DELAY);
+        assert_eq!(
+            schedule.creature_gone(POINT, timing(false), 10).unwrap(),
+            10 + DELAY
+        );
         assert!(schedule.due(10 + DELAY - 1).is_empty());
         assert_eq!(
             schedule.run_warning_step(POINT, timing(false), true, 10 + DELAY - 1),

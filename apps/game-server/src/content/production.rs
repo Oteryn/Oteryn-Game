@@ -3393,7 +3393,8 @@ mod tests {
 
         // Amendment 04: population 2 with two distinct placement cells is the accepted maximum.
         let two = test_source_with_population(3, 2)?;
-        let compiled = compile_first_production(&two, FirstProductionCompileTarget::OrdinaryRelease)?;
+        let compiled =
+            compile_first_production(&two, FirstProductionCompileTarget::OrdinaryRelease)?;
         StagedGeneration::stage(
             &compiled.server_artifact,
             &compiled.client_artifact,
@@ -4129,7 +4130,9 @@ mod tests {
         let spawn_index = records
             .iter()
             .position(|record| record.kind == RECORD_SPAWN)
-            .ok_or(ContentError::InvalidArtifact("spawn record missing in test"))?;
+            .ok_or(ContentError::InvalidArtifact(
+                "spawn record missing in test",
+            ))?;
         let stage = |records: &[ProductionRecord]| -> Result<(), ContentError> {
             let crafted = encode_artifact(&metadata, records)?;
             StagedGeneration::stage(

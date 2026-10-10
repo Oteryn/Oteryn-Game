@@ -385,7 +385,10 @@ fn native_entry_captures_qualifies_and_compiles_a_deterministic_pair() {
         ]
     );
     assert_eq!(
-        (spawn.respawn_delay_ms(), spawn.occupancy_retry_interval_ms()),
+        (
+            spawn.respawn_delay_ms(),
+            spawn.occupancy_retry_interval_ms()
+        ),
         (60_000, 5_000)
     );
     assert_eq!(
@@ -943,6 +946,17 @@ fn profile_edit(mutate: impl FnOnce(&mut Value)) -> Docs {
     })
 }
 
+/// The profile body of the one authoring profile of `kind`, wherever canonical order put it.
+fn kind<'a>(profiles: &'a mut Value, kind: &str) -> &'a mut Value {
+    let profile = profiles
+        .as_array_mut()
+        .expect("profiles")
+        .iter_mut()
+        .find(|profile| profile["data"]["kind"] == kind)
+        .expect("profile of kind");
+    &mut profile["data"]["profile"]
+}
+
 /// SPAWN-1A-PACKET-1 §1.1, §1.6: room revision 2's spawn cells, spawn inputs and the hostile
 /// rat's two authoring profiles. Every case changes one invariant of the valid revision-2 room.
 #[test]
@@ -1036,16 +1050,25 @@ fn revision_two_spawn_and_profiles_refuse_every_invariant_mutation() {
         "profile",
     );
     refuses(
-        &profile_edit(|p| p[0]["data"]["profile"]["targeting"]["hostile"] = json!(false)),
+        &profile_edit(|p| kind(p, "Behavior")["targeting"]["hostile"] = json!(false)),
         "hostile, target and bite",
     );
     refuses(
-        &profile_edit(|p| p[0]["data"]["profile"]["attacks"] = json!([])),
+        &profile_edit(|p| kind(p, "Behavior")["attacks"] = json!([])),
         "hostile, target and bite",
     );
     refuses(
-        &profile_edit(|p| p[1]["data"]["profile"]["initial_health"] = json!(21)),
-        "initial_health",
+        &profile_edit(|p| kind(p, "Creature")["initial_health"] = json!(21)),
+        "initial health",
+    );
+    refuses(
+        &profile_edit(|p| {
+            kind(p, "Creature")
+                .as_object_mut()
+                .expect("creature")
+                .remove("speed");
+        }),
+        "requires health, initial_health and speed",
     );
     // The revision-1 passive behaviour is not the revision-2 room.
     refuses(

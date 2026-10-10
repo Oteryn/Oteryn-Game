@@ -319,6 +319,10 @@ pub struct NativeEntryProject {
 /// One qualified spawn placement cell: (cell key, x, y, floor).
 pub type NativeEntrySpawnCell = (String, i32, i32, i16);
 
+/// What the Channel runtime realizes a spawn source from: placement cells `(x, y, floor)` in
+/// order, respawn delay and occupancy retry interval (ms), creature key and initial health.
+pub type NativeEntrySpawnFacts = (Vec<(i32, i32, i16)>, u64, u64, String, u64);
+
 /// The revision-2 room's qualified D116 spawn (SPAWN-1A-PACKET-1 §1.1, §1.6): the content inputs
 /// the activated spawn source realizes. It is produced only by qualification; the authored
 /// creature and behaviour profiles are carried here, never lowered into FirstProduction.
@@ -372,6 +376,20 @@ impl NativeEntrySpawnSource {
 
     pub const fn speed(&self) -> u32 {
         self.speed
+    }
+
+    /// The facts the Channel runtime realizes this source from.
+    pub(crate) fn activation_facts(&self) -> NativeEntrySpawnFacts {
+        (
+            self.cells
+                .iter()
+                .map(|(_, x, y, floor)| (*x, *y, *floor))
+                .collect(),
+            self.respawn_delay_ms,
+            self.occupancy_retry_interval_ms,
+            self.creature.key.to_string(),
+            self.initial_health,
+        )
     }
 
     pub fn behaviour_profile(&self) -> &ProjectV2BehaviorAuthoring {
@@ -1013,8 +1031,7 @@ pub mod accepted {
         "oteryn:behavior/passive-idle",
         "oteryn:policy/passive-idle-r1",
     );
-    pub const R1_CREATURE: (&str, &str) =
-        ("oteryn:creature/rat", "oteryn:policy/creature-rat-r1");
+    pub const R1_CREATURE: (&str, &str) = ("oteryn:creature/rat", "oteryn:policy/creature-rat-r1");
     /// (presentation key, metadata token), sorted by key.
     pub const PRESENTATIONS: [(&str, &str); 3] = [
         ("oteryn:presentation/bite", "oteryn:appearance/bite-r1"),
@@ -2015,9 +2032,9 @@ fn spawn_cells<'a>(
     }
     let mut seen = BTreeSet::new();
     for key in &keys {
-        let walkable = cells.iter().any(|cell| {
-            cell.key.as_str() == *key && cell.collision == CollisionClass::Walkable
-        });
+        let walkable = cells
+            .iter()
+            .any(|cell| cell.key.as_str() == *key && cell.collision == CollisionClass::Walkable);
         if !seen.insert(*key) || !walkable || accepted::PROOF_CELLS.contains(key) {
             return refuse(
                 "native entry spawn cell is duplicated, not Walkable, undeclared or a proof cell",
@@ -2044,7 +2061,9 @@ fn qualified_spawn_source(
     bite: &ProjectV2DefinitionRef,
 ) -> Result<NativeEntrySpawnSource, ProjectError> {
     let [first, second] = state.authoring_profiles.as_slice() else {
-        return refuse("native entry revision 2 requires exactly the behaviour and creature profiles");
+        return refuse(
+            "native entry revision 2 requires exactly the behaviour and creature profiles",
+        );
     };
     let profile = |target: &ProjectV2DefinitionRef| {
         [first, second]
@@ -2078,10 +2097,9 @@ fn qualified_spawn_source(
     }
     let mut placed = Vec::with_capacity(spawn_cell_keys.len());
     for key in spawn_cell_keys {
-        let cell = cells
-            .iter()
-            .find(|cell| cell.key.as_str() == *key)
-            .ok_or(ProjectError::InvalidProject("native entry spawn cell missing"))?;
+        let cell = cells.iter().find(|cell| cell.key.as_str() == *key).ok_or(
+            ProjectError::InvalidProject("native entry spawn cell missing"),
+        )?;
         placed.push(((*key).to_owned(), cell.x, cell.y, cell.z));
     }
     let (Some(respawn_delay_ms), Some(occupancy_retry_interval_ms)) =
