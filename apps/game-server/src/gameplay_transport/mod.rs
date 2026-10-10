@@ -4,6 +4,9 @@
 pub(crate) mod actor_spell;
 mod attack;
 mod capabilities;
+mod character_progression_binding;
+#[cfg(test)]
+mod character_progression_binding_tests;
 pub(crate) mod charm;
 mod connection;
 mod container_view;
@@ -510,6 +513,7 @@ pub async fn serve_gameplay(
             .and_then(|data| data.wheel_ruleset().ok())
             .map(std::sync::Arc::new),
         wheel_sessions: std::sync::Mutex::default(),
+        progression_sessions: std::sync::Mutex::default(),
         premium: premium_refresher(owners.root),
         premium_sessions: std::sync::Mutex::default(),
         fence_holders: FenceHolders::default(),
@@ -682,6 +686,13 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
             Option<crate::durability::character_wheel::WheelAllocation>,
         >,
     >,
+    /// The progression binding of each bound admitted session (ARCH-PROGRESSION-SOURCE-0 §1.4),
+    /// inserted at fresh admission and removed only in `retire`, so a `ClientResume` of a lost
+    /// session finds the same binding. An unbound session has no entry. Never held across an
+    /// await.
+    pub(crate) progression_sessions: std::sync::Mutex<
+        std::collections::HashMap<GameSessionId, std::sync::Arc<SessionProgressionBinding>>,
+    >,
     /// PREM-1b: the account's Premium pulls, started at fresh admission and reconnect without
     /// waiting on them, and cancelled when the session is released.
     pub(crate) premium: crate::premium::refresh::PremiumRefresher,
@@ -694,6 +705,12 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// key-33 caller and never while a Channel guard is held.
     pub(crate) spell_lane: crate::durability::spell_owner_commit::SpellLane,
 }
+
+/// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the
+/// pinned table length on both the death and the kill reward paths.
+pub(crate) type SessionProgressionBinding = crate::combat::RewardProgressionBinding<
+    { crate::content::character_progression_content::CHARACTER_EXPERIENCE_TABLE_LEVELS },
+>;
 
 /// One admitted session's quest state (QUEST-STATE-0 §5.4, §7).
 #[derive(Debug)]
@@ -1052,7 +1069,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// DEATH-2 (first player death decision §4.3-§4.5): settle one runtime death and respawn the
-    /// actor. With a composed progression policy the death is committed (or replayed) and its
+    /// actor. With the session's progression binding the death is committed (or replayed) and its
     /// pending respawn consumed off the owner lane, with no lock held across the database; the
     /// actor is then placed at its respawn position and refilled in one owner step. `None` (a
     /// durable attempt without an outcome, or a stale actor) keeps the player dead, and the next
@@ -1078,11 +1095,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .respawn(&runtime, actor, session, death.occurrence, now)
     }
 
-    /// DEATH-2 §4.3-§4.4: with a composed progression policy, commit (or replay) the durable death
+    /// DEATH-2 §4.3-§4.4: with the session's progression binding, commit (or replay) the durable death
     /// of `death` and its pending respawn, with no lock held across the database. `false` is a
     /// durable attempt without an outcome; the caller keeps the actor dead and retries.
     async fn settle_death(&self, session: GameSessionId, death: actor_spell::PlayerDeath) -> bool {
-        let Some(progression) = player_death_progression() else {
+        // ARCH-PROGRESSION-SOURCE-0 §1.5: an unbound session respawns non-durably.
+        let Some(progression) = self.progression_binding(session) else {
             return true;
         };
         let (map_revision, respawn) = {
@@ -1090,7 +1108,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (runtime.map_revision_digest(), runtime.respawn_position())
         };
         let request = player_death_request(
-            progression,
+            &progression,
             (self.world_id, self.channel_id),
             map_revision,
             death,
@@ -1369,6 +1387,69 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if let Ok(mut sessions) = self.wheel_sessions.lock() {
             sessions.remove(&session);
+        }
+    }
+
+    /// The progression binding of `session`; `None` for an unbound or unknown session. The lock
+    /// is released before the caller awaits.
+    pub(crate) fn progression_binding(
+        &self,
+        session: GameSessionId,
+    ) -> Option<std::sync::Arc<SessionProgressionBinding>> {
+        self.progression_sessions
+            .lock()
+            .ok()?
+            .get(&session)
+            .map(std::sync::Arc::clone)
+    }
+
+    fn forget_progression_session(&self, session: GameSessionId) {
+        if let Ok(mut sessions) = self.progression_sessions.lock() {
+            sessions.remove(&session);
+        }
+    }
+
+    /// ARCH-PROGRESSION-SOURCE-0 §1.5: the progression step of a fresh admission whose first
+    /// entry is positioned. A World pin without the section binds nothing; otherwise the session
+    /// is bound or logs why not once, and a step whose rounds end undecided leaves the actor
+    /// not input-eligible.
+    async fn admit_progression_session(&self, admitted: &mut AdmittedSession) {
+        let Some(content) = self
+            .active_generation
+            .and_then(|active| active.progression())
+        else {
+            return;
+        };
+        let session = admitted.game_session_id;
+        let binding = character_progression_binding::bind_character_progression(
+            character_progression_binding::ProgressionDurable {
+                root: self.root,
+                character: self.character,
+                holder: self.holder,
+            },
+            |profile, ruleset, revision| content.policy_for(profile, ruleset, revision).ok(),
+            || self.current_quest_fence(session),
+            character_progression_binding::ProgressionRounds {
+                attempts: RECONCILE_ATTEMPTS,
+                backoff: RECONCILE_BACKOFF,
+            },
+        )
+        .await;
+        match binding {
+            character_progression_binding::ProgressionBinding::Bound(policy) => {
+                let binding = std::sync::Arc::new(SessionProgressionBinding::from_content(*policy));
+                if let Ok(mut sessions) = self.progression_sessions.lock() {
+                    sessions.insert(session, binding);
+                }
+            }
+            character_progression_binding::ProgressionBinding::Unbound(unbound) => {
+                operator_event(&format!("progression_unbound reason={}", unbound.reason()));
+                if unbound
+                    == character_progression_binding::ProgressionUnbound::InitializationUnavailable
+                {
+                    admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+                }
+            }
         }
     }
 
@@ -1667,6 +1748,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(()) => {
                 self.fence_holders.forget(session);
                 self.forget_quest_session(session);
+                self.forget_progression_session(session);
                 GraceExpiryResult::Released
             }
             Err(_) => GraceExpiryResult::Unknown,
@@ -3167,6 +3249,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             continuity: SessionContinuity::FRESH,
             item_fence,
         };
+        // ARCH-PROGRESSION-SOURCE-0 §1.5: before the respawn settle and the quest session, so
+        // before the session is input-eligible or writes anything that advances the root.
+        if matches!(
+            admitted.first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        ) {
+            self.admit_progression_session(&mut admitted).await;
+        }
         // DEATH-2b: a pending respawn that is not placed and consumed leaves the actor
         // input-ineligible, its pending row intact for the next admission.
         if matches!(
@@ -3978,14 +4068,6 @@ impl FreshAdmissionDurabilityPortV1 for PreparedRequest {
     fn reconcile(&mut self, _: &FreshAdmissionOperationV1) -> FreshAdmissionSubmissionV1 {
         FreshAdmissionSubmissionV1::Unavailable
     }
-}
-
-/// DEATH-2: the progression policy binding a player death commits under, the one the D88
-/// initializer and the XP writer share. No Character progression owner is composed into the
-/// gameplay seam yet (as [`PLAYER_LEVEL_UNTIL_PROGRESSION_OWNER`] waits for one), so a death
-/// respawns without a durable death until the composing owner supplies it here.
-const fn player_death_progression() -> Option<&'static crate::combat::RewardProgressionBinding<1>> {
-    None
 }
 
 /// The durable intent of one runtime death (DEATH-0 §3.1): the death cell in this Channel at the

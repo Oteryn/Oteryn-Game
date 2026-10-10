@@ -990,6 +990,31 @@ where
     ConnectionEnd::AdmittedThenClosed(admitted, error)
 }
 
+/// ARCH-PROGRESSION-SOURCE-0 §1.5: an admitted session that is not playable but holds a runtime
+/// actor is held at most `policy.interval * policy.missed_limit`; then the connection closes
+/// with no frame, so a silent client cannot keep its committed GameSession and slot. A frame
+/// before the bound ends it as `hold_admitted` does. A session with no actor is held unbounded.
+async fn hold_refused<S>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    policy: LivenessPolicy,
+) -> ConnectionEnd
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+{
+    if admitted.runtime_actor.is_none() {
+        return hold_admitted(stream, admitted).await;
+    }
+    let bound = policy.interval.saturating_mul(policy.missed_limit);
+    match tokio::time::timeout(bound, hold_admitted(stream, admitted)).await {
+        Ok(end) => end,
+        Err(_) => {
+            let _ = tokio::io::AsyncWriteExt::shutdown(stream).await;
+            ConnectionEnd::AdmittedThenDisconnected(admitted)
+        }
+    }
+}
+
 /// FIRST-CONTROL post-admission play (FND-02 §§14-16, #642/#139). A positioned actor gets the
 /// initial `WORLD_SPATIAL_VISIBILITY` snapshot (target sequence 0) before any command is accepted;
 /// each `ClientCommand` must carry the next CommandId. A step is one Channel-owner work item
@@ -1073,10 +1098,10 @@ where
         FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
     );
     let Some(actor) = admitted.runtime_actor.filter(|_| playable) else {
-        return hold_admitted(stream, admitted).await;
+        return hold_refused(stream, admitted, policy).await;
     };
     let Some(baseline) = authority.observe(actor).await else {
-        return hold_admitted(stream, admitted).await;
+        return hold_refused(stream, admitted, policy).await;
     };
     let mut revision = admitted.continuity.spatial_revision;
     // VIS-3: domain 1 goes first; with capability 6 it is composed after the item view below, so
@@ -3137,6 +3162,69 @@ mod tests {
                 expected.push(encode_liveness_probe(ADMITTED_GENERATION, probe_id)?);
             }
             assert_eq!(split_frames(&output)?, expected);
+            Ok(())
+        })
+    }
+
+    fn refused() -> Result<AdmittedSession, Box<dyn Error>> {
+        Ok(AdmittedSession {
+            first_entry: FirstEntryOutcome::RefusedUnavailable,
+            ..positioned()?
+        })
+    }
+
+    #[test]
+    fn a_silent_refused_session_with_an_actor_closes_after_the_bound() -> Result<(), Box<dyn Error>>
+    {
+        run(async {
+            let authority = StepAuthority {
+                steps: RefCell::new(Vec::new()),
+            };
+            let (mut server, mut client) = tokio::io::duplex(1 << 16);
+            // The client keeps its transport open but never writes.
+            let end = serve_admitted(&mut server, refused()?, &authority, FAST).await;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            drop(server);
+            let mut output = Vec::new();
+            client.read_to_end(&mut output).await?;
+            assert!(output.is_empty());
+            assert!(authority.steps.borrow().is_empty());
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_frame_before_the_bound_closes_a_refused_session_with_an_error()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = StepAuthority {
+                steps: RefCell::new(Vec::new()),
+            };
+            let (mut server, mut client) = tokio::io::duplex(1 << 16);
+            client.write_all(&framed(&ack(1, 1))).await?;
+            let end = serve_admitted(&mut server, refused()?, &authority, FAST).await;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenClosed(_, _)));
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn a_refused_session_without_an_actor_is_not_bounded() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = StepAuthority {
+                steps: RefCell::new(Vec::new()),
+            };
+            let admitted = AdmittedSession {
+                runtime_actor: None,
+                ..refused()?
+            };
+            let (mut server, _client) = tokio::io::duplex(1 << 16);
+            let held = tokio::time::timeout(
+                FAST.interval.saturating_mul(FAST.missed_limit * 5),
+                serve_admitted(&mut server, admitted, &authority, FAST),
+            )
+            .await;
+            assert!(held.is_err());
             Ok(())
         })
     }

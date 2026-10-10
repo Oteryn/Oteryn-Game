@@ -277,6 +277,30 @@ impl DurabilityRoot {
         })).await?
     }
 
+    /// The current Game-owned Character interpretation under the reconciled recovery fence.
+    /// Every progression writer's gameplay fence requires the Character root to equal it, so a
+    /// progression binding built from it names the root's profile, ruleset and content
+    /// (ARCH-PROGRESSION-SOURCE-0 §1.3). Read only.
+    pub async fn read_current_character_interpretation(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+    ) -> Result<CharacterInterpretationV1> {
+        let recovery = authority.record_for(self)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let current = current_interpretation(&mut tx).await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(current
+                        .map(|(_, interpretation)| interpretation)
+                        .ok_or(CharacterAuthorityError::Rejected))
+                })
+            })
+            .await?
+    }
+
     /// Issue the authority capability for a sealed recovery fence: the database's
     /// latest admission must equal the fence and the full integrity check must pass.
     pub async fn open_character_authority<'f, 's>(
