@@ -31,9 +31,12 @@ class ExistingArenaTests(unittest.TestCase):
         self.assertEqual(len(result["cells"]), 6)
         self.assertEqual([(s["role"], s["x"], s["y"], s["floor"])
                           for s in result["spawn_slots"]],
-                         [("player", 0, 0, 0), ("monster", 2, 0, 0), ("monster", 2, -1, 0)])
+                         [("player", 1, 0, 0), ("monster", 2, 0, 0), ("monster", 2, -1, 0)])
         self.assertEqual(result["simultaneous_monster_capacity"], 2)
         self.assertEqual(self.source.read_bytes(), before)
+        player, monster = result["spawn_slots"][0], result["spawn_slots"][1]
+        self.assertEqual(max(abs(player["x"] - monster["x"]),
+                             abs(player["y"] - monster["y"])), 1)
         self.assertEqual(build_arena_map(self.source), result)
         cells = {cell["key"]: cell for cell in result["cells"]}
         self.assertEqual(cells["oteryn:cell/entry-north"]["walkability"], "Blocked")

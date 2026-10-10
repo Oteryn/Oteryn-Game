@@ -57,7 +57,10 @@ def export_map(source_path, expected_sha256, maximum_cells=256):
         cells.append(cell)
     if (set(static) | set(doors)) - keys:
         raise ValueError("Collision declaration references absent placement")
-    player_key = "oteryn:cell/entry-start"
+    # The lab requires the primary player and monster slots at Chebyshev distance 1. The
+    # entry-start cell is two cells from the dens, so the player stands on the walkable
+    # cell between the start and the dens, adjacent to both den cells.
+    player_key = "oteryn:cell/entry-east"
     # Room revision 2 (SPAWN-1a): one monster slot per authored den cell, in authored order.
     monster_keys = entry["spawn"]["cell_keys"]
     by_key = {cell["key"]: cell for cell in cells}
@@ -66,6 +69,10 @@ def export_map(source_path, expected_sha256, maximum_cells=256):
             not by_key.get(key, {}).get("spawn_eligible") for _, key in roles):
         raise ValueError("Arena player and monster require distinct explicit walkable cells")
     slots = [{"role": role, **by_key[key]} for role, key in roles]
+    first = slots[1]
+    if slots[0]["floor"] != first["floor"] or max(
+            abs(slots[0]["x"] - first["x"]), abs(slots[0]["y"] - first["y"])) != 1:
+        raise ValueError("Arena player and primary monster slots must be adjacent")
     return {"schema": "oteryn-monster-lab-arena-map-v1", "map": {
         "source_path": str(source_path), "source_sha256": digest,
         "world_key": world["key"], "coordinate_frame": world["coordinate_frame"],
