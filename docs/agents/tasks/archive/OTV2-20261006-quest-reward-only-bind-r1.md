@@ -1,6 +1,7 @@
 # OTV2-20261006 Quest Reward-Only Completion Candidates
 
-status: implementing
+status: completed
+pr: 1896
 base_main: f6894e793c162d9d8a43578332f3a6f77d2936a3
 branch: codex/quest-reward-only-bind-20261006-r2
 runtime_activation: false
@@ -17,6 +18,7 @@ Owned paths:
 - `tools/content-schema/quest-authoring/test_quest_reward_only_binding_candidates.py`
 - `tools/content-schema/quest-authoring/samples/server-completion/reward-only-completion/candidates.json`
 - `docs/agents/tasks/OTV2-20261006-quest-reward-only-bind-r1.md`
+- `docs/agents/tasks/archive/OTV2-20261006-quest-reward-only-bind-r1.md`
 
 No shared `run_checks.py` ownership is taken. The committed-output drift check is inside the dedicated unittest so this lane remains disjoint from the collect/use candidate PRs.
 
@@ -83,14 +85,14 @@ That transport does **not** decide the semantic questions above. This lane there
 
 ## Validation
 
-Focused on current main:
+- `python3.12 quest_reward_only_binding_candidates.py --check`: pass
+- `python3.12 -m unittest test_quest_reward_only_binding_candidates`: 6 tests OK
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: 59 tests OK
 
-- generator: **42 quests / 59 claims**
-- dedicated unittest: **6 PASS**
-- generator `--check`: PASS
-- `git diff --check`: PASS
+Generator: 42 quests / 59 claims, no runtime admission. The dedicated test also requires the committed packet to match generator bytes exactly.
 
-The dedicated test also requires the committed packet to match generator bytes exactly.
+Review state: Codex P1 (archive the record) addressed on this head.
 
 ## Next action
 
