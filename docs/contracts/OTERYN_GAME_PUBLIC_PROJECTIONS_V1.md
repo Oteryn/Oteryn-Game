@@ -125,8 +125,15 @@ Transport, TLS and the HTTP client follow LCFA §3. The differences are:
 
 - **Bounds.** Connect 1 s, handshake 2 s, exchange 5 s. The request byte limits are in §8. Every
   response is at most 256 bytes.
-- **In-flight.** At most one publication in flight per family per publisher, so a large
-  highscores snapshot never delays `world_online`.
+- **In-flight.** At most one publication in flight per family per publisher (`PUBPROJ-INFLIGHT`),
+  except `world_online`, so a large highscores snapshot never delays `world_online`. `world_online` is per-World: the publisher
+  sends the changed Worlds of one scan concurrently, one publication in flight per World, up to
+  `PUBPROJ-ONLINE-WORLDS` (16) Worlds. A `world_online` exchange is bounded at 3 s on a connection the publisher keeps open (a
+  cold connection that does not finish within 3 s counts as a failed attempt, retried by the next
+  scan), which leaves 2 s of the `PUBPROJ-ONLINE-SCAN-DEADLINE` (5 s) for reading the cut,
+  building the snapshots and dispatching. A scan of up to 16 changed Worlds sent concurrently
+  therefore fits the deadline; a deployment with more
+  Worlds than that is not enabled until the deadline is re-derived for the fanout.
 
 ## 4. Wire (v1)
 
@@ -441,11 +448,29 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
 
 - `character_id` and `guild_id` are internal join keys of Platform's read model. Platform never
   puts them in a public URL, page, API or error. Public pages are addressed by name: a character
-  by name, a guild by (World, name), a house by (World, house name).
+  by name, a guild by (World, name), a house by (World, `house_key`; see the name handoff rule
+  below).
 - An unknown name, a hidden or deleted character, and a profile published as `[]` get the same
   public response, with the same status and body and no timing difference that depends on which
   case applies. Platform rate-limits public lookups.
 - A rename makes the old name not found at once. Old names are never kept as public aliases.
+- **Name handoff.** Game permits a name to be reused after a rename or deletion, and the two
+  profiles publish under independent `character_id` subjects, so Platform can briefly hold two
+  profiles for one name. The rule is namespace-level and has two halves. Game's publisher never
+  publishes the new holder of a character name (one global namespace across all Worlds,
+  `CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md` §6.1) or (World, guild name) until every
+  publication that carries the old holder's name has been `accepted` or `superseded`: the
+  vacating profile, every `guild` roster that lists the name as a member, every `house` whose
+  `owner_name` is the name, and the old holder's guild or house publication for a guild-name
+  reuse. A guild or house publication that still carries the old name when the new holder is
+  ready is re-derived first and enqueued before the new holder; the publisher enqueues all of
+  these vacating publications first and holds the new holder until all are acknowledged, so a
+  stale roster or owner row never joins the new holder by name. Platform
+  resolves a public name only when exactly one current, non-stale profile holds the character name
+  in any World, or exactly one guild holds the guild name in that World: a name held by two or more is answered as an unknown name (§7.3 first rule) until a
+  single holder remains, and never shows either holder's data. House names are presentation, not
+  identity: a house is addressed by (World, `house_key`), and a reused house name is never a
+  routing key.
 
 ### 7.4 Logging
 
@@ -472,12 +497,13 @@ the implementation, as LCFA's were.
 | `PUBPROJ-ONLINE` | 4,096 entries per World | wire bound, not a capacity; 8 Channels × 500 players (D128) |
 | `PUBPROJ-ONLINE-REQUEST-BYTES` | 524,288 | 4,096 × at most 112 bytes + envelope |
 | `PUBPROJ-ONLINE-INTERVAL` | 10 s | fixed start interval of `world_online` scans: the minimum gap between revisions of one World, and the maximum age of a healthy scan |
+| `PUBPROJ-ONLINE-WORLDS` | 16 | changed Worlds published concurrently in one scan, one publication in flight per World |
 | `PUBPROJ-ONLINE-SCAN-DEADLINE` | 5 s | from a scan's cut to the last changed World's `accepted` or `superseded`; a later scan counts as failed |
 | `PUBPROJ-ONLINE-SERVE-DELAY` | 5 s | from Platform returning `accepted` to the replaced snapshot no longer being served, caches included |
 | `PUBPROJ-ONLINE-REVOKE-BOUND` | 20 s | derived: 10 + 5 + 5; at most S (§7.2) |
 | `PUBPROJ-WATERMARK-BYTES` | 512 | |
 | `PUBPROJ-WATERMARK-GAP` | 10 s | maximum gap between watermarks of one family |
-| `PUBPROJ-INFLIGHT` | 1 per family per publisher | |
+| `PUBPROJ-INFLIGHT` | 1 per family per publisher; `world_online`: 1 per World, up to `PUBPROJ-ONLINE-WORLDS` | |
 
 ## 9. Required tests
 
@@ -513,7 +539,13 @@ the implementation, as LCFA's were.
   shown while `character_profile` is stale; a highscores row is joined by `character_id`, so a
   name reused by another character never shows the old row under it; a bid that changes
   `current_bid` or `auction_ends_at` advances the house revision; an online character whose
-  profile is `[]` (for example after a sanction) is not listed in `world_online`.
+  profile is `[]` (for example after a sanction) is not listed in `world_online`; a scan with 16
+  changed Worlds whose exchanges all take 4 s is accepted within the deadline, because the
+  Worlds are published concurrently.
+- Name handoff: a character renamed from `Aldric` while another character takes `Aldric` never
+  has both profiles resolve; the new holder is not published before the rename is `accepted` or
+  `superseded`, and if both reach Platform the name answers as unknown until one holder remains;
+  the same holds for a reused guild name.
 - Identity: only the public-projection certificate is accepted on these routes, and it is refused
   elsewhere.
 
