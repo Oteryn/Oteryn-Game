@@ -11,6 +11,7 @@ BASE = ARCH / "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.
 AMENDMENT_01 = ARCH / "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09_AMENDMENT_01.md"
 AMENDMENT_02 = ARCH / "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09_AMENDMENT_02.md"
 AMENDMENT_03 = ARCH / "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09_AMENDMENT_03.md"
+AMENDMENT_04 = ARCH / "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09_AMENDMENT_04.md"
 PREFIX = "DUR04-FIRST-PROD-"
 
 
@@ -22,6 +23,23 @@ def json_block_after(text: str, marker: str) -> list[dict[str, object]]:
     if not isinstance(value, list) or not all(isinstance(row, dict) for row in value):
         raise AssertionError(f"expected JSON object array after {marker}")
     return value
+
+
+def amendment_04_maxima() -> dict[str, tuple[int, int]]:
+    """Registry id -> (was, becomes) from the Amendment 04 §4 table."""
+    text = AMENDMENT_04.read_text(encoding="utf-8")
+    section = text[text.index("## 4. Mechanical maxima"):text.index("## 5.")]
+    maxima: dict[str, tuple[int, int]] = {}
+    for line in section.splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) == 4 and cells[0].startswith("`DUR04-FIRST-PROD-"):
+            maxima[cells[0].strip("`")] = (
+                int(cells[1].replace(",", "")),
+                int(cells[2].replace(",", "")),
+            )
+    if len(maxima) != 8:
+        raise AssertionError(f"expected 8 Amendment 04 maxima, found {len(maxima)}")
+    return maxima
 
 
 def expected_first_production_rows() -> list[dict[str, object]]:
@@ -62,7 +80,29 @@ def expected_first_production_rows() -> list[dict[str, object]]:
     insert_after("DUR04-FIRST-PROD-SPAWNS", a1_rows)
     replace_by_id(a2_replacements)
     replace_by_id(a3_replacements)
+    # Amendment 04 §4 changes each row's maximum in place and appends +AMENDMENT_04 to its owner.
+    # Its boundary-test wording is checked separately (max accepted, max+1 refused).
+    for row in rows:
+        change = amendment_04_maxima().get(str(row["id"]))
+        if change is None:
+            continue
+        was, becomes = change
+        if row["hard_maximum"] != was:
+            raise AssertionError(f"{row['id']}: Amendment 04 'was' {was} != {row['hard_maximum']}")
+        row["owner_contract"] = f"{row['owner_contract']}+AMENDMENT_04"
+        row["hard_maximum"] = becomes
+        row["configurable_range"] = {**row["configurable_range"], "maximum": becomes}
     return rows
+
+
+def without_amendment_04_prose(row: dict[str, object]) -> dict[str, object]:
+    if str(row["id"]) not in amendment_04_maxima():
+        return row
+    return {
+        key: value
+        for key, value in row.items()
+        if key not in {"boundary_tests", "allocation_impact"}
+    }
 
 
 class FirstProductionContentRegistryContractTests(unittest.TestCase):
@@ -79,7 +119,20 @@ class FirstProductionContentRegistryContractTests(unittest.TestCase):
     def test_exact_serialization_matches_protected_decision_packet(self) -> None:
         self.assertEqual(46, len(self.expected))
         self.assertEqual(46, len(self.actual))
-        self.assertEqual(self.expected, self.actual)
+        self.assertEqual(
+            [without_amendment_04_prose(row) for row in self.expected],
+            [without_amendment_04_prose(row) for row in self.actual],
+        )
+
+    def test_amendment_04_rows_name_max_and_max_plus_one(self) -> None:
+        by_id = {str(row["id"]): row for row in self.actual}
+        for row_id, (_, becomes) in amendment_04_maxima().items():
+            tests = " ".join(str(item) for item in by_id[row_id]["boundary_tests"])
+            if becomes >= 1000:
+                self.assertIn(f"{becomes:,}", tests, row_id)
+            else:
+                self.assertIn(str(becomes), tests, row_id)
+                self.assertIn(str(becomes + 1), tests, row_id)
 
     def test_appended_rows_have_complete_bounded_contract_shape(self) -> None:
         required = set(self.registry["required_entry_fields"])
@@ -109,18 +162,29 @@ class FirstProductionContentRegistryContractTests(unittest.TestCase):
         by_id = {str(row["id"]): row for row in self.actual}
         final_values = {
             "DUR04-FIRST-PROD-MANIFEST-FIELDS": 20,
-            "DUR04-FIRST-PROD-DECODED-FIELDS": 8432,
-            "DUR04-FIRST-PROD-SERVER-ARTIFACT-BYTES": 4304614,
+            "DUR04-FIRST-PROD-DECODED-FIELDS": 8448,
+            "DUR04-FIRST-PROD-SERVER-ARTIFACT-BYTES": 4312850,
             "DUR04-FIRST-PROD-CLIENT-ARTIFACT-BYTES": 34248,
-            "DUR04-FIRST-PROD-GENERATION-PAIR-BYTES": 4338862,
-            "DUR04-FIRST-PROD-SPAWN-POPULATION-PER-SPAWN": 1,
-            "DUR04-FIRST-PROD-SPAWN-POPULATION-PER-SCOPE": 1,
+            "DUR04-FIRST-PROD-GENERATION-PAIR-BYTES": 4347098,
+            "DUR04-FIRST-PROD-SPAWN-POPULATION-PER-SPAWN": 2,
+            "DUR04-FIRST-PROD-SPAWN-POPULATION-PER-SCOPE": 2,
+            "DUR04-FIRST-PROD-SERVER-RECORDS": 1045,
+            "DUR04-FIRST-PROD-REFERENCES": 3090,
+            "DUR04-FIRST-PROD-SECTION-BYTES": 4303314,
         }
         for row_id, expected in final_values.items():
             self.assertEqual(expected, by_id[row_id]["hard_maximum"])
 
         for superseded in (4305510, 35144, 4340654):
             self.assertNotIn(str(superseded), self.registry_text)
+        # Amendment 04 superseded maxima appear nowhere in the rows it changed.
+        rows_text = json.dumps([by_id[row_id] for row_id in amendment_04_maxima()])
+        for row_id, (was, _) in amendment_04_maxima().items():
+            if row_id.startswith("DUR04-FIRST-PROD-SPAWN-POPULATION"):
+                self.assertNotEqual(was, by_id[row_id]["hard_maximum"])
+                continue
+            self.assertNotIn(str(was), rows_text, row_id)
+            self.assertNotIn(f"{was:,}", rows_text, row_id)
 
 
 if __name__ == "__main__":

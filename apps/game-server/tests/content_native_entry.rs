@@ -16,12 +16,13 @@ static TEMP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 const WORLD_ID: &str = "0123456789ab70cd8ef0123456789abc";
 const FRAME: &str = "oteryn:entry.frame";
 const REV: &str = "oteryn:rev/entry-r1";
+// Room revision 2 changed only the behaviour and the creature (SPAWN-1A-PACKET-1 §1.2).
+const R2: &str = "oteryn:rev/entry-r2";
 // Records are written family-then-key sorted: Ability, Behavior, Creature, Effect, Formula, Item,
 // LocalObject (index 6), Presentation x3, Terrain.
 const DOOR_RECORD_INDEX: usize = 6;
-// Placements are written key-sorted, so "oteryn:cell/entry-door" (index 0) sorts before
-// east/north/start.
-const DOOR_PLACEMENT_INDEX: usize = 0;
+// Placements are written key-sorted: den(0), den-north(1), door(2), east(3), north(4), start(5).
+const DOOR_PLACEMENT_INDEX: usize = 2;
 
 fn limits() -> ProjectEvidenceLimits {
     native_entry_first_slice_limits().project
@@ -31,16 +32,44 @@ fn def(family: &str, key: &str) -> Value {
     json!({"family": family, "key": key, "revision": REV})
 }
 
+fn def2(family: &str, key: &str) -> Value {
+    json!({"family": family, "key": key, "revision": R2})
+}
+
+fn hostile() -> Value {
+    def2("Behavior", "oteryn:behavior/rat-hostile")
+}
+
+fn rat() -> Value {
+    def2("Creature", "oteryn:creature/rat")
+}
+
+/// The two authoring profiles of room revision 2 (SPAWN-1A-PACKET-1 §1.6).
+fn authoring_profiles() -> Value {
+    json!([
+        {"target": hostile(), "data": {"kind": "Behavior", "profile": {
+            "movement": {"can_walk": true, "pass_through": false, "pushable": true,
+                "push_items": false, "push_creatures": false, "walks_on_energy": false,
+                "walks_on_fire": false, "walks_on_poison": false},
+            "targeting": {"hostile": true, "can_target": true, "sense_invisible": false,
+                "target_distance_tiles": 1, "static_attack_chance_ppm": 900_000,
+                "flee_health": 5, "change_target": {"interval_ms": 4000, "chance_ppm": 0},
+                "strategy_weights": {"nearest": 100, "damage": 0, "health": 0, "random": 0}},
+            "attacks": [{"ability": def("Ability", "oteryn:ability/bite"), "interval_ms": 2000,
+                "chance_ppm": 1_000_000, "magnitude": {"minimum": 0, "maximum": 8}}]}}},
+        {"target": rat(), "data": {"kind": "Creature",
+            "profile": {"health": 20, "initial_health": 20, "speed": 67}}}
+    ])
+}
+
 fn records() -> Value {
     json!([
         {"kind": "Ability", "identity": def("Ability", "oteryn:ability/bite"),
          "effects": [def("Effect", "oteryn:effect/bite")]},
-        {"kind": "Generic", "identity": def("Behavior", "oteryn:behavior/passive-idle"),
-         "client_projection": "ServerOnly"},
-        {"kind": "Creature", "identity": def("Creature", "oteryn:creature/rat"),
-         "client_projection": "ClientSafe",
+        {"kind": "Generic", "identity": hostile(), "client_projection": "ServerOnly"},
+        {"kind": "Creature", "identity": rat(), "client_projection": "ClientSafe",
          "presentation": def("Presentation", "oteryn:presentation/rat"),
-         "behavior": def("Behavior", "oteryn:behavior/passive-idle"), "loot": null},
+         "behavior": hostile(), "loot": null},
         {"kind": "Effect", "identity": def("Effect", "oteryn:effect/bite"),
          "client_projection": "ServerOnly", "effect_family": "Damage",
          "formula": def("Formula", "oteryn:formula/entry-melee-r1")},
@@ -68,7 +97,7 @@ fn records() -> Value {
 fn door_cell() -> Value {
     json!({
         "key": "oteryn:cell/entry-door", "world": "oteryn:entry.world",
-        "map_revision": "oteryn:map/entry-r1",
+        "map_revision": "oteryn:map/entry-r2",
         "definition": def("Terrain", "oteryn:terrain/stone-floor"),
         "area": def("Area", "oteryn:area/entry-room"),
         "coordinate_frame": FRAME, "x": 1, "y": -1, "floor": 0,
@@ -90,7 +119,7 @@ fn door_overlay() -> Value {
 
 fn placement(key: &str, x: i32, y: i32) -> Value {
     json!({
-        "key": key, "world": "oteryn:entry.world", "map_revision": "oteryn:map/entry-r1",
+        "key": key, "world": "oteryn:entry.world", "map_revision": "oteryn:map/entry-r2",
         "definition": def("Terrain", "oteryn:terrain/stone-floor"),
         "area": def("Area", "oteryn:area/entry-room"),
         "coordinate_frame": FRAME, "x": x, "y": y, "floor": 0,
@@ -103,12 +132,14 @@ fn state() -> Value {
         "declarations": [{"kind": "Area",
             "identity": {"key": "oteryn:area/entry-room", "revision": REV}, "fields": []}],
         "worlds": [{"key": "oteryn:entry.world", "world_id": WORLD_ID, "coordinate_frame": FRAME,
-            "bounds": {"min_x": 0, "min_y": -1, "max_x_exclusive": 2, "max_y_exclusive": 1},
+            "bounds": {"min_x": 0, "min_y": -1, "max_x_exclusive": 3, "max_y_exclusive": 1},
             "floors": [0]}],
         "placements": [
             placement("oteryn:cell/entry-start", 0, 0),
             placement("oteryn:cell/entry-east", 1, 0),
             placement("oteryn:cell/entry-north", 0, -1),
+            placement("oteryn:cell/entry-den", 2, 0),
+            placement("oteryn:cell/entry-den-north", 2, -1),
             door_cell()
         ]
     })
@@ -120,7 +151,7 @@ fn overlay() -> Value {
         "frame": {"coordinate_profile": "oteryn-world-spatial-v1", "contract_revision": 1,
             "coordinate_frame": FRAME, "origin": {"x": 0, "y": 0, "floor": 0},
             "x_direction": "East", "y_direction": "South", "higher_floor": "Up"},
-        "revisions": {"content": "oteryn:content/entry-r1", "map": "oteryn:map/entry-r1",
+        "revisions": {"content": "oteryn:content/entry-r2", "map": "oteryn:map/entry-r2",
             "ruleset": "oteryn:ruleset/entry-r1", "world_policy": "oteryn:world-policy/entry-r1",
             "compiler": "oteryn:compiler/first-production-r1",
             "canonicalization": "oteryn:canonicalization/first-production-r1",
@@ -133,13 +164,16 @@ fn overlay() -> Value {
             {"placement_key": "oteryn:cell/entry-east", "region_key": "oteryn:region/entry",
              "collision": "Walkable"},
             {"placement_key": "oteryn:cell/entry-north", "region_key": "oteryn:region/entry",
-             "collision": "Blocked"}
+             "collision": "Blocked"},
+            {"placement_key": "oteryn:cell/entry-den", "region_key": "oteryn:region/entry",
+             "collision": "Walkable"},
+            {"placement_key": "oteryn:cell/entry-den-north", "region_key": "oteryn:region/entry",
+             "collision": "Walkable"}
         ],
         "doors": [door_overlay()],
         "relocation": {"key": "oteryn:relocation/entry-east-return",
             "from_cell": "oteryn:cell/entry-east", "to_cell": "oteryn:cell/entry-start"},
-        "behavior": {"definition": def("Behavior", "oteryn:behavior/passive-idle"),
-            "policy_revision": "oteryn:policy/passive-idle-r1"},
+        "behavior": {"definition": hostile(), "policy_revision": "oteryn:policy/rat-hostile-r2"},
         "presentations": [
             {"definition": def("Presentation", "oteryn:presentation/rat"),
              "metadata_token": "oteryn:appearance/rat-r1"},
@@ -148,13 +182,12 @@ fn overlay() -> Value {
             {"definition": def("Presentation", "oteryn:presentation/cheese"),
              "metadata_token": "oteryn:appearance/cheese-r1"}
         ],
-        "creature": {"definition": def("Creature", "oteryn:creature/rat"),
-            "policy_revision": "oteryn:policy/creature-rat-r1"},
-        "spawn": {"key": "oteryn:spawn/entry-rat", "creature": def("Creature", "oteryn:creature/rat"),
-            "behavior": def("Behavior", "oteryn:behavior/passive-idle"),
-            "cell_key": "oteryn:cell/entry-east", "population_limit": 1,
-            "recovery": "EphemeralScopeReset", "multiplicity": "ChannelLocalRepeatable",
-            "eligibility_scope": "CharacterWorld"},
+        "creature": {"definition": rat(), "policy_revision": "oteryn:policy/creature-rat-r2"},
+        "spawn": {"key": "oteryn:spawn/entry-rat", "creature": rat(), "behavior": hostile(),
+            "cell_keys": ["oteryn:cell/entry-den", "oteryn:cell/entry-den-north"],
+            "population_limit": 2, "recovery": "EphemeralScopeReset",
+            "multiplicity": "ChannelLocalRepeatable", "eligibility_scope": "CharacterWorld",
+            "respawn_delay_ms": 60_000, "occupancy_retry_interval_ms": 5_000},
         "ability": {"definition": def("Ability", "oteryn:ability/bite"),
             "presentation": def("Presentation", "oteryn:presentation/bite")},
         "item": {"definition": def("Item", "oteryn:item/cheese"),
@@ -172,6 +205,7 @@ struct Parts {
     records: Value,
     state: Value,
     overlay: Value,
+    profiles: Value,
 }
 
 fn valid() -> Parts {
@@ -180,6 +214,7 @@ fn valid() -> Parts {
         records: records(),
         state: state(),
         overlay: overlay(),
+        profiles: authoring_profiles(),
     }
 }
 
@@ -187,7 +222,7 @@ fn draft(parts: &Parts) -> ProjectV2Draft {
     let state = &parts.state;
     ProjectV2Draft {
         core: ProjectDraft {
-            project_revision: "oteryn:package-rev/entry-r1".into(),
+            project_revision: "oteryn:package-rev/entry-r2".into(),
             package_key: "oteryn:package/native-entry-room".into(),
             semantic_schema_version: "oteryn:schema/first-production-v1".into(),
             licensing_metadata: parts.licensing.clone(),
@@ -200,7 +235,7 @@ fn draft(parts: &Parts) -> ProjectV2Draft {
         state: ProjectV2State {
             declarations: serde_json::from_value(state["declarations"].clone()).expect("decls"),
             item_authoring: vec![],
-            authoring_profiles: vec![],
+            authoring_profiles: serde_json::from_value(parts.profiles.clone()).expect("profiles"),
             worlds: serde_json::from_value(state["worlds"].clone()).expect("worlds"),
             placements: serde_json::from_value(state["placements"].clone()).expect("placements"),
             appearance_bindings: vec![],
@@ -334,8 +369,30 @@ fn native_entry_captures_qualifies_and_compiles_a_deterministic_pair() {
     fs::remove_dir_all(parent).expect("cleanup");
     assert_eq!(first, second);
     let source = first.source();
-    // #162 A4-a: the three room Terrain cells plus the door's own walkable Terrain cell.
-    assert_eq!(source.cells.len(), 4);
+    // Room revision 2: the five room Terrain cells plus the door's own walkable Terrain cell.
+    assert_eq!(source.cells.len(), 6);
+    // D116: the qualified spawn source carries both den cells in order and the content profile.
+    let spawn = first.spawn_source().expect("revision-2 spawn source");
+    assert_eq!(
+        spawn
+            .cells()
+            .iter()
+            .map(|(key, x, y, floor)| (key.as_str(), *x, *y, *floor))
+            .collect::<Vec<_>>(),
+        [
+            ("oteryn:cell/entry-den", 2, 0, 0),
+            ("oteryn:cell/entry-den-north", 2, -1, 0)
+        ]
+    );
+    assert_eq!(
+        (spawn.respawn_delay_ms(), spawn.occupancy_retry_interval_ms()),
+        (60_000, 5_000)
+    );
+    assert_eq!(
+        (spawn.health(), spawn.initial_health(), spawn.speed()),
+        (20, 20, 67)
+    );
+    assert!(spawn.behaviour_profile().targeting.hostile);
     let door = first.door();
     // DECISION_REQUIRED (r4120444680): no placement is genuinely linker-validated today (the
     // accepted evidence manifest has no CONTENT_WORLD case bound to any target-sensitive claim),
@@ -454,7 +511,10 @@ fn accepted_product_bindings_are_enforced() {
         pin,
     );
     refuses(
-        &overlay_edit(|o| o["spawn"]["cell_key"] = json!("oteryn:cell/entry-start")),
+        &overlay_edit(|o| {
+            o["spawn"]["cell_keys"] =
+                json!(["oteryn:cell/entry-den-north", "oteryn:cell/entry-den"])
+        }),
         pin,
     );
     refuses(
@@ -562,8 +622,8 @@ fn every_single_invariant_mutation_refuses_for_its_reason() {
         "invalid type: null",
     );
     refuses(
-        &overlay_edit(|o| o["cells"].as_array_mut().expect("c").truncate(2)),
-        "exactly three cells",
+        &overlay_edit(|o| o["cells"].as_array_mut().expect("c").truncate(4)),
+        "exactly its room cells",
     );
     refuses(
         &overlay_edit(|o| o["cells"][1]["region_key"] = json!("oteryn:region/other")),
@@ -614,8 +674,10 @@ fn every_single_invariant_mutation_refuses_for_its_reason() {
         "InvalidString",
     );
     refuses(
-        &overlay_edit(|o| o["spawn"]["cell_key"] = json!("oteryn:cell/missing")),
-        "spawn binding",
+        &overlay_edit(|o| {
+            o["spawn"]["cell_keys"] = json!(["oteryn:cell/missing", "oteryn:cell/entry-den"])
+        }),
+        "undeclared or a proof cell",
     );
     refuses(
         &overlay_edit(|o| o["spawn"]["behavior"] = def("Creature", "oteryn:creature/rat")),
@@ -623,7 +685,7 @@ fn every_single_invariant_mutation_refuses_for_its_reason() {
     );
     refuses(
         &overlay_edit(|o| o["spawn"]["population_limit"] = json!(0)),
-        "spawn is not the accepted",
+        "one cell per actor",
     );
     refuses(
         &overlay_edit(|o| o["spawn"]["recovery"] = Value::Null),
@@ -786,9 +848,9 @@ fn door_adjacency_near_i32_extremes_refuses_without_panicking() {
     let docs = edit("worlds/world.json", |w| {
         w["worlds"][0]["bounds"]["min_x"] = json!(i64::from(i32::MIN));
         w["worlds"][0]["bounds"]["max_x_exclusive"] = json!(i64::from(i32::MAX) + 1);
-        // Placements are written key-sorted: door(0), east(1), north(2), start(3).
-        w["placements"][0]["x"] = json!(i32::MAX);
-        w["placements"][2]["x"] = json!(i32::MIN);
+        w["placements"][DOOR_PLACEMENT_INDEX]["x"] = json!(i32::MAX);
+        // north
+        w["placements"][4]["x"] = json!(i32::MIN);
     });
     refuses(&docs, "must be adjacent");
 }
@@ -801,7 +863,7 @@ fn zero_placements_refuses_without_panicking() {
         &edit("worlds/world.json", |w| {
             w["placements"] = json!([]);
         }),
-        "requires exactly three cells and placements",
+        "requires exactly its room cells and placements",
     );
 }
 
@@ -834,7 +896,7 @@ fn door_placement_is_refused_by_the_real_linker_path() {
     };
     let placement = PlacementRef {
         key: PlacementKey::new("oteryn:cell/entry-door").expect("placement key"),
-        map_revision: MapRevisionRef::new("oteryn:map/entry-r1").expect("map revision"),
+        map_revision: MapRevisionRef::new("oteryn:map/entry-r2").expect("map revision"),
         definition: door.definitions[0].definition.clone(),
         address: SpatialAddress {
             world_id: door.world_id,
@@ -872,6 +934,125 @@ fn door_placement_is_refused_by_the_real_linker_path() {
             || message.contains("evidence manifest revision")
             || message.contains("evidence case"),
         "{message}"
+    );
+}
+
+fn profile_edit(mutate: impl FnOnce(&mut Value)) -> Docs {
+    edit("definitions/declarations.json", |document| {
+        mutate(&mut document["authoring_profiles"]);
+    })
+}
+
+/// SPAWN-1A-PACKET-1 §1.1, §1.6: room revision 2's spawn cells, spawn inputs and the hostile
+/// rat's two authoring profiles. Every case changes one invariant of the valid revision-2 room.
+#[test]
+fn revision_two_spawn_and_profiles_refuse_every_invariant_mutation() {
+    let cells = |keys: Value| overlay_edit(move |o| o["spawn"]["cell_keys"] = keys);
+    let per_actor = "one cell per actor";
+    let bad_cell = "undeclared or a proof cell";
+    refuses(&cells(json!([])), per_actor);
+    refuses(
+        &overlay_edit(|o| {
+            o["spawn"]["cell_keys"] = json!([
+                "oteryn:cell/entry-den",
+                "oteryn:cell/entry-den-north",
+                "oteryn:cell/entry-den"
+            ]);
+            o["spawn"]["population_limit"] = json!(3);
+        }),
+        per_actor,
+    );
+    refuses(
+        &cells(json!(["oteryn:cell/entry-den", "oteryn:cell/entry-den"])),
+        bad_cell,
+    );
+    // Length mismatch against the population.
+    refuses(&cells(json!(["oteryn:cell/entry-den"])), per_actor);
+    // A spawn on a proof cell: east, start or the door.
+    for proof in [
+        "oteryn:cell/entry-east",
+        "oteryn:cell/entry-start",
+        "oteryn:cell/entry-door",
+    ] {
+        refuses(&cells(json!([proof, "oteryn:cell/entry-den"])), bad_cell);
+    }
+    // A Blocked cell is never a spawn cell.
+    refuses(
+        &overlay_edit(|o| o["cells"][4]["collision"] = json!("Blocked")),
+        bad_cell,
+    );
+    // Four or six room cells.
+    refuses(
+        &overlay_edit(|o| o["cells"].as_array_mut().expect("c").truncate(4)),
+        "exactly its room cells",
+    );
+    refuses(
+        &overlay_edit(|o| {
+            let extra = o["cells"][0].clone();
+            o["cells"].as_array_mut().expect("c").push(extra);
+        }),
+        "exactly its room cells",
+    );
+    // The revision-1 singular cell_key in revision 2.
+    refuses(
+        &overlay_edit(|o| o["spawn"]["cell_key"] = json!("oteryn:cell/entry-den")),
+        "revision-2 spawn refuses cell_key",
+    );
+    // Spawn inputs: missing, delay out of RL-13 bounds, zero retry.
+    refuses(
+        &overlay_edit(|o| {
+            o["spawn"]
+                .as_object_mut()
+                .expect("spawn")
+                .remove("respawn_delay_ms");
+        }),
+        "requires both spawn inputs",
+    );
+    let delay = "delay or occupancy retry interval out of bounds";
+    refuses(
+        &overlay_edit(|o| o["spawn"]["respawn_delay_ms"] = json!(999)),
+        delay,
+    );
+    refuses(
+        &overlay_edit(|o| o["spawn"]["respawn_delay_ms"] = json!(86_400_001)),
+        delay,
+    );
+    refuses(
+        &overlay_edit(|o| o["spawn"]["occupancy_retry_interval_ms"] = json!(0)),
+        delay,
+    );
+    // Profiles: missing, extra, non-hostile, no bite, invalid health.
+    refuses(
+        &profile_edit(|p| {
+            p.as_array_mut().expect("profiles").truncate(1);
+        }),
+        "exactly the behaviour and creature profiles",
+    );
+    refuses(
+        &profile_edit(|p| {
+            let extra = p[1].clone();
+            p.as_array_mut().expect("profiles").push(extra);
+        }),
+        "profile",
+    );
+    refuses(
+        &profile_edit(|p| p[0]["data"]["profile"]["targeting"]["hostile"] = json!(false)),
+        "hostile, target and bite",
+    );
+    refuses(
+        &profile_edit(|p| p[0]["data"]["profile"]["attacks"] = json!([])),
+        "hostile, target and bite",
+    );
+    refuses(
+        &profile_edit(|p| p[1]["data"]["profile"]["initial_health"] = json!(21)),
+        "initial_health",
+    );
+    // The revision-1 passive behaviour is not the revision-2 room.
+    refuses(
+        &overlay_edit(|o| {
+            o["behavior"]["policy_revision"] = json!("oteryn:policy/passive-idle-r1")
+        }),
+        "not the accepted binding",
     );
 }
 

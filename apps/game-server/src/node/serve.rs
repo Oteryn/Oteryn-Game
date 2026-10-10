@@ -1800,7 +1800,7 @@ async fn boot_and_serve(
     let (active_content, content) =
         activate_content(root, material.world, material.channel).await?;
     let qualified_room = content.qualified_room().clone();
-    let (channel_pin, movement_cells, door_content) = content.into_channel_parts();
+    let (channel_pin, movement_cells, door_content, spawn_source) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
     let gameplay = active_content
@@ -1922,6 +1922,18 @@ async fn boot_and_serve(
             .install_companion_policies(&mut channel_runtime)
             .map_err(|_| BootError::ContentActivation("active creature policies"))?;
     }
+    // SPAWN-1a (CREATURE-AI-0 §6.2): the fixture World's spawn source is realized at Channel
+    // activation, before the listener binds. A bundle World has no fixture spawn source.
+    let spawn_sources = spawn_source
+        .filter(|_| bundle.is_none())
+        .into_iter()
+        .collect::<Vec<_>>();
+    let spawned_monsters = channel_runtime
+        .realize_activation_spawns(&spawn_sources)
+        .map_err(|_| BootError::Readiness("creature spawn realization"))?;
+    event(&format!(
+        "event=creature_spawns state=realized spawned_monsters={spawned_monsters}"
+    ));
     let runtime = Mutex::new(channel_runtime);
     event(&format!(
         "event=channel_runtime state=bootstrapped ownership_generation={} source_revision={} capacity={}",

@@ -1399,7 +1399,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             &issuance,
         ),
     };
-    let (channel_pin, movement_cells, door_content) = pin
+    let (channel_pin, movement_cells, door_content, spawn_source) = pin
         .map_err(|e| format!("native entry activation: {e}"))?
         .into_channel_parts();
     // #162 5868482467 (M2b): the same door-binding the production boot sequence performs, from
@@ -1454,6 +1454,15 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         )
         .map_err(|e| format!("channel runtime: {e:?}"))?,
     );
+    // SPAWN-1a: the activation spawn realization `serve` performs, before readiness.
+    let spawned_monsters = runtime
+        .lock()
+        .await
+        .realize_activation_spawns(&spawn_source.into_iter().collect::<Vec<_>>())
+        .map_err(|e| format!("creature spawn realization: {e:?}"))?;
+    evidence(&format!(
+        "creature_spawns state=realized spawned_monsters={spawned_monsters}"
+    ));
     if spell_input.is_some()
         && let Some(source_world) = room.source_world()
     {

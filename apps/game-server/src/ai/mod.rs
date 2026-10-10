@@ -18,6 +18,7 @@ mod path_proposal;
 mod perception;
 mod resolution;
 mod snapshot;
+pub mod spawn;
 
 #[cfg(test)]
 mod tests;

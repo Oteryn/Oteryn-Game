@@ -372,13 +372,13 @@ pub(crate) mod entry_chest {
     pub(crate) const CLAIM: &str = "oteryn:reward-claim/entry-chest";
     pub(crate) const DEFINITION_REVISION: &str = "oteryn:rev/entry-chest-r1";
     /// Must equal `content::accepted::REVISIONS[1]` (the entry room's map revision).
-    pub(crate) const MAP_REVISION: &str = "oteryn:map/entry-r1";
+    pub(crate) const MAP_REVISION: &str = "oteryn:map/entry-r2";
     /// The entry room's non-walkable `entry-north` cell (`content::accepted::CELLS[2]`): one step
     /// from the start cell and from the door, so the chest never stands on a walkable cell.
     pub(crate) const CELL: (i32, i32, i32) = (0, -1, 0);
     /// The revisions a chest `USE` is bound to: the entry room's content, ruleset and sim
     /// revisions (`content::accepted::REVISIONS[0]`, `[2]` and `[6]`).
-    pub(crate) const CONTENT_REVISION: &str = "oteryn:content/entry-r1";
+    pub(crate) const CONTENT_REVISION: &str = "oteryn:content/entry-r2";
     pub(crate) const RULESET_REVISION: &str = "oteryn:ruleset/entry-r1";
     pub(crate) const SIM_REVISION: &str = "oteryn:sim/entry-r1";
 }

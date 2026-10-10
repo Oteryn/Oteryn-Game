@@ -39,6 +39,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return;
         }
+        // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
+        // before the creature think pass. A refusal leaves the occurrences pending.
+        let _ = runtime.drive_spawn_respawns(now.get());
         let mut states = self.spell_states.lock().await;
         if now.get() < states.next_monster_ai_pass_us {
             return;

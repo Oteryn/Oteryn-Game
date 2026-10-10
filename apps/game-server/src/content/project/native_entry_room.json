@@ -21,8 +21,8 @@
       "kind": "Generic",
       "identity": {
         "family": "Behavior",
-        "key": "oteryn:behavior/passive-idle",
-        "revision": "oteryn:rev/entry-r1"
+        "key": "oteryn:behavior/rat-hostile",
+        "revision": "oteryn:rev/entry-r2"
       },
       "client_projection": "ServerOnly"
     },
@@ -31,7 +31,7 @@
       "identity": {
         "family": "Creature",
         "key": "oteryn:creature/rat",
-        "revision": "oteryn:rev/entry-r1"
+        "revision": "oteryn:rev/entry-r2"
       },
       "client_projection": "ClientSafe",
       "presentation": {
@@ -41,8 +41,8 @@
       },
       "behavior": {
         "family": "Behavior",
-        "key": "oteryn:behavior/passive-idle",
-        "revision": "oteryn:rev/entry-r1"
+        "key": "oteryn:behavior/rat-hostile",
+        "revision": "oteryn:rev/entry-r2"
       },
       "loot": null
     },
@@ -152,7 +152,7 @@
     "bounds": {
       "min_x": 0,
       "min_y": -1,
-      "max_x_exclusive": 2,
+      "max_x_exclusive": 3,
       "max_y_exclusive": 1
     },
     "floors": [
@@ -163,7 +163,7 @@
     {
       "key": "oteryn:cell/entry-start",
       "world": "oteryn:entry.world",
-      "map_revision": "oteryn:map/entry-r1",
+      "map_revision": "oteryn:map/entry-r2",
       "definition": {
         "family": "Terrain",
         "key": "oteryn:terrain/stone-floor",
@@ -187,7 +187,7 @@
     {
       "key": "oteryn:cell/entry-east",
       "world": "oteryn:entry.world",
-      "map_revision": "oteryn:map/entry-r1",
+      "map_revision": "oteryn:map/entry-r2",
       "definition": {
         "family": "Terrain",
         "key": "oteryn:terrain/stone-floor",
@@ -211,7 +211,7 @@
     {
       "key": "oteryn:cell/entry-north",
       "world": "oteryn:entry.world",
-      "map_revision": "oteryn:map/entry-r1",
+      "map_revision": "oteryn:map/entry-r2",
       "definition": {
         "family": "Terrain",
         "key": "oteryn:terrain/stone-floor",
@@ -233,9 +233,57 @@
       "disposition": "CandidateOnly"
     },
     {
+      "key": "oteryn:cell/entry-den",
+      "world": "oteryn:entry.world",
+      "map_revision": "oteryn:map/entry-r2",
+      "definition": {
+        "family": "Terrain",
+        "key": "oteryn:terrain/stone-floor",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "area": {
+        "family": "Area",
+        "key": "oteryn:area/entry-room",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "coordinate_frame": "oteryn:entry.frame",
+      "x": 2,
+      "y": 0,
+      "floor": 0,
+      "presentation_order": {
+        "plane": 0,
+        "order": 0
+      },
+      "disposition": "CandidateOnly"
+    },
+    {
+      "key": "oteryn:cell/entry-den-north",
+      "world": "oteryn:entry.world",
+      "map_revision": "oteryn:map/entry-r2",
+      "definition": {
+        "family": "Terrain",
+        "key": "oteryn:terrain/stone-floor",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "area": {
+        "family": "Area",
+        "key": "oteryn:area/entry-room",
+        "revision": "oteryn:rev/entry-r1"
+      },
+      "coordinate_frame": "oteryn:entry.frame",
+      "x": 2,
+      "y": -1,
+      "floor": 0,
+      "presentation_order": {
+        "plane": 0,
+        "order": 0
+      },
+      "disposition": "CandidateOnly"
+    },
+    {
       "key": "oteryn:cell/entry-door",
       "world": "oteryn:entry.world",
-      "map_revision": "oteryn:map/entry-r1",
+      "map_revision": "oteryn:map/entry-r2",
       "definition": {
         "family": "Terrain",
         "key": "oteryn:terrain/stone-floor",
@@ -273,8 +321,8 @@
       "higher_floor": "Up"
     },
     "revisions": {
-      "content": "oteryn:content/entry-r1",
-      "map": "oteryn:map/entry-r1",
+      "content": "oteryn:content/entry-r2",
+      "map": "oteryn:map/entry-r2",
       "ruleset": "oteryn:ruleset/entry-r1",
       "world_policy": "oteryn:world-policy/entry-r1",
       "compiler": "oteryn:compiler/first-production-r1",
@@ -300,6 +348,16 @@
         "placement_key": "oteryn:cell/entry-north",
         "region_key": "oteryn:region/entry",
         "collision": "Blocked"
+      },
+      {
+        "placement_key": "oteryn:cell/entry-den",
+        "region_key": "oteryn:region/entry",
+        "collision": "Walkable"
+      },
+      {
+        "placement_key": "oteryn:cell/entry-den-north",
+        "region_key": "oteryn:region/entry",
+        "collision": "Walkable"
       }
     ],
     "doors": [
@@ -332,10 +390,10 @@
     "behavior": {
       "definition": {
         "family": "Behavior",
-        "key": "oteryn:behavior/passive-idle",
-        "revision": "oteryn:rev/entry-r1"
+        "key": "oteryn:behavior/rat-hostile",
+        "revision": "oteryn:rev/entry-r2"
       },
-      "policy_revision": "oteryn:policy/passive-idle-r1"
+      "policy_revision": "oteryn:policy/rat-hostile-r2"
     },
     "presentations": [
       {
@@ -367,27 +425,32 @@
       "definition": {
         "family": "Creature",
         "key": "oteryn:creature/rat",
-        "revision": "oteryn:rev/entry-r1"
+        "revision": "oteryn:rev/entry-r2"
       },
-      "policy_revision": "oteryn:policy/creature-rat-r1"
+      "policy_revision": "oteryn:policy/creature-rat-r2"
     },
     "spawn": {
       "key": "oteryn:spawn/entry-rat",
       "creature": {
         "family": "Creature",
         "key": "oteryn:creature/rat",
-        "revision": "oteryn:rev/entry-r1"
+        "revision": "oteryn:rev/entry-r2"
       },
       "behavior": {
         "family": "Behavior",
-        "key": "oteryn:behavior/passive-idle",
-        "revision": "oteryn:rev/entry-r1"
+        "key": "oteryn:behavior/rat-hostile",
+        "revision": "oteryn:rev/entry-r2"
       },
-      "cell_key": "oteryn:cell/entry-east",
-      "population_limit": 1,
+      "cell_keys": [
+        "oteryn:cell/entry-den",
+        "oteryn:cell/entry-den-north"
+      ],
+      "population_limit": 2,
       "recovery": "EphemeralScopeReset",
       "multiplicity": "ChannelLocalRepeatable",
-      "eligibility_scope": "CharacterWorld"
+      "eligibility_scope": "CharacterWorld",
+      "respawn_delay_ms": 60000,
+      "occupancy_retry_interval_ms": 5000
     },
     "ability": {
       "definition": {
@@ -437,5 +500,77 @@
       "profile_revision": "oteryn:rng-profile/entry-r1",
       "purpose_key": "oteryn:rng/rat-loot"
     }
-  }
+  },
+  "authoring_profiles": [
+    {
+      "target": {
+        "family": "Behavior",
+        "key": "oteryn:behavior/rat-hostile",
+        "revision": "oteryn:rev/entry-r2"
+      },
+      "data": {
+        "kind": "Behavior",
+        "profile": {
+          "movement": {
+            "can_walk": true,
+            "pass_through": false,
+            "pushable": true,
+            "push_items": false,
+            "push_creatures": false,
+            "walks_on_energy": false,
+            "walks_on_fire": false,
+            "walks_on_poison": false
+          },
+          "targeting": {
+            "hostile": true,
+            "can_target": true,
+            "sense_invisible": false,
+            "target_distance_tiles": 1,
+            "static_attack_chance_ppm": 900000,
+            "flee_health": 5,
+            "change_target": {
+              "interval_ms": 4000,
+              "chance_ppm": 0
+            },
+            "strategy_weights": {
+              "nearest": 100,
+              "damage": 0,
+              "health": 0,
+              "random": 0
+            }
+          },
+          "attacks": [
+            {
+              "ability": {
+                "family": "Ability",
+                "key": "oteryn:ability/bite",
+                "revision": "oteryn:rev/entry-r1"
+              },
+              "interval_ms": 2000,
+              "chance_ppm": 1000000,
+              "magnitude": {
+                "minimum": 0,
+                "maximum": 8
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "target": {
+        "family": "Creature",
+        "key": "oteryn:creature/rat",
+        "revision": "oteryn:rev/entry-r2"
+      },
+      "data": {
+        "kind": "Creature",
+        "profile": {
+          "health": 20,
+          "initial_health": 20,
+          "speed": 67
+        }
+      }
+    }
+  ]
 }

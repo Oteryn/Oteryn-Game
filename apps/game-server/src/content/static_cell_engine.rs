@@ -14,9 +14,11 @@ use crate::foundation::WorldId;
 use std::collections::BTreeMap;
 
 pub const STATIC_CELL_ENGINE_PROFILE: &str = "ENGINE_STATIC_CELL_CARRIER/v1";
-pub const STATIC_CELL_ENGINE_CANDIDATE_MAX_CELLS: usize = 4;
+// Room revision 2 of the native entry room: five room cells plus the door (SPAWN-1a, D976).
+pub const STATIC_CELL_ENGINE_CANDIDATE_MAX_CELLS: usize = 6;
 // Engineering candidate only. This is not an admitted Reference corpus or registry maximum.
-pub const STATIC_CELL_ENGINE_CANDIDATE_MAX_BYTES: usize = 2_743;
+// 13 bytes per cell over the four-cell 2_743.
+pub const STATIC_CELL_ENGINE_CANDIDATE_MAX_BYTES: usize = 2_769;
 const MAGIC: &[u8; 8] = b"OTSCENG1";
 const MAX_ATOM: usize = 512;
 

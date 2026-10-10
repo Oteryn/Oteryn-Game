@@ -12,24 +12,24 @@ pub const FIRST_PRODUCTION_CAPABILITY_PROFILE: &str = "content:first-production-
 
 pub const FIRST_PRODUCTION_MAX_MANIFEST_FIELDS: usize = 20;
 pub const FIRST_PRODUCTION_MAX_MANIFEST_BYTES: usize = 9_384;
-pub const FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES: usize = 4_304_614;
+pub const FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES: usize = 4_312_850;
 pub const FIRST_PRODUCTION_MAX_CLIENT_ARTIFACT_BYTES: usize = 34_248;
-pub const FIRST_PRODUCTION_MAX_GENERATION_PAIR_BYTES: usize = 4_338_862;
-pub const FIRST_PRODUCTION_MAX_SECTION_BYTES: usize = 4_295_078;
+pub const FIRST_PRODUCTION_MAX_GENERATION_PAIR_BYTES: usize = 4_347_098;
+pub const FIRST_PRODUCTION_MAX_SECTION_BYTES: usize = 4_303_314;
 pub const FIRST_PRODUCTION_MAX_RECORD_BYTES: usize = 4_114;
 pub const FIRST_PRODUCTION_MAX_KEY_BYTES: usize = 512;
 pub const FIRST_PRODUCTION_MAX_ATOM_BYTES: usize = 512;
 pub const FIRST_PRODUCTION_MAX_DEFINITIONS: usize = 1_042;
-pub const FIRST_PRODUCTION_MAX_REFERENCES: usize = 3_087;
-pub const FIRST_PRODUCTION_MAX_SERVER_RECORDS: usize = 1_043;
+pub const FIRST_PRODUCTION_MAX_REFERENCES: usize = 3_090;
+pub const FIRST_PRODUCTION_MAX_SERVER_RECORDS: usize = 1_045;
 pub const FIRST_PRODUCTION_MAX_CLIENT_RECORDS: usize = 6;
 pub const FIRST_PRODUCTION_MAX_CELLS: usize = 1_024;
 pub const FIRST_PRODUCTION_MAX_X_SPAN: usize = 32;
 pub const FIRST_PRODUCTION_MAX_Y_SPAN: usize = 32;
 pub const FIRST_PRODUCTION_MAX_FLOORS: usize = 1;
-pub const FIRST_PRODUCTION_MAX_DECODED_FIELDS: usize = 8_432;
-pub const FIRST_PRODUCTION_MAX_SPAWN_POPULATION: usize = 1;
-pub const FIRST_PRODUCTION_MAX_SCOPE_POPULATION: usize = 1;
+pub const FIRST_PRODUCTION_MAX_DECODED_FIELDS: usize = 8_448;
+pub const FIRST_PRODUCTION_MAX_SPAWN_POPULATION: usize = 2;
+pub const FIRST_PRODUCTION_MAX_SCOPE_POPULATION: usize = 2;
 pub const FIRST_PRODUCTION_MAX_CONTENT_LOCK_ENTRIES: usize = 1;
 
 const MAGIC: [u8; 8] = *b"OTFPC01\0";
@@ -59,6 +59,8 @@ const RECORD_LOOT_ENTRY: u8 = 15;
 const RECORD_XP: u8 = 16;
 const RECORD_RNG_CONTEXT: u8 = 17;
 const RECORD_RNG_PURPOSE: u8 = 18;
+// Amendment 04: one record per spawn placement cell, directly after its spawn record.
+const RECORD_SPAWN_CELL: u8 = 19;
 const RECORD_CLIENT_CREATURE: u8 = 108;
 const RECORD_CLIENT_ABILITY: u8 = 112;
 const RECORD_CLIENT_ITEM: u8 = 113;
@@ -483,7 +485,8 @@ pub struct FirstProductionSpawn {
     pub key: ProductionKey,
     pub creature_key: ProductionKey,
     pub behavior_key: ProductionKey,
-    pub cell_key: ProductionKey,
+    /// Amendment 04: ordered, duplicate-free placement cells; placement `i` realizes actor `i`.
+    pub cell_keys: Vec<ProductionKey>,
     pub population_limit: u16,
     pub recovery: SpawnRecoveryClass,
     pub multiplicity: MultiplicityClass,
@@ -1013,20 +1016,20 @@ fn validate_source_shape(source: &FirstProductionContentSource) -> Result<(), Co
         definitions,
         FIRST_PRODUCTION_MAX_DEFINITIONS,
     )?;
+    let spawn_cell_records = source.spawns.iter().try_fold(0usize, |sum, spawn| {
+        sum.checked_add(spawn.cell_keys.len())
+            .ok_or(ContentError::InvalidSectionBounds)
+    })?;
     let server_records = definitions
         .checked_add(1)
+        .and_then(|value| value.checked_add(spawn_cell_records))
         .ok_or(ContentError::InvalidSectionBounds)?;
     limits.check(
         "first-production server records",
         server_records,
         FIRST_PRODUCTION_MAX_SERVER_RECORDS,
     )?;
-    let references = source
-        .cells
-        .len()
-        .checked_mul(3)
-        .and_then(|value| value.checked_add(15))
-        .ok_or(ContentError::InvalidSectionBounds)?;
+    let references = first_production_reference_count(source.cells.len(), spawn_cell_records)?;
     limits.check(
         "first-production references",
         references,
@@ -1043,9 +1046,20 @@ fn validate_source_shape(source: &FirstProductionContentSource) -> Result<(), Co
             population,
             FIRST_PRODUCTION_MAX_SPAWN_POPULATION,
         )?;
-        if population != FIRST_PRODUCTION_MAX_SPAWN_POPULATION {
+        if population == 0 {
             return Err(ContentError::InvalidArtifact(
-                "first-production spawn population must equal 1",
+                "first-production spawn population must be 1 or 2",
+            ));
+        }
+        if spawn.cell_keys.len() != population {
+            return Err(ContentError::InvalidArtifact(
+                "first-production spawn cell count must equal its population",
+            ));
+        }
+        let distinct: BTreeSet<&str> = spawn.cell_keys.iter().map(ProductionKey::as_str).collect();
+        if distinct.len() != spawn.cell_keys.len() {
+            return Err(ContentError::InvalidArtifact(
+                "first-production spawn cells must be distinct",
             ));
         }
         if spawn.multiplicity == MultiplicityClass::ExplicitEventPolicyRequired {
@@ -1057,11 +1071,28 @@ fn validate_source_shape(source: &FirstProductionContentSource) -> Result<(), Co
             .checked_add(usize::from(spawn.population_limit))
             .ok_or(ContentError::InvalidSectionBounds)?;
     }
-    limits.check_exact(
-        "first-production aggregate population must equal 1",
+    limits.check(
+        "first-production aggregate population per scope",
         aggregate_population,
         FIRST_PRODUCTION_MAX_SCOPE_POPULATION,
     )
+}
+
+/// Base §4 references (3 per cell + 15) with Amendment 04's spawn shape: the spawn record keeps
+/// its creature and behavior references and each spawn-cell record adds (spawn, cell).
+fn first_production_reference_count(
+    cells: usize,
+    spawn_cell_records: usize,
+) -> Result<usize, ContentError> {
+    cells
+        .checked_mul(3)
+        .and_then(|value| value.checked_add(14))
+        .and_then(|value| {
+            spawn_cell_records
+                .checked_mul(2)
+                .and_then(|pairs| value.checked_add(pairs))
+        })
+        .ok_or(ContentError::InvalidSectionBounds)
 }
 
 fn validate_cell_footprint(cells: &[FirstProductionCell]) -> Result<(), ContentError> {
@@ -1240,7 +1271,9 @@ fn validate_source_semantics(source: &FirstProductionContentSource) -> Result<()
     for spawn in &source.spawns {
         require(&spawn.key, &spawn.creature_key, &creature_keys)?;
         require(&spawn.key, &spawn.behavior_key, &behavior_keys)?;
-        require(&spawn.key, &spawn.cell_key, &cell_keys)?;
+        for cell_key in &spawn.cell_keys {
+            require(&spawn.key, cell_key, &cell_keys)?;
+        }
     }
     for effect in &source.effects {
         require(&effect.key, &effect.formula_profile_key, &formula_keys)?;
@@ -1370,7 +1403,6 @@ fn server_records(
                 value.key.as_str().to_owned(),
                 value.creature_key.as_str().to_owned(),
                 value.behavior_key.as_str().to_owned(),
-                value.cell_key.as_str().to_owned(),
                 value.population_limit.to_string(),
                 match value.recovery {
                     SpawnRecoveryClass::EphemeralScopeReset => "EPHEMERAL_SCOPE_RESET".to_owned(),
@@ -1400,6 +1432,16 @@ fn server_records(
                 },
             ],
         ));
+        for (ordinal, cell_key) in value.cell_keys.iter().enumerate() {
+            records.push(ProductionRecord::new(
+                RECORD_SPAWN_CELL,
+                vec![
+                    value.key.as_str().to_owned(),
+                    ordinal.to_string(),
+                    cell_key.as_str().to_owned(),
+                ],
+            ));
+        }
     }
     for value in &source.formula_profiles {
         records.push(record(
@@ -2481,10 +2523,12 @@ fn expected_field_count(kind: u8) -> Option<u8> {
         | RECORD_CLIENT_CREATURE
         | RECORD_CLIENT_ABILITY
         | RECORD_CLIENT_ITEM => Some(2),
-        RECORD_RELOCATION | RECORD_EFFECT | RECORD_ABILITY | RECORD_ITEM | RECORD_XP => Some(3),
+        RECORD_RELOCATION | RECORD_EFFECT | RECORD_ABILITY | RECORD_ITEM | RECORD_XP
+        | RECORD_SPAWN_CELL => Some(3),
         RECORD_CREATURE => Some(4),
         RECORD_LOOT_ENTRY => Some(5),
-        RECORD_CELL | RECORD_SPAWN => Some(8),
+        RECORD_SPAWN => Some(7),
+        RECORD_CELL => Some(8),
         _ => None,
     }
 }
@@ -2538,6 +2582,7 @@ fn validate_parsed_semantics(
             )?;
             let expected_records = cell_count
                 .checked_add(19)
+                .and_then(|value| value.checked_add(count_kind(RECORD_SPAWN_CELL)))
                 .ok_or(ContentError::InvalidSectionBounds)?;
             if records.len() != expected_records {
                 return Err(ContentError::InvalidArtifact(
@@ -2628,13 +2673,14 @@ fn validate_parsed_semantics(
             Ok(())
         };
 
-    for record in records {
+    for (index, record) in records.iter().enumerate() {
         decoded_fields = decoded_fields
             .checked_add(record.fields.len())
             .ok_or(ContentError::InvalidSectionBounds)?;
 
+        // A spawn-cell record is part of its spawn definition, not a definition (Amendment 04).
         let definition_index = match record.kind {
-            RECORD_RNG_CONTEXT => None,
+            RECORD_RNG_CONTEXT | RECORD_SPAWN_CELL => None,
             _ => Some(0usize),
         };
         if let Some(index) = definition_index {
@@ -2695,25 +2741,16 @@ fn validate_parsed_semantics(
             RECORD_SPAWN => {
                 require_family(&record.fields[0], &record.fields[1], &creature_keys)?;
                 require_family(&record.fields[0], &record.fields[2], &behavior_keys)?;
-                require_family(&record.fields[0], &record.fields[3], &cell_keys)?;
-                references.extend([
-                    record.fields[1].clone(),
-                    record.fields[2].clone(),
-                    record.fields[3].clone(),
-                ]);
-                let population = usize::from(parse_positive_u16(&record.fields[4])?);
+                references.extend([record.fields[1].clone(), record.fields[2].clone()]);
+                let population = usize::from(parse_positive_u16(&record.fields[3])?);
                 FirstProductionLimits::v1().check(
                     "first-production spawn population per spawn",
                     population,
                     FIRST_PRODUCTION_MAX_SPAWN_POPULATION,
                 )?;
-                if population != FIRST_PRODUCTION_MAX_SPAWN_POPULATION {
-                    return Err(ContentError::InvalidArtifact(
-                        "first-production spawn population must equal 1",
-                    ));
-                }
+                validate_parsed_spawn_cells(records, index, population, &cell_keys)?;
                 if !matches!(
-                    record.fields[5].as_str(),
+                    record.fields[4].as_str(),
                     "EPHEMERAL_SCOPE_RESET"
                         | "CHECKPOINTED_RUNTIME_CONTINUITY"
                         | "DURABLE_EVENT_OCCURRENCE"
@@ -2722,13 +2759,13 @@ fn validate_parsed_semantics(
                         "invalid first-production spawn recovery class",
                     ));
                 }
-                if record.fields[6] == "EXPLICIT_EVENT_POLICY_REQUIRED" {
+                if record.fields[5] == "EXPLICIT_EVENT_POLICY_REQUIRED" {
                     return Err(ContentError::InvalidArtifact(
                         "first-production explicit event policy is unresolved",
                     ));
                 }
                 if !matches!(
-                    record.fields[6].as_str(),
+                    record.fields[5].as_str(),
                     "CHANNEL_LOCAL_REPEATABLE"
                         | "CHANNEL_LOCAL_SHARED_ELIGIBILITY"
                         | "WORLD_SCOPED_UNIQUE"
@@ -2738,7 +2775,7 @@ fn validate_parsed_semantics(
                     ));
                 }
                 if !matches!(
-                    record.fields[7].as_str(),
+                    record.fields[6].as_str(),
                     "CHARACTER_WORLD" | "ACCOUNT_WORLD" | "WORLD"
                 ) {
                     return Err(ContentError::InvalidArtifact(
@@ -2806,6 +2843,22 @@ fn validate_parsed_semantics(
                 require_family(&record.fields[0], &record.fields[1], &presentation_keys)?;
                 references.push(record.fields[1].clone());
             }
+            RECORD_SPAWN_CELL => {
+                // Placement and adjacency are checked from the owning spawn record; a spawn-cell
+                // record whose predecessor chain does not reach its spawn is dangling.
+                let owner = records[..index]
+                    .iter()
+                    .rev()
+                    .find(|candidate| candidate.kind != RECORD_SPAWN_CELL);
+                if owner.is_none_or(|owner| {
+                    owner.kind != RECORD_SPAWN || owner.fields[0] != record.fields[0]
+                }) {
+                    return Err(ContentError::InvalidArtifact(
+                        "first-production spawn cell record is dangling",
+                    ));
+                }
+                references.extend([record.fields[0].clone(), record.fields[2].clone()]);
+            }
             RECORD_REGION | RECORD_AREA | RECORD_TERRAIN | RECORD_LOOT_TABLE
             | RECORD_RNG_PURPOSE => {}
             _ => {
@@ -2859,10 +2912,8 @@ fn validate_parsed_semantics(
     if projection == ProductionProjection::ServerAuthoritative {
         validate_parsed_cell_footprint(&cell_points)?;
         let cell_count = count_kind(RECORD_CELL);
-        let references = cell_count
-            .checked_mul(3)
-            .and_then(|value| value.checked_add(15))
-            .ok_or(ContentError::InvalidSectionBounds)?;
+        let references =
+            first_production_reference_count(cell_count, count_kind(RECORD_SPAWN_CELL))?;
         FirstProductionLimits::v1().check(
             "first-production references",
             references,
@@ -2877,6 +2928,48 @@ fn validate_parsed_semantics(
     }
 
     Ok(decoded_fields)
+}
+
+/// Amendment 04: a spawn of population `n` is followed directly by exactly `n` spawn-cell records
+/// with ordinals `0..n` in order, each naming a distinct declared cell.
+fn validate_parsed_spawn_cells(
+    records: &[ParsedRecord],
+    spawn_index: usize,
+    population: usize,
+    cell_keys: &BTreeSet<&str>,
+) -> Result<(), ContentError> {
+    let spawn_key = records[spawn_index].fields[0].as_str();
+    let following = &records[spawn_index.saturating_add(1)..];
+    let placed = following
+        .iter()
+        .take_while(|record| record.kind == RECORD_SPAWN_CELL)
+        .count();
+    if placed != population {
+        return Err(ContentError::InvalidArtifact(
+            "first-production spawn cell records do not match its population",
+        ));
+    }
+    let mut seen = BTreeSet::new();
+    for (ordinal, record) in following[..placed].iter().enumerate() {
+        if record.fields[0] != spawn_key || record.fields[1] != ordinal.to_string() {
+            return Err(ContentError::InvalidArtifact(
+                "first-production spawn cell record is out of order",
+            ));
+        }
+        let cell = ProductionKey::new(&record.fields[2])?;
+        if !cell_keys.contains(cell.as_str()) {
+            return Err(ContentError::MissingReference {
+                owner: spawn_key.to_owned(),
+                target: cell.as_str().to_owned(),
+            });
+        }
+        if !seen.insert(record.fields[2].as_str()) {
+            return Err(ContentError::InvalidArtifact(
+                "first-production spawn cells must be distinct",
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn validate_parsed_cell_footprint(points: &[(i32, i32, i16)]) -> Result<(), ContentError> {
@@ -3013,6 +3106,22 @@ fn test_world_id(seed: u8) -> Result<WorldId, ContentError> {
         .map_err(|_| ContentError::InvalidArtifact("test first-production WorldId invalid"))
 }
 
+/// [`test_source`] with a spawn of `population` placements on the last `population` cells.
+#[cfg(test)]
+pub(crate) fn test_source_with_population(
+    cell_count: usize,
+    population: u16,
+) -> Result<FirstProductionContentSource, ContentError> {
+    let mut source = test_source(cell_count)?;
+    let placements = usize::from(population);
+    source.spawns[0].population_limit = population;
+    source.spawns[0].cell_keys = source.cells[cell_count.saturating_sub(placements)..]
+        .iter()
+        .map(|cell| cell.key.clone())
+        .collect();
+    Ok(source)
+}
+
 #[cfg(test)]
 pub(crate) fn test_source(cell_count: usize) -> Result<FirstProductionContentSource, ContentError> {
     let package_key = ProductionKey::new("oteryn:content.first-production")?;
@@ -3140,7 +3249,7 @@ pub(crate) fn test_source(cell_count: usize) -> Result<FirstProductionContentSou
             key: ProductionKey::new("oteryn:prod.spawn")?,
             creature_key: creature,
             behavior_key: behavior,
-            cell_key: last_cell,
+            cell_keys: vec![last_cell],
             population_limit: 1,
             recovery: SpawnRecoveryClass::CheckpointedRuntimeContinuity,
             multiplicity: MultiplicityClass::ChannelLocalSharedEligibility,
@@ -3282,33 +3391,65 @@ mod tests {
             compile_first_production(&zero, FirstProductionCompileTarget::OrdinaryRelease).is_err()
         );
 
-        let mut two = test_source(3)?;
-        two.spawns[0].population_limit = 2;
+        // Amendment 04: population 2 with two distinct placement cells is the accepted maximum.
+        let two = test_source_with_population(3, 2)?;
+        let compiled = compile_first_production(&two, FirstProductionCompileTarget::OrdinaryRelease)?;
+        StagedGeneration::stage(
+            &compiled.server_artifact,
+            &compiled.client_artifact,
+            compiled.expectation(),
+        )?;
+
+        let mut three = test_source_with_population(3, 3)?;
         assert!(matches!(
-            compile_first_production(&two, FirstProductionCompileTarget::OrdinaryRelease),
+            compile_first_production(&three, FirstProductionCompileTarget::OrdinaryRelease),
             Err(ContentError::LimitExceeded {
                 resource: "first-production spawn population per spawn",
-                actual: 2,
-                limit: 1,
+                actual: 3,
+                limit: 2,
             })
         ));
 
         let server_metadata = ProductionArtifactMetadata::from_source(
-            &two,
+            &three,
             ProductionProjection::ServerAuthoritative,
         )?;
         let client_metadata =
-            ProductionArtifactMetadata::from_source(&two, ProductionProjection::ClientSafe)?;
-        let server = encode_artifact(&server_metadata, &server_records(&two)?)?;
-        let client = encode_artifact(&client_metadata, &client_records(&two))?;
-        let expected = FirstProductionExpectation::from_source(&two, server.digest, client.digest)?;
+            ProductionArtifactMetadata::from_source(&three, ProductionProjection::ClientSafe)?;
+        let server = encode_artifact(&server_metadata, &server_records(&three)?)?;
+        let client = encode_artifact(&client_metadata, &client_records(&three))?;
+        let expected =
+            FirstProductionExpectation::from_source(&three, server.digest, client.digest)?;
         assert!(matches!(
             StagedGeneration::stage(&server.bytes, &client.bytes, &expected),
             Err(ContentError::LimitExceeded {
                 resource: "first-production spawn population per spawn",
-                actual: 2,
-                limit: 1,
+                actual: 3,
+                limit: 2,
             })
+        ));
+
+        // The placement list must match the population exactly and be duplicate-free.
+        three.spawns[0].population_limit = 2;
+        assert!(matches!(
+            compile_first_production(&three, FirstProductionCompileTarget::OrdinaryRelease),
+            Err(ContentError::InvalidArtifact(
+                "first-production spawn cell count must equal its population"
+            ))
+        ));
+        let mut duplicate = test_source_with_population(3, 2)?;
+        duplicate.spawns[0].cell_keys[1] = duplicate.spawns[0].cell_keys[0].clone();
+        assert!(matches!(
+            compile_first_production(&duplicate, FirstProductionCompileTarget::OrdinaryRelease),
+            Err(ContentError::InvalidArtifact(
+                "first-production spawn cells must be distinct"
+            ))
+        ));
+        let mut dangling = test_source_with_population(3, 2)?;
+        dangling.spawns[0].cell_keys[1] = ProductionKey::new("oteryn:prod.cell.missing")?;
+        assert!(matches!(
+            compile_first_production(&dangling, FirstProductionCompileTarget::OrdinaryRelease),
+            Err(ContentError::MissingReference { .. })
         ));
 
         let mut empty_lock = test_source(3)?;
@@ -3489,15 +3630,22 @@ mod tests {
     fn protected_registry_constants_and_text_boundaries_match() -> Result<(), ContentError> {
         assert_eq!(FIRST_PRODUCTION_MAX_MANIFEST_FIELDS, 20);
         assert_eq!(FIRST_PRODUCTION_MAX_MANIFEST_BYTES, 9_384);
-        assert_eq!(FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES, 4_304_614);
+        assert_eq!(FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES, 4_312_850);
         assert_eq!(FIRST_PRODUCTION_MAX_CLIENT_ARTIFACT_BYTES, 34_248);
-        assert_eq!(FIRST_PRODUCTION_MAX_GENERATION_PAIR_BYTES, 4_338_862);
-        assert_eq!(FIRST_PRODUCTION_MAX_DECODED_FIELDS, 8_432);
-        assert_eq!(FIRST_PRODUCTION_MAX_SECTION_BYTES, 4_295_078);
+        assert_eq!(FIRST_PRODUCTION_MAX_GENERATION_PAIR_BYTES, 4_347_098);
+        assert_eq!(FIRST_PRODUCTION_MAX_DECODED_FIELDS, 8_448);
+        assert_eq!(FIRST_PRODUCTION_MAX_SECTION_BYTES, 4_303_314);
         assert_eq!(FIRST_PRODUCTION_MAX_RECORD_BYTES, 4_114);
         assert_eq!(FIRST_PRODUCTION_MAX_DEFINITIONS, 1_042);
-        assert_eq!(FIRST_PRODUCTION_MAX_REFERENCES, 3_087);
-        assert_eq!(FIRST_PRODUCTION_MAX_SERVER_RECORDS, 1_043);
+        assert_eq!(FIRST_PRODUCTION_MAX_REFERENCES, 3_090);
+        assert_eq!(FIRST_PRODUCTION_MAX_SERVER_RECORDS, 1_045);
+        assert_eq!(FIRST_PRODUCTION_MAX_SPAWN_POPULATION, 2);
+        assert_eq!(FIRST_PRODUCTION_MAX_SCOPE_POPULATION, 2);
+        // Amendment 04 §4: every record may reach the record maximum plus its 4-byte length.
+        assert_eq!(
+            FIRST_PRODUCTION_MAX_SECTION_BYTES,
+            FIRST_PRODUCTION_MAX_SERVER_RECORDS * (4 + FIRST_PRODUCTION_MAX_RECORD_BYTES) + 4
+        );
         assert_eq!(FIRST_PRODUCTION_MAX_CLIENT_RECORDS, 6);
         assert_eq!(
             FIRST_PRODUCTION_MAX_SERVER_ARTIFACT_BYTES + FIRST_PRODUCTION_MAX_CLIENT_ARTIFACT_BYTES,
@@ -3659,7 +3807,7 @@ mod tests {
             .ok_or(ContentError::InvalidArtifact(
                 "spawn record missing in explicit-event policy test",
             ))?;
-        spawn.fields[6] = "EXPLICIT_EVENT_POLICY_REQUIRED".to_owned();
+        spawn.fields[5] = "EXPLICIT_EVENT_POLICY_REQUIRED".to_owned();
         let metadata = ProductionArtifactMetadata::from_source(
             &source,
             ProductionProjection::ServerAuthoritative,
@@ -3870,6 +4018,158 @@ mod tests {
             StagedGeneration::stage(&unknown, &compiled.client_artifact, compiled.expectation(),),
             Err(ContentError::UnknownCriticalSection(0x7ffe))
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn every_record_kind_is_distinct() {
+        let kinds = [
+            RECORD_REGION,
+            RECORD_AREA,
+            RECORD_TERRAIN,
+            RECORD_CELL,
+            RECORD_RELOCATION,
+            RECORD_BEHAVIOR,
+            RECORD_PRESENTATION,
+            RECORD_CREATURE,
+            RECORD_SPAWN,
+            RECORD_FORMULA,
+            RECORD_EFFECT,
+            RECORD_ABILITY,
+            RECORD_ITEM,
+            RECORD_LOOT_TABLE,
+            RECORD_LOOT_ENTRY,
+            RECORD_XP,
+            RECORD_RNG_CONTEXT,
+            RECORD_RNG_PURPOSE,
+            RECORD_SPAWN_CELL,
+            RECORD_CLIENT_CREATURE,
+            RECORD_CLIENT_ABILITY,
+            RECORD_CLIENT_ITEM,
+        ];
+        let distinct: BTreeSet<u8> = kinds.into_iter().collect();
+        assert_eq!(distinct.len(), kinds.len());
+        assert_eq!(RECORD_SPAWN_CELL, 19);
+    }
+
+    /// Amendment 04 §4: the maximum-cell graph with the two-placement spawn reaches exactly the
+    /// server-record and reference maxima; one more of each is refused.
+    #[test]
+    fn amendment_04_record_and_reference_maxima_are_exact() -> Result<(), ContentError> {
+        let source = test_source_with_population(FIRST_PRODUCTION_MAX_CELLS, 2)?;
+        let compiled =
+            compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
+        StagedGeneration::stage(
+            &compiled.server_artifact,
+            &compiled.client_artifact,
+            compiled.expectation(),
+        )?;
+        let canonical = canonicalize_first_production(&source)?;
+        let records = server_records(&canonical.source)?;
+        assert_eq!(records.len(), FIRST_PRODUCTION_MAX_SERVER_RECORDS);
+        assert_eq!(
+            first_production_reference_count(FIRST_PRODUCTION_MAX_CELLS, 2)?,
+            FIRST_PRODUCTION_MAX_REFERENCES
+        );
+        assert!(matches!(
+            FirstProductionLimits::v1().check(
+                "first-production references",
+                first_production_reference_count(FIRST_PRODUCTION_MAX_CELLS, 2)? + 1,
+                FIRST_PRODUCTION_MAX_REFERENCES,
+            ),
+            Err(ContentError::LimitExceeded { .. })
+        ));
+        let mut extra = records;
+        extra.push(extra[extra.len() - 1].clone());
+        let metadata = ProductionArtifactMetadata::from_source(
+            &canonical.source,
+            ProductionProjection::ServerAuthoritative,
+        )?;
+        assert!(matches!(
+            encode_artifact(&metadata, &extra),
+            Err(ContentError::LimitExceeded {
+                resource: "first-production records",
+                ..
+            })
+        ));
+        assert!(
+            FirstProductionLimits::v1()
+                .check(
+                    "first-production section bytes",
+                    FIRST_PRODUCTION_MAX_SECTION_BYTES,
+                    FIRST_PRODUCTION_MAX_SECTION_BYTES
+                )
+                .is_ok()
+        );
+        assert!(
+            FirstProductionLimits::v1()
+                .check(
+                    "first-production section bytes",
+                    FIRST_PRODUCTION_MAX_SECTION_BYTES + 1,
+                    FIRST_PRODUCTION_MAX_SECTION_BYTES
+                )
+                .is_err()
+        );
+        Ok(())
+    }
+
+    /// Amendment 04 §3: spawn-cell records follow their spawn record directly, in ordinal order,
+    /// and a missing, extra, out-of-order or dangling record refuses at staging.
+    #[test]
+    fn staging_refuses_malformed_spawn_cell_records() -> Result<(), ContentError> {
+        let source = test_source_with_population(3, 2)?;
+        let compiled =
+            compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
+        let canonical = canonicalize_first_production(&source)?;
+        let records = server_records(&canonical.source)?;
+        let metadata = ProductionArtifactMetadata::from_source(
+            &canonical.source,
+            ProductionProjection::ServerAuthoritative,
+        )?;
+        let spawn_index = records
+            .iter()
+            .position(|record| record.kind == RECORD_SPAWN)
+            .ok_or(ContentError::InvalidArtifact("spawn record missing in test"))?;
+        let stage = |records: &[ProductionRecord]| -> Result<(), ContentError> {
+            let crafted = encode_artifact(&metadata, records)?;
+            StagedGeneration::stage(
+                &crafted.bytes,
+                &compiled.client_artifact,
+                compiled.expectation(),
+            )
+            .map(|_| ())
+        };
+
+        let mut missing = records.clone();
+        missing.remove(spawn_index + 2);
+        assert!(stage(&missing).is_err());
+
+        let mut swapped = records.clone();
+        swapped.swap(spawn_index + 1, spawn_index + 2);
+        assert!(matches!(
+            stage(&swapped),
+            Err(ContentError::InvalidArtifact(
+                "first-production spawn cell record is out of order"
+            ))
+        ));
+
+        let mut duplicate = records.clone();
+        duplicate[spawn_index + 2].fields[2] = duplicate[spawn_index + 1].fields[2].clone();
+        assert!(matches!(
+            stage(&duplicate),
+            Err(ContentError::InvalidArtifact(
+                "first-production spawn cells must be distinct"
+            ))
+        ));
+
+        let mut detached = records.clone();
+        let moved = detached.remove(spawn_index + 2);
+        detached.push(moved);
+        assert!(stage(&detached).is_err());
+
+        let mut wrong_owner = records;
+        wrong_owner[spawn_index + 2].fields[0] = "oteryn:prod.other-spawn".to_owned();
+        assert!(stage(&wrong_owner).is_err());
         Ok(())
     }
 

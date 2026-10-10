@@ -1492,6 +1492,9 @@ pub(crate) struct SpawnDefinition {
     occupancy_retry_interval_micros: u64,
     creature_target_identity: String,
     creature_initial_health: i64,
+    /// CREATURE-AI-0 §6.3 `blocked_by_nearby_players`. The fixture spawn source is not
+    /// blockable; only a test definition sets it.
+    blockable: bool,
 }
 
 impl SpawnDefinition {
@@ -1529,8 +1532,58 @@ impl SpawnDefinition {
             occupancy_retry_interval_micros,
             creature_target_identity,
             creature_initial_health,
+            blockable: false,
         })
     }
+
+    /// SPAWN-1a: the activated fixture spawn source as a definition. The cells, population,
+    /// delays (ms to the owner clock's µs), creature key and authored initial health all come
+    /// from the source; nothing is defaulted here.
+    pub(crate) fn from_native_entry(
+        source: &crate::content::NativeEntrySpawnSource,
+    ) -> Result<Self, CarrierError> {
+        let micros = |ms: u64| ms.checked_mul(1_000).ok_or(CarrierError::InvalidSpawnDefinition);
+        let cells = source
+            .cells()
+            .iter()
+            .map(|(_, x, y, floor)| (*x, *y, *floor))
+            .collect::<Vec<_>>();
+        let population = cells.len();
+        Self::new(
+            cells,
+            population,
+            micros(source.respawn_delay_ms())?,
+            micros(source.occupancy_retry_interval_ms())?,
+            source.creature().key.to_string(),
+            i64::try_from(source.initial_health())
+                .map_err(|_| CarrierError::InvalidSpawnDefinition)?,
+        )
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_blockable(mut self, blockable: bool) -> Self {
+        self.blockable = blockable;
+        self
+    }
+
+    fn timing(&self) -> crate::ai::spawn::PointTiming {
+        crate::ai::spawn::PointTiming {
+            respawn_delay_micros: self.respawn_delay_micros,
+            occupancy_retry_interval_micros: self.occupancy_retry_interval_micros,
+            blockable: self.blockable,
+        }
+    }
+}
+
+/// SPAWN-1a: what one respawn drive did, in run order. The warning is reported, not
+/// broadcast: no client effect exists for it yet.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub(crate) struct SpawnDriveReport {
+    pub(crate) warnings: Vec<MovementLocalPosition>,
+    pub(crate) admitted: Vec<ExactActorRef>,
+    pub(crate) blocked: usize,
+    pub(crate) retried: usize,
+    pub(crate) skipped: usize,
 }
 
 /// One placement cell's live/pending bookkeeping within a realized spawn.
@@ -1767,6 +1820,8 @@ pub(crate) struct ChannelRuntimeV1 {
     content: ChannelContentPin,
     companion_policies: Option<Arc<runtime_actor_companion::CompiledCreaturePolicies>>,
     owner_cycle: super::ScopeRuntimeFence,
+    /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
+    spawn_schedule: crate::ai::spawn::RespawnSchedule,
 }
 
 impl ChannelRuntimeV1 {
@@ -1847,6 +1902,7 @@ impl ChannelRuntimeV1 {
             companion_policies: None,
             owner_cycle: super::ScopeRuntimeFence::from_external_grant(scope_generation)
                 .with_scope(super::RuntimeScopeRefV1::channel(world_id, channel_id)),
+            spawn_schedule: crate::ai::spawn::RespawnSchedule::default(),
         })
     }
 
@@ -2502,6 +2558,279 @@ impl ChannelRuntimeV1 {
             self.carrier.spawns = spawns_before;
         }
         result
+    }
+
+    /// SPAWN-1a (CREATURE-AI-0 §6.2): realizes the activated spawn sources at Channel
+    /// activation, before the Channel admits players. Sources are realized in canonical order
+    /// (`crate::ai::spawn::realization_windows`; source ordinal `i`, point ordinal = cell
+    /// index), each creature a fresh actor-local generation with the source's authored initial
+    /// health. A creature whose definition the active Creature policy table names is bound to
+    /// that policy; otherwise it stands unbound. Any refusal realizes nothing. Returns the
+    /// number of creatures realized.
+    pub(crate) fn realize_activation_spawns(
+        &mut self,
+        sources: &[crate::content::NativeEntrySpawnSource],
+    ) -> Result<usize, CarrierError> {
+        let definitions = sources
+            .iter()
+            .map(SpawnDefinition::from_native_entry)
+            .collect::<Result<Vec<_>, _>>()?;
+        self.realize_spawn_definitions(definitions)
+    }
+
+    fn realize_spawn_definitions(
+        &mut self,
+        definitions: Vec<SpawnDefinition>,
+    ) -> Result<usize, CarrierError> {
+        self.owner_fence()?;
+        if !self.carrier.spawns.is_empty() {
+            return Err(CarrierError::DuplicateSpawnSource);
+        }
+        let mut points = Vec::new();
+        for (source, definition) in definitions.iter().enumerate() {
+            let source = u16::try_from(source).map_err(|_| CarrierError::CapacityExceeded)?;
+            for ordinal in 0..definition.placement_cells.len() {
+                let ordinal = u8::try_from(ordinal).map_err(|_| CarrierError::CapacityExceeded)?;
+                points.push(crate::ai::spawn::SpawnPoint { source, ordinal });
+            }
+        }
+        let context = self.pinned_position_context();
+        let slots_before = self.carrier.slots.clone();
+        let free_before = self.carrier.free_head;
+        let occupied_before = self.carrier.occupied.clone();
+        let mut definitions = definitions.into_iter().map(Some).collect::<Vec<_>>();
+        let result = (|| {
+            for window in crate::ai::spawn::realization_windows(&points) {
+                for point in window {
+                    // A source realizes whole, at its first point in canonical order.
+                    let Some(definition) = definitions
+                        .get_mut(usize::from(point.source))
+                        .and_then(Option::take)
+                    else {
+                        continue;
+                    };
+                    self.carrier.realize_spawn(
+                        &self.continuity,
+                        SpawnSourceId(point.source),
+                        definition,
+                        context,
+                    )?;
+                }
+            }
+            Ok::<(), CarrierError>(())
+        })();
+        if let Err(error) = result {
+            self.carrier.slots = slots_before;
+            self.carrier.free_head = free_before;
+            self.carrier.occupied = occupied_before;
+            self.carrier.spawns.clear();
+            return Err(error);
+        }
+        let realized = self
+            .carrier
+            .spawns
+            .iter()
+            .flat_map(|spawn| spawn.cells.iter().filter_map(|cell| cell.live))
+            .collect::<Vec<_>>();
+        for actor in &realized {
+            self.bind_spawned_creature_policy(*actor);
+        }
+        Ok(realized.len())
+    }
+
+    /// Binds a realized creature to its active Creature policy when the table names its
+    /// definition and agrees on its health. Content that names no policy leaves it unbound.
+    fn bind_spawned_creature_policy(&mut self, actor: ExactActorRef) {
+        let Ok(index) = self.carrier.validate_ref(&self.continuity, actor.0) else {
+            return;
+        };
+        let Slot::CreatureOccupied {
+            target_identity, ..
+        } = &self.carrier.slots[index]
+        else {
+            return;
+        };
+        let Ok(key) = std::str::from_utf8(target_identity).map(str::to_owned) else {
+            return;
+        };
+        if self.companion_policy(&key).is_ok() {
+            let _ = self.install_creature_policy(actor, &key);
+        }
+    }
+
+    /// The live creature of each realized spawn point, in canonical point order.
+    pub(crate) fn spawn_point_creatures(
+        &self,
+    ) -> Vec<(crate::ai::spawn::SpawnPoint, MovementLocalPosition, Option<ExactActorRef>)> {
+        let mut points = Vec::new();
+        for spawn in &self.carrier.spawns {
+            for (index, (cell, state)) in spawn
+                .definition
+                .placement_cells
+                .iter()
+                .zip(&spawn.cells)
+                .enumerate()
+            {
+                let Ok(ordinal) = u8::try_from(index) else {
+                    continue;
+                };
+                let live = state
+                    .live
+                    .filter(|actor| self.carrier.creature_alive(&self.continuity, *actor));
+                points.push((
+                    crate::ai::spawn::SpawnPoint {
+                        source: spawn.source.0,
+                        ordinal,
+                    },
+                    MovementLocalPosition {
+                        x: cell.x,
+                        y: cell.y,
+                        floor: cell.floor,
+                    },
+                    live,
+                ));
+            }
+        }
+        points.sort_by_key(|(point, _, _)| *point);
+        points
+    }
+
+    /// The pending respawn occurrence of `point`, if any.
+    pub(crate) fn pending_respawn(
+        &self,
+        point: crate::ai::spawn::SpawnPoint,
+    ) -> Option<crate::ai::spawn::PendingRespawn> {
+        self.spawn_schedule.pending(point)
+    }
+
+    /// SPAWN-1a (CREATURE-AI-0 §6.3): one respawn drive at owner time `now_micros`, run from the
+    /// Channel owner's creature pass. A point whose creature is gone (observed at this drive)
+    /// gets its one occurrence one full delay later; due occurrences then run by deadline and
+    /// point: blocked by a player's interest area (blockable points only), else the warning and
+    /// admission 4,200 ms later; an occupied cell runs the Occupied chain.
+    pub(crate) fn drive_spawn_respawns(
+        &mut self,
+        now_micros: u64,
+    ) -> Result<SpawnDriveReport, CarrierError> {
+        use crate::ai::spawn::{RespawnOutcome, RespawnStep};
+        self.owner_fence()?;
+        let mut report = SpawnDriveReport::default();
+        if self.carrier.spawns.is_empty() {
+            return Ok(report);
+        }
+        let points = self.spawn_point_creatures();
+        for (point, _, live) in &points {
+            if live.is_none() && self.spawn_schedule.pending(*point).is_none() {
+                let timing = self.spawn_timing(*point)?;
+                self.spawn_schedule
+                    .creature_gone(*point, timing, now_micros)
+                    .map_err(|_| CarrierError::CapacityExceeded)?;
+            }
+        }
+        let context = self.pinned_position_context();
+        for (point, pending) in self.spawn_schedule.due(now_micros) {
+            let timing = self.spawn_timing(point)?;
+            let cell = self.spawn_cell(point)?;
+            let outcome = match pending.step {
+                RespawnStep::Due | RespawnStep::Retry => {
+                    let blocked = timing.blockable
+                        && pending.step == RespawnStep::Due
+                        && self.player_interest_contains(cell)?;
+                    self.spawn_schedule
+                        .run_warning_step(point, timing, blocked, now_micros)
+                }
+                RespawnStep::Admit => {
+                    let local = LocalPosition {
+                        x: cell.x,
+                        y: cell.y,
+                        floor: cell.floor,
+                    };
+                    let occupied = self.carrier.cell_occupied(context, local);
+                    if !occupied {
+                        match self.carrier.resolve_respawn_timer(
+                            &self.continuity,
+                            SpawnSourceId(point.source),
+                            usize::from(point.ordinal),
+                            context,
+                        )? {
+                            RespawnResolution::Admitted(actor) => {
+                                self.bind_spawned_creature_policy(actor);
+                                report.admitted.push(actor);
+                            }
+                            RespawnResolution::Postponed { .. }
+                            | RespawnResolution::Skipped { .. } => {
+                                return Err(CarrierError::PlanConflict);
+                            }
+                        }
+                    }
+                    self.spawn_schedule
+                        .run_admit_step(point, timing, occupied, now_micros)
+                }
+            }
+            .map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+            match outcome {
+                RespawnOutcome::Warned { .. } => report.warnings.push(cell),
+                RespawnOutcome::Blocked { .. } => report.blocked += 1,
+                RespawnOutcome::Retrying { .. } => report.retried += 1,
+                RespawnOutcome::Skipped { .. } => report.skipped += 1,
+                RespawnOutcome::Admitted => {}
+            }
+        }
+        Ok(report)
+    }
+
+    fn spawn_realization(
+        &self,
+        point: crate::ai::spawn::SpawnPoint,
+    ) -> Result<&SpawnRealization, CarrierError> {
+        self.carrier
+            .spawns
+            .iter()
+            .find(|spawn| spawn.source.0 == point.source)
+            .ok_or(CarrierError::UnknownSpawnSource)
+    }
+
+    fn spawn_timing(
+        &self,
+        point: crate::ai::spawn::SpawnPoint,
+    ) -> Result<crate::ai::spawn::PointTiming, CarrierError> {
+        Ok(self.spawn_realization(point)?.definition.timing())
+    }
+
+    fn spawn_cell(
+        &self,
+        point: crate::ai::spawn::SpawnPoint,
+    ) -> Result<MovementLocalPosition, CarrierError> {
+        let cell = self
+            .spawn_realization(point)?
+            .definition
+            .placement_cells
+            .get(usize::from(point.ordinal))
+            .ok_or(CarrierError::UnknownSpawnCell)?;
+        Ok(MovementLocalPosition {
+            x: cell.x,
+            y: cell.y,
+            floor: cell.floor,
+        })
+    }
+
+    /// §6.3 Blocked: a present player's interest area (MOVE-RL-11, the reference view)
+    /// contains `cell` on its floor.
+    fn player_interest_contains(&self, cell: MovementLocalPosition) -> Result<bool, CarrierError> {
+        use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
+        let Ok(target) = VisibilityPosition::new(cell.x, cell.y, cell.floor) else {
+            return Ok(false);
+        };
+        Ok(self
+            .positioned_actor_census()?
+            .iter()
+            .filter(|(_, _, session)| session.is_some())
+            .any(|(_, snapshot, _)| {
+                let position = snapshot.position();
+                position.floor == cell.floor
+                    && VisibilityPosition::new(position.x, position.y, position.floor)
+                        .is_ok_and(|observer| VisibilitySettings::REFERENCE.can_see(observer, target))
+            }))
     }
 
     /// Test only: one live creature at `position`, under the same synthetic context as
@@ -4788,6 +5117,16 @@ impl ChannelActorCarrier {
         })
     }
 
+    /// True when `actor` is still this carrier's live creature (`health > 0`).
+    fn creature_alive(&self, continuity: &NamespaceContinuityGuard, actor: ExactActorRef) -> bool {
+        self.validate_ref(continuity, actor.0).is_ok_and(|index| {
+            matches!(
+                self.slots[index],
+                Slot::CreatureOccupied { health: 1.., .. }
+            )
+        })
+    }
+
     /// The spawn source and cell index `actor` is (or, if now dead, was) admitted at, if any.
     /// The caller uses this right after a death commits, to schedule that cell's first respawn
     /// occurrence (attempt 1).
@@ -6438,6 +6777,234 @@ mod tests {
             20,
         )
         .expect("D116 definition is within every AI01-SPAWN-* bound")
+    }
+
+    // SPAWN-1a: activation realization and the §6.3 respawn drive on the composed runtime.
+    const SPAWN_DELAY: u64 = 60_000_000;
+    const SPAWN_RETRY: u64 = 5_000_000;
+    const DEN: MovementLocalPosition = MovementLocalPosition {
+        x: 2,
+        y: 0,
+        floor: 7,
+    };
+
+    fn den_definition() -> SpawnDefinition {
+        SpawnDefinition::new(
+            vec![(2, 0, 7), (2, -1, 7)],
+            2,
+            SPAWN_DELAY,
+            SPAWN_RETRY,
+            "oteryn:creature/rat".to_string(),
+            20,
+        )
+        .expect("den definition")
+    }
+
+    fn spawned_runtime(definition: SpawnDefinition) -> ChannelRuntimeV1 {
+        let mut runtime = runtime(8);
+        assert_eq!(runtime.realize_spawn_definitions(vec![definition]), Ok(2));
+        runtime
+    }
+
+    fn kill_creature(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef) {
+        let index = runtime
+            .carrier
+            .validate_ref(&runtime.continuity, actor.0)
+            .expect("live creature");
+        let Slot::CreatureOccupied { health, .. } = &mut runtime.carrier.slots[index] else {
+            panic!("creature slot");
+        };
+        *health = 0;
+    }
+
+    fn place_creature(runtime: &mut ChannelRuntimeV1, cell: MovementLocalPosition) {
+        let context = runtime.pinned_position_context();
+        let actor = runtime
+            .carrier
+            .admit_creature(&runtime.continuity, ActorState(0), "test:blocker", 20)
+            .expect("blocker");
+        runtime
+            .carrier
+            .initialize_position(
+                &runtime.continuity,
+                actor,
+                context,
+                LocalPosition {
+                    x: cell.x,
+                    y: cell.y,
+                    floor: cell.floor,
+                },
+            )
+            .expect("blocker position");
+    }
+
+    fn place_player(runtime: &mut ChannelRuntimeV1, raw: u64, cell: MovementLocalPosition) {
+        let reservation = runtime
+            .reserve_fresh_session(session(raw))
+            .expect("player reservation");
+        let actor = runtime
+            .commit_fresh_session(reservation)
+            .expect("player commit");
+        let context = runtime.pinned_position_context();
+        runtime
+            .carrier
+            .initialize_position(
+                &runtime.continuity,
+                actor.0,
+                context,
+                LocalPosition {
+                    x: cell.x,
+                    y: cell.y,
+                    floor: cell.floor,
+                },
+            )
+            .expect("player position");
+    }
+
+    fn den_creature(runtime: &ChannelRuntimeV1) -> Option<ExactActorRef> {
+        runtime.spawn_point_creatures()[0].2
+    }
+
+    #[test]
+    fn activation_realizes_one_creature_per_den_cell_with_its_authored_health() {
+        let runtime = spawned_runtime(den_definition());
+        let points = runtime.spawn_point_creatures();
+        assert_eq!(points.len(), 2);
+        let census = runtime.positioned_actor_census().expect("census");
+        for ((_, cell, live), expected) in points.iter().zip([(2, 0), (2, -1)]) {
+            assert_eq!((cell.x, cell.y), expected);
+            let actor = live.expect("live rat");
+            let (_, snapshot, session) = census
+                .iter()
+                .find(|(listed, _, _)| *listed == actor)
+                .expect("positioned before admission of players");
+            assert_eq!(*session, None);
+            assert_eq!(snapshot.position(), *cell);
+            let index = runtime
+                .carrier
+                .validate_ref(&runtime.continuity, actor.0)
+                .expect("live");
+            assert!(matches!(
+                runtime.carrier.slots[index],
+                Slot::CreatureOccupied { health: 20, .. }
+            ));
+        }
+    }
+
+    #[test]
+    fn activation_realizes_once_and_a_restart_realizes_the_same_set() {
+        let mut first = spawned_runtime(den_definition());
+        assert_eq!(
+            first.realize_spawn_definitions(vec![den_definition()]),
+            Err(CarrierError::DuplicateSpawnSource)
+        );
+        let cells = |runtime: &ChannelRuntimeV1| {
+            runtime
+                .spawn_point_creatures()
+                .iter()
+                .map(|(point, cell, live)| (*point, *cell, live.is_some()))
+                .collect::<Vec<_>>()
+        };
+        let restarted = spawned_runtime(den_definition());
+        assert_eq!(cells(&first), cells(&restarted));
+    }
+
+    #[test]
+    fn a_dead_rat_warns_one_full_delay_later_and_is_admitted_4200_ms_after_the_warning() {
+        let mut runtime = spawned_runtime(den_definition());
+        let dead = den_creature(&runtime).expect("live rat");
+        kill_creature(&mut runtime, dead);
+        // Observed at this drive: the one occurrence is due one full delay later.
+        assert_eq!(runtime.drive_spawn_respawns(1_000), Ok(SpawnDriveReport::default()));
+        let point = runtime.spawn_point_creatures()[0].0;
+        assert_eq!(
+            runtime.pending_respawn(point).map(|p| p.due_micros),
+            Some(1_000 + SPAWN_DELAY)
+        );
+        // At most one pending occurrence per point: a later drive schedules nothing more.
+        runtime.drive_spawn_respawns(2_000).expect("drive");
+        assert_eq!(
+            runtime.pending_respawn(point).map(|p| p.due_micros),
+            Some(1_000 + SPAWN_DELAY)
+        );
+        assert_eq!(
+            runtime.drive_spawn_respawns(SPAWN_DELAY).expect("drive"),
+            SpawnDriveReport::default()
+        );
+        let warned = runtime.drive_spawn_respawns(1_000 + SPAWN_DELAY).expect("drive");
+        assert_eq!(warned.warnings, vec![DEN]);
+        assert!(warned.admitted.is_empty());
+        let admit_at = 1_000 + SPAWN_DELAY + crate::ai::spawn::SPAWN_WARNING_MICROS;
+        assert!(runtime.drive_spawn_respawns(admit_at - 1).expect("drive").admitted.is_empty());
+        let admitted = runtime.drive_spawn_respawns(admit_at).expect("drive");
+        assert_eq!(admitted.admitted.len(), 1);
+        let fresh = den_creature(&runtime).expect("respawned rat");
+        assert_ne!(fresh, dead);
+        assert_eq!(fresh, admitted.admitted[0]);
+        assert_eq!(runtime.pending_respawn(point), None);
+    }
+
+    #[test]
+    fn an_occupied_den_retries_three_times_every_retry_interval_then_skips() {
+        let mut runtime = spawned_runtime(den_definition());
+        let dead = den_creature(&runtime).expect("live rat");
+        kill_creature(&mut runtime, dead);
+        runtime.drive_spawn_respawns(0).expect("observe");
+        place_creature(&mut runtime, DEN);
+        let mut now = SPAWN_DELAY;
+        assert_eq!(runtime.drive_spawn_respawns(now).expect("warn").warnings, vec![DEN]);
+        now += crate::ai::spawn::SPAWN_WARNING_MICROS;
+        for _ in 0..crate::ai::spawn::OCCUPANCY_RETRIES_MAX {
+            assert_eq!(runtime.drive_spawn_respawns(now).expect("occupied").retried, 1);
+            assert!(runtime.drive_spawn_respawns(now + SPAWN_RETRY - 1).expect("wait").warnings.is_empty());
+            now += SPAWN_RETRY;
+            assert_eq!(runtime.drive_spawn_respawns(now).expect("retry").warnings, vec![DEN]);
+            now += crate::ai::spawn::SPAWN_WARNING_MICROS;
+        }
+        let skipped = runtime.drive_spawn_respawns(now).expect("skip");
+        assert_eq!((skipped.skipped, skipped.admitted.len()), (1, 0));
+        let point = runtime.spawn_point_creatures()[0].0;
+        let pending = runtime.pending_respawn(point).expect("successor");
+        assert_eq!((pending.due_micros, pending.successor), (now + SPAWN_DELAY, 1));
+        assert_eq!(den_creature(&runtime), None);
+    }
+
+    #[test]
+    fn player_interest_blocks_a_blockable_den_and_the_successor_is_a_full_delay_later() {
+        let mut runtime = spawned_runtime(den_definition().with_blockable(true));
+        let dead = den_creature(&runtime).expect("live rat");
+        kill_creature(&mut runtime, dead);
+        place_player(&mut runtime, 40, MovementLocalPosition { x: 0, y: 0, floor: 7 });
+        runtime.drive_spawn_respawns(0).expect("observe");
+        let blocked = runtime.drive_spawn_respawns(SPAWN_DELAY).expect("blocked");
+        assert_eq!((blocked.blocked, blocked.warnings.len()), (1, 0));
+        let point = runtime.spawn_point_creatures()[0].0;
+        assert_eq!(
+            runtime.pending_respawn(point).map(|p| p.due_micros),
+            Some(2 * SPAWN_DELAY)
+        );
+    }
+
+    #[test]
+    fn player_interest_never_blocks_the_non_blockable_fixture_point() {
+        let mut runtime = spawned_runtime(den_definition());
+        let dead = den_creature(&runtime).expect("live rat");
+        kill_creature(&mut runtime, dead);
+        place_player(&mut runtime, 41, MovementLocalPosition { x: 0, y: 0, floor: 7 });
+        runtime.drive_spawn_respawns(0).expect("observe");
+        let warned = runtime.drive_spawn_respawns(SPAWN_DELAY).expect("warned");
+        assert_eq!((warned.blocked, warned.warnings), (0, vec![DEN]));
+    }
+
+    #[test]
+    fn a_player_on_another_floor_does_not_block_a_blockable_den() {
+        let mut runtime = spawned_runtime(den_definition().with_blockable(true));
+        let dead = den_creature(&runtime).expect("live rat");
+        kill_creature(&mut runtime, dead);
+        place_player(&mut runtime, 42, MovementLocalPosition { x: 2, y: 0, floor: 6 });
+        runtime.drive_spawn_respawns(0).expect("observe");
+        let warned = runtime.drive_spawn_respawns(SPAWN_DELAY).expect("warned");
+        assert_eq!((warned.blocked, warned.warnings), (0, vec![DEN]));
     }
 
     #[test]
