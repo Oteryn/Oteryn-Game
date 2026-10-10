@@ -4,7 +4,6 @@
 //! (N3 `InputRouter`). While the server gate is closed every cast is `Rejected`, shown as
 //! "spells unavailable"; no vitals arrive either, so no bar is drawn.
 
-use crate::input::Targetable;
 use oteryn_input_actions::{
     ActionId, ActionPhase, Binding, BindingMap, ContextDefinition, ContextId, ContextKind,
     InputAtom, InputChord, InputError, InputRouter, KeyCode, Modifiers, NormalizedInputEvent,
@@ -113,15 +112,15 @@ impl SpellFeedback {
     }
 }
 
-/// Casts `spell` at the selected target (aimed) or without one, and records the disposition.
+/// Casts `spell` at the attack target (`aimed`) or without one, and records the disposition.
 /// Vitals after a `Cast` are read from `Session::actor_vitals`.
 pub async fn cast_selected<S: SessionStream>(
     session: &mut Session<S>,
     feedback: &mut SpellFeedback,
     spell: NonZeroU32,
-    target: Option<Targetable>,
+    aimed: bool,
 ) -> Result<CastOutcome, SessionError> {
-    let (intent, aim) = if target.is_some() {
+    let (intent, aim) = if aimed {
         (SpellTarget::AttackTarget, true)
     } else {
         (SpellTarget::None, false)

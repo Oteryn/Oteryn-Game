@@ -14,6 +14,7 @@ use oteryn_input_actions::{
     NormalizedInputEvent, RepeatPolicy,
 };
 use oteryn_renderer::{TileCoord, TileView};
+use oteryn_session::EntityRef;
 use std::sync::OnceLock;
 use std::time::Duration;
 
@@ -225,6 +226,8 @@ pub enum TargetKind {
 pub struct Targetable {
     pub tile: TileCoord,
     pub kind: TargetKind,
+    /// The server entity drawn there, when it is one a click may attack.
+    pub entity: Option<EntityRef>,
 }
 
 /// What a click on `tile` selects: an entity wins over an object on the same tile; empty tiles
@@ -496,14 +499,17 @@ mod tests {
             Targetable {
                 tile: t(1, 1),
                 kind: TargetKind::Object,
+                entity: None,
             },
             Targetable {
                 tile: t(1, 1),
                 kind: TargetKind::Entity,
+                entity: None,
             },
             Targetable {
                 tile: t(2, 2),
                 kind: TargetKind::Object,
+                entity: None,
             },
         ];
         assert_eq!(
