@@ -251,8 +251,16 @@ fn modify_conditions<S: Clone>(
     source: Option<S>,
     immunities: &[crate::ability::condition::ConditionType],
     facts: &crate::ability::condition::ApplicationFacts<'_>,
+    shield_required: bool,
 ) -> Result<(), SpellCastDisposition> {
     use crate::ability::condition::{ConditionRefusal, ConditionSourceKind};
+    if shield_required
+        && effects.iter().any(|effect| {
+            matches!(effect, ResolvedEffect::RemoveCondition { condition } if condition == "manashield")
+        })
+    {
+        crate::spell::actor_conditions::require_active_mana_shield(store, facts.now)?;
+    }
     for effect in effects {
         match effect {
             ResolvedEffect::Damage { .. } | ResolvedEffect::Heal { .. } => {}
@@ -1381,6 +1389,7 @@ fn lower(
                 Some(batch.caster),
                 &next.policy.condition_immunities,
                 &facts,
+                spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield",
             )?;
             if next.conditions != expected.state.conditions {
                 change = Some(OwnerCombatChange::CompanionConditions(Box::new(
@@ -1420,6 +1429,7 @@ fn lower(
                 Some(crate::spell::combat_execution::actor_atom(batch.caster)),
                 &[],
                 &facts,
+                spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield",
             )?;
             if next != expected {
                 change = Some(OwnerCombatChange::PlayerConditions {

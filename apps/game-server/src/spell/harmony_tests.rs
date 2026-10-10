@@ -432,3 +432,37 @@ fn the_harmony_roles_are_admitted_and_monk_focus_stays_fail_closed() {
     let error = spell_from_bundle(&spell, &dependencies).expect_err("monk_focus admitted");
     assert!(error.to_string().contains("monk_focus"), "{error}");
 }
+
+#[test]
+fn lethal_reset_clears_live_harmony_and_forced_serene_until_respawn_initializes() {
+    let mut state = ready(3);
+    state.commit_focus_serenity(at(0)).expect("forced");
+    state.clear_on_death();
+    assert_eq!(state.harmony(), 0);
+    assert!(!state.serene());
+    assert_eq!(state.serene_forced_until(), None);
+    assert_eq!(state.serene_forced_remaining(at(1000)), 0);
+    assert_eq!(state.accept_command(), Err(MonkStateError::NotInitialized));
+    let before = state.clone();
+    state.clear_on_death();
+    assert_eq!(state, before);
+    state
+        .initialize(at(2000), &solo())
+        .expect("respawn evaluation");
+    assert!(state.serene());
+    assert_eq!(state.harmony(), 0);
+}
+
+#[test]
+fn lethal_reset_also_discards_uninitialized_loaded_forced_time() {
+    let mut state = MonkState::load(Vocation::Monk, 3, 3_000_000)
+        .expect("valid")
+        .expect("monk");
+    state.clear_on_death();
+    assert_eq!(state.serene_forced_remaining(at(0)), 0);
+    state
+        .initialize(at(2000), &crowded())
+        .expect("respawn evaluation");
+    assert!(!state.serene());
+    assert_eq!(state.harmony(), 0);
+}
