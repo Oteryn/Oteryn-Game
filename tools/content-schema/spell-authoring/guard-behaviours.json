@@ -43,7 +43,7 @@
           "removed_condition": "manashield"
         }
       ],
-      "sources": "C.5: Canary and Crystal creature:removeCondition(CONDITION_MANASHIELD) before the combat; the condition key follows the converter's name for CONDITION_MANASHIELD (the Magic Shield condition). Q23 (shield required?) stays open; the Canary reading (no shield needed) is used.",
+      "sources": "C.5 Q23: owner decision 2026-09-30, https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5914941038, requires an active Magic Shield condition and overrides the Canary/Crystal no-shield-needed reading. The captured body removes CONDITION_MANASHIELD before combat; the authored remove_condition effect retains that source operation. This source declaration alone does not enforce the active-condition precondition: the runtime owner must refuse an absent or expired Magic Shield before paying costs. A physical shield item is not the Magic Shield condition.",
       "spell_type": "instant"
     }
   }

@@ -4,6 +4,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 import unittest
 
@@ -221,7 +222,7 @@ projected,_=module.project_supported_candidate(bundle,deps,entry,target)
 assert projected['spell']['identity']==target
 assert sys.path==original
 """
-        result = subprocess.run([sys.executable, "-c", program, str(adapter_path)], cwd="/tmp",
+        result = subprocess.run([sys.executable, "-c", program, str(adapter_path)], cwd=tempfile.gettempdir(),
                                 input=json.dumps([self.bundle, self.deps, self.entry, self.target]),
                                 text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stderr)
