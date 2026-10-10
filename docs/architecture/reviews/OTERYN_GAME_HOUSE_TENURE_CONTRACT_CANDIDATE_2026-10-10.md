@@ -4,7 +4,7 @@
 - Status: **CANDIDATE**. Docs only. It re-decides nothing that is accepted: it binds the accepted
   house contract by reference, records the live gap on `main`, names one storage conflict and
   asks the owner the questions where the HOUSE-1 control-plane order (#1622) differs from the
-  accepted contract (§8).
+  accepted contract (§8). The owner answered them on 2026-10-10 (D972, §10).
 - Task: `OTV2-20261010-house-1-contract` (HOUSE-1, control plane #1622)
 - Live base: `main` at `348b2b76`
 - Builds on (all on `main`):
@@ -20,7 +20,8 @@
   - the Tibia manual notes `docs/reference/tibia-manual/houses.md` §5.7.2 and §5.7.3;
   - House client 15.33 source audit (PR #1946, open; evidence only): the 995 static records
     match 15.30, one layout (Lakeside Mansion, 55015) changed.
-- Amends: nothing. Runtime, migration, registry, protocol and production authority: NONE.
+- Amends: EXP-HOUSES-01 §17 and §25.21 on acceptance (owner answer Q2a, §10); nothing else.
+  Runtime, migration, registry, protocol and production authority: NONE.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
 ## 1. Question
@@ -53,7 +54,7 @@ second contract would create a competing authority. This candidate therefore:
 | Rent | HOUSE-OWN-0 §5; owner answer H1 | catalogue `rent_gold` every 30 days in advance, debited from the (Account, World) bank balance as `HOUSE_RENT` burn; coins in inventory or depot are never used |
 | Grace and eviction | HOUSE-OWN-0 §5, §7; EXP-HOUSES-01 §12 | 7 day grace, retried daily and at its end; eviction under a database-enforced content fence; items to each item's reclaim subject's Inbox; 30 day ban per (Account, World) |
 | Move-out | HOUSE-OWN-0 §6 | notice 1 to 30 days; cancellable; no ban, no refund |
-| Access lists | EXP-HOUSES-01 §16, §17; HOUSE-OWN-0 §10 | OWNER, SUBOWNER, GUEST, door lists; revisioned edits (`STALE_REVISION`); 200 entries per list; GUI is the player path (but see §4.2) |
+| Access lists | EXP-HOUSES-01 §16, §17; HOUSE-OWN-0 §10 | OWNER, SUBOWNER, GUEST, door lists; revisioned edits (`STALE_REVISION`); 200 entries per list; GUI and Aleta spells write one list (§10 Q2a) |
 | Entry, kick, leave | HOUSE-RUNTIME-0 §5; HOUSE-OWN-0 §11 amendment | entry checks read the ACL at its revision; `kick`, `leave` intents |
 | Wire | HOUSE-OWN-0 §11 | capability `HOUSE_V1`, `HOUSE_QUERY`, `HOUSE_INTENT` (bid, move_out, cancel_move_out, acl_set, door_set, kick, leave) and their result codes |
 | Persistence ownership | ADR-0004; HOUSE-OWN-0 §7, §9; EXP-HOUSES-01 §22 | Game PostgreSQL is the only authority for property, bids, escrow, rent, ACL and interior; writes through SECURITY DEFINER functions; runtime gets no direct grant on house tables; Platform holds no house truth; Atlas may only consume a Game-owned projection |
@@ -97,7 +98,7 @@ spell edits the list. The two use different house key forms (`oteryn:content.hou
 **Consequence.** Building HOUSE-1a and HOUSE-ACL-1 as written leaves two ownership truths and two
 ACLs in one database, which breaks "one World-global property state per `HouseId`"
 (EXP-HOUSES-01 §4.1). HOUSE-1a must not be allocated before owner question Q1 (§8) is answered.
-The recommended resolution keeps one owner per fact:
+The resolution (owner answer Q1a, §10) keeps one owner per fact:
 
 - `game_house_properties` (HOUSE-1a) is the property and owner authority;
   `game_house_ownership` becomes a row HOUSE-1a's settlement and release functions write in the
@@ -135,7 +136,7 @@ The recommended resolution keeps one owner per fact:
 | HOUSE-RUNTIME-1a/1b/1c | 1-4, 25, 26 (interior parts) |
 | HOUSE-1a | 5, 6, 7, 8 (two physical houses), 28, 34, 35, plus the packet §2.3 tests |
 | HOUSE-1b | 10, 11, 23, 24, 40, 43 (move-out, eviction), plus the packet §2.4 tests |
-| HOUSE-ACL-1 | 19, 20, 21 (see Q2: 21 conflicts with Aleta) |
+| HOUSE-ACL-1 | 19, 20; 21 as amended by §10 Q2a |
 | HOUSE-WIRE-1 | 20, 21 at the wire |
 | Later decisions (Residence, Bazaar, transfer) | 9, 12-18, 22, 27, 29-33, 36-39, 41, 42 |
 
@@ -196,3 +197,20 @@ b) bank, then depot coins (a new value path; supersedes H1).
   scope of later slices.
 - **Minimum sufficient:** no new contract; an index, one conflict and five questions.
 - **Deliberately not decided:** everything accepted in §3; Residence, Bazaar, beds, guildhalls.
+
+## 10. Owner answers (D972, 2026-10-10)
+
+The owner chose `1a 2a 3a 4a 5a`:
+
+- **Q1a.** `game_house_properties` (HOUSE-1a) is the property and owner authority. It keeps
+  `game_house_ownership` in step in the same transactions. HOUSE-ACL-1 adopts `game_house_acl`
+  as the one ACL store, raises its member bound to 200 (`HOUSEOWN0-RL-12`) and creates no
+  `game_house_acl_entries`. HOUSE-1a may be allocated once this record is on `main`.
+- **Q2a.** EXP-HOUSES-01 §17 and §25.21 are superseded under §30. Aleta spells and the GUI write
+  the same revisioned list with the same permissions; a stale edit returns `STALE_REVISION`.
+- **Q3a.** Direct transfer stays deferred (EXP-HOUSES-01 §11.6) until HOUSE-WIRE-1 is playable.
+  It then needs its own HOUSE-TRANSFER-0 decision.
+- **Q4a.** Acquisition is the accepted auction only, through `HOUSE_INTENT` and the panel. There
+  is no NPC sale and no grant command.
+- **Q5a.** Rent comes from the bank only (owner answer H1). Coins in a depot or inventory are
+  never used.

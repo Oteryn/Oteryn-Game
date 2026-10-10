@@ -36,7 +36,7 @@ Docs-only consolidation candidate. It re-decides nothing that EXP-HOUSES-01, HOU
 - failure modes, conformance mapping and the slice plan;
 - owner questions Q1-Q5 (§8).
 
-Q1 blocks HOUSE-1a.
+Owner answers `1a 2a 3a 4a 5a` (D972) are recorded in §10; HOUSE-1a may be allocated once this PR merges.
 
 ## Validation
 
