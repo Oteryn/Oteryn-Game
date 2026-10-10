@@ -14,6 +14,7 @@ pub mod bestiary_progress;
 pub mod character_authority;
 pub mod character_authority_audit;
 pub mod character_build;
+pub(crate) mod character_chat_name;
 pub mod character_death;
 pub mod character_equipment;
 pub mod character_familiar;

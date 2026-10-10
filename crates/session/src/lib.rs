@@ -779,6 +779,13 @@ impl WorldEntities {
         self.entities.values()
     }
 
+    /// Every stored entity but the own actor, ordered by `EntityRef`.
+    pub fn others(&self) -> impl Iterator<Item = &WorldSpatialEntity> {
+        self.entities
+            .values()
+            .filter(|entity| entity.entity.identity != self.own_identity)
+    }
+
     #[must_use]
     pub fn len(&self) -> usize {
         self.entities.len()
@@ -1270,6 +1277,11 @@ impl<S: SessionStream> Session<S> {
             }
         }
 
+        if attack_selected && combat_state.is_none() {
+            return Err(SessionError::MissingDomain(
+                attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
+            ));
+        }
         let snapshot = JoinSnapshot {
             game_session_id: accepted_fields.game_session_id,
             world_spatial: world_spatial_observation.ok_or(SessionError::MissingDomain(
@@ -2842,7 +2854,10 @@ mod tests {
 
     /// Capability 17 is selected: attack-target and fight-mode intents reach the wire with their
     /// codec payloads, each result is decoded, and domain 10 (snapshot and delta) is kept.
-    async fn attack_server(mut stream: DuplexStream) -> Result<(), BoxError> {
+    async fn attack_server(
+        mut stream: DuplexStream,
+        with_combat_state: bool,
+    ) -> Result<(), BoxError> {
         read_frame(&mut stream).await?;
         write_frame(
             &mut stream,
@@ -2854,39 +2869,41 @@ mod tests {
                 current_server_sequence: 0,
                 next_command_id: 7,
                 schema_revision: 1,
-                selected_capabilities: &[attack::CAPABILITY_ATTACK_V1],
+                selected_capabilities: &[
+                    CAPABILITY_WORLD_SPATIAL_ENTITIES,
+                    attack::CAPABILITY_ATTACK_V1,
+                ],
             })?,
         )
         .await?;
+        let (spatial_type, spatial_payload) = entity_snapshot(vec![]);
         let overlay = encode_world_object_overlay_snapshot(&[])
             .map_err(|error| format!("overlay snapshot: {error:?}"))?;
         let combat = attack::encode_actor_combat_state(&combat_state(None, false))
             .map_err(|error| format!("combat: {error:?}"))?;
-        for frame in encode_single_chunk_snapshot(
-            1,
-            1,
-            40,
-            &[
-                DomainSnapshot {
-                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    revision: 5,
-                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-                    payload: &spatial(0),
-                },
-                DomainSnapshot {
-                    domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-                    revision: 2,
-                    snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-                    payload: &overlay,
-                },
-                DomainSnapshot {
-                    domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
-                    revision: 1,
-                    snapshot_type: attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
-                    payload: &combat,
-                },
-            ],
-        )? {
+        let mut domains = vec![
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 5,
+                snapshot_type: spatial_type,
+                payload: &spatial_payload,
+            },
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 2,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload: &overlay,
+            },
+        ];
+        if with_combat_state {
+            domains.push(DomainSnapshot {
+                domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
+                revision: 1,
+                snapshot_type: attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
+                payload: &combat,
+            });
+        }
+        for frame in encode_single_chunk_snapshot(1, 1, 40, &domains)? {
             write_frame(&mut stream, &frame).await?;
         }
         let command = read_frame(&mut stream).await?;
@@ -2957,9 +2974,12 @@ mod tests {
     {
         block_on(async {
             let (client, server) = tokio::io::duplex(64 * 1024);
-            let server = tokio::spawn(attack_server(server));
+            let server = tokio::spawn(attack_server(server, true));
             let mut admission = admission()?;
-            admission.supported_capabilities = &[attack::CAPABILITY_ATTACK_V1];
+            admission.supported_capabilities = &[
+                CAPABILITY_WORLD_SPATIAL_ENTITIES,
+                attack::CAPABILITY_ATTACK_V1,
+            ];
             let mut session = Session::admit(client, admission).await?;
             assert_eq!(session.combat_state(), Some(&combat_state(None, false)));
             let attack = session.attack_target(Some(&target_ref())).await?;
@@ -2982,6 +3002,29 @@ mod tests {
             assert!(matches!(
                 session.take_events().as_slice(),
                 [SessionEvent::ActorCombatState(delta)] if delta.new_revision == 2
+            ));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn a_join_snapshot_without_domain_10_is_refused_when_capability_17_is_selected()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let (client, server) = tokio::io::duplex(64 * 1024);
+            let server = tokio::spawn(attack_server(server, false));
+            let mut admission = admission()?;
+            admission.supported_capabilities = &[
+                CAPABILITY_WORLD_SPATIAL_ENTITIES,
+                attack::CAPABILITY_ATTACK_V1,
+            ];
+            let refused = Session::admit(client, admission).await.err();
+            server.abort();
+            assert!(matches!(
+                refused,
+                Some(SessionError::MissingDomain(
+                    attack::STATE_DOMAIN_ACTOR_COMBAT_STATE
+                ))
             ));
             Ok(())
         })?
