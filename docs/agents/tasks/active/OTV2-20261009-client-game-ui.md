@@ -154,3 +154,11 @@ server projection order, wraps deterministically and shares pointer targeting's
 current Creature/NPC boundary; players, objects, off-floor and off-view entities
 are not guessed to be attackable. Exact reference battle-list sorting/filtering
 remains a separate acceptance gap.
+
+## Continuation checkpoint — 2026-10-10 stop-all hotkey
+
+Stop All Actions now cancels the local click-walk goal, replaces bounded queued
+movement/cast/attack inputs with one stop intent and sends the protocol's existing
+`attack_target(None)` command. An already-sent step remains server-authoritative;
+the client does not pretend it can rewind an in-flight outcome. The resulting
+server disposition is exposed through the existing combat feedback path.

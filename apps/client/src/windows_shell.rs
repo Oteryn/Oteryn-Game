@@ -327,6 +327,11 @@ impl Application {
                         .unwrap_or(false)
                         || settings_changed;
                 }
+                "client.stop" => {
+                    if let Some(play) = self.play.as_mut() {
+                        play.view.stop_all();
+                    }
+                }
                 "action.bottom.all" => {
                     self.preferences.action_bar.edge_enabled[0] =
                         !self.preferences.action_bar.edge_enabled[0];

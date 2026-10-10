@@ -79,6 +79,7 @@ enum Input {
     Arrow(StepDir),
     Cast(NonZeroU32),
     Attack(EntityRef),
+    Stop,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -300,6 +301,14 @@ impl PlayView {
         Ok(true)
     }
 
+    /// Drop queued local actions and enqueue the protocol's explicit stop-attack
+    /// intent. An already-sent step can only be resolved by the server.
+    pub fn stop_all(&mut self) {
+        self.inputs.clear();
+        self.walk.cancel();
+        self.queue(Input::Stop);
+    }
+
     /// A spell hotkey: casts the 1-based spell-book entry. Entries past the bar are ignored and
     /// at most one press per bar slot waits for the next tick.
     pub fn cast(&mut self, spell: NonZeroU32) {
@@ -466,6 +475,7 @@ impl PlayView {
             match input {
                 Input::Cast(spell) => link.request_combat(CombatCommand::Cast(spell)),
                 Input::Attack(target) => link.request_combat(CombatCommand::Attack(target)),
+                Input::Stop => link.request_combat(CombatCommand::Stop),
                 Input::Arrow(_) => match self
                     .send_step()
                     .map_err(|_error| PublicClass::SessionUnavailable)?
@@ -1131,6 +1141,29 @@ mod tests {
     }
 
     #[test]
+    fn stop_all_replaces_queued_local_actions_with_one_stop_intent() -> Result<(), BatchError> {
+        let mut view = view()?;
+        view.click(TileCoord::new(98, 200))?;
+        view.arrow(StepDir::North);
+        view.cast(NonZeroU32::MIN);
+        assert!(view.walk.goal().is_some());
+        assert!(view.inputs.len() > 1);
+
+        view.stop_all();
+        assert_eq!(view.walk.goal(), None);
+        assert_eq!(
+            view.inputs.iter().copied().collect::<Vec<_>>(),
+            vec![Input::Stop]
+        );
+        view.stop_all();
+        assert_eq!(
+            view.inputs.iter().copied().collect::<Vec<_>>(),
+            vec![Input::Stop]
+        );
+        Ok(())
+    }
+
+    #[test]
     fn sending_a_step_redraws_the_new_facing() -> Result<(), BatchError> {
         let mut view = view()?;
         view.click(view.own())?;
@@ -1247,6 +1280,7 @@ mod tests {
             Ok(match command {
                 CombatCommand::Cast(_) => CombatReport::Cast(SpellCastDisposition::NotEnoughMana),
                 CombatCommand::Attack(_) => CombatReport::Attack(AttackIntentDisposition::Ok),
+                CombatCommand::Stop => CombatReport::Stop(AttackIntentDisposition::Ok),
             })
         }
 

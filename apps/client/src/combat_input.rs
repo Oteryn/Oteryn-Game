@@ -30,6 +30,8 @@ pub enum PlayCommand {
 pub enum CombatCommand {
     /// Attack the visible entity a click selected.
     Attack(EntityRef),
+    /// Stop the server-held attack target without inventing a replacement.
+    Stop,
     /// Cast the 1-based spell-book entry, aimed at the attack target when there is one.
     Cast(NonZeroU32),
 }
@@ -38,6 +40,7 @@ pub enum CombatCommand {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CombatReport {
     Attack(AttackIntentDisposition),
+    Stop(AttackIntentDisposition),
     Cast(SpellCastDisposition),
 }
 
@@ -47,6 +50,8 @@ impl CombatReport {
     pub const fn text(self) -> Option<&'static str> {
         match self {
             Self::Attack(disposition) => Some(attack_text(disposition)),
+            Self::Stop(AttackIntentDisposition::Ok) => Some("Actions stopped"),
+            Self::Stop(disposition) => Some(attack_text(disposition)),
             Self::Cast(disposition) => Some(crate::spell::feedback_text(disposition)),
         }
     }
@@ -67,11 +72,11 @@ const fn attack_text(disposition: AttackIntentDisposition) -> &'static str {
 /// arrives as a pushed delta after the command's result.
 async fn settle_target<S: SessionStream>(
     session: &mut Session<S>,
-    wanted: EntityRef,
+    wanted: Option<EntityRef>,
 ) -> Result<(), SessionError> {
     for _ in 0..SETTLE_POLLS {
         let held = session.combat_state().and_then(|state| state.target);
-        if held == Some(wanted) {
+        if held == wanted {
             return Ok(());
         }
         session.service_liveness(SETTLE_SLICE).await?;
@@ -90,9 +95,16 @@ pub async fn run_combat<S: SessionStream>(
         CombatCommand::Attack(target) => {
             let outcome = session.attack_target(Some(&target)).await?;
             if outcome.disposition == AttackIntentDisposition::Ok {
-                settle_target(session, target).await?;
+                settle_target(session, Some(target)).await?;
             }
             Ok(CombatReport::Attack(outcome.disposition))
+        }
+        CombatCommand::Stop => {
+            let outcome = session.attack_target(None).await?;
+            if outcome.disposition == AttackIntentDisposition::Ok {
+                settle_target(session, None).await?;
+            }
+            Ok(CombatReport::Stop(outcome.disposition))
         }
         CombatCommand::Cast(spell) => {
             // Apply any domain-10 delta already on the wire before reading the target.
@@ -116,6 +128,10 @@ mod tests {
         assert_eq!(
             CombatReport::Cast(SpellCastDisposition::NotEnoughMana).text(),
             Some("Not enough mana")
+        );
+        assert_eq!(
+            CombatReport::Stop(AttackIntentDisposition::Ok).text(),
+            Some("Actions stopped")
         );
     }
 }

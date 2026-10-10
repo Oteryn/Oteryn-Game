@@ -44,6 +44,7 @@ pub fn general_action_supported(action: &str) -> bool {
             | "client.options"
             | "client.hotkeys"
             | "client.next_profile"
+            | "client.stop"
             | "client.fullscreen"
             | "client.fps"
             | "minimap.zoom_out"
