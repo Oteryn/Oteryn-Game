@@ -104,7 +104,8 @@ HOUSE-OWN-0 §3. The conflict is the competing tables, not the key. No accepted 
 **Consequence.** Building HOUSE-1a and HOUSE-ACL-1 as written leaves two ownership truths and two
 ACLs in one database, which breaks "one World-global property state per `HouseId`"
 (EXP-HOUSES-01 §4.1). HOUSE-1a must not be allocated before owner question Q1 (§8) is answered,
-and not before the exit gate of ARCH-HOUSE-RT-INBOX-PACKETS-1 §1.5 holds.
+not before PREM-WIRE-1 is merged, and not before the exit gate of ARCH-HOUSE-RT-INBOX-PACKETS-1
+§1.5 holds.
 The resolution (owner answer Q1a, §10) keeps one owner per fact:
 
 - `game_house_properties` (HOUSE-1a) is the property and owner authority. `0038` and `0047` do
@@ -114,6 +115,12 @@ The resolution (owner answer Q1a, §10) keeps one owner per fact:
   `game_house_editors` and `game_house_acl_receipts` also reference that row, and receipts
   cannot be deleted. So the ownership row stays as the anchor of every one of those references.
   HOUSE-1a makes its owner nullable and clears it in the same transaction as each release.
+  Nullability alone is not enough: the `0038` trigger `game_house_owner_in_world` refuses any
+  row whose owner is not an active Character of the World (a NULL owner fails that check) and
+  any update without a new acquisition receipt. HOUSE-1a replaces that trigger, in the same
+  migration and before any release can run, with one that requires an active owner and an exact
+  acquisition successor when the owner is set, and allows a release update that clears the owner
+  with `ownership_revision` + 1 under the property authority.
   `house_spell_acl.rs` reads its owner from the property authority. A `VACANT` or released house
   then grants no owner access, and no former owner keeps rights. Release never deletes the row.
   So it does not depend on whether HOUSE-ACL-1 or HOUSE-1b merges first.
@@ -159,17 +166,20 @@ The resolution (owner answer Q1a, §10) keeps one owner per fact:
 **Gate HOUSE-1B-RECLAIM.** SOCIAL-MAP-PACKETS-1 §2.4 has a test that moves the whole interior to
 the owner's CharacterInbox. Scenario 11 and HOUSE-OWN-0 §7 instead route each item to its
 placement-time reclaim subject. HOUSE-1b is not allocated until a SOCIAL-MAP-PACKETS-1 amendment
-changes that test to route by reclaim subject. This candidate does not make the amendment.
+changes that test to route by reclaim subject. This candidate does not make the amendment. The
+amendment is therefore on the HOUSE-1b critical path (§7 step 4).
 
 ## 7. Slice plan and critical path
 
 1. HOUSE-RUNTIME-1a, then 1b (needs MAP-LOAD-1), then 1c (needs CHAR-POSITION-1): enter and
    furnish a house.
 2. PREM-WIRE-1: the Premium gate the settlement calls.
-3. Owner answer Q1 (§10) and the §1.5 exit gate (HOUSE-RUNTIME-1b and 1c both accepted with every
-   exit-dependent item met, not merely merged), then **HOUSE-1a**: properties, tiles, slot,
-   auction, escrow, settlement (hard worker; persistence, economy and security review).
-4. **HOUSE-ACL-1** and **HOUSE-1b** in parallel (HOUSE-1b also needs MAP-OVERLAY-1c): ACL;
+3. Owner answer Q1 (§10), PREM-WIRE-1 merged, and the §1.5 exit gate (HOUSE-RUNTIME-1b and 1c
+   both accepted with every exit-dependent item met, not merely merged), then **HOUSE-1a**:
+   properties, tiles, slot, auction, escrow, settlement (hard worker; persistence, economy and
+   security review).
+4. **HOUSE-ACL-1** and **HOUSE-1b** in parallel (HOUSE-1b also needs MAP-OVERLAY-1c and the
+   SOCIAL-MAP-PACKETS-1 §2.4 reclaim amendment of gate HOUSE-1B-RECLAIM, §6): ACL;
    rent, grace, move-out, eviction, catalogue revisions.
 5. **HOUSE-WIRE-1**: `HOUSE_V1`, house list, bid, move-out, panel, rent warning at login.
 6. Playability: a player can bid only with gold in the bank. **BANK-NPC-1** (or a bank wire) is a
@@ -235,7 +245,8 @@ The owner chose `1a 2a 3a 4a 5a`:
   `game_house_ownership` in step in the same transactions. HOUSE-ACL-1 adopts `game_house_acl`
   as the one ACL store, raises its member bound to 200 (`HOUSEOWN0-RL-12`) and creates no
   `game_house_acl_entries`. HOUSE-1a and HOUSE-ACL-1 migrate the `0038`/`0047` tables to the
-  accepted model as §4.2 states. HOUSE-1a may be allocated once this record is on `main` and the
+  accepted model as §4.2 states. HOUSE-1a may be allocated once this record is on `main`,
+  PREM-WIRE-1 (the Premium gate the settlement calls) is merged, and the
   exit gate of ARCH-HOUSE-RT-INBOX-PACKETS-1 §1.5 holds. That gate needs HOUSE-RUNTIME-1b and 1c
   accepted with every exit-dependent item met. Both are absent today (§4.1).
 - **Q2a.** Superseded under EXP-HOUSES-01 §30, as far as they forbid Aleta list edits:
