@@ -23,6 +23,7 @@ owned_paths:
   - apps/client/src/lib.rs
   - apps/client/src/windows_shell.rs
   - tools/dev-client/src/lib.rs
+  - tools/synthetic-client-harness/src/live/model.rs
   - docs/agents/tasks/archive/CLIENT-COMBAT-INPUT-1.md
 public_contracts: []
 external_repositories: []
@@ -54,7 +55,7 @@ task: the view carries no visible entities yet, so it returns in CLIENT-ENTITY-V
 ## Excluded scope
 
 `apps/game-server/**` and `protocol-oteryn` unchanged. No fight-mode control and no click-to-attack.
-`tools/dev-client` got one `SessionError::Attack` mapping arm, forced by its exhaustive match.
+`tools/synthetic-client-harness` got one no-op `ActorCombatState` arm. `tools/dev-client` got one `SessionError::Attack` mapping arm, forced by its exhaustive match.
 
 ## Validation
 
