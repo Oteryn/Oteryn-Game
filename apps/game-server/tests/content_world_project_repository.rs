@@ -16,8 +16,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        418,
-        "4b522b20db3a15fa0cea6fce7b29ea0e72ba5f410c1c20c98379a971bc71924a",
+        412,
+        "89ae95e31152335b2e0f16cb1919ad990d203d4aadaaf0d0cfa5ebb11566a42e",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        27050744,
-        "d8680c42f767c29c977b0a3a00afde93f7a6f3eea28de5f549d30323bb0bfd2a",
+        27_238_252,
+        "2b09b38ab63b3b68e6e3244d8ee644c68318f89882faf9f7495a055eab2cc855",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1957,
-        "36208a79ae598db9a1b4c6a976303d5f3b9552bfb1b94ccf3b75811ccd85ee7c",
+        1955,
+        "a3cd7dc5080c65750efd115b69919d0cf4bd3a93d942565e0c2207ac6bf7159a",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        408,
-        "42edd1e97a3125787cdbbd8f156b8cbbbc10b88133b727427d4c50c20fb1e67d",
+        406,
+        "2a7af708f61a6f0b63d65d912841b4a2e5e65c7218489805de96ae55087e3440",
     ),
     (
         "provenance/imports.json",
@@ -125,7 +125,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "045776ffda71f9199431bd0ca02615d2e94a8956fda1d3ff2fcc81ad54b2ccde";
+const TREE_SHA256: &str = "7353a9ed65d82bb393db172a74f576b699ede2d727ddb6690ec8cc6c50925071";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -339,6 +339,28 @@ fn tracked_package_has_exact_inventory_digests_and_no_runtime_identity_layer() {
 }
 
 #[test]
+fn bed_promotion_is_idempotent_on_the_committed_world() {
+    let root = project_root();
+    let mut draft = capture_world_project(
+        root.parent().expect("package has content parent"),
+        OsStr::new("world"),
+        filesystem_limits(),
+    )
+    .expect("capture tracked canonical package")
+    .migrate_to_v2();
+    let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits())
+        .expect("committed world documents");
+    item_bed_promotion::apply_item_bed_promotion_v1(&mut draft)
+        .expect("bed promotion re-applies to promoted world");
+    let after = CanonicalProjectDocuments::from_v2_draft(draft, limits())
+        .expect("re-promoted world documents");
+    assert!(
+        before == after,
+        "re-applying the bed promotion changed the committed world"
+    );
+}
+
+#[test]
 fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() {
     let root = project_root();
     let project = capture_world_project(
@@ -349,7 +371,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "monster-npc-reconciled-20261005-r1"
+        "d3-7-corpse-admitted-20261006-r1"
     );
     assert_eq!(project.imports().len(), 31);
     let legacy_imports: Vec<_> = project
@@ -1970,14 +1992,23 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // (ITEM-ID-1b) and are kept in the tombstone archive.
     // ITEM-ADD-1: 23 donor epoch-2 Items carry 39 TibiaWiki atoms on these paths.
     // Source-qualified portal25051 adds one newly known presentation.name atom.
-    assert_eq!(promoted_items, 12_301 - 201 + 23 + 1);
+    // D3-7 admits the rat corpse (i5964) with a container capacity.
+    assert_eq!(promoted_items, 12_301 - 201 + 23 + 1 + 1);
     // ITEM-SEM-2b adds 328 TibiaWiki atoms on these v1 paths where v1 had none; it replaces,
     // never removes, the others. Capacity adds 17 unknown atoms; declared charges add one.
     // Explicit relative hit facts add 28 atoms on Items already in this census.
     // TIMED-CONTENT-1 adds one charges atom on these paths where none was promoted.
     assert_eq!(
         promoted_fields,
-        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204 + 328 + 39 + 17 + 1 + 28 + 1 + 1
+        ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT + 12 - 204
+            + 328
+            + 39
+            + 17
+            + 1
+            + 28
+            + 1
+            + 1
+            + 1
     );
     let (wave1_items, wave1_fields) = linked
         .definitions
@@ -2003,14 +2034,15 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // (D289 holds i901, which enters this census through no other atom; D310 holds i3450,
     // which keeps other atoms).
     // Eight successor defaults add eight false leaves; all already have Wave 1 atoms.
+    // D3-7 adds one explicit `stackable: false` leaf on the corpse, which had no atom here.
     assert_eq!(
         wave1_items,
         // Portal25051 + ten exact Tentacle Item identities add eleven explicit false stackability facts.
-        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2518 + 11
+        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2518 + 11 + 1
     );
     assert_eq!(
         wave1_fields,
-        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_889 + 8 + 11
+        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_889 + 8 + 11 + 1
     );
     // The declared timer has its own census: it is not one of the older v1/Wave 1 atoms.
     let (charge_fields, duration_fields) = linked
@@ -2047,7 +2079,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // The timed promotion adds 49 durations (its 49 `temporal.duration_ms` rows; TIMED-CONTENT-2
     // omits the one-way i9394) and clears the 21 durations the stats promotion had put on
     // inactive equip forms (TIMED-ITEM-0 §4).
-    assert_eq!(duration_fields, 138 + 49 - 21);
+    // D3-7 gives the corpse a 60 s duration.
+    assert_eq!(duration_fields, 138 + 49 - 21 + 1);
     // Resistance vectors were entirely unknown in the predecessor. Count their typed
     // percentages as atoms so a missing list member cannot hide behind the vector count.
     let (mut resistance_vectors, mut resistance_atoms, mut equipment_patterns) = (0, 0, 0);

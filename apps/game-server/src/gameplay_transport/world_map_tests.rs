@@ -132,7 +132,17 @@ fn content(id: u32) -> Item {
 }
 
 /// A server bundle over `0..=127` holding `tiles`, loaded as a base.
-fn base(tiles: Vec<(TilePos, Vec<Item>)>) -> Arc<WorldBase> {
+fn base(tiles: Vec<(TilePos, Vec<Item>)>, ground_speed: u16) -> Arc<WorldBase> {
+    let (bytes, pins) = bundle_bytes(tiles, ground_speed);
+    Arc::new(crate::map::load(&bytes, &pins).expect("loaded base"))
+}
+
+/// The bytes and pins of a server bundle over `0..=127` holding `tiles`, whose ground stores
+/// `ground_speed`.
+fn bundle_bytes(
+    tiles: Vec<(TilePos, Vec<Item>)>,
+    ground_speed: u16,
+) -> (Vec<u8>, crate::map::BundlePins) {
     let terrain = |key: &str, id, kind| PaletteEntry {
         key: key.into(),
         family: Family::Terrain,
@@ -141,7 +151,7 @@ fn base(tiles: Vec<(TilePos, Vec<Item>)>) -> Arc<WorldBase> {
             TerrainKind::Ground => Terrain {
                 kind,
                 walkable: Some(true),
-                ground_speed: Some(150),
+                ground_speed: Some(ground_speed),
             },
             _ => Terrain {
                 kind,
@@ -230,7 +240,7 @@ fn base(tiles: Vec<(TilePos, Vec<Item>)>) -> Arc<WorldBase> {
         content_revision: "rev-1".into(),
         production: true,
     };
-    Arc::new(crate::map::load(&bytes, &pins).expect("loaded base"))
+    (bytes, pins)
 }
 
 fn uuid(seed: u8) -> [u8; 16] {
@@ -259,8 +269,12 @@ struct Fixture {
 
 impl Fixture {
     fn new(tiles: Vec<(TilePos, Vec<Item>)>) -> Self {
+        Self::with_ground_speed(tiles, 150)
+    }
+
+    fn with_ground_speed(tiles: Vec<(TilePos, Vec<Item>)>, ground_speed: u16) -> Self {
         Self {
-            overlay: ChannelOverlay::new(base(tiles), world(), channel()),
+            overlay: ChannelOverlay::new(base(tiles, ground_speed), world(), channel()),
             facts: Facts::default(),
             reset_epoch: 1,
             items: SessionItemView::resume(ItemViewContinuity::default()).with_map_view(),
@@ -947,6 +961,24 @@ fn a_diagonal_step_sends_at_most_31_tiles_per_floor_and_matches_a_fresh_snapshot
     assert_eq!(fixture.step(tp(31, 31, -7)), None);
 }
 
+/// §2.4: until MAP-CLIENT-1 the view sends the Engineering 150 speed the server paces with,
+/// not the bundle's stored ground speed.
+#[test]
+fn the_view_sends_the_engineering_ground_speed_not_the_stored_one() {
+    let mut fixture = Fixture::with_ground_speed(vec![(ACTOR, vec![item(GRASS)])], 220);
+    assert_eq!(
+        fixture
+            .overlay
+            .base()
+            .tile(ACTOR.x, ACTOR.y, ACTOR.floor)
+            .expect("tile")
+            .stored_ground_speed(),
+        220
+    );
+    fixture.join(ACTOR);
+    assert_eq!(fixture.client_tile(ACTOR).expect("tile").ground_speed, 150);
+}
+
 #[test]
 fn a_step_onto_empty_tiles_sends_the_origin_alone() {
     let mut fixture = Fixture::new(vec![(ACTOR, vec![item(GRASS)])]);
@@ -1419,41 +1451,93 @@ const GOLDEN: (usize, usize, &str) = (
 #[test]
 #[ignore = "measurement; run in release"]
 fn map_viewport_measure() {
+    let floors: Vec<i8> = (-7..=0).collect();
+    let fixture = Fixture::new(seeded_world(7, &floors, 24..72));
+    measure_viewports("", &fixture.overlay, &fixture.facts, &floors);
+}
+
+/// [`map_viewport_measure`] over the production [`BundleFacts`](crate::map::facts::BundleFacts)
+/// of the same seeded world booted as a bundle World (MAP-CUTOVER-1b).
+#[test]
+#[ignore = "measurement; run in release"]
+fn map_viewport_measure_production_facts() {
+    let floors: Vec<i8> = (-7..=0).collect();
+    let world = booted(seeded_world(7, &floors, 24..72));
+    measure_viewports(" production-facts", world.overlay(), world.facts(), &floors);
+}
+
+/// The served definition of a test palette Item key: its §1.6 reference is 1 + its palette `id`.
+fn production_item(key: &str) -> Option<crate::map::facts::ItemDefinition> {
+    let id = match key {
+        "item:coin" => COIN,
+        "item:door" => DOOR,
+        "item:chest" => CHEST,
+        "item:table" => TABLE,
+        "item:bag" => BAG,
+        "item:pillar" => PILLAR,
+        _ => return None,
+    };
+    let solid = matches!(id, DOOR | CHEST | PILLAR);
+    Some(crate::map::facts::ItemDefinition {
+        reference: nz(id + 1),
+        solid: Some(solid),
+        blocks_projectile: id == PILLAR,
+        pickupable: matches!(id, COIN | BAG),
+    })
+}
+
+/// `tiles` booted as a bundle World with [`production_item`], starting at the first tile that
+/// holds grass alone.
+fn booted(tiles: Vec<(TilePos, Vec<Item>)>) -> crate::map::boot::BundleWorld {
+    let start = tiles
+        .iter()
+        .find(|(_, items)| items.len() == 1 && items[0].palette == GRASS - 1)
+        .map(|(pos, _)| *pos)
+        .expect("a grass tile");
+    let (bytes, bundle) = bundle_bytes(tiles, 150);
+    let map_revision = map_revision(&crate::map::load(&bytes, &bundle).expect("loaded base"));
+    let pins = crate::map::boot::BootPins {
+        bundle,
+        map_revision,
+        start,
+    };
+    crate::map::boot::boot(&bytes, &pins, world(), channel(), production_item).expect("booted")
+}
+
+fn measure_viewports<F: MapFacts>(label: &str, overlay: &ChannelOverlay, facts: &F, floors: &[i8]) {
     use std::time::{Duration, Instant};
     const SAMPLES: usize = 20_000;
-    let floors: Vec<i8> = (-7..=0).collect();
-    let mut fixture = Fixture::new(seeded_world(7, &floors, 24..72));
+    let mut items = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+    let mut view = SessionMapView::default();
     let mut rng = Seeded(0x5eed_0007);
     let (mut snapshots, mut deltas) = (Vec::with_capacity(SAMPLES), Vec::with_capacity(SAMPLES));
     let mut plans = Vec::with_capacity(SAMPLES);
+    let source = MapViewSource {
+        overlay,
+        facts,
+        content_generation: [7; 32],
+        reset_epoch: 1,
+    };
     for _ in 0..SAMPLES {
         let actor = tp(
             34 + rng.below(28) as u16,
             34 + rng.below(28) as u16,
             floors[rng.below(floors.len() as u64) as usize],
         );
-        let source = MapViewSource {
-            overlay: &fixture.overlay,
-            facts: &fixture.facts,
-            content_generation: [7; 32],
-            reset_epoch: fixture.reset_epoch,
-        };
         let started = Instant::now();
         let planned = plan(&source, at(actor)).expect("plan");
         plans.push(started.elapsed());
         std::hint::black_box(planned);
         let started = Instant::now();
-        let snapshot = fixture
-            .view
-            .snapshot(&mut fixture.items, &source, at(actor))
+        let snapshot = view
+            .snapshot(&mut items, &source, at(actor))
             .expect("snapshot");
         snapshots.push(started.elapsed());
         std::hint::black_box(snapshot);
         let stepped = tp(actor.x + 1, actor.y, actor.floor);
         let started = Instant::now();
-        let delta = fixture
-            .view
-            .update(&mut fixture.items, &source, at(stepped))
+        let delta = view
+            .update(&mut items, &source, at(stepped))
             .expect("delta");
         deltas.push(started.elapsed());
         std::hint::black_box(delta);
@@ -1461,7 +1545,7 @@ fn map_viewport_measure() {
     let report = |name: &str, samples: &mut Vec<Duration>| {
         samples.sort_unstable();
         println!(
-            "MAP01-VIEWPORT-US {name} p50={:?} p99={:?} max={:?}",
+            "MAP01-VIEWPORT-US{label} {name} p50={:?} p99={:?} max={:?}",
             samples[samples.len() / 2],
             samples[samples.len() * 99 / 100],
             samples[samples.len() - 1]
@@ -1470,4 +1554,147 @@ fn map_viewport_measure() {
     report("snapshot", &mut snapshots);
     report("delta", &mut deltas);
     report("stage plan (compose + rank)", &mut plans);
+}
+
+/// MAP-CUTOVER-1b: the admission path of a bundle World plans domain 17 from the bundle's own
+/// overlay and facts at the runtime position, with the native floor `-z`, a snapshot at join and
+/// a delta after a step; a fixture World has no domain 17.
+#[test]
+fn map_cutover_a_bundle_world_plans_domain_17_at_the_runtime_position() {
+    use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+    use crate::foundation::{
+        ChannelContentPin, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId,
+    };
+    use crate::movement::{
+        CardinalStep, MovementEngineeringSelection, MovementOwnerTurn, MovementTurnOutcome,
+    };
+
+    let mut tiles: Vec<(TilePos, Vec<Item>)> = (16..=24)
+        .map(|x| (tp(x, 20, -7), vec![item(GRASS)]))
+        .collect();
+    tiles.push((tp(22, 21, -7), vec![item(GRASS), item(COIN)]));
+    tiles.push((tp(23, 21, -7), vec![item(GRASS), item(PILLAR)]));
+    let bundle = booted(tiles);
+    let room = crate::content::qualify_native_entry_room(world()).expect("entry room");
+    let cells = bundle
+        .movement_cells(room.movement_cells())
+        .expect("bundle cells");
+    assert!(matches!(
+        cells.index(),
+        NativeMovementCollisionIndex::Bundle(_)
+    ));
+
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        world(),
+        channel(),
+        NodeId::decode(&uuid(3)).expect("fixture"),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        2,
+        ChannelContentPin::test(world()),
+    )
+    .expect("runtime");
+    let reserved = runtime
+        .reserve_fresh_session(GameSessionId::decode(&uuid(4)).expect("fixture"))
+        .expect("reserved");
+    let actor = runtime.commit_fresh_session(reserved).expect("committed");
+    let start = runtime
+        .initialize_pinned_test_position(
+            actor,
+            MovementLocalPosition {
+                x: 20,
+                y: 20,
+                floor: 7,
+            },
+        )
+        .expect("position");
+
+    // What a fresh view plans from the bundle World at a native position.
+    let generation = runtime.content_pin().client_artifact_digest();
+    let source = MapViewSource {
+        overlay: bundle.overlay(),
+        facts: bundle.facts(),
+        content_generation: generation,
+        reset_epoch: 0,
+    };
+    let mut fresh_items = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+    let mut fresh = SessionMapView::default();
+
+    let mut items = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+    let mut view = SessionMapView::default();
+    let joined = crate::gameplay_transport::bundle_world_map(
+        &mut runtime,
+        &cells,
+        actor,
+        &mut view,
+        &mut items,
+    )
+    .expect("a bundle World")
+    .expect("planned");
+    let Some(MapUpdate::Snapshot(joined)) = joined else {
+        panic!("a join snapshot");
+    };
+    let expected = fresh
+        .snapshot(&mut fresh_items, &source, at(ACTOR))
+        .expect("fresh snapshot");
+    assert_eq!(joined.payload, expected.payload);
+    let decoded = decode_world_map_snapshot(&joined.payload).expect("decoded");
+    assert_eq!(decoded.header.reset_epoch, 0);
+    assert_eq!(decoded.header.content_generation, generation);
+    let coin = decoded
+        .tiles
+        .iter()
+        .find(|tile| tile.position == at(tp(22, 21, -7)))
+        .expect("the coin tile");
+    assert_eq!(
+        definitions(coin),
+        [MapDefinition::Terrain(nz(GRASS + 1)), item_def(COIN + 1)]
+    );
+
+    // One step east is a delta that a fresh view's move agrees with.
+    let selection = MovementEngineeringSelection {
+        owner_context: start.context(),
+        content_scope: cells.scope(),
+    };
+    match MovementOwnerTurn::begin(&mut runtime, std::num::NonZeroUsize::MIN)
+        .try_step(actor, start, &selection, cells.index(), CardinalStep::East)
+        .expect("stepped")
+    {
+        MovementTurnOutcome::Applied(_) => {}
+        MovementTurnOutcome::Deferred => panic!("deferred step"),
+    }
+    let stepped = crate::gameplay_transport::bundle_world_map(
+        &mut runtime,
+        &cells,
+        actor,
+        &mut view,
+        &mut items,
+    )
+    .expect("a bundle World")
+    .expect("planned");
+    let Some(MapUpdate::Delta(stepped)) = stepped else {
+        panic!("a step delta");
+    };
+    let Some(MapUpdate::Delta(expected)) = fresh
+        .update(&mut fresh_items, &source, at(tp(21, 20, -7)))
+        .expect("fresh delta")
+    else {
+        panic!("a fresh delta");
+    };
+    assert_eq!((stepped.from, stepped.to), (expected.from, expected.to));
+    assert_eq!(stepped.payload, expected.payload);
+
+    // The entry room's own cells are not a bundle World.
+    assert!(
+        crate::gameplay_transport::bundle_world_map(
+            &mut runtime,
+            room.movement_cells(),
+            actor,
+            &mut view,
+            &mut items,
+        )
+        .is_none()
+    );
 }

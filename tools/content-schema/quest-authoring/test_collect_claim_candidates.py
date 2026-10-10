@@ -15,12 +15,12 @@ class CollectClaimCandidatesTest(unittest.TestCase):
             {
                 candidates.CLASS_AMBIGUOUS: 2,
                 candidates.CLASS_EXACT: 2,
-                candidates.CLASS_NO_MATCH: 141,
-                candidates.CLASS_TARGET_INCOMPLETE: 128,
+                candidates.CLASS_NO_MATCH: 143,
+                candidates.CLASS_TARGET_INCOMPLETE: 130,
             },
             self.packet["summary"]["classification_counts"],
         )
-        self.assertEqual(273, self.packet["summary"]["collect_stages"])
+        self.assertEqual(277, self.packet["summary"]["collect_stages"])
         self.assertEqual(0, self.packet["native_dispatch_bindings"])
         self.assertFalse(self.packet["runtime_admitted"])
 

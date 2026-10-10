@@ -245,8 +245,8 @@ def build(root: Path):
     records.sort(key=lambda row: (row["quest"], row["stage_key"]))
     counts = collections.Counter(row["classification"] for row in records)
     expected_counts = {
-        CLASS_NO_MATCH: 141,
-        CLASS_TARGET_INCOMPLETE: 128,
+        CLASS_NO_MATCH: 143,
+        CLASS_TARGET_INCOMPLETE: 130,
         CLASS_EXACT: 2,
         CLASS_AMBIGUOUS: 2,
     }

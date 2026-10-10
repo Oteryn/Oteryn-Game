@@ -351,7 +351,7 @@ fn registries_bind_the_item_view_ids_and_limits() {
     };
     let capability = find("capabilities", CAPABILITY_ITEM_VIEW_MOVE_V1);
     assert_eq!(capability["name"], "ITEM_VIEW_MOVE_V1");
-    assert_eq!(capability["offered"], false);
+    assert_eq!(capability["offered"], true);
     assert_eq!(
         capability["requires"],
         serde_json::json!(CAPABILITY_ITEM_VIEW_MOVE_V1_REQUIRES)
