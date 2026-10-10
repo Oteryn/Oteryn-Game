@@ -97,6 +97,10 @@ pub(crate) struct PlayerSpellState {
     pub(super) health: u32,
     pub(super) field_attack_history: super::field_history::FieldAttackHistory,
     pub(super) mana: u32,
+    /// FOOD-REGEN-1: milliseconds of fed time accumulated toward the next health and mana credit.
+    /// Runtime-only; a fresh actor starts at zero.
+    pub(super) regen_health_ms: u32,
+    pub(super) regen_mana_ms: u32,
     pub(super) soul: u32,
     pub(super) cooldowns: Cooldowns,
     pub(super) revision: u64,
@@ -245,6 +249,8 @@ impl PlayerSpellState {
                 facts,
                 health: facts.max_health,
                 mana: facts.max_mana,
+                regen_health_ms: 0,
+                regen_mana_ms: 0,
                 premium_current: false,
                 premium_valid_until_micros: None,
                 soul: facts.max_soul,

@@ -18,6 +18,9 @@ MAP_IDS={1949,2338,2429,2430,2433,2441,2454,2471,2472,2480,2487,2488,2493,2494,2
 PATHS=('data/items/appearances.dat','data/items/items.xml','src/items/items.hpp','src/items/items.cpp','src/items/item.cpp','src/items/functions/item/item_parse.cpp','src/items/functions/item/item_parse.hpp','src/utils/const.hpp','src/creatures/combat/spells.cpp','src/creatures/combat/combat.cpp','src/items/tile.cpp','src/utils/utils_definitions.hpp','config.lua.dist')
 K=lambda value:{'state':'KNOWN','value':value}
 NA={'state':'NOT_APPLICABLE'};U={'state':'UNKNOWN'}
+# Closed coin table of apps/game-server/src/domain/currency.rs (CHARACTER-GOLD-FEE-BOUNDARY-V1
+# D175/D176): gold, platinum and crystal, each StackCapable to exactly COIN_STACK_MAXIMUM.
+COIN_IDS=(3031,3035,3043);COIN_STACK_MAXIMUM=100;COINS='coin-item-profiles.json'
 SECTIONS=('presentation','classification','physical','stack','equipment','weapon','protection','skill_modifiers','charges','temporal','container','imbuement','use_transform','trade_restrictions','fluid','readable_writeable')
 
 def pinned(root,path):return subprocess.check_output(['git','-C',str(root),'show',f'{CANARY_PIN}:{path}'])
@@ -106,7 +109,7 @@ def build(canary,crystal,bundles,out):
  if 'bool replaceable = true;' not in hpp or 'itemType.replaceable = valueAttribute.as_bool();' not in captured['src/items/functions/item/item_parse.cpp'].decode():raise ValueError('source field replacement loader drifted')
  if 'iType.stackable = object.flags().cumulative()' not in cpp:raise ValueError('source stack loader drifted')
  if 'removeChargesFromRunes = true' not in captured['config.lua.dist'].decode() or 'item->getItemCount() - 1' not in captured['src/creatures/combat/spells.cpp'].decode():raise ValueError('source Rune consumption policy changed')
- wanted=set(MAP_IDS)|{2854,3264,3412,3147,3289,3321,25760,40450}
+ wanted=set(MAP_IDS)|{2854,3264,3412,3147,3289,3321,25760,40450}|set(COIN_IDS)
  excluded=[]
  for path in bundles.glob('*/spell.json'):
   doc=json.loads(path.read_bytes());found=set(refs(doc))
@@ -131,6 +134,17 @@ def build(canary,crystal,bundles,out):
   'attributes':{'speed_bonus':0,'blocks_movement':False,'blocks_projectile':False,'immovable_block_solid':False,'has_height':False,'field_replaceable':None,'field_condition':None,'rune_consumption':None},'admission':{k:p[k] for k in ['materializable','stack_class','legal_destinations']}})
  result=bind_profiles({'schema':'OTERYN_NATIVE_ITEM_PROFILES/v1','records':records},bindings,ordinary,generic)
  out.mkdir(parents=True,exist_ok=True);raw=(json.dumps(result,indent=2,ensure_ascii=False)+'\n').encode();(out/'item-profiles.json').write_bytes(raw)
+ coins=[r for r in result['records'] if r['production_definition']['production_key'] in {f'oteryn:item.tibia.i{i}' for i in COIN_IDS}]
+ for r in coins:
+  a=r['admission']
+  if (len(coins)!=len(COIN_IDS) or r['semantics']['stack']!=K({'stackable':K(True),'stack_max':K(COIN_STACK_MAXIMUM)})
+      or a!={'materializable':True,'stack_class':'StackCapable','legal_destinations':['CharacterInventory','Ground']}):
+   raise ValueError('coin profile disagrees with the D175/D176 coin table')
+ # The overlay register_spell_families.py adds to the pinned r25 Item provider; with it, the
+ # provider is exactly item-profiles.json.
+ (out/COINS).write_bytes((json.dumps({'schema':'OTERYN_NATIVE_COIN_ITEM_PROFILES/v1','sources':[canary_source,crystal_source],
+  'producer':'tools/content-schema/native-gameplay/build_source_item_profiles.py','item_profiles_sha256':hashlib.sha256(raw).hexdigest(),
+  'records':coins},indent=2,ensure_ascii=False)+'\n').encode())
  evidence={'schema':'OTERYN_NATIVE_SOURCE_ITEM_PROFILE_IMPORT/v1','classification':'Explicit local source candidate; not production activation','sources':[canary_source,crystal_source],
   'loader_sources':[{'path':p,'revision':CANARY_PIN,'sha256':hashlib.sha256(b).hexdigest()} for p,b in captured.items()],
   'output_sha256':hashlib.sha256(raw).hexdigest(),'records':len(records),'excluded_zero_count_bundles':excluded,'map_ids':sorted(MAP_IDS),'starter_ids':{'backpack':2854,'sword':3264,'wooden_shield':3412},
