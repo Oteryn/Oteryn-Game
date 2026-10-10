@@ -68,7 +68,7 @@ entry 2, issue index 5; verified in game by its author on protocol 15.25):
 | frag load window on login | 30 days (upstream 24 h lost bars and orange marks, fixed) | yes: durable point rows, 45-day retention (`PARTYPVP0-RL-23`) |
 | frag share | 5 or fewer participants: 1.0 each; 6+: `5 / N` each | yes, `PARTYPVP0-RL-18` |
 | PvP situation | mutual, 60 s (`pzLocked`), refreshed by each aggressive act, runtime only | yes, §8.2 aggression relations |
-| a player-made field harms bystanders only in a PvP situation | per-viewer safe item variants (`ITEM_*_NOPVP`, `*_SAFE`) | **partly**: WORLD-INTERACTION-0 §8.2 runs a player field's hit through legality rules 1-5 and 7 with no PvP-situation gate (the manual's incidental skulls), so an eligible unmarked bystander on an `OPEN` World is hurt; the PvP-situation gate is not adopted. The safe variant follows that legality; viewer rendering unassigned (gap G5) |
+| a player-made field harms bystanders only in a PvP situation | per-viewer safe item variants (`ITEM_*_NOPVP`, `*_SAFE`) | **partly**: WORLD-INTERACTION-0 §8.2 runs a player field's hit through legality rules 1-5 and 7 with no PvP-situation gate (the manual's incidental skulls), so an eligible unmarked bystander on an `OPEN` World is hurt; the PvP-situation gate is not adopted. field rules against players moved to PVP-FIELD-0 (gap G5, §6.5) |
 | expert modes Dove / White Hand / Yellow Hand / Red Fist | wire byte 0-3 appended to fight modes; restricts who may be attacked and blocked | wire and blocking yes (§7.5, §11); attack restriction **no**: the manual (`interface.md` §3.5.2) makes each mode restrict attacks too, and PARTY-PVP-0 §7.2 has no such rule (gap G6) |
 | a character not first in its tile stack cannot start PvP or cast area effects | `Player::isFirstInStack` | not in the manual; not adopted (§5) |
 | PZ duration ("pzLocked") and in-fight | 60 s | yes, `PARTYPVP0-RL-12`, `ATTACK0-RL-03` |
@@ -85,7 +85,7 @@ The Canary `protectionLevel` convention (a character at or below the value is pr
 | G2 | Two World PvP type sources: `rulesets/pvp/` `pvp_type` (PARTY-PVP-0 §6.1, not yet populated) and the published field policy `world_type` (migration 0048), plus two minimum-level and two in-fight values. They can disagree. | §6.2 amendment (Q2) |
 | G3 | Map tiles carry `no_pvp_zone`, but no PvP legality rule reads it. A non-PZ no-PvP tile (regeneration and logout allowed, PvP refused) has no rule. | §6.3 amendment (Q3) |
 | G4 | Map tiles carry `pvp_zone` (arena tiles), and arenas are deferred. No rule says what such a tile does until then, and `field_step_ingress.rs` already holds an arena-like exception: on a `NoPvp` World a player-made field hits a character when both stand on `pvp_zone` tiles. | §6.4 amendment (Q4) |
-| G5 | Viewer-relative field item variants (a bystander sees the harmless variant) and the World-relative walkable wall variant have no slice, and nothing refreshes them when the legality between viewer and owner changes. | §6.5, PVP-BLOCK-1, PVP-WIRE-1 |
+| G5 | Player-made fields and walls against players: which positions the legality rules read, the viewer-relative field variants and the wall variant, their refresh, and the activation guard have no owner. | §6.5: moved to PVP-FIELD-0, with an explicit gate |
 | G6 | Expert mode is carried on the wire and decides blocking, but PARTY-PVP-0 §7.2 never uses it to restrict attacks; a client could show Dove while the server lets it attack anyone secure mode allows. | §6.6 amendment |
 
 Rookgaard ("no PvP on every World type") is G3 applied to map data: the map marks it `no_pvp_zone`.
@@ -131,41 +131,35 @@ PARTY-PVP-0 §7.2 gains rule **3b, no-PvP tile**: an offensive effect from a cha
 summon) to a character is refused when either stands on a `no_pvp_zone` tile, on every World type.
 A tile with unknown zone facts refuses (fail closed, as `ordinary_field_items.rs` already does).
 A no-PvP tile does not stop regeneration or logout and sets no PZ semantics; PvE is unaffected.
-Single target: `PVP_REFUSED {NO_PVP_TILE}`; an area effect skips the actor. For a player-made
-field hit, rule 3b reads the field's own tile, where the target stands when hit; the owner's
-position does not matter. A field on a no-PvP tile therefore never hits a character and keeps
-the §6.5 safe variant for every viewer.
+Single target: `PVP_REFUSED {NO_PVP_TILE}`; an area effect skips the actor. Which positions
+rules 3 and 3b read for a player-made field hit belongs to PVP-FIELD-0 (§6.5).
 
 ### 6.4 PvP-zone tiles until ARENA-0 (G4, Q4 a, D971)
 
 A `pvp_zone` tile grants nothing until an arena decision: World rules apply on it unchanged.
-PVP-RT-1 moves the player-made field hit in `field_step_ingress.rs` onto the legality stage
-(§7.2, with the WORLD-INTERACTION-0 §8.2 field amendment) and removes its `NoPvp` both-tiles-`pvp_zone`
-exception, so an `OPTIONAL` World has no PvP field damage outside a war. Arena death without loss,
+PVP-RT-1 removes the `NoPvp` both-tiles-`pvp_zone` exception from `field_step_ingress.rs`, so
+the field path holds no PvP grant of its own; how a player-made field hit runs through the
+legality stage belongs to PVP-FIELD-0 (§6.5). Arena death without loss,
 arena-only PvP on Optional Worlds and the arena exit rules belong to ARENA-0
 (`rulesets/pvp/arena/`).
 
-### 6.5 Viewer-relative field and wall variants (G5)
+### 6.5 Player-made fields and walls against players: PVP-FIELD-0 (G5)
 
-PVP-BLOCK-1 also owns the viewer-relative item variant of a player-made damage field: a viewer
-for whom the field legality (§7.2 rules 1-5 and 7 with the WORLD-INTERACTION-0 §8.2 field rules,
-plus rule 3b) refuses the owner's field hit receives the harmless variant;
-the predicate evaluates the hit the viewer would take standing on the field entry's tile (§6.3),
-so neither the viewer's nor the owner's current tile is an input; every other viewer
-receives the real one. A blocking wall is not viewer-relative, because WORLD-INTERACTION-0 §8.3
-collision does not depend on the viewer: on an `OPTIONAL` World every viewer receives the
-walkable variant (a step onto it removes the wall and moves), and on every other World every
-viewer receives the real, blocking one. The server decides every step and every field
-application independently of what the viewer was sent. The variant rides the existing item entry; no new
-domain and no PVP-WIRE-1 element. When an input of that predicate changes for a viewer and an
-owner (a skull or mark, an aggression relation (§8.2) starting, expiring or ending by logout,
-party or guild membership, a war, the level threshold, the
-owner's post-login immunity (rule 4: the owner is the actor) expiring),
-PVP-BLOCK-1 republishes every affected entry in that viewer's view in the next projection update,
-as an item update on the same entry. A channel
-restart clears both the relations (runtime only, §8.2) and player fields and walls
-(WORLD-INTERACTION-0 volatile field overlay), so nothing is republished for it. A missed
-republish never changes a server decision.
+PVP-0 does not decide how player-made fields and walls act on players. A named follow-up
+decision, **PVP-FIELD-0**, allocated on #162 as its own task, decides:
+
+- which positions the §7.2 rules read for a player-made field hit (the field's tile, the
+  target's, the owner's at creation or now), including rules 3 and 3b;
+- the viewer-relative field variant and the wall variant: predicate, republish triggers, and
+  the owning slice;
+- the activation guard: the extension of the ADMIT-CAP-2 channel activation predicate
+  (ADMIT-0 §6) that also requires the §8 PvP go-live gate, and which slice builds it.
+
+**Gate.** Until PVP-FIELD-0 is accepted and the slices it names have merged, player-made field
+and wall effects on players stay inactive on every World, whatever else has merged, including
+WORLDINT-ADMIT-1, FIELD-2, ADMIT-CAP-2 and every PvP slice. The control plane carries this hold
+into the #162 packets of FIELD-2 and ADMIT-CAP-2: they may land with those effects off, and
+neither activates them. PvP going live does not activate them.
 
 ### 6.6 Expert mode restricts attacks (G6)
 
@@ -223,26 +217,22 @@ Each slice is one PR in its own owned paths, test-first, and tests `OPTIONAL` an
 the `HARDCORE` branch it touches). PvP goes live on a World only when PVP-1, PVP-RT-1,
 PVP-DEATH-1, PVP-WIRE-1, PVP-BLOCK-1 and PVP-CLIENT-1 have merged (without the client's expert
 mode control a character stays in the default Dove mode and cannot start aggression, §6.6;
-without PVP-BLOCK-1 a viewer whom field legality protects, or one it exposes, could be sent a
-variant that disagrees with the server, §6.5), and the channel scope's
+without PVP-BLOCK-1 blocking ignores expert mode, PARTY-PVP-0 §7.5), and the channel scope's
 `required_gameplay_capabilities` (ADMIT-0, ADMIT-CAP-1) include `PVP_V1`, deployed with a new
 `world_policy_revision`, so admission, reconnect and recovery refuse a session without it (a
 session that did not negotiate `PVP_V1` would stay in Dove mode and see no skull or frame state);
 until then `attackable_kind` stays creature-only. The
-first World is `OPTIONAL`, so it shows no PvP until GUILD-WAR-0. Player-made field and wall
-effects on players activate on a World only when both hold, whichever is met last: this complete
-PvP go-live gate (all six slices and the required `PVP_V1`; PVP-RT-1 moves field hits onto the
-legality stage and removes the `NoPvp` `pvp_zone` exception, §6.4, PVP-DEATH-1 handles a PvP
-death, PVP-BLOCK-1 sends the §6.5 variants), and WORLDINT-ADMIT-1 and FIELD-2 have merged
-(WORLD-INTERACTION-0 §8.6, ADMIT-0). Neither alone activates them.
+first World is `OPTIONAL`, so it shows no PvP until GUILD-WAR-0. This gate never activates
+player-made field and wall effects on players: they wait for PVP-FIELD-0 (§6.5 gate).
+PVP-FIELD-0 is a decision allocated on its own, not a PVP-0 slice.
 
 | Slice | Worker / review | Builds | Depends on (state on `main`) |
 |---|---|---|---|
 | PVP-1 | hard; persistence, security | four PvP tables and the migration; skull evaluation and commit in the death transaction; World cleanup job; `rulesets/pvp/skulls` rows and `pvp_type` (`OPTIONAL` for the first World); the §6.2 field policy check | DEATH-1 (landed), PARTY-1 (landed) |
-| PVP-RT-1 | hard (combat); combat, security | legality rules 1-7 with 3b (§6.3) and 6b (§6.6); player-made field hits moved onto the legality stage and the `NoPvp` `pvp_zone` field exception removed (§6.4); aggression relations; white (§6.1) and yellow skulls; logout, PZ and kill blocks with durable write-ahead and restore; damage factor; PvP damage ledger and snapshot; kill classification; Join Aggression; friendly fire; Adventurer forfeiture write | PVP-1; ATTACK-1 (landed); COND-1 |
+| PVP-RT-1 | hard (combat); combat, security | legality rules 1-7 with 3b (§6.3) and 6b (§6.6); the `NoPvp` `pvp_zone` field exception removed (§6.4); aggression relations; white (§6.1) and yellow skulls; logout, PZ and kill blocks with durable write-ahead and restore; damage factor; PvP damage ledger and snapshot; kill classification; Join Aggression; friendly fire; Adventurer forfeiture write | PVP-1; ATTACK-1 (landed); COND-1 |
 | PVP-DEATH-1 | hard (persistence); persistence | PvP death test; receipt fields; red/black loss; Twist of Fate; Adventurer's Blessing; black skull respawn | PVP-1; DEATH-3 (not landed) |
 | PVP-WIRE-1 | impl; protocol | `PARTY_V1` and `PVP_V1`; `PARTY_INTENT` and `PVP_INTENT`; `expert_mode`; domains `PARTY` and `PVP` (PARTY-PVP-0 §11, unchanged); VIS-2 skull, party shield and frame fields; `PVP_REFUSED` reasons incl. `NO_PVP_TILE`, `EXPERT_MODE` | PARTY-1 (landed); PVP-RT-1; VIS-2; ATTACK-WIRE-1; ADMIT-CAP-1 |
-| PVP-BLOCK-1 | impl; movement | walk-through and expert-mode blocking; viewer-relative field variants, the World-relative wall variant, and their republish when the field legality changes (§6.5) | PVP-RT-1; SPEED-1 |
+| PVP-BLOCK-1 | impl; movement | walk-through and expert-mode blocking (PARTY-PVP-0 §7.5) | PVP-RT-1; SPEED-1 |
 | PVP-CLIENT-1 | impl; client | party controls for every `PARTY_INTENT` variant and the `PARTY` domain view (PARTY-PVP-0 §11); expert mode control, skull, frame and shield rendering, PvP refusal text | PVP-WIRE-1 |
 
 PVP-1 and PVP-RT-1 split cleanly at the tables (PVP-1 writes them only from the death
@@ -259,7 +249,7 @@ Each is a focused test in the named slice; "O" = `OPEN`, "P" = `OPTIONAL`, "H" =
 | PVP-CC-02 | RT-1 | O, attacker level 7 (or target level 7) → `PVP_REFUSED`; area skips |
 | PVP-CC-03 | RT-1 | either on a PZ tile → refused; PZ-blocked character cannot step onto a PZ tile |
 | PVP-CC-04 | RT-1 | either on a `no_pvp_zone` tile, O and H → `PVP_REFUSED {NO_PVP_TILE}`; P before GUILD-WAR-0 → the rule 1 World-type refusal (rule 3b is unreachable without a war); PvE on the same tile works; unknown zone facts → refused |
-| PVP-CC-05 | RT-1 | `pvp_zone` tile → behaves as an ordinary tile (§6.4); P, no war, field owner and target both on `pvp_zone` tiles, target steps into the owner's field → no damage; with WORLDINT-ADMIT-1 and FIELD-2 merged but any part of the PvP go-live gate unmet, no player-made field affects a player |
+| PVP-CC-05 | RT-1 | `pvp_zone` tile → behaves as an ordinary tile (§6.4); `field_step_ingress.rs` no longer reads `pvp_zone` |
 | PVP-CC-06 | RT-1 | P, no war → every character target refused; H → allowed with no skull |
 | PVP-CC-07 | RT-1 | admitted 9 s ago starts aggression → refused; answers an aggressor → allowed |
 | PVP-CC-08 | RT-1 | same party, no shared enemy → refused; both aggressive to one enemy → area hits ally, no skull, no block, no points |
@@ -282,11 +272,11 @@ Each is a focused test in the named slice; "O" = `OPEN`, "P" = `OPTIONAL`, "H" =
 | PVP-CC-25 | DEATH-1 | black skull respawn → 40 HP, 0 mana; a PvP kill grants no XP |
 | PVP-CC-26 | DEATH-1, 1 | replayed death command (same `PlayerDeathOccurrence`) → one receipt, points and marks written once |
 | PVP-CC-27 | 1 | field policy `world_type` or `protection_level` or `in_fight_ms` disagrees with the ruleset → World not ready (`WORLD_POLICY_MISMATCH`) |
-| PVP-CC-28 | BLOCK-1 | P, no war: bystander receives the safe field variant and stepping onto it causes no damage; O, eligible unmarked bystander: real variant, the step hurts and the owner gains a white skull; a spoofed step into a real wall is refused; O, viewer in the owner's party receives the real, blocking Magic Wall and its step is refused; P, every viewer receives the walkable wall variant and a step removes the wall and moves |
+| PVP-CC-28 | — | moved to PVP-FIELD-0 (§6.5) |
 | PVP-CC-29 | WIRE-1 | client-supplied skull, CharacterId or PartyId never changes a server decision; unknown `expert_mode` value → `REJECTED` |
 | PVP-CC-30 | RT-1 | O, secure off: Dove, unmarked non-aggressor → `PVP_REFUSED {EXPERT_MODE}`, aggressor → allowed; White Hand, character aggressive to a party member → allowed; Yellow Hand, white-skulled stranger → allowed, skulled party member → refused (rule 5); Red Fist → any; area effect skips a filtered actor; field damage not filtered; secure on, Dove, Join Aggression on a member fighting a marked non-aggressor → `PVP_REFUSED {EXPERT_MODE}` and no relation change |
 | PVP-CC-31 | PVP-1, RT-1, WIRE-1 | black-skulled actor selects Red Fist → `REJECTED`; online actor in Red Fist gains a black skull through a committed PVP-1 death transaction → mode Dove before its next input is processed, and the client receives the mode; H → mode fixed at Red Fist |
-| PVP-CC-32 | BLOCK-1 | O, viewer in the owner's party sees the safe variant of the owner's field; the viewer leaves the party → that entry republished as the real variant in the next update; the viewer moving onto or off a `no_pvp_zone` tile does not change the variant, and a field on a `no_pvp_zone` tile is the safe variant for every viewer and never hits; an owner creates a field during its own post-login immunity → an unrelated viewer receives the safe variant, and the owner's immunity expiring → real variant in the next update; a viewer inside its own post-login immunity receives the real variant of an unrelated owner's field |
+| PVP-CC-32 | — | moved to PVP-FIELD-0 (§6.5) |
 | PVP-CC-33 | WIRE-1, ADMIT-CAP-1 | O, PvP live: the channel scope requires `PVP_V1`; a session that does not negotiate it is refused at admission, reconnect and recovery (ADMIT-0 required-capability check) |
 
 ## 10. Owner questions (answered: D971, 1a 2a 3a 4a)
@@ -309,7 +299,7 @@ Each recommended option is adopted; §6.1-§6.4 are written to it.
 - **Must decide now:** YES. PvP is missing on `main`; the accepted contract leaves G1-G6 open,
   and G2 is already live code that the first PvP slice would otherwise contradict.
 - **Minimum sufficient:** no new table, column, capability or slice beyond PVP-CLIENT-1; five
-  rule amendments (§6.1-§6.4, §6.6), one ownership assignment and one refresh rule (§6.5).
+  rule amendments (§6.1-§6.4, §6.6), one named follow-up with an explicit gate (§6.5).
 - **Superseding evidence:** CIPSOFT_OFFICIAL values for the thresholds, white-skull duration or
   assist share; an accepted arena decision.
 
