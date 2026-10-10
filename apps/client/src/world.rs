@@ -624,7 +624,14 @@ mod tests {
     #[test]
     fn a_crlf_checkout_of_the_manifest_still_matches_the_pin() -> Result<(), String> {
         let bytes = std::fs::read(repo().join(MANIFEST_PATH)).map_err(|e| e.to_string())?;
-        let crlf: Vec<u8> = bytes
+        let lf: Vec<u8> = bytes
+            .iter()
+            .enumerate()
+            .filter_map(|(index, byte)| {
+                (!(*byte == b'\r' && bytes.get(index + 1) == Some(&b'\n'))).then_some(*byte)
+            })
+            .collect();
+        let crlf: Vec<u8> = lf
             .iter()
             .flat_map(|byte| match byte {
                 b'\n' => vec![b'\r', b'\n'],
