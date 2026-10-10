@@ -197,15 +197,14 @@ jobs:
 
       - name: Smoke native game-server bootstrap
         run: cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
-      - name: Drop build artifacts before saving the Cargo cache
+      - name: Trim incremental cache and measure archive inputs
         if: github.ref == 'refs/heads/main' && github.ref_protected
         shell: bash
         run: |
           set -euo pipefail
           du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
-          cargo +1.94.0 clean
-          test ! -e target
-          echo "target/: removed before cache save" | tee -a "$GITHUB_STEP_SUMMARY"
+          find target -type d -name incremental -prune -exec rm -rf -- {} +
+          du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Save trimmed cache from successful protected main
         if: github.ref == 'refs/heads/main' && github.ref_protected
