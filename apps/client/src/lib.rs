@@ -1,6 +1,7 @@
 //! Production pre-native client composition.
 //! Terminal evidence is revalidated after the MPL-2.0 and Linux lint corrections.
 
+pub mod combat_input;
 pub mod cyclopedia;
 pub mod input;
 pub mod play;
