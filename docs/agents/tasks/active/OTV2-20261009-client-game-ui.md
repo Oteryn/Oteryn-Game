@@ -128,3 +128,12 @@ now toggle the same real client-panel state as the HUD shortcut bar. They expose
 only admitted session projections and keep unavailable values unknown. Unknown
 panel identifiers and the unresolved Lenshelp destination remain non-executable;
 persisting a binding still does not count as implementing those actions.
+
+## Continuation checkpoint — 2026-10-10 local display hotkeys
+
+Minimap Zoom In/Out now changes the same bounded three-level runtime zoom used
+by the visible minimap controls. Toggle FPS/Lag Indicator now changes the real
+FPS overlay preference, validates it through the finite settings catalogue and
+persists it through the existing settings save path. Minimap scrolling/floor
+actions and latency display remain disabled because no corresponding projection
+or navigable minimap state exists yet.

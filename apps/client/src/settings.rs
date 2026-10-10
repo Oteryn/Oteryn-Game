@@ -117,6 +117,19 @@ impl ClientSettings {
         }
     }
 
+    /// Toggle the reference FPS overlay. An unset value has the same visible
+    /// behavior as `false`, so the first invocation always enables it.
+    pub fn toggle_fps_indicator(&mut self) -> bool {
+        let enabled = !self
+            .stored_bool("graphics.graphics.fps_indicator")
+            .unwrap_or(false);
+        self.future_preferences.insert(
+            "graphics.graphics.fps_indicator".into(),
+            crate::settings_catalog::FutureValue::Bool(enabled),
+        );
+        enabled
+    }
+
     /// An unset preference preserves the pre-settings behavior: atlas frame on,
     /// translucent highlight off.
     #[must_use]
@@ -421,6 +434,26 @@ mod tests {
             assert_eq!(settings.target_frame_enabled(), frame, "{choice}");
             assert_eq!(settings.target_highlight_enabled(), highlight, "{choice}");
         }
+    }
+
+    #[test]
+    fn fps_indicator_hotkey_toggle_has_a_real_persisted_setting() {
+        let mut settings = ClientSettings::default();
+        assert_eq!(
+            settings.stored_bool("graphics.graphics.fps_indicator"),
+            None
+        );
+        assert!(settings.toggle_fps_indicator());
+        assert_eq!(
+            settings.stored_bool("graphics.graphics.fps_indicator"),
+            Some(true)
+        );
+        assert!(!settings.toggle_fps_indicator());
+        assert_eq!(
+            settings.stored_bool("graphics.graphics.fps_indicator"),
+            Some(false)
+        );
+        assert!(settings.validate().is_ok());
     }
 
     #[test]

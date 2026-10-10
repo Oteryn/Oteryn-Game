@@ -176,6 +176,15 @@ impl GameUi {
         };
         self.panels.toggle(panel)
     }
+
+    pub fn route_minimap_hotkey(&mut self, action: &str) -> bool {
+        match action {
+            "minimap.zoom_out" => self.minimap_zoom = (self.minimap_zoom + 1).min(2),
+            "minimap.zoom_in" => self.minimap_zoom = self.minimap_zoom.saturating_sub(1),
+            _ => return false,
+        }
+        true
+    }
     pub fn clear_action_row(&mut self, row: usize, settings: &ClientSettings) {
         if self
             .bar(settings)
@@ -223,6 +232,10 @@ impl GameUi {
                         if action.starts_with("window.") || action.starts_with("dialog.") =>
                     {
                         matched |= self.route_panel_hotkey(&action);
+                        continue;
+                    }
+                    ResolvedHotkey::General(action) if action.starts_with("minimap.") => {
+                        matched |= self.route_minimap_hotkey(&action);
                         continue;
                     }
                     ResolvedHotkey::General(_) => continue,
@@ -1374,6 +1387,19 @@ mod tests {
         assert_eq!(cycle_chat_channel(0, rooms, false), 5);
         assert_eq!(cycle_chat_channel(5, rooms, false), 3);
         assert_eq!(cycle_chat_channel(2, rooms, true), 1);
+    }
+
+    #[test]
+    fn minimap_zoom_hotkeys_share_the_visible_control_bounds() {
+        let mut ui = super::GameUi::default();
+        assert!(ui.route_minimap_hotkey("minimap.zoom_out"));
+        assert_eq!(ui.minimap_zoom, 1);
+        assert!(ui.route_minimap_hotkey("minimap.zoom_out"));
+        assert!(ui.route_minimap_hotkey("minimap.zoom_out"));
+        assert_eq!(ui.minimap_zoom, 2);
+        assert!(ui.route_minimap_hotkey("minimap.zoom_in"));
+        assert_eq!(ui.minimap_zoom, 1);
+        assert!(!ui.route_minimap_hotkey("minimap.floor_up"));
     }
 
     #[test]

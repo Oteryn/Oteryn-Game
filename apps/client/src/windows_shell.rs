@@ -293,6 +293,10 @@ impl Application {
                     self.preferences.fullscreen = !self.preferences.fullscreen;
                     settings_changed = true;
                 }
+                "client.fps" => {
+                    self.preferences.toggle_fps_indicator();
+                    settings_changed = true;
+                }
                 "action.bottom.all" => {
                     self.preferences.action_bar.edge_enabled[0] =
                         !self.preferences.action_bar.edge_enabled[0];
