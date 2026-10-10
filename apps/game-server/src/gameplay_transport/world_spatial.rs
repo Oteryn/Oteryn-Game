@@ -73,6 +73,8 @@ pub(crate) const PLACEHOLDER_APPEARANCE_REF: u32 = 0;
 /// VIS-3 known gap: the runtime keeps no maximum health beside the slot, so a live actor shows
 /// full health.
 pub(crate) const PLACEHOLDER_HEALTH_PERCENT: u8 = 100;
+/// D85: an NPC entity always carries full health.
+const NPC_HEALTH_PERCENT: u8 = 100;
 
 /// VIS-3: the kind of one Channel entity, as the Channel owner reads it.
 ///
@@ -82,6 +84,13 @@ pub(crate) const PLACEHOLDER_HEALTH_PERCENT: u8 = 100;
 pub(crate) enum VisibleKind {
     Player,
     Creature,
+    /// NPC-RT-1: a placed NPC actor (NPC-BEHAVIOUR-0 §3.1). It has no health; the wire always
+    /// carries 100 for it.
+    #[allow(
+        dead_code,
+        reason = "NPC-RT-1: the join snapshot producer is the follow-up after NPC-PLACE-1b"
+    )]
+    Npc,
     Corpse {
         item_definition_ref: std::num::NonZeroU32,
     },
@@ -117,6 +126,14 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
     let (kind, detail) = match entity.kind {
         VisibleKind::Player => (EntityKind::Player, actor),
         VisibleKind::Creature => (EntityKind::Creature, actor),
+        VisibleKind::Npc => (
+            EntityKind::Npc,
+            EntityDetail::Actor {
+                direction: PLACEHOLDER_ACTOR_DIRECTION,
+                appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+                health_percent: NPC_HEALTH_PERCENT,
+            },
+        ),
         // The handle is attached per session under capability 4 (`attach`).
         VisibleKind::Corpse {
             item_definition_ref,
@@ -607,6 +624,30 @@ mod tests {
         assert_eq!(
             encode_visibility_snapshot(&[], &snapshot).expect("v1").0,
             SNAPSHOT_TYPE_WORLD_SPATIAL_V1
+        );
+    }
+
+    #[test]
+    fn an_npc_is_an_npc_actor_entity_with_full_health() {
+        let channel = channel([at(1, VisibleKind::Npc, 101, 100, 7)]);
+        let snapshot = SessionVisibility::default()
+            .snapshot(&channel, &mut no_handles)
+            .expect("snapshot");
+        assert_eq!(identities(&snapshot.entities), [id(0), id(1)]);
+        assert_eq!(snapshot.entities[1].kind, EntityKind::Npc);
+        assert_eq!(
+            snapshot.entities[1].detail,
+            EntityDetail::Actor {
+                direction: PLACEHOLDER_ACTOR_DIRECTION,
+                appearance_ref: PLACEHOLDER_APPEARANCE_REF,
+                health_percent: 100,
+            }
+        );
+        let selected = [CAPABILITY_WORLD_SPATIAL_ENTITIES];
+        let (kind, payload) = encode_visibility_snapshot(&selected, &snapshot).expect("v2");
+        assert_eq!(
+            decode_world_spatial_snapshot_view(&selected, kind, &payload),
+            Ok(WorldSpatialSnapshotView::Entities(snapshot))
         );
     }
 
