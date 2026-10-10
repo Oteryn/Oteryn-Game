@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/guild-0-20261010
 issue: 1622
-pr: null
+pr: 1955
 base_sha: 348b2b76
 head_sha: "exact frozen head in the #1622 FREEZE entry"
 final_head_sha: "exact frozen head in the #1622 FREEZE entry"
