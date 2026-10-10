@@ -153,7 +153,7 @@ Encoding rules:
 - **Names.** Every character, guild, rank and house name follows the LCFA name wire rule: 1..64
   bytes, NFC, no Cc or Cf characters, no `"` or `\`. Game emits only names its own name policies
   allow, a subset of the wire rule. The consumer validates the wire rule only.
-- **Integers.** `category`, `filter`, `vocation` and `rank_level` are JSON integers in canonical
+- **Integers.** `category`, `filter`, `vocation`, `rank_level` and guild `ranks[].level` are JSON integers in canonical
   form (no sign, no leading zero, no exponent), in the ranges given per family. Levels, ranks,
   values, gold amounts and times are canonical decimal uint64 strings, with `0` allowed only where
   stated.
@@ -272,7 +272,8 @@ different content, `429` rate limited, `503` unavailable.
   Together they form the `HouseId`.
 - `house` has 0 or 1 entries. A `RETIRED` house, or one absent from the active catalogue, publishes
   `[]`. `name`, `kind` (`private_house`, `shop`, `guildhall`), `town` (the `Area` key), `size_sqm`,
-  `beds` and `rent_gold` come from the active catalogue record.
+  `beds` and `rent_gold` come from the active catalogue record. `beds` may be `"0"` (shops in
+  the active catalogue have no beds).
 - `status` and the extra members of each status (an exact member set per status):
 
 | Property state | `status` | Extra members |
@@ -297,7 +298,9 @@ different content, `429` rate limited, `503` unavailable.
 ```
 
 - `characters` lists the World's characters that are online on the World (a committed live game
-  session on any of its Channels) and whose presence may be public (§7.2). There are 0 to
+  session on any of its Channels), whose `character_profile` would publish a present entry (§4.2),
+  and whose presence may be public (§7.2). A character hidden by a sanction or any other
+  visibility decision is never listed. There are 0 to
   `PUBPROJ-ONLINE` (4,096) entries, sorted by name in byte order, unique.
 - If more characters qualify than the bound, the publisher publishes nothing for that World, and
   the World's feed goes stale (§5.1, §6). The list is never truncated, because a truncated list
@@ -322,7 +325,7 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
 | `character_profile` | create; rename; lifecycle change; world transfer; level or vocation change; guild join, leave or rank change; any visibility decision |
 | `character_deaths` | each committed death of the character; any change that flips its profile between `[]` and present |
 | `guild` | any change to guild state, name, ranks, roster or a member's rank; a member's rename; any change that flips a member's profile between `[]` and present |
-| `house` | any property state or revision change; any bid placement, raise, lowering or withdrawal that changes `current_bid` or `auction_ends_at`; a catalogue activation that changes the record; a rename of the owner character or guild; any change that flips the owner's profile |
+| `house` | any property state or revision change; any bid placement, raise or lowering that changes `current_bid` or `auction_ends_at`; a catalogue activation that changes the record; a rename of the owner character or guild; any change that flips the owner's profile |
 | `world_online` | the publisher's own scan of every World, which starts every `PUBPROJ-ONLINE-INTERVAL` (10 s); a World gets a revision when its qualifying list differs from its last snapshot. Its watermark follows the scan, not the outbox (§5.1) |
 
 - **Transactional outbox.** Each revision touch also records the subject in that family's outbox,
@@ -407,7 +410,7 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
 ### 7.2 Presence setting
 
 - No privacy-preference contract exists yet. Until one is accepted, every online character of the
-  World qualifies for `world_online`. This is the baseline's maximum for non-contacts, and GUILD-0
+  World whose profile would be present (§4.6) qualifies for `world_online`. This is the baseline's maximum for non-contacts, and GUILD-0
   §4.2 already shows a coarse online flag to the whole World. It is a candidate default (U-PP2).
 - When a privacy-preference contract adds a presence setting, a character whose setting hides
   presence, or whose setting cannot be read, is left out of `world_online`. A setting change takes
@@ -456,7 +459,8 @@ the implementation, as LCFA's were.
 
 ## 9. Required tests
 
-- Each family: exact wire fixtures shared with the Platform consumer; unknown, duplicate and `null`
+- Each family: exact wire fixtures shared with the Platform consumer, including a house with
+  `beds: "0"`; unknown, duplicate and `null`
   members refused; every bound at its limit accepted and one past it refused.
 - Ordering: a lower pair is superseded; an equal pair with different content is `409`; a higher
   epoch invalidates every family below it until resync; `source_observed_at` alone never causes a
@@ -481,7 +485,8 @@ the implementation, as LCFA's were.
   character publishes `profile: []` is not shown before the next HIGHSCORES-0 job, and no row is
   shown while `character_profile` is stale; a highscores row is joined by `character_id`, so a
   name reused by another character never shows the old row under it; a bid that changes
-  `current_bid` or `auction_ends_at` advances the house revision.
+  `current_bid` or `auction_ends_at` advances the house revision; an online character whose
+  profile is `[]` (for example after a sanction) is not listed in `world_online`.
 - Identity: only the public-projection certificate is accepted on these routes, and it is refused
   elsewhere.
 
