@@ -5,7 +5,7 @@ use sha2::{Digest, Sha256};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::net::{Ipv4Addr, SocketAddr};
 use std::time::Duration;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::mpsc;
 
@@ -13,6 +13,7 @@ const MIN_ENTROPY_BYTES: usize = 32;
 const MAX_ENTROPY_BYTES: usize = 96;
 const MAX_CALLBACK_QUERY_BYTES: usize = 4096;
 const MAX_CALLBACK_REQUEST_LINE_BYTES: usize = 8192;
+const MAX_CALLBACK_REQUEST_HEADER_BYTES: usize = 16_384;
 const CALLBACK_READ_TIMEOUT: Duration = Duration::from_secs(5);
 const CALLBACK_PATH: &str = "/callback";
 
@@ -283,7 +284,7 @@ async fn serve_redirect(mut stream: TcpStream) -> Option<String> {
     query
 }
 
-async fn read_request_line(stream: &mut TcpStream) -> Option<String> {
+async fn read_request_line<R: AsyncRead + Unpin>(stream: &mut R) -> Option<String> {
     let mut line = Vec::new();
     let mut chunk = [0_u8; 1024];
     loop {
@@ -292,11 +293,20 @@ async fn read_request_line(stream: &mut TcpStream) -> Option<String> {
             return None;
         }
         line.extend_from_slice(&chunk[..read]);
-        if let Some(end) = line.windows(2).position(|pair| pair == b"\r\n") {
-            line.truncate(end);
-            return String::from_utf8(line).ok();
+        if line.len() > MAX_CALLBACK_REQUEST_HEADER_BYTES {
+            return None;
         }
-        if line.len() > MAX_CALLBACK_REQUEST_LINE_BYTES {
+        if let Some(end) = line.windows(2).position(|pair| pair == b"\r\n") {
+            if end > MAX_CALLBACK_REQUEST_LINE_BYTES {
+                return None;
+            }
+            // Drain the bounded headers before responding and closing. Leaving
+            // browser headers unread can reset the callback TCP connection.
+            if line.windows(4).any(|bytes| bytes == b"\r\n\r\n") {
+                line.truncate(end);
+                return String::from_utf8(line).ok();
+            }
+        } else if line.len() > MAX_CALLBACK_REQUEST_LINE_BYTES {
             return None;
         }
     }
@@ -408,6 +418,57 @@ mod tests {
             PkceMaterial::from_entropy(&[7_u8; 97]),
             Err(IdentityError::EntropyLengthOutOfRange)
         );
+    }
+
+    #[test]
+    fn callback_reader_waits_for_fragmented_headers() -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+        runtime.block_on(async {
+            let (mut client, mut server) = tokio::io::duplex(8192);
+            let request = "GET /callback?code=abc&state=state-1 HTTP/1.1";
+            client
+                .write_all(
+                    format!(
+                        "{request}\r\nHost: 127.0.0.1\r\nX-Browser: {}",
+                        "a".repeat(3000)
+                    )
+                    .as_bytes(),
+                )
+                .await?;
+            let mut reading = Box::pin(read_request_line(&mut server));
+            let completed = std::future::poll_fn(|context| {
+                std::task::Poll::Ready(
+                    std::future::Future::poll(reading.as_mut(), context).is_ready(),
+                )
+            })
+            .await;
+            assert!(
+                !completed,
+                "the callback must not close with unread headers"
+            );
+            client.write_all(b"\r\n\r\n").await?;
+            assert_eq!(reading.await.as_deref(), Some(request));
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn callback_reader_refuses_excessive_headers() -> Result<(), Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+        runtime.block_on(async {
+            let (mut client, mut server) = tokio::io::duplex(32_768);
+            client
+                .write_all(
+                    format!(
+                        "GET /callback HTTP/1.1\r\nX: {}\r\n\r\n",
+                        "a".repeat(MAX_CALLBACK_REQUEST_HEADER_BYTES)
+                    )
+                    .as_bytes(),
+                )
+                .await?;
+            assert!(read_request_line(&mut server).await.is_none());
+            Ok(())
+        })
     }
 
     async fn get(redirect_uri: &str, path: &str) -> Result<String, std::io::Error> {

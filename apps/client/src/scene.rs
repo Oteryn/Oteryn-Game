@@ -39,6 +39,7 @@ pub struct Scene {
     sprites: SpriteBatch,
     visible: Vec<Targetable>,
     target: Option<Targetable>,
+    target_frame: bool,
 }
 
 impl Scene {
@@ -97,6 +98,7 @@ impl Scene {
             sprites: SpriteBatch::new(),
             visible,
             target: None,
+            target_frame: true,
         };
         scene.rebuild_sprites()?;
         Ok(scene)
@@ -128,6 +130,15 @@ impl Scene {
     pub fn clear_target(&mut self) -> Result<(), BatchError> {
         self.target = None;
         self.rebuild_sprites()
+    }
+
+    /// Enables or disables the atlas frame drawn around the selected target.
+    pub fn set_target_frame(&mut self, enabled: bool) -> Result<(), BatchError> {
+        if self.target_frame != enabled {
+            self.target_frame = enabled;
+            self.rebuild_sprites()?;
+        }
+        Ok(())
     }
 
     /// Row by row, [`SCAN_MARGIN`] tiles past the view on the right and bottom (the world drops
@@ -180,7 +191,9 @@ impl Scene {
                 }
             }
         }
-        if let Some(target) = self.target {
+        if self.target_frame
+            && let Some(target) = self.target
+        {
             sprites.push(&self.view, atlas, target.tile, TARGET_CELL)?;
         }
         self.sprites = sprites;
@@ -304,6 +317,11 @@ mod tests {
             assert_eq!(scene.target(), picked);
             assert_eq!(scene.sprites().len(), 4);
             assert_eq!(scene.sprites().instances()[3].position, [x, y]);
+            scene.set_target_frame(false)?;
+            assert_eq!(scene.target(), picked);
+            assert_eq!(scene.sprites().len(), 3);
+            scene.set_target_frame(true)?;
+            assert_eq!(scene.sprites().len(), 4);
         }
         // An empty tile keeps the target; clearing removes the highlight.
         assert_eq!(scene.select_tile(TileCoord::new(5, 3))?, None);

@@ -191,11 +191,11 @@ impl SceneGpu {
                 module: &module,
                 entry_point: Some("vs_main"),
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
-                buffers: &[Some(wgpu::VertexBufferLayout {
+                buffers: &[wgpu::VertexBufferLayout {
                     array_stride: QUAD_INSTANCE_BYTES as u64,
                     step_mode: wgpu::VertexStepMode::Instance,
                     attributes: &INSTANCE_ATTRIBUTES,
-                })],
+                }],
             },
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,

@@ -25,6 +25,22 @@ allow = [
     "Zlib",
 ]
 
+# Embedded, unmodified fonts of this exact upstream crate only. Copyright and
+# license texts ship with the client: apps/client/THIRD-PARTY-FONTS.txt.
+# Compatibility/provenance: docs/repository/LICENSING.md and
+# apps/client/FONT-PROVENANCE.json. Other packages retain the global allow-list.
+[[licenses.exceptions]]
+crate = "epaint_default_fonts@0.35.0"
+allow = ["OFL-1.1", "Ubuntu-font-1.0"]
+
+# Shader lexer used transitively by the MSRV-compatible wgpu 29 / naga 29
+# renderer stack. The crate is dedicated to the public domain under CC0-1.0;
+# keep the exception pinned to the exact locked package instead of broadening
+# the workspace-wide license allow-list.
+[[licenses.exceptions]]
+crate = "hexf-parse@0.2.1"
+allow = ["CC0-1.0"]
+
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"

@@ -45,6 +45,25 @@ The license of this repository does not replace dependency licenses. Every depen
 
 Generated output inherits licensing according to the material and tools from which it is produced; generation does not erase upstream obligations.
 
+### Embedded client fonts
+
+The unmodified fonts embedded by `epaint_default_fonts` **0.36.2** remain under
+their upstream licenses, including SIL Open Font License 1.1 and Ubuntu Font
+Licence 1.0. Both permit embedding and redistribution with software while
+retaining the fonts' licenses and copyright notices. These terms govern the
+fonts; they do not replace the MPL-2.0 license of Oteryn source code. Font files
+are not renamed, relicensed or sold separately.
+
+`deny.toml` permits those two additional licenses only for that exact package
+version. [`FONT-PROVENANCE.json`](../../apps/client/FONT-PROVENANCE.json) records
+the verified crates.io archive and original notice/font hashes.
+[`THIRD-PARTY-FONTS.txt`](../../apps/client/THIRD-PARTY-FONTS.txt) preserves the
+upstream copyright and full license texts for Hack, Noto Emoji, Ubuntu Light
+and emoji-icon-font, together with the separately licensed Cinzel brand font.
+The Windows installer installs this notice alongside the launcher; its checks
+verify the installed notice matches the source. Any future font or dependency
+version change requires a fresh compatibility and provenance review.
+
 ## Questions and exceptions
 
 Licensing exceptions are governance changes. They require an explicit file- or directory-level notice, provenance evidence, compatibility review and a pull request updating this policy when the exception affects repository-wide expectations.
