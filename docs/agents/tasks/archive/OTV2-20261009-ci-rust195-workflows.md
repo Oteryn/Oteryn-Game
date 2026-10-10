@@ -44,6 +44,14 @@ owned_paths:
   - tools/qualification/spells/run.sh
   - tools/qualification/wp5_s3a/run.sh
   - tools/qualification/wp5_s3b/run.sh
+  - apps/game-server/src/content/npc_catalogue.rs
+  - apps/game-server/src/content/project.rs
+  - apps/game-server/src/content/project/v2.rs
+  - apps/game-server/src/content/project/v2/creature.rs
+  - apps/game-server/src/creature_attack_geometry.rs
+  - apps/game-server/src/gameplay_transport/condition_snapshots.rs
+  - apps/game-server/src/spell/companion_lifecycle.rs
+  - apps/game-server/tests/support/charm_state_postgres_cases.rs
   - docs/agents/tasks/active/OTV2-20261009-ci-rust195-workflows.md
   - docs/agents/tasks/archive/OTV2-20261009-ci-rust195-workflows.md
 depends_on: [OTV2-20261009-ci-rust195-audit-pins, PR-1943]
@@ -64,7 +72,11 @@ This expands the original 20-path migration source scope to 26 source paths;
 the separate audit proposal remains unchanged.
 This grants preparation/publication/review, not merge, activation, deployment,
 production, credential, ruleset or database mutation. No audit exception is
-self-granted. No unrelated client or server edits are included.
+self-granted. No unrelated client or server edits are included, except as
+follows. Control plane decision D981 (Option A) authorized one
+behavior-preserving commit fixing the Clippy 1.95 findings in
+`apps/game-server` that fail `qualify` (eight library sites and one test-support
+loop counter), without any `#[allow]` or gate change.
 
 Canonical draft PR #1944 is open against main and depends on audit-pin PR #1943.
 This record is archived in the final AUTHORING successor, as required by

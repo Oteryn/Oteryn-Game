@@ -3651,7 +3651,7 @@ impl CanonicalProjectDocuments {
         managed.insert(MANIFEST_LOCATOR.to_owned(), manifest_bytes);
         managed.insert(LOCK_LOCATOR.to_owned(), lock_bytes);
         managed.insert(PROJECT_LOCATOR.to_owned(), budget.encode(&root)?);
-        let snapshot = ProjectSnapshot::new(managed.into_iter(), limits)?;
+        let snapshot = ProjectSnapshot::new(managed, limits)?;
         match admission {
             ProjectAdmission::Ordinary => {
                 snapshot.parse(limits)?;
