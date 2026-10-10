@@ -247,7 +247,7 @@ Each is a focused test in the named slice; "O" = `OPEN`, "P" = `OPTIONAL`, "H" =
 | PVP-CC-01 | RT-1 | O, both level 8, open field → hit lands at 50% (black-skulled target 100%) |
 | PVP-CC-02 | RT-1 | O, attacker level 7 (or target level 7) → `PVP_REFUSED`; area skips |
 | PVP-CC-03 | RT-1 | either on a PZ tile → refused; PZ-blocked character cannot step onto a PZ tile |
-| PVP-CC-04 | RT-1 | either on a `no_pvp_zone` tile, every World type → `PVP_REFUSED {NO_PVP_TILE}`; PvE on the same tile works; unknown zone facts → refused |
+| PVP-CC-04 | RT-1 | either on a `no_pvp_zone` tile, O and H → `PVP_REFUSED {NO_PVP_TILE}`; P before GUILD-WAR-0 → the rule 1 World-type refusal (rule 3b is unreachable without a war); PvE on the same tile works; unknown zone facts → refused |
 | PVP-CC-05 | RT-1 | `pvp_zone` tile → behaves as an ordinary tile (§6.4); P, no war, field owner and target both on `pvp_zone` tiles, target steps into the owner's field → no damage |
 | PVP-CC-06 | RT-1 | P, no war → every character target refused; H → allowed with no skull |
 | PVP-CC-07 | RT-1 | admitted 9 s ago starts aggression → refused; answers an aggressor → allowed |
@@ -267,7 +267,7 @@ Each is a focused test in the named slice; "O" = `OPEN`, "P" = `OPTIONAL`, "H" =
 | PVP-CC-21 | DEATH-1 | 4% PvP damage in 5 min, final blow by a monster → PvE death; 5% → PvP death; PvP final blow alone → PvP death |
 | PVP-CC-22 | DEATH-1 | red/black at death → all equipment and backpack lost, regular blessings consumed, Amulet of Loss ignored, Twist of Fate neither used nor consumed; level ≤ 8 → no loss |
 | PVP-CC-23 | DEATH-1 | PvP death with Twist of Fate and regular blessings → regular kept, Twist consumed |
-| PVP-CC-24 | DEATH-1 | O, level 20, not forfeited → no XP, item or blessing loss; first aggression → forfeited durably before the hit |
+| PVP-CC-24 | DEATH-1, RT-1 | DEATH-1: O, level 20, not forfeited → no XP, item or blessing loss; RT-1: first aggression → forfeited durably before the hit |
 | PVP-CC-25 | DEATH-1 | black skull respawn → 40 HP, 0 mana; a PvP kill grants no XP |
 | PVP-CC-26 | DEATH-1, 1 | replayed death command (same `PlayerDeathOccurrence`) → one receipt, points and marks written once |
 | PVP-CC-27 | 1 | field policy `world_type` or `protection_level` or `in_fight_ms` disagrees with the ruleset → World not ready (`WORLD_POLICY_MISMATCH`) |
