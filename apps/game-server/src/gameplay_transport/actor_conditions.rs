@@ -764,7 +764,26 @@ mod native_composite_tests {
     }
     #[test]
     fn composite_failed_native_mint_keeps_hp_and_slot_then_native_lethal_clears_it() {
-        let (mut r, mut s, a, g, c, fence, stamp) = ready(0x7c);
+        let (mut r, _initial_states, a, g, c, fence, stamp) = ready(0x7c);
+        // Keep the actual native source/composite owner and stamp; make its
+        // independently initialized player a monk to qualify lethal reset here.
+        let mut s = ChannelSpellStates::default();
+        s.initialize(
+            &r,
+            a,
+            g,
+            crate::spell::cast::CharacterCastFacts {
+                vocation: crate::spell::Vocation::Monk,
+                ..super::super::tests::FACTS
+            },
+            (3, 4_000_000),
+            SemanticTimeMicros::from_micros(0),
+        )
+        .unwrap();
+        assert_eq!(
+            s.monk_save_values(&r, a, g, SemanticTimeMicros::from_micros(0)),
+            Some((3, 4_000_000))
+        );
         let root = GameplayDecisionRoot::from_bytes([11; 32]);
         let defs = definitions();
         let before = r.actor_conditions(a, Some(g)).unwrap().clone();
@@ -809,6 +828,12 @@ mod native_composite_tests {
         assert_eq!(receipt.health_after, 0);
         assert!(receipt.death.is_some());
         assert_eq!(s.deaths.len(), 1);
+        let dead = s.get(&r, a, g).unwrap().vitals();
+        assert_eq!((dead.health, dead.harmony, dead.serene), (0, 0, false));
+        assert_eq!(
+            s.monk_save_values(&r, a, g, SemanticTimeMicros::from_micros(0)),
+            Some((0, 0))
+        );
         assert!(
             r.actor_conditions(a, Some(g))
                 .unwrap()
