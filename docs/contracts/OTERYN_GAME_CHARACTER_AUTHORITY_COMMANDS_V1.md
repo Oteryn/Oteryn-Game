@@ -134,16 +134,21 @@ as uint64, then `operation_id` as bytes), unique `operation_id`:
   it, and a continuous stream of full pages would keep the cursor from returning to that key. The
   consumer therefore runs a bounded rescan: after at most 8 consecutive full pages, or 30 s since
   its last rescan, whichever comes first, it lists again from `("0", nil)` and pages forward until
-  it passes the key it had reached, then resumes from that key. A rescan lists only PENDING
-  entries, so its cost is the number of unreceipted intents behind the cursor. Re-listing an
-  intent is safe because the per-operation receipt makes deciding idempotent. The 30 s bound is
-  well inside the 300 s intent TTL only while the backlog is bounded. Platform keeps at most
-  1,024 unreceipted PENDING intents (`CHARCMD-PENDING-BACKLOG`) and refuses to store a new intent
-  beyond that, so the account page shows a retry-later state instead of an intent that could expire
-  unread. A rescan then takes at most 32 pages of 3 s, 96 s, so an intent committed just behind
-  the cursor waits at most 30 s for the next rescan plus 96 s to reach it, 126 s, inside the
-  300 s intent TTL. The consumer raises an operator alarm when a rescan lists more than 768
-  entries.
+  it passes the key it had reached, then resumes from that key. A rescan is list-only for keys the
+  consumer already knows: it skips every key it has already read and decided or is already
+  retrying on its own backoff (a local set bounded by the backlog), so it spends one pending-list
+  exchange per page and one read exchange, plus a receipt exchange, only per key it has not seen.
+  Re-listing an intent is safe because the per-operation receipt makes deciding idempotent.
+  Platform keeps at most 256 unreceipted PENDING intents (`CHARCMD-PENDING-BACKLOG`) and refuses to
+  store a new intent beyond that, so the account page shows a retry-later state instead of an
+  intent that could expire unread. With one exchange in flight at 3 s each, a rescan lists at most
+  8 pages, 24 s; an intent committed just behind the cursor waits at most 30 s for the next
+  rescan plus 24 s of listing plus 6 s (read and receipt) for each unseen key ahead of it, so up
+  to 41 unseen keys ahead of it stay inside the 300 s intent TTL (246 s / 6 s). The number of
+  intents Platform may commit behind the cursor per rescan interval is not capped by this
+  contract: that cap, or an equivalent proof, is the gate `U-CC9`, and the enablement packet does
+  not enable the consumer until it is closed. The consumer raises an operator alarm when a rescan
+  lists more than 192 entries or finds more than 16 unseen keys.
 - `source_authority` is the configured Character Authority namespace (LCFA §4 rule).
 
 ### 4.2 Intent read
@@ -598,7 +603,7 @@ The Game implementation and the Platform consumer must prove, with shared exact 
 | response bytes (pending list) | 8192 |
 | response bytes (receipt) | 256 |
 | in-flight exchanges per consumer | 1 |
-| unreceipted PENDING intents (`CHARCMD-PENDING-BACKLOG`) | 1,024 |
+| unreceipted PENDING intents (`CHARCMD-PENDING-BACKLOG`) | 256 |
 | intent TTL | 300 s |
 | Characters per account | 64 (`LCA-CHARACTERS`, wire bound, not a quota) |
 
@@ -616,6 +621,7 @@ The implementation packet registers the new limits in `docs/contracts/RESOURCE_L
 | U-CC6 | rename, deletion, restore, world transfer | out of scope; later contract versions |
 | U-CC7 | Platform storage of `recovery_generation` and the restore notice (PLATFORM-RESTORE-RECONCILE-P1, not yet accepted by Platform) | enablement (§14 step 4) requires Platform's acceptance; until then both commands stay disabled |
 | U-CC8 | housing prepare command and fence representation (EXP-HOUSES-01 not started) | §6.4 semantics bind; the housing contract fixes the wire and tables |
+| U-CC9 | cap on intents Platform commits behind the consumer's cursor per 30 s rescan interval (the 300 s TTL proof in §4.1 holds for up to 41 unseen keys) | open gate: closed by the enablement packet before the consumer is enabled |
 
 ## 14. Rollout
 

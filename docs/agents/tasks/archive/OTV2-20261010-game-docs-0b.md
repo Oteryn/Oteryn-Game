@@ -41,7 +41,7 @@ Character authority commands:
   `source_authority` and `issuer_authority` of up to 128 bytes each and a `command` of up to 64 (496 bytes worst case).
 - (b) Intent reads are keyed by `(issuer_authority, operation_id)`; a pair held for another
   command returns `409`, and Game stores `CHAR_CMD_OPERATION_CONFLICT`.
-- (c) Bounded rescan of the pending list (every 8 full pages or 30 s) with a 1,024-entry PENDING backlog bound (worst case 126 s) so a lower
+- (c) Bounded rescan of the pending list (every 8 full pages or 30 s) with a 256-entry PENDING backlog bound with a list-only rescan (gate U-CC9 caps late commits) so a lower
   `source_revision` committed behind the cursor is read before its 300 s expiry.
 
 Public projections:
