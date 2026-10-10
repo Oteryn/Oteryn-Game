@@ -878,4 +878,29 @@ pub(crate) mod tests {
         assert!(!world.enterable(DOOR_AT));
         Ok(())
     }
+
+    #[test]
+    fn map_door_an_unqualified_open_item_keeps_the_door_sealed() -> Result<(), Box<dyn Error>> {
+        // The open item is described but not as walkable: solid unknown, or it blocks shots.
+        for (solid, shoots) in [
+            (None, true),
+            (None, false),
+            (Some(false), true),
+            (Some(true), false),
+        ] {
+            let world = door_world_with(|key| {
+                door_items(key).map(|mut item| {
+                    if key.ends_with("1630") {
+                        item.solid = solid;
+                        item.blocks_projectile = shoots;
+                    }
+                    item
+                })
+            })?;
+            let doors = world.facts().doors();
+            assert_eq!((doors.len(), doors.sealed()), (0, 1), "{solid:?} {shoots}");
+            assert!(!world.enterable(DOOR_AT));
+        }
+        Ok(())
+    }
 }

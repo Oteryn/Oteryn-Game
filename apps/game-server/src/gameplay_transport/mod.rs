@@ -2021,9 +2021,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(actor_tile) = native(expected.position()) else {
             return UseOutcome::rejected();
         };
+        // Every live actor keeps a doorway open: players, creatures and placed NPCs.
+        let visible = runtime.visible_entities();
         let positions: Vec<_> = runtime
             .committed_player_positions()
             .into_iter()
+            .chain(
+                visible
+                    .players
+                    .iter()
+                    .chain(&visible.creatures)
+                    .chain(&visible.npcs)
+                    .map(|entry| entry.position),
+            )
             .filter_map(native)
             .collect();
         map_door::use_door(

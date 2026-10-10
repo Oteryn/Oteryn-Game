@@ -1683,7 +1683,7 @@ fn world_bundle_gate(
 /// `blocks_projectile` and pickup eligibility are the generation's Item profile for that key and
 /// revision; a fact the generation does not state blocks and is not pickupable. A generation
 /// without an Item key set names no Item, so a bundle with any Item fails closed at boot.
-fn boot_bundle_world(
+fn boot_bundle_items(
     checked: crate::map::boot::CheckedBundle,
     world: WorldId,
     channel: ChannelId,
@@ -1715,9 +1715,23 @@ fn boot_bundle_world(
             pickupable,
         })
     };
-    let booted = checked
+    checked
         .boot(world, channel, item)
-        .map_err(BootError::WorldBundle)?;
+        .map_err(BootError::WorldBundle)
+}
+
+/// MAP-DOOR-1: [`boot_bundle_items`] plus the preprod rule that the World places a usable door.
+/// A door is usable only when the generation's Item profile states its open item as walkable
+/// (`blocks_movement` false and `blocks_projectile` false); a profile that does not describe
+/// the open item leaves the door sealed, so the node refuses readiness instead of serving a
+/// doorway that opens in appearance only.
+fn boot_bundle_world(
+    checked: crate::map::boot::CheckedBundle,
+    world: WorldId,
+    channel: ChannelId,
+    gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
+) -> Result<crate::map::boot::BundleWorld, BootError> {
+    let booted = boot_bundle_items(checked, world, channel, gameplay)?;
     // MAP-DOOR-1: a bundle without a usable door is not a playable preprod World.
     let doors = booted.facts().doors();
     if doors.is_empty() {
@@ -2385,9 +2399,17 @@ mod tests {
         let index = gameplay
             .and_then(|state| state.item_index())
             .expect("index");
-        let booted = boot_bundle_world(checked(), world, channel, gameplay).expect("booted");
-        assert_eq!(booted.facts().doors().len(), 1);
-        assert_eq!(booted.facts().doors().sealed(), 0);
+        let booted = boot_bundle_items(checked(), world, channel, gameplay).expect("booted");
+        // The active profile does not describe the open item 1630, so the door stays sealed and
+        // a preprod node refuses to serve this bundle rather than open a doorway in name only.
+        assert_eq!(booted.facts().doors().len(), 0);
+        assert_eq!(booted.facts().doors().sealed(), 1);
+        assert!(matches!(
+            boot_bundle_world(checked(), world, channel, gameplay),
+            Err(BootError::WorldBundle(
+                crate::map::boot::BootRefusal::NoDoors
+            ))
+        ));
         for (key, x, compact) in [(boxed, 6, boxed_id), (coin, 7, coin_id)] {
             use crate::map::view::MapFacts;
             let reference = index

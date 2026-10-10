@@ -154,18 +154,21 @@ impl BundleFacts {
                     .palette
                     .get(item.palette as usize)
                     .map_or(PaletteDoor::No, |entry| entry.door);
-                let door = if bound(&item.attrs) {
+                let key = u8::try_from(ordinal)
+                    .ok()
+                    .filter(|ordinal| *ordinal <= MAX_BASE_ORDINAL)
+                    .and_then(|ordinal| placement_key(pos, ordinal));
+                // A dropped teleport is a bound, non-materialized placement, never a door.
+                let dropped =
+                    key.is_some_and(|key| manifest.dropped_teleports.binary_search(&key).is_ok());
+                let door = if dropped || bound(&item.attrs) {
                     PaletteDoor::No
                 } else {
                     door
                 };
                 let closed_solid = self.blocks(item.palette);
                 blocks |= closed_solid && door == PaletteDoor::No;
-                let Some(key) = u8::try_from(ordinal)
-                    .ok()
-                    .filter(|ordinal| *ordinal <= MAX_BASE_ORDINAL)
-                    .and_then(|ordinal| placement_key(pos, ordinal))
-                else {
+                let Some(key) = key else {
                     // A door beyond the ordinal reach cannot be named, so it blocks as a wall.
                     blocks |= closed_solid;
                     continue;
@@ -180,7 +183,6 @@ impl BundleFacts {
                     }
                     PaletteDoor::No => {}
                 }
-                let dropped = manifest.dropped_teleports.binary_search(&key).is_ok();
                 let placement = Placement {
                     palette: item.palette,
                     bound: dropped || bound(&item.attrs),
@@ -301,6 +303,11 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
     let Some(definition) = item(&open_key) else {
         return PaletteDoor::Sealed;
     };
+    // Qualified facts only: an item the profile does not describe reads `solid: None` and
+    // blocks projectiles, and must not pass as a walkable open doorway.
+    if definition.solid != Some(false) || definition.blocks_projectile {
+        return PaletteDoor::Sealed;
+    }
     PaletteDoor::Pair {
         open: EntryFacts {
             definition: MapDefinition::Item(definition.reference),
@@ -315,7 +322,7 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
             count: 1,
             sub_type: 0,
         },
-        open_solid: definition.solid != Some(false),
+        open_solid: false,
     }
 }
 
