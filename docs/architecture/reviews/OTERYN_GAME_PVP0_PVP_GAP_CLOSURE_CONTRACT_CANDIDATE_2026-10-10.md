@@ -176,7 +176,9 @@ to harm:
 - **Yellow Hand:** as White Hand, or any character showing the actor a skull (white, yellow toward
   the actor, red, black, orange toward the actor).
 - **Red Fist:** any character rules 1-7 allow. A black-skulled actor cannot select it
-  (`REJECTED`); a black skull acquired while in Red Fist sets Dove.
+  (`REJECTED`). When PVP-1's death transaction commits a black skull for an actor in Red Fist,
+  the channel runtime holding that online actor sets its expert mode to Dove before it processes
+  the actor's next input, and PVP-WIRE-1 publishes the new mode to the client.
 
 Single target: `PVP_REFUSED {EXPERT_MODE}`; an area effect skips the actor. As with rule 6, rule 6b
 does not filter a player-made field's damage to a character who enters or stands in it. The mode
@@ -230,7 +232,7 @@ FIELD-2 have merged (WORLD-INTERACTION-0 §8.6, ADMIT-0), and PVP-BLOCK-1 varian
 | PVP-1 | hard; persistence, security | four PvP tables and the migration; skull evaluation and commit in the death transaction; World cleanup job; `rulesets/pvp/skulls` rows and `pvp_type` (`OPTIONAL` for the first World); the §6.2 field policy check | DEATH-1 (landed), PARTY-1 (landed) |
 | PVP-RT-1 | hard (combat); combat, security | legality rules 1-7 with 3b (§6.3) and 6b (§6.6); player-made field hits moved onto the legality stage and the `NoPvp` `pvp_zone` field exception removed (§6.4); aggression relations; white (§6.1) and yellow skulls; logout, PZ and kill blocks with durable write-ahead and restore; damage factor; PvP damage ledger and snapshot; kill classification; Join Aggression; friendly fire; Adventurer forfeiture write | PVP-1; ATTACK-1 (landed); COND-1 |
 | PVP-DEATH-1 | hard (persistence); persistence | PvP death test; receipt fields; red/black loss; Twist of Fate; Adventurer's Blessing; black skull respawn | PVP-1; DEATH-3 (not landed) |
-| PVP-WIRE-1 | impl; protocol | `PVP_V1`; `PVP_INTENT`; `expert_mode`; domain `PVP`; VIS-2 skull and frame fields; `PVP_REFUSED` reasons incl. `NO_PVP_TILE`, `EXPERT_MODE` | PVP-RT-1; VIS-2; ATTACK-WIRE-1 |
+| PVP-WIRE-1 | impl; protocol | `PVP_V1`; `PVP_INTENT`; `expert_mode`; domain `PVP`; VIS-2 skull, party shield and frame fields; `PVP_REFUSED` reasons incl. `NO_PVP_TILE`, `EXPERT_MODE` | PVP-RT-1; VIS-2; ATTACK-WIRE-1; ADMIT-CAP-1 |
 | PVP-BLOCK-1 | impl; movement | walk-through and expert-mode blocking; viewer-relative field variants, the World-relative wall variant, and their republish when the field legality changes (§6.5) | PVP-RT-1; SPEED-1 |
 | PVP-CLIENT-1 | impl; client | expert mode control, skull, frame and shield rendering, PvP refusal text | PVP-WIRE-1 |
 
@@ -274,9 +276,9 @@ Each is a focused test in the named slice; "O" = `OPEN`, "P" = `OPTIONAL`, "H" =
 | PVP-CC-28 | BLOCK-1 | P, no war: bystander receives the safe field variant and stepping onto it causes no damage; O, eligible unmarked bystander: real variant, the step hurts and the owner gains a white skull; a spoofed step into a real wall is refused; O, viewer in the owner's party receives the real, blocking Magic Wall and its step is refused; P, every viewer receives the walkable wall variant and a step removes the wall and moves |
 | PVP-CC-29 | WIRE-1 | client-supplied skull, CharacterId or PartyId never changes a server decision; unknown `expert_mode` value → `REJECTED` |
 | PVP-CC-30 | RT-1 | O, secure off: Dove, unmarked non-aggressor → `PVP_REFUSED {EXPERT_MODE}`, aggressor → allowed; White Hand, character aggressive to a party member → allowed; Yellow Hand, white-skulled stranger → allowed, skulled party member → refused (rule 5); Red Fist → any; area effect skips a filtered actor; field damage not filtered |
-| PVP-CC-31 | RT-1, WIRE-1 | black-skulled actor selects Red Fist → `REJECTED`; actor in Red Fist gains a black skull → mode Dove; H → mode fixed at Red Fist |
+| PVP-CC-31 | PVP-1, RT-1, WIRE-1 | black-skulled actor selects Red Fist → `REJECTED`; online actor in Red Fist gains a black skull through a committed PVP-1 death transaction → mode Dove before its next input is processed, and the client receives the mode; H → mode fixed at Red Fist |
 | PVP-CC-32 | BLOCK-1 | O, viewer in the owner's party sees the safe variant of the owner's field; the viewer leaves the party → that entry republished as the real variant in the next update; the viewer moves onto a `no_pvp_zone` tile → safe variant again; an owner creates a field during its own post-login immunity → an unrelated viewer receives the safe variant, and the owner's immunity expiring → real variant in the next update; a viewer inside its own post-login immunity receives the real variant of an unrelated owner's field |
-| PVP-CC-33 | WIRE-1 | O, PvP live: the channel scope requires `PVP_V1`; a session that does not negotiate it is refused at admission, reconnect and recovery (ADMIT-0 required-capability check) |
+| PVP-CC-33 | WIRE-1, ADMIT-CAP-1 | O, PvP live: the channel scope requires `PVP_V1`; a session that does not negotiate it is refused at admission, reconnect and recovery (ADMIT-0 required-capability check) |
 
 ## 10. Owner questions (answered: D971, 1a 2a 3a 4a)
 
