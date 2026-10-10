@@ -75,8 +75,23 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             },
             self.result["summary"]["implementation_state"],
         )
-        self.assertEqual(59, self.result["summary"]["reward_claim_ready_refs"])
-        self.assertEqual(60, self.result["summary"]["reward_claim_placements"])
+        self.assertEqual(123, self.result["summary"]["reward_claim_ready_refs"])
+        self.assertEqual(126, self.result["summary"]["reward_claim_placements"])
+        self.assertEqual(
+            {
+                "REWARD_CLAIM_DATA_PENDING": 17,
+                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 40,
+                "REWARD_CLAIM_USE_PENDING": 48,
+            },
+            self.result["summary"]["reward_claim_owner_state"],
+        )
+        self.assertEqual(
+            self.result["summary"]["reward_claim_ready_refs"],
+            sum(
+                (row["reward_claim_owner"] or {}).get("ready_claims", 0)
+                for row in self.result["records"]
+            ),
+        )
         self.assertEqual(
             {
                 "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 146,
@@ -115,6 +130,16 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(
             "REWARD_CLAIM_USE_PENDING",
             matrix.reward_claim_owner([definition], ready)["state"],
+        )
+        waiting = {
+            "oteryn:reward-claim.test": {
+                "readiness": "waiting_implementation",
+                "placements": [{}],
+            }
+        }
+        self.assertEqual(
+            "REWARD_CLAIM_IMPLEMENTATION_PENDING",
+            matrix.reward_claim_owner([definition], waiting)["state"],
         )
         for broken in [
             {},

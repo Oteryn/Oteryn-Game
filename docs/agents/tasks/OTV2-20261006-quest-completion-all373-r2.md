@@ -178,8 +178,10 @@ This checkpoint supersedes the older held-terminal counts above. The immutable c
 ### All-373 implementation state
 
 - `NATIVE_BINDINGS_PENDING`: **331**
-- `DEFINITION_READY_RUNTIME_UNKNOWN`: **42**
+- `REWARD_CLAIM_USE_PENDING`: **42** (the former `DEFINITION_READY_RUNTIME_UNKNOWN` reward-only rows, now owned by RewardClaim use)
 - `NATIVE_LOWERING_PENDING`: **0**
+
+RewardClaim owner state across all reward-only quests (`summary.reward_claim_owner_state`): `REWARD_CLAIM_USE_PENDING` **48**, `REWARD_CLAIM_IMPLEMENTATION_PENDING` **40** (complete claim data, native lowering outstanding), `REWARD_CLAIM_DATA_PENDING` **17**; ready claim refs **123**, placements **126**.
 
 Typed-progress state:
 

@@ -79,12 +79,20 @@ def reward_claim_owner(definitions, reward_claims):
         and claim.get("readiness") == "ready"
         and bool(claim.get("placements"))
     ]
+    implementation_pending = [
+        claim
+        for claim in claims
+        if claim is not None and claim.get("readiness") == "waiting_implementation"
+    ]
+    if len(ready) == len(refs):
+        state = "REWARD_CLAIM_USE_PENDING"
+    elif len(ready) + len(implementation_pending) == len(refs):
+        # Complete source data; only native lowering/implementation is outstanding.
+        state = "REWARD_CLAIM_IMPLEMENTATION_PENDING"
+    else:
+        state = "REWARD_CLAIM_DATA_PENDING"
     return {
-        "state": (
-            "REWARD_CLAIM_USE_PENDING"
-            if len(ready) == len(refs)
-            else "REWARD_CLAIM_DATA_PENDING"
-        ),
+        "state": state,
         "claim_keys": sorted(refs),
         "ready_claims": len(ready),
         "placements": sum(len(claim.get("placements") or []) for claim in ready),
@@ -337,12 +345,10 @@ def expected(root: Path):
             "reward_claim_ready_refs": sum(
                 (r["reward_claim_owner"] or {}).get("ready_claims", 0)
                 for r in records
-                if r["implementation_state"] == "REWARD_CLAIM_USE_PENDING"
             ),
             "reward_claim_placements": sum(
                 (r["reward_claim_owner"] or {}).get("placements", 0)
                 for r in records
-                if r["implementation_state"] == "REWARD_CLAIM_USE_PENDING"
             ),
             "work_state": dict(sorted(work_counts.items())),
             "canonical_readiness": dict(sorted(unique_readiness.items())),
