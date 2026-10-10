@@ -838,17 +838,6 @@ jobs:
           EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
-      - name: Reclaim hosted-runner disk space
-        run: |
-          set -euo pipefail
-          df -h /
-          sudo rm -rf -- \
-            /opt/ghc \
-            /usr/local/.ghcup \
-            /usr/local/lib/android \
-            /usr/share/dotnet
-          df -h /
-
       - name: Classify registered PostgreSQL targets
         id: pg_target
         env:
