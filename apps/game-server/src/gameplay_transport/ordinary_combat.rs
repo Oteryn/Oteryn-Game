@@ -1146,6 +1146,24 @@ fn lower(
         applications.len(),
         geometry.len()
     );
+    let harmony_heal_target = if paid.harmony_gain_healing.is_some() {
+        let profile = crate::spell::actor_execution::harmony_gain_profile()?;
+        let party_world = party.as_ref().ok_or(SpellCastDisposition::Rejected)?;
+        let selected = crate::spell::native_actor_states::focus_healing_target(
+            profile,
+            party_world.caster_facts(),
+            party_world.member_facts(),
+        )
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+        Some(
+            party_world
+                .actor_for_id(selected)
+                .ok_or(SpellCastDisposition::Rejected)?
+                .0,
+        )
+    } else {
+        None
+    };
     let source_protected = runtime
         .current_player_reentry_protection(
             owned.binding().actor,
@@ -1153,6 +1171,10 @@ fn lower(
             now.get(),
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
+    if source_protected && harmony_heal_target.is_some_and(|target| target != owned.binding().actor)
+    {
+        return Err(SpellCastDisposition::TargetIllegal);
+    }
     if source_protected
         && applications.iter().any(|(id, _, effects)| {
             *id != world.caster.id
@@ -1277,6 +1299,7 @@ fn lower(
         effects:Vec::new(),deferred:None,binding:serde_json::to_vec(&json!({"intent":match named {Some((_,parameter))=>source_parameter_intent(&parameter.intent,parameter)?,None=>source_cast_intent(intent,rune)},"source_named_target":named.map(|(a,_)|format!("{a:?}")),"parameter_result":if named.is_some(){Some(oteryn_protocol_oteryn::actor_spell_v2::encode_parameter_spell_cast_result(&oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult{disposition:SpellCastDisposition::Cast,feedback:None,editor:None}).map_err(|_|SpellCastDisposition::Rejected)?)}else{None},"source_definition":format!("{spell:?}"),
             "capture_format":"ordinary-owner-r21","source_world_capture_digest":sha2::Sha256::digest(format!("{world:?}").as_bytes()).to_vec(),"source_hit_delays":source_delays,"source_chain_origins":paid.resolution.chain.iter().map(|hit|json!([hit.hit.creature,hit.hit.step,hit.hit.from.x,hit.hit.from.y,hit.hit.from.floor])).collect::<Vec<_>>(),"equipment_facts":format!("{:?}",owned.equipment()),
             "magnitude_facts":format!("{:?}",owned.magnitude()),"selected_variant":format!("{:?}",paid.resolution.ability_variant),
+            "harmony_gained":paid.harmony_gained,"harmony_gain_healing_profile":if paid.harmony_gain_healing.is_some(){Some(crate::spell::actor_execution::harmony_gain_profile()?)}else{None},
             "source_party":party.as_ref().map(|p|format!("{:?}",p.source()))})).map_err(|_|SpellCastDisposition::Rejected)?};
     let mut delayed = Vec::new();
     let mut ordinal = 0u16;
@@ -1602,6 +1625,16 @@ fn lower(
         capture["ordinary_item_creations"] = json!(format!("{items:?}"));
         batch.binding = serde_json::to_vec(&capture).map_err(|_| SpellCastDisposition::Rejected)?;
     }
+    if let Some(cue) = append_harmony_gain_healing(
+        &mut batch,
+        paid.harmony_gain_healing.as_ref(),
+        harmony_heal_target,
+        ordinal,
+        delayed.len(),
+        draw,
+    )? {
+        cues.push(cue);
+    }
     #[cfg(test)]
     eprintln!(
         "SEAM_EVIDENCE ordinary_combat_lower stage=presentation_prepare cues={} applications={} magnitude_hits={}",
@@ -1630,6 +1663,51 @@ fn lower(
     })
 }
 
+/// Lower only the already selected, source-qualified gained-charge heal. The
+/// caller retains the strong party/current owner proofs; this does not resolve
+/// membership or authorize a commit.
+fn append_harmony_gain_healing(
+    batch: &mut OwnerCombatBatch,
+    healing: Option<&crate::spell::native_actor_states::HealingRollPlan>,
+    target: Option<ExactActorRef>,
+    ordinal: u16,
+    delayed_count: usize,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<Option<LocatedCueRequest>, SpellCastDisposition> {
+    let Some(healing) = healing else {
+        return Ok(None);
+    };
+    let target = target.ok_or(SpellCastDisposition::Rejected)?;
+    if batch
+        .effects
+        .len()
+        .checked_add(delayed_count)
+        .ok_or(SpellCastDisposition::Rejected)?
+        >= crate::spell::combat_batch::MAX_EFFECTS
+    {
+        return Err(SpellCastDisposition::Rejected);
+    }
+    let profile = crate::spell::actor_execution::harmony_gain_profile()?;
+    let binding = profile["presentation"]["effect_asset_binding"]
+        .as_str()
+        .ok_or(SpellCastDisposition::Rejected)?;
+    let magnitude = healing
+        .finish_draw(draw(healing.bounds.minimum, healing.bounds.maximum))
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+    batch.effects.push(OwnerCombatEffect {
+        target,
+        sub_ordinal: ordinal,
+        change: OwnerCombatChange::Heal {
+            target_atom: crate::spell::combat_execution::actor_atom(target),
+            magnitude,
+        },
+    });
+    Ok(Some(LocatedCueRequest {
+        binding: binding.into(),
+        target: CueTarget::Actor(target),
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::items_after_test_module)]
@@ -1648,6 +1726,183 @@ mod tests {
             .find(|row| row["bundle"]["spell"]["identity"]["key"] == key)
             .unwrap();
         crate::spell::authoring::spell_from_bundle(&row["bundle"], &row["dependencies"]).unwrap()
+    }
+
+    #[test]
+    fn ordinary_builder_pure_policy_prepare_preserves_wheel_gate_and_gain_cap() {
+        use crate::spell::cast::CharacterCastFacts;
+        use crate::spell::{CasterState, Vocation};
+        let pos = |x| TilePosition { x, y: 0, floor: 7 };
+        let world = World {
+            origin: pos(1),
+            sight_origin: pos(0),
+            direction: Direction::East,
+            caster: ChainCreature {
+                id: 1,
+                actor: "actor:monk".into(),
+                position: pos(0),
+            },
+            creatures: vec![ChainCreature {
+                id: 2,
+                actor: "creature:target".into(),
+                position: pos(1),
+            }],
+            legal: BTreeSet::from([2]),
+            sight: BTreeSet::from([(pos(0), pos(1))]),
+            tiles: BTreeMap::new(),
+        };
+        let operational = OperationalCastFacts {
+            caster_position: pos(0),
+            target_position: Some(pos(1)),
+            target: Some(crate::spell::target::CastTarget {
+                caster: 1,
+                creature: 2,
+                actor: "creature:target".into(),
+                master: None,
+            }),
+            line_of_sight_clear: Some(true),
+            direction_available: true,
+            wheel_unlocked: None,
+            in_protection_zone: false,
+            target_tile_solid: Some(false),
+            target_tile_creature: Some(true),
+        };
+        for key in [
+            "chained_penance",
+            "double_jab",
+            "forceful_uppercut",
+            "greater_flurry_of_blows",
+            "mystic_repulse",
+            "swift_jab",
+            "thousand_fist_blows",
+        ] {
+            let spell = source(&format!("candidate:spell/{key}"));
+            assert_eq!(spell.harmony_role, Some(crate::spell::HarmonyRole::Builder));
+            let book = crate::spell::SpellBook::canonical(vec![spell.clone()]).unwrap();
+            for charges in [0, 4, 5] {
+                let mut state = PlayerSpellState::new(
+                    CharacterCastFacts {
+                        vocation: Vocation::Monk,
+                        level: 600,
+                        magic_level: 100,
+                        max_health: 5000,
+                        max_mana: 10000,
+                        max_soul: 100,
+                    },
+                    charges,
+                    0,
+                )
+                .unwrap();
+                state
+                    .make_playable(SemanticTimeMicros::from_micros(0))
+                    .unwrap();
+                let caster = CasterState {
+                    harmony_multiplier: state.owned_harmony_multiplier(&spell).unwrap(),
+                    vocation: Vocation::Monk,
+                    level: 600,
+                    magic_level: 100,
+                    premium: true,
+                    mana: 10000,
+                    max_mana: 10000,
+                    soul: 100,
+                    learned: BTreeSet::from([spell.key.clone()]),
+                    attack_skill: 100,
+                    attack_value: 10,
+                    attack_factor: 1.0,
+                    shielding_skill: 100,
+                    melee_weapon: true,
+                    shield_defense: Some(100),
+                };
+                let before = state.clone();
+                let mut draws = 0;
+                let result = prepare_ordinary_owner_cast_with_caster(
+                    &book,
+                    &state,
+                    &spell,
+                    &operational,
+                    SemanticTimeMicros::from_micros(1000),
+                    &caster,
+                    None,
+                    Some((
+                        &world,
+                        ChainStart {
+                            target: Some(2),
+                            attacked: None,
+                        },
+                    )),
+                    &mut |minimum, _| {
+                        draws += 1;
+                        minimum
+                    },
+                );
+                // No Wheel owner input was supplied. Preserve the real gate;
+                // do not fabricate unlock evidence to turn this into a success.
+                if spell
+                    .authored
+                    .as_ref()
+                    .is_some_and(|p| p.header.requirements.wheel_unlock == Some(true))
+                {
+                    assert!(
+                        matches!(&result, Err(SpellCastDisposition::Rejected)),
+                        "{key}"
+                    );
+                    assert_eq!(draws, 0, "{key}");
+                    assert_eq!(state, before, "{key}");
+                }
+                let paid = if spell
+                    .authored
+                    .as_ref()
+                    .is_some_and(|p| p.header.requirements.wheel_unlock == Some(true))
+                {
+                    // Explicit pure current-policy input, not a real Wheel
+                    // producer/read or owned build admission qualification.
+                    let mut unit_policy = operational.clone();
+                    unit_policy.wheel_unlocked = Some(true);
+                    prepare_ordinary_owner_cast_with_caster(
+                        &book,
+                        &state,
+                        &spell,
+                        &unit_policy,
+                        SemanticTimeMicros::from_micros(1000),
+                        &caster,
+                        None,
+                        Some((
+                            &world,
+                            ChainStart {
+                                target: Some(2),
+                                attacked: None,
+                            },
+                        )),
+                        &mut |minimum, _| minimum,
+                    )
+                    .unwrap_or_else(|e| {
+                        panic!("{key} with explicit unit policy at {charges}: {e:?}")
+                    })
+                } else {
+                    result.unwrap_or_else(|e| panic!("{key} at {charges} charges: {e:?}"))
+                };
+                let gained = u8::from(charges < 5);
+                assert_eq!(state, before);
+                assert_eq!(paid.harmony_gained, gained, "{key}");
+                assert_eq!(paid.harmony_gain_healing.is_some(), gained > 0, "{key}");
+                assert_eq!(
+                    paid.next.vitals().harmony,
+                    u32::from(charges + gained),
+                    "{key}"
+                );
+                assert_eq!(paid.next.revision(), state.revision() + 1, "{key}");
+                assert_eq!(
+                    paid.next.vitals().mana,
+                    10000 - paid.anchor.paid_mana,
+                    "{key}"
+                );
+                assert_eq!(
+                    paid.anchor.paid_mana,
+                    crate::spell::mana_cost(&spell, &caster),
+                    "{key}"
+                );
+            }
+        }
     }
 
     struct CmsOwnerFixture {
