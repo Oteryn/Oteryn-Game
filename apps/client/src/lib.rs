@@ -445,7 +445,12 @@ mod native_entry {
 
         /// The placeholder view of the join snapshot.
         pub fn play_view(&self) -> Result<crate::play::PlayView, oteryn_renderer::BatchError> {
-            crate::play::PlayView::from_join(self.session.join_snapshot())
+            crate::play::PlayView::from_join(self.session.join_snapshot())?.with_entities(
+                self.session
+                    .world_entities()
+                    .map(|entities| entities.others().copied().collect())
+                    .unwrap_or_default(),
+            )
         }
 
         #[must_use]
