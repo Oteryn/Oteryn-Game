@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/prog-bind-1-20261008
-pr: "the PR of this branch"
+pr: 1964
 base_sha: null
 head_sha: "exact frozen head in the FREEZE report on the PR"
 final_head_sha: "exact frozen head in the FREEZE report on the PR"
