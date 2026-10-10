@@ -145,3 +145,106 @@ A broader pre-cleanup run also showed missing local `g++` for the map-node test.
 ## Next implementation lane
 
 Start with the **8 exact kill-to-Encounter seams** and prove the actual creature-death consumer boundary. A binding may be admitted only when the real death/outcome occurrence can produce the exact `QuestTransitionRequest` cause and owner required by QuestState. If the encounter owner does not expose that boundary, escalate the owner/architecture seam rather than introducing a quest-specific bypass.
+
+
+## Superseding checkpoint — terminal-count normalization
+
+**Current branch:** `codex/quest-terminal-normalization-20261006`
+**Base main:** `ee71e79eccd1d498d6c39ea25ac01ee74ccd118c`
+**Runtime activation:** `false`
+
+This checkpoint supersedes the older held-terminal counts above. The immutable canonical chosen recipes remain unchanged; the correction is applied only in the typed candidate projection through a SHA-fenced terminal-normalization packet.
+
+### Result
+
+- canonical Quest definitions: **352**
+- wiki titles mapped: **373 / 373**
+- completion candidate owners: **310**
+- typed tracks: **3219**
+- typed transitions: **5154**
+- completion transitions: **308**
+- chosen-source projected owners: **236**
+  - new owners: **146**
+  - additive overlays over existing Source owners: **90**
+  - Source-complete owners intentionally skipped: **6**
+- chosen-source terminal-count holds: **0**
+- binding-plan owners: **304**
+- binding-plan stages: **1891**
+- native event dispatch bindings: **0**
+- native NPC dialogue bindings: **0**
+- native reward delivery bindings: **0**
+- runtime activation: **false**
+
+### All-373 implementation state
+
+- `NATIVE_BINDINGS_PENDING`: **331**
+- `DEFINITION_READY_RUNTIME_UNKNOWN`: **42**
+- `NATIVE_LOWERING_PENDING`: **0**
+
+Typed-progress state:
+
+- `CHOSEN_SOURCE_TYPED_PROGRESS_ONLY`: **146**
+- `SOURCE_PLUS_CHOSEN_TYPED_PROGRESS_ONLY`: **110** wiki-title rows
+- `CHOSEN_TYPED_PROGRESS_ONLY`: **68**
+- `LOWERED`: **7**
+- `NO_CANDIDATE`: **42**
+
+Source fidelity remains a separate axis:
+
+- `SOURCE_HOLDS_PRESENT`: **221**
+- `SOURCE_HOLDS_CLEAR`: **152**
+
+### Nine terminal-count normalizations
+
+The previous holds were caused by chosen recipes using terminal `complete count > 1` to describe work that must happen before completion. The candidate projection now normalizes exactly these nine records, while leaving canonical recipe payloads and SOURCE evidence untouched:
+
+- Barbarian Arena Quest: collect 3 trophies, then complete once.
+- Bear Room Quest: use/open 3 reward boxes, then complete once.
+- Behemoth Quest: use/open 4 reward chests, then complete once.
+- Demon Helmet Quest: use/open 3 reward chests, then complete once.
+- Dragon Tower Quest: use/open 2 supply boxes, then complete once.
+- Edron Goblin Quest: use/open 2 throne-room chests, then complete once.
+- Opticording Sphere Quest: use/open 2 final ornate chests, then complete once.
+- Rift Warrior Outfits Quest: the two 100-token inventory stages remain quantity gates; each Cledwyn handoff is one dialogue occurrence, then complete once.
+- The Ancient Tombs Quest: one combination action after the seven pharaoh trials, then complete once.
+
+Normalization packet:
+
+- schema: `OTERYN_QUEST_TERMINAL_NORMALIZATION/v1`
+- packet SHA256: `234fa874bf5652339147e5b224c3bb0da2fb992afefebb834b0c3e28d69d82d0`
+- runtime enabled: `false`
+- source holds preserved: `true`
+
+### Source event/reward projection after normalization
+
+- schema: `OTERYN_CHOSEN_SOURCE_EVENT_REWARD_ASSOCIATIONS/v3`
+- packet SHA256: `1219badd0163147d357fda0bd4fe0c624f0d0c7924af1629a92856440a2f1c14`
+- quests: **236**
+- stages: **1475**
+- non-dialogue stages: **1225**
+- exact stage target refs: **617**
+- reward intents: **508**
+- exact reward refs: **372**
+- exact existing Encounter outcome seams: **25**
+
+Every stage and reward remains non-executable: `runtime_admitted=false`; all native binding fields remain null.
+
+### Validation
+
+Focused final validation on this branch:
+
+- terminal-stage refinement tests: PASS
+- chosen-source progress tests: PASS
+- chosen-source binding-plan tests: PASS
+- completion importer tests: PASS
+- all-373 matrix tests: PASS
+- chosen-source event/reward packet tests: PASS
+- combined focused suite: **26 PASS**
+- event/reward packet suite: **6 PASS**
+- `quest_completion_import.py --check`: PASS
+- `quest_completion_matrix.py --check`: PASS
+- `git diff --check`: PASS
+
+### Next lane
+
+The lowering backlog is closed. Work should now move only to native binding/runtime owner seams. The Encounter kill lane is still blocked on the accepted Encounter runtime architecture (`ENC-RT-1` / `ENC-OUTCOME-1`); do not introduce a quest-specific death bypass.
