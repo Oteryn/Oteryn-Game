@@ -3,8 +3,9 @@
 //! Pure rules of CHAT-1: the text bounds, who hears a `say`, `whisper` or `yell`, the yell gates
 //! and cooldown, the per-character spam bucket with its in-memory mute, and the NPC greeting match.
 //! The wire (capability `CHAT_V1`, `CHAT_INTENT`, domain `CHAT`) and the runtime that feeds these
-//! rules come with CHAT-1b; the World relay, private messages, rooms and the durable mute row are
-//! CHAT-2. Chat is Channel-local here and never durable.
+//! rules live in `gameplay_transport::chat_intent` (CHAT-WIRE-1); the World relay, private
+//! messages, rooms and the durable mute row are CHAT-2. Chat is Channel-local here and never
+//! durable.
 
 pub(crate) mod egress;
 pub(crate) mod greeting;

@@ -667,7 +667,7 @@ fn validate_acceptance_value(
 
 /// A selected capability whose requirement is not selected with it (ITEM-MOVE-WIRE-0 §4: 4
 /// requires 6; ITEM-EQUIP-DROP: 12 requires 4; BAGS-0 §5: 14 requires 4 and 12; ITEM-USE-0 §3:
-/// 15 requires 4) is an invalid set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
+/// 15 requires 4; ATTACK-WIRE-1: 17 requires 6) is an invalid set, refused on encode and decode of both `ServerAccepted` and `ServerResumeAccepted`.
 const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     (
         item_view::CAPABILITY_ITEM_VIEW_MOVE_V1,
@@ -684,6 +684,10 @@ const CAPABILITY_REQUIREMENTS_V1: &[(u32, &[u32])] = &[
     (
         world_object::CAPABILITY_ITEM_USE_V1,
         world_object::CAPABILITY_ITEM_USE_V1_REQUIRES,
+    ),
+    (
+        attack::CAPABILITY_ATTACK_V1,
+        &attack::CAPABILITY_ATTACK_V1_REQUIRES,
     ),
 ];
 
@@ -2682,6 +2686,10 @@ mod tests {
             (&[15][..], false),
             (&[6, 15][..], false),
             (&[4, 6, 15][..], true),
+            (&[17][..], false),
+            (&[4, 17][..], false),
+            (&[6, 17][..], true),
+            (&[4, 6, 17][..], true),
         ] {
             let expected = |result: Result<(), FoundationProtocolError>| match valid {
                 true => assert!(result.is_ok(), "{selected:?}"),

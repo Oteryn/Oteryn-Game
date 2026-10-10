@@ -8,6 +8,7 @@ mod character_progression_binding;
 #[cfg(test)]
 mod character_progression_binding_tests;
 pub(crate) mod charm;
+mod chat_intent;
 mod connection;
 mod container_view;
 pub(crate) mod fresh_evidence;
@@ -507,6 +508,7 @@ pub async fn serve_gameplay(
             crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
         quest_catalogue: Some(std::sync::Arc::clone(owners.quest_catalogue)),
         quest_sessions: std::sync::Mutex::default(),
+        chat: chat_intent::ChatRuntime::default(),
         // WHEEL-W1: the embedded Wheel ruleset; without it every Wheel load fails closed.
         wheel_ruleset: crate::wheel_gem_data::WheelGemData::embedded()
             .ok()
@@ -673,6 +675,8 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// and resume. Never held across an await.
     pub(crate) quest_sessions:
         std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
+    /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
+    pub(crate) chat: chat_intent::ChatRuntime,
     /// The active Wheel ruleset (WHEEL-0 §4, §5.1); `None` when the embedded catalogue does not
     /// read, and every Wheel load then fails closed.
     pub(crate) wheel_ruleset:
@@ -1382,6 +1386,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     fn forget_quest_session(&self, session: GameSessionId) {
+        self.chat.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {
             sessions.remove(&session);
         }
@@ -2331,6 +2336,30 @@ fn bundle_map_position<'a>(
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn chat_admit(
+        &self,
+        _actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> oteryn_protocol_oteryn::chat::ChatRoomSet {
+        self.chat_open(session).await
+    }
+
+    async fn chat_intent(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        intent: oteryn_protocol_oteryn::chat::ChatIntent,
+    ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+        self.chat_speak(actor, session, &intent).await
+    }
+
+    async fn chat_drain(
+        &self,
+        session: GameSessionId,
+    ) -> Vec<oteryn_protocol_oteryn::chat::ChatLine> {
+        self.chat.drain(session)
+    }
+
     /// MAP-CUTOVER-1b: a bundle World offers the Item view set plus capability 18 and admits
     /// only a client that selects 18. MAP-ITEM-REF-1: any other World offers capability 4 (once
     /// Part B sets its gate) only when the active generation pins a non-empty Item key set.
