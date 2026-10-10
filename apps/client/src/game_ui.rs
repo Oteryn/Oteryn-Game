@@ -84,6 +84,7 @@ pub struct GameUi {
     draft: String,
     recipient: String,
     channel: usize,
+    chat_read_only: [bool; 6],
     notice: Option<String>,
     action_bar: Option<ActionBar>,
     minimap: Option<(LoadedMinimap, egui::TextureHandle)>,
@@ -595,7 +596,7 @@ impl GameUi {
                             });
                             return;
                         };
-                        ui.horizontal(|ui| {
+                        ui.horizontal_wrapped(|ui| {
                             for (index, label) in [
                                 tr("Lokalny", "Local"),
                                 "World",
@@ -609,6 +610,43 @@ impl GameUi {
                             {
                                 ui.selectable_value(&mut self.channel, index, *label);
                             }
+                            let contents = chat_contents(chat, self.channel, en);
+                            ui.menu_button("▾", |ui| {
+                                ui.checkbox(
+                                    &mut self.chat_read_only[self.channel],
+                                    tr("Tylko do odczytu", "Read-only"),
+                                );
+                                if ui
+                                    .add_enabled(
+                                        !contents.is_empty(),
+                                        egui::Button::new(tr("Kopiuj treść", "Copy contents")),
+                                    )
+                                    .clicked()
+                                {
+                                    ui.ctx().copy_text(contents.clone());
+                                    ui.close();
+                                }
+                                if ui
+                                    .add_enabled(
+                                        !contents.is_empty(),
+                                        egui::Button::new(tr("Zapisz treść", "Save contents")),
+                                    )
+                                    .clicked()
+                                {
+                                    self.notice =
+                                        Some(match export_chat_contents(self.channel, &contents) {
+                                            Ok(path) if en => {
+                                                format!("Chat exported to {}", path.display())
+                                            }
+                                            Ok(path) => {
+                                                format!("Wyeksportowano czat do {}", path.display())
+                                            }
+                                            Err(_) if en => "Chat was not exported.".into(),
+                                            Err(_) => "Nie wyeksportowano czatu.".into(),
+                                        });
+                                    ui.close();
+                                }
+                            });
                         });
                         let room = self
                             .channel
@@ -625,34 +663,7 @@ impl GameUi {
                             .stick_to_bottom(true)
                             .show(ui, |ui| {
                                 for line in chat.lines() {
-                                    let text = match line {
-                                        ChatLine::Local {
-                                            speaker_name, text, ..
-                                        } if self.channel == 0 => {
-                                            Some(format!("{speaker_name}: {text}"))
-                                        }
-                                        ChatLine::Private { speaker_name, text }
-                                            if self.channel == 5 =>
-                                        {
-                                            Some(format!("{speaker_name}: {text}"))
-                                        }
-                                        ChatLine::Room {
-                                            room: line_room,
-                                            speaker_name,
-                                            text,
-                                        } if room == Some(*line_room) => {
-                                            Some(format!("{speaker_name}: {text}"))
-                                        }
-                                        ChatLine::Dropped => Some(
-                                            tr(
-                                                "Pominięto starsze wiadomości",
-                                                "Older messages were dropped",
-                                            )
-                                            .into(),
-                                        ),
-                                        _ => None,
-                                    };
-                                    if let Some(text) = text {
+                                    if let Some(text) = chat_line_text(line, self.channel, en) {
                                         if let Some(size) = settings
                                             .stored_int("console.console.font_size")
                                             .map(|size| size.clamp(10, 32) as f32)
@@ -665,20 +676,26 @@ impl GameUi {
                                 }
                             });
                         ui.horizontal(|ui| {
+                            let read_only = self.chat_read_only[self.channel];
                             if self.channel == 5 {
-                                ui.add(
+                                ui.add_enabled(
+                                    !read_only,
                                     egui::TextEdit::singleline(&mut self.recipient)
                                         .desired_width(100.0)
                                         .hint_text(tr("Odbiorca", "Recipient")),
                                 );
                             }
-                            let edit = ui.add(
+                            let edit = ui.add_enabled(
+                                !read_only,
                                 egui::TextEdit::singleline(&mut self.draft)
                                     .desired_width((ui.available_width() - 65.0).max(30.0))
                                     .hint_text(tr("Napisz wiadomość", "Write a message")),
                             );
-                            let submit = ui.button(tr("Wyślij", "Send")).clicked()
-                                || edit.lost_focus()
+                            let submit = ui
+                                .add_enabled(!read_only, egui::Button::new(tr("Wyślij", "Send")))
+                                .clicked()
+                                || !read_only
+                                    && edit.lost_focus()
                                     && ui.input(|input| input.key_pressed(egui::Key::Enter));
                             if submit && !self.draft.trim().is_empty() {
                                 let text = self.draft.trim().to_owned();
@@ -729,6 +746,12 @@ impl GameUi {
                                 }
                             }
                         });
+                        if self.chat_read_only[self.channel] {
+                            ui.small(tr(
+                                "Ta karta jest tylko do odczytu.",
+                                "This tab is read-only.",
+                            ));
+                        }
                         if let Some(result) = link.chat_result()
                             && result.disposition != oteryn_session::ChatDisposition::Ok
                         {
@@ -810,6 +833,117 @@ fn chat_intent(channel: usize, recipient: &str, text: String) -> Option<ChatInte
             text,
         }
     })
+}
+
+fn chat_contents(chat: &oteryn_session::ChatLog, channel: usize, english: bool) -> String {
+    chat.lines()
+        .filter_map(|line| chat_line_text(line, channel, english))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn chat_line_text(line: &ChatLine, channel: usize, english: bool) -> Option<String> {
+    let room = channel
+        .checked_sub(1)
+        .and_then(|index| ChatRoom::ALL.get(index).copied());
+    match line {
+        ChatLine::Local {
+            speaker_name, text, ..
+        } if channel == 0 => Some(format!("{speaker_name}: {text}")),
+        ChatLine::Private { speaker_name, text } if channel == 5 => {
+            Some(format!("{speaker_name}: {text}"))
+        }
+        ChatLine::Room {
+            room: line_room,
+            speaker_name,
+            text,
+        } if room == Some(*line_room) => Some(format!("{speaker_name}: {text}")),
+        ChatLine::Dropped => Some(
+            if english {
+                "[Older messages were dropped]"
+            } else {
+                "[Pominięto starsze wiadomości]"
+            }
+            .into(),
+        ),
+        _ => None,
+    }
+}
+
+pub(crate) fn export_chat_contents(
+    channel: usize,
+    contents: &str,
+) -> std::io::Result<std::path::PathBuf> {
+    let root = oteryn_client::settings::ClientSettings::path()
+        .and_then(|path| path.parent().map(|parent| parent.join("chat")))
+        .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))?;
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(std::io::Error::other)?
+        .as_secs();
+    export_chat_contents_to(&root, channel, contents, timestamp)
+}
+
+fn export_chat_contents_to(
+    root: &std::path::Path,
+    channel: usize,
+    contents: &str,
+    timestamp: u64,
+) -> std::io::Result<std::path::PathBuf> {
+    const MAX_EXPORT_BYTES: usize = 256 * 1024;
+    const CHANNEL_NAMES: [&str; 6] = [
+        "local",
+        "world",
+        "english",
+        "help",
+        "advertising",
+        "private",
+    ];
+    let name = CHANNEL_NAMES
+        .get(channel)
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unknown chat tab"))?;
+    if contents.is_empty() || contents.len() > MAX_EXPORT_BYTES {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Chat export is empty or too large",
+        ));
+    }
+    std::fs::create_dir_all(root)?;
+    for suffix in 0..100_u8 {
+        let suffix = if suffix == 0 {
+            String::new()
+        } else {
+            format!("-{suffix}")
+        };
+        let path = root.join(format!("{name}-{timestamp}{suffix}.txt"));
+        let mut options = std::fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        match options.open(&path) {
+            Ok(mut file) => {
+                use std::io::Write;
+                if let Err(error) = file
+                    .write_all(contents.as_bytes())
+                    .and_then(|()| file.sync_all())
+                {
+                    drop(file);
+                    let _cleanup = std::fs::remove_file(&path);
+                    return Err(error);
+                }
+                return Ok(path);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(error),
+        }
+    }
+    Err(std::io::Error::new(
+        std::io::ErrorKind::AlreadyExists,
+        "Chat export name space exhausted",
+    ))
 }
 
 fn show_window_recovery(ctx: &egui::Context, english: bool) -> bool {
@@ -1131,8 +1265,56 @@ fn chat_feedback(value: ChatDisposition, english: bool) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use super::{item_button, show_window_recovery};
+    use super::{chat_line_text, export_chat_contents_to, item_button, show_window_recovery};
     use crate::preferences_browser::test_support::{button_position, click, frame};
+
+    #[test]
+    fn chat_export_partitions_tabs_and_never_overwrites_an_existing_snapshot()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let private = oteryn_session::ChatLine::Private {
+            speaker_name: "Alice".into(),
+            text: "hello".into(),
+        };
+        let help = oteryn_session::ChatLine::Room {
+            room: oteryn_session::ChatRoom::Help,
+            speaker_name: "Guide".into(),
+            text: "welcome".into(),
+        };
+        assert_eq!(
+            chat_line_text(&private, 5, true).as_deref(),
+            Some("Alice: hello")
+        );
+        assert!(chat_line_text(&private, 3, true).is_none());
+        assert_eq!(
+            chat_line_text(&help, 3, true).as_deref(),
+            Some("Guide: welcome")
+        );
+        assert!(chat_line_text(&help, 2, true).is_none());
+
+        let root = std::env::temp_dir().join(format!(
+            "oteryn-chat-export-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_nanos()
+        ));
+        let first = export_chat_contents_to(&root, 5, "Alice: hello", 42)?;
+        let second = export_chat_contents_to(&root, 5, "Alice: hello again", 42)?;
+        assert_eq!(
+            first.file_name().and_then(|name| name.to_str()),
+            Some("private-42.txt")
+        );
+        assert_eq!(
+            second.file_name().and_then(|name| name.to_str()),
+            Some("private-42-1.txt")
+        );
+        assert_eq!(std::fs::read_to_string(first)?, "Alice: hello");
+        assert_eq!(std::fs::read_to_string(second)?, "Alice: hello again");
+        assert!(export_chat_contents_to(&root, 6, "text", 42).is_err());
+        assert!(export_chat_contents_to(&root, 0, "", 42).is_err());
+        std::fs::remove_dir_all(root)?;
+        Ok(())
+    }
 
     #[test]
     fn long_authoritative_item_labels_stay_inside_compact_tiles() -> Result<(), &'static str> {

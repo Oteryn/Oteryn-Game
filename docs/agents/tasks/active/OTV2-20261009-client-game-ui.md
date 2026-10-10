@@ -94,3 +94,19 @@ Windows cross-target check/Clippy and the compiled 20-page
 reachability test are the local evidence for this checkpoint. Native Windows
 screenshot comparison and every explicitly pending engine/server consumer remain
 open; do not describe the whole matrix as 1:1 complete.
+
+## Continuation checkpoint — 2026-10-10 chat console
+
+The received-chat projection now backs per-tab Copy and bounded, non-overwriting
+local Save actions. Export names come only from the six fixed client tabs, private
+files use owner-only Unix permissions, and a failed write removes its incomplete
+file. Per-tab read-only mode blocks both the composer and send action. The inert
+secondary-console control is disabled; participants, Clear and a second console
+remain explicit gaps because their required projections/views do not exist.
+
+The Windows-only HUD, panel, icon and reference-dialog modules are now included in
+Linux test builds through `cfg(test)`; the application target therefore exercises
+51 tests instead of silently omitting those modules. The `image` dev dependency
+matches the existing pinned Windows dependency and does not change production
+composition. Native Windows cross-check still requires the missing MinGW compiler
+in this environment and remains a CI lane.

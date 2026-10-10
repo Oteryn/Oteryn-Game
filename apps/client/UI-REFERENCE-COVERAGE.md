@@ -85,9 +85,11 @@ not proof of every hidden control or runtime effect. Do not restart those pages.
   unrecorded choices, validation and behavior. D now records backpack sorting
   by four keys in both directions, nested controls and Obtain Container movement;
   filtering and recursive confirmations remain unverified.
-- Chat: D now records Server Log's read-only-tab/save/clear menu. Participants,
-  mute, player-channel/entry menus, secondary-chat routes and actual save behavior
-  still need targeted checks; file vocabulary alone does not establish behavior.
+- Chat: D records Server Log's read-only-tab/save/clear menu. Oteryn's read-only
+  state now blocks the real composer, and Copy/Save consume the received chat
+  projection; Save creates a bounded, non-overwriting private local snapshot.
+  Participants, player-channel/entry menus, secondary-chat routes and Clear still
+  need targeted checks; no participant data or second console is fabricated.
 - Boss difficulty, depot search, stash, market and inspection: A's semantic
   sweep identifies these extra dialogs. Their complete runtime layouts remain
   unverified; the 28 shortcuts do not bound the whole client.

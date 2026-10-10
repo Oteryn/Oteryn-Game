@@ -24,7 +24,7 @@ implemented.
 | Custom Hotkeys | Partial: observed editor inventory | Text assignments fill the real composer or send through the typed chat intent. Spell/object assignment and legacy bindings are disabled because no authoritative live picker/assignment exists; their persisted presence is not counted as behavior |
 | Interface | Yes | Language/contrast and tile-under-pointer highlighting work; system/custom cursor, link-copy warning and expiry controls stay disabled pending consumers |
 | HUD | Partial: groups/arcs and all 35 observed conditions | Own name and harmony use admitted/session data; own health/mana bars/arcs and other-actor health bars consume real projections. Condition controls and ordering are visible but disabled because the protocol exposes no condition projection; native live-session visual acceptance remains pending |
-| Console | Yes | Chat visibility and text size work; timestamp/message filters stay disabled pending chat/event projection |
+| Console | Yes | Chat visibility, room open/close, text size and per-tab read-only mode work. Copy uses the clipboard and Save writes a bounded, non-overwriting local snapshot; participants, secondary console, clear, timestamps and event filters remain pending |
 | Game Window | Yes | Frame & Highlight / Frame Only / Highlight Only / None drive the real target frame and scene overlay. Text/combat/effect projections remain disabled |
 | Action Bars | Yes | Three masters/nine independent 50-slot rows, locks, two chords per slot and session action clearing work. Hotkey labels, item amounts and tooltips drive the live action-row renderer |
 | Shortcuts | Yes, two lists | Add/remove/order edits affect draft only; Apply updates live registry, Cancel discards |

@@ -115,7 +115,7 @@ pub struct ReferenceDialogs {
     backpacks_first: Option<bool>,
     channel_search: String,
     channel_muted: Option<bool>,
-    secondary_chat: Option<bool>,
+    chat_notice: Option<String>,
     session_inventory: Option<CharacterInventory>,
     session_container: Option<OpenContainer>,
     session_chat: Option<ChatLog>,
@@ -642,13 +642,23 @@ impl ReferenceDialogs {
                 ("Wycisz podgląd kanału", "Mute channel preview"),
                 &mut self.channel_muted,
             );
-            optional_bool(
-                ui,
+            let mut secondary_chat = false;
+            ui.add_enabled(
+                false,
+                egui::Checkbox::new(
+                    &mut secondary_chat,
+                    tr(
+                        en,
+                        "Wyświetl w dodatkowej konsoli",
+                        "Show in secondary console",
+                    ),
+                ),
+            )
+            .on_disabled_hover_text(tr(
                 en,
-                "secondary-chat",
-                ("Wyświetl w dodatkowej konsoli", "Show in secondary console"),
-                &mut self.secondary_chat,
-            );
+                "Dodatkowa konsola nie ma jeszcze działającego widoku.",
+                "The secondary console does not have a working view yet.",
+            ));
             ui.heading(tr(en, "Uczestnicy kanału", "Channel participants"));
             table(ui, en, &[("Postać", "Character"), ("Stan", "Status")]);
             let room_open = self
@@ -696,16 +706,27 @@ impl ReferenceDialogs {
                 {
                     ui.ctx().copy_text(contents.clone());
                 }
-                ui.add_enabled(
-                    false,
-                    egui::Button::new(tr(en, "Zapisz treść…", "Save contents…")),
-                )
-                .on_hover_text(tr(
-                    en,
-                    "Eksport do pliku jest w przygotowaniu. Możesz skopiować odebrane wiadomości.",
-                    "File export is in preparation. You can copy received messages.",
-                ));
+                if ui
+                    .add_enabled(
+                        contents.as_ref().is_some_and(|text| !text.is_empty()),
+                        egui::Button::new(tr(en, "Zapisz treść…", "Save contents…")),
+                    )
+                    .clicked()
+                    && let (Some(room), Some(contents)) = (self.selected_room, &contents)
+                {
+                    self.chat_notice = Some(
+                        match crate::game_ui::export_chat_contents(room as usize, contents) {
+                            Ok(path) if en => format!("Chat exported to {}", path.display()),
+                            Ok(path) => format!("Wyeksportowano czat do {}", path.display()),
+                            Err(_) if en => "Chat was not exported.".into(),
+                            Err(_) => "Nie wyeksportowano czatu.".into(),
+                        },
+                    );
+                }
             });
+            if let Some(notice) = &self.chat_notice {
+                ui.small(notice);
+            }
             ui.heading(tr(
                 en,
                 "Podgląd odebranych wiadomości",

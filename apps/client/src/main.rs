@@ -7,7 +7,8 @@ mod login_backdrop;
 mod login_screen;
 #[cfg(any(windows, test))]
 mod preferences_browser;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod reference_dialogs;
 #[cfg(any(windows, test))]
 #[cfg_attr(test, allow(dead_code))]
@@ -19,13 +20,17 @@ mod action_bar_ui;
 #[cfg(any(windows, test))]
 #[cfg_attr(test, allow(dead_code))]
 mod client_chrome;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod client_panels;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod game_ui;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod panel_icons;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod panel_views;
 #[cfg(windows)]
 mod windows_shell;
