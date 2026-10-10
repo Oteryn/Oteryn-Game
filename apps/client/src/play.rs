@@ -336,6 +336,7 @@ impl PlayView {
                     EntityKind::Corpse | EntityKind::GroundItem => TargetKind::Object,
                     _ => TargetKind::Entity,
                 },
+                glyph: true,
                 entity: matches!(entity.kind, EntityKind::Creature).then_some(entity.entity),
             })
             .collect::<Vec<_>>();
@@ -822,6 +823,8 @@ mod tests {
         };
         let creature = actor(EntityKind::Creature, 101, 1);
         let mut view = view()?.with_entities(vec![creature, actor(EntityKind::Npc, 99, 2)])?;
+        // The NPC is still drawn: player plus one glyph per visible entity.
+        assert_eq!(view.scene().sprites().len(), 2 + 2);
         view.click(TileCoord::new(99, 200))?;
         assert!(view.inputs.is_empty());
         view.click(TileCoord::new(101, 200))?;
