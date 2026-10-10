@@ -1312,6 +1312,43 @@ pub(crate) fn commit_familiar(
     request: Option<&FamiliarStateRequest>,
     committed: Option<&CommittedCharacterFamiliar>,
 ) -> Result<FamiliarApplyReceipt, CompanionExecutionError> {
+    let checked = check_commit_familiar(
+        runtime,
+        &prepared,
+        current,
+        original_fence,
+        request,
+        committed,
+        None,
+    )?;
+    Ok(install_familiar(runtime, prepared, checked))
+}
+
+/// Proof that [`check_commit_familiar`] passed under the held guards. It carries the exact
+/// receipt [`install_familiar`] returns, so later phase-1 checks can read it before any write.
+#[derive(Debug)]
+pub(crate) struct CheckedFamiliarApply {
+    receipt: FamiliarApplyReceipt,
+    session: GameSessionId,
+}
+impl CheckedFamiliarApply {
+    pub(crate) fn receipt(&self) -> &FamiliarApplyReceipt {
+        &self.receipt
+    }
+}
+
+/// The borrowing check of [`commit_familiar`] (ARCH-SPELL-LOCK-2 §1.6). With `staged`, the
+/// caller releases that batch's companion touches first in the same owner turn, and every
+/// touched slot is read as released. It changes nothing and allocates only the receipt.
+pub(crate) fn check_commit_familiar(
+    runtime: &ChannelRuntimeV1,
+    prepared: &PreparedFamiliar,
+    current: &FamiliarOwnerFacts,
+    original_fence: &CurrentCharacterGameplayFence,
+    request: Option<&FamiliarStateRequest>,
+    committed: Option<&CommittedCharacterFamiliar>,
+    staged: Option<&crate::foundation::StagedSpellBatch>,
+) -> Result<CheckedFamiliarApply, CompanionExecutionError> {
     prepared.validate_current(runtime, current)?;
     if original_fence.character_id.as_bytes() != prepared.binding.attacker.as_bytes()
         || original_fence.game_session_id != prepared.binding.command.game_session_id()
@@ -1330,28 +1367,23 @@ pub(crate) fn commit_familiar(
     } else if request.is_some() || committed.is_some() {
         return Err(CompanionExecutionError::SnapshotMismatch);
     }
-    // Existing summons receive party protection before new creation. All snapshots were compared
-    // above, and immutable policies/master facts cannot change under this exclusive owner turn.
-    if prepared
+    let marks: &[CompanionSnapshot] = if prepared
         .actions
         .contains(&FamiliarAction::RegisterPartyProtectionAllOwnedSummons)
     {
-        for snapshot in &prepared.owned {
-            runtime.mark_companion_party_protection(snapshot)?;
-        }
-    }
-    if let Some(dead) = &prepared.death {
-        runtime.despawn_companion(
-            prepared.binding.caster,
-            original_fence.game_session_id,
-            dead,
-        )?;
-    }
-    let creature = prepared
-        .spawn
-        .map(|spawn| runtime.install_companion_spawn(spawn))
-        .transpose()?;
-    let mut owner_operations = prepared.actions;
+        &prepared.owned
+    } else {
+        &[]
+    };
+    runtime.check_familiar_companion_apply(
+        staged.map_or(&[][..], |staged| staged.companion_touch_indices()),
+        prepared.binding.caster,
+        original_fence.game_session_id,
+        marks,
+        prepared.death.as_ref(),
+        prepared.spawn.as_ref(),
+    )?;
+    let mut owner_operations = prepared.actions.clone();
     owner_operations.retain(|a| {
         !matches!(
             a,
@@ -1366,12 +1398,51 @@ pub(crate) fn commit_familiar(
                 | FamiliarAction::ScheduleWarning { .. }
         )
     });
-    Ok(FamiliarApplyReceipt {
-        creature,
-        after: prepared.after,
-        binding: prepared.binding,
-        owner_operations,
+    Ok(CheckedFamiliarApply {
+        receipt: FamiliarApplyReceipt {
+            creature: prepared.spawn.as_ref().map(|spawn| spawn.actor()),
+            after: prepared.after.clone(),
+            binding: prepared.binding.clone(),
+            owner_operations,
+        },
+        session: original_fence.game_session_id,
     })
+}
+
+/// The infallible apply, only after [`check_commit_familiar`] passed under the same held guards
+/// (and, with its `staged` batch, after that batch's companion touch release).
+#[allow(
+    clippy::expect_used,
+    reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+)]
+pub(crate) fn install_familiar(
+    runtime: &mut ChannelRuntimeV1,
+    prepared: PreparedFamiliar,
+    checked: CheckedFamiliarApply,
+) -> FamiliarApplyReceipt {
+    // Existing summons receive party protection before new creation. All snapshots were compared
+    // in phase 1, and immutable policies/master facts cannot change under this exclusive owner turn.
+    if prepared
+        .actions
+        .contains(&FamiliarAction::RegisterPartyProtectionAllOwnedSummons)
+    {
+        for snapshot in &prepared.owned {
+            runtime
+                .mark_companion_party_protection(snapshot)
+                .expect("checked companion party protection");
+        }
+    }
+    if let Some(dead) = &prepared.death {
+        runtime
+            .despawn_companion(prepared.binding.caster, checked.session, dead)
+            .expect("checked companion despawn");
+    }
+    if let Some(spawn) = prepared.spawn {
+        runtime
+            .install_companion_spawn(spawn)
+            .expect("checked reserved companion spawn");
+    }
+    checked.receipt
 }
 
 /// Source corpse and predicted spawn share an exact physical owner binding. Construction

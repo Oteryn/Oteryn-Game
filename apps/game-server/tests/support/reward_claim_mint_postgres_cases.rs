@@ -34,6 +34,7 @@ use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
     LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
 };
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
     AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
@@ -511,7 +512,12 @@ impl Harness {
             .map_err(debug)?;
         match self
             .root
-            .commit_item_mint(authority, &self.node, &mut candidate)
+            .commit_item_mint(
+                &candidate.fresh_death_lane_permit().await,
+                authority,
+                &self.node,
+                &mut candidate,
+            )
             .await
             .map_err(debug)?
         {
@@ -531,7 +537,13 @@ impl Harness {
             .freeze_item_transfer(authority, &self.node, fence, request)
             .await?;
         self.root
-            .commit_item_transfer(authority, &self.node, fence, &mut candidate)
+            .commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope(fence.runtime_scope).await?,
+                authority,
+                &self.node,
+                fence,
+                &mut candidate,
+            )
             .await
     }
 
@@ -1923,9 +1935,15 @@ fn concurrent_claims_mint_once_and_serialize_with_pickup_and_xp() -> TestResult 
             .await
             .map_err(debug)?;
         let (moved, minted) = join_two(
-            harness
-                .root
-                .commit_item_transfer(&first, &harness.node, fence()?, &mut pickup),
+            harness.root.commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope(fence()?.runtime_scope)
+                    .await
+                    .map_err(debug)?,
+                &first,
+                &harness.node,
+                fence()?,
+                &mut pickup,
+            ),
             second_root.commit_reward_claim_mint(&second, &harness.node, fence()?, &mut claim),
         )
         .await;

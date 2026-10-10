@@ -504,6 +504,9 @@ const MONSTER_NPC_RECONCILED_PREDECESSOR: &str =
     "41b10815e50ba785f297a066ca799c47dc393455d63b41c754095614184dd965";
 /// Revisions are immutable (DUR-04): the admitted package is a new project and package revision.
 const CORPSE_ADMITTED_PROJECT_REVISION: &str = "d3-7-corpse-admitted-20261006-r1";
+/// Tree digest of the admitted package; re-admitting it is a no-op (idempotent).
+const CORPSE_ADMITTED_PACKAGE: &str =
+    "7353a9ed65d82bb393db172a74f576b699ede2d727ddb6690ec8cc6c50925071";
 
 fn reconciled_limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -530,7 +533,13 @@ fn admit_corpse_on_reconciled(
     };
     let mut draft = captured.migrate_to_v2();
     let before = CanonicalProjectDocuments::from_v2_draft(draft.clone(), reconciled_limits())?;
-    if document_tree_digest(&before) != MONSTER_NPC_RECONCILED_PREDECESSOR {
+    let digest = document_tree_digest(&before);
+    if digest == CORPSE_ADMITTED_PACKAGE {
+        let tree_sha256 = write_documents(output, &before)?;
+        println!("corpse_admitted_items=0 tree_sha256={tree_sha256} predecessor_mode=true");
+        return Ok(true);
+    }
+    if digest != MONSTER_NPC_RECONCILED_PREDECESSOR {
         return Ok(false);
     }
     let corpse_admitted = apply_item_admission_v2(&mut draft)?;

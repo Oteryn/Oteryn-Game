@@ -608,6 +608,8 @@ impl RenderModel {
                     next.overlay_revision = delta.new_revision;
                 }
                 SessionEvent::ActorVitals(delta) => next.vitals = Some(delta.value),
+                // The harness model does not track combat state.
+                SessionEvent::ActorCombatState(_) => {}
                 SessionEvent::ChatLine(delta) => {
                     if let Some(chat) = next.chat.as_mut() {
                         chat.push(delta.value.clone());

@@ -295,6 +295,13 @@ pub(super) async fn take_corpse_entry(
 ) -> Result<ItemTransferOutcome, GroundPickupError> {
     use crate::interaction_chest_use::entry_chest;
     let rejected = || GroundPickupError::Transfer(ItemTransferError::AuthorityRejected);
+    // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the TRANSFER is a
+    // key-33 writer. `None` is retryable with no side effect while the lane is fenced.
+    let Some(permit) = admission.spell_lane_permit().await else {
+        return Err(GroundPickupError::Transfer(ItemTransferError::Unavailable(
+            crate::durability::DurabilityError::Unavailable,
+        )));
+    };
     let (corpse, entry_id, native) = {
         let runtime = admission.runtime.lock().await;
         let dead = admission.spell_states.lock().await.is_dead(actor);
@@ -347,7 +354,13 @@ pub(super) async fn take_corpse_entry(
         .await?;
     Ok(admission
         .root
-        .commit_item_transfer(admission.character, admission.holder, fence, &mut candidate)
+        .commit_item_transfer(
+            &permit,
+            admission.character,
+            admission.holder,
+            fence,
+            &mut candidate,
+        )
         .await?)
 }
 
