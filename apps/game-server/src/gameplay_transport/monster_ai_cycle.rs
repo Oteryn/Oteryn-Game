@@ -22,6 +22,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// One coalesced creature think pass. The same Channel's scheduler is shared by
     /// all connections; player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
+        let now = self.owner_now();
+        let mut runtime = self.runtime.lock().await;
+        // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
+        // before the creature think pass, whether or not melee content is active.
+        drive_owner_spawns(&mut runtime, now.get());
         let Some(room) = self.qualified_room else {
             return;
         };
@@ -31,8 +36,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
-        let now = self.owner_now();
-        let mut runtime = self.runtime.lock().await;
         if runtime.owner_fence().is_err()
             || content.source_digest() != runtime.content_pin().server_artifact_digest()
             || room.compiled().server_digest() != runtime.content_pin().server_artifact_digest()
@@ -327,6 +330,21 @@ fn current_player_target<'a>(
     (state.vitals().health > 0).then_some(state)
 }
 
+/// SPAWN-1a (CREATURE-AI-0 §6.3): runs the respawn occurrences due at `now` with the MOVE-RL-11
+/// reference view. It needs no melee content. A refusal leaves the occurrences pending.
+fn drive_owner_spawns(runtime: &mut ChannelRuntimeV1, now: u64) {
+    let _ = runtime.drive_spawn_respawns(now, |observer, cell| {
+        use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
+        match (
+            VisibilityPosition::new(observer.x, observer.y, observer.floor),
+            VisibilityPosition::new(cell.x, cell.y, cell.floor),
+        ) {
+            (Ok(observer), Ok(cell)) => VisibilitySettings::REFERENCE.can_see(observer, cell),
+            _ => false,
+        }
+    });
+}
+
 /// One monster the first playable melee dispatch serves: a wild hostile Creature whose bound
 /// profile has a native melee schedule.
 struct QualifiedMelee<'a> {
@@ -467,6 +485,47 @@ mod tests {
     fn position(x: i32, floor: i16) -> MovementLocalPosition {
         MovementLocalPosition { x, y: 0, floor }
     }
+    /// SPAWN-1a (Codex 4239269255): with no native gameplay manifest the fixture rats still
+    /// respawn on the owner turn; the drive reads no melee content.
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn a_fixture_rat_respawns_without_native_gameplay_content() {
+        use crate::foundation::{ChannelContentPin, ChannelId, NodeId, WorldId};
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            node,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            8,
+            ChannelContentPin::test(world),
+        )
+        .expect("runtime");
+        let source = room.spawn_source().expect("D116 spawn source");
+        assert_eq!(
+            runtime.realize_activation_spawns(vec![source.activation_facts()]),
+            Ok(2)
+        );
+        let (point, _, live) = runtime.spawn_point_creatures()[0];
+        assert!(runtime.kill_creature_for_test(live.expect("live rat")));
+        drive_owner_spawns(&mut runtime, 0);
+        let due = runtime.pending_respawn(point).expect("pending").due_micros;
+        drive_owner_spawns(&mut runtime, due);
+        assert!(runtime.spawn_point_creatures()[0].2.is_none());
+        // Admission runs 4,200 ms after the warning (CREATURE-AI-0 §6.3).
+        drive_owner_spawns(&mut runtime, due + 4_200_000);
+        assert!(runtime.spawn_point_creatures()[0].2.is_some());
+    }
+
     #[test]
     fn remote_players_do_not_consume_local_perception_budget() {
         let mut targets = vec![(position(100, 7), false, false); 65];

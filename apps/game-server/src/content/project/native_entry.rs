@@ -46,8 +46,13 @@ pub const fn native_spell_entry_candidate_limits() -> ProjectFilesystemLimits {
 pub const NATIVE_ENTRY_LICENSING: &str = "oteryn-original-preproduction";
 pub const NATIVE_ENTRY_COORDINATE_PROFILE: &str = "oteryn-world-spatial-v1";
 pub const NATIVE_ENTRY_CONTRACT_REVISION: u32 = 1;
-/// The one entry-room has exactly these three cells (#935, #937 §4).
-pub const NATIVE_ENTRY_CELLS: usize = 3;
+/// Room revision 2 has exactly these five room cells: start, east, north and the two dens
+/// (Amendment 02 §1).
+pub const NATIVE_ENTRY_CELLS: usize = 5;
+/// The revision-1 room (the spell candidate) has exactly three cells (#935, #937 §4).
+pub const NATIVE_ENTRY_R1_CELLS: usize = 3;
+/// Amendment 04: a spawn names at most two placement cells.
+pub const NATIVE_ENTRY_SPAWN_CELLS_MAX: usize = 2;
 pub const NATIVE_ENTRY_PRESENTATIONS: usize = 3;
 /// The one entry-room door (#162 comment 5865792400, owner decision A4-a): exactly one 4th
 /// walkable cell, adjacent to the accepted three, carries exactly one typed door overlay.
@@ -245,11 +250,22 @@ pub struct NativeEntrySpawn {
     pub key: String,
     pub creature: ProjectV2DefinitionRef,
     pub behavior: ProjectV2DefinitionRef,
-    pub cell_key: String,
+    /// Revision 1 only: the single spawn cell. Revision 2 refuses it (Amendment 02 §1).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cell_key: Option<String>,
+    /// Revision 2 only: the ordered placement cells; placement `i` realizes actor `i`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub cell_keys: Vec<String>,
     pub population_limit: u16,
     pub recovery: NativeEntryRecovery,
     pub multiplicity: NativeEntryMultiplicity,
     pub eligibility_scope: NativeEntryEligibility,
+    /// Revision 2 only (SPAWN-1A-PACKET-1 §1.1): `CREATUREAI0-RL-13`, 1,000..=86,400,000 ms.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub respawn_delay_ms: Option<u64>,
+    /// Revision 2 only: 1..=`respawn_delay_ms`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub occupancy_retry_interval_ms: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -297,6 +313,88 @@ pub struct NativeEntryProject {
     spell_tiles: Option<NativeSpellTileDocument>,
     house_tiles: Option<super::NativeHouseTileDocument>,
     door: CanonicalReferencePlayableContent,
+    spawn_source: Option<NativeEntrySpawnSource>,
+}
+
+/// One qualified spawn placement cell: (cell key, x, y, floor).
+pub type NativeEntrySpawnCell = (String, i32, i32, i16);
+
+/// What the Channel runtime realizes a spawn source from: placement cells `(x, y, floor)` in
+/// order, respawn delay and occupancy retry interval (ms), creature key and initial health.
+pub type NativeEntrySpawnFacts = (Vec<(i32, i32, i16)>, u64, u64, String, u64);
+
+/// The revision-2 room's qualified D116 spawn (SPAWN-1A-PACKET-1 §1.1, §1.6): the content inputs
+/// the activated spawn source realizes. It is produced only by qualification; the authored
+/// creature and behaviour profiles are carried here, never lowered into FirstProduction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeEntrySpawnSource {
+    key: String,
+    creature: ProjectV2DefinitionRef,
+    behavior: ProjectV2DefinitionRef,
+    cells: Vec<NativeEntrySpawnCell>,
+    respawn_delay_ms: u64,
+    occupancy_retry_interval_ms: u64,
+    health: u64,
+    initial_health: u64,
+    speed: u32,
+    behaviour_profile: ProjectV2BehaviorAuthoring,
+}
+
+impl NativeEntrySpawnSource {
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    pub fn creature(&self) -> &ProjectV2DefinitionRef {
+        &self.creature
+    }
+
+    pub fn behavior(&self) -> &ProjectV2DefinitionRef {
+        &self.behavior
+    }
+
+    /// The ordered placement cells; placement `i` realizes actor `i`.
+    pub fn cells(&self) -> &[NativeEntrySpawnCell] {
+        &self.cells
+    }
+
+    pub const fn respawn_delay_ms(&self) -> u64 {
+        self.respawn_delay_ms
+    }
+
+    pub const fn occupancy_retry_interval_ms(&self) -> u64 {
+        self.occupancy_retry_interval_ms
+    }
+
+    pub const fn health(&self) -> u64 {
+        self.health
+    }
+
+    pub const fn initial_health(&self) -> u64 {
+        self.initial_health
+    }
+
+    pub const fn speed(&self) -> u32 {
+        self.speed
+    }
+
+    /// The facts the Channel runtime realizes this source from.
+    pub(crate) fn activation_facts(&self) -> NativeEntrySpawnFacts {
+        (
+            self.cells
+                .iter()
+                .map(|(_, x, y, floor)| (*x, *y, *floor))
+                .collect(),
+            self.respawn_delay_ms,
+            self.occupancy_retry_interval_ms,
+            self.creature.key.to_string(),
+            self.initial_health,
+        )
+    }
+
+    pub fn behaviour_profile(&self) -> &ProjectV2BehaviorAuthoring {
+        &self.behaviour_profile
+    }
 }
 
 impl NativeEntryProject {
@@ -328,6 +426,11 @@ impl NativeEntryProject {
         &self.door
     }
 
+    /// The revision-2 room's qualified spawn source; `None` for the revision-1 spell candidate.
+    pub fn spawn_source(&self) -> Option<&NativeEntrySpawnSource> {
+        self.spawn_source.as_ref()
+    }
+
     pub(super) fn qualify(
         project: WorldProject,
         overlay: NativeFirstEntryDocument,
@@ -347,7 +450,7 @@ impl NativeEntryProject {
         overlay: NativeFirstEntryDocument,
         candidate: bool,
     ) -> Result<Self, ProjectError> {
-        let (source, door) = lower(&project, &overlay, candidate)?;
+        let (source, door, spawn_source) = lower(&project, &overlay, candidate)?;
         require_accepted_bindings(&project, &source, &door, candidate)?;
         if candidate {
             qualify_candidate_ground(&project, &overlay)?;
@@ -363,6 +466,7 @@ impl NativeEntryProject {
             spell_tiles: overlay.spell_tiles,
             house_tiles: overlay.house_tiles,
             door,
+            spawn_source,
         };
         // The lookup carrier can be reconstructed later, but its complete source
         // metadata must already qualify under the same compiled generation here.
@@ -468,6 +572,7 @@ impl NativeEntryProject {
                 self.source.revisions.map.as_str().as_bytes(),
             ),
             door: self.door.clone(),
+            spawn_source: self.spawn_source.clone(),
         })
     }
 
@@ -550,6 +655,9 @@ pub struct QualifiedNativeEntryRoom {
     /// Channel activation owner can bind its `LocalObjectRuntime` from the exact qualified
     /// content, never a reconstruction of it.
     door: CanonicalReferencePlayableContent,
+    /// The qualified spawn of the same qualification (SPAWN-1A-PACKET-1 §1.3), handed to the
+    /// Channel activation owner with the content pin, never re-read.
+    spawn_source: Option<NativeEntrySpawnSource>,
 }
 
 /// The qualified room's cells as the Movement kernel's direct-lookup index, scoped to the exact
@@ -645,6 +753,11 @@ impl QualifiedNativeEntryRoom {
     /// See [`NativeEntryProject::door`].
     pub fn door(&self) -> &CanonicalReferencePlayableContent {
         &self.door
+    }
+
+    /// See [`NativeEntryProject::spawn_source`].
+    pub fn spawn_source(&self) -> Option<&NativeEntrySpawnSource> {
+        self.spawn_source.as_ref()
     }
 }
 
@@ -744,6 +857,9 @@ struct NativeEntryRoomSource {
     sources: Vec<ProjectV2Source>,
     #[serde(default)]
     source_identity_bindings: Vec<ProjectV2SourceIdentityBinding>,
+    /// Revision 2 only: the hostile rat's two authoring profiles (Amendment 02 §1).
+    #[serde(default)]
+    authoring_profiles: Vec<ProjectV2AuthoringProfile>,
 }
 
 /// Binds the committed entry-room source to one issued canonical WorldId and writes the native
@@ -796,7 +912,13 @@ fn native_room_documents_for(
         .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
     let draft = ProjectV2Draft {
         core: ProjectDraft {
-            project_revision: accepted::PACKAGE_REVISION.to_owned(),
+            // The revision-1 spell candidate keeps its own immutable package (§1.2).
+            project_revision: if candidate {
+                accepted::R1_PACKAGE_REVISION
+            } else {
+                accepted::PACKAGE_REVISION
+            }
+            .to_owned(),
             package_key: accepted::PACKAGE_KEY.to_owned(),
             semantic_schema_version: accepted::SEMANTIC_SCHEMA.to_owned(),
             licensing_metadata: source.licensing,
@@ -809,7 +931,7 @@ fn native_room_documents_for(
         state: ProjectV2State {
             declarations: source.declarations,
             item_authoring: vec![],
-            authoring_profiles: vec![],
+            authoring_profiles: source.authoring_profiles,
             worlds: vec![world],
             placements: source.placements,
             appearance_bindings: vec![],
@@ -830,15 +952,23 @@ fn native_room_documents_for(
 /// entry-room choices of `PLAYER_FIRST_ENTRY_NATIVE_CONTENT_BINDING_V1` (#935). A spelling that is
 /// not one of these is not product-policy evidence (#937 §3), so every other value refuses.
 pub mod accepted {
+    /// The revision of every definition record whose bytes room revision 2 left unchanged:
+    /// terrain, area, presentations, ability, effect, item, formula and the door (§1.2).
     pub const DEFINITION_REVISION: &str = "oteryn:rev/entry-r1";
+    /// Room revision 2's revision of the two changed definitions: the behaviour and the creature.
+    pub const R2_DEFINITION_REVISION: &str = "oteryn:rev/entry-r2";
     pub const PACKAGE_KEY: &str = "oteryn:package/native-entry-room";
-    pub const PACKAGE_REVISION: &str = "oteryn:package-rev/entry-r1";
+    pub const PACKAGE_REVISION: &str = "oteryn:package-rev/entry-r2";
     pub const SEMANTIC_SCHEMA: &str = "oteryn:schema/first-production-v1";
-    pub const LOCK_TOKEN: &str = "lock:oteryn:package-rev/entry-r1";
+    pub const LOCK_TOKEN: &str = "lock:oteryn:package-rev/entry-r2";
+    /// The revision-1 identities, kept only by the revision-1 spell candidate room.
+    pub const R1_PACKAGE_REVISION: &str = "oteryn:package-rev/entry-r1";
+    pub const R1_LOCK_TOKEN: &str = "lock:oteryn:package-rev/entry-r1";
+    pub const R1_CONTENT_REVISION: &str = "oteryn:content/entry-r1";
     /// (content, map, ruleset, world_policy, compiler, canonicalization, sim_profile, profile)
     pub const REVISIONS: [&str; 8] = [
-        "oteryn:content/entry-r1",
-        "oteryn:map/entry-r1",
+        "oteryn:content/entry-r2",
+        "oteryn:map/entry-r2",
         "oteryn:ruleset/entry-r1",
         "oteryn:world-policy/entry-r1",
         "oteryn:compiler/first-production-r1",
@@ -849,12 +979,19 @@ pub mod accepted {
     pub const REGION: &str = "oteryn:region/entry";
     pub const AREA: &str = "oteryn:area/entry-room";
     pub const TERRAIN: &str = "oteryn:terrain/stone-floor";
-    /// (cell key, x, y, floor, walkable) — start, east, north (#935).
-    pub const CELLS: [(&str, i32, i32, i16, bool); 3] = [
+    /// (cell key, x, y, floor, walkable) — start, east, north (#935), then room revision 2's two
+    /// den cells (SPAWN-1A-PACKET-1 §1.1). The first three keep their indices.
+    pub const CELLS: [(&str, i32, i32, i16, bool); 5] = [
         ("oteryn:cell/entry-start", 0, 0, 0, true),
         ("oteryn:cell/entry-east", 1, 0, 0, true),
         ("oteryn:cell/entry-north", 0, -1, 0, false),
+        ("oteryn:cell/entry-den", 2, 0, 0, true),
+        ("oteryn:cell/entry-den-north", 2, -1, 0, true),
     ];
+    /// The revision-1 room cells: start, east, north.
+    pub const R1_CELLS: [(&str, i32, i32, i16, bool); 3] = [CELLS[0], CELLS[1], CELLS[2]];
+    /// The proof cells no spawn may name: start, east, north and the door.
+    pub const PROOF_CELLS: [&str; 4] = [CELLS[0].0, CELLS[1].0, CELLS[2].0, DOOR_CELL.0];
     /// The one door's 4th walkable cell (#162 A4-a): (cell key, x, y, floor, walkable), adjacent
     /// to `east` and to `north`.
     pub const DOOR_CELL: (&str, i32, i32, i16, bool) = ("oteryn:cell/entry-door", 1, -1, 0, true);
@@ -871,11 +1008,14 @@ pub mod accepted {
     /// depend on `world_runtime`.
     pub const DOOR_OWNER_CAPABILITY: &str = "oteryn:runtime.capability.local-object-transition";
     /// Origin (x, y, floor), World bounds (min_x, min_y, max_x_exclusive, max_y_exclusive), floors.
-    /// This is the accepted envelope for exactly the four placed cells (#162 A4-a): three room
-    /// cells plus the one door cell. It is not grown to make refusal tests distinct; a door
-    /// placed off this frame is refused by the same envelope check as any other placement.
+    /// This is the accepted envelope for exactly the six placed cells of room revision 2: five
+    /// room cells plus the one door cell (Amendment 02 §2). It is not grown to make refusal tests
+    /// distinct; a door placed off this frame is refused by the same envelope check as any other
+    /// placement.
     pub const ORIGIN: (i32, i32, i16) = (0, 0, 0);
-    pub const BOUNDS: (i64, i64, i64, i64) = (0, -1, 2, 1);
+    pub const BOUNDS: (i64, i64, i64, i64) = (0, -1, 3, 1);
+    /// The revision-1 envelope of its four placed cells.
+    pub const R1_BOUNDS: (i64, i64, i64, i64) = (0, -1, 2, 1);
     pub const FLOORS: [i16; 1] = [0];
     pub const RELOCATION: (&str, &str, &str) = (
         "oteryn:relocation/entry-east-return",
@@ -883,10 +1023,15 @@ pub mod accepted {
         "oteryn:cell/entry-start",
     );
     pub const BEHAVIOR: (&str, &str) = (
+        "oteryn:behavior/rat-hostile",
+        "oteryn:policy/rat-hostile-r2",
+    );
+    pub const CREATURE: (&str, &str) = ("oteryn:creature/rat", "oteryn:policy/creature-rat-r2");
+    pub const R1_BEHAVIOR: (&str, &str) = (
         "oteryn:behavior/passive-idle",
         "oteryn:policy/passive-idle-r1",
     );
-    pub const CREATURE: (&str, &str) = ("oteryn:creature/rat", "oteryn:policy/creature-rat-r1");
+    pub const R1_CREATURE: (&str, &str) = ("oteryn:creature/rat", "oteryn:policy/creature-rat-r1");
     /// (presentation key, metadata token), sorted by key.
     pub const PRESENTATIONS: [(&str, &str); 3] = [
         ("oteryn:presentation/bite", "oteryn:appearance/bite-r1"),
@@ -894,7 +1039,11 @@ pub mod accepted {
         ("oteryn:presentation/rat", "oteryn:appearance/rat-r1"),
     ];
     pub const SPAWN: &str = "oteryn:spawn/entry-rat";
-    pub const SPAWN_CELL: &str = "oteryn:cell/entry-east";
+    /// D116: one spawn of two rats, one per den cell, in this order (§1.1).
+    pub const SPAWN_CELLS: [&str; 2] = [CELLS[3].0, CELLS[4].0];
+    pub const R1_SPAWN_CELL: &str = "oteryn:cell/entry-east";
+    /// `CREATUREAI0-RL-13`: the respawn delay bounds, in milliseconds.
+    pub const RESPAWN_DELAY_MS: std::ops::RangeInclusive<u64> = 1_000..=86_400_000;
     /// First-entry start cell (#935).
     pub const START_CELL: &str = "oteryn:cell/entry-start";
     pub const FORMULA: &str = "oteryn:formula/entry-melee-r1";
@@ -906,6 +1055,47 @@ pub mod accepted {
     pub const XP: &str = "oteryn:xp/rat";
     pub const RNG_PURPOSE: &str = "oteryn:rng/rat-loot";
     pub const RNG_PROFILE: &str = "oteryn:rng-profile/entry-r1";
+}
+
+/// The accepted values that differ between room revision 1 (kept only by the spell candidate)
+/// and room revision 2 (SPAWN-1A-PACKET-1 §1.1, §1.2).
+struct AcceptedShape {
+    package_revision: &'static str,
+    lock_token: &'static str,
+    content: &'static str,
+    room_cells: &'static [(&'static str, i32, i32, i16, bool)],
+    bounds: (i64, i64, i64, i64),
+    behavior: (&'static str, &'static str),
+    creature: (&'static str, &'static str),
+    changed_revision: &'static str,
+}
+
+/// Room revision 2, except for the revision-1 spell candidate.
+const fn accepted_shape(candidate: bool) -> AcceptedShape {
+    use accepted as a;
+    if candidate {
+        AcceptedShape {
+            package_revision: a::R1_PACKAGE_REVISION,
+            lock_token: a::R1_LOCK_TOKEN,
+            content: a::R1_CONTENT_REVISION,
+            room_cells: &a::R1_CELLS,
+            bounds: a::R1_BOUNDS,
+            behavior: a::R1_BEHAVIOR,
+            creature: a::R1_CREATURE,
+            changed_revision: a::DEFINITION_REVISION,
+        }
+    } else {
+        AcceptedShape {
+            package_revision: a::PACKAGE_REVISION,
+            lock_token: a::LOCK_TOKEN,
+            content: a::REVISIONS[0],
+            room_cells: &a::CELLS,
+            bounds: a::BOUNDS,
+            behavior: a::BEHAVIOR,
+            creature: a::CREATURE,
+            changed_revision: a::R2_DEFINITION_REVISION,
+        }
+    }
 }
 
 fn pin(ok: bool, reason: &'static str) -> Result<(), ProjectError> {
@@ -920,12 +1110,13 @@ fn require_accepted_bindings(
     candidate: bool,
 ) -> Result<(), ProjectError> {
     use accepted as a;
+    let shape = accepted_shape(candidate);
     let manifest = &source.package_manifest;
     pin(
         manifest.package_key.as_str() == a::PACKAGE_KEY
-            && manifest.package_revision.as_str() == a::PACKAGE_REVISION
+            && manifest.package_revision.as_str() == shape.package_revision
             && manifest.semantic_schema_version.as_str() == a::SEMANTIC_SCHEMA
-            && source.content_lock.revision_digest_token.as_str() == a::LOCK_TOKEN,
+            && source.content_lock.revision_digest_token.as_str() == shape.lock_token,
         "native entry package identity is not the accepted binding",
     )?;
     let r = &source.revisions;
@@ -946,10 +1137,10 @@ fn require_accepted_bindings(
             .enumerate()
             .all(|(index, (actual, expected))| {
                 actual.as_str()
-                    == if candidate && index == 1 {
-                        "oteryn:map/entry-spell-r2"
-                    } else {
-                        expected
+                    == match index {
+                        0 => shape.content,
+                        1 if candidate => "oteryn:map/entry-spell-r2",
+                        _ => expected,
                     }
             }),
         "native entry revision set is not the accepted binding",
@@ -977,13 +1168,19 @@ fn require_accepted_bindings(
         })
         .collect();
     cells.sort_unstable();
-    // #162 A4-a: the accepted set is the three room cells plus the one door cell — a bijection
-    // of exactly `NATIVE_ENTRY_CELLS + NATIVE_ENTRY_DOOR_CELLS` FirstProduction Terrain cells.
-    let mut expected_cells: Vec<_> = a::CELLS.into_iter().chain([a::DOOR_CELL]).collect();
+    // #162 A4-a, Amendment 02: the accepted set is the room cells plus the one door cell — a
+    // bijection of exactly `NATIVE_ENTRY_CELLS + NATIVE_ENTRY_DOOR_CELLS` FirstProduction Terrain
+    // cells (revision 1: `NATIVE_ENTRY_R1_CELLS + NATIVE_ENTRY_DOOR_CELLS`).
+    let mut expected_cells: Vec<_> = shape
+        .room_cells
+        .iter()
+        .copied()
+        .chain([a::DOOR_CELL])
+        .collect();
     expected_cells.sort_unstable();
     pin(
         cells == expected_cells,
-        "native entry cells are not the accepted start, east, north and door",
+        "native entry cells are not the accepted room cells and door",
     )?;
     let world = project
         .v2
@@ -996,7 +1193,7 @@ fn require_accepted_bindings(
             world.bounds.min_y,
             world.bounds.max_x_exclusive,
             world.bounds.max_y_exclusive,
-        ) == a::BOUNDS
+        ) == shape.bounds
             && world.floors == a::FLOORS,
         "native entry World envelope is not the accepted entry-room",
     )?;
@@ -1013,8 +1210,8 @@ fn require_accepted_bindings(
     let behavior = &source.behaviors[0];
     let creature = &source.creatures[0];
     pin(
-        (behavior.key.as_str(), behavior.policy_revision.as_str()) == a::BEHAVIOR
-            && (creature.key.as_str(), creature.policy_revision.as_str()) == a::CREATURE
+        (behavior.key.as_str(), behavior.policy_revision.as_str()) == shape.behavior
+            && (creature.key.as_str(), creature.policy_revision.as_str()) == shape.creature
             && creature.presentation_key.as_str() == a::PRESENTATIONS[2].0,
         "native entry behavior or creature policy is not the accepted binding",
     )?;
@@ -1034,10 +1231,15 @@ fn require_accepted_bindings(
         "native entry presentations are not the accepted binding",
     )?;
     let spawn = &source.spawns[0];
+    let spawn_cells: Vec<&str> = spawn.cell_keys.iter().map(ProductionKey::as_str).collect();
+    let spawn_cells_ok = if candidate {
+        spawn_cells == [a::R1_SPAWN_CELL] && spawn.population_limit == 1
+    } else {
+        spawn_cells == a::SPAWN_CELLS && usize::from(spawn.population_limit) == a::SPAWN_CELLS.len()
+    };
     pin(
         spawn.key.as_str() == a::SPAWN
-            && spawn.cell_key.as_str() == a::SPAWN_CELL
-            && spawn.population_limit == 1
+            && spawn_cells_ok
             && spawn.recovery == SpawnRecoveryClass::EphemeralScopeReset
             && spawn.multiplicity == MultiplicityClass::ChannelLocalRepeatable
             && spawn.eligibility_scope == EligibilityScope::CharacterWorld,
@@ -1150,6 +1352,7 @@ fn lower(
     (
         FirstProductionContentSource,
         CanonicalReferencePlayableContent,
+        Option<NativeEntrySpawnSource>,
     ),
     ProjectError,
 > {
@@ -1171,9 +1374,16 @@ fn lower(
     {
         return refuse("native entry admits no import candidates or reimport states");
     }
-    if !state.item_authoring.is_empty() || !state.authoring_profiles.is_empty() {
+    // Revision 1 admits no authoring overlay; revision 2 exactly the hostile rat's two, checked
+    // once the creature graph is resolved below (Amendment 02 §1).
+    if !state.item_authoring.is_empty() || (candidate && !state.authoring_profiles.is_empty()) {
         return refuse("native entry admits no authoring overlays");
     }
+    let room_cell_count = if candidate {
+        NATIVE_ENTRY_R1_CELLS
+    } else {
+        NATIVE_ENTRY_CELLS
+    };
 
     // World and frame (#937 §4).
     let [world] = state.worlds.as_slice() else {
@@ -1210,14 +1420,14 @@ fn lower(
     // (#162 A4-a). Full placement cardinality is enforced here, before any placement is indexed,
     // so malformed content (including zero placements) fails closed instead of panicking.
     let region = ProductionKey::new(&overlay.region.key)?;
-    if overlay.cells.len() != NATIVE_ENTRY_CELLS {
-        return refuse("native entry requires exactly three cells and placements");
+    if overlay.cells.len() != room_cell_count {
+        return refuse("native entry requires exactly its room cells and placements");
     }
     if overlay.doors.len() != NATIVE_ENTRY_DOOR_CELLS {
         return refuse("native entry requires exactly one door");
     }
-    if state.placements.len() != NATIVE_ENTRY_CELLS + NATIVE_ENTRY_DOOR_CELLS {
-        return refuse("native entry requires exactly three cells and placements");
+    if state.placements.len() != room_cell_count + NATIVE_ENTRY_DOOR_CELLS {
+        return refuse("native entry requires exactly its room cells and placements");
     }
     let door_overlay = &overlay.doors[0];
     let [area_declaration] = state.declarations.as_slice() else {
@@ -1243,7 +1453,7 @@ fn lower(
     require_family(terrain_ref, ProjectV2Family::Terrain)?;
     let terrain = require_generic(records, terrain_ref, ProjectV2Family::Terrain)?;
     let area = ProductionKey::new(&area_identity.key)?;
-    let mut cells = Vec::with_capacity(NATIVE_ENTRY_CELLS);
+    let mut cells = Vec::with_capacity(room_cell_count + NATIVE_ENTRY_DOOR_CELLS);
     let mut coordinates = BTreeSet::new();
     let mut cell_keys = BTreeSet::new();
     for cell in &overlay.cells {
@@ -1420,12 +1630,10 @@ fn lower(
 
     // Spawn.
     let spawn = &overlay.spawn;
-    if spawn.creature != *creature_ref
-        || spawn.behavior != *behavior_ref
-        || !cell_keys.contains(&spawn.cell_key)
-    {
+    if spawn.creature != *creature_ref || spawn.behavior != *behavior_ref {
         return refuse("native entry spawn binding mismatch");
     }
+    let spawn_cell_keys = spawn_cells(spawn, &cells, candidate)?;
 
     // Ability -> exactly one Damage Effect -> Formula; XP shares that Formula.
     let ability_ref = &overlay.ability.definition;
@@ -1513,9 +1721,14 @@ fn lower(
     .into_iter()
     .chain(presentation_refs.iter().copied())
     .collect();
-    if graph_refs
-        .iter()
-        .any(|reference| reference.revision != accepted::DEFINITION_REVISION)
+    // Revisions follow bytes (§1.2): only the behaviour and the creature moved to revision 2.
+    let changed_revision = accepted_shape(candidate).changed_revision;
+    if behavior_ref.revision != changed_revision
+        || creature_ref.revision != changed_revision
+        || graph_refs
+            .iter()
+            .filter(|reference| ![behavior_ref, creature_ref].contains(reference))
+            .any(|reference| reference.revision != accepted::DEFINITION_REVISION)
         || area_identity.revision != accepted::DEFINITION_REVISION
         || effect_identity.revision != accepted::DEFINITION_REVISION
     {
@@ -1659,6 +1872,18 @@ fn lower(
         transitions: door_transitions,
     })?;
 
+    let spawn_source = if candidate {
+        None
+    } else {
+        Some(qualified_spawn_source(
+            state,
+            spawn,
+            &spawn_cell_keys,
+            &cells,
+            ability_ref,
+        )?)
+    };
+
     let source = FirstProductionContentSource {
         package_manifest,
         content_lock,
@@ -1702,7 +1927,10 @@ fn lower(
             key: ProductionKey::new(&spawn.key)?,
             creature_key: creature,
             behavior_key: behavior,
-            cell_key: ProductionKey::new(&spawn.cell_key)?,
+            cell_keys: spawn_cell_keys
+                .iter()
+                .map(|key| ProductionKey::new(key))
+                .collect::<Result<_, _>>()?,
             population_limit: spawn.population_limit,
             recovery: match spawn.recovery {
                 NativeEntryRecovery::EphemeralScopeReset => SpawnRecoveryClass::EphemeralScopeReset,
@@ -1766,7 +1994,131 @@ fn lower(
             purpose_keys: vec![rng_purpose],
         },
     };
-    Ok((source, door_content))
+    Ok((source, door_content, spawn_source))
+}
+
+/// The spawn's placement cells (Amendment 02 §1). Revision 1 names one cell through `cell_key`
+/// and carries no spawn inputs; revision 2 names an ordered `cell_keys` list of Walkable non-proof
+/// room cells, one per actor, and both spawn inputs (SPAWN-1A-PACKET-1 §1.1).
+fn spawn_cells<'a>(
+    spawn: &'a NativeEntrySpawn,
+    cells: &[FirstProductionCell],
+    candidate: bool,
+) -> Result<Vec<&'a str>, ProjectError> {
+    if candidate {
+        let Some(cell_key) = spawn.cell_key.as_deref() else {
+            return refuse("native entry revision-1 spawn requires cell_key");
+        };
+        if !spawn.cell_keys.is_empty()
+            || spawn.respawn_delay_ms.is_some()
+            || spawn.occupancy_retry_interval_ms.is_some()
+        {
+            return refuse("native entry revision-1 spawn admits no revision-2 fields");
+        }
+        if !cells.iter().any(|cell| cell.key.as_str() == cell_key) {
+            return refuse("native entry spawn binding mismatch");
+        }
+        return Ok(vec![cell_key]);
+    }
+    if spawn.cell_key.is_some() {
+        return refuse("native entry revision-2 spawn refuses cell_key");
+    }
+    let keys: Vec<&str> = spawn.cell_keys.iter().map(String::as_str).collect();
+    if keys.is_empty()
+        || keys.len() > NATIVE_ENTRY_SPAWN_CELLS_MAX
+        || keys.len() != usize::from(spawn.population_limit)
+    {
+        return refuse("native entry spawn cell_keys must hold one cell per actor, at most two");
+    }
+    let mut seen = BTreeSet::new();
+    for key in &keys {
+        let walkable = cells
+            .iter()
+            .any(|cell| cell.key.as_str() == *key && cell.collision == CollisionClass::Walkable);
+        if !seen.insert(*key) || !walkable || accepted::PROOF_CELLS.contains(key) {
+            return refuse(
+                "native entry spawn cell is duplicated, not Walkable, undeclared or a proof cell",
+            );
+        }
+    }
+    let (Some(delay), Some(retry)) = (spawn.respawn_delay_ms, spawn.occupancy_retry_interval_ms)
+    else {
+        return refuse("native entry revision-2 spawn requires both spawn inputs");
+    };
+    if !accepted::RESPAWN_DELAY_MS.contains(&delay) || retry == 0 || retry > delay {
+        return refuse("native entry spawn delay or occupancy retry interval out of bounds");
+    }
+    Ok(keys)
+}
+
+/// Revision 2's two authoring profiles (SPAWN-1A-PACKET-1 §1.6) and the qualified spawn source.
+/// The existing v2 profile validation has already run on the admitted state.
+fn qualified_spawn_source(
+    state: &ProjectV2State,
+    spawn: &NativeEntrySpawn,
+    spawn_cell_keys: &[&str],
+    cells: &[FirstProductionCell],
+    bite: &ProjectV2DefinitionRef,
+) -> Result<NativeEntrySpawnSource, ProjectError> {
+    let [first, second] = state.authoring_profiles.as_slice() else {
+        return refuse(
+            "native entry revision 2 requires exactly the behaviour and creature profiles",
+        );
+    };
+    let profile = |target: &ProjectV2DefinitionRef| {
+        [first, second]
+            .into_iter()
+            .find(|profile| profile.target == *target)
+            .map(|profile| &profile.data)
+    };
+    let Some(ProjectV2AuthoringProfileData::Behavior(behavior)) = profile(&spawn.behavior) else {
+        return refuse("native entry revision 2 requires the behaviour profile");
+    };
+    let Some(ProjectV2AuthoringProfileData::Creature(creature)) = profile(&spawn.creature) else {
+        return refuse("native entry revision 2 requires the creature profile");
+    };
+    let (Some(health), Some(initial_health), Some(speed)) =
+        (creature.health, creature.initial_health, creature.speed)
+    else {
+        return refuse("native entry creature profile requires health, initial_health and speed");
+    };
+    if health == 0 || initial_health == 0 || initial_health > health {
+        return refuse("native entry creature initial_health must be in 1..=health");
+    }
+    let attacks_bite = !behavior.attacks.is_empty()
+        && behavior.attacks.iter().all(|attack| {
+            attack.ability == *bite
+                && attack.interval_ms > 0
+                && attack.chance_ppm > 0
+                && attack.magnitude.is_some()
+        });
+    if !behavior.targeting.hostile || !behavior.targeting.can_target || !attacks_bite {
+        return refuse("native entry behaviour must be hostile, target and bite");
+    }
+    let mut placed = Vec::with_capacity(spawn_cell_keys.len());
+    for key in spawn_cell_keys {
+        let cell = cells.iter().find(|cell| cell.key.as_str() == *key).ok_or(
+            ProjectError::InvalidProject("native entry spawn cell missing"),
+        )?;
+        placed.push(((*key).to_owned(), cell.x, cell.y, cell.z));
+    }
+    let (Some(respawn_delay_ms), Some(occupancy_retry_interval_ms)) =
+        (spawn.respawn_delay_ms, spawn.occupancy_retry_interval_ms)
+    else {
+        return refuse("native entry revision-2 spawn requires both spawn inputs");
+    };
+    Ok(NativeEntrySpawnSource {
+        key: spawn.key.clone(),
+        creature: spawn.creature.clone(),
+        behavior: spawn.behavior.clone(),
+        cells: placed,
+        respawn_delay_ms,
+        occupancy_retry_interval_ms,
+        health,
+        initial_health,
+        speed,
+        behaviour_profile: behavior.clone(),
+    })
 }
 
 #[cfg(test)]
@@ -2075,5 +2427,7 @@ pub(crate) fn qualify_native_source_spell_world_with_gameplay(
         // door placement is never admitted into this source map. Consumers must
         // select the source-world static owner instead of this baseline door.
         door: base.door,
+        // The source world is a different map: the entry room's den cells are not in it.
+        spawn_source: None,
     })
 }

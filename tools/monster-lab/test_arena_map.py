@@ -25,12 +25,14 @@ class ExistingArenaTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, message):
                 export_map(path, hashlib.sha256(raw).hexdigest())
 
-    def test_actual_committed_room_preserved_and_two_open_slots(self):
+    def test_actual_committed_room_preserved_and_den_slots(self):
         before = self.source.read_bytes()
         result = export_map(self.source, SOURCE_SHA256)["map"]
-        self.assertEqual(len(result["cells"]), 4)
-        self.assertEqual([(s["x"], s["y"], s["floor"]) for s in result["spawn_slots"]],
-                         [(0, 0, 0), (1, 0, 0)])
+        self.assertEqual(len(result["cells"]), 6)
+        self.assertEqual([(s["role"], s["x"], s["y"], s["floor"])
+                          for s in result["spawn_slots"]],
+                         [("player", 0, 0, 0), ("monster", 2, 0, 0), ("monster", 2, -1, 0)])
+        self.assertEqual(result["simultaneous_monster_capacity"], 2)
         self.assertEqual(self.source.read_bytes(), before)
         self.assertEqual(build_arena_map(self.source), result)
         cells = {cell["key"]: cell for cell in result["cells"]}
@@ -43,18 +45,18 @@ class ExistingArenaTests(unittest.TestCase):
             export_map(self.source, "0" * 64)
 
     def test_out_of_bounds_rejected(self):
-        self.check_mutation(lambda d: d["placements"][0].update(x=2), "outside")
+        self.check_mutation(lambda d: d["placements"][0].update(x=3), "outside")
 
     def test_blocked_monster_spawn_rejected(self):
-        self.check_mutation(lambda d: d["native_first_entry"]["cells"][1].update(
+        self.check_mutation(lambda d: d["native_first_entry"]["cells"][3].update(
             collision="Blocked"), "walkable")
 
     def test_unknown_monster_spawn_rejected(self):
-        self.check_mutation(lambda d: d["native_first_entry"]["cells"].pop(1), "walkable")
+        self.check_mutation(lambda d: d["native_first_entry"]["cells"].pop(3), "walkable")
 
     def test_bounded_cell_export(self):
         with self.assertRaisesRegex(ValueError, "cell limit"):
-            export_map(self.source, SOURCE_SHA256, maximum_cells=3)
+            export_map(self.source, SOURCE_SHA256, maximum_cells=5)
 
     def test_config_export_readback(self):
         with tempfile.TemporaryDirectory() as directory:

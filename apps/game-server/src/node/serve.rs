@@ -1748,6 +1748,23 @@ fn bundle_channel_pin(
     ))
 }
 
+/// SPAWN-1a (CREATURE-AI-0 §6.2): the fixture World's spawn source is realized at Channel
+/// activation, before the listener binds. A bundle World has no fixture spawn source.
+fn realize_fixture_spawns(
+    runtime: &mut ChannelRuntimeV1,
+    spawn_source: Option<crate::content::NativeEntrySpawnSource>,
+    bundle_world: bool,
+) -> Result<usize, BootError> {
+    let sources = spawn_source
+        .filter(|_| !bundle_world)
+        .map(|source| source.activation_facts())
+        .into_iter()
+        .collect();
+    runtime
+        .realize_activation_spawns(sources)
+        .map_err(|_| BootError::Readiness("creature spawn realization"))
+}
+
 async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
@@ -1800,7 +1817,7 @@ async fn boot_and_serve(
     let (active_content, content) =
         activate_content(root, material.world, material.channel).await?;
     let qualified_room = content.qualified_room().clone();
-    let (channel_pin, movement_cells, door_content) = content.into_channel_parts();
+    let (channel_pin, movement_cells, door_content, spawn_source) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
     let gameplay = active_content
@@ -1922,6 +1939,11 @@ async fn boot_and_serve(
             .install_companion_policies(&mut channel_runtime)
             .map_err(|_| BootError::ContentActivation("active creature policies"))?;
     }
+    let spawned_monsters =
+        realize_fixture_spawns(&mut channel_runtime, spawn_source, bundle.is_some())?;
+    event(&format!(
+        "event=creature_spawns state=realized spawned_monsters={spawned_monsters}"
+    ));
     let runtime = Mutex::new(channel_runtime);
     event(&format!(
         "event=channel_runtime state=bootstrapped ownership_generation={} source_revision={} capacity={}",
@@ -2328,6 +2350,49 @@ mod tests {
     /// #1916: a bundle whose palette names Items boots on the real path, from the active
     /// generation's Item key set and profiles, not from the entry room's content, and its
     /// Channel pin carries the bundle's identities.
+    #[test]
+    fn boot_realizes_both_d116_rats_on_the_den_cells_before_readiness() {
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let runtime = || {
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                channel,
+                node,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                8,
+                crate::foundation::ChannelContentPin::test(world),
+            )
+            .expect("runtime")
+        };
+        let mut booted = runtime();
+        assert_eq!(
+            realize_fixture_spawns(&mut booted, room.spawn_source().cloned(), false).ok(),
+            Some(2)
+        );
+        let rats = booted
+            .spawn_point_creatures()
+            .into_iter()
+            .map(|(_, cell, live)| ((cell.x, cell.y, cell.floor), live.is_some()))
+            .collect::<Vec<_>>();
+        assert_eq!(rats, vec![((2, 0, 0), true), ((2, -1, 0), true)]);
+        // A bundle World realizes no fixture spawn.
+        let mut bundle = runtime();
+        assert_eq!(
+            realize_fixture_spawns(&mut bundle, room.spawn_source().cloned(), true).ok(),
+            Some(0)
+        );
+        assert!(bundle.spawn_point_creatures().is_empty());
+    }
+
     #[test]
     fn map_cutover_b_a_bundle_with_items_boots_from_the_active_generation() {
         const KEYS: &[u8] =

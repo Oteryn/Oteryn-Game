@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 SOURCE = "apps/game-server/src/content/project/native_entry_room.json"
-SOURCE_SHA256 = "f35534dd675d7713b50aa522fda83907da9e978122a805e4de62acad50f03a3f"
+SOURCE_SHA256 = "b0d5d0348a59d7ef3ff31e9062f5b207634c1a2c3a29807a97ed0222a1308940"
 
 
 def export_map(source_path, expected_sha256, maximum_cells=256):
@@ -58,24 +58,24 @@ def export_map(source_path, expected_sha256, maximum_cells=256):
     if (set(static) | set(doors)) - keys:
         raise ValueError("Collision declaration references absent placement")
     player_key = "oteryn:cell/entry-start"
-    monster_key = entry["spawn"]["cell_key"]
+    # Room revision 2 (SPAWN-1a): one monster slot per authored den cell, in authored order.
+    monster_keys = entry["spawn"]["cell_keys"]
     by_key = {cell["key"]: cell for cell in cells}
-    if player_key == monster_key or any(
-            not by_key.get(key, {}).get("spawn_eligible")
-            for key in (player_key, monster_key)):
+    roles = [("player", player_key)] + [("monster", key) for key in monster_keys]
+    if not monster_keys or len({key for _, key in roles}) != len(roles) or any(
+            not by_key.get(key, {}).get("spawn_eligible") for _, key in roles):
         raise ValueError("Arena player and monster require distinct explicit walkable cells")
-    slots = [{"role": role, **by_key[key]} for role, key in
-             (("player", player_key), ("monster", monster_key))]
+    slots = [{"role": role, **by_key[key]} for role, key in roles]
     return {"schema": "oteryn-monster-lab-arena-map-v1", "map": {
         "source_path": str(source_path), "source_sha256": digest,
         "world_key": world["key"], "coordinate_frame": world["coordinate_frame"],
         "map_revision": entry["revisions"]["map"], "bounds": bounds,
         "floors": world["floors"], "cells": cells, "spawn_slots": slots,
         "player_slot": slots[0], "monster_slot": slots[1],
-        "simultaneous_monster_capacity": 1,
+        "simultaneous_monster_capacity": len(monster_keys),
         "physical_walkability": "Explicit native source declarations; dynamic door excluded",
         "source_modified": False,
-        "scope": "Existing native room; one creature at a time, no large-area spell coverage"
+        "scope": "Existing native room; one creature per den cell, no large-area spell coverage"
     }}
 
 

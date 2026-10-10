@@ -14,9 +14,11 @@ use crate::foundation::WorldId;
 use std::collections::BTreeMap;
 
 pub const STATIC_CELL_ENGINE_PROFILE: &str = "ENGINE_STATIC_CELL_CARRIER/v1";
-pub const STATIC_CELL_ENGINE_CANDIDATE_MAX_CELLS: usize = 4;
+// Room revision 2 of the native entry room: five room cells plus the door (SPAWN-1a, D976).
+pub const STATIC_CELL_ENGINE_CANDIDATE_MAX_CELLS: usize = 6;
 // Engineering candidate only. This is not an admitted Reference corpus or registry maximum.
-pub const STATIC_CELL_ENGINE_CANDIDATE_MAX_BYTES: usize = 2_743;
+// 13 bytes per cell over the four-cell 2_743.
+pub const STATIC_CELL_ENGINE_CANDIDATE_MAX_BYTES: usize = 2_769;
 const MAGIC: &[u8; 8] = b"OTSCENG1";
 const MAX_ATOM: usize = 512;
 
@@ -341,7 +343,7 @@ mod tests {
     fn static_cell_engine_bounded_roundtrip_and_exact_lookup()
     -> Result<(), Box<dyn std::error::Error>> {
         let scope = scope()?;
-        for n in [1, 2, 4] {
+        for n in [1, 2, 4, 6] {
             let claims = (0..n)
                 .map(|x| {
                     claim(
@@ -381,7 +383,7 @@ mod tests {
                 Err(StaticCellEngineError::Absent)
             );
         }
-        let five = (0..5)
+        let seven = (0..7)
             .map(|x| {
                 claim(
                     &scope,
@@ -391,7 +393,7 @@ mod tests {
             })
             .collect();
         assert_eq!(
-            EngineeringStaticCellIndex::from_claims(five),
+            EngineeringStaticCellIndex::from_claims(seven),
             Err(StaticCellEngineError::TooManyCells)
         );
         Ok(())
