@@ -44,13 +44,31 @@ async fn read_frame(peer: &mut Peer) -> Result<Vec<u8>, BoxError> {
 }
 
 fn spatial(x: i32) -> Vec<u8> {
+    spatial_at(x, 0)
+}
+
+fn spatial_at(x: i32, floor: i16) -> Vec<u8> {
     encode_world_spatial(&WorldSpatialObservation {
         content_generation: [0x11; 32],
-        actor_position: ActorPosition { x, y: 0, floor: 0 },
+        actor_position: ActorPosition { x, y: 0, floor },
     })
 }
 
-async fn live_run(stall: bool) -> Result<(), BoxError> {
+/// What the scripted peer answers to the bot's one east step.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Reply {
+    /// Blocked, then a position delta (the legacy regression case).
+    Blocked,
+    /// Never answers while sending liveness probes.
+    Stall,
+    /// MAP-FLOOR-1: the step lands on the stair's far side, one floor up: the bot starts on
+    /// floor 8 at x 0 and the server reports it on floor 7 at x 2.
+    FloorChange,
+}
+
+async fn live_run(reply: Reply) -> Result<(), BoxError> {
+    let stall = reply == Reply::Stall;
+    let floor_change = reply == Reply::FloorChange;
     let generated = rcgen::generate_simple_self_signed(vec!["localhost".into()])?;
     let certificate = generated.cert.der().clone();
     let key = PrivatePkcs8KeyDer::from(generated.signing_key.serialize_der());
@@ -83,7 +101,11 @@ async fn live_run(stall: bool) -> Result<(), BoxError> {
             })?,
         )
         .await?;
-        let spatial_payload = spatial(0);
+        let spatial_payload = if floor_change {
+            spatial_at(0, 8)
+        } else {
+            spatial(0)
+        };
         let overlay = encode_world_object_overlay_snapshot(&[])
             .map_err(|e| std::io::Error::other(format!("overlay: {e:?}")))?;
         for frame in encode_single_chunk_snapshot(
@@ -132,7 +154,11 @@ async fn live_run(stall: bool) -> Result<(), BoxError> {
                     1,
                     id,
                     CommandStatus::Accepted,
-                    &encode_step_result(StepDisposition::Blocked),
+                    &encode_step_result(if floor_change {
+                        StepDisposition::Moved
+                    } else {
+                        StepDisposition::Blocked
+                    }),
                 )?,
             )
             .await?;
@@ -146,7 +172,11 @@ async fn live_run(stall: bool) -> Result<(), BoxError> {
                     1,
                     2,
                     DELTA_TYPE_WORLD_SPATIAL_V1,
-                    &spatial(1),
+                    &if floor_change {
+                        spatial_at(2, 7)
+                    } else {
+                        spatial(1)
+                    },
                 )?,
             )
             .await?;
@@ -202,7 +232,12 @@ async fn live_run(stall: bool) -> Result<(), BoxError> {
         }
     );
     if !stall {
-        assert_eq!(reports[0].metrics.events_drained, 1);
+        // A Moved result consumes its position delta inside the step outcome, so nothing is left
+        // queued; a Blocked result leaves the delta for the event drain.
+        assert_eq!(
+            reports[0].metrics.events_drained,
+            if floor_change { 0 } else { 1 }
+        );
         assert_eq!(reports[0].metrics.liveness_cycles, 1);
     }
     tokio::time::timeout(Duration::from_secs(2), peer).await???;
@@ -218,10 +253,17 @@ fn runtime() -> Result<tokio::runtime::Runtime, std::io::Error> {
 
 #[test]
 fn final_command_services_a_delayed_state_delta() -> Result<(), BoxError> {
-    runtime()?.block_on(live_run(false))
+    runtime()?.block_on(live_run(Reply::Blocked))
 }
 
 #[test]
 fn shutdown_cancels_a_command_while_the_peer_sends_probes() -> Result<(), BoxError> {
-    runtime()?.block_on(live_run(true))
+    runtime()?.block_on(live_run(Reply::Stall))
+}
+
+/// MAP-FLOOR-1: the real bot runner takes a floor-changing step result and the position delta on
+/// another floor through the real dev-client session, against a scripted (not a real) server.
+#[test]
+fn a_floor_changing_step_and_its_position_delta_complete_the_run() -> Result<(), BoxError> {
+    runtime()?.block_on(live_run(Reply::FloorChange))
 }
