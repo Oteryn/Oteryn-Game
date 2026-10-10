@@ -12,9 +12,9 @@ use oteryn_session::{
 use std::num::NonZeroU32;
 use std::time::Duration;
 
-/// How long a command waits for the pushed domain-10 delta its answer announced: a few short
-/// reads, so a lost delta never stalls the task.
-const SETTLE_POLLS: u32 = 10;
+/// How long a command waits for the pushed domain-10 delta its answer announced. An announced
+/// state change that never arrives ends the session instead of letting a cast read stale state.
+const SETTLE_DEADLINE: Duration = Duration::from_secs(5);
 const SETTLE_SLICE: Duration = Duration::from_millis(20);
 /// A read that applies only what has already arrived.
 const PUMP_SLICE: Duration = Duration::from_millis(1);
@@ -57,26 +57,29 @@ const fn attack_text(disposition: AttackIntentDisposition) -> &'static str {
         AttackIntentDisposition::Ok => "Attacking",
         AttackIntentDisposition::TargetNotVisible => "Target not visible",
         AttackIntentDisposition::TargetNotACreature => "You cannot attack that",
-        AttackIntentDisposition::ProtectionZone => "Not in a protection zone",
+        AttackIntentDisposition::ProtectionZone => "You cannot attack in a protection zone",
         AttackIntentDisposition::ReentryProtected => "You cannot attack yet",
         AttackIntentDisposition::Rejected => "Attack refused",
     }
 }
 
-/// Reads until the session holds `wanted` as its attack target, or the polls run out. The target
-/// arrives as a pushed delta after the command's result.
+/// Reads until the session holds `wanted` as its attack target. The target arrives as a pushed
+/// delta after the command's result; if it does not arrive by the deadline the session fails.
 async fn settle_target<S: SessionStream>(
     session: &mut Session<S>,
     wanted: EntityRef,
 ) -> Result<(), SessionError> {
-    for _ in 0..SETTLE_POLLS {
+    let until = tokio::time::Instant::now() + SETTLE_DEADLINE;
+    loop {
         let held = session.combat_state().and_then(|state| state.target);
         if held == Some(wanted) {
             return Ok(());
         }
+        if tokio::time::Instant::now() >= until {
+            return Err(SessionError::Timeout("attack target state"));
+        }
         session.service_liveness(SETTLE_SLICE).await?;
     }
-    Ok(())
 }
 
 /// Runs one combat command. Every server disposition is a normal report; only a session error is
