@@ -18,7 +18,7 @@ from item_id_alias_table import tibia_key
 
 QUALIFICATION = Path(__file__).parent / "samples/official-rule-only-navigation-six.json"
 QUALIFICATION_SHA256 = (
-    "e6582c068ad2c210895816697ba26c28c8445dc480e40ded18b16a5a5ef8a9d2"
+    "1671a710e1c865f0ada6b523f26749faeca057d47ad45141e8525dd04832f8cf"
 )
 REVIEWED_IDS = frozenset({51276, 53197, 53199, 53201, 53203, 53205})
 
