@@ -226,6 +226,9 @@ pub enum TargetKind {
 pub struct Targetable {
     pub tile: TileCoord,
     pub kind: TargetKind,
+    /// A server entity or object glyph is drawn there (the own sprite and the object markers
+    /// carry their own drawing).
+    pub glyph: bool,
     /// The server entity drawn there, when it is one a click may attack.
     pub entity: Option<EntityRef>,
 }
@@ -499,16 +502,19 @@ mod tests {
             Targetable {
                 tile: t(1, 1),
                 kind: TargetKind::Object,
+                glyph: false,
                 entity: None,
             },
             Targetable {
                 tile: t(1, 1),
                 kind: TargetKind::Entity,
+                glyph: false,
                 entity: None,
             },
             Targetable {
                 tile: t(2, 2),
                 kind: TargetKind::Object,
+                glyph: false,
                 entity: None,
             },
         ];

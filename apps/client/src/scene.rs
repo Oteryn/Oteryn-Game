@@ -78,12 +78,14 @@ impl Scene {
             .map(|&tile| Targetable {
                 tile,
                 kind: TargetKind::Object,
+                glyph: false,
                 entity: None,
             })
             .chain(entities.iter().copied())
             .chain([Targetable {
                 tile: own,
                 kind: TargetKind::Entity,
+                glyph: false,
                 entity: None,
             }])
             .collect();
@@ -162,7 +164,7 @@ impl Scene {
                 if self
                     .visible
                     .iter()
-                    .any(|v| v.tile == tile && (v.kind == TargetKind::Object || v.entity.is_some()))
+                    .any(|v| v.tile == tile && (v.kind == TargetKind::Object || v.glyph))
                 {
                     let glyph = Draw {
                         cell: MARKER_CELL,
@@ -251,6 +253,7 @@ mod tests {
         let on = |x| Targetable {
             tile: TileCoord::new(x, 1),
             kind: TargetKind::Entity,
+            glyph: true,
             entity: Some(entity),
         };
         let mut scene = Scene::centered_with(

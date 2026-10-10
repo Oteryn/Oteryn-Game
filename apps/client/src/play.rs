@@ -331,13 +331,13 @@ impl PlayView {
             .filter(|entity| entity.position.floor == self.floor)
             .map(|entity| Targetable {
                 tile: TileCoord::new(entity.position.x, entity.position.y),
-                // Only a creature or an NPC may be attacked; the rest is drawn and inspected.
+                // Only a creature may be attacked; NPCs and the rest are drawn and inspected.
                 kind: match entity.kind {
                     EntityKind::Corpse | EntityKind::GroundItem => TargetKind::Object,
                     _ => TargetKind::Entity,
                 },
-                entity: matches!(entity.kind, EntityKind::Creature | EntityKind::Npc)
-                    .then_some(entity.entity),
+                glyph: true,
+                entity: matches!(entity.kind, EntityKind::Creature).then_some(entity.entity),
             })
             .collect::<Vec<_>>();
         self.scene = Scene::centered_with(
@@ -799,6 +799,39 @@ mod tests {
         // A cast waiting at the front holds the step behind it.
         view.inputs.pop_front();
         assert_eq!(view.next_step(), None);
+        Ok(())
+    }
+
+    #[test]
+    fn only_a_creature_click_queues_an_attack() -> Result<(), BatchError> {
+        let actor = |kind, x, id: u8| WorldSpatialEntity {
+            kind,
+            entity: EntityRef {
+                identity: [id; 16],
+                generation: 1,
+            },
+            position: ActorPosition {
+                x,
+                y: 200,
+                floor: 0,
+            },
+            detail: oteryn_session::EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        };
+        let creature = actor(EntityKind::Creature, 101, 1);
+        let mut view = view()?.with_entities(vec![creature, actor(EntityKind::Npc, 99, 2)])?;
+        // The NPC is still drawn: player plus one glyph per visible entity.
+        assert_eq!(view.scene().sprites().len(), 2 + 2);
+        view.click(TileCoord::new(99, 200))?;
+        assert!(view.inputs.is_empty());
+        view.click(TileCoord::new(101, 200))?;
+        assert_eq!(
+            view.inputs.iter().copied().collect::<Vec<_>>(),
+            vec![Input::Attack(creature.entity)]
+        );
         Ok(())
     }
 
