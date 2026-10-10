@@ -43,6 +43,8 @@ pub(crate) use runtime_actor_conditions::{
     RationalSpeedRange, SpeedRange, StatusKind, TickFacts, TickKind,
 };
 use runtime_actor_conditions::{CreatureCommitState, PlayerRuntimeState};
+#[path = "npc_actor.rs"]
+pub(crate) mod npc_actor;
 #[path = "runtime_actor_death.rs"]
 mod runtime_actor_death;
 
@@ -956,6 +958,8 @@ pub(crate) struct VisibleRuntimeActor {
 pub(crate) struct VisibleRuntimeEntities {
     pub(crate) players: Vec<VisibleRuntimeActor>,
     pub(crate) creatures: Vec<VisibleRuntimeActor>,
+    /// NPC-RT-1: the placed NPC actors (`EntityKind::Npc`).
+    pub(crate) npcs: Vec<VisibleRuntimeActor>,
 }
 
 /// Opaque, single-use handoff from the owner commit record to Combat. It is
@@ -1224,7 +1228,8 @@ impl CurrentOwnerExactActorLookup<'_> {
             } => *generation == actor.0.actor_local_generation.0 && *health > 0,
             Slot::VacantReusable { .. }
             | Slot::Exhausted { .. }
-            | Slot::CreatureReserved { .. } => false,
+            | Slot::CreatureReserved { .. }
+            | Slot::NpcOccupied { .. } => false,
         }
     }
 }
@@ -1319,6 +1324,14 @@ enum Slot {
     },
     Exhausted {
         generation: u64,
+    },
+    /// NPC-RT-1 (NPC-BEHAVIOUR-0 §3.1): one runtime-only NPC actor of one placement. Never a
+    /// combat creature: no health, target identity or spell state; it blocks movement and is
+    /// shown, and nothing removes it within the generation.
+    NpcOccupied {
+        generation: u64,
+        key: Arc<str>,
+        position: VersionedPosition,
     },
 }
 
@@ -1910,14 +1923,15 @@ impl ChannelRuntimeV1 {
                     committed: true,
                     position,
                     ..
-                } => position,
+                } => *position,
                 Slot::CreatureOccupied {
                     health, position, ..
-                } if *health > 0 => position,
+                } if *health > 0 => *position,
                 Slot::CreatureReserved { planned, .. } => match planned.as_ref() {
-                    Slot::CreatureOccupied { position, .. } => position,
+                    Slot::CreatureOccupied { position, .. } => *position,
                     _ => return Err(CarrierError::PlanConflict),
                 },
+                Slot::NpcOccupied { position, .. } => Some(*position),
                 _ => continue,
             }
             .ok_or(CarrierError::PositionSnapshotMismatch)?;
@@ -1960,7 +1974,7 @@ impl ChannelRuntimeV1 {
 
     /// VIS-3 (MOVE-RL-11 §4.2, D524): every entity this Channel shows in
     /// `WORLD_SPATIAL_VISIBILITY` under the pinned Movement context, read in one owner work item:
-    /// committed present players and live creatures. Corpses wait on their item binding (D3-7).
+    /// committed present players, live creatures and placed NPCs. Corpses wait on their item binding (D3-7).
     /// Read-only: a value snapshot of the existing `slots`, never an authority token.
     pub(crate) fn visible_entities(&self) -> VisibleRuntimeEntities {
         let context = self.pinned_position_context();
@@ -2002,6 +2016,9 @@ impl ChannelRuntimeV1 {
                 } if *health > 0 && version.context == context => {
                     visible.creatures.push(actor(version));
                 }
+                Slot::NpcOccupied {
+                    position: version, ..
+                } if version.context == context => visible.npcs.push(actor(version)),
                 _ => {}
             }
         }
@@ -3176,7 +3193,13 @@ impl ChannelActorCarrier {
             } if *generation == actor_ref.actor_local_generation.0 && *health == 0 => {
                 Err(CarrierError::CreatureNotActionable)
             }
+            Slot::NpcOccupied { generation, .. }
+                if *generation == actor_ref.actor_local_generation.0 =>
+            {
+                Err(CarrierError::NotCreature)
+            }
             Slot::Occupied { .. }
+            | Slot::NpcOccupied { .. }
             | Slot::CreatureOccupied { .. }
             | Slot::CreatureReserved { .. }
             | Slot::VacantReusable { .. }
@@ -3233,6 +3256,7 @@ impl ChannelActorCarrier {
                 return Err(CarrierError::StaleActorGeneration);
             }
             Slot::CreatureReserved { .. }
+            | Slot::NpcOccupied { .. }
             | Slot::VacantReusable { .. }
             | Slot::Exhausted { .. } => {
                 return Err(CarrierError::PlanConflict);
@@ -3271,6 +3295,7 @@ impl ChannelActorCarrier {
             Slot::CreatureOccupied {
                 generation, actor, ..
             } if *generation == actor_ref.actor_local_generation.0 => (*generation, *actor, true),
+            Slot::NpcOccupied { .. } => return Err(CarrierError::PlanConflict),
             Slot::Occupied { .. }
             | Slot::CreatureOccupied { .. }
             | Slot::CreatureReserved { .. }
@@ -4784,6 +4809,9 @@ impl ChannelActorCarrier {
             Slot::CreatureReserved { planned, .. } => matches!(planned.as_ref(),
                 Slot::CreatureOccupied { position: Some(version), .. }
                     if version.context == position_context && version.position == cell),
+            Slot::NpcOccupied {
+                position: version, ..
+            } => version.context == position_context && version.position == cell,
             _ => false,
         })
     }

@@ -51,6 +51,19 @@ impl Scene {
         facing: StepDir,
         markers: &[TileCoord],
     ) -> Result<Self, BatchError> {
+        Self::centered_with(world, anchor, own, facing, markers, &[])
+    }
+
+    /// [`Self::centered_on`] with the other visible entities the server reports, each drawn as a
+    /// glyph on its tile and selectable by a click.
+    pub fn centered_with(
+        world: Arc<World>,
+        anchor: Option<TileCoord>,
+        own: TileCoord,
+        facing: StepDir,
+        markers: &[TileCoord],
+        entities: &[Targetable],
+    ) -> Result<Self, BatchError> {
         let origin = TileCoord::new(
             own.x
                 .saturating_sub(i32::try_from(SCENE_COLUMNS / 2).unwrap_or(0)),
@@ -65,10 +78,13 @@ impl Scene {
             .map(|&tile| Targetable {
                 tile,
                 kind: TargetKind::Object,
+                entity: None,
             })
+            .chain(entities.iter().copied())
             .chain([Targetable {
                 tile: own,
                 kind: TargetKind::Entity,
+                entity: None,
             }])
             .collect();
         let mut scene = Self {
@@ -141,14 +157,18 @@ impl Scene {
                     push(&mut sprites, tile, draw, 0)?;
                 }
                 let lift = map.map_or(0, |map| map.elevation);
-                for marker in self.visible.iter().filter(|v| v.tile == tile) {
-                    if marker.kind == TargetKind::Object {
-                        let glyph = Draw {
-                            cell: MARKER_CELL,
-                            offset: [0, 0],
-                        };
-                        push(&mut sprites, tile, &glyph, lift)?;
-                    }
+                // One glyph per tile however many markers and entities stand on it, so a crowded
+                // view stays inside the sprite batch.
+                if self
+                    .visible
+                    .iter()
+                    .any(|v| v.tile == tile && (v.kind == TargetKind::Object || v.entity.is_some()))
+                {
+                    let glyph = Draw {
+                        cell: MARKER_CELL,
+                        offset: [0, 0],
+                    };
+                    push(&mut sprites, tile, &glyph, lift)?;
                 }
                 if tile == self.own {
                     for draw in self.world.player(self.facing) {
@@ -196,6 +216,7 @@ impl Scene {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oteryn_session::EntityRef;
 
     fn scene() -> Result<Scene, BatchError> {
         let world = Arc::new(World::builtin()?);
@@ -216,6 +237,36 @@ mod tests {
         assert_eq!(scene.tiles().vertex_count(), 165 * 6);
         assert_eq!(scene.sprites().len(), 3);
         assert_eq!(scene.sprites().vertex_count(), 18);
+        Ok(())
+    }
+
+    #[test]
+    fn a_visible_entity_is_drawn_and_a_click_selects_it_with_its_reference()
+    -> Result<(), BatchError> {
+        let world = Arc::new(World::builtin()?);
+        let entity = EntityRef {
+            identity: [7; 16],
+            generation: 3,
+        };
+        let on = |x| Targetable {
+            tile: TileCoord::new(x, 1),
+            kind: TargetKind::Entity,
+            entity: Some(entity),
+        };
+        let mut scene = Scene::centered_with(
+            world,
+            Some(TileCoord::new(0, 0)),
+            TileCoord::new(0, 0),
+            StepDir::South,
+            &[],
+            // Two on one tile draw one glyph.
+            &[on(2), on(2)],
+        )?;
+        assert_eq!(scene.sprites().len(), 2);
+        assert_eq!(
+            scene.select_tile(TileCoord::new(2, 1))?.map(|t| t.entity),
+            Some(Some(entity))
+        );
         Ok(())
     }
 
