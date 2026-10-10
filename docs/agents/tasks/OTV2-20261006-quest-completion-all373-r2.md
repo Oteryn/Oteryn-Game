@@ -249,4 +249,4 @@ Focused final validation on this branch:
 
 ### Next lane
 
-The lowering backlog is closed. Work should now move only to native binding/runtime owner seams. The Encounter kill lane is still blocked on the accepted Encounter runtime architecture (`ENC-RT-1` / `ENC-OUTCOME-1`); do not introduce a quest-specific death bypass.
+The Quest terminal-count lowering backlog is closed (it does not cover the 40 `REWARD_CLAIM_IMPLEMENTATION_PENDING` RewardClaims, whose native lowering remains outstanding). Work should now move only to native binding/runtime owner seams. The Encounter kill lane is still blocked on the accepted Encounter runtime architecture (`ENC-RT-1` / `ENC-OUTCOME-1`); do not introduce a quest-specific death bypass.
