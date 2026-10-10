@@ -91,10 +91,22 @@ class ChosenSourceProgressTest(unittest.TestCase):
 
         merged = self.builder.merge(base, self.packet)
 
-        self.assertEqual(242, merged["counts"]["quests"])
-        self.assertEqual(2803, merged["counts"]["tracks"])
-        self.assertEqual(4738, merged["counts"]["transitions"])
-        self.assertEqual(240, merged["counts"]["completes"])
+        self.assertEqual(
+            base["counts"]["quests"] + self.packet["summary"]["new_quests"],
+            merged["counts"]["quests"],
+        )
+        self.assertEqual(
+            base["counts"]["tracks"] + self.packet["summary"]["tracks"],
+            merged["counts"]["tracks"],
+        )
+        self.assertEqual(
+            base["counts"]["transitions"] + self.packet["summary"]["transitions"],
+            merged["counts"]["transitions"],
+        )
+        self.assertEqual(
+            base["counts"]["completes"] + self.packet["summary"]["completion_transitions"],
+            merged["counts"]["completes"],
+        )
         self.assertEqual(
             {
                 "CHOSEN_SOURCE_TYPED_PROGRESS_ONLY": 146,
