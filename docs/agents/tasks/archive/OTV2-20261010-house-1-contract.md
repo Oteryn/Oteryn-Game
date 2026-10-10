@@ -28,7 +28,7 @@ high_risk_qualification: NOT_APPLICABLE (docs only)
 
 ## Outcome
 
-Docs-only consolidation candidate. It re-decides nothing that EXP-HOUSES-01, HOUSE-OWN-0, HOUSE-CUSTODY-0, HOUSE-RUNTIME-0, SOCIAL-MAP-PACKETS-1 or ARCH-HOUSE-RT-INBOX-PACKETS-1 already accepted. The candidate covers:
+Docs-only consolidation candidate. It binds EXP-HOUSES-01, HOUSE-OWN-0, HOUSE-CUSTODY-0, HOUSE-RUNTIME-0, SOCIAL-MAP-PACKETS-1 and ARCH-HOUSE-RT-INBOX-PACKETS-1 by reference. It re-decides one accepted rule: owner answer Q2a supersedes EXP-HOUSES-01 §17 and §25.21 (Aleta list edits). The candidate covers:
 
 - the binding clause for each topic;
 - what `main` has and lacks;
@@ -36,7 +36,7 @@ Docs-only consolidation candidate. It re-decides nothing that EXP-HOUSES-01, HOU
 - failure modes, conformance mapping and the slice plan;
 - owner questions Q1-Q5 (§8).
 
-Owner answers `1a 2a 3a 4a 5a` (D972) are recorded in §10; HOUSE-1a may be allocated once this PR merges.
+Owner answers `1a 2a 3a 4a 5a` (D972) are recorded in §10. HOUSE-1a may be allocated once this PR merges and the ARCH-HOUSE-RT-INBOX-PACKETS-1 §1.5 exit gate holds (HOUSE-RUNTIME-1b and 1c accepted).
 
 ## Validation
 

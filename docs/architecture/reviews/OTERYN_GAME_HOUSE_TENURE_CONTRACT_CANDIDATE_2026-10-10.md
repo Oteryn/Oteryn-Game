@@ -1,10 +1,12 @@
 # HOUSE-TENURE-0 House tenure contract candidate
 
 - Decision: `HOUSE-TENURE0-CONSOLIDATED-HOUSE-TENURE-V1`
-- Status: **CANDIDATE**. Docs only. It re-decides nothing that is accepted: it binds the accepted
-  house contract by reference, records the live gap on `main`, names one storage conflict and
-  asks the owner the questions where the HOUSE-1 control-plane order (#1622) differs from the
-  accepted contract (§8). The owner answered them on 2026-10-10 (D972, §10).
+- Status: **CANDIDATE**. Docs only. It binds the accepted house contract by reference and
+  re-decides one accepted rule: owner answer Q2a supersedes EXP-HOUSES-01 §17 and §25.21 (Aleta
+  spells edit house lists, §10), which needs the review that supersession requires. It also
+  records the live gap on `main`, names one storage conflict and asks the owner the questions
+  where the HOUSE-1 control-plane order (#1622) differs from the accepted contract (§8). The
+  owner answered them on 2026-10-10 (D972, §10).
 - Task: `OTV2-20261010-house-1-contract` (HOUSE-1, control plane #1622)
 - Live base: `main` at `348b2b76`
 - Builds on (all on `main`):
@@ -91,24 +93,33 @@ the GUI (`OTERYN_WORLD_HOUSE_INSTANCE_CANDIDATE_V1.md`).
 **PROVEN.** The accepted packets plan a different owner: HOUSE-1a creates
 `game_house_properties` with owner, state and `acl_revision`; HOUSE-ACL-1 creates
 `game_house_acl_entries` with 200 entries per list. HOUSE-OWN-0 §10 and EXP-HOUSES-01 §17 say no
-spell edits the list. The two use different house key forms (`oteryn:content.house.<slug>` in
-`0038`, the catalogue `HouseId` in HOUSE-OWN-0). No accepted document names `0038` or
-`game_house_ownership`.
+spell edits the list. Both key the house the same way: `house_key` is the catalogue
+`identity.key` (`oteryn:content.house.<slug>`, catalogue §2.1), which is the house key of
+HOUSE-OWN-0 §3. The conflict is the competing tables, not the key. No accepted document names
+`0038` or `game_house_ownership`.
 
 **Consequence.** Building HOUSE-1a and HOUSE-ACL-1 as written leaves two ownership truths and two
 ACLs in one database, which breaks "one World-global property state per `HouseId`"
-(EXP-HOUSES-01 §4.1). HOUSE-1a must not be allocated before owner question Q1 (§8) is answered.
+(EXP-HOUSES-01 §4.1). HOUSE-1a must not be allocated before owner question Q1 (§8) is answered,
+and not before the exit gate of ARCH-HOUSE-RT-INBOX-PACKETS-1 §1.5 holds.
 The resolution (owner answer Q1a, §10) keeps one owner per fact:
 
-- `game_house_properties` (HOUSE-1a) is the property and owner authority;
-  `game_house_ownership` becomes a row HOUSE-1a's settlement and release functions write in the
-  same transaction (or a view over the property), so `0047` and `house_spell_acl.rs` keep working
-  unchanged;
-- HOUSE-ACL-1 adopts `game_house_acl` as the one ACL store (raising its member bound to
-  `HOUSEOWN0-RL-12` 200) instead of creating `game_house_acl_entries`; the GUI and Aleta then
-  write one list through one revision;
-- the house key form is mapped once (catalogue `HouseId` to the content key) in HOUSE-1a's tile
-  and property materialization.
+- `game_house_properties` (HOUSE-1a) is the property and owner authority. `0038` and `0047` do
+  not stay unchanged. `game_house_ownership.owner_character_id` is `NOT NULL`, and the `0047`
+  instance binding has a foreign key to that row and an immutability trigger, so the row can be
+  neither deleted nor left naming a former owner. HOUSE-1a therefore migrates the pair. Either the
+  binding's foreign key moves to `game_house_properties`, or the ownership row stays as the
+  binding anchor and its owner becomes nullable with release in the same transaction. Whichever
+  it picks, `house_spell_acl.rs` reads its owner from the property authority. A `VACANT` or
+  released house then grants no owner access, and no former owner keeps rights.
+- HOUSE-ACL-1 migrates `game_house_acl` to the accepted ACL model, not just its bound, and creates
+  no second ACL table. The accepted model has:
+  - doors keyed by catalogue position `[x,y,z]` (catalogue §2.2), not by numeric `list_id`;
+  - one property-wide `acl_revision` (HOUSE-OWN-0 §10), not one revision per list;
+  - guild entries and character exclusions (HOUSE-OWN-0 GUILD-0 amendment);
+  - 200 entries per list (`HOUSEOWN0-RL-12`).
+
+  Existing rows move to that shape. The GUI and Aleta then write one list through one revision.
 
 ## 5. Failure modes (consolidated)
 
@@ -135,18 +146,19 @@ The resolution (owner answer Q1a, §10) keeps one owner per fact:
 |---|---|
 | HOUSE-RUNTIME-1a/1b/1c | 1-4, 25, 26 (interior parts) |
 | HOUSE-1a | 5, 6, 7, 8 (two physical houses), 28, 34, 35, plus the packet §2.3 tests |
-| HOUSE-1b | 10, 11, 23, 24, 40, 43 (move-out, eviction), plus the packet §2.4 tests |
+| HOUSE-1b | 10, 11, 40; the voluntary relinquishment and eviction parts of 43; plus the packet §2.4 tests. It supplies the disposition primitive that 23, 24 and the rest of 43 use |
 | HOUSE-ACL-1 | 19, 20; 21 as amended by §10 Q2a |
 | HOUSE-WIRE-1 | 20, 21 at the wire |
-| Later decisions (Residence, Bazaar, transfer) | 9, 12-18, 22, 27, 29-33, 36-39, 41, 42 |
+| Later decisions (Residence, Bazaar, transfer, Character lifecycle, World transfer) | 9, 12-18, 22, 23 (Character finalization), 24 (World transfer), 27, 29-33, 36-39, 41, 42; 43 for Bazaar buyer release, Residence replacement, physical house to Residence, Character deletion and World transfer |
 
 ## 7. Slice plan and critical path
 
 1. HOUSE-RUNTIME-1a, then 1b (needs MAP-LOAD-1), then 1c (needs CHAR-POSITION-1): enter and
    furnish a house.
 2. PREM-WIRE-1: the Premium gate the settlement calls.
-3. Owner answer Q1, then **HOUSE-1a**: properties, tiles, slot, auction, escrow, settlement (hard
-   worker; persistence, economy and security review).
+3. Owner answer Q1 (§10) and the §1.5 exit gate (HOUSE-RUNTIME-1b and 1c both accepted with every
+   exit-dependent item met, not merely merged), then **HOUSE-1a**: properties, tiles, slot,
+   auction, escrow, settlement (hard worker; persistence, economy and security review).
 4. **HOUSE-ACL-1** and **HOUSE-1b** in parallel (HOUSE-1b also needs MAP-OVERLAY-1c): ACL;
    rent, grace, move-out, eviction, catalogue revisions.
 5. **HOUSE-WIRE-1**: `HOUSE_V1`, house list, bid, move-out, panel, rent warning at login.
@@ -205,7 +217,10 @@ The owner chose `1a 2a 3a 4a 5a`:
 - **Q1a.** `game_house_properties` (HOUSE-1a) is the property and owner authority. It keeps
   `game_house_ownership` in step in the same transactions. HOUSE-ACL-1 adopts `game_house_acl`
   as the one ACL store, raises its member bound to 200 (`HOUSEOWN0-RL-12`) and creates no
-  `game_house_acl_entries`. HOUSE-1a may be allocated once this record is on `main`.
+  `game_house_acl_entries`. HOUSE-1a and HOUSE-ACL-1 migrate the `0038`/`0047` tables to the
+  accepted model as §4.2 states. HOUSE-1a may be allocated once this record is on `main` and the
+  exit gate of ARCH-HOUSE-RT-INBOX-PACKETS-1 §1.5 holds. That gate needs HOUSE-RUNTIME-1b and 1c
+  accepted with every exit-dependent item met. Both are absent today (§4.1).
 - **Q2a.** EXP-HOUSES-01 §17 and §25.21 are superseded under §30. Aleta spells and the GUI write
   the same revisioned list with the same permissions; a stale edit returns `STALE_REVISION`.
 - **Q3a.** Direct transfer stays deferred (EXP-HOUSES-01 §11.6) until HOUSE-WIRE-1 is playable.
@@ -214,3 +229,7 @@ The owner chose `1a 2a 3a 4a 5a`:
   is no NPC sale and no grant command.
 - **Q5a.** Rent comes from the bank only (owner answer H1). Coins in a depot or inventory are
   never used.
+
+Q4a and Q5a also fix HOUSE-1a's scope. Acquisition is the auction only. Escrow (max + first rent)
+and the first `HOUSE_RENT` burn come from the bank only (packets §1.3). No later answer reopens
+HOUSE-1a's acquisition transaction.
