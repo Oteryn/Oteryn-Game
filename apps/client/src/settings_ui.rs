@@ -12,6 +12,14 @@ pub struct SettingsPanel {
 }
 
 impl SettingsPanel {
+    pub fn open_complete_section(&mut self, id: &str) -> bool {
+        if !self.browser.open_section(id) {
+            return false;
+        }
+        self.open = true;
+        true
+    }
+
     pub fn set_action_bar_available(&mut self, available: bool) {
         self.browser.set_action_bar_available(available);
     }

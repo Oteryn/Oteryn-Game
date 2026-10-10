@@ -254,6 +254,17 @@ impl ClientSettings {
         Ok(())
     }
 
+    /// Select the next existing profile without inventing one. The current
+    /// profile retains its live action-bar configuration before the switch.
+    pub fn select_next_hotkey_profile(&mut self) -> io::Result<bool> {
+        if self.hotkeys.profiles.len() <= 1 {
+            return Ok(false);
+        }
+        let next = (self.hotkeys.selected + 1) % self.hotkeys.profiles.len();
+        self.select_hotkey_profile(next)?;
+        Ok(true)
+    }
+
     /// Select the profile named exactly like the admitted character when the
     /// observed Auto-Switch option is enabled. No profile is created or guessed.
     /// The previous profile's current action bars are retained before switching.
@@ -454,6 +465,29 @@ mod tests {
             Some(false)
         );
         assert!(settings.validate().is_ok());
+    }
+
+    #[test]
+    fn next_profile_cycles_existing_profiles_and_preserves_action_bars()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut settings = ClientSettings::default();
+        assert!(!settings.select_next_hotkey_profile()?);
+        let mut second = crate::hotkeys::HotkeyProfile {
+            name: "Second".into(),
+            ..crate::hotkeys::HotkeyProfile::default()
+        };
+        second.action_bar.edge_enabled[0] = false;
+        settings.hotkeys.profiles.push(second);
+        settings.action_bar.edge_enabled[1] = false;
+
+        assert!(settings.select_next_hotkey_profile()?);
+        assert_eq!(settings.hotkeys.selected, 1);
+        assert!(!settings.action_bar.edge_enabled[0]);
+        assert!(!settings.hotkeys.profiles[0].action_bar.edge_enabled[1]);
+        assert!(settings.select_next_hotkey_profile()?);
+        assert_eq!(settings.hotkeys.selected, 0);
+        assert!(!settings.action_bar.edge_enabled[1]);
+        Ok(())
     }
 
     #[test]

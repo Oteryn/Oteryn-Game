@@ -137,3 +137,11 @@ FPS overlay preference, validates it through the finite settings catalogue and
 persists it through the existing settings save path. Minimap scrolling/floor
 actions and latency display remain disabled because no corresponding projection
 or navigable minimap state exists yet.
+
+## Continuation checkpoint — 2026-10-10 profile and settings hotkeys
+
+Open Hotkeys now opens the compiled complete-preferences browser directly on
+General Hotkeys. Next Hotkey Preset cycles only through existing profiles,
+retains the outgoing profile's live action bars, activates the incoming action
+bars and persists the same validated settings object. A single-profile client
+remains unchanged rather than inventing another profile.

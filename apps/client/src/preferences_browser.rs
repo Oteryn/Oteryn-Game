@@ -38,6 +38,16 @@ pub enum PreferenceAction {
 }
 
 impl PreferencesBrowser {
+    pub fn open_section(&mut self, id: &str) -> bool {
+        let Some(section) = SETTINGS_SECTIONS.iter().position(|entry| entry.id == id) else {
+            return false;
+        };
+        self.section = section;
+        self.overview = false;
+        self.open = true;
+        true
+    }
+
     pub fn set_action_bar_available(&mut self, available: bool) {
         self.action_bar_available = available;
         if !available {
@@ -1158,6 +1168,17 @@ pub(crate) mod test_support {
 mod tests {
     use super::*;
     use test_support::{button_position, click, frame, reveal, scroll_geometry};
+
+    #[test]
+    fn direct_section_navigation_accepts_only_catalogue_pages() {
+        let mut browser = PreferencesBrowser::new();
+        assert!(browser.open_section("general_hotkeys"));
+        assert_eq!(SETTINGS_SECTIONS[browser.section].id, "general_hotkeys");
+        assert!(!browser.overview);
+        assert!(browser.open);
+        assert!(!browser.open_section("not-a-settings-page"));
+        assert_eq!(SETTINGS_SECTIONS[browser.section].id, "general_hotkeys");
+    }
 
     #[test]
     fn every_reference_settings_page_renders_in_the_compiled_client_at_native_size()

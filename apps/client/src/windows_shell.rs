@@ -281,6 +281,12 @@ impl Application {
                 }
                 continue;
             }
+            if action == "client.hotkeys" {
+                if let Some(ui) = self.game_ui.as_mut() {
+                    ui.settings.open_complete_section("general_hotkeys");
+                }
+                continue;
+            }
             if modal {
                 continue;
             }
@@ -296,6 +302,13 @@ impl Application {
                 "client.fps" => {
                     self.preferences.toggle_fps_indicator();
                     settings_changed = true;
+                }
+                "client.next_profile" => {
+                    settings_changed = self
+                        .preferences
+                        .select_next_hotkey_profile()
+                        .unwrap_or(false)
+                        || settings_changed;
                 }
                 "action.bottom.all" => {
                     self.preferences.action_bar.edge_enabled[0] =

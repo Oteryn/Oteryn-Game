@@ -39,6 +39,8 @@ pub fn general_action_supported(action: &str) -> bool {
             | "window.battle"
             | "window.skills"
             | "client.options"
+            | "client.hotkeys"
+            | "client.next_profile"
             | "client.fullscreen"
             | "client.fps"
             | "minimap.zoom_out"
