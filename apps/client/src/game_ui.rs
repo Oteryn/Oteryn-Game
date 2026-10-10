@@ -89,6 +89,7 @@ pub struct GameUi {
     action_bar: Option<ActionBar>,
     minimap: Option<(LoadedMinimap, egui::TextureHandle)>,
     minimap_zoom: usize,
+    minimap_pan: [i32; 2],
     minimap_retry_at: f64,
     panels: crate::client_panels::ClientPanels,
     dialogs: crate::reference_dialogs::ReferenceDialogs,
@@ -181,6 +182,10 @@ impl GameUi {
         match action {
             "minimap.zoom_out" => self.minimap_zoom = (self.minimap_zoom + 1).min(2),
             "minimap.zoom_in" => self.minimap_zoom = self.minimap_zoom.saturating_sub(1),
+            "minimap.north" => self.minimap_pan[1] = (self.minimap_pan[1] - 1).max(-16),
+            "minimap.east" => self.minimap_pan[0] = (self.minimap_pan[0] + 1).min(16),
+            "minimap.south" => self.minimap_pan[1] = (self.minimap_pan[1] + 1).min(16),
+            "minimap.west" => self.minimap_pan[0] = (self.minimap_pan[0] - 1).max(-16),
             _ => return false,
         }
         true
@@ -530,10 +535,11 @@ impl GameUi {
                                     MinimapZoom::LoadedArea,
                                 ][self.minimap_zoom];
                                 if let Some((map, texture)) = &self.minimap
-                                    && let Some(crop) = map.viewport(
+                                    && let Some(crop) = map.shifted_viewport(
                                         view.minimap_location(),
                                         oteryn_client::world::START_FLOOR,
                                         zoom,
+                                        self.minimap_pan,
                                     )
                                 {
                                     let side = f32::from(MINIMAP_SIDE);
@@ -1399,6 +1405,14 @@ mod tests {
         assert_eq!(ui.minimap_zoom, 2);
         assert!(ui.route_minimap_hotkey("minimap.zoom_in"));
         assert_eq!(ui.minimap_zoom, 1);
+        for _ in 0..40 {
+            assert!(ui.route_minimap_hotkey("minimap.north"));
+            assert!(ui.route_minimap_hotkey("minimap.east"));
+        }
+        assert_eq!(ui.minimap_pan, [16, -16]);
+        assert!(ui.route_minimap_hotkey("minimap.south"));
+        assert!(ui.route_minimap_hotkey("minimap.west"));
+        assert_eq!(ui.minimap_pan, [15, -15]);
         assert!(!ui.route_minimap_hotkey("minimap.floor_up"));
     }
 

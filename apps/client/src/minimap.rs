@@ -133,6 +133,20 @@ impl LoadedMinimap {
         floor: u8,
         zoom: MinimapZoom,
     ) -> Option<MinimapViewport> {
+        self.shifted_viewport(location, floor, zoom, [0, 0])
+    }
+
+    /// Crop around a bounded local pan offset while retaining the authoritative
+    /// player marker. The offset cannot move the marker outside the nearest zoom
+    /// crop and never requests an unloaded floor.
+    #[must_use]
+    pub fn shifted_viewport(
+        &self,
+        location: Option<MapLocation>,
+        floor: u8,
+        zoom: MinimapZoom,
+        offset: [i32; 2],
+    ) -> Option<MinimapViewport> {
         let location = location?;
         if floor != START_FLOOR || location.source_floor != floor {
             return None;
@@ -147,14 +161,16 @@ impl LoadedMinimap {
             return None;
         }
         let radius = zoom.radius();
+        let center_x = (x + offset[0].clamp(-16, 16)).clamp(0, side - 1);
+        let center_y = (y + offset[1].clamp(-16, 16)).clamp(0, side - 1);
         let (left, top, right, bottom) = if zoom == MinimapZoom::LoadedArea {
             (0, 0, side, side)
         } else {
             (
-                (x - radius).max(0),
-                (y - radius).max(0),
-                (x + radius + 1).min(side),
-                (y + radius + 1).min(side),
+                (center_x - radius).max(0),
+                (center_y - radius).max(0),
+                (center_x + radius + 1).min(side),
+                (center_y + radius + 1).min(side),
             )
         };
         Some(MinimapViewport {
@@ -245,6 +261,26 @@ mod tests {
             .viewport(location, START_FLOOR, MinimapZoom::LoadedArea)
             .ok_or("overview unavailable")?;
         assert_eq!(full.size, [MINIMAP_SIDE; 2]);
+        Ok(())
+    }
+
+    #[test]
+    fn shifted_crop_moves_within_loaded_bounds_and_keeps_the_player_visible() -> TestResult {
+        let overview = overview()?;
+        let location = Some(MapLocation {
+            position: TileCoord::new(ORIGIN.0, ORIGIN.1),
+            source_floor: START_FLOOR,
+        });
+        let shifted = overview
+            .shifted_viewport(location, START_FLOOR, MinimapZoom::Nearby, [16, 16])
+            .ok_or("shifted viewport unavailable")?;
+        assert_eq!(shifted.origin, [0, 0]);
+        assert_eq!(shifted.size, [33, 33]);
+        assert_eq!(shifted.player, [0, 0]);
+        let clamped = overview
+            .shifted_viewport(location, START_FLOOR, MinimapZoom::Nearby, [500, 500])
+            .ok_or("clamped viewport unavailable")?;
+        assert_eq!(clamped, shifted);
         Ok(())
     }
 }

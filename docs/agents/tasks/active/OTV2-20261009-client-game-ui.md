@@ -162,3 +162,11 @@ movement/cast/attack inputs with one stop intent and sends the protocol's existi
 `attack_target(None)` command. An already-sent step remains server-authoritative;
 the client does not pretend it can rewind an in-flight outcome. The resulting
 server disposition is exposed through the existing combat feedback path.
+
+## Continuation checkpoint — 2026-10-10 minimap pan hotkeys
+
+Minimap North/East/South/West now move the real loaded-map crop one tile per
+press. The offset is bounded to the nearest zoom radius, clamped to loaded
+texture bounds and keeps the authoritative player marker in view. Floor Up/Down
+remain disabled because the client has only the admitted mapped floor; no blank
+or fabricated layer is shown.
