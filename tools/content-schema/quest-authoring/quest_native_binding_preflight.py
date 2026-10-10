@@ -14,6 +14,7 @@ from pathlib import Path
 DEFINITIONS = "content/quests/definitions/index.json"
 CANDIDATE = "content/quests/missions/quest-state-completion-candidate.json"
 PLAN = "content/quests/missions/completion-binding-plan.json"
+SOURCE_PLAN = "content/quests/missions/source-lowered-binding-plan.json"
 MATRIX = "tools/content-schema/quest-authoring/samples/completion-matrix/all373.json"
 OUTPUT = "tools/content-schema/quest-authoring/samples/native-binding-preflight/all352.json"
 
@@ -49,11 +50,16 @@ def collect(root: Path):
 
     candidate = read(root, CANDIDATE)
     plan = read(root, PLAN)
+    source_plan = read(root, SOURCE_PLAN)
     matrix = read(root, MATRIX)
     typed = {row["quest"]: row for row in candidate["quests"]}
     planned = {row["quest"]: row for row in plan["records"]}
     check(len(typed) == len(candidate["quests"]), "Duplicate typed Quest owner")
     check(len(planned) == len(plan["records"]), "Duplicate binding plan owner")
+    source_planned = {row["quest"]: row for row in source_plan["records"]}
+    check(len(source_planned) == len(source_plan["records"]), "Duplicate source-lowered plan owner")
+    check(set(source_planned) <= set(typed), "Source-lowered plan owner absent from candidate")
+    check(not set(source_planned) & set(planned), "Quest in both binding plans")
     check(set(typed) <= set(definitions), "Unknown typed Quest owner")
     check(set(planned) <= set(typed), "Binding plan owner absent from candidate")
     check(len(matrix["records"]) == matrix["summary"]["wiki_titles"], "Wiki title count mismatch")
@@ -72,6 +78,7 @@ def collect(root: Path):
     seams = Counter()
     stage_holds = Counter()
     reward_holds = Counter()
+    source_lane_totals = Counter()
     records = []
 
     for key, definition in sorted(definitions.items()):
@@ -84,6 +91,9 @@ def collect(root: Path):
         per_seams = Counter()
         per_stage_holds = Counter()
         per_reward_holds = Counter()
+        source_lanes = Counter()
+        source_transitions = 0
+        source_unbound = 0
         plan_stages = 0
         transitions_without_binding = 0
         stage_bindings = 0
@@ -135,9 +145,23 @@ def collect(root: Path):
                 for hold in reward.get("unresolved") or []:
                     per_reward_holds[str(hold)] += 1
                     reward_holds[str(hold)] += 1
+        elif key in source_planned:
+            lane = "SOURCE_LOWERED_TRANSITION_CONSUMERS"
+            source = source_planned[key]
+            check(not source.get("runtime_enabled"), f"Runtime already enabled {key}")
+            check(source["transition_count"] == len(source["transitions"]), f"Source plan count {key}")
+            for transition in source["transitions"]:
+                source_transitions += 1
+                source_lanes[transition["consumer_lane"]] += 1
+                if transition.get("native_binding") is None:
+                    source_unbound += 1
         elif quest is not None:
             lane = "SOURCE_PROGRESS_NO_CHOSEN_STAGE_PLAN"
         else:
+            check(
+                definition.get("kind") == "reward_only",
+                f"Non-reward Quest without typed progress candidate {key}",
+            )
             lane = "REWARD_ONLY_NO_TYPED_PROGRESS_CANDIDATE"
 
         totals[lane] += 1
@@ -147,6 +171,9 @@ def collect(root: Path):
         totals["native_reward_delivery_bindings"] += reward_bindings
         totals["target_associations"] += target_count
         totals["reward_intents"] += reward_intents
+        totals["source_lowered_transitions"] += source_transitions
+        totals["source_lowered_unbound_transitions"] += source_unbound
+        source_lane_totals.update(source_lanes)
 
         records.append({
             "quest": key,
@@ -156,6 +183,9 @@ def collect(root: Path):
             "typed_completion_state": state(quest) if quest else None,
             "plan_stage_count": plan_stages,
             "unbound_dispatch_stage_count": transitions_without_binding,
+            "source_lowered_transition_count": source_transitions,
+            "source_lowered_unbound_transition_count": source_unbound,
+            "source_lowered_consumer_lanes": counter(source_lanes),
             "native_dispatch_binding_count": stage_bindings,
             "native_reward_delivery_binding_count": reward_bindings,
             "event_kinds": counter(per_kinds),
@@ -170,7 +200,9 @@ def collect(root: Path):
     check(len(records) == index["record_count"], "Incomplete native preflight")
     check(
         totals["CHOSEN_STAGE_CONSUMERS"] == len(planned)
-        and totals["SOURCE_PROGRESS_NO_CHOSEN_STAGE_PLAN"] == len(typed) - len(planned)
+        and totals["SOURCE_LOWERED_TRANSITION_CONSUMERS"] == len(source_planned)
+        and totals["SOURCE_PROGRESS_NO_CHOSEN_STAGE_PLAN"]
+        == len(typed) - len(planned) - len(source_planned)
         and totals["REWARD_ONLY_NO_TYPED_PROGRESS_CANDIDATE"] == len(definitions) - len(typed),
         "Partition does not cover every canonical Quest",
     )
@@ -181,6 +213,7 @@ def collect(root: Path):
             "canonical_definitions": DEFINITIONS,
             "typed_completion_candidate": CANDIDATE,
             "selected_binding_plan": PLAN,
+            "source_lowered_binding_plan": SOURCE_PLAN,
             "wiki_title_mapping": MATRIX,
         },
         "scope": "All canonical Quest owners; no gameplay or production runtime run",
@@ -189,15 +222,20 @@ def collect(root: Path):
             "wiki_titles": len(matrix["records"]),
             "typed_candidate_quests": len(typed),
             "binding_plan_quests": len(planned),
+            "source_lowered_plan_quests": len(source_planned),
             "lanes": {
                 lane: totals[lane] for lane in (
                     "CHOSEN_STAGE_CONSUMERS",
+                    "SOURCE_LOWERED_TRANSITION_CONSUMERS",
                     "SOURCE_PROGRESS_NO_CHOSEN_STAGE_PLAN",
                     "REWARD_ONLY_NO_TYPED_PROGRESS_CANDIDATE",
                 )
             },
             "plan_stages": totals["plan_stages"],
             "unbound_dispatch_stages": totals["unbound_dispatch_stages"],
+            "source_lowered_transitions": totals["source_lowered_transitions"],
+            "source_lowered_unbound_transitions": totals["source_lowered_unbound_transitions"],
+            "source_lowered_consumer_lanes": counter(source_lane_totals),
             "native_dispatch_bindings": totals["native_dispatch_bindings"],
             "native_reward_delivery_bindings": totals["native_reward_delivery_bindings"],
             "target_associations": totals["target_associations"],

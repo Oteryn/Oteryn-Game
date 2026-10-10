@@ -26,9 +26,17 @@ class QuestNativeBindingPreflightTest(unittest.TestCase):
             {
                 "CHOSEN_STAGE_CONSUMERS": 304,
                 "REWARD_ONLY_NO_TYPED_PROGRESS_CANDIDATE": 42,
-                "SOURCE_PROGRESS_NO_CHOSEN_STAGE_PLAN": 6,
+                "SOURCE_LOWERED_TRANSITION_CONSUMERS": 6,
+                "SOURCE_PROGRESS_NO_CHOSEN_STAGE_PLAN": 0,
             },
             summary["lanes"],
+        )
+        self.assertEqual(6, summary["source_lowered_plan_quests"])
+        self.assertEqual(121, summary["source_lowered_transitions"])
+        self.assertEqual(121, summary["source_lowered_unbound_transitions"])
+        self.assertEqual(
+            {"NPC_QUEST_1": 106, "QUEST_TRIGGER_1": 15},
+            summary["source_lowered_consumer_lanes"],
         )
 
     def test_every_stage_has_real_owner_and_is_unbound(self):
