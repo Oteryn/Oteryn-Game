@@ -1,7 +1,7 @@
 # Make Believe Quest — Native/runtime handoff
 
-Date: 2026-10-06  
-Repository: `Oteryn/Oteryn-Game`  
+Date: 2026-10-06
+Repository: `Oteryn/Oteryn-Game`
 Handoff base: `main@f6894e793c162d9d8a43578332f3a6f77d2936a3`
 
 ## Purpose
