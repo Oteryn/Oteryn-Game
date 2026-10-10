@@ -26,7 +26,7 @@ fresh source/model qualification and review of the new pin; schema validity alon
 cannot establish donor provenance. Regeneration requires no upstream checkout or
 network access.
 
-The player-source batch contains 368 bindings: 293 `identity_only` projections and
+The player-source batch contains 375 bindings: 300 `identity_only` projections and
 75 `ordinary_data` imports. Of the ordinary imports, 45 qualify an
 `accepted_ordinary_model`; 30 import only `canonical_base` data and retain their
 missing-mechanic records. The partial imports comprise six Buzz/Scorch variants
@@ -50,7 +50,7 @@ raw/whole-controller parity false. S21 Familiar aliases and the four barrier
 projections use their existing explicit selection and Effect proofs. All 36
 retain source-scope holds; none changes a native gameplay payload.
 
-`unavailable-spells.jsonl` retains 486 records using the five classes from
+`unavailable-spells.jsonl` retains 479 records using the five classes from
 SPELL-NPC-MAP-0 §1: 249 `SOURCE_CONFLICT_KEPT`, 155 `ADAPTER_MISSING`, 27
 `RUNTIME_GAP`, 38 `EXCLUDED` and 17 `CONTRACT_GAP`. There are 108 registrations in
 both the binding and held sets: 30 partial base models, 15 party projections,

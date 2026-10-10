@@ -784,10 +784,10 @@
             "dependencies": "tools/content-schema/spell-authoring/spell-dependencies.schema.json",
             "manifest": "tools/content-schema/monster-authoring/monster-import-readiness.schema.json"
           },
-          "sha256": "98a426315b5b37b0f8b289f10c92b3b80630985a94d35b5a2ca26ba8119e565d",
+          "sha256": "11bb2a7a6ae28b0f515a9d2df6526d998a1a290aa556deb5d0d7f1fe12128b67",
           "source_selection": {
             "path": "content/abilities/definitions/player-spell-selection.json",
-            "sha256": "81525706ab6e31c08ccdf80fb4b68956f61c30920a4900311c70e175ea711123"
+            "sha256": "d5a5c29b77e4107a8fa425fd00b2a6a88b6283a64f98af20e1b0a5b7a167c992"
           }
         },
         {
@@ -799,7 +799,7 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/abilities/items"
           },
-          "sha256": "0d05ac9c0ce572d8e3b5591149283db181b87e038b409ea5d654e42ca506c438"
+          "sha256": "2bca5870303c5565b6b0ed052a7c13a4b9c2fafc4fb43a72ea8e8b4bc1899e3f"
         },
         {
           "creates_canonical_identities": false,
@@ -876,7 +876,7 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/effects/items"
           },
-          "sha256": "854fabe40eae78e314070bf6e7dba4a31e38bc4e896c73a7ee5c703fd22665c5"
+          "sha256": "27f9820953317efac20eb904d1aac7f6553002b245db9fc5471d4cf5ca2f6ab3"
         }
       ],
       "Formula": [
@@ -889,7 +889,7 @@
             "collection": "tools/content-schema/spell-authoring/spell-family-import.schema.json",
             "records": "tools/content-schema/spell-authoring/spell-dependencies.schema.json#/properties/formulas/items"
           },
-          "sha256": "2724903497013f49bb648202fcf9064023763402ddf4c225985305a8f49b75f1"
+          "sha256": "2992bb5d477ec9c8e28cf9ee37aa72b1fcacb43534666b5ba692432531abab52"
         }
       ],
       "Item": [
