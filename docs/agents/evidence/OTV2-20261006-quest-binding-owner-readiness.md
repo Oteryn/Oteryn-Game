@@ -1,9 +1,9 @@
 # OTV2-20261006 Quest Binding Owner Readiness
 
-Status: retained evidence / execution work queue  
-Repository baseline: `Oteryn/Oteryn-Game@97c46d0e63fefe8a22a2053de7b596c50b7253a6`  
-Related merged PRs: #1875, #1876  
-Coordination: #1622  
+Status: retained evidence / execution work queue
+Repository baseline: `Oteryn/Oteryn-Game@97c46d0e63fefe8a22a2053de7b596c50b7253a6`
+Related merged PRs: #1875, #1876
+Coordination: #1622
 Runtime activation: **false**
 
 ## Purpose
@@ -172,19 +172,19 @@ This is especially critical for the nine terminal-count holds.
 
 **RECOMMENDATION**
 
-1. **QUEST-TRIGGER-1 and current prerequisites**  
+1. **QUEST-TRIGGER-1 and current prerequisites**
    Unlock the generic world/movement trigger root needed by large portions of USE and EXPLORE.
 
-2. **NPC-TALK-1 -> NPC-QUEST-1**  
+2. **NPC-TALK-1 -> NPC-QUEST-1**
    Unlock the 326 TALK rows, starting with the 79 already-qualified dialogue candidates.
 
-3. **Inventory collection occurrence owner**  
+3. **Inventory collection occurrence owner**
    Define the accepted event/quantity boundary for the 273 COLLECT rows without polling state into authority.
 
-4. **Encounter outcome / kill-credit owner**  
+4. **Encounter outcome / kill-credit owner**
    Admit exact recipient/credit semantics for KILL rows; consume the 25 exact Encounter seams only after their owner is executable.
 
-5. **Progress-versus-final selector contract**  
+5. **Progress-versus-final selector contract**
    Close the nine non-unit terminal-count recipes using an explicit producer-owned selector, not a content-only completion shortcut.
 
 ## Do not regress
