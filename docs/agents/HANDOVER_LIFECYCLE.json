@@ -74,6 +74,17 @@
         "docs/architecture/ADR-0021-world-map-runtime-loading.md",
         "current main Item, Terrain and WorldObject catalogues"
       ]
+    },
+    {
+      "handover_id": "OTV2-20261008-quest-all373-continuation-handoff",
+      "path": "docs/agents/evidence/OTV2-20261008-quest-all373-continuation-handoff.md",
+      "status": "historical",
+      "authoritative": false,
+      "expiry_rule": "Retained counts and PR heads apply only to the recorded main snapshot. Re-resolve current main, #1622 STATE, open Quest PRs, ownership, accepted contracts and CI before continuation; changes supersede current-state claims without erasing historical evidence.",
+      "superseded_by": [
+        "live GitHub Issue/PR/CI state",
+        "current main all373 completion matrix"
+      ]
     }
   ]
 }

@@ -1,10 +1,10 @@
 # OTV2-20261008 — All-373 Quest Completion continuation handoff
 
-**Status:** retained continuation evidence, not a runtime authority or new Quest allocation  
-**Snapshot date:** 2026-10-08 (Europe/Warsaw)  
-**Fresh-read Oteryn Game main:** `340278d84f5c5406b45c634c9750e3414844bd88`  
-**Canonical coordination:** [Oteryn/Oteryn-Game#1622](https://github.com/Oteryn/Oteryn-Game/issues/1622) (read its current STATE, not only the issue body)  
-**Related merged Quest milestone:** [PR #1875](https://github.com/Oteryn/Oteryn-Game/pull/1875) (merged; do not resume its deleted historical branch)  
+**Status:** retained continuation evidence, not a runtime authority or new Quest allocation
+**Snapshot date:** 2026-10-08 (Europe/Warsaw)
+**Fresh-read Oteryn Game main:** `340278d84f5c5406b45c634c9750e3414844bd88`
+**Canonical coordination:** [Oteryn/Oteryn-Game#1622](https://github.com/Oteryn/Oteryn-Game/issues/1622) (read its current STATE, not only the issue body)
+**Related merged Quest milestone:** [PR #1875](https://github.com/Oteryn/Oteryn-Game/pull/1875) (merged; do not resume its deleted historical branch)
 **Related active preflight at snapshot:** [PR #1930](https://github.com/Oteryn/Oteryn-Game/pull/1930), head `9a5bfa4f604a1a71428d0d5a04c4bc78ce51e9d4` (open at snapshot, ahead 2 / behind 3 vs snapshot main; recheck live state).
 
 ## Objective and why this handoff exists
