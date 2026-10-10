@@ -804,11 +804,11 @@
         },
         "post_release_tibiawiki": {
           "statement": "with Moon Mirror equipped, use Empty Crystal Flask at 33098,32947,6 to obtain Crystal Flask with Blue Lava",
-          "night_requirement": false
+          "night_requirement": null
         },
         "post_release_itemlevel": {
           "statement": "with Moon Mirror in inventory the correct lava section turns blue; use Empty Crystal Flask on the blue lava",
-          "night_requirement": false
+          "night_requirement": null
         },
         "supplied_video": {
           "statement": "narrator says wiki claims night-only but explicitly says he does not know whether it is true",
@@ -1510,7 +1510,7 @@
         "target_mount": "PENDING_MOUNT_OWNER_ADMISSION",
         "on_success": [
           "ACCOUNT_MOUNT_UNLOCK",
-          "oteryn:achievement/six_steps_ahead@1"
+          "oteryn:achievement/six_steps_ahead"
         ],
         "chance_semantics": "UNKNOWN_DO_NOT_INVENT",
         "note": "s16 grants Skewered Fish only; Jaracal mount is a later tame interaction, not a direct quest-completion grant."
@@ -1524,7 +1524,7 @@
           "key": "oteryn:item.tibia.i54638",
           "count": 1
         },
-        "achievement": "oteryn:achievement/amati_s_echo@1",
+        "achievement": "oteryn:achievement/amati_s_echo",
         "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
         "execution_owner": "NPC-QUEST-1 + RewardClaim/Durability",
         "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only.",
@@ -1567,7 +1567,7 @@
           "key": "oteryn:item.tibia.i54638",
           "count": 1
         },
-        "achievement": "oteryn:achievement/amati_s_echo@1",
+        "achievement": "oteryn:achievement/amati_s_echo",
         "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
         "execution_owner": "NPC-QUEST-1 + RewardClaim/Durability",
         "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only."
@@ -1593,7 +1593,7 @@
       "id": "reward_amatis_echo",
       "visible_stage": "s16",
       "kind": "REWARD_ACHIEVEMENT",
-      "achievement": "oteryn:achievement/amati_s_echo@1",
+      "achievement": "oteryn:achievement/amati_s_echo",
       "evidence": "FACT_IDENTITY",
       "owner": "Achievement",
       "identity_status": "EXACT_EXISTING_CANONICAL_IDENTITY",
@@ -1607,7 +1607,7 @@
       "kind": "ACCESS_GATE",
       "predicates": [
         "quest_completed(oteryn:quest.authored.shards_of_a_broken_moon_quest)",
-        "account_achievement(oteryn:achievement/forbidden_fruit@1)"
+        "account_achievement(oteryn:achievement/forbidden_fruit)"
       ],
       "evidence": "FACT_SEMANTICS_RUNTIME_COMPOSITION_MISSING",
       "owner": "QuestGate + Achievement",
@@ -1814,7 +1814,7 @@
       },
       "creature_key": "oteryn:creature.jaracal",
       "taming_item": "oteryn:item.tibia.i54638",
-      "canonical_achievement": "oteryn:achievement/six_steps_ahead@1",
+      "canonical_achievement": "oteryn:achievement/six_steps_ahead",
       "current_mount_catalogue_present": false,
       "current_mount_record_count": 252,
       "chance_semantics": "UNKNOWN_DO_NOT_INVENT",
@@ -1826,9 +1826,9 @@
         "Do not grant the mount directly from Shards s16."
       ],
       "failure_semantics": {
-        "item_consumed_on_failure": false,
-        "item_breaks_on_failure": false,
-        "retry_same_item": true,
+        "item_consumed_on_failure": "UNKNOWN",
+        "item_breaks_on_failure": "UNKNOWN",
+        "retry_same_item": "UNKNOWN",
         "evidence_class": "POST_RELEASE_COMMUNITY_OBSERVATION",
         "source": "TibiaQA question 40059, answered 2026-07-14",
         "observation": "Responder reports many failed Jaracal tame attempts and none broke the Skewered Fish.",
@@ -1837,7 +1837,7 @@
       "success_semantics": {
         "result": [
           "ACCOUNT_MOUNT_UNLOCK",
-          "oteryn:achievement/six_steps_ahead@1"
+          "oteryn:achievement/six_steps_ahead"
         ],
         "item_consumption": "REQUIRES_OWNER_CONFIRMATION_ON_SUCCESS",
         "chance": "UNKNOWN"
@@ -1846,7 +1846,7 @@
     "forbidden_gardens_predicate": {
       "required": [
         "quest_completed(Shards of a Broken Moon)",
-        "account_has_achievement(oteryn:achievement/forbidden_fruit@1)"
+        "account_has_achievement(oteryn:achievement/forbidden_fruit)"
       ],
       "current_quest_predicate_support": {
         "quest_completed": true,
@@ -1905,7 +1905,7 @@
       "forbidden": "Use current canonical oteryn:item.tibia.i54638; retired alias i00038475 is not canonical."
     },
     "achievement_identities": {
-      "oteryn:achievement/amati_s_echo@1": {
+      "oteryn:achievement/amati_s_echo": {
         "status": "EXACT_EXISTING_CANONICAL_IDENTITY",
         "staticdata_source_id": 594,
         "tibiawiki": {
@@ -1913,7 +1913,7 @@
           "revid": 1200473
         }
       },
-      "oteryn:achievement/forbidden_fruit@1": {
+      "oteryn:achievement/forbidden_fruit": {
         "status": "EXACT_EXISTING_CANONICAL_IDENTITY",
         "staticdata_source_id": null,
         "tibiawiki": {
@@ -1921,7 +1921,7 @@
           "revid": 849801
         }
       },
-      "oteryn:achievement/six_steps_ahead@1": {
+      "oteryn:achievement/six_steps_ahead": {
         "status": "EXACT_EXISTING_CANONICAL_IDENTITY",
         "staticdata_source_id": 592,
         "tibiawiki": {
@@ -2021,7 +2021,7 @@
           "key": "oteryn:item.tibia.i54638",
           "count": 1
         },
-        "achievement": "oteryn:achievement/amati_s_echo@1",
+        "achievement": "oteryn:achievement/amati_s_echo",
         "quest_transition": "oteryn:quest-transition/authored/shards_of_a_broken_moon_quest/s16",
         "execution_owner": "NPC-QUEST-1 + RewardClaim/Durability",
         "current_representation_gap": "Accepted NPC-QUEST contract supports dialogue claims, but current RewardClaim content/runtime implementation is chest-placement-only."

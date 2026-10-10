@@ -73,7 +73,7 @@
       "target": "Forbidden Gardens",
       "predicates": [
         "Shards of a Broken Moon completed",
-        "account owns oteryn:achievement/forbidden_fruit@1"
+        "account owns oteryn:achievement/forbidden_fruit"
       ],
       "forbidden_fruit": {
         "canonical_key": "oteryn:achievement/forbidden_fruit",

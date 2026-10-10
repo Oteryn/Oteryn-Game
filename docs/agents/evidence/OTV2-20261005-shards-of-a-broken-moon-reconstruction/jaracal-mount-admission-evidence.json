@@ -60,7 +60,7 @@
     "target_creature": "oteryn:creature.jaracal",
     "on_success": {
       "account_mount_unlock": "oteryn:content.mount.jaracal",
-      "achievement": "oteryn:achievement/six_steps_ahead@1"
+      "achievement": "oteryn:achievement/six_steps_ahead"
     },
     "chance_or_failure_semantics": "UNKNOWN_DO_NOT_INVENT",
     "item_consumption_semantics": "PENDING_REFERENCE_RUNTIME_QUALIFICATION",

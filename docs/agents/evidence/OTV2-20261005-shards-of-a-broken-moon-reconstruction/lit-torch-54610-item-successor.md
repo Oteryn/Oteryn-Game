@@ -110,6 +110,8 @@ For Shards execution, materialization/use remains required after identity admiss
 
 ## Where to hook it
 
+> Status note: part of this proposal (a separate current-source-held identity admission for 54610 in `item_identity.rs`) may already be merged on main. This packet does not verify that. Re-check current main before treating identity admission as future work; the remaining Shards gap is materialization, use and binding.
+
 The correct composition point is the A12 key-switch successor path that currently accepts proof-backed current appearance Items.
 
 Do **not** introduce a pre-A12 temporary key.

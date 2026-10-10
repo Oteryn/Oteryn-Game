@@ -310,7 +310,7 @@
           "key": "oteryn:item.tibia.i54638",
           "count": 1
         },
-        "achievement": "oteryn:achievement/amati_s_echo@1"
+        "achievement": "oteryn:achievement/amati_s_echo"
       },
       "disposition": "ONE_SHARED_TERMINAL_CLAIM"
     }
@@ -320,7 +320,7 @@
       "name": "Forbidden Gardens",
       "required": [
         "quest_completed(Shards)",
-        "account_has_achievement(oteryn:achievement/forbidden_fruit@1)"
+        "account_has_achievement(oteryn:achievement/forbidden_fruit)"
       ],
       "candidate_door": {
         "item_id": 54613,
@@ -338,7 +338,7 @@
       "target": "oteryn:creature.jaracal",
       "result": [
         "Jaracal mount unlock",
-        "oteryn:achievement/six_steps_ahead@1"
+        "oteryn:achievement/six_steps_ahead"
       ],
       "direct_quest_reward": false,
       "success_chance": "UNKNOWN_DO_NOT_INVENT",
