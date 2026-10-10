@@ -70,4 +70,5 @@ repository and GAME-CHAR-CMD-0 files.
 - Second review repair (CP ruling D607 1a 2a): `world_online` scans start every `PUBPROJ-ONLINE-INTERVAL`, and a late scan stalls the watermark; Platform shows a highscores row only while the same-name `character_profile` entry is served.
 - Third review repair (CP ruling D607 1a 2a): highscores rows carry an internal `character_id` join key (`PUBPROJ-HS-REQUEST-BYTES` 262,144); auction bid changes advance the house revision.
 - Fourth review repair (CP ruling D607): `world_online` requires a present profile; `beds` may be `"0"`; guild `ranks[].level` is a JSON integer; bid withdrawal removed (HOUSE-OWN-0).
+- Fifth review repair (CP ruling D607): death `occurred_at` is `floor(committed_at / 1000)` (receipt milliseconds to wire seconds); the `world_online` revocation bound is an explicit 20 s (interval 10 s + scan deadline 5 s + serve delay 5 s), with S = 30 s as the hard upper bound.
 - PR #1937; closeout by squash merge of #1937 (pending). Platform consumption follows in Oteryn/Oteryn-Platform#1476.

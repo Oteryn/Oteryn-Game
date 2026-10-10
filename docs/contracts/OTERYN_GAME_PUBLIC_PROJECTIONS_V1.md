@@ -227,7 +227,9 @@ different content, `429` rate limited, `503` unavailable.
 
 - `deaths` holds the character's most recent committed deaths, newest first: at most
   `PUBPROJ-DEATHS` (20). It is `[]` whenever `character_profile` would publish `[]`.
-- `occurred_at` is the receipt's `committed_at`. `level` is `level_before`, the level at death
+- `occurred_at` is the receipt's `committed_at` converted from Unix milliseconds, as stored by
+  `game_character_death_receipts`, to Unix seconds: `occurred_at = floor(committed_at / 1000)`.
+  The wire value is whole Unix seconds, like every other time on these routes. `level` is `level_before`, the level at death
   (DEATH-0 §3). `pvp` is the receipt's `pvp_death` (PARTY-PVP0 §10 amendment).
 - `killers` lists 0..16 character names (`PUBPROJ-KILLERS`), consistent with PARTY-PVP0 §9
   (candidate). The final-blow character comes first when there is one. Then follow the other
@@ -356,13 +358,16 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
   not recorded in an outbox, so the watermark is held by the scan instead (D607). A scan starts
   every `PUBPROJ-ONLINE-INTERVAL` and reads the committed session state of every World at one
   cut time. `complete_through` is the cut time
-  of the last scan that completed and whose changed Worlds were all `accepted` or `superseded`,
-  and it never passes that cut. A stopped, late or failed scan therefore stalls the watermark,
+  of the last scan that completed and whose changed Worlds were all `accepted` or `superseded`
+  within `PUBPROJ-ONLINE-SCAN-DEADLINE` (5 s) of that cut, and it never passes that cut. A scan
+  that misses the deadline counts as failed, even if its snapshots are accepted later. A stopped, late or failed scan therefore stalls the watermark,
   and so does a World whose snapshot is refused for its bound (§4.6) or whose publication failed.
   The whole family goes stale rather than showing a list that is wrong for one World.
 - A family is stale when `platform_now - complete_through + clock_uncertainty > S`, when the
   stored `complete_through` is more than `clock_uncertainty` after `platform_now`, or when the
   watermark epoch is not the highest seen. S = 30 s for `testing` and `preproduction` (U-PP1).
+  Platform checks staleness each time it serves, including from a cache, so no cached entry
+  outlives the moment its family goes stale.
 
 ## 6. Error handling
 
@@ -413,10 +418,24 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
   World whose profile would be present (§4.6) qualifies for `world_online`. This is the baseline's maximum for non-contacts, and GUILD-0
   §4.2 already shows a coarse online flag to the whole World. It is a candidate default (U-PP2).
 - When a privacy-preference contract adds a presence setting, a character whose setting hides
-  presence, or whose setting cannot be read, is left out of `world_online`. A setting change takes
-  effect in the World's next snapshot, within one `PUBPROJ-ONLINE-INTERVAL` while scans run on
-  time. A late or failed scan stalls the watermark, and the whole list is hidden once the family
-  is stale (§6), so a revocation is never outlived by a cached "online".
+  presence, or whose setting cannot be read, is left out of `world_online`.
+- **Revocation bound.** A revocation is any committed change that removes a character from
+  `world_online`: a presence setting that hides it, a sanction or other visibility decision, a
+  deletion, or a logout. Platform stops serving the character's online marker within
+  `PUBPROJ-ONLINE-REVOKE-BOUND` (20 s) of the revocation commit, by one of two paths:
+
+  | Step (worst case: the revocation commits just after a scan's cut) | Bound |
+  |---|---|
+  | the next scan starts and takes its cut (`PUBPROJ-ONLINE-INTERVAL`) | 10 s |
+  | the scan reads its cut and every changed World's snapshot is `accepted` or `superseded` (`PUBPROJ-ONLINE-SCAN-DEADLINE`) | 5 s |
+  | Platform stops serving the replaced snapshot, caches included, after returning `accepted` (`PUBPROJ-ONLINE-SERVE-DELAY`) | 5 s |
+  | **total, scans on time (`PUBPROJ-ONLINE-REVOKE-BOUND`)** | **20 s** |
+
+  If the next scan is late, fails or misses its deadline, `complete_through` stays at or before
+  the last cut, which is before the revocation. The family is then stale, and every marker is
+  hidden, once `platform_now - complete_through + clock_uncertainty > S` (§5.1, §6). That is
+  within S − 1 s = 29 s of the revocation, because staleness is checked at serve time. S = 30 s
+  is the hard upper bound on either path, and the on-time path is shorter than it.
 
 ### 7.3 Enumeration and identifiers
 
@@ -453,6 +472,9 @@ the implementation, as LCFA's were.
 | `PUBPROJ-ONLINE` | 4,096 entries per World | wire bound, not a capacity; 8 Channels × 500 players (D128) |
 | `PUBPROJ-ONLINE-REQUEST-BYTES` | 524,288 | 4,096 × at most 112 bytes + envelope |
 | `PUBPROJ-ONLINE-INTERVAL` | 10 s | fixed start interval of `world_online` scans: the minimum gap between revisions of one World, and the maximum age of a healthy scan |
+| `PUBPROJ-ONLINE-SCAN-DEADLINE` | 5 s | from a scan's cut to the last changed World's `accepted` or `superseded`; a later scan counts as failed |
+| `PUBPROJ-ONLINE-SERVE-DELAY` | 5 s | from Platform returning `accepted` to the replaced snapshot no longer being served, caches included |
+| `PUBPROJ-ONLINE-REVOKE-BOUND` | 20 s | derived: 10 + 5 + 5; at most S (§7.2) |
 | `PUBPROJ-WATERMARK-BYTES` | 512 | |
 | `PUBPROJ-WATERMARK-GAP` | 10 s | maximum gap between watermarks of one family |
 | `PUBPROJ-INFLIGHT` | 1 per family per publisher | |
@@ -474,8 +496,13 @@ the implementation, as LCFA's were.
   unknown name and a hidden character give identical public responses; ids never appear on a
   public page.
 - Presence: a stale `world_online` is hidden; a World over `PUBPROJ-ONLINE` publishes nothing and
-  goes stale; once a presence setting exists, hiding it removes the character within one interval.
-- Deaths: killer names stay the names at the death commit after a rename.
+  goes stale; a revocation committed just after a scan's cut stops being served within
+  `PUBPROJ-ONLINE-REVOKE-BOUND` (20 s) when the next scan is on time, and within S when it is late
+  or misses `PUBPROJ-ONLINE-SCAN-DEADLINE`, because the family goes stale; a scan whose snapshots
+  are accepted after the deadline does not advance the watermark.
+- Deaths: killer names stay the names at the death commit after a rename; a receipt with
+  `committed_at` 1789990000999 (milliseconds) publishes `occurred_at` `"1789990000"` (seconds,
+  rounded down).
 - Watermark: `complete_through` never passes an undelivered change; a future-dated watermark is
   refused; a stopped watermark makes the family stale and unserved; a stopped `world_online` scan
   stalls its watermark even when no outbox row is pending; a scan that does not start within
