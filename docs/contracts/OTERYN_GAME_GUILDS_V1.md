@@ -125,8 +125,10 @@ found ─► FORMING ──(4 vices before formation_deadline)──► ACTIVE
 - **Premium** (owner answer G1 a, PREMIUM-ACTIVATION-0 §1.2 and §2.2): only `NotActivated`
   bypasses the rule; then no Premium rule applies and the Premium job writes nothing. Once
   activated, founding and every move into levels 1 and 2 require `Current`; `NotCurrent`,
-  including an unavailable source or clock, is refused `NOT_PREMIUM` and counts as a deficit for
-  the Premium job. A lapse keeps the rank.
+  including an unavailable source or clock, is refused `NOT_PREMIUM`. The daily Premium job
+  counts the leadership Accounts that are `Current` (a `NotCurrent` one, unavailable included,
+  is not counted): at least 5 clears `premium_deficit_since`, fewer than 5 sets it if NULL, and
+  fewer than 5 for more than 14 days disbands (GUILD-0 §3.3). A lapse keeps the rank.
 - **Effect time.** Every committed change applies at once on every Channel (declared difference
   from the manual's logout and server-save rules, GUILD-0 §3.2).
 
@@ -141,7 +143,7 @@ expected guild `revision` (`STALE_REVISION` on mismatch).
 | Intent | Actor | Preconditions (each refusal writes nothing) | Effect |
 |---|---|---|---|
 | `found {name}` | any Character | in no guild (`ALREADY_IN_GUILD`); not junior (`JUNIOR`); Account holds no position (`ACCOUNT_HAS_POSITION`); name valid, ≤ 29 letters (`NAME_INVALID`); `name_key` free in the World (`NAME_TAKEN`); Premium once activated (`NOT_PREMIUM`) | guild `FORMING`, deadline +3 d, default ranks, founder level 1, leadership row |
-| `invite {character}` | level 1 or 2 | target of the same World and not a member of this guild (`NOT_ALLOWED`); limits GI-06 (`INVITATION_LIMIT`) | invitation, expiry +30 d (`GUILD0-RL-07`) |
+| `invite {character}` | level 1 or 2 | target of the same World and not a member of this guild (`NOT_ALLOWED`); under the target root lock, the target's expired rows (≤ 50) are deleted first, then limits GI-06 are counted (`INVITATION_LIMIT`), so an expired row never blocks a new invitation (GUILD-0 §3.2) | invitation, expiry +30 d (`GUILD0-RL-07`) |
 | `revoke_invite {character}` | level 1 or 2 | an invitation exists (`NOT_INVITED`) | invitation deleted |
 | `accept {guild}` | invited Character | in no guild; invitation present and unexpired (`NOT_INVITED`); `GUILD_FULL`; state and deadline gates | joins at the lowest level; all its invitations deleted (≤ 50) |
 | `decline {guild}` | invited Character | an invitation exists (`NOT_INVITED`) | its invitation deleted |
@@ -151,7 +153,7 @@ expected guild `revision` (`STALE_REVISION` on mismatch).
 | `edit_ranks {names[3..20]}` | level 1 | names valid and pairwise distinct by `name_key` (`NAME_TAKEN`); revision | ranks replaced; members of a removed level move to the new lowest level |
 | `set_title {character, title}` | level 1 | target is a member; title ≤ 29 characters, CHAT-0 text rules (`NAME_INVALID`) | title set |
 | `set_message {text}` | level 1 or 2 | ≤ 255 characters, CHAT-0 text rules (`NAME_INVALID`); revision | message set |
-| `resign {successor}` | level 1 | successor is a level-2 member that is not junior (`NOT_ALLOWED`, `JUNIOR`) | levels 1 and 2 swap; leadership rows follow |
+| `resign {successor}` | level 1 | successor is a level-2 member that is not junior (`NOT_ALLOWED`, `JUNIOR`) and, once Premium is activated, `Current` (`NOT_PREMIUM`) | levels 1 and 2 swap; leadership rows follow |
 | `disband {confirm}` | level 1 | `confirm` equals the guild name (the GUILD-0 §3.2 confirmation, `NOT_ALLOWED` otherwise) | state `DISBANDING`; the disband job runs |
 | `deposit`, `withdraw`, `claim_disband_payout` | — | reserved for GUILD-BANK-1 | — |
 
@@ -250,7 +252,7 @@ under `CHAT0-RL-06`.
 | A late World job | it re-checks under the guild lock; the deadline gate keeps a due guild due |
 | Command replayed after an ambiguous result | the stored outcome by occurrence; another binding is `REJECTED` |
 | Premium not activated | Premium rules do not apply (G1 a); the Premium job writes nothing |
-| Premium activated, source or clock unavailable | `NotCurrent` (PREMIUM-ACTIVATION-0 §1.2): founding and moves into levels 1 and 2 are `NOT_PREMIUM`; the Premium job counts the deficit; ranks held are kept |
+| Premium activated, source or clock unavailable | `NotCurrent` (PREMIUM-ACTIVATION-0 §1.2): founding, `resign` and moves into levels 1 and 2 are `NOT_PREMIUM`; the Premium job does not count that Account as `Current` (the 5-Account threshold still decides); ranks held are kept |
 | Relay node cannot read membership | the guild line is dropped and counted; never delivered on stale data |
 | Badge resolution fails | `NONE` (§6.2) |
 | Public publisher down | Platform keeps its last snapshot; the next snapshot replaces it (PUBLIC-PROJ §2.1) |
@@ -270,7 +272,7 @@ GC-23 to GC-28, GUILD-CHAT-1 GC-29 to GC-31, the public publisher GC-32.
 | GC-05 | found with 30 letters or an invalid character | `NAME_INVALID` |
 | GC-06 | found while Premium not activated, then after activation without Premium, then after activation with the Premium source unavailable | `OK`, then `NOT_PREMIUM`, then `NOT_PREMIUM` |
 | GC-07 | invite by level 3 | `NOT_ALLOWED` |
-| GC-08 | the 501st invitation of a guild; the 51st row for one target | `INVITATION_LIMIT` |
+| GC-08 | the 501st invitation of a guild; the 51st row for one target; a target with 50 expired rows | `INVITATION_LIMIT`, `INVITATION_LIMIT`; the expired rows are deleted and the invite is `OK` |
 | GC-09 | accept of an expired invitation | `NOT_INVITED` |
 | GC-10 | accept that would make member 2,001 | `GUILD_FULL` |
 | GC-11 | accept deletes the Character's other invitations | none remain |
@@ -281,7 +283,7 @@ GC-23 to GC-28, GUILD-CHAT-1 GC-29 to GC-31, the public publisher GC-32.
 | GC-16 | the fourth vice after `formation_deadline` | `GUILD_DEADLINE_PASSED`; the next job pass disbands |
 | GC-17 | `ACTIVE` drops to 3 vices, then 14 d pass | `vice_deficit_since` set; the job disbands after `GUILD0-RL-04` |
 | GC-18 | edit_ranks with two names of one `name_key` | `NAME_TAKEN`, nothing written; removing a level moves its members to the lowest level |
-| GC-19 | resign to a level-3 member or a junior vice | `NOT_ALLOWED` or `JUNIOR`; to a valid vice, levels and leadership rows swap |
+| GC-19 | resign to a level-3 member, a junior vice, or (Premium activated) a `NotCurrent` vice | `NOT_ALLOWED`, `JUNIOR` or `NOT_PREMIUM`; to a valid vice, levels and leadership rows swap |
 | GC-20 | any command on a `DISBANDING` guild | `GUILD_DISBANDING` |
 | GC-21 | disband with 250 members; crash after the first step | `DISBANDED` after resumption, no member, invitation or leadership row left, name free |
 | GC-22 | any command with a stale session generation | nothing commits, no event |
