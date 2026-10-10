@@ -2682,6 +2682,19 @@ impl ChannelRuntimeV1 {
         }
     }
 
+    /// Kills a live creature in place, as a lethal hit would, for owner-turn spawn tests.
+    #[cfg(test)]
+    pub(crate) fn kill_creature_for_test(&mut self, actor: ExactActorRef) -> bool {
+        let Ok(index) = self.carrier.validate_ref(&self.continuity, actor.0) else {
+            return false;
+        };
+        let Slot::CreatureOccupied { health, .. } = &mut self.carrier.slots[index] else {
+            return false;
+        };
+        *health = 0;
+        true
+    }
+
     /// The live creature of each realized spawn point, in canonical point order.
     pub(crate) fn spawn_point_creatures(
         &self,
