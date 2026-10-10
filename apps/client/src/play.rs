@@ -81,6 +81,13 @@ enum Input {
     Attack(EntityRef),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BattleTargetSelection {
+    First,
+    Next,
+    Previous,
+}
+
 /// Most inputs held while the session task is busy; a later one is dropped.
 const MAX_QUEUED_INPUTS: usize = 16;
 
@@ -238,6 +245,59 @@ impl PlayView {
             Some(_) => {}
         }
         Ok(())
+    }
+
+    /// Select and attack an admitted, currently visible battle target. Cycling
+    /// follows the server projection order and the same attackability boundary
+    /// as pointer selection; players and object-only entities are not guessed to
+    /// be attackable by this client.
+    pub fn select_battle_target(
+        &mut self,
+        selection: BattleTargetSelection,
+    ) -> Result<bool, BatchError> {
+        let candidates = self
+            .entities
+            .iter()
+            .filter(|entity| {
+                entity.position.floor == self.floor
+                    && matches!(entity.kind, EntityKind::Creature | EntityKind::Npc)
+                    && self
+                        .scene
+                        .view()
+                        .contains(TileCoord::new(entity.position.x, entity.position.y))
+            })
+            .map(|entity| {
+                (
+                    entity.entity,
+                    TileCoord::new(entity.position.x, entity.position.y),
+                )
+            })
+            .collect::<Vec<_>>();
+        if candidates.is_empty() {
+            return Ok(false);
+        }
+        let current = self
+            .scene
+            .target()
+            .and_then(|target| target.entity)
+            .and_then(|target| {
+                candidates
+                    .iter()
+                    .position(|(candidate, _)| *candidate == target)
+            });
+        let index = match selection {
+            BattleTargetSelection::First => 0,
+            BattleTargetSelection::Next => {
+                current.map_or(0, |index| (index + 1) % candidates.len())
+            }
+            BattleTargetSelection::Previous => current.map_or(candidates.len() - 1, |index| {
+                index.checked_sub(1).unwrap_or(candidates.len() - 1)
+            }),
+        };
+        let (entity, tile) = candidates[index];
+        self.scene.select_tile(tile)?;
+        self.queue(Input::Attack(entity));
+        Ok(true)
     }
 
     /// A spell hotkey: casts the 1-based spell-book entry. Entries past the bar are ignored and
@@ -934,6 +994,26 @@ mod tests {
         )
     }
 
+    fn actor(kind: EntityKind, ordinal: u8, x: i32) -> WorldSpatialEntity {
+        WorldSpatialEntity {
+            kind,
+            entity: EntityRef {
+                identity: [ordinal; 16],
+                generation: u64::from(ordinal),
+            },
+            position: ActorPosition {
+                x,
+                y: 200,
+                floor: 0,
+            },
+            detail: oteryn_session::EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent: 100,
+            },
+        }
+    }
+
     #[test]
     fn snapshot_builds_a_view_centred_on_the_own_position_with_overlay_markers()
     -> Result<(), BatchError> {
@@ -963,6 +1043,56 @@ mod tests {
         let mut other = self::view()?;
         other.click(TileCoord::new(102, 199))?;
         assert_eq!(other.next_step(), None);
+        Ok(())
+    }
+
+    #[test]
+    fn battle_target_hotkeys_cycle_only_visible_attackable_entities() -> Result<(), BatchError> {
+        let player = actor(EntityKind::Player, 1, 98);
+        let first = actor(EntityKind::Creature, 2, 99);
+        let second = actor(EntityKind::Creature, 3, 101);
+        let npc = actor(EntityKind::Npc, 4, 102);
+        let hidden_floor = WorldSpatialEntity {
+            position: ActorPosition {
+                floor: 1,
+                ..first.position
+            },
+            ..actor(EntityKind::Creature, 5, 103)
+        };
+        let mut selected_view =
+            view()?.with_entities(vec![player, first, second, npc, hidden_floor])?;
+
+        assert!(selected_view.select_battle_target(BattleTargetSelection::First)?);
+        assert_eq!(
+            selected_view
+                .scene()
+                .target()
+                .and_then(|target| target.entity),
+            Some(first.entity)
+        );
+        assert!(selected_view.select_battle_target(BattleTargetSelection::Next)?);
+        assert_eq!(
+            selected_view
+                .scene()
+                .target()
+                .and_then(|target| target.entity),
+            Some(second.entity)
+        );
+        assert!(selected_view.select_battle_target(BattleTargetSelection::Previous)?);
+        assert_eq!(
+            selected_view
+                .scene()
+                .target()
+                .and_then(|target| target.entity),
+            Some(first.entity)
+        );
+
+        let mut previous = view()?.with_entities(vec![player, first, second, npc, hidden_floor])?;
+        assert!(previous.select_battle_target(BattleTargetSelection::Previous)?);
+        assert_eq!(
+            previous.scene().target().and_then(|target| target.entity),
+            Some(npc.entity)
+        );
         Ok(())
     }
 

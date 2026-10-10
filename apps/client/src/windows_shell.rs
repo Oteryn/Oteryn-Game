@@ -1,6 +1,6 @@
 use oteryn_client::hotkeys::ResolvedHotkey;
 use oteryn_client::input::{MouseActions, StepDir, click_tile};
-use oteryn_client::play::{PlayLink, PlayView};
+use oteryn_client::play::{BattleTargetSelection, PlayLink, PlayView};
 use oteryn_client::scene::Scene;
 use oteryn_client::spell::SpellHotkeys;
 use oteryn_client::world::{START, World};
@@ -160,7 +160,8 @@ impl Application {
         } else {
             false
         };
-        let (hotkey_direction, hotkey_matched) = self.route_general_hotkeys(events, typing, modal);
+        let (hotkey_direction, hotkey_matched) =
+            self.route_general_hotkeys(event_loop, events, typing, modal);
         if self.hotkeys.set_text_active(typing || modal).is_err() {
             self.fail(event_loop, ShellError::InputInitialization);
             return;
@@ -257,6 +258,7 @@ impl Application {
 
     fn route_general_hotkeys(
         &mut self,
+        event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
         chat_on: bool,
         modal: bool,
@@ -271,6 +273,7 @@ impl Application {
         });
         let mut movement = None;
         let mut settings_changed = false;
+        let mut renderer_failed = false;
         for action in actions {
             let ResolvedHotkey::General(action) = action else {
                 continue;
@@ -295,6 +298,20 @@ impl Application {
                 "movement.east" => movement = Some(StepDir::East),
                 "movement.south" => movement = Some(StepDir::South),
                 "movement.west" => movement = Some(StepDir::West),
+                "battle.first" | "battle.next" | "battle.previous" => {
+                    let selection = match action.as_str() {
+                        "battle.first" => BattleTargetSelection::First,
+                        "battle.next" => BattleTargetSelection::Next,
+                        _ => BattleTargetSelection::Previous,
+                    };
+                    if self
+                        .play
+                        .as_mut()
+                        .is_some_and(|play| play.view.select_battle_target(selection).is_err())
+                    {
+                        renderer_failed = true;
+                    }
+                }
                 "client.fullscreen" => {
                     self.preferences.fullscreen = !self.preferences.fullscreen;
                     settings_changed = true;
@@ -354,6 +371,10 @@ impl Application {
                 }
                 _ => {}
             }
+        }
+        if renderer_failed {
+            self.fail(event_loop, ShellError::RendererRender);
+            return (movement, matched);
         }
         if settings_changed {
             if let Some(window) = &self.window {

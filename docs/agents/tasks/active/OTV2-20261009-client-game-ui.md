@@ -145,3 +145,12 @@ General Hotkeys. Next Hotkey Preset cycles only through existing profiles,
 retains the outgoing profile's live action bars, activates the incoming action
 bars and persists the same validated settings object. A single-profile client
 remains unchanged rather than inventing another profile.
+
+## Continuation checkpoint — 2026-10-10 battle target hotkeys
+
+Attack First/Next/Previous Target now selects from the admitted visible-entity
+projection and queues the existing typed attack command. Cycling follows the
+server projection order, wraps deterministically and shares pointer targeting's
+current Creature/NPC boundary; players, objects, off-floor and off-view entities
+are not guessed to be attackable. Exact reference battle-list sorting/filtering
+remains a separate acceptance gap.
