@@ -14,12 +14,12 @@ class UseTriggerCandidatesTest(unittest.TestCase):
         self.assertEqual(
             {
                 candidates.CLASS_EXACT: 4,
-                candidates.CLASS_NO_MATCH: 40,
-                candidates.CLASS_TARGET_INCOMPLETE: 387,
+                candidates.CLASS_NO_MATCH: 42,
+                candidates.CLASS_TARGET_INCOMPLETE: 412,
             },
             self.packet["summary"]["classification_counts"],
         )
-        self.assertEqual(431, self.packet["summary"]["use_stages"])
+        self.assertEqual(458, self.packet["summary"]["use_stages"])
         self.assertEqual(0, self.packet["native_dispatch_bindings"])
         self.assertFalse(self.packet["runtime_admitted"])
 

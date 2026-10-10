@@ -41,13 +41,13 @@ expressions, display-name similarity or other donor numeric domains as identity 
 
 ## Result
 
-Current binding plan contains **431** use stages.
+Current binding plan contains **458** use stages.
 
 | Classification | Count |
 | --- | ---: |
 | `ONE_SAME_QUEST_LITERAL_ID_USE_TRIGGER_COVERS_ALL_TARGETS` | **4** |
-| `NO_SAME_QUEST_LITERAL_ID_USE_TRIGGER_MATCH` | **40** |
-| `TARGET_IDENTITY_INCOMPLETE` | **387** |
+| `NO_SAME_QUEST_LITERAL_ID_USE_TRIGGER_MATCH` | **42** |
+| `TARGET_IDENTITY_INCOMPLETE` | **412** |
 
 The four exact source-trigger candidates are:
 

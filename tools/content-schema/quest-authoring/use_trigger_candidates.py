@@ -197,8 +197,8 @@ def build(root: Path):
     records.sort(key=lambda row: (row["quest"], row["stage_key"]))
     counts = collections.Counter(row["classification"] for row in records)
     expected = {
-        CLASS_TARGET_INCOMPLETE: 387,
-        CLASS_NO_MATCH: 40,
+        CLASS_TARGET_INCOMPLETE: 412,
+        CLASS_NO_MATCH: 42,
         CLASS_EXACT: 4,
     }
     if dict(counts) != expected:
