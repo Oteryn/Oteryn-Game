@@ -230,6 +230,7 @@ fn bundle_bytes(
         skipped_provisional_keys: Vec::new(),
         dropped_teleports: Vec::new(),
         spawns: Default::default(),
+        npcs: Default::default(),
     };
     let bytes = bundle::write(&manifest, &sectors, &Default::default()).expect("written bundle");
     let digest = bundle::read(&bytes).expect("read bundle").digest;

@@ -305,9 +305,19 @@ fn reader_rejects_corrupt_and_truncated_bundles() -> TestResult {
     flipped[at] ^= 1;
     assert!(matches!(bundle::read(&flipped), Err(Error::Format(_))));
     assert!(bundle::read(&bytes[..bytes.len() - 1]).is_err());
-    // A frame changed and the digest recomputed still fails its sector checksum.
+    // A frame changed and the digest recomputed still fails its checksum: the last frame is the
+    // NPC frame.
     let flipped = reseal(flipped);
     let error = bundle::read(&flipped)
+        .err()
+        .ok_or("corrupt frame accepted")?;
+    assert_eq!(error, Error::Format("NPC checksum".into()));
+    // The same for the spawn frame, which the NPC frame follows.
+    let mut spawn = bytes.clone();
+    let table = 16 + word(&bytes, 8);
+    let spawn_frame = word(&bytes, table + 50 * word(&bytes, 12));
+    spawn[spawn_frame] ^= 1;
+    let error = bundle::read(&reseal(spawn))
         .err()
         .ok_or("corrupt frame accepted")?;
     assert_eq!(error, Error::Format("spawn checksum".into()));
@@ -441,7 +451,7 @@ fn reader_matches_the_python_b3_codec() -> TestResult {
 fn reseal(mut bytes: Vec<u8>) -> Vec<u8> {
     let body = bytes.len() - 32;
     let mut hash = <sha2::Sha256 as sha2::Digest>::new();
-    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v3\0");
+    sha2::Digest::update(&mut hash, b"OTERYN_WORLD_BUNDLE/v4\0");
     sha2::Digest::update(&mut hash, &bytes[..body]);
     let digest: [u8; 32] = sha2::Digest::finalize(hash).into();
     bytes[body..].copy_from_slice(&digest);
@@ -578,8 +588,9 @@ fn reduced_maxima_accept_the_boundary_and_refuse_one_more() -> TestResult {
         .map(|i| word(&bytes, table + 50 * i + 14))
         .collect();
     let spawn_raw = word(&bytes, table + 50 * count + 8);
+    let npc_raw = word(&bytes, table + 50 * count + 44 + 8);
     let (total, largest) = (
-        raws.iter().sum::<usize>() + spawn_raw,
+        raws.iter().sum::<usize>() + spawn_raw + npc_raw,
         *raws.iter().max().ok_or("rows")?,
     );
     assert!(count >= 2);

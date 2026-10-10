@@ -24,7 +24,7 @@ use oteryn_world_bundle_compiler::bundle::{
     TerrainKind,
 };
 use oteryn_world_bundle_compiler::compile::{
-    self, Input, SpawnReport, equivalence, parity, placed_palette,
+    self, HoldReason, Input, NpcReport, SpawnReport, equivalence, parity, placed_palette,
 };
 use oteryn_world_bundle_compiler::project::{self, Families};
 use oteryn_world_bundle_compiler::resolve::Registry;
@@ -57,6 +57,89 @@ fn read(path: &Path) -> Result<Vec<u8>, Error> {
 
 fn json(bytes: &[u8], what: &str) -> Result<Value, Error> {
     serde_json::from_slice(bytes).map_err(|e| Error::Format(format!("{what}: {e}")))
+}
+
+/// A family index and its shards in index order.
+type Indexed = (Value, Vec<Vec<u8>>);
+
+/// The `OTERYN_FAMILY_INDEX/v1` index of `directory` (relative to `root`) and its shards in
+/// index order; `None` without an index or for another schema (a tree directory marker).
+fn indexed(root: &Path, directory: &str) -> Result<Option<Indexed>, Error> {
+    let path = root.join(directory).join("index.json");
+    if !path.is_file() {
+        return Ok(None);
+    }
+    let index = json(&read(&path)?, directory)?;
+    if index["schema"] != "OTERYN_FAMILY_INDEX/v1" {
+        return Ok(None);
+    }
+    let shards = index["shards"]
+        .as_array()
+        .ok_or_else(|| Error::Format(format!("{directory} index has no shards")))?
+        .iter()
+        .map(|shard| match shard.as_str() {
+            Some(shard) if shard.starts_with(directory) => read(&root.join(shard)),
+            _ => Err(Error::Format(format!(
+                "{directory} shard is not one of its paths"
+            ))),
+        })
+        .collect::<Result<_, _>>()?;
+    Ok(Some((index, shards)))
+}
+
+/// The NPC, Dialogue and Service records, the travel routes, the `Npc.Placement` family with
+/// its held list (NPC-PLACE-1 §4) and the catalogue digest (§3.1).
+fn add_npc_families(root: &Path, families: &mut Families) -> Result<(), Error> {
+    let shards_of = |directory: &str| {
+        indexed(root, directory).map(|found| found.map(|(_, shards)| shards).unwrap_or_default())
+    };
+    for shard in shards_of("content/npcs/definitions/")? {
+        families.add_npcs(&shard)?;
+    }
+    for shard in shards_of("content/dialogues/definitions/")? {
+        families.add_dialogues(&shard)?;
+    }
+    let services = root.join("content/services");
+    let io = |e: std::io::Error| Error::Format(format!("content/services: {e}"));
+    let mut kinds: Vec<String> = fs::read_dir(&services)
+        .map_err(io)?
+        .map(|entry| entry.map(|entry| entry.file_name().to_string_lossy().into_owned()))
+        .collect::<Result<_, _>>()
+        .map_err(io)?;
+    kinds.sort();
+    for kind in kinds {
+        for shard in shards_of(&format!("content/services/{kind}/"))? {
+            families.add_services(&shard)?;
+        }
+    }
+    if let Some((index, shards)) = indexed(root, "content/world/npc-placements/")? {
+        for shard in shards {
+            families.add_npc_placements(&shard)?;
+        }
+        let held = &index["held"];
+        let path = held["path"]
+            .as_str()
+            .filter(|path| path.starts_with("content/world/npc-placements/"))
+            .ok_or_else(|| Error::Format("NPC placements index has no held path".into()))?;
+        let bytes = read(&root.join(path))?;
+        if held["sha256"] != hex(&Sha256::digest(&bytes)) {
+            return Err(Error::Format(
+                "NPC held list sha256 differs from its index".into(),
+            ));
+        }
+        let before = families.npc_source_held.len();
+        families.add_npc_source_held(&bytes)?;
+        if held["count"] != (families.npc_source_held.len() - before) {
+            return Err(Error::Format(
+                "NPC held list count differs from its index".into(),
+            ));
+        }
+    }
+    families.catalogue_sha256 = Some(
+        oteryn_world_bundle_compiler::npc::catalogue_sha256(&root.join("content"))
+            .map_err(|e| Error::Format(format!("NPC catalogue: {e}")))?,
+    );
+    Ok(())
 }
 
 /// The World Project of `root`: placements index, B3 regions and the checked families.
@@ -94,6 +177,7 @@ fn project(root: &Path) -> Result<Project, Error> {
     for shard in shards(&root.join("content/world/spawns"), "spawns-")? {
         families.add_spawns(&shard)?;
     }
+    add_npc_families(root, &mut families)?;
     Ok(Project {
         index,
         regions,
@@ -107,6 +191,9 @@ fn registry(root: &Path, project: &Project) -> Result<(Registry, Vec<String>), E
     for shard in shards(&root.join("content/items/definitions"), "items-")? {
         registry.add_items(&shard)?;
     }
+    registry.add_item_profiles(&read(
+        &root.join("content/items/definitions/spell-native-profiles.json"),
+    )?)?;
     for (family, directory, prefix) in [
         ("Terrain", "content/world/terrain", "terrain-"),
         ("WorldObject", "content/world/objects", "objects-"),
@@ -154,6 +241,22 @@ fn spawn_report(report: &SpawnReport) -> Result<Value, Error> {
     Ok(value)
 }
 
+/// The NPC report as JSON (NPC-PLACE-1 §5, §6): totals, the count per reason of held placements
+/// and routes, and every one held.
+fn npc_report(report: &NpcReport) -> Result<Value, Error> {
+    let mut value = serde_json::to_value(report).map_err(|e| Error::Format(e.to_string()))?;
+    let by_reason = |reasons: &mut dyn Iterator<Item = HoldReason>| {
+        let mut counts = std::collections::BTreeMap::<String, usize>::new();
+        for reason in reasons {
+            *counts.entry(format!("{reason:?}")).or_default() += 1;
+        }
+        json!(counts)
+    };
+    value["held_by_reason"] = by_reason(&mut report.held.iter().map(|h| h.reason));
+    value["routes_held_by_reason"] = by_reason(&mut report.routes_held.iter().map(|r| r.reason));
+    Ok(value)
+}
+
 fn run_parity(root: &Path) -> Result<Value, Error> {
     let project = project(root)?;
     let mut report = serde_json::to_value(parity(&project.regions, &project.families)?)
@@ -178,7 +281,14 @@ fn run_parity(root: &Path) -> Result<Value, Error> {
         draft_areas: Vec::new(),
         families: &project.families,
     };
-    report["spawns"] = spawn_report(&compile::realize_spawns(&input, &registry)?.1)?;
+    let (spawns, spawn_counts) = compile::realize_spawns(&input, &registry)?;
+    report["spawns"] = spawn_report(&spawn_counts)?;
+    report["npcs"] = npc_report(&compile::realize_npcs(&input, &registry, &spawns)?.1)?;
+    let mut source_held = std::collections::BTreeMap::<&str, usize>::new();
+    for (_, reason) in &project.families.npc_source_held {
+        *source_held.entry(reason.as_str()).or_default() += 1;
+    }
+    report["npcs"]["source_held"] = json!(source_held);
     Ok(report)
 }
 
@@ -212,6 +322,7 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
         "skipped_provisional_entries": compiled.diagnostics.len(),
         "dropped_teleports": compiled.dropped_teleports.len(),
         "spawns": spawn_report(&compiled.spawns)?,
+        "npcs": npc_report(&compiled.npcs)?,
         "equivalence": proof,
     }))
 }
@@ -225,6 +336,9 @@ const INPUT_PATHS: &[&str] = &[
     "content/houses/",
     "content/creatures/definitions/",
     "content/items/definitions/",
+    "content/npcs/definitions/",
+    "content/dialogues/definitions/",
+    "content/services/",
     "tools/world-bundle-compiler/",
     "crates/world-bundle/",
     "Cargo.toml",

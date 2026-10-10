@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-10-06T00:00:00+00:00",
+  "updated_at": "2026-10-08T00:00:00+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -7529,6 +7529,98 @@
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "Decoded entries of one bundle, container contents included",
       "unit": "entries"
+    },
+    {
+      "allocation_impact": "The NPC count and each NPC's placement count are checked against the running total and against the bytes left before any list is reserved; the compiler applies the same check before it writes.",
+      "boundary_tests": [
+        "a table of exactly 2,048 placements validates and round-trips",
+        "2,049 placements are a Limit in the writer's check and in the reader"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 2048,
+        "minimum": 2048
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 2048,
+      "id": "NPCPLACE1-RL-01",
+      "notes": "NPC-PLACE-1b; decision NPC-PLACE-1 \u00a73.4; format document \u00a79 and \u00a714. Equal to NPCBEH0-RL-01.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "NPC placements of one bundle, over all NPCs; the NPC count is bounded by it",
+      "unit": "placements"
+    },
+    {
+      "allocation_impact": "Checked before the NPC's placement list is reserved.",
+      "boundary_tests": [
+        "an NPC with exactly 16 placements validates and round-trips",
+        "17 placements of one NPC are a Limit in the writer's check and in the reader"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 16,
+        "minimum": 16
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 16,
+      "id": "NPCPLACE1-RL-02",
+      "notes": "NPC-PLACE-1b; decision NPC-PLACE-1 \u00a73.4; format document \u00a79 and \u00a714.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Placements of one NPC in one bundle",
+      "unit": "placements"
+    },
+    {
+      "allocation_impact": "Checked from the NPC row before the frame is decompressed, with the ratio cap (at most 1,024 times the frame) and the running raw total (MAP01-BUNDLE-TOTAL-RAW-BYTES).",
+      "boundary_tests": [
+        "an NPC row declaring exactly 1 MiB passes the size check",
+        "an NPC row declaring 1 MiB plus one byte is a Limit before decompression"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 1048576,
+        "minimum": 1048576
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 1048576,
+      "id": "NPCPLACE1-RL-03",
+      "notes": "NPC-PLACE-1b; decision NPC-PLACE-1 \u00a73.4; format document \u00a79 and \u00a714.",
+      "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
+      "resource": "Raw (decompressed) NPC payload of one bundle",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Bounded at bundle read by NPCPLACE1-RL-01, before any actor exists; the actor runtime (NPC-ACTOR-1) creates at most one actor per placement.",
+      "boundary_tests": [
+        "a bundle of exactly 2,048 placements is read",
+        "a bundle of 2,049 placements is refused at read, so no channel holds more than 2,048 NPC actors"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "maximum": 2048,
+        "minimum": 2048
+      },
+      "consumers": [
+        "world bundle compiler",
+        "game server World runtime (MAP-LOAD-1)"
+      ],
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 2048,
+      "id": "NPCBEH0-RL-01",
+      "notes": "NPC-BEHAVIOUR-0 \u00a73.1; decision NPC-PLACE-1 \u00a73.4. Registered by NPC-PLACE-1b.",
+      "owner_contract": "OTERYN_GAME_NPC_BEHAVIOUR0_NPC_PRESENCE_WALKING_VOICES_AND_FOCUS_DECISION_2026-10-01.md",
+      "resource": "NPC actors of one channel; every bundle placement is one actor on every channel",
+      "unit": "actors"
     },
     {
       "id": "LCA-CHARACTERS",

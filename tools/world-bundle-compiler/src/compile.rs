@@ -11,6 +11,7 @@ use crate::b3::{self, Region};
 use crate::bundle::{
     self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
 };
+use crate::npc;
 use crate::project::{CreatureFacts, Families, LegacyPosition};
 use crate::sector::{Item, Tile};
 use crate::spawn;
@@ -35,6 +36,14 @@ pub trait KeyResolver {
     /// Whether the key is a floor-change object (stairs, ramps, holes): a catalogue
     /// `floor_change` that is KNOWN and not `none`. UNKNOWN is not a floor change.
     fn floor_change(&self, key: &str) -> bool;
+
+    /// Whether a resolved Item key blocks movement in the game server's bundle collision index
+    /// (`map/boot.rs`): an Item without a native profile saying `blocks_movement` false does.
+    /// Read only for the NPC and travel cell checks (format v4); a resolver without profiles
+    /// blocks every Item.
+    fn solid(&self, _key: &str) -> bool {
+        true
+    }
 }
 
 pub struct Input<'a> {
@@ -65,6 +74,7 @@ pub struct Compiled {
     /// Zero-destination teleport attributes dropped (ADR-0021 §4.5), at native positions.
     pub dropped_teleports: Vec<(u16, u16, i8)>,
     pub spawns: SpawnReport,
+    pub npcs: NpcReport,
 }
 
 /// How a map `teleport` attribute compares with the Transition.Teleport family (ADR-0021 §4.5,
@@ -239,6 +249,12 @@ struct CellFacts {
     floor_change: bool,
     teleport: bool,
     unclassified: bool,
+    /// A top-level entry is a `wall` Terrain (format v4, NPC-PLACE-1 §5 item 2).
+    wall: bool,
+    /// A top-level entry is an Item the game server's collision index calls solid.
+    block_solid: bool,
+    /// The tile carries a nonzero house id.
+    house: bool,
 }
 
 /// OTBM `TILESTATE_PROTECTIONZONE`.
@@ -260,7 +276,11 @@ fn cell_facts(
         .palette
         .iter()
         .map(|key| match resolver.resolve(key) {
-            Resolution::Resolved(..) => Some((resolver.terrain(key), resolver.floor_change(key))),
+            Resolution::Resolved(family, _) => Some((
+                resolver.terrain(key),
+                resolver.floor_change(key),
+                family == Family::Item && resolver.solid(key),
+            )),
             _ => None,
         })
         .collect();
@@ -275,21 +295,27 @@ fn cell_facts(
                 tile: true,
                 pz: tile.flags & FLAG_PROTECTION_ZONE != 0,
                 teleport: input.families.teleports.contains_key(&at),
+                house: tile.house != 0,
                 ..CellFacts::default()
             };
             for item in &tile.items {
                 if matches!(item.attrs.teleport, Some(to) if to != (0, 0, 0)) {
                     cell.teleport = true;
                 }
-                let Some(Some((terrain, change))) = kinds.get(item.palette as usize) else {
+                let Some(Some((terrain, change, solid))) = kinds.get(item.palette as usize) else {
                     continue;
                 };
                 cell.floor_change |= *change;
+                let top = item.depth == 0;
+                cell.block_solid |= top && *solid;
                 match terrain {
                     Err(_) => cell.unclassified = true,
                     Ok(Some(terrain)) if terrain.kind == bundle::TerrainKind::Ground => {
                         let walkable = terrain.walkable == Some(true);
                         cell.ground = Some(cell.ground.unwrap_or(false) | walkable);
+                    }
+                    Ok(Some(terrain)) if terrain.kind == bundle::TerrainKind::Wall => {
+                        cell.wall |= top;
                     }
                     Ok(_) => {}
                 }
@@ -428,6 +454,288 @@ pub fn realize_spawns(
     }
     report.realized_sources = table.sources.len();
     spawn::validate(&table, &input.world)?;
+    Ok((table, report))
+}
+
+/// Why an NPC placement (NPC-PLACE-1 §5) or a travel destination (§6) is held. A placement takes
+/// the reasons through `SharedCell`, a destination the cell reasons, `SpawnPoint`,
+/// `NpcPlacement` and `HouseTile`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize)]
+pub enum HoldReason {
+    /// No NPC definition has the key.
+    UnboundNpc,
+    /// The NPC's Dialogue reference names no Dialogue definition.
+    UnresolvedDialogue,
+    /// One of the NPC's Service references names no Service definition.
+    UnresolvedService,
+    NoTile,
+    UnclassifiedTerrain,
+    NoGround,
+    NotWalkable,
+    FloorChange,
+    Teleport,
+    /// A top-level `wall` Terrain entry.
+    Wall,
+    /// A top-level Item entry the game server's collision index calls solid.
+    BlockSolid,
+    /// A realized creature spawn point is on the cell.
+    SpawnPoint,
+    /// Two placements that pass the reasons above stand on one cell.
+    SharedCell,
+    /// A written NPC placement is on the cell.
+    NpcPlacement,
+    /// The tile carries a nonzero house id.
+    HouseTile,
+}
+
+/// One placement left out, at its project-frame cell.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct HeldPlacement {
+    pub key: String,
+    pub npc: String,
+    pub cell: LegacyPosition,
+    pub reason: HoldReason,
+}
+
+/// One travel route whose destination is held.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct HeldRoute {
+    pub service: String,
+    pub route: String,
+    pub destination: LegacyPosition,
+    pub reason: HoldReason,
+}
+
+/// The NPC part of the parity and compile output (NPC-PLACE-1 §5, §6).
+#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
+pub struct NpcReport {
+    pub placements: usize,
+    pub written: usize,
+    /// In family order.
+    pub held: Vec<HeldPlacement>,
+    pub routes: usize,
+    /// In family order.
+    pub routes_held: Vec<HeldRoute>,
+}
+
+impl NpcReport {
+    /// The manifest member `npcs` of `table`, this report and `families`' catalogue.
+    pub fn counts(&self, table: &npc::Table, families: &Families) -> bundle::NpcCounts {
+        let held: BTreeSet<&str> = self.held.iter().map(|h| h.key.as_str()).collect();
+        let routes: BTreeSet<[String; 2]> = self
+            .routes_held
+            .iter()
+            .map(|r| [r.service.clone(), r.route.clone()])
+            .collect();
+        let mut counts = bundle::NpcCounts {
+            npcs: table.npcs.len() as u32,
+            placements: table.placement_count() as u32,
+            held: held.into_iter().map(str::to_owned).collect(),
+            routes_held: routes.into_iter().collect(),
+            ..bundle::NpcCounts::default()
+        };
+        if let Some(digest) = &families.catalogue_sha256 {
+            counts.catalogue_sha256.clone_from(digest);
+        }
+        counts
+    }
+}
+
+/// The cell reasons of NPC-PLACE-1 §5 item 2, in order.
+fn cell_reason(cell: &CellFacts) -> Option<HoldReason> {
+    if !cell.tile {
+        Some(HoldReason::NoTile)
+    } else if cell.unclassified {
+        Some(HoldReason::UnclassifiedTerrain)
+    } else if cell.ground.is_none() {
+        Some(HoldReason::NoGround)
+    } else if cell.ground == Some(false) {
+        Some(HoldReason::NotWalkable)
+    } else if cell.floor_change {
+        Some(HoldReason::FloorChange)
+    } else if cell.teleport {
+        Some(HoldReason::Teleport)
+    } else if cell.wall {
+        Some(HoldReason::Wall)
+    } else if cell.block_solid {
+        Some(HoldReason::BlockSolid)
+    } else {
+        None
+    }
+}
+
+/// The admission rule of the game server's `NpcServiceModel`: the reason it holds `npc`, if any.
+fn admission(families: &Families, npc: &str) -> Option<HoldReason> {
+    let Some(facts) = families.npcs.get(npc) else {
+        return Some(HoldReason::UnboundNpc);
+    };
+    if facts
+        .dialogue
+        .as_ref()
+        .is_some_and(|dialogue| !families.dialogues.contains(dialogue))
+    {
+        Some(HoldReason::UnresolvedDialogue)
+    } else if facts
+        .services
+        .iter()
+        .any(|service| !families.services.contains(service))
+    {
+        Some(HoldReason::UnresolvedService)
+    } else {
+        None
+    }
+}
+
+/// The NPC keys the game server's `NpcServiceModel` admits, ascending.
+pub fn admitted_npcs(families: &Families) -> Vec<&str> {
+    families
+        .npcs
+        .keys()
+        .filter(|key| admission(families, key).is_none())
+        .map(String::as_str)
+        .collect()
+}
+
+fn within(world: &Extent, (x, y, z): LegacyPosition, what: &str) -> Result<i8, Error> {
+    let floor = native_floor(z)?;
+    if world.contains(x, y, floor) {
+        Ok(floor)
+    } else {
+        Err(Error::Bounds(format!(
+            "{what} at ({x}, {y}, {z}) is outside the World"
+        )))
+    }
+}
+
+/// Realizes the `Npc.Placement` family and classifies the travel destinations against the cells
+/// they stand on and the realized `spawns` (NPC-PLACE-1 §5, §6): the NPC table the bundle holds
+/// and the report of every placement and route held. A placement or destination outside the
+/// World fails; a held one does not, so the caller decides what the build class allows.
+pub fn realize_npcs(
+    input: &Input<'_>,
+    resolver: &dyn KeyResolver,
+    spawns: &spawn::Table,
+) -> Result<(npc::Table, NpcReport), Error> {
+    let families = input.families;
+    let mut keys = BTreeSet::new();
+    let mut floors = Vec::with_capacity(families.npc_placements.len());
+    for placement in &families.npc_placements {
+        if !keys.insert(placement.key.as_str()) {
+            return Err(Error::Format(format!(
+                "NPC placement key {} given twice",
+                placement.key
+            )));
+        }
+        floors.push(within(&input.world, placement.cell, "NPC placement")?);
+    }
+    for route in &families.routes {
+        within(&input.world, route.destination, "travel destination")?;
+    }
+    let wanted: BTreeSet<LegacyPosition> = families
+        .npc_placements
+        .iter()
+        .map(|p| p.cell)
+        .chain(families.routes.iter().map(|r| r.destination))
+        .collect();
+    let facts = cell_facts(input, resolver, &wanted)?;
+    let spawn_cells: BTreeSet<LegacyPosition> = spawns
+        .sources
+        .iter()
+        .flat_map(|source| {
+            let z = source.floor.unsigned_abs();
+            source.points.iter().map(move |p| (p.x, p.y, z))
+        })
+        .collect();
+    let mut report = NpcReport {
+        placements: families.npc_placements.len(),
+        routes: families.routes.len(),
+        ..NpcReport::default()
+    };
+    // Items 1-3 first; the placements that pass, per cell.
+    let mut reasons: Vec<Option<HoldReason>> = families
+        .npc_placements
+        .iter()
+        .map(|placement| {
+            admission(families, &placement.npc)
+                .or_else(|| cell_reason(&facts.get(&placement.cell).copied().unwrap_or_default()))
+                .or_else(|| {
+                    spawn_cells
+                        .contains(&placement.cell)
+                        .then_some(HoldReason::SpawnPoint)
+                })
+        })
+        .collect();
+    let mut passing: BTreeMap<LegacyPosition, usize> = BTreeMap::new();
+    for (placement, reason) in families.npc_placements.iter().zip(&reasons) {
+        if reason.is_none() {
+            *passing.entry(placement.cell).or_default() += 1;
+        }
+    }
+    for (placement, reason) in families.npc_placements.iter().zip(&mut reasons) {
+        if reason.is_none() && passing[&placement.cell] > 1 {
+            *reason = Some(HoldReason::SharedCell);
+        }
+    }
+    let mut written: BTreeMap<&str, Vec<npc::Placement>> = BTreeMap::new();
+    let mut npc_cells = BTreeSet::new();
+    for ((placement, reason), floor) in families.npc_placements.iter().zip(reasons).zip(floors) {
+        match reason {
+            Some(reason) => report.held.push(HeldPlacement {
+                key: placement.key.clone(),
+                npc: placement.npc.clone(),
+                cell: placement.cell,
+                reason,
+            }),
+            None => {
+                npc_cells.insert(placement.cell);
+                written
+                    .entry(&placement.npc)
+                    .or_default()
+                    .push(npc::Placement {
+                        floor,
+                        x: placement.cell.0,
+                        y: placement.cell.1,
+                        direction: placement.direction,
+                    });
+            }
+        }
+    }
+    let table = npc::Table {
+        npcs: written
+            .into_iter()
+            .map(|(key, mut placements)| {
+                placements.sort_unstable_by_key(npc::Placement::order);
+                npc::Npc {
+                    key: key.to_owned(),
+                    placements,
+                }
+            })
+            .collect(),
+    };
+    report.written = table.placement_count();
+    for route in &families.routes {
+        let cell = facts.get(&route.destination).copied().unwrap_or_default();
+        let reason = cell_reason(&cell).or_else(|| {
+            if spawn_cells.contains(&route.destination) {
+                Some(HoldReason::SpawnPoint)
+            } else if npc_cells.contains(&route.destination) {
+                Some(HoldReason::NpcPlacement)
+            } else if cell.house {
+                Some(HoldReason::HouseTile)
+            } else {
+                None
+            }
+        });
+        if let Some(reason) = reason {
+            report.routes_held.push(HeldRoute {
+                service: route.service.clone(),
+                route: route.route.clone(),
+                destination: route.destination,
+                reason,
+            });
+        }
+    }
+    npc::validate(&table, &input.world)?;
     Ok((table, report))
 }
 
@@ -624,6 +932,21 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
         })
         .collect();
     let (spawns, spawn_report) = realize_spawns(input, resolver)?;
+    let (npcs, npc_report) = realize_npcs(input, resolver, &spawns)?;
+    if input.build_class == BuildClass::Production {
+        if let Some(held) = npc_report.held.first() {
+            return Err(Error::Family(format!(
+                "production build holds NPC placement {} ({:?})",
+                held.key, held.reason
+            )));
+        }
+        if let Some(held) = npc_report.routes_held.first() {
+            return Err(Error::Family(format!(
+                "production build holds travel route {} of {} ({:?})",
+                held.route, held.service, held.reason
+            )));
+        }
+    }
     let skipped: BTreeSet<String> = state.diagnostics.iter().map(|d| d.key.clone()).collect();
     let manifest = Manifest {
         format: bundle::FORMAT.into(),
@@ -643,8 +966,9 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
             sources: spawns.sources.len() as u32,
             points: spawns.point_count() as u32,
         },
+        npcs: npc_report.counts(&npcs, input.families),
     };
-    let bytes = bundle::write(&manifest, &sectors, &spawns)?;
+    let bytes = bundle::write_with_npcs(&manifest, &sectors, &spawns, &npcs)?;
     let mut digest = [0; 32];
     digest.copy_from_slice(&bytes[bytes.len() - 32..]);
     Ok(Compiled {
@@ -653,6 +977,7 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
         diagnostics: state.diagnostics,
         dropped_teleports: state.dropped,
         spawns: spawn_report,
+        npcs: npc_report,
     })
 }
 
@@ -760,6 +1085,10 @@ pub fn equivalence(
     if read.spawns != spawns {
         return differs("spawn family is not the one derived from the input".into());
     }
+    let (npcs, npc_report) = realize_npcs(input, resolver, &spawns)?;
+    if read.npcs != npcs {
+        return differs("NPC family is not the one derived from the input".into());
+    }
     let palette = used
         .into_iter()
         .map(|at| match resolver.resolve(&palette[at as usize]) {
@@ -792,6 +1121,7 @@ pub fn equivalence(
             sources: spawns.sources.len() as u32,
             points: spawns.point_count() as u32,
         },
+        npcs: npc_report.counts(&npcs, families),
     };
     let got = &read.manifest;
     for (field, same) in [
@@ -822,6 +1152,7 @@ pub fn equivalence(
             expected.dropped_teleports == got.dropped_teleports,
         ),
         ("spawns", expected.spawns == got.spawns),
+        ("npcs", expected.npcs == got.npcs),
     ] {
         if !same {
             return differs(format!(

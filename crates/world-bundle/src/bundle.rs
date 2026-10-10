@@ -1,20 +1,21 @@
-//! `OTERYN_WORLD_BUNDLE/v3`: the byte layout and the fail-closed reader. The writer lives in
+//! `OTERYN_WORLD_BUNDLE/v4`: the byte layout and the fail-closed reader. The writer lives in
 //! the compiler and applies the same `validate_*` functions.
 //!
 //! Layout (little endian), specified in `docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md`:
 //! header `"OTWB" | version u16 | reserved u16 | manifest_length u32 | sector_count u32`,
-//! canonical JSON manifest, sector table (50-byte rows), spawn row (44 bytes), zstd frames (the
-//! sector frames, then the spawn frame), 32-byte digest trailer.
+//! canonical JSON manifest, sector table (50-byte rows), spawn row (44 bytes), NPC row (44
+//! bytes), zstd frames (the sector frames, then the spawn frame, then the NPC frame), 32-byte
+//! digest trailer.
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::Error;
 use crate::sector::{self, Budget, SECTOR_SIZE, Tile, TileLimits};
-use crate::spawn;
+use crate::{npc, spawn};
 
-pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v3";
-pub const VERSION: u16 = 3;
+pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v4";
+pub const VERSION: u16 = 4;
 pub const MAGIC: &[u8; 4] = b"OTWB";
 /// The node's runtime-compatibility version (`identity.min_runtime_version`), not the format
 /// `VERSION`. Raise it by one only in a PR whose content needs runtime behaviour a node built
@@ -29,6 +30,8 @@ pub const HEADER: usize = 16;
 pub const ENTRY: usize = 50;
 /// `offset u32 | compressed_length u32 | raw_length u32 | SHA-256 of the frame`.
 pub const SPAWN_ROW: usize = 44;
+/// The NPC row (format v4), in the spawn row's shape.
+pub const NPC_ROW: usize = 44;
 /// Digest trailer bytes.
 pub const DIGEST: usize = 32;
 
@@ -232,6 +235,9 @@ pub struct Manifest {
     pub dropped_teleports: Vec<u64>,
     /// The counts of the spawn family (format v3); the spawn frame must hold exactly these.
     pub spawns: SpawnCounts,
+    /// The NPC family (format v4): the counts the NPC frame must hold, what the compiler held
+    /// and the catalogue it classified against (decision NPC-PLACE-1 §3.1).
+    pub npcs: NpcCounts,
 }
 
 /// Spawn sources and points the bundle carries (format v3).
@@ -240,6 +246,34 @@ pub struct Manifest {
 pub struct SpawnCounts {
     pub sources: u32,
     pub points: u32,
+}
+
+/// The manifest member `npcs` (format v4).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NpcCounts {
+    pub npcs: u32,
+    pub placements: u32,
+    /// Record keys of the placements the compiler held; sorted and unique.
+    pub held: Vec<String>,
+    /// `[service_key, route_key]` of each travel route whose destination the compiler held;
+    /// sorted by Service key, then route key, as bytes, and unique.
+    pub routes_held: Vec<[String; 2]>,
+    /// [`npc::catalogue_sha256`] of the NPC, Dialogue and Service records classified.
+    pub catalogue_sha256: String,
+}
+
+/// No NPCs, nothing held, and the digest of an empty catalogue.
+impl Default for NpcCounts {
+    fn default() -> Self {
+        Self {
+            npcs: 0,
+            placements: 0,
+            held: Vec::new(),
+            routes_held: Vec::new(),
+            catalogue_sha256: npc::catalogue_digest::<&str, &[u8]>(&[]),
+        }
+    }
 }
 
 impl Manifest {
@@ -261,6 +295,7 @@ pub struct Bundle {
     pub manifest: Manifest,
     pub sectors: Vec<Sector>,
     pub spawns: spawn::Table,
+    pub npcs: npc::Table,
     pub digest: [u8; 32],
 }
 
@@ -393,6 +428,38 @@ pub fn validate_manifest(m: &Manifest) -> Result<(), Error> {
     Ok(())
 }
 
+/// The NPC family against the manifest member `npcs` and the World extent (format v4): the
+/// counts equal the frame, `held` and `routes_held` sorted and unique, `catalogue_sha256`
+/// lowercase hex, and both lists empty in a production bundle.
+pub fn validate_npcs(m: &Manifest, table: &npc::Table) -> Result<(), Error> {
+    npc::validate(table, &m.world)?;
+    let n = &m.npcs;
+    check(
+        n.npcs as usize == table.npcs.len() && n.placements as usize == table.placement_count(),
+        "manifest NPC counts differ from the NPC frame",
+    )?;
+    check(
+        n.held.windows(2).all(|p| p[0] < p[1]),
+        "held NPC placements are not sorted and unique",
+    )?;
+    check(
+        n.routes_held.windows(2).all(|p| p[0] < p[1]),
+        "held travel routes are not sorted and unique",
+    )?;
+    check(
+        npc::is_sha256_hex(&n.catalogue_sha256),
+        "catalogue_sha256 is not 64 lowercase hex digits",
+    )?;
+    if m.is_production() {
+        check(n.held.is_empty(), "production bundle holds NPC placements")?;
+        check(
+            n.routes_held.is_empty(),
+            "production bundle holds travel routes",
+        )?;
+    }
+    Ok(())
+}
+
 /// The spawn family against the manifest counts and the World extent (format v3).
 pub fn validate_spawns(m: &Manifest, table: &spawn::Table) -> Result<(), Error> {
     spawn::validate(table, &m.world)?;
@@ -496,6 +563,7 @@ pub fn read_with(data: &[u8], caps: ReadCaps) -> Result<Bundle, Error> {
         manifest: read.manifest,
         sectors,
         spawns: read.spawns,
+        npcs: read.npcs,
         digest: read.digest,
     })
 }
@@ -505,6 +573,7 @@ pub fn read_with(data: &[u8], caps: ReadCaps) -> Result<Bundle, Error> {
 pub struct Visited {
     pub manifest: Manifest,
     pub spawns: spawn::Table,
+    pub npcs: npc::Table,
     pub digest: [u8; 32],
 }
 
@@ -543,7 +612,7 @@ pub fn visit_budgeted(
     )?;
     check(
         &data[..4] == MAGIC && le16(data, 4) == VERSION,
-        "not an OTERYN_WORLD_BUNDLE/v3",
+        "not an OTERYN_WORLD_BUNDLE/v4",
     )?;
     check(le16(data, 6) == 0, "reserved header bytes are not zero")?;
     let (body, trailer) = data.split_at(data.len() - DIGEST);
@@ -554,7 +623,8 @@ pub fn visit_budgeted(
     limit(count <= caps.sectors, "too many sectors")?;
     let table = HEADER + manifest_length;
     let spawn_row = table + ENTRY * count;
-    let mut expected = spawn_row + SPAWN_ROW;
+    let npc_row = spawn_row + SPAWN_ROW;
+    let mut expected = npc_row + NPC_ROW;
     check(
         expected <= body.len(),
         "sector table runs past the payloads",
@@ -666,7 +736,38 @@ pub fn visit_budgeted(
     let spawns = spawn::decode(&raw, &manifest.world)?;
     validate_spawns(&manifest, &spawns)?;
     expected += length;
-    check(expected == body.len(), "bytes after the spawn frame")?;
+    let (offset, length, raw_length) = (
+        le32(data, npc_row),
+        le32(data, npc_row + 4),
+        le32(data, npc_row + 8),
+    );
+    check(
+        offset == expected && length > 0 && body.len() - offset == length,
+        "the NPC frame must follow the spawn frame and end at the digest",
+    )?;
+    limit(raw_length <= npc::MAX_RAW_BYTES, "NPC payload too large")?;
+    limit(
+        raw_length <= length.saturating_mul(MAX_SECTOR_RATIO),
+        "NPC ratio too high",
+    )?;
+    total_raw += raw_length;
+    limit(
+        total_raw <= caps.total_raw_bytes,
+        "bundle payload too large",
+    )?;
+    let frame = &data[offset..offset + length];
+    check(
+        Sha256::digest(frame).as_slice() == &data[npc_row + 12..npc_row + NPC_ROW],
+        "NPC checksum",
+    )?;
+    check(
+        canonical_frame(frame, raw_length),
+        "NPC is not one canonical zstd frame",
+    )?;
+    let raw = zstd::bulk::decompress(frame, raw_length).map_err(zstd_error)?;
+    check(raw.len() == raw_length, "NPC length differs from its row")?;
+    let npcs = npc::decode(&raw, &manifest.world)?;
+    validate_npcs(&manifest, &npcs)?;
     check(
         named.iter().all(|named| *named),
         "dropped teleport key names no top-level entry",
@@ -674,6 +775,7 @@ pub fn visit_budgeted(
     Ok(Visited {
         manifest,
         spawns,
+        npcs,
         digest,
     })
 }

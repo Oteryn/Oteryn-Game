@@ -1,6 +1,6 @@
-# Oteryn World Bundle format (v3; the file name keeps V1)
+# Oteryn World Bundle format (v4; the file name keeps V1)
 
-- Format ID: `OTERYN_WORLD_BUNDLE/v3` (v1 and v2 are retired and have no reader; see "Format v2" and "Format v3" below)
+- Format ID: `OTERYN_WORLD_BUNDLE/v4` (v1, v2 and v3 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
 - Owner: `Oteryn/Oteryn-Game`, MAP-BUNDLE-1 (ADR-0021 §5)
 - Status: **CANDIDATE.** ADR-0005 §3 requires an accepted schema contract before a runtime
   treats a serializer as a permanent format. This document is accepted together with
@@ -34,17 +34,18 @@ All integers are little endian unless the payload grammar (§5) says varint.
 | Offset | Size | Field | Rule |
 |---|---|---|---|
 | 0 | 4 | magic | `"OTWB"` |
-| 4 | 2 | `format_version` u16 | `3` |
+| 4 | 2 | `format_version` u16 | `4` |
 | 6 | 2 | reserved u16 | `0` |
 | 8 | 4 | `manifest_length` u32 | at most `MAP01-BUNDLE-MANIFEST-BYTES` |
 | 12 | 4 | `sector_count` u32 | at most `MAP01-BUNDLE-SECTOR-COUNT` |
 | 16 | `manifest_length` | manifest | JSON, written canonically (§3) |
 | … | 50 × `sector_count` | sector table | §4 |
 | … | 44 | spawn row | §13 |
-| … | Σ `compressed_length` | sector frames, then the spawn frame | back to back, in table order, the spawn frame last |
+| … | 44 | NPC row | §14 |
+| … | Σ `compressed_length` | sector frames, then the spawn frame, then the NPC frame | back to back, in table order, the NPC frame last |
 | end − 32 | 32 | digest | §6 |
 
-Nothing may follow the digest, and no byte may lie between the spawn row and the first frame or
+Nothing may follow the digest, and no byte may lie between the NPC row and the first frame or
 between two frames. The whole file is at most `MAP01-BUNDLE-FILE-BYTES`.
 
 ## 3. Manifest
@@ -57,8 +58,8 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 
 | Field | Meaning |
 |---|---|
-| `format` | `"OTERYN_WORLD_BUNDLE/v3"` |
-| `min_reader_version` | lowest reader `format_version` able to read the file; `3` |
+| `format` | `"OTERYN_WORLD_BUNDLE/v4"` |
+| `min_reader_version` | lowest reader `format_version` able to read the file; `4` |
 | `projection_class` | `"server"` (ADR-0021 §4.2). A client projection is not part of v1. |
 | `compiler_version` | set by the compiler, never by its caller: `oteryn-world-bundle-compiler/<crate version> zstd/<library version>` (§6) |
 | `build_class` | `"production"` or `"non-production"`, §8 |
@@ -68,6 +69,7 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 | `draft_areas` | keys of the draft areas compiled in, sorted and unique; empty in a production bundle |
 | `skipped_provisional_keys` | provisional keys skipped in this build, sorted and unique; empty in a production bundle |
 | `spawns` | `{sources, points}`: the counts of the spawn family (§13); the spawn frame must hold exactly these |
+| `npcs` | `{npcs, placements, held, routes_held, catalogue_sha256}` (§14): the counts of the NPC table and its placements, which the NPC frame must hold exactly; the record keys of the held placements, sorted and unique; the held travel routes as `[service_key, route_key]` pairs, sorted and unique; and the lowercase hex SHA-256 of the NPC, Dialogue and Service catalogue. `held` and `routes_held` are empty in a production bundle |
 | `dropped_teleports` | placement keys (§7, JSON numbers) of the top-level entries whose zero-destination `teleport` attribute the compiler dropped (§10, OPEN-3), strictly ascending; each must name a top-level entry of the bundle. Such an entry is never materialized (ADR-0021 §4.4). Allowed in a production bundle |
 
 `palette[i].key` is the stable World Project key, `family` is `item` or `terrain` (§10,
@@ -126,9 +128,9 @@ already writes canonical varints.
 
 - **Per sector.** The table row holds the SHA-256 of the stored frame. A reader checks it before
   it decompresses the frame, so a corrupt frame never reaches the decompressor.
-- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v3" || 0x00 || file[0 .. len − 32])`, stored
+- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v4" || 0x00 || file[0 .. len − 32])`, stored
   as the last 32 bytes. It covers the header, the manifest (including `build_class` and the
-  content revision), the tables and every frame, the spawn frame included. It is the bundle identity used for pinning
+  content revision), the tables and every frame, the spawn and NPC frames included. It is the bundle identity used for pinning
   (ADR-0021 §4.2), the Ground `map_revision` (§4.4) and `MapItemMaterialization`.
 - **Byte identity.** The same inputs and the same `compiler_version` produce the same bytes. The
   compiler derives `compiler_version` from its own crate version and the linked zstd library
@@ -157,8 +159,9 @@ inside a skipped provisional entry has no key and is only reported.
 
 ## 8. Build class
 
-- `production`: every palette key resolved, no draft area and no skipped provisional key. The
-  writer refuses such a manifest otherwise, and the reader rejects it.
+- `production`: every palette key resolved, no draft area, no skipped provisional key, and
+  `npcs.held` and `npcs.routes_held` both empty (§14). The writer refuses such a manifest
+  otherwise, and the reader rejects it.
 - `non-production`: may carry draft areas and skipped provisional keys, each listed in the
   manifest.
 - A missing `build_class` and any other string value read as `non-production`. A value that is
@@ -175,7 +178,7 @@ against `world.floors`, ascending order, the frame checksum, the single canonica
 decompression into exactly `raw_length` bytes, the sector coordinate range, the payload grammar
 with the per-bundle tile and entry budget, a non-empty sector, palette indices, tile positions
 and teleport destinations inside the World extent, and the top-level entry limit; after the last
-frame, the spawn row and frame (§13), then every `dropped_teleports` key against the decoded entries. Every size is checked before
+frame, the spawn row and frame (§13), then the NPC row and frame and the manifest member `npcs` (§14), then every `dropped_teleports` key against the decoded entries. Every size is checked before
 memory is reserved for it.
 
 | Limit | Hard maximum |
@@ -361,6 +364,8 @@ a planned World reset (§11; ADR-0021 §4.7). A later Terrain field is a later f
 
 ## 13. Format v3 (SPAWN-CONTENT-1; decision CREATURE-AI-0 §6.1)
 
+(Superseded by §14: v3 is retired. The text below is the v3 change that v4 keeps.)
+
 `OTERYN_WORLD_BUNDLE/v3` has `format_version` 3 and `min_reader_version` 3. It adds the spawn
 family: every realizable spawn source of the World, in one frame after the sector frames. The
 sector table, the sector payload grammar and every v2 rule are unchanged; the manifest gains the
@@ -371,7 +376,7 @@ reading). MAP-LOAD-1's reader targets v3.
 **Spawn row.** A 44-byte row follows the sector table: `offset` u32 of the spawn frame from the
 start of the file, `compressed_length` u32 (non-zero), `raw_length` u32, and the SHA-256 of the
 frame (32 bytes). The frame follows the last sector frame, is exactly one canonical zstd frame
-like a sector frame (§5), and ends at the digest. A bundle without spawns still has the row and a
+like a sector frame (§5), and is followed by the NPC frame (§14). A bundle without spawns still has the row and a
 frame of the empty table.
 
 **Spawn payload.** Varints are LEB128 and canonical (§5). The payload is the creature table, then
@@ -428,3 +433,110 @@ A source with no point left is not written. A creature whose `spawn_eligibility.
 is compiled and outside the activation set (its points are counted as `inactive_points`). The
 `compile` command's equivalence proof derives the spawn table from the same inputs and compares
 it with the bundle.
+
+## 14. Format v4 (NPC-PLACE-1b; decision NPC-PLACE-1 §3)
+
+Decision: `docs/architecture/reviews/OTERYN_GAME_NPC_PLACE1_NPC_PLACEMENTS_DECISION_2026-10-06.md`.
+
+`OTERYN_WORLD_BUNDLE/v4` has `format_version` 4 and `min_reader_version` 4. It adds the NPC
+placement family: every realizable NPC placement of the World, in one frame after the spawn frame.
+The sector table, the sector payload grammar, the spawn row, frame and grammar and every v3 rule
+are unchanged; the manifest gains the required member `npcs`, and the digest domain string names
+v4. The compiler writes only v4 and the reader accepts only v4; a v1, v2 or v3 bundle is refused
+like any unknown version (no dual reading).
+
+**Byte order (the only one).** Header, manifest, sector table, spawn row, NPC row, sector frames,
+spawn frame, NPC frame, digest. Every table row comes before the first frame; no byte lies
+between the NPC row and the first sector frame or between two frames.
+
+**NPC row.** A 44-byte row in the spawn row's shape follows the spawn row: `offset` u32 of the
+NPC frame from the start of the file, `compressed_length` u32 (non-zero), `raw_length` u32, and
+the SHA-256 of the frame (32 bytes). The NPC frame is exactly one canonical zstd frame (§5), the
+last frame, and ends at the digest. A bundle without NPCs still has the row and a frame of the
+empty table.
+
+**Manifest `npcs`.** `{npcs, placements, held, routes_held, catalogue_sha256}`:
+
+- `npcs` and `placements` are the counts of the NPC table and its placements; the frame must hold
+  exactly these.
+- `held` is the record keys of the placements the compiler held, sorted and unique, like
+  `draft_areas`.
+- `routes_held` is the travel routes whose destination the compiler held, each a pair
+  `[service_key, route_key]`: a route key is unique only within its Service record, so only the
+  pair names one route. The pairs are sorted by Service key, then route key, as bytes, and unique.
+- Both lists are empty in a production bundle (§8).
+- `catalogue_sha256` (64 lowercase hex digits) binds the bundle to the catalogue it classified:
+  SHA-256 over every file under `content/npcs/definitions/`, `content/dialogues/definitions/` and
+  `content/services/`, in byte order of the path relative to `content/`, each as the path length
+  (u64 big-endian), the path, the byte length (u64 big-endian) and the bytes. One function in
+  `crates/world-bundle` (`npc::catalogue_sha256`) computes it for the compiler and the game
+  server. `identity.content_revision` is not compared with the catalogue revision.
+
+**NPC payload.** Varints are LEB128 and canonical (§5).
+
+- `npc_count`, then per NPC, strictly ascending by key: `key` (varint length and ASCII
+  `0x21..=0x7E` bytes, at most 128, starting `oteryn:npc.`) and `placement_count` (at least 1).
+- Per placement, strictly ascending by (`floor`, `y`, `x`): `floor` i8 (native, one of
+  `world.floors`), `y` and `x` (varints) and `direction` u8 (`0` north, `1` east, `2` south, `3`
+  west).
+- Every placement is inside the World extent. No two placements of the bundle share a cell; the
+  reader rejects a repeat across NPCs.
+- Counts are checked against the bytes left before anything is reserved; nothing may follow the
+  payload. The writer and the reader apply the same validation, so the writer never writes what
+  the reader rejects.
+- The order is the canonical actor order of NPC-BEHAVIOUR-0 §3.1.
+
+| Limit | Hard maximum |
+|---|---|
+| `NPCPLACE1-RL-01` | 2,048 placements per bundle (= `NPCBEH0-RL-01`); the NPC count is bounded by it |
+| `NPCPLACE1-RL-02` | 16 placements per NPC |
+| `NPCPLACE1-RL-03` | 1 MiB raw NPC payload, at most 1,024 times its frame |
+
+The NPC payload counts toward the running raw total of §9. The rows are in
+`RESOURCE_LIMITS_REGISTRY.json`; each is tested at its maximum and at the maximum plus one.
+
+**Reader check order.** A check order, not a byte order. After the spawn row and frame: the NPC
+row (its contiguity: the NPC frame begins where the spawn frame ends and ends at the digest), the
+raw and ratio limits, the running raw total, the frame checksum, the single canonical frame,
+decompression into exactly `raw_length` bytes, the payload grammar with the limits above, and the
+manifest member `npcs`: its counts equal to the frame, `held` and `routes_held` sorted and
+unique, `catalogue_sha256` 64 lowercase hex digits, and both lists empty when `build_class` is
+`production`. Then `dropped_teleports`, as in v3.
+
+**Source.** The family is `Npc.Placement` under `content/world/npc-placements/` (index plus
+shards, frame `global-target-2026-09-27`, NPC-PLACE-1a): per record `declaration.identity.key`
+(`oteryn:npc_placement.<npc local name>.x<x>_y<y>_z<z>`), `npc`, `cell` (`x`, `y`, `floor` =
+legacy `z`) and `direction`. The compiler also reads the NPC, Dialogue and Service definitions
+(the catalogue above) and `content/services/travel/`.
+
+**Realization.** A placement or travel destination outside the World extent or floors fails
+compilation in every build class. Otherwise the compiler writes a placement when its NPC is
+admitted and its cell can hold it, and holds it with the first reason in this order:
+
+1. The NPC, by the admission rule of the game server's `NpcServiceModel`: `UnboundNpc` (no
+   admitted NPC definition has the key), `UnresolvedDialogue` (its Dialogue reference names no
+   Dialogue definition), `UnresolvedService` (one of its Service references names no Service
+   definition).
+2. The cell: the compile-time facts of spawn realization (§13, item 4) `NoTile`,
+   `UnclassifiedTerrain`, `NoGround`, `NotWalkable`, `FloorChange`, `Teleport`; then the bundle
+   enterability rule of the game server over the cell's top-level entries: `Wall` (a Terrain
+   entry of kind `wall`) and `BlockSolid` (an Item entry whose definition is solid or does not
+   exist). A protection zone is not a reason.
+3. `SpawnPoint`: a realized creature spawn point is on the cell.
+4. `SharedCell`: two placements that pass items 1-3 on one cell; every placement on that cell is
+   held.
+
+Each travel route destination is classified with the cell reasons of item 2, then `SpawnPoint`,
+`NpcPlacement` (a written placement is on the cell; a held placement is not a reason) and
+`HouseTile` (the tile carries a nonzero house id). No route is written to the bundle.
+
+A production build stops on any held placement or route. A non-production build leaves held
+placements out, lists their record keys in `npcs.held` and the held routes' pairs in
+`npcs.routes_held`, and reports each with its reason in the `parity` and `compile` output
+(`npcs.held_by_reason`, `npcs.routes_held_by_reason`; `parity` also reports the family's held list by
+reason, `npcs.source_held`). The `compile` command's equivalence proof
+derives the NPC table, `held` and `routes_held` from the same inputs and compares them with the
+bundle.
+
+The game server reads the NPC table through the shared reader and does nothing with it until
+NPC-ACTOR-1. There is no wire change.

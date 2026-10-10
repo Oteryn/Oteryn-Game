@@ -4,7 +4,7 @@
 
 | field | meaning |
 | --- | --- |
-| `digest` | the `OTERYN_WORLD_BUNDLE/v3` digest of the bundle the compiler builds from this tree |
+| `digest` | the `OTERYN_WORLD_BUNDLE/v4` digest of the bundle the compiler builds from this tree |
 | `project_format_version`, `world_schema_version`, `content_revision` | must equal the identity derived from `project.json` and `manifest.json` |
 | `production` | `false`; a production pin on a non-production build fails the gate |
 | `entry_start` | `{x, y, floor}`: a walkable, non-blocking base cell inside the World bounds |
