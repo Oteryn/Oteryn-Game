@@ -50,6 +50,8 @@ pub enum BootRefusal {
     StartNotEnterable,
     /// A palette Item key the §1.6 item index lacks or places at another `id`.
     ItemReference,
+    /// The bundle places no door a player can use (MAP-DOOR-1), which a preprod node refuses.
+    NoDoors,
 }
 
 impl fmt::Display for BootRefusal {
@@ -61,6 +63,7 @@ impl fmt::Display for BootRefusal {
             Self::ItemReference => {
                 f.write_str("a world bundle palette item does not match the item index")
             }
+            Self::NoDoors => f.write_str("the world bundle places no usable door"),
         }
     }
 }
@@ -104,6 +107,7 @@ impl PartialEq for BundleWorld {
             && self.map_revision == other.map_revision
             && self.start == other.start
             && self.blocked == other.blocked
+            && self.map.facts.doors().len() == other.map.facts.doors().len()
             && self.map.overlay.world_id() == other.map.overlay.world_id()
             && self.map.overlay.channel_id() == other.map.overlay.channel_id()
             && self.map.overlay.tiles().next().is_none()
@@ -166,7 +170,7 @@ impl CheckedBundle {
     ) -> Result<BundleWorld, BootRefusal> {
         let (facts, blocked) = scan(&self.data, &item)?;
         let blocked = Arc::new(blocked);
-        if !enterable(&self.base, &blocked, self.start) {
+        if !enterable(&self.base, &blocked, self.start) || facts.doors().blocks(self.start) {
             return Err(BootRefusal::StartNotEnterable);
         }
         Ok(BundleWorld {
@@ -183,7 +187,8 @@ impl CheckedBundle {
 }
 
 /// The map facts of the bundle, and the walkable-or-not tiles one of whose top-level entries is
-/// a `wall` Terrain or an Item whose definition is solid.
+/// a `wall` Terrain or an Item whose definition is solid; a usable door is not among them, since
+/// its state decides ([`BundleFacts::doors`]).
 fn scan(
     data: &[u8],
     item: &impl Fn(&str) -> Option<ItemDefinition>,
@@ -206,21 +211,7 @@ fn scan(
         let Some(facts) = facts.as_mut() else {
             return Ok(());
         };
-        for tile in &sector.tiles {
-            let blocks = tile
-                .items
-                .iter()
-                .filter(|item| item.depth == 0)
-                .any(|item| facts.blocks(item.palette));
-            if blocks {
-                blocked.insert(TilePos {
-                    x: tile.x,
-                    y: tile.y,
-                    floor: sector.floor,
-                });
-            }
-        }
-        facts.push(manifest, &sector);
+        facts.push(manifest, &sector, &mut blocked);
         Ok(())
     });
     if let Some(refusal) = refused {
@@ -313,7 +304,7 @@ impl BundleWorld {
 
     /// Whether a player can enter `pos`.
     pub fn enterable(&self, pos: TilePos) -> bool {
-        enterable(&self.base, &self.blocked, pos)
+        enterable(&self.base, &self.blocked, pos) && !self.map.facts.doors().blocks(pos)
     }
 
     /// The ground speed a step onto `pos` uses. This is the one switch point: Engineering 150
@@ -388,11 +379,13 @@ impl BundleCollisionIndex {
         self.base
             .tile(pos.x, pos.y, pos.floor)
             .ok_or(StaticCellEngineError::Absent)?;
-        Ok(if enterable(&self.base, &self.blocked, pos) {
-            CollisionClass::Walkable
-        } else {
-            CollisionClass::Blocked
-        })
+        Ok(
+            if enterable(&self.base, &self.blocked, pos) && !self.map.facts.doors().blocks(pos) {
+                CollisionClass::Walkable
+            } else {
+                CollisionClass::Blocked
+            },
+        )
     }
 }
 
@@ -422,6 +415,14 @@ pub(crate) mod tests {
 
     /// [`bundle`] with `boxed` as palette Item id 0 (the solid box) and `coin` as Item id 1.
     pub(crate) fn bundle_with_items(boxed: &str, coin: &str) -> (Vec<u8>, BundlePins) {
+        bundle_with_item_ids((boxed, 0), (coin, 1))
+    }
+
+    /// [`bundle_with_items`] with the compact Item ids the §1.6 index gives the two keys.
+    pub(crate) fn bundle_with_item_ids(
+        (boxed, boxed_id): (&str, u32),
+        (coin, coin_id): (&str, u32),
+    ) -> (Vec<u8>, BundlePins) {
         use oteryn_world_bundle_compiler::bundle::{
             self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
             TerrainKind,
@@ -466,8 +467,8 @@ pub(crate) mod tests {
                 terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
                 terrain("terrain:lava", 1, TerrainKind::Ground, Some(false)),
                 terrain("terrain:wall", 2, TerrainKind::Wall, None),
-                item(boxed, 0),
-                item(coin, 1),
+                item(boxed, boxed_id),
+                item(coin, coin_id),
             ],
             draft_areas: Vec::new(),
             skipped_provisional_keys: Vec::new(),
@@ -745,6 +746,161 @@ pub(crate) mod tests {
         assert_eq!(facts.base_entry(at(7), 1, 0), None);
         assert!(!facts.house_tile(at(7)));
         assert_eq!(facts.object_revision(0), 0);
+        Ok(())
+    }
+
+    /// The served definitions of [`door_world`]: the plain closed door 1629 (solid), its open
+    /// item 1630 (not solid) and a loose coin.
+    pub(crate) fn door_items(key: &str) -> Option<ItemDefinition> {
+        let (reference, solid, pickupable) = match key {
+            "oteryn:item.tibia.i1629" => (1, Some(true), false),
+            "oteryn:item.tibia.i1630" => (1631, Some(false), false),
+            "oteryn:item.tibia.i1000" => (2, Some(false), true),
+            _ => return None,
+        };
+        Some(ItemDefinition {
+            reference: std::num::NonZeroU32::new(reference)?,
+            solid,
+            blocks_projectile: solid == Some(true),
+            pickupable,
+        })
+    }
+
+    /// The test bundle with the closed door 1629 at x 6 (top-level entry 1 of its tile) and a
+    /// coin at x 7, booted with `item`.
+    pub(crate) fn door_world_with(
+        item: impl Fn(&str) -> Option<ItemDefinition>,
+    ) -> Result<BundleWorld, Box<dyn Error>> {
+        let (bytes, load) = bundle_with_items("oteryn:item.tibia.i1629", "oteryn:item.tibia.i1000");
+        Ok(boot(
+            &bytes,
+            &pins(load, 2),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            item,
+        )?)
+    }
+
+    pub(crate) fn door_world() -> Result<BundleWorld, Box<dyn Error>> {
+        door_world_with(door_items)
+    }
+
+    /// The door's tile.
+    pub(crate) const DOOR_AT: TilePos = TilePos {
+        x: 6,
+        y: 0,
+        floor: -7,
+    };
+
+    pub(crate) fn door_key() -> u64 {
+        crate::map::view::placement_key(DOOR_AT, 1).unwrap_or(0)
+    }
+
+    #[test]
+    fn map_door_state_drives_walkability_facts_and_revision() -> Result<(), Box<dyn Error>> {
+        use crate::map::door::DoorUse;
+        use crate::map::view::MapFacts;
+        use oteryn_protocol_oteryn::world_map::MapDefinition;
+        let world = door_world()?;
+        let doors = world.facts().doors();
+        let key = door_key();
+        assert_eq!((doors.len(), doors.sealed()), (1, 0));
+        let room = crate::content::qualify_native_entry_room(WorldId::decode(&id(1))?)?;
+        let cells = world.movement_cells(room.movement_cells())?;
+        let class = || {
+            cells
+                .index()
+                .lookup(cells.scope(), LogicalCell { x: 6, y: 0, z: 7 })
+        };
+
+        // Closed: solid, closed appearance, revision 0.
+        assert!(!world.enterable(DOOR_AT) && class() == Ok(CollisionClass::Blocked));
+        let closed = world.facts().base_entry(DOOR_AT, 1, 0).ok_or("closed")?;
+        assert_eq!(closed.appearance_id, 1629);
+        assert_eq!(world.facts().object_revision(key), 0);
+
+        // Open: walkable (live in the collision index too), the open item's facts, revision 1.
+        assert_eq!(
+            doors.toggle(key, 0, false),
+            Some(DoorUse::Toggled {
+                revision: 1,
+                open: true
+            })
+        );
+        assert!(world.enterable(DOOR_AT) && class() == Ok(CollisionClass::Walkable));
+        let open = world.facts().base_entry(DOOR_AT, 1, 0).ok_or("open")?;
+        assert_eq!(open.appearance_id, 1630);
+        assert_eq!(
+            open.definition,
+            MapDefinition::Item(std::num::NonZeroU32::new(1631).ok_or("ref")?)
+        );
+        assert!(!open.blocks_projectile && !open.pickupable && !open.bound);
+        assert_eq!(world.facts().object_revision(key), 1);
+
+        // A stale revision changes nothing; an occupied open door does not close.
+        assert_eq!(doors.toggle(key, 0, false), Some(DoorUse::Stale));
+        assert_eq!(doors.toggle(key, 1, true), Some(DoorUse::Occupied));
+        assert!(world.enterable(DOOR_AT));
+        assert_eq!(
+            doors.toggle(key, 1, false),
+            Some(DoorUse::Toggled {
+                revision: 2,
+                open: false
+            })
+        );
+        assert!(!world.enterable(DOOR_AT) && class() == Ok(CollisionClass::Blocked));
+
+        // The grass under the door and the coin beside it are no door.
+        let grass = crate::map::view::placement_key(DOOR_AT, 0).ok_or("grass key")?;
+        assert_eq!(doors.toggle(grass, 0, false), None);
+        assert_eq!(world.facts().object_revision(grass), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn map_door_a_second_boot_starts_closed() -> Result<(), Box<dyn Error>> {
+        let first = door_world()?;
+        assert!(first.facts().doors().toggle(door_key(), 0, false).is_some());
+        assert!(first.enterable(DOOR_AT));
+        let second = door_world()?;
+        assert!(!second.enterable(DOOR_AT));
+        assert_eq!(second.facts().doors().revision(door_key()), 0);
+        assert_eq!(first, second);
+        Ok(())
+    }
+
+    #[test]
+    fn map_door_an_unserved_open_item_keeps_the_door_sealed() -> Result<(), Box<dyn Error>> {
+        let world = door_world_with(|key| door_items(key).filter(|_| !key.ends_with("1630")))?;
+        let doors = world.facts().doors();
+        assert_eq!((doors.len(), doors.sealed()), (0, 1));
+        assert_eq!(doors.toggle(door_key(), 0, false), None);
+        assert!(!world.enterable(DOOR_AT));
+        Ok(())
+    }
+
+    #[test]
+    fn map_door_an_unqualified_open_item_keeps_the_door_sealed() -> Result<(), Box<dyn Error>> {
+        // The open item is described but not as walkable: solid unknown, or it blocks shots.
+        for (solid, shoots) in [
+            (None, true),
+            (None, false),
+            (Some(false), true),
+            (Some(true), false),
+        ] {
+            let world = door_world_with(|key| {
+                door_items(key).map(|mut item| {
+                    if key.ends_with("1630") {
+                        item.solid = solid;
+                        item.blocks_projectile = shoots;
+                    }
+                    item
+                })
+            })?;
+            let doors = world.facts().doors();
+            assert_eq!((doors.len(), doors.sealed()), (0, 1), "{solid:?} {shoots}");
+            assert!(!world.enterable(DOOR_AT));
+        }
         Ok(())
     }
 }

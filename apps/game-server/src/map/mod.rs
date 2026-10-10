@@ -14,6 +14,7 @@ use oteryn_world_bundle::sector::{Budget, SECTOR_SIZE};
 use std::fmt;
 
 pub mod boot;
+pub mod door;
 pub mod facts;
 pub mod overlay;
 pub mod view;
