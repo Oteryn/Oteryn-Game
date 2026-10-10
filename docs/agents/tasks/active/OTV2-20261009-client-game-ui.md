@@ -88,8 +88,9 @@ disabled because no verified target/format exists.
 
 Rust remains pinned to repository MSRV 1.94. The incompatible client-only Rust
 1.95 / egui 0.36 change was replaced with egui 0.35 and its matching wgpu 29,
-including the renderer API adjustments. Locked Linux client tests, strict client
-and workspace Clippy, Windows cross-target check/Clippy and the compiled 20-page
+including the renderer API adjustments and the resulting World compiler-input
+pin refresh. Locked Linux client tests, strict client and workspace Clippy,
+Windows cross-target check/Clippy and the compiled 20-page
 reachability test are the local evidence for this checkpoint. Native Windows
 screenshot comparison and every explicitly pending engine/server consumer remain
 open; do not describe the whole matrix as 1:1 complete.
