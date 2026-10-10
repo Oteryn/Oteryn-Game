@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::content::native_gameplay::tests::activated_with_item_keys;
+use crate::domain::currency::{COIN_STACK_MAXIMUM, Coin};
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::{BackpackEntry, CharacterBackpack, InventoryItem};
 use crate::foundation::{
@@ -344,7 +345,7 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
         ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
         activate_native_entry_room_with_gameplay, qualify_native_entry_room_with_gameplay,
     };
-    // The committed production manifest's pins (its 118 canonical Item profiles among them), on
+    // The committed production manifest's pins (its 121 canonical Item profiles among them), on
     // the accepted entry room rather than the separately produced source world.
     let manifest =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/spells.manifest.json");
@@ -403,8 +404,22 @@ fn corpse_take_facts_are_the_generation_item_profiles() {
     let not_found = |definition: TypedDefinitionRef| {
         generation_item_facts(native, &definition) == Err(PickupContentError::DefinitionNotFound)
     };
-    // The gold coin has no canonical profile yet; it fails closed rather than being guessed.
-    assert!(not_found(item("oteryn:item.tibia.i3031")));
+    // Every coin of the closed D176 table resolves to its stack maximum.
+    for coin in Coin::ALL {
+        let definition = item(coin.production_key());
+        assert_eq!(
+            generation_item_facts(native, &definition).unwrap(),
+            ItemDefinitionFacts {
+                definition: definition.clone(),
+                stack: ItemStackClass::Stackable {
+                    proven_maximum: Some(COIN_STACK_MAXIMUM)
+                },
+                container_capacity: None,
+                container_slot_equip_pattern: false,
+            },
+            "{coin:?}"
+        );
+    }
     assert!(not_found(TypedDefinitionRef {
         revision_ref: "definition-r2".to_owned(),
         ..cheese.clone()

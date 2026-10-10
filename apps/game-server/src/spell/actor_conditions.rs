@@ -506,15 +506,49 @@ fn tick_inner(
                         .min(staged.facts.max_mana);
                 }
             }
+            TickKind::Regeneration {
+                key: crate::ability::condition::ConflictKey::FoodRegeneration,
+                suppressed,
+            } => {
+                if !suppressed {
+                    super::food_regeneration::credit_fed_second(&mut staged);
+                }
+            }
             TickKind::Damage { .. } | TickKind::Regeneration { .. } => combat.push(tick),
         }
     }
     *state = staged;
     Ok(combat)
 }
+/// FOOD-REGEN-1: eating food adds `regeneration_seconds` to the fed time (cap 1,200 s).
+/// A full fed time or an unrepresentable food is refused and leaves the state unchanged.
+pub(crate) fn eat_food(
+    state: &mut PlayerSpellState,
+    regeneration_seconds: u16,
+    now_ms: u64,
+) -> Result<(), SpellCastDisposition> {
+    if regeneration_seconds == 0 {
+        return rejected();
+    }
+    let added_ms = u32::from(regeneration_seconds) * 1_000;
+    let mut staged = state.clone();
+    let food = definition(
+        "food.regeneration",
+        ConditionValues::FoodRegeneration {
+            added_ms,
+            interval_ms: super::food_regeneration::FOOD_TICK_MS,
+        },
+    )?;
+    // `Full` is a refusal, not `KeptCurrent`: `apply_definition` maps it to `Rejected`.
+    apply_definition(&mut staged, food, now_ms, 0)?;
+    *state = staged;
+    Ok(())
+}
 pub(crate) fn clear_on_lifecycle(state: &mut PlayerSpellState) {
     state.field_attack_history.clear_on_lifecycle();
     state.conditions.clear_on_death();
+    state.regen_health_ms = 0;
+    state.regen_mana_ms = 0;
 }
 
 /// The existing creature-bite vitals owner applies its already qualified damage to the
