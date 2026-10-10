@@ -47,13 +47,17 @@ pub(crate) fn palette_mask(family: Family, key: &str) -> u8 {
     let Some(appearance) = palette_appearance(key) else {
         return 0;
     };
-    let table = match family {
-        Family::Item => OBJECT,
-        Family::Terrain => TERRAIN,
+    let lookup = |table: &[(u16, u8)]| {
+        table
+            .binary_search_by_key(&appearance, |(id, _)| *id)
+            .map_or(0, |found| table[found].1)
     };
-    table
-        .binary_search_by_key(&appearance, |(id, _)| *id)
-        .map_or(0, |found| table[found].1)
+    match family {
+        Family::Terrain => lookup(TERRAIN),
+        // The compiler can route an Item palette key to a Terrain catalogue record (resolve.rs),
+        // so an Item entry also carries the Terrain floor facts. The two id sets are disjoint.
+        Family::Item => lookup(OBJECT) | lookup(TERRAIN),
+    }
 }
 
 /// The tiles of a bundle World that change floors, with the OR of the flags of their entries.
@@ -560,6 +564,8 @@ mod tests {
             palette_mask(Family::Item, "donor:crystalserver@r1:item/868"),
             DOWN
         );
+        // An Item key that routes to a Terrain record (the hole i293) still carries its fact.
+        assert_eq!(palette_mask(Family::Item, "oteryn:item.tibia.i293"), DOWN);
         // The two families keep separate tables; a plain, UNKNOWN or foreign key is no change.
         assert_eq!(palette_mask(Family::Item, "oteryn:item.tibia.i100"), 0);
         assert_eq!(palette_mask(Family::Item, "item:box"), 0);
