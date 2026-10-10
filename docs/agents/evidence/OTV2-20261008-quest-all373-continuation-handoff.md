@@ -80,11 +80,7 @@ Preflight task record on the PR branch: `docs/agents/tasks/archive/OTV2-20261008
 
 ## Preserved Crystal/Canary/Wiki source evidence
 
-The earlier Crystal `summer-update` directory-level audit is retained at:
-
-`docs/agents/evidence/OTV2-20261006-crystal-summer-quest-audit.md`
-
-It classified 122 Crystal quest-script directories as 101 SOURCE_BOUND, 15 DEFINITION_ONLY, 1 INDIRECT and 5 AUX. That was a **directory-to-source/canonical representation audit**, **not** a playability result or a count of all wiki quests. Quest evidence also exists outside `data-global/scripts/quests` (NPC, actions, world objects, storage, combat, loot and world systems).
+An earlier session reported a Crystal `summer-update` directory-level audit of 122 quest-script directories (101 SOURCE_BOUND, 15 DEFINITION_ONLY, 1 INDIRECT, 5 AUX). **That audit file was never committed**: no `docs/agents/evidence/OTV2-20261006-crystal-summer-quest-audit.md` or equivalent exists in the repository, so those figures are an unretained, unverified recollection and must not be reused as evidence. Re-run the directory-to-source/canonical classification and commit it under `docs/agents/evidence/` before relying on it. Whatever it reports is a **directory-to-source/canonical representation audit**, **not** a playability result or a count of all wiki quests. Quest evidence also exists outside `data-global/scripts/quests` (NPC, actions, world objects, storage, combat, loot and world systems).
 
 The all-373 donor coverage matrix currently reports 332 with a donor implementation, 12 partially implemented, and 29 absent from both donors in the pinned coverage classification. For exact source pin/provenance use the committed `source` and `coverage` manifests, not floating donor heads or this narrative.
 
