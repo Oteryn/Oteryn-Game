@@ -44,9 +44,11 @@ implemented.
   900 × 620 and requires a page-specific marker plus Reset/OK/Apply/Cancel.
 - PL/EN composition tests render the dedicated page families without mutating a
   default draft merely by opening them.
-- Rust 1.94 locked client tests and strict all-target Clippy pass on Linux; the
-  complete Windows-only client and renderer modules also pass locked cross-target
-  check and strict Clippy.
+- Rust 1.94 locked client tests and strict all-target Clippy pass on Linux. The
+  current environment has the Windows GNU Rust target but not
+  `x86_64-w64-mingw32-gcc`; the locked cross-target check therefore stops in
+  `aws-lc-sys` before compiling the Windows-only shell. Native Windows CI remains
+  required for that composition.
 - This is compiled reachability and behavior evidence, not a native Windows
   screenshot comparison. Native visual acceptance and every row whose consumer
   remains pending are still open and must not be reported as 1:1 complete.

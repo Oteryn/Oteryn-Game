@@ -170,3 +170,9 @@ press. The offset is bounded to the nearest zoom radius, clamped to loaded
 texture bounds and keeps the authoritative player marker in view. Floor Up/Down
 remain disabled because the client has only the admitted mapped floor; no blank
 or fabricated layer is shown.
+
+The current Linux worker has the `x86_64-pc-windows-gnu` Rust target but no
+`x86_64-w64-mingw32-gcc`. A fresh locked cross-target check stops in the
+`aws-lc-sys` C probe before reaching Oteryn's Windows shell. Linux locked tests,
+strict all-target Clippy and compiled page coverage remain green; native Windows
+CI is still required for the complete composition.
