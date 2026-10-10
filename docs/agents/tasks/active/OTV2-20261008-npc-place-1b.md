@@ -27,6 +27,8 @@ owned_paths:
   - apps/game-server/src/map/boot.rs
   - apps/game-server/src/gameplay_transport/world_map_tests.rs
   - apps/game-server/src/movement/speed.rs
+  - apps/game-server/tests/map_cutover_boot.rs
+  - apps/game-server/tests/map_cutover_view.rs
   - content/world/pins/oteryn.json
   - content/world/pins/README.md
   - docs/agents/tasks/active/OTV2-20261008-npc-place-1b.md
@@ -40,5 +42,7 @@ depends_on: [NPC-PLACE-1, NPC-PLACE-1a]
 - Control plane decision (a): `map/boot.rs` and `gameplay_transport/world_map_tests.rs` for the
   cfg(test) `npcs: Default::default()` manifest line only; the pin files for a re-pin only.
 - Control plane Q1 (a): `movement/speed.rs`, the same single cfg(test) line only.
+- Control plane Q3 (a) (D607): `tests/map_cutover_boot.rs` and `tests/map_cutover_view.rs`, the
+  same single `npcs: Default::default(),` line only.
 - Control plane Q2 (a): `apps/game-server/tests/npc_placement_parity.rs`, a new file on existing
   pub APIs only.
