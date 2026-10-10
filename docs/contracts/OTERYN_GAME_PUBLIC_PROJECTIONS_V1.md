@@ -125,8 +125,8 @@ Transport, TLS and the HTTP client follow LCFA §3. The differences are:
 
 - **Bounds.** Connect 1 s, handshake 2 s, exchange 5 s. The request byte limits are in §8. Every
   response is at most 256 bytes.
-- **In-flight.** At most one publication in flight per family per publisher, so a large
-  highscores snapshot never delays `world_online`. `world_online` is per-World: the publisher
+- **In-flight.** At most one publication in flight per family per publisher (`PUBPROJ-INFLIGHT`),
+  except `world_online`, so a large highscores snapshot never delays `world_online`. `world_online` is per-World: the publisher
   sends the changed Worlds of one scan concurrently, one publication in flight per World, up to
   `PUBPROJ-ONLINE-WORLDS` (16) Worlds. Each exchange keeps its own 5 s bound, so a scan of up to
   16 changed Worlds still fits `PUBPROJ-ONLINE-SCAN-DEADLINE` (5 s); a deployment with more
@@ -454,9 +454,14 @@ Ordering, outbox, resync and the epoch fence follow LCFA §5, applied per family
 - **Name handoff.** Game permits a name to be reused after a rename or deletion, and the two
   profiles publish under independent `character_id` subjects, so Platform can briefly hold two
   profiles for one name. The rule is namespace-level and has two halves. Game's publisher never
-  publishes the new holder of a (World, character name) or (World, guild name) until the
-  publication that vacates it (the old holder's rename, deletion or visibility change) is
-  `accepted` or `superseded`; the publisher enqueues the vacating publication first. Platform
+  publishes the new holder of a (World, character name) or (World, guild name) until every
+  publication that carries the old holder's name has been `accepted` or `superseded`: the
+  vacating profile, every `guild` roster that lists the name as a member, every `house` whose
+  `owner_name` is the name, and the old holder's guild or house publication for a guild-name
+  reuse. A guild or house publication that still carries the old name when the new holder is
+  ready is re-derived first and enqueued before the new holder; the publisher enqueues all of
+  these vacating publications first and holds the new holder until all are acknowledged, so a
+  stale roster or owner row never joins the new holder by name. Platform
   resolves a public name only when exactly one current, non-stale profile or guild holds it in
   that World: a name held by two or more is answered as an unknown name (§7.3 first rule) until a
   single holder remains, and never shows either holder's data. House names are presentation, not
@@ -494,7 +499,7 @@ the implementation, as LCFA's were.
 | `PUBPROJ-ONLINE-REVOKE-BOUND` | 20 s | derived: 10 + 5 + 5; at most S (§7.2) |
 | `PUBPROJ-WATERMARK-BYTES` | 512 | |
 | `PUBPROJ-WATERMARK-GAP` | 10 s | maximum gap between watermarks of one family |
-| `PUBPROJ-INFLIGHT` | 1 per family per publisher | |
+| `PUBPROJ-INFLIGHT` | 1 per family per publisher; `world_online`: 1 per World, up to `PUBPROJ-ONLINE-WORLDS` | |
 
 ## 9. Required tests
 

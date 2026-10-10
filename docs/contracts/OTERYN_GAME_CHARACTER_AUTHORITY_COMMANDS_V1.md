@@ -87,8 +87,9 @@ client, exactly as LCFA §3.
   - `ListPendingCharacterCommandsV1` → `/internal/v1/game-auth/character-commands/pending`;
   - `ReadCharacterCommandIntentV1` → `/internal/v1/game-auth/character-commands/read`;
   - `PublishCharacterCommandReceiptV1` → `/internal/v1/game-auth/character-commands/receipt`.
-- Bounds: connect 1 s, handshake 2 s, exchange 3 s; a read request at most 448 bytes (it carries a
-  `issuer_authority` of up to 128 bytes and a `command` of up to 64, 402 bytes at most), a
+- Bounds: connect 1 s, handshake 2 s, exchange 3 s; a read request at most 512 bytes (with a
+  `source_authority` and an `issuer_authority` of up to 128 bytes each, a `command` of up to 64 and a
+  UUID it is 496 bytes at most), a
   pending-list request at most 512 bytes and a receipt at most 1024 bytes (the largest receipt,
   a committed transfer with 20-digit counters, is 699 bytes); a pending-list
   response at most 8192 bytes (a full page of 32 entries with 64-byte commands and 20-digit
@@ -136,8 +137,13 @@ as uint64, then `operation_id` as bytes), unique `operation_id`:
   it passes the key it had reached, then resumes from that key. A rescan lists only PENDING
   entries, so its cost is the number of unreceipted intents behind the cursor. Re-listing an
   intent is safe because the per-operation receipt makes deciding idempotent. The 30 s bound is
-  well inside the 300 s intent TTL, so an intent that commits behind the cursor is read before it
-  expires.
+  well inside the 300 s intent TTL only while the backlog is bounded. Platform keeps at most
+  1,024 unreceipted PENDING intents (`CHARCMD-PENDING-BACKLOG`) and refuses to store a new intent
+  beyond that, so the account page shows a retry-later state instead of an intent that could expire
+  unread. A rescan then takes at most 32 pages of 3 s, 96 s, so an intent committed just behind
+  the cursor waits at most 30 s for the next rescan plus 96 s to reach it, 126 s, inside the
+  300 s intent TTL. The consumer raises an operator alarm when a rescan lists more than 768
+  entries.
 - `source_authority` is the configured Character Authority namespace (LCFA §4 rule).
 
 ### 4.2 Intent read
@@ -585,13 +591,14 @@ The Game implementation and the Platform consumer must prove, with shared exact 
 | Limit | Value |
 |---|---|
 | pending entries per list response | 32 |
-| request bytes (read) | 448 |
+| request bytes (read) | 512 |
 | request bytes (pending list) | 512 |
 | intent bytes | 4096 |
 | receipt request bytes | 1024 |
 | response bytes (pending list) | 8192 |
 | response bytes (receipt) | 256 |
 | in-flight exchanges per consumer | 1 |
+| unreceipted PENDING intents (`CHARCMD-PENDING-BACKLOG`) | 1,024 |
 | intent TTL | 300 s |
 | Characters per account | 64 (`LCA-CHARACTERS`, wire bound, not a quota) |
 

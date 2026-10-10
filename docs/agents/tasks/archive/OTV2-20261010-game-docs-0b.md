@@ -37,11 +37,11 @@ Docs only. Applies the P2 findings deferred under D245 from the #1936 and #1937 
 
 Character authority commands:
 
-- (a) The intent read request bound is 448 bytes (was 256): the request now carries
-  `issuer_authority` of up to 128 bytes and a `command` of up to 64 (402 bytes worst case).
+- (a) The intent read request bound is 512 bytes (was 256): the request now carries
+  `source_authority` and `issuer_authority` of up to 128 bytes each and a `command` of up to 64 (496 bytes worst case).
 - (b) Intent reads are keyed by `(issuer_authority, operation_id)`; a pair held for another
   command returns `409`, and Game stores `CHAR_CMD_OPERATION_CONFLICT`.
-- (c) Bounded rescan of the pending list (every 8 full pages or 30 s) so a lower
+- (c) Bounded rescan of the pending list (every 8 full pages or 30 s) with a 1,024-entry PENDING backlog bound (worst case 126 s) so a lower
   `source_revision` committed behind the cursor is read before its 300 s expiry.
 
 Public projections:
