@@ -184,6 +184,24 @@ pub(crate) fn step_in_channel_with_source_step(
     {
         return failure(MovementError::ScopeMismatch);
     }
+    if crate::map::floor::table_of(cells).is_some() {
+        // MAP-FLOOR-1: a bundle World resolves the step over its floor table.
+        if prepared_source_step.is_some() {
+            return failure(MovementError::NotQualified);
+        }
+        let speed = spell_state_speed(
+            runtime,
+            state,
+            actor,
+            session,
+            now_us,
+            equipment_delta,
+            false,
+        );
+        return bundle_step(
+            runtime, cells, actor, session, direction, blocking, speed, expected,
+        );
+    }
     let source_step = if let Some(proof) = prepared_source_step {
         if proof.expected() != expected || proof.validate_current(runtime).is_err() {
             return failure(MovementError::NotQualified);
@@ -259,6 +277,37 @@ pub(crate) fn step_in_channel_with_source_step(
     }
 }
 
+/// MAP-FLOOR-1: one step of a bundle World, which may change floors. The destination is proven
+/// against the bundle collision and floor table and committed by the owner turn like a source
+/// step; the pacing is the Engineering 150 source onto the destination.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the owner turn binds every independently resolved fact explicitly"
+)]
+fn bundle_step(
+    runtime: &mut ChannelRuntimeV1,
+    cells: &NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    direction: CardinalStep,
+    blocking: &std::collections::BTreeSet<LogicalCell>,
+    speed: Option<u16>,
+    expected: MovementPositionSnapshot,
+) -> StepInChannel {
+    let proof = crate::map::floor::prepare_bundle_step(
+        runtime, cells, actor, session, expected, direction,
+    )?;
+    let onto = proof.destination();
+    if blocking.contains(&cell(onto)) {
+        return Err(MovementError::Blocked);
+    }
+    let duration = duration_onto(&EngineeringGroundSpeed, onto, speed)?;
+    runtime
+        .commit_source_step(proof)
+        .map(|snapshot| (snapshot, duration))
+        .map_err(MovementError::Actor)
+}
+
 fn baseline_step(
     runtime: &mut ChannelRuntimeV1,
     cells: &NativeEntryMovementCells,
@@ -279,6 +328,11 @@ fn baseline_step(
         || expected.context() != owner_context
     {
         return Err(MovementError::ScopeMismatch);
+    }
+    if crate::map::floor::table_of(cells).is_some() {
+        return bundle_step(
+            runtime, cells, actor, session, direction, blocking, speed, expected,
+        );
     }
     if crate::movement::source_floor_change::is_source_profile(cells) {
         let proof = crate::movement::source_floor_change::prepare_source_step(
@@ -384,6 +438,206 @@ mod tests {
         runtime.initialize_first_entry_position(actor).unwrap();
         (runtime, ChannelSpellStates::default(), room, actor, session)
     }
+    /// MAP-FLOOR-1: a Channel booted from `floor_bundle`, with one actor at its start (`z` 8).
+    fn bundle_owner() -> (
+        ChannelRuntimeV1,
+        ChannelSpellStates,
+        NativeEntryMovementCells,
+        ExactActorRef,
+        GameSessionId,
+    ) {
+        use crate::map::boot::tests::{floor_bundle, floor_items, floor_pins};
+        let world = WorldId::decode(&id(1)).unwrap();
+        let channel = ChannelId::decode(&id(2)).unwrap();
+        let room = crate::content::qualify_native_entry_room(world).unwrap();
+        let (bytes, load) = floor_bundle();
+        let booted =
+            crate::map::boot::boot(&bytes, &floor_pins(load), world, channel, floor_items).unwrap();
+        let cells = booted.movement_cells(room.movement_cells()).unwrap();
+        let pin = ChannelContentPin::from_activation(
+            world,
+            1,
+            room.compiled().server_digest(),
+            room.compiled().client_digest(),
+            booted.frame_binding_digest(world),
+            booted.map_revision_digest(),
+            (0, 0, 8),
+        );
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            NodeId::decode(&id(3)).unwrap(),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            pin,
+        )
+        .unwrap();
+        let session = GameSessionId::decode(&id(4)).unwrap();
+        let reservation = runtime.reserve_fresh_session(session).unwrap();
+        let actor = runtime.commit_fresh_session(reservation).unwrap();
+        runtime.initialize_first_entry_position(actor).unwrap();
+        (
+            runtime,
+            ChannelSpellStates::default(),
+            cells,
+            actor,
+            session,
+        )
+    }
+
+    fn at(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef) -> (i32, i32, i16) {
+        let position = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .unwrap()
+            .position();
+        (position.x, position.y, position.floor)
+    }
+
+    #[test]
+    fn map_floor_a_bundle_step_climbs_a_stair_and_drops_through_a_hole() {
+        let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+        let none = std::collections::BTreeSet::new();
+        let mut step = |runtime: &mut ChannelRuntimeV1, direction| {
+            step_in_channel(
+                runtime,
+                &mut states,
+                &cells,
+                actor,
+                session,
+                1,
+                direction,
+                &none,
+                None,
+            )
+        };
+        assert_eq!(at(&mut runtime, actor), (0, 0, 8));
+        // Onto the east stair at x 1: one step east and one floor up.
+        let (_, duration) = step(&mut runtime, CardinalStep::East).unwrap();
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+        // SPEED-1: level 1 on 150 ground, 1000 x 150 / 278 -> 550 ms.
+        assert_eq!(duration, Duration::from_millis(550));
+        // Onto the hole at x 3: one floor down in place.
+        step(&mut runtime, CardinalStep::East).unwrap();
+        assert_eq!(at(&mut runtime, actor), (3, 0, 8));
+        // A plain step keeps the floor.
+        step(&mut runtime, CardinalStep::West).unwrap();
+        assert_eq!(at(&mut runtime, actor), (2, 0, 8));
+        // The stair works from its other side.
+        step(&mut runtime, CardinalStep::West).unwrap();
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+        // A solid box, then the edge of the map, refuse and leave the actor in place.
+        assert!(matches!(
+            step(&mut runtime, CardinalStep::West),
+            Err(MovementError::Blocked)
+        ));
+        assert!(matches!(
+            step(&mut runtime, CardinalStep::North),
+            Err(MovementError::Cell(
+                crate::content::static_cell_engine::StaticCellEngineError::Absent
+            ))
+        ));
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+    }
+
+    #[test]
+    fn map_floor_an_initialized_player_changes_floors_at_its_own_speed() {
+        let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+        let facts = CharacterCastFacts {
+            vocation: crate::spell::Vocation::Knight,
+            level: 291,
+            magic_level: 10,
+            max_health: 1000,
+            max_mana: 500,
+            max_soul: 100,
+        };
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                facts,
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        let (_, duration) = step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            CardinalStep::East,
+            &std::collections::BTreeSet::new(),
+            None,
+        )
+        .unwrap();
+        // Base speed 400 on 150 ground: 200 ms.
+        assert_eq!(duration, Duration::from_millis(200));
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+    }
+
+    #[test]
+    fn map_floor_a_proof_is_bound_to_the_position_it_was_made_for() {
+        let (mut runtime, mut states, cells, actor, session) = bundle_owner();
+        let expected = runtime.borrow_movement_position().read(actor).unwrap();
+        let proof = crate::map::floor::prepare_bundle_step(
+            &runtime,
+            &cells,
+            actor,
+            session,
+            expected,
+            CardinalStep::East,
+        )
+        .unwrap();
+        assert_eq!(proof.destination().floor, 7);
+        // The actor steps elsewhere first: the old proof no longer commits.
+        step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            CardinalStep::South,
+            &std::collections::BTreeSet::new(),
+            None,
+        )
+        .unwrap_err();
+        step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            CardinalStep::West,
+            &std::collections::BTreeSet::new(),
+            None,
+        )
+        .unwrap_err();
+        // Move for real, then replay the stale proof.
+        step_in_channel(
+            &mut runtime,
+            &mut states,
+            &cells,
+            actor,
+            session,
+            1,
+            CardinalStep::East,
+            &std::collections::BTreeSet::new(),
+            None,
+        )
+        .unwrap();
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+        assert!(runtime.commit_source_step(proof).is_err());
+        assert_eq!(at(&mut runtime, actor), (2, 0, 7));
+    }
+
     #[test]
     fn real_first_entry_without_spell_state_keeps_baseline_and_door_blocking() {
         let (mut runtime, mut states, room, actor, session) = owner();

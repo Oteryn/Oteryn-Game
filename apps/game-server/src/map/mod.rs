@@ -15,6 +15,8 @@ use std::fmt;
 
 pub mod boot;
 pub mod facts;
+pub mod floor;
+mod floor_catalogue;
 pub mod overlay;
 pub mod view;
 
