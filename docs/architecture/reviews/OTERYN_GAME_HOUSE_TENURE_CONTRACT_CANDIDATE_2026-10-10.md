@@ -2,8 +2,9 @@
 
 - Decision: `HOUSE-TENURE0-CONSOLIDATED-HOUSE-TENURE-V1`
 - Status: **CANDIDATE**. Docs only. It binds the accepted house contract by reference and
-  re-decides one accepted rule: owner answer Q2a supersedes EXP-HOUSES-01 §17 and §25.21 (Aleta
-  spells edit house lists, §10), which needs the review that supersession requires. It also
+  re-decides one accepted rule: owner answer Q2a lets Aleta spells edit house lists. It
+  supersedes every accepted clause that forbids that (§10 Q2a lists them), and needs the review
+  that supersession requires. It also
   records the live gap on `main`, names one storage conflict and asks the owner the questions
   where the HOUSE-1 control-plane order (#1622) differs from the accepted contract (§8). The
   owner answered them on 2026-10-10 (D972, §10).
@@ -22,7 +23,9 @@
   - the Tibia manual notes `docs/reference/tibia-manual/houses.md` §5.7.2 and §5.7.3;
   - House client 15.33 source audit (PR #1946, open; evidence only): the 995 static records
     match 15.30, one layout (Lakeside Mansion, 55015) changed.
-- Amends: EXP-HOUSES-01 §17 and §25.21 on acceptance (owner answer Q2a, §10); nothing else.
+- Amends on acceptance (owner answer Q2a, §10), and nothing else:
+  - EXP-HOUSES-01 §17, §25.21, §27.8 and the §32 line `ACL PLAYER UX`;
+  - HOUSE-OWN-0 §10 (the bullet "No spell edits the list") and §13 ("House spells for the list").
   Runtime, migration, registry, protocol and production authority: NONE.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
 
@@ -144,11 +147,11 @@ The resolution (owner answer Q1a, §10) keeps one owner per fact:
 
 | Slice | Scenarios |
 |---|---|
-| HOUSE-RUNTIME-1a/1b/1c | 1-4, 25, 26 (interior parts) |
-| HOUSE-1a | 5, 6, 7, 8 (two physical houses), 28, 34, 35, plus the packet §2.3 tests |
-| HOUSE-1b | 10, 11, 40; the voluntary relinquishment and eviction parts of 43; plus the packet §2.4 tests. It supplies the disposition primitive that 23, 24 and the rest of 43 use |
-| HOUSE-ACL-1 | 19, 20; 21 as amended by §10 Q2a |
-| HOUSE-WIRE-1 | 20, 21 at the wire |
+| HOUSE-RUNTIME-1a/1b/1c | 1-4, 26 (interior parts); 19 (1b revocation and revalidation of present occupants); 25 (interior parts) |
+| HOUSE-1a | 5, 6, 7, 8 (two physical houses), 28, 34, 35; 25 (settlement fails closed when Character or Premium authority is out); plus the packet §2.3 tests |
+| HOUSE-1b | 10, 11, 40; 25 (rent, move-out and eviction fail closed); the voluntary relinquishment and eviction parts of 43; plus the packet §2.4 tests. It supplies the disposition primitive that 23, 24 and the rest of 43 use |
+| HOUSE-ACL-1 | 19 (the revision bump and stale-edit refusal), 20; 21 as amended by §10 Q2a; 25 (ACL edits fail closed) |
+| HOUSE-WIRE-1 | 20, 21 and 25 at the wire |
 | Later decisions (Residence, Bazaar, transfer, Character lifecycle, World transfer) | 9, 12-18, 22, 23 (Character finalization), 24 (World transfer), 27, 29-33, 36-39, 41, 42; 43 for Bazaar buyer release, Residence replacement, physical house to Residence, Character deletion and World transfer |
 
 ## 7. Slice plan and critical path
@@ -182,7 +185,8 @@ b) HOUSE-1a migrates `0038`/`0047` onto new tables and retires them (more churn,
 c) keep both stores (rejected: two truths per `HouseId`).
 
 **Q2. Aleta spells for house lists.** `0038` says the owner authorized Aleta alongside the GUI;
-EXP-HOUSES-01 §17 and §25.21 (owner-accepted) forbid spell edits, and no supersession is recorded.
+EXP-HOUSES-01 §17, §25.21, §27.8, §32 and HOUSE-OWN-0 §10, §13 (all accepted) forbid spell
+edits, and no supersession is recorded.
 a) Record the authorization as an EXP-HOUSES-01 §17 supersession under §30: GUI and Aleta write
 the same revisioned list (recommended: Tibia parity, code already on `main`);
 b) keep §17: Aleta stays unavailable and `0038`'s editor path is removed later.
@@ -221,8 +225,20 @@ The owner chose `1a 2a 3a 4a 5a`:
   accepted model as §4.2 states. HOUSE-1a may be allocated once this record is on `main` and the
   exit gate of ARCH-HOUSE-RT-INBOX-PACKETS-1 §1.5 holds. That gate needs HOUSE-RUNTIME-1b and 1c
   accepted with every exit-dependent item met. Both are absent today (§4.1).
-- **Q2a.** EXP-HOUSES-01 §17 and §25.21 are superseded under §30. Aleta spells and the GUI write
-  the same revisioned list with the same permissions; a stale edit returns `STALE_REVISION`.
+- **Q2a.** Superseded under EXP-HOUSES-01 §30, as far as they forbid Aleta list edits:
+  - EXP-HOUSES-01 §17, §25.21, §27.8 and the §32 line `ACL PLAYER UX`;
+  - HOUSE-OWN-0 §10 ("No spell edits the list") and §13 ("House spells for the list").
+
+  Aleta spells and the GUI write the same revisioned list with the same permissions (EXP-HOUSES-01
+  §16.2), and a stale edit returns `STALE_REVISION`. Everything else in those clauses stays
+  binding:
+  - the GUI/panel stays a supported player path;
+  - no other text command administers an ACL;
+  - local client manipulation still cannot change the effective ACL (§25.20);
+  - entry, door and kick checks stay with the interior runtime.
+
+  Scenario 21 becomes: an Aleta edit goes through the same authority, revision and permission
+  checks as the GUI, and no other text command mutates an ACL.
 - **Q3a.** Direct transfer stays deferred (EXP-HOUSES-01 §11.6) until HOUSE-WIRE-1 is playable.
   It then needs its own HOUSE-TRANSFER-0 decision.
 - **Q4a.** Acquisition is the accepted auction only, through `HOUSE_INTENT` and the panel. There

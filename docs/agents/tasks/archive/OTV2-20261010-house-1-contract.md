@@ -28,7 +28,7 @@ high_risk_qualification: NOT_APPLICABLE (docs only)
 
 ## Outcome
 
-Docs-only consolidation candidate. It binds EXP-HOUSES-01, HOUSE-OWN-0, HOUSE-CUSTODY-0, HOUSE-RUNTIME-0, SOCIAL-MAP-PACKETS-1 and ARCH-HOUSE-RT-INBOX-PACKETS-1 by reference. It re-decides one accepted rule: owner answer Q2a supersedes EXP-HOUSES-01 §17 and §25.21 (Aleta list edits). The candidate covers:
+Docs-only consolidation candidate. It binds EXP-HOUSES-01, HOUSE-OWN-0, HOUSE-CUSTODY-0, HOUSE-RUNTIME-0, SOCIAL-MAP-PACKETS-1 and ARCH-HOUSE-RT-INBOX-PACKETS-1 by reference. It re-decides one accepted rule: owner answer Q2a lets Aleta spells edit house lists and supersedes the clauses that forbid that (EXP-HOUSES-01 §17, §25.21, §27.8, §32 `ACL PLAYER UX`; HOUSE-OWN-0 §10, §13). The candidate covers:
 
 - the binding clause for each topic;
 - what `main` has and lacks;
