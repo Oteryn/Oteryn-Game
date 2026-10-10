@@ -17,25 +17,25 @@ implemented.
 
 | Reference page | Dedicated composition | Actual consumer / remaining acceptance |
 | --- | --- | --- |
-| Basic | Yes | Display controls/action-row visibility work; own-resource bars/arcs now have a vitals renderer behind explicit HUD selections; audio remains pending |
+| Basic | Yes | Display controls/action-row visibility work; own-resource bars/arcs have a vitals renderer behind explicit HUD selections. Audio stays disabled because no backend/content exists |
 | Controls | Yes | Movement bindings work; three modifier-only controls and grouped delay intent prepared; input consumers pending |
 | General Hotkeys | Partial: dedicated profile/action table | Add/copy/rename/remove, two chat contexts, delayed-search layout, two captured bindings and cross-family conflict validation work. Character-name profile auto-switch, movement, Options, fullscreen and individual/edge action-bar visibility have consumers; unsupported inventory rows are disabled and most observed actions remain pending |
 | Action Bar Hotkeys | Dedicated 9 × 50 table | Two captured chords per slot in distinct Chat On/Off contexts, migration from 12 slots, modal/held-key routing and both-chord activation work; compiled Windows cross-check and headless page reachability pass, while native Windows visual acceptance remains pending |
 | Custom Hotkeys | Partial: observed editor inventory | Text assignments fill the real composer or send through the typed chat intent. Spell/object assignment and legacy bindings are disabled because no authoritative live picker/assignment exists; their persisted presence is not counted as behavior |
-| Interface | Yes | Language/contrast work; cursor, link-copy warning and expiry intents prepared; consumers pending |
-| HUD | Partial: groups/arcs and all 35 observed conditions | Native PL/EN reachability, per-condition HUD/bar fields, aggregate edits and ordering controls are present; own-health/mana bars/arcs consume real session vitals. Condition-state projection and native live-session visual acceptance remain pending |
-| Console | Yes | Chat visibility works; timestamp/message filters await chat/event projection |
-| Game Window | Yes | The verified Frame & Highlight / Frame Only / Highlight Only / None dropdown is present; target/effect projection consumers remain pending |
-| Action Bars | Yes | Three masters/nine independent 50-slot rows, locks, two chords per slot and session action clearing work |
+| Interface | Yes | Language/contrast and tile-under-pointer highlighting work; system/custom cursor, link-copy warning and expiry controls stay disabled pending consumers |
+| HUD | Partial: groups/arcs and all 35 observed conditions | Own name and harmony use admitted/session data; own health/mana bars/arcs and other-actor health bars consume real projections. Condition controls and ordering are visible but disabled because the protocol exposes no condition projection; native live-session visual acceptance remains pending |
+| Console | Yes | Chat visibility and text size work; timestamp/message filters stay disabled pending chat/event projection |
+| Game Window | Yes | Frame & Highlight / Frame Only / Highlight Only / None drive the real target frame and scene overlay. Text/combat/effect projections remain disabled |
+| Action Bars | Yes | Three masters/nine independent 50-slot rows, locks, two chords per slot and session action clearing work. Hotkey labels, item amounts and tooltips drive the live action-row renderer |
 | Shortcuts | Yes, two lists | Add/remove/order edits affect draft only; Apply updates live registry, Cancel discards |
-| Graphics | Yes | Fullscreen/VSync/FPS work; reference arrangement prepared; engine/AA consumers pending |
-| Effects | Yes, lighting + opacity groups | Bounded stored percentages; lighting/effect renderer consumers pending |
-| Sound | Yes, device + five volume groups | Food/move-item controls belong in item group; audio backend/content pending |
-| Battle Sounds | Yes, own/others/creatures | Nested spell categories and volume preferences stored; mixer/events pending |
-| UI Sounds | Yes, UI/social + console categories | Filters stored; audio playback pending |
+| Graphics | Yes | Fullscreen/VSync/frame limits, live frame-rate readout and the optional FPS overlay work; engine/AA controls stay disabled pending renderer capabilities |
+| Effects | Yes, lighting + opacity groups | Lighting and ambient intensity drive a bounded scene overlay. Floor/cloud/indoor/spell-effect controls stay disabled pending projections/renderers |
+| Sound | Yes, device + five volume groups | Food/move-item controls belong in item group; all controls are disabled because no audio backend/content exists |
+| Battle Sounds | Yes, own/others/creatures | Nested spell categories are present but disabled because no mixer/events exist |
+| UI Sounds | Yes, UI/social + console categories | Filters are present but disabled because no audio playback exists |
 | Miscellaneous | Yes, seven rows | Confirmation and session selections require explicit consumers; secure remembered sign-in stays OFF/unwired |
 | Gameplay | Yes | Inspection/chase/loot intent prepared; engine contracts/consumers pending |
-| Screenshots | Yes, two trigger columns | Seventeen individual triggers prepared; capture pipeline/storage/folder action incomplete |
+| Screenshots | Yes, two trigger columns | The folder action creates and opens the local Oteryn screenshot directory. Seventeen triggers stay disabled because capture/event pipelines do not exist |
 | Help | Partial | Info is local; complete options export/import and confirmed reset work. Client Help, Compendium, Rule Violations, Manual and FAQ stay visibly disabled because no verified Oteryn destination exists; minimap import/export is likewise disabled because no versioned format exists |
 
 ## Compiled-page verification — 2026-10-10
@@ -56,6 +56,9 @@ implemented.
 - Control type, label, grouping, order and dimensions compared with a named private
   capture; dropdown membership and defaults only when actually observed.
 - Unknown settings remain unset; simply drawing a page must not persist defaults.
+- Catalogue rows without a real runtime consumer are disabled. Previously saved
+  values remain round-trippable for compatibility but cannot be edited or counted
+  as working behavior.
 - Draft edits survive navigation; Cancel discards; successful Apply updates live
   consumers and restart; failed save preserves the previous active configuration.
 - Every actionable control is reachable at the default native window size and

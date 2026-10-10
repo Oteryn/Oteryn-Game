@@ -28,6 +28,7 @@ pub(super) enum HelpAction {
     Export,
     Import,
     Reset,
+    OpenScreenshotFolder,
 }
 
 impl PageState {
@@ -53,7 +54,7 @@ pub(super) fn show(
         "help" => help(ui, english, state),
         _ => {
             return hotkeys::show(ui, draft, section, english, &mut state.hotkeys)
-                || hud::show(ui, draft, section, english)
+                || hud::show(ui, draft, section, english, state)
                 || display::show(ui, draft, section, english, state);
         }
     }
@@ -209,13 +210,29 @@ fn percent(
     };
     let mut value = selected.unwrap_or(0);
     let text = selected.map_or_else(|| "—".into(), |v| format!("{v}%"));
-    let response = ui.push_id(&key, |ui| ui.horizontal(|ui| {
-        ui.label(format!("{} {text}", labels[usize::from(en)]));
-        ui.spacing_mut().slider_width = ui.available_width().clamp(45.0, 185.0);
-        ui.add(egui::Slider::new(&mut value, 0..=100).show_value(false))
-            .on_hover_text(if crate::actor_hud::resource_consumer(&key) { if en { "Applied to own-character resource arcs; — means no explicit value." } else { "Działa na łuki zasobów własnej postaci; — oznacza brak własnej wartości." } } else if en { "Saved preference. Playback/rendering support is pending; — means unset." } else { "Zapisany wybór. Obsługa odtwarzania/renderowania jest w przygotowaniu; — oznacza brak wyboru." })
-    }).inner).inner;
-    if response.changed() || (selected.is_none() && response.clicked()) {
+    let consumer = oteryn_client::settings_catalog::runtime_consumer(&key);
+    let response = ui
+        .push_id(&key, |ui| {
+            ui.horizontal(|ui| {
+                ui.label(format!("{} {text}", labels[usize::from(en)]));
+                ui.spacing_mut().slider_width = ui.available_width().clamp(45.0, 185.0);
+                ui.add_enabled(
+                    consumer.is_some(),
+                    egui::Slider::new(&mut value, 0..=100).show_value(false),
+                )
+                .on_hover_text(match (consumer, en) {
+                    (Some(consumer), true) => format!("Applied by {consumer}; — means unset."),
+                    (Some(consumer), false) => {
+                        format!("Używane przez: {consumer}; — oznacza brak wyboru.")
+                    }
+                    (None, true) => "Unavailable: this control has no runtime consumer.".into(),
+                    (None, false) => "Niedostępne: ta kontrolka nie ma obsługi wykonawczej.".into(),
+                })
+            })
+            .inner
+        })
+        .inner;
+    if consumer.is_some() && (response.changed() || (selected.is_none() && response.clicked())) {
         draft
             .future_preferences
             .insert(key, FutureValue::Int(value));

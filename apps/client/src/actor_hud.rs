@@ -2,7 +2,8 @@
 //! Original UI textures are not used; the geometry is independently authored.
 use egui::{Color32, Pos2, Rect, Shape, Stroke, Vec2};
 use oteryn_client::{settings::ClientSettings, settings_catalog::FutureValue};
-use oteryn_session::ActorVitals;
+use oteryn_renderer::{TileCoord, TileView};
+use oteryn_session::{ActorVitals, EntityDetail, WorldSpatialEntity};
 
 fn enabled(settings: &ClientSettings, key: &str) -> bool {
     matches!(
@@ -11,18 +12,60 @@ fn enabled(settings: &ClientSettings, key: &str) -> bool {
     )
 }
 
-pub fn resource_consumer(key: &str) -> bool {
-    matches!(
-        key,
-        "hud.hud.player_enabled"
-            | "hud.hud.resource_bars"
-            | "hud.hud.owner_health"
-            | "hud.hud.owner_mana"
-            | "hud.hud.arcs"
-            | "hud.arc_size_preset"
-            | "hud.hud.arc_distance"
-            | "hud.hud.arc_opacity"
-    )
+fn other_health_shapes(
+    settings: &ClientSettings,
+    view: &TileView,
+    entities: &[WorldSpatialEntity],
+    own: TileCoord,
+    floor: i16,
+    scene: Rect,
+    scale: f32,
+) -> Vec<Shape> {
+    if !enabled(settings, "hud.hud.creatures_enabled") || !enabled(settings, "hud.hud.other_health")
+    {
+        return Vec::new();
+    }
+    let mut shapes = Vec::new();
+    for entity in entities {
+        let EntityDetail::Actor { health_percent, .. } = entity.detail else {
+            continue;
+        };
+        let tile = TileCoord::new(entity.position.x, entity.position.y);
+        if entity.position.floor != floor || tile == own || !view.contains(tile) {
+            continue;
+        }
+        let [x, y] = view.tile_to_screen(tile);
+        let center = scene.min
+            + egui::vec2(
+                x + oteryn_client::scene::SCENE_TILE_PX as f32 / 2.0,
+                y + oteryn_client::scene::SCENE_TILE_PX as f32 / 2.0,
+            ) * scale;
+        let rect = Rect::from_min_size(
+            center + egui::vec2(-16.0, -25.0) * scale,
+            egui::vec2(32.0, 4.0) * scale,
+        );
+        shapes.push(Shape::rect_filled(rect, 0.0, Color32::BLACK));
+        let track = rect.shrink(0.75 * scale);
+        let fraction = f32::from(health_percent.min(100)) / 100.0;
+        if fraction > 0.0 {
+            let color = if health_percent > 60 {
+                Color32::from_rgb(55, 183, 61)
+            } else if health_percent > 30 {
+                Color32::from_rgb(222, 170, 48)
+            } else {
+                Color32::from_rgb(205, 57, 47)
+            };
+            shapes.push(Shape::rect_filled(
+                Rect::from_min_size(
+                    track.min,
+                    egui::vec2(track.width() * fraction, track.height()),
+                ),
+                0.0,
+                color,
+            ));
+        }
+    }
+    shapes
 }
 
 fn percent(settings: &ClientSettings, key: &str, fallback: f32) -> f32 {
@@ -161,6 +204,7 @@ pub fn show(
     own: [f32; 2],
     settings: &ClientSettings,
     vitals: Option<ActorVitals>,
+    character_name: Option<&str>,
 ) {
     if !scene.is_finite() || !scene.is_positive() {
         return;
@@ -172,17 +216,75 @@ pub fn show(
     if !scene.contains(center) {
         return;
     }
-    ctx.layer_painter(egui::LayerId::new(
+    let painter = ctx.layer_painter(egui::LayerId::new(
         egui::Order::Background,
         "own-resource-hud".into(),
+    ));
+    let painter = painter.with_clip_rect(scene);
+    painter.extend(shapes(settings, vitals, center, scale));
+    if enabled(settings, "hud.hud.player_enabled")
+        && enabled(settings, "hud.hud.owner_name")
+        && let Some(name) = character_name
+    {
+        painter.text(
+            center + egui::vec2(0.0, -30.0) * scale,
+            egui::Align2::CENTER_BOTTOM,
+            name,
+            egui::FontId::proportional(11.0 * scale.clamp(0.75, 1.5)),
+            Color32::WHITE,
+        );
+    }
+    if enabled(settings, "hud.hud.player_enabled")
+        && enabled(settings, "hud.show_harmony")
+        && let Some(vitals) = vitals
+    {
+        let side = if settings.stored_choice("hud.harmony_position") == Some("mana") {
+            1.0
+        } else {
+            -1.0
+        };
+        painter.text(
+            center + egui::vec2(side * 38.0, 0.0) * scale,
+            egui::Align2::CENTER_CENTER,
+            vitals.harmony,
+            egui::FontId::proportional(10.0 * scale.clamp(0.75, 1.5)),
+            if vitals.serene {
+                Color32::from_rgb(135, 211, 246)
+            } else {
+                Color32::from_rgb(236, 205, 126)
+            },
+        );
+    }
+}
+
+pub fn show_other_health(
+    ctx: &egui::Context,
+    scene: Rect,
+    view: &TileView,
+    own: TileCoord,
+    floor: i16,
+    settings: &ClientSettings,
+    entities: &[WorldSpatialEntity],
+) {
+    if !scene.is_finite() || !scene.is_positive() {
+        return;
+    }
+    let scale = scene.width()
+        / (oteryn_client::scene::SCENE_COLUMNS * oteryn_client::scene::SCENE_TILE_PX) as f32;
+    ctx.layer_painter(egui::LayerId::new(
+        egui::Order::Background,
+        "other-health-hud".into(),
     ))
     .with_clip_rect(scene)
-    .extend(shapes(settings, vitals, center, scale));
+    .extend(other_health_shapes(
+        settings, view, entities, own, floor, scene, scale,
+    ));
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oteryn_session::{ActorPosition, EntityKind, EntityRef, StepDirection};
     fn configured() -> ClientSettings {
         let mut settings = ClientSettings::default();
         for key in [
@@ -301,6 +403,62 @@ mod tests {
             )
             .len(),
             1
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn other_health_uses_authoritative_percent_and_excludes_own_and_other_floors()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut settings = ClientSettings::default();
+        for key in ["hud.hud.creatures_enabled", "hud.hud.other_health"] {
+            settings
+                .future_preferences
+                .insert(key.into(), FutureValue::Bool(true));
+        }
+        let view = TileView::new(TileCoord::new(0, 0), 48, 15, 11)?;
+        let actor = |x, floor, health_percent| WorldSpatialEntity {
+            kind: EntityKind::Creature,
+            entity: EntityRef {
+                identity: [x as u8; 16],
+                generation: 1,
+            },
+            position: ActorPosition { x, y: 2, floor },
+            detail: EntityDetail::Actor {
+                direction: StepDirection::South,
+                appearance_ref: 1,
+                health_percent,
+            },
+        };
+        let scene = Rect::from_min_size(Pos2::ZERO, egui::vec2(720.0, 528.0));
+        let shapes = other_health_shapes(
+            &settings,
+            &view,
+            &[actor(1, 0, 25), actor(2, 1, 100), actor(3, 0, 0)],
+            TileCoord::new(3, 2),
+            0,
+            scene,
+            1.0,
+        );
+        assert_eq!(shapes.len(), 2); // Track + 25% fill; the zero-health own actor is excluded.
+        let (Shape::Rect(track), Shape::Rect(fill)) = (&shapes[0], &shapes[1]) else {
+            return Err("health shapes".into());
+        };
+        assert!((fill.rect.width() / track.rect.shrink(0.75).width() - 0.25).abs() < 0.001);
+        settings
+            .future_preferences
+            .insert("hud.hud.creatures_enabled".into(), FutureValue::Bool(false));
+        assert!(
+            other_health_shapes(
+                &settings,
+                &view,
+                &[actor(1, 0, 100)],
+                TileCoord::new(3, 2),
+                0,
+                scene,
+                1.0,
+            )
+            .is_empty()
         );
         Ok(())
     }

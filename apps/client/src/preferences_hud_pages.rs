@@ -1,5 +1,5 @@
 //! HUD, confirmation and capture page compositions. Server state is never fabricated.
-use super::{boxed, percent, reference_option, row};
+use super::{HelpAction, PageState, boxed, percent, reference_option, row};
 use oteryn_client::settings::ClientSettings;
 use oteryn_client::settings_catalog::FutureValue;
 
@@ -44,11 +44,17 @@ const CONDITIONS: [(&str, [&str; 2]); 35] = [
     ("hungry", ["Głód", "Hungry"]),
 ];
 
-pub(super) fn show(ui: &mut egui::Ui, draft: &mut ClientSettings, section: &str, en: bool) -> bool {
+pub(super) fn show(
+    ui: &mut egui::Ui,
+    draft: &mut ClientSettings,
+    section: &str,
+    en: bool,
+    state: &mut PageState,
+) -> bool {
     match section {
         "hud" => hud(ui, draft, en),
         "miscellaneous" => miscellaneous(ui, draft, en),
-        "screenshots" => screenshots(ui, draft, en),
+        "screenshots" => screenshots(ui, draft, en, state),
         _ => return false,
     }
     true
@@ -307,6 +313,9 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 ui.vertical(|ui| {
                     ui.add_space(45.0);
                     let index = order.iter().position(|id| id == &selected).unwrap_or(0);
+                    let order_supported =
+                        oteryn_client::settings_catalog::runtime_consumer("hud.condition_order")
+                            .is_some();
                     for (label, target, allowed) in [
                         ("↑", index.saturating_sub(1), index > 0),
                         (
@@ -316,7 +325,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                         ),
                     ] {
                         let response = ui.add_enabled(
-                            allowed,
+                            allowed && order_supported,
                             egui::Button::new("").min_size(egui::vec2(30.0, 30.0)),
                         );
                         #[cfg(test)]
@@ -325,7 +334,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                         });
                         let center = response.rect.center();
                         let direction = if label == "↑" { -1.0 } else { 1.0 };
-                        let color = if allowed {
+                        let color = if allowed && order_supported {
                             ui.visuals().text_color()
                         } else {
                             ui.visuals().weak_text_color()
@@ -339,7 +348,12 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                             egui::Stroke::new(1.5, color),
                         ));
                         if response
-                            .on_hover_text(if label == "↑" {
+                            .on_hover_text(if !order_supported {
+                                tr(
+                                    "Niedostępne bez projekcji stanów HUD",
+                                    "Unavailable without a HUD condition projection",
+                                )
+                            } else if label == "↑" {
                                 tr("Przenieś w górę", "Move up")
                             } else {
                                 tr("Przenieś w dół", "Move down")
@@ -443,7 +457,7 @@ fn miscellaneous(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
     });
 }
 
-fn screenshots(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
+fn screenshots(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut PageState) {
     for (id, labels) in [
         (
             "capture.game_only",
@@ -509,19 +523,21 @@ fn screenshots(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             });
         },
     );
-    ui.add_enabled(
-        false,
-        egui::Button::new(if en {
+    if ui
+        .button(if en {
             "Open Screenshot Folder"
         } else {
             "Otwórz folder zrzutów"
-        }),
-    )
-    .on_hover_text(if en {
-        "Capture storage is not configured yet."
-    } else {
-        "Zapis zrzutów nie został jeszcze podłączony."
-    });
+        })
+        .on_hover_text(if en {
+            "Create and open Oteryn's local screenshot folder."
+        } else {
+            "Utwórz i otwórz lokalny folder zrzutów Oteryn."
+        })
+        .clicked()
+    {
+        state.help_action = Some(HelpAction::OpenScreenshotFolder);
+    }
 }
 
 #[cfg(test)]
@@ -543,7 +559,7 @@ mod tests {
                     egui::Window::new("HUD test")
                         .default_size([510.0, 450.0])
                         .show(ctx, |ui| {
-                            show(ui, draft, "hud", en);
+                            show(ui, draft, "hud", en, &mut PageState::default());
                         });
                 };
                 for _ in 0..3 {
@@ -583,7 +599,8 @@ mod tests {
     }
 
     #[test]
-    fn hud_column_master_preserves_all_individual_choices() -> Result<(), &'static str> {
+    fn unavailable_condition_controls_preserve_existing_choices_without_saving_more()
+    -> Result<(), &'static str> {
         let ctx = egui::Context::default();
         let size = egui::vec2(1100.0, 900.0);
         let mut draft = ClientSettings::default();
@@ -598,13 +615,13 @@ mod tests {
             egui::Window::new("HUD test")
                 .fixed_size([1050.0, 850.0])
                 .show(ctx, |ui| {
-                    show(ui, draft, "hud", true);
+                    show(ui, draft, "hud", true, &mut PageState::default());
                 });
         };
         for _ in 0..3 {
             let _ = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft));
         }
-        for value in [true, false, true] {
+        for _ in 0..3 {
             let (rect, clip) = ctx
                 .data(|data| {
                     data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
@@ -615,9 +632,10 @@ mod tests {
                 .ok_or("header")?;
             assert!(clip.contains_rect(rect));
             click(&ctx, size, rect.center(), |ctx| draw(ctx, &mut draft));
-            assert_eq!(
-                draft.future_preferences.get("hud.conditions_hud_enabled"),
-                Some(&FutureValue::Bool(value))
+            assert!(
+                !draft
+                    .future_preferences
+                    .contains_key("hud.conditions_hud_enabled")
             );
             for (key, expected) in &choices {
                 assert_eq!(draft.future_preferences.get(key), Some(expected));
@@ -627,13 +645,7 @@ mod tests {
             .data(|d| d.get_temp::<egui::Rect>(egui::Id::new(("condition-order", "↓"))))
             .ok_or("reorder control")?;
         click(&ctx, size, down.center(), |ctx| draw(ctx, &mut draft));
-        match draft.future_preferences.get("hud.condition_order") {
-            Some(FutureValue::Text(order)) => {
-                assert!(order.starts_with("burning,poison,"));
-                assert_eq!(order.split(',').count(), 35);
-            }
-            _ => return Err("order not saved"),
-        }
+        assert!(!draft.future_preferences.contains_key("hud.condition_order"));
         for (key, expected) in &choices {
             assert_eq!(draft.future_preferences.get(key), Some(expected));
         }

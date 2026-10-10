@@ -13,8 +13,74 @@ use oteryn_session::{
     EquipmentSlot, ItemEntry, ItemMoveOutcome, UseDisposition,
 };
 
+fn tile_overlay_rect(
+    scene: egui::Rect,
+    view: &oteryn_renderer::TileView,
+    tile: oteryn_renderer::TileCoord,
+) -> Option<egui::Rect> {
+    if !view.contains(tile) {
+        return None;
+    }
+    let scale = scene.width()
+        / (oteryn_client::scene::SCENE_COLUMNS * oteryn_client::scene::SCENE_TILE_PX) as f32;
+    let [x, y] = view.tile_to_screen(tile);
+    Some(egui::Rect::from_min_size(
+        scene.min + egui::vec2(x, y) * scale,
+        egui::Vec2::splat(oteryn_client::scene::SCENE_TILE_PX as f32 * scale),
+    ))
+}
+
+fn scene_setting_overlays(
+    ctx: &egui::Context,
+    scene: egui::Rect,
+    view: &PlayView,
+    settings: &ClientSettings,
+) {
+    if settings.stored_bool("effects.effects.lighting") == Some(true)
+        && let Some(ambient) = settings.stored_int("effects.effects.ambient_light")
+    {
+        let alpha = (((100 - ambient.clamp(0, 100)) as f32 / 100.0) * 190.0).round() as u8;
+        ctx.layer_painter(egui::LayerId::new(
+            egui::Order::Background,
+            "scene-ambient-light".into(),
+        ))
+        .rect_filled(scene, 0.0, Color32::from_black_alpha(alpha));
+    }
+    let painter = ctx
+        .layer_painter(egui::LayerId::new(
+            egui::Order::Background,
+            "scene-setting-overlays".into(),
+        ))
+        .with_clip_rect(scene);
+    if settings.target_highlight_enabled()
+        && let Some(target) = view.scene().target()
+        && let Some(rect) = tile_overlay_rect(scene, view.scene().view(), target.tile)
+    {
+        painter.rect_filled(rect, 0.0, Color32::from_rgba_unmultiplied(235, 195, 64, 58));
+    }
+    if settings.stored_bool("interface.interface.highlight_mouse") == Some(true)
+        && let Some(pointer) = ctx.pointer_hover_pos()
+        && scene.contains(pointer)
+    {
+        let scale = scene.width()
+            / (oteryn_client::scene::SCENE_COLUMNS * oteryn_client::scene::SCENE_TILE_PX) as f32;
+        let local = (pointer - scene.min) / scale;
+        if let Some(tile) = view.scene().view().screen_to_tile(local.x, local.y)
+            && let Some(rect) = tile_overlay_rect(scene, view.scene().view(), tile)
+        {
+            painter.rect_stroke(
+                rect.shrink(1.0),
+                0.0,
+                egui::Stroke::new(1.5, Color32::from_rgb(225, 207, 143)),
+                egui::StrokeKind::Inside,
+            );
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct GameUi {
+    character_name: Option<String>,
     draft: String,
     recipient: String,
     channel: usize,
@@ -29,6 +95,10 @@ pub struct GameUi {
 }
 
 impl GameUi {
+    pub fn set_character_name(&mut self, name: String) {
+        self.character_name = Some(name);
+    }
+
     pub fn blocks_game_input(&self) -> bool {
         self.panels.manage || self.dialogs.any_open()
     }
@@ -208,17 +278,28 @@ impl GameUi {
                 egui::pos2(viewport.x, viewport.y),
                 egui::vec2(viewport.width, viewport.height),
             );
+            scene_setting_overlays(ctx, scene, view, settings);
             crate::actor_hud::show(
                 ctx,
                 scene,
                 view.scene().view().tile_to_screen(view.own()),
                 settings,
                 state.vitals,
+                self.character_name.as_deref(),
+            );
+            crate::actor_hud::show_other_health(
+                ctx,
+                scene,
+                view.scene().view(),
+                view.own(),
+                view.floor(),
+                settings,
+                &state.entities,
             );
         }
         let commands = self.bar(settings).map_or_else(Vec::new, |bar| {
             // Available spells need an authoritative catalogue projection.
-            crate::action_bar_ui::show(ctx, bar, &state, &[], en, body, hud_enabled)
+            crate::action_bar_ui::show(ctx, bar, &state, &[], settings, body, hud_enabled)
         });
         for command in commands {
             if !link.send_action(command) {
@@ -270,6 +351,16 @@ impl GameUi {
                 ui.horizontal(|ui| {
                     if let Some(vitals) = state.vitals {
                         ui.small(format!("Soul {} · Harmony {}", vitals.soul, vitals.harmony));
+                    }
+                    if settings.stored_bool("graphics.graphics.fps_indicator") == Some(true) {
+                        let fps = ctx.input(|input| {
+                            if input.stable_dt > 0.0 {
+                                1.0 / input.stable_dt
+                            } else {
+                                0.0
+                            }
+                        });
+                        ui.small(format!("{fps:.0} FPS"));
                     }
                     if ui
                         .small_button(tr("Ustawienia · F10", "Settings · F10"))
@@ -562,7 +653,14 @@ impl GameUi {
                                         _ => None,
                                     };
                                     if let Some(text) = text {
-                                        ui.label(text);
+                                        if let Some(size) = settings
+                                            .stored_int("console.console.font_size")
+                                            .map(|size| size.clamp(10, 32) as f32)
+                                        {
+                                            ui.label(RichText::new(text).size(size));
+                                        } else {
+                                            ui.label(text);
+                                        }
                                     }
                                 }
                             });

@@ -93,6 +93,48 @@ impl Default for ClientSettings {
 }
 
 impl ClientSettings {
+    #[must_use]
+    pub fn stored_bool(&self, key: &str) -> Option<bool> {
+        match self.future_preferences.get(key) {
+            Some(crate::settings_catalog::FutureValue::Bool(value)) => Some(*value),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub fn stored_int(&self, key: &str) -> Option<i32> {
+        match self.future_preferences.get(key) {
+            Some(crate::settings_catalog::FutureValue::Int(value)) => Some(*value),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub fn stored_choice(&self, key: &str) -> Option<&str> {
+        match self.future_preferences.get(key) {
+            Some(crate::settings_catalog::FutureValue::Choice(value)) => Some(value),
+            _ => None,
+        }
+    }
+
+    /// An unset preference preserves the pre-settings behavior: atlas frame on,
+    /// translucent highlight off.
+    #[must_use]
+    pub fn target_frame_enabled(&self) -> bool {
+        !matches!(
+            self.stored_choice("game_window.window.target_marking"),
+            Some("highlight_only" | "none")
+        )
+    }
+
+    #[must_use]
+    pub fn target_highlight_enabled(&self) -> bool {
+        matches!(
+            self.stored_choice("game_window.window.target_marking"),
+            Some("frame_and_highlight" | "highlight_only")
+        )
+    }
+
     /// Local count control enables the first N rows of the chosen edge, preserving
     /// every row's locks and chords. The detailed editor can select arbitrary rows.
     pub fn set_action_row_count(&mut self, edge: usize, count: u8) -> io::Result<()> {
@@ -359,6 +401,26 @@ mod tests {
         settings = ClientSettings::default();
         settings.version = 2;
         assert!(settings.validate().is_err());
+    }
+
+    #[test]
+    fn target_marking_maps_all_observed_choices_without_inventing_an_unset_default() {
+        let mut settings = ClientSettings::default();
+        assert!(settings.target_frame_enabled());
+        assert!(!settings.target_highlight_enabled());
+        for (choice, frame, highlight) in [
+            ("frame_and_highlight", true, true),
+            ("frame_only", true, false),
+            ("highlight_only", false, true),
+            ("none", false, false),
+        ] {
+            settings.future_preferences.insert(
+                "game_window.window.target_marking".into(),
+                crate::settings_catalog::FutureValue::Choice(choice.into()),
+            );
+            assert_eq!(settings.target_frame_enabled(), frame, "{choice}");
+            assert_eq!(settings.target_highlight_enabled(), highlight, "{choice}");
+        }
     }
 
     #[test]
@@ -689,7 +751,10 @@ mod tests {
         }
         for section in SETTINGS_SECTIONS {
             for option in section.options {
-                if !matches!(option.implementation, Implementation::Pending { .. }) {
+                if !matches!(
+                    option.implementation,
+                    Implementation::Stored { .. } | Implementation::Pending { .. }
+                ) {
                     continue;
                 }
                 let value = match option.kind {

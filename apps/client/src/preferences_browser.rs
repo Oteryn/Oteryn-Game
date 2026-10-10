@@ -34,6 +34,7 @@ pub enum PreferenceAction {
     ExportOptions,
     ImportOptions,
     ResetOptions,
+    OpenScreenshotFolder,
 }
 
 impl PreferencesBrowser {
@@ -172,6 +173,7 @@ impl PreferencesBrowser {
                                     pages::HelpAction::Export => PreferenceAction::ExportOptions,
                                     pages::HelpAction::Import => PreferenceAction::ImportOptions,
                                     pages::HelpAction::Reset => PreferenceAction::ResetOptions,
+                                    pages::HelpAction::OpenScreenshotFolder => PreferenceAction::OpenScreenshotFolder,
                                 };
                             }
                         }
@@ -186,11 +188,27 @@ impl PreferencesBrowser {
                             if section.id == "action_hotkeys" { continue; }
                             match option.implementation {
                                 Implementation::Implemented{field} => implemented(ui, draft, option, field, english),
-                                Implementation::Pending{..} => {
+                                Implementation::Stored { consumer } => {
                                     let key = format!("{}.{}", section.id, option.id);
                                     ui.push_id(&key, |ui| {
-                                        ui.label(option.text(english)).on_hover_text(tr("Możesz zapisać swój wybór. Działanie tej funkcji nie jest jeszcze dostępne.", "Your selection can be saved. This feature is not available yet."));
-                                        pending(ui, draft, option, key.clone(), english);
+                                        ui.label(option.text(english)).on_hover_text(if english {
+                                            format!("Applied by {consumer}.")
+                                        } else {
+                                            format!("Używane przez: {consumer}.")
+                                        });
+                                        stored_value(ui, draft, option, key.clone(), english);
+                                    });
+                                    ui.separator();
+                                }
+                                Implementation::Pending{ consumer } => {
+                                    let key = format!("{}.{}", section.id, option.id);
+                                    ui.push_id(&key, |ui| {
+                                        ui.label(option.text(english)).on_hover_text(if english {
+                                            format!("Unavailable: missing {consumer}.")
+                                        } else {
+                                            format!("Niedostępne: brak obsługi przez {consumer}.")
+                                        });
+                                        unavailable_value(ui, draft, option, key.clone(), english);
                                     });
                                     ui.separator();
                                 }
@@ -256,15 +274,20 @@ fn future_toggle(
     label: &str,
     english: bool,
 ) {
+    let consumer = oteryn_client::settings_catalog::runtime_consumer(key);
     let stored = draft.future_preferences.get(key);
     let mut value = matches!(stored, Some(FutureValue::Bool(true)));
     let response = ui
-        .add(egui::Checkbox::new(&mut value, label).indeterminate(stored.is_none()))
-        .on_hover_text(if crate::actor_hud::resource_consumer(key) {
-            if english { "Applied to the own character's available health/mana projection. Names, marks and conditions still await their consumers." }
-            else { "Obsługuje dostępne zdrowie i manę własnej postaci. Nazwy, znaczniki i stany wymagają dalszej obsługi." }
-        } else if english { "Saved selection; gameplay support is pending." }
-        else { "Zapisany wybór; działanie w grze oczekuje na obsługę." });
+        .add_enabled(
+            consumer.is_some(),
+            egui::Checkbox::new(&mut value, label).indeterminate(stored.is_none()),
+        )
+        .on_hover_text(match (consumer, english) {
+            (Some(consumer), true) => format!("Applied by {consumer}."),
+            (Some(consumer), false) => format!("Używane przez: {consumer}."),
+            (None, true) => "Unavailable: this control has no runtime consumer.".into(),
+            (None, false) => "Niedostępne: ta kontrolka nie ma obsługi wykonawczej.".into(),
+        });
     // Keep egui's input/accessibility behavior and paint the project's compact square control.
     let icon = egui::Rect::from_center_size(
         egui::pos2(response.rect.left() + 8.0, response.rect.center().y),
@@ -313,7 +336,7 @@ fn future_toggle(
             (response.rect, ui.clip_rect()),
         )
     });
-    if response.changed() {
+    if consumer.is_some() && response.changed() {
         draft
             .future_preferences
             .insert(key.into(), FutureValue::Bool(value));
@@ -349,8 +372,10 @@ fn reference_option(
     };
     let key = format!("{section}.{id}");
     ui.push_id(&key, |ui| {
-        if matches!(option.implementation, Implementation::Pending { .. })
-            && option.kind == OptionKind::Toggle
+        if matches!(
+            option.implementation,
+            Implementation::Stored { .. } | Implementation::Pending { .. }
+        ) && option.kind == OptionKind::Toggle
         {
             future_toggle(ui, draft, &key, label, english);
         } else if let Implementation::Implemented {
@@ -359,20 +384,25 @@ fn reference_option(
         {
             ui.vertical(|ui| implemented(ui, draft, option, "movement_keys", english));
         } else {
-            ui.horizontal(|ui| {
-                if let Implementation::Implemented { field } = option.implementation {
+            ui.horizontal(|ui| match option.implementation {
+                Implementation::Implemented { field } => {
                     if field == "fullscreen" {
                         ui.checkbox(&mut draft.fullscreen, label);
                     } else {
                         implemented(ui, draft, option, field, english);
                     }
-                } else {
+                }
+                Implementation::Stored { .. } => {
+                    ui.label(label);
+                    stored_value(ui, draft, option, key.clone(), english);
+                }
+                Implementation::Pending { consumer } => {
                     ui.label(label).on_hover_text(if english {
-                        "Saved selection; gameplay support is pending."
+                        format!("Unavailable: missing {consumer}.")
                     } else {
-                        "Zapisany wybór; działanie w grze oczekuje na obsługę."
+                        format!("Niedostępne: brak obsługi przez {consumer}.")
                     });
-                    pending(ui, draft, option, key.clone(), english);
+                    unavailable_value(ui, draft, option, key.clone(), english);
                 }
             });
         }
@@ -506,15 +536,31 @@ fn master_volume(ui: &mut egui::Ui, draft: &mut ClientSettings, english: bool) -
     };
     let mut value = selected.unwrap_or(0);
     let text = selected.map_or_else(|| "—".to_string(), |value| format!("{value}%"));
-    let response = ui.horizontal(|ui| {
-        ui.label(format!("{} {text}", if english { "Master Volume:" } else { "Głośność główna:" }));
-        ui.spacing_mut().slider_width = ui.available_width().clamp(50.0, 180.0);
-        ui.add(egui::Slider::new(&mut value, 0..=100).show_value(false)).on_hover_text(if english {
-            "Choose a saved volume preference. — means unset. Audio playback is not yet supported."
-        } else { "Wybierz zapisaną głośność. — oznacza brak wyboru. Odtwarzanie dźwięku oczekuje na obsługę." })
-    }).inner;
+    let consumer = oteryn_client::settings_catalog::runtime_consumer(key);
+    let response = ui
+        .horizontal(|ui| {
+            ui.label(format!(
+                "{} {text}",
+                if english {
+                    "Master Volume:"
+                } else {
+                    "Głośność główna:"
+                }
+            ));
+            ui.spacing_mut().slider_width = ui.available_width().clamp(50.0, 180.0);
+            ui.add_enabled(
+                consumer.is_some(),
+                egui::Slider::new(&mut value, 0..=100).show_value(false),
+            )
+            .on_hover_text(if english {
+                "Unavailable: audio playback has no runtime backend."
+            } else {
+                "Niedostępne: odtwarzanie dźwięku nie ma jeszcze warstwy wykonawczej."
+            })
+        })
+        .inner;
     // Choosing zero explicitly also changes the selection from unknown to known.
-    if response.changed() || (selected.is_none() && response.clicked()) {
+    if consumer.is_some() && (response.changed() || (selected.is_none() && response.clicked())) {
         draft
             .future_preferences
             .insert(key.into(), FutureValue::Int(value));
@@ -828,7 +874,7 @@ fn implemented(
     }
 }
 
-fn pending(
+fn stored_value(
     ui: &mut egui::Ui,
     draft: &mut ClientSettings,
     option: &SettingOption,
@@ -951,6 +997,18 @@ fn pending(
             draft.future_preferences.remove(&key);
         }
     }
+}
+
+fn unavailable_value(
+    ui: &mut egui::Ui,
+    draft: &mut ClientSettings,
+    option: &SettingOption,
+    key: String,
+    english: bool,
+) {
+    ui.add_enabled_ui(false, |ui| {
+        stored_value(ui, draft, option, key, english);
+    });
 }
 
 fn shortcut_label(code: u16) -> String {
@@ -1163,6 +1221,36 @@ mod tests {
     }
 
     #[test]
+    fn screenshot_page_routes_the_real_folder_action() -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(900.0, 620.0);
+        let mut browser = PreferencesBrowser::new();
+        browser.section = SETTINGS_SECTIONS
+            .iter()
+            .position(|section| section.id == "screenshots")
+            .ok_or("screenshots page")?;
+        let mut draft = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let output = reveal(
+            &ctx,
+            size,
+            "Open Screenshot Folder",
+            egui::pos2(size.x * 0.7, size.y * 0.7),
+            |ctx| browser.show(ctx, &mut draft, None),
+        );
+        let button = button_position(&output, size, "Open Screenshot Folder")
+            .ok_or("folder action clipped")?;
+        assert!(matches!(
+            click(&ctx, size, button, |ctx| browser
+                .show(ctx, &mut draft, None)),
+            PreferenceAction::OpenScreenshotFolder
+        ));
+        Ok(())
+    }
+
+    #[test]
     fn quick_settings_hud_navigation_opens_the_requested_page() -> Result<(), &'static str> {
         let ctx = egui::Context::default();
         let size = egui::vec2(900.0, 620.0);
@@ -1316,10 +1404,7 @@ mod tests {
                 let _ = click(&ctx, size, rect.center(), |ctx| {
                     browser.show(ctx, &mut draft, None)
                 });
-                assert_eq!(
-                    draft.future_preferences.get(&key),
-                    Some(&FutureValue::Bool(true))
-                );
+                assert!(!draft.future_preferences.contains_key(&key));
             }
             assert!(
                 !draft
@@ -1488,7 +1573,8 @@ mod tests {
     }
 
     #[test]
-    fn master_volume_remains_unset_until_slider_input() -> Result<(), &'static str> {
+    fn master_volume_without_an_audio_backend_is_disabled_and_never_saved()
+    -> Result<(), &'static str> {
         let ctx = egui::Context::default();
         ctx.set_theme(egui::Theme::Dark);
         crate::client_chrome::install(&ctx, false);
@@ -1510,10 +1596,7 @@ mod tests {
         let _ = click(&ctx, size, position, |ctx| {
             egui::Window::new("Sound").show(ctx, |ui| master_volume(ui, &mut draft, true))
         });
-        assert!(matches!(
-            draft.future_preferences.get("sound.sound.master"),
-            Some(FutureValue::Int(1..=100))
-        ));
+        assert!(!draft.future_preferences.contains_key("sound.sound.master"));
         let saved = draft.future_preferences.clone();
         let _ = frame(&ctx, size, Vec::new(), |ctx| {
             egui::Window::new("Sound").show(ctx, |ui| master_volume(ui, &mut draft, true))

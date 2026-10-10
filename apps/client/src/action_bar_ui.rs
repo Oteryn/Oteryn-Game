@@ -6,6 +6,7 @@ use oteryn_client::action_bar::{
     row_position,
 };
 use oteryn_client::play::GameState;
+use oteryn_client::settings::ClientSettings;
 use oteryn_session::{ChatIntent, ChatRoom, EntityDetail, EntityKind, SpellTarget};
 use std::num::NonZeroU32;
 
@@ -23,14 +24,26 @@ pub fn show(
     bar: &mut ActionBar,
     state: &GameState,
     spells: &[AvailableSpell],
-    english: bool,
+    settings: &ClientSettings,
     body: Rect,
     enabled: bool,
 ) -> Vec<ActionBarCommand> {
     if !body.is_finite() || !body.is_positive() {
         return Vec::new();
     }
+    let english = settings.english;
     let [bottom, left, right] = bar.preferences().visible_rows();
+    // Unset values preserve the renderer behavior that predates the reference
+    // controls; the UI keeps the choice visibly indeterminate until changed.
+    let show_shortcuts = settings
+        .stored_bool("action_bars.bars.labels")
+        .unwrap_or(true);
+    let show_item_amounts = settings
+        .stored_bool("action_bars.bars.item_amounts")
+        .unwrap_or(true);
+    let show_tooltips = settings
+        .stored_bool("action_bars.bars.tooltips")
+        .unwrap_or(true);
     let mut shown = [0_usize; 3];
     let mut commands = Vec::new();
     for row in 0..ACTION_BAR_ROWS {
@@ -135,17 +148,19 @@ pub fn show(
                                 let slot = row * ACTION_BAR_SLOTS + index;
                                 let (label, available) = bar.assignment(slot).map_or_else(
                                     || ("—".into(), false),
-                                    |a| assignment_label(a, state, english),
+                                    |a| assignment_label(a, state, english, show_item_amounts),
                                 );
                                 let shortcut = preferences.shortcuts[index]
                                     .map_or_else(|| "—".into(), shortcut_label);
-                                let response = ui
-                                    .add_sized([width, 24.0], egui::Button::new(""))
-                                    .on_hover_text(format!(
+                                let mut response =
+                                    ui.add_sized([width, 24.0], egui::Button::new(""));
+                                if show_tooltips {
+                                    response = response.on_hover_text(format!(
                                         "{} · {}\n{label}\n{shortcut}",
                                         row_label(row, english),
                                         index + 1
                                     ));
+                                }
                                 response.widget_info(|| {
                                     egui::WidgetInfo::labeled(
                                         egui::WidgetType::Button,
@@ -157,7 +172,12 @@ pub fn show(
                                         ),
                                     )
                                 });
-                                paint_slot_text(ui, &response, &label, &shortcut);
+                                paint_slot_text(
+                                    ui,
+                                    &response,
+                                    &label,
+                                    if show_shortcuts { &shortcut } else { "" },
+                                );
                                 if enabled
                                     && available
                                     && response.clicked()
@@ -239,6 +259,7 @@ fn assignment_label(
     assignment: &SlotAssignment,
     state: &GameState,
     english: bool,
+    show_item_amounts: bool,
 ) -> (String, bool) {
     let item = match assignment.command {
         ActionBarCommand::MoveToBackpack(handle) => state
@@ -247,20 +268,33 @@ fn assignment_label(
             .flat_map(|i| i.entries.iter().chain(i.equipment.iter().map(|e| &e.item)))
             .chain(state.container.iter().flat_map(|c| c.entries.iter()))
             .find(|item| item.handle == handle)
-            .map(|item| format!("#{} ×{}", item.item_definition_ref, item.count)),
+            .map(|item| {
+                if show_item_amounts {
+                    format!("#{} ×{}", item.item_definition_ref, item.count)
+                } else {
+                    format!("#{}", item.item_definition_ref)
+                }
+            }),
         ActionBarCommand::OpenItem(handle) => state.entities.iter().find_map(|e| {
             if e.kind == EntityKind::Corpse
                 && let EntityDetail::Object {
                     item_handle: Some(current),
                     item_definition_ref,
-                    ..
+                    quantity,
                 } = e.detail
                 && current == handle
             {
-                Some(format!(
-                    "{} #{item_definition_ref}",
-                    if english { "Corpse" } else { "Zwłoki" }
-                ))
+                Some(if show_item_amounts {
+                    format!(
+                        "{} #{item_definition_ref} ×{quantity}",
+                        if english { "Corpse" } else { "Zwłoki" }
+                    )
+                } else {
+                    format!(
+                        "{} #{item_definition_ref}",
+                        if english { "Corpse" } else { "Zwłoki" }
+                    )
+                })
             } else {
                 None
             }
@@ -612,7 +646,18 @@ mod tests {
                     )),
                     ..Default::default()
                 });
-                let _ = show(&ctx, &mut bar, &GameState::default(), &[], true, body, true);
+                let _ = show(
+                    &ctx,
+                    &mut bar,
+                    &GameState::default(),
+                    &[],
+                    &ClientSettings {
+                        english: true,
+                        ..Default::default()
+                    },
+                    body,
+                    true,
+                );
                 let mut output = ctx.end_pass();
                 output.textures_delta.clear();
                 shapes = output.shapes;
@@ -691,7 +736,10 @@ mod tests {
                 &mut bar,
                 &GameState::default(),
                 &[],
-                true,
+                &ClientSettings {
+                    english: true,
+                    ..Default::default()
+                },
                 body,
                 enabled,
             );
@@ -754,12 +802,16 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            assignment_label(&assignment, &state, true),
+            assignment_label(&assignment, &state, true, true),
             ("#7 ×3".into(), true)
+        );
+        assert_eq!(
+            assignment_label(&assignment, &state, true, false),
+            ("#7".into(), true)
         );
         state.inventory = None;
         assert_eq!(
-            assignment_label(&assignment, &state, true),
+            assignment_label(&assignment, &state, true, true),
             ("Unavailable".into(), false)
         );
         assert_eq!(
@@ -790,7 +842,18 @@ mod tests {
                     )),
                     ..Default::default()
                 });
-                let _ = show(&ctx, &mut bar, &GameState::default(), &[], true, body, true);
+                let _ = show(
+                    &ctx,
+                    &mut bar,
+                    &GameState::default(),
+                    &[],
+                    &ClientSettings {
+                        english: true,
+                        ..Default::default()
+                    },
+                    body,
+                    true,
+                );
                 let mut output = ctx.end_pass();
                 output.textures_delta.clear(); // Geometry-only test intentionally has no renderer.
                 for shape in output.shapes {

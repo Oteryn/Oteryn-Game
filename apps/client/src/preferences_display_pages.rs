@@ -294,12 +294,21 @@ fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut
                 state.last_frame_limit = Some(limit);
             }
         });
-        // Renderer diagnostics are not passed into preferences; never display a made-up FPS.
-        ui.weak(if en {
-            "Current Frame Rate: —"
-        } else {
-            "Aktualna liczba FPS: —"
+        let current_fps = ui.ctx().input(|input| {
+            if input.stable_dt > 0.0 {
+                1.0 / input.stable_dt
+            } else {
+                0.0
+            }
         });
+        ui.weak(format!(
+            "{} {current_fps:.0}",
+            if en {
+                "Current Frame Rate:"
+            } else {
+                "Aktualna liczba FPS:"
+            }
+        ));
     });
     boxed(ui, "OTERYN", |ui| {
         ui.horizontal(|ui| {

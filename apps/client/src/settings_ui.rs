@@ -107,6 +107,7 @@ impl SettingsPanel {
                     }
                     .into());
                 }
+                PreferenceAction::OpenScreenshotFolder => self.open_screenshot_folder(),
             }
             return false;
         }
@@ -140,7 +141,8 @@ impl SettingsPanel {
                     | PreferenceAction::QuickSettings
                     | PreferenceAction::ExportOptions
                     | PreferenceAction::ImportOptions
-                    | PreferenceAction::ResetOptions => {}
+                    | PreferenceAction::ResetOptions
+                    | PreferenceAction::OpenScreenshotFolder => {}
                 }
                 let body_size = body_rect.size().max(egui::Vec2::splat(1.0));
                 let mut body_ui = ui.new_child(egui::UiBuilder::new().max_rect(body_rect));
@@ -304,6 +306,32 @@ impl SettingsPanel {
         ClientSettings::path().map(|path| path.with_file_name("oteryn-options-export.json"))
     }
 
+    fn screenshot_directory() -> Option<std::path::PathBuf> {
+        ClientSettings::path().and_then(|path| Self::screenshot_directory_for(&path))
+    }
+
+    fn screenshot_directory_for(settings_path: &std::path::Path) -> Option<std::path::PathBuf> {
+        settings_path
+            .parent()
+            .map(|parent| parent.join("screenshots"))
+    }
+
+    fn open_screenshot_folder(&mut self) {
+        let result = Self::screenshot_directory()
+            .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
+            .and_then(|path| {
+                std::fs::create_dir_all(&path)?;
+                open_directory(&path)?;
+                Ok(path)
+            });
+        self.message = Some(match result {
+            Ok(path) if self.draft.english => format!("Opened {}", path.display()),
+            Ok(path) => format!("Otwarto {}", path.display()),
+            Err(_) if self.draft.english => "The screenshot folder could not be opened.".into(),
+            Err(_) => "Nie udało się otworzyć folderu zrzutów.".into(),
+        });
+    }
+
     fn export_options(&mut self) {
         let result = Self::options_export_path()
             .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
@@ -359,6 +387,34 @@ impl SettingsPanel {
             Err(_) => self.message = Some(if self.current.english { "Not saved. Check distinct movement keys, action shortcuts and preferences directory access." } else { "Nie zapisano. Sprawdź klawisze kierunków, skróty akcji i dostęp do folderu ustawień." }.into()),
         }
     }
+}
+
+#[cfg(target_os = "windows")]
+fn open_directory(path: &std::path::Path) -> std::io::Result<()> {
+    let _child = std::process::Command::new("explorer.exe")
+        .arg(path)
+        .spawn()?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn open_directory(path: &std::path::Path) -> std::io::Result<()> {
+    let _child = std::process::Command::new("open").arg(path).spawn()?;
+    Ok(())
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn open_directory(path: &std::path::Path) -> std::io::Result<()> {
+    let _child = std::process::Command::new("xdg-open").arg(path).spawn()?;
+    Ok(())
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos", unix)))]
+fn open_directory(_path: &std::path::Path) -> std::io::Result<()> {
+    Err(std::io::Error::new(
+        std::io::ErrorKind::Unsupported,
+        "Opening directories is unsupported on this platform",
+    ))
 }
 
 fn key_label(code: u16) -> String {
@@ -490,6 +546,17 @@ mod tests {
         assert_eq!(panel.current, current);
         assert!(!panel.applied);
         Ok(())
+    }
+
+    #[test]
+    fn screenshot_directory_is_a_sibling_of_the_settings_file() {
+        let path = std::path::Path::new("/configuration/oteryn/settings.json");
+        assert_eq!(
+            SettingsPanel::screenshot_directory_for(path),
+            Some(std::path::PathBuf::from(
+                "/configuration/oteryn/screenshots"
+            ))
+        );
     }
 
     #[test]

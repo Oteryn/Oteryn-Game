@@ -107,6 +107,8 @@ pub struct PlayView {
     entities: Vec<WorldSpatialEntity>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
+    /// Preserved when pushed session state rebuilds the scene.
+    target_frame: bool,
 }
 
 impl PlayView {
@@ -140,6 +142,7 @@ impl PlayView {
             inputs: VecDeque::new(),
             entities: Vec::new(),
             combat_line: None,
+            target_frame: true,
         };
         for entry in overlay {
             view.set_marker(entry);
@@ -168,6 +171,16 @@ impl PlayView {
     #[must_use]
     pub const fn scene(&self) -> &Scene {
         &self.scene
+    }
+
+    #[must_use]
+    pub const fn floor(&self) -> i16 {
+        self.floor
+    }
+
+    pub fn set_target_frame(&mut self, enabled: bool) -> Result<(), BatchError> {
+        self.target_frame = enabled;
+        self.scene.set_target_frame(enabled)
     }
 
     #[must_use]
@@ -358,7 +371,7 @@ impl PlayView {
                     .then_some(entity.entity),
             })
             .collect::<Vec<_>>();
-        self.scene = Scene::centered_with(
+        let mut scene = Scene::centered_with(
             Arc::clone(&self.world),
             (self.map_floor == Some(self.floor)).then_some(self.anchor),
             self.own,
@@ -366,6 +379,8 @@ impl PlayView {
             &markers,
             &entities,
         )?;
+        scene.set_target_frame(self.target_frame)?;
+        self.scene = scene;
         Ok(())
     }
 

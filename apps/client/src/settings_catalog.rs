@@ -37,8 +37,18 @@ pub enum Evidence {
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Implementation {
-    Implemented { field: &'static str },
-    Pending { consumer: &'static str },
+    Implemented {
+        field: &'static str,
+    },
+    /// A validated entry in `future_preferences` with a real runtime consumer.
+    /// This keeps unset reference defaults representable without confusing
+    /// persistence with implementation.
+    Stored {
+        consumer: &'static str,
+    },
+    Pending {
+        consumer: &'static str,
+    },
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SettingOption {
@@ -127,7 +137,10 @@ pub fn validate_future_preferences(
             .find_map(|section| {
                 section.options.iter().find(|option| {
                     key == &format!("{}.{}", section.id, option.id)
-                        && matches!(option.implementation, Implementation::Pending { .. })
+                        && matches!(
+                            option.implementation,
+                            Implementation::Stored { .. } | Implementation::Pending { .. }
+                        )
                 })
             })
             .ok_or_else(invalid)?;
@@ -156,6 +169,25 @@ pub fn validate_future_preferences(
         return Err(invalid());
     }
     Ok(())
+}
+
+/// Returns the runtime consumer declared for a value stored in
+/// [`crate::settings::ClientSettings::future_preferences`]. Pending catalogue
+/// rows deliberately return `None`: persistence by itself is not a feature.
+#[must_use]
+pub fn runtime_consumer(key: &str) -> Option<&'static str> {
+    SETTINGS_SECTIONS
+        .iter()
+        .find_map(|section| {
+            section
+                .options
+                .iter()
+                .find(|option| key == format!("{}.{}", section.id, option.id))
+        })
+        .and_then(|option| match option.implementation {
+            Implementation::Stored { consumer } => Some(consumer),
+            Implementation::Implemented { .. } | Implementation::Pending { .. } => None,
+        })
 }
 macro_rules! p {
     ($id:literal, $pl:literal, $en:literal, $kind:expr, $consumer:literal) => {
@@ -207,6 +239,36 @@ macro_rules! n {
             evidence: Evidence::NamesOnly,
             reference_key: Some($key),
             ..p!($id, $pl, $en, $kind, $consumer)
+        }
+    };
+}
+macro_rules! s {
+    ($id:literal, $pl:literal, $en:literal, $kind:expr, $consumer:literal) => {
+        SettingOption {
+            implementation: Implementation::Stored {
+                consumer: $consumer,
+            },
+            ..p!($id, $pl, $en, $kind, $consumer)
+        }
+    };
+}
+macro_rules! sn {
+    ($id:literal, $pl:literal, $en:literal, $kind:expr, $consumer:literal, $key:literal) => {
+        SettingOption {
+            implementation: Implementation::Stored {
+                consumer: $consumer,
+            },
+            ..n!($id, $pl, $en, $kind, $consumer, $key)
+        }
+    };
+}
+macro_rules! qs {
+    ($id:literal, $pl:literal, $en:literal, $kind:expr, $consumer:literal) => {
+        SettingOption {
+            implementation: Implementation::Stored {
+                consumer: $consumer,
+            },
+            ..q!($id, $pl, $en, $kind, $consumer)
         }
     };
 }
@@ -351,7 +413,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         q!("hotkeys.custom_binding", "Skrót własnej czynności", "Custom-action shortcut", Binding, "supported action commands"),
     ]),
     section!("interface", "Interfejs", "Interface", [
-        p!("interface.highlight_mouse", "Wyróżnij cel myszy", "Highlight Mouse Target", Toggle, "target presentation"),
+        s!("interface.highlight_mouse", "Wyróżnij cel myszy", "Highlight Mouse Target", Toggle, "scene hover projection"),
         p!("interface.big_cursor", "Duży kursor myszy", "Show Big Mouse Cursor", Toggle, "cursor integration"),
         p!("interface.link_copy_warning", "Ostrzeżenie przy kopiowaniu linku", "Show Link Copy Warning", Toggle, "safe clipboard UI"),
         p!("interface.expiry_inventory", "Wygaśnięcie w ekwipunku", "Show Expiry in Inventory", Toggle, "item expiry projection"),
@@ -367,9 +429,9 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         n!("interface.system_cursor", "Używaj kursora systemowego", "Use system cursor", Toggle, "cursor integration", "mouseSystemCursor"),
     ]),
     section!("hud", "HUD i wskaźniki", "HUD", [
-        p!("arc_size_preset", "Rozmiar łuków", "Arc Size", Choice(&[LocalizedChoice {id:"default",pl:"Rozmiar domyślny",en:"Default Size"}, LocalizedChoice {id:"small",pl:"Mały rozmiar",en:"Small Size"}, LocalizedChoice {id:"large",pl:"Duży rozmiar",en:"Large Size"}]), "actor HUD"),
-        p!("harmony_position", "Położenie harmonii", "Harmony Position", Choice(&[LocalizedChoice {id:"health",pl:"Obok łuku zdrowia",en:"next to Health Arc"}, LocalizedChoice {id:"mana",pl:"Obok łuku many",en:"next to Mana Arc"}]), "vocation HUD"),
-        p!("show_harmony", "Pokaż harmonię", "Show Harmony", Toggle, "actor/condition projection"),
+        s!("arc_size_preset", "Rozmiar łuków", "Arc Size", Choice(&[LocalizedChoice {id:"default",pl:"Rozmiar domyślny",en:"Default Size"}, LocalizedChoice {id:"small",pl:"Mały rozmiar",en:"Small Size"}, LocalizedChoice {id:"large",pl:"Duży rozmiar",en:"Large Size"}]), "own-resource HUD"),
+        s!("harmony_position", "Położenie harmonii", "Harmony Position", Choice(&[LocalizedChoice {id:"health",pl:"Obok łuku zdrowia",en:"next to Health Arc"}, LocalizedChoice {id:"mana",pl:"Obok łuku many",en:"next to Mana Arc"}]), "own-resource HUD"),
+        s!("show_harmony", "Pokaż harmonię", "Show Harmony", Toggle, "own-resource HUD"),
         p!("other_marks", "Znaczniki innych postaci", "Other Creature Marks", Toggle, "actor/condition projection"),
         p!("status_bars", "Pokaż paski stanu", "Show Status Bars", Toggle, "actor/condition projection"),
         p!("custom_status_bars", "Konfigurowalne paski stanu", "Show Customisable Status Bars", Toggle, "actor/condition projection"),
@@ -446,33 +508,33 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("conditions_hud_enabled", "Stany na HUD", "Conditions in HUD", Toggle, "actor/condition projection"),
         p!("conditions_bar_enabled", "Stany na pasku", "Conditions in bar", Toggle, "actor/condition projection"),
         p!("condition_order", "Kolejność stanów", "Condition order", Text { max_bytes: 1024 }, "actor/condition projection"),
-        p!("hud.owner_name", "Nazwa własnej postaci", "Own character name", Toggle, "actor HUD"),
+        s!("hud.owner_name", "Nazwa własnej postaci", "Own character name", Toggle, "own-character HUD"),
         p!("hud.other_names", "Nazwy innych postaci i stworzeń", "Other actor names", Toggle, "actor HUD"),
-        p!("hud.owner_health", "Własny pasek zdrowia", "Own health bar", Toggle, "actor HUD"),
-        p!("hud.other_health", "Paski zdrowia innych", "Other health bars", Toggle, "actor HUD"),
-        p!("hud.owner_mana", "Własny pasek many", "Own mana bar", Toggle, "actor HUD"),
+        s!("hud.owner_health", "Własny pasek zdrowia", "Own health bar", Toggle, "own-resource HUD"),
+        s!("hud.other_health", "Paski zdrowia innych", "Other health bars", Toggle, "visible-actor HUD"),
+        s!("hud.owner_mana", "Własny pasek many", "Own mana bar", Toggle, "own-resource HUD"),
         p!("hud.other_mana", "Paski many innych", "Other mana bars", Toggle, "supported resource projection"),
         p!("hud.marks", "Znaczniki postaci", "Actor marks", Toggle, "actor status projection"),
         p!("hud.npc_icons", "Ikony NPC", "NPC icons", Toggle, "NPC presentation"),
-        p!("hud.arcs", "Łuki zdrowia i many", "Health and mana arcs", Toggle, "actor HUD"),
+        s!("hud.arcs", "Łuki zdrowia i many", "Health and mana arcs", Toggle, "own-resource HUD"),
         p!("hud.arc_size", "Rozmiar łuków", "Arc size", PERCENT, "actor HUD"),
-        p!("hud.arc_distance", "Odległość łuków od postaci", "Arc distance", PERCENT, "actor HUD"),
-        p!("hud.arc_opacity", "Przezroczystość łuków", "Arc opacity", PERCENT, "actor HUD"),
+        s!("hud.arc_distance", "Odległość łuków od postaci", "Arc distance", PERCENT, "own-resource HUD"),
+        s!("hud.arc_opacity", "Przezroczystość łuków", "Arc opacity", PERCENT, "own-resource HUD"),
         p!("hud.conditions_bar", "Stany postaci na pasku", "Conditions in status bar", Toggle, "condition projection"),
         p!("hud.conditions_world", "Stany postaci przy postaci", "Conditions beside character", Toggle, "condition projection"),
         p!("hud.conditions_order", "Kolejność stanów postaci", "Condition order", Action, "condition layout"),
         p!("hud.status_placement", "Położenie pasków stanu", "Status-bar placement", UNKNOWN_CHOICES, "HUD layout"),
         p!("hud.status_customization", "Zawartość pasków stanu", "Customize status bars", Action, "HUD layout"),
-        n!("hud.player_enabled", "HUD własnej postaci", "Own character HUD", Toggle, "actor HUD", "playerHudEnabled"),
-        n!("hud.creatures_enabled", "HUD pozostałych postaci i stworzeń", "Other actor HUD", Toggle, "actor HUD", "creatureHudEnabled"),
-        n!("hud.resource_bars", "Paski zasobów", "Resource bars", Toggle, "actor HUD", "playerHudShowBars"),
+        sn!("hud.player_enabled", "HUD własnej postaci", "Own character HUD", Toggle, "own-resource HUD", "playerHudEnabled"),
+        sn!("hud.creatures_enabled", "HUD pozostałych postaci i stworzeń", "Other actor HUD", Toggle, "visible-actor HUD", "creatureHudEnabled"),
+        sn!("hud.resource_bars", "Paski zasobów", "Resource bars", Toggle, "own-resource HUD", "playerHudShowBars"),
         n!("hud.cooldown_bar", "Osobny pasek czasów odnowienia", "Standalone cooldown bar", Toggle, "cooldown projection", "cooldownBarEnabled"),
         n!("hud.harmony_left", "Harmonia po lewej stronie HUD", "Harmony on the left of HUD", Toggle, "vocation HUD", "playerHudShowHarmonyLeft"),
         n!("hud.serene_harmony", "Pokazuj spokojną harmonię", "Show serene Harmony", Toggle, "vocation condition projection", "playerShowHarmonySerene"),
     ]),
     section!("console", "Czat i konsola", "Console", [
         r!("console.visible", "Pokaż panel czatu", "Show chat panel", Toggle, "show_chat"),
-        p!("console.font_size", "Rozmiar tekstu", "Text size", Integer { min: 10, max: 32 }, "chat presentation"),
+        s!("console.font_size", "Rozmiar tekstu", "Text size", Integer { min: 10, max: 32 }, "chat text renderer"),
         p!("console.timestamps", "Znaczniki czasu", "Timestamps", Toggle, "chat presentation"),
         p!("console.seconds", "Sekundy w znacznikach czasu", "Timestamp seconds", Toggle, "chat presentation"),
         p!("console.levels", "Poziomy przy nazwach", "Levels beside names", Toggle, "chat projection"),
@@ -484,7 +546,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         n!("console.join_leave", "Komunikaty wejścia i wyjścia z kanału", "Channel join/leave messages", Toggle, "chat membership projection", "consoleShowJoinLeaveMessages"),
     ]),
     section!("game_window", "Okno gry", "Game Window", [
-        p!("window.target_marking", "Oznaczaj cel wizualnie", "Mark Target Visually", Choice(TARGET_MARKING), "target projection"),
+        s!("window.target_marking", "Oznaczaj cel wizualnie", "Mark Target Visually", Choice(TARGET_MARKING), "scene target projection"),
         p!("window.textual_effects", "Efekty tekstowe", "Show Textual Effects", Toggle, "effect projection"),
         p!("window.potion_sounds", "Efekty dźwiękowe mikstur", "Show Potion Sound Effects", Toggle, "effect projection"),
         q!("window.fit", "Dopasowanie obszaru gry", "Game viewport fit", UNKNOWN_CHOICES, "scene layout"),
@@ -513,12 +575,12 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         i!("bars.left_rows", "Lewe paski akcji", "Left action rows", Integer { min: 0, max: 3 }, "action_left_rows"),
         i!("bars.right_rows", "Prawe paski akcji", "Right action rows", Integer { min: 0, max: 3 }, "action_right_rows"),
         q!("bars.locked", "Zablokuj układ pasków", "Lock action bars", Toggle, "action bar layout"),
-        p!("bars.labels", "Etykiety skrótów", "Hotkey labels", Toggle, "action bar"),
-        p!("bars.item_amounts", "Liczba przedmiotów", "Item amounts", Toggle, "inventory projection"),
+        s!("bars.labels", "Etykiety skrótów", "Hotkey labels", Toggle, "action-bar renderer"),
+        s!("bars.item_amounts", "Liczba przedmiotów", "Item amounts", Toggle, "action-bar renderer"),
         p!("bars.spell_parameters", "Parametry zaklęć", "Spell parameters", Toggle, "spell actions"),
         p!("bars.graphic_cooldown", "Graficzny czas odnowienia", "Graphical cooldown", Toggle, "cooldown projection"),
         p!("bars.numeric_cooldown", "Liczbowy czas odnowienia", "Numeric cooldown", Toggle, "cooldown projection"),
-        p!("bars.tooltips", "Podpowiedzi", "Tooltips", Toggle, "action bar"),
+        s!("bars.tooltips", "Podpowiedzi", "Tooltips", Toggle, "action-bar renderer"),
         p!("bars.auto_spells", "Dodawaj nowe zaklęcia", "Automatically add new spells", Toggle, "spell catalogue"),
         p!("bars.clear_row", "Wyczyść wybrany pasek", "Clear selected row", Action, "action bar layout"),
         i!("bars.bottom_visible", "Pokaż dolne paski", "Show bottom bars", Toggle, "action_bottom_enabled"),
@@ -555,11 +617,11 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("graphics.antialiasing", "Wygładzanie obrazu", "Antialiasing", Choice(ANTIALIASING), "renderer capabilities"),
         p!("graphics.integer_scale", "Skalowanie całkowite", "Integer scaling", Toggle, "scene viewport"),
         q!("graphics.monitor", "Monitor", "Monitor", UNKNOWN_CHOICES, "window integration"),
-        q!("graphics.fps_indicator", "Wskaźnik FPS", "FPS indicator", Toggle, "frame diagnostics"),
+        qs!("graphics.fps_indicator", "Wskaźnik FPS", "FPS indicator", Toggle, "frame diagnostics overlay"),
         q!("graphics.latency_indicator", "Wskaźnik opóźnienia", "Latency indicator", Toggle, "session diagnostics"),
     ]),
     section!("effects", "Efekty graficzne", "Effects", [
-        p!("effects.ambient_light", "Światło otoczenia", "Ambient light", PERCENT, "lighting renderer"),
+        s!("effects.ambient_light", "Światło otoczenia", "Ambient light", PERCENT, "scene lighting overlay"),
         p!("effects.level_separator", "Oddzielenie pięter", "Level separator", PERCENT, "floor projection"),
         p!("effects.indoor_light", "Tłumienie światła we wnętrzach", "Indoor light attenuation", PERCENT, "lighting renderer"),
         p!("effects.cloud_light", "Tłumienie światła przez chmury", "Cloud light attenuation", PERCENT, "lighting renderer"),
@@ -567,7 +629,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("effects.other_opacity", "Widoczność zaklęć innych", "Other-player spell opacity", PERCENT, "effect renderer"),
         p!("effects.creature_opacity", "Widoczność zaklęć stworzeń", "Creature spell opacity", PERCENT, "effect renderer"),
         p!("effects.boss_opacity", "Widoczność obszarów ataków bossów", "Boss-area spell opacity", PERCENT, "effect renderer"),
-        n!("effects.lighting", "Efekty oświetlenia", "Lighting effects", Toggle, "lighting renderer", "lightEffectsEnabled"),
+        sn!("effects.lighting", "Efekty oświetlenia", "Lighting effects", Toggle, "scene lighting overlay", "lightEffectsEnabled"),
     ]),
     section!("sound", "Dźwięk", "Sound", [
         p!("sound.device", "Urządzenie wyjściowe", "Output device", UNKNOWN_CHOICES, "audio backend"),

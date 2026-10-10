@@ -607,9 +607,17 @@ impl ApplicationHandler for Application {
                     &mut self.ui_state,
                     &self.window,
                     &mut self.renderer,
-                    &self.play,
+                    &mut self.play,
                 ) {
                     if !redraw_eligible(Some(renderer.state().phase())) {
+                        return;
+                    }
+                    if play
+                        .view
+                        .set_target_frame(self.preferences.target_frame_enabled())
+                        .is_err()
+                    {
+                        self.fail(event_loop, ShellError::RendererRender);
                         return;
                     }
                     gui.context.set_zoom_factor(self.preferences.ui_scale);
@@ -686,6 +694,14 @@ impl ApplicationHandler for Application {
                     if rendered.is_err() {
                         self.fail(event_loop, ShellError::RendererRender);
                     }
+                    return;
+                }
+                if let Some(scene) = self.scene.as_mut()
+                    && scene
+                        .set_target_frame(self.preferences.target_frame_enabled())
+                        .is_err()
+                {
+                    self.fail(event_loop, ShellError::RendererRender);
                     return;
                 }
                 let scene = self
@@ -779,6 +795,7 @@ impl ApplicationHandler for Application {
                         link,
                         status: String::new(),
                     });
+                    self.hud.set_character_name(character_name);
                     self.game_ui = self.login.take();
                     if let Some(gui) = &self.game_ui {
                         crate::client_chrome::install(&gui.context, self.preferences.high_contrast);
