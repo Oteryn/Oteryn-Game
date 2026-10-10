@@ -1,8 +1,8 @@
 # OTV2-20261006 Quest Binding Owner Readiness
 
 Status: retained evidence / execution work queue
-Repository baseline: `Oteryn/Oteryn-Game@97c46d0e63fefe8a22a2053de7b596c50b7253a6`
-Related merged PRs: #1875, #1876
+Repository baseline: counts re-derived from the committed artifacts at `docs/quest-binding-owner-readiness-20261006@a4f3ae3e` (includes #1895; the earlier `97c46d0e` snapshot is superseded)
+Related merged PRs: #1875, #1876, #1895
 Coordination: #1622
 Runtime activation: **false**
 
@@ -16,18 +16,19 @@ This document does not certify playability.
 
 ## Current all-373 state
 
-**PROVEN / DERIVED from committed current-main artifacts**
+**PROVEN / DERIVED from committed artifacts at the baseline above**
 
 - pinned wiki titles: **373**
 - canonical Quest definitions: **352**
 - wiki titles mapped: **373 / 373**
 - canonical title mapping state: **373 SINGLE**
-- completion candidate owners: **303**
-- typed tracks: **3152**
-- typed transitions: **5085**
-- completion transitions: **299**
-- completion binding-plan owners: **295**
-- binding-plan stage rows: **1822**
+- completion candidate owners: **310**
+- typed tracks: **3221**
+- typed transitions: **5154**
+- completion transitions: **308**
+- chosen-source terminal-count holds: **0**
+- completion binding-plan owners: **304**
+- binding-plan stage rows: **1891**
 - native event dispatch bindings: **0**
 - native NPC dialogue bindings: **0**
 - native reward delivery bindings: **0**
@@ -37,15 +38,15 @@ Implementation backlog by wiki-title row:
 
 | State | Count |
 | --- | ---: |
-| `NATIVE_BINDINGS_PENDING` | **322** |
-| `NATIVE_LOWERING_PENDING` | **9** |
-| `DEFINITION_READY_RUNTIME_UNKNOWN` | **42** |
+| `NATIVE_BINDINGS_PENDING` | **331** |
+| `NATIVE_LOWERING_PENDING` | **0** |
+| `REWARD_ONLY_RUNTIME_PENDING` | **42** |
 
 Source fidelity remains an independent axis. Source holds do not erase a consciously chosen Oteryn typed-progress candidate.
 
-## The nine remaining lowering holds
+## The nine terminal-count normalizations (closed by #1895)
 
-The remaining lowering blockers are exactly the chosen-source recipes whose terminal `complete` stage has a count greater than one:
+#1895 normalized exactly the nine chosen-source recipes whose terminal `complete` stage had a count greater than one, so the lowering-hold count is now **0**:
 
 1. Barbarian Arena Quest
 2. Bear Room Quest
@@ -57,7 +58,9 @@ The remaining lowering blockers are exactly the chosen-source recipes whose term
 8. Rift Warrior Outfits Quest
 9. The Ancient Tombs Quest
 
-### Why they remain fail-closed
+The normalization is a content projection only. The runtime constraint below still applies to any producer that dispatches these transitions.
+
+### Why the runtime selector remains fail-closed
 
 QuestState commits completion from the selected transition's plain `completes` flag.
 
@@ -69,16 +72,18 @@ The existing Crystal Herald path demonstrates that state-dependent transition se
 
 ## Binding owner matrix
 
-Counts below are stage rows in `content/quests/missions/completion-binding-plan.json`. Quest counts overlap across kinds and must not be summed.
+Counts below are stage rows in `content/quests/missions/completion-binding-plan.json` (304 owners, 1891 rows). Quest counts overlap across kinds and must not be summed.
 
 | Stage kind | Stage rows | Quest owners | Strong evidence already present | Missing executable owner |
 | --- | ---: | ---: | --- | --- |
-| `talk` | **326** | **163** | 79 rows have NPC dialogue candidates | NPC-TALK-1 -> NPC-QUEST-1 |
-| `use` | **431** | **213** | 44 rows have all targets exact; 148 have at least one exact target | QUEST-TRIGGER-1 / WORLDINT-USE-1; ITEM-USE-1 where the event is Item-definition consumption/use |
-| `collect` | **273** | **148** | 145 rows have all targets exact; 180 have at least one exact Item target | inventory-count / per-target-quantity occurrence owner |
-| `explore` | **239** | **173** | 29 rows have all targets exact; 43 have at least one exact Area | movement/world entry occurrence via QUEST-TRIGGER-1 and applicable spatial owner |
-| `kill` | **258** | **135** | 172 rows have all targets exact; 191 at least one exact Creature; 25 exact Encounter outcome seams | kill credit / Encounter outcome delivery |
-| `complete` | **295** | **295** | chosen graph predecessor relation | real producing occurrence / completion reducer binding |
+| `talk` | **329** | **165** | 71 rows have NPC dialogue candidates; 8 more carry only a held target and no candidate | NPC-TALK-1 -> NPC-QUEST-1 |
+| `use` | **458** | **221** | 46 rows have all targets exact; 152 have at least one exact target | QUEST-TRIGGER-1 / WORLDINT-USE-1; ITEM-USE-1 where the event is Item-definition consumption/use |
+| `collect` | **277** | **151** | 147 rows have all targets exact; 182 have at least one exact Item target | inventory-count / per-target-quantity occurrence owner |
+| `explore` | **248** | **180** | 29 rows have all targets exact; 44 have at least one exact Area | movement/world entry occurrence via QUEST-TRIGGER-1 and applicable spatial owner |
+| `kill` | **275** | **143** | 182 rows have all targets exact; 201 at least one exact Creature; 25 exact Encounter outcome seams | kill credit / Encounter outcome delivery |
+| `complete` | **304** | **304** | chosen graph predecessor relation | real producing occurrence / completion reducer binding |
+
+The six source-lowered owners (121 transitions, none natively bound) are tracked separately in `content/quests/missions/source-lowered-binding-plan.json` and are not part of the table above.
 
 ## TALK owner boundary
 
@@ -91,7 +96,7 @@ Counts below are stage rows in `content/quests/missions/completion-binding-plan.
 
 **DERIVED**
 
-The 79 dialogue candidates are useful binding evidence, not executable NPC Quest bindings.
+The 71 stage rows with dialogue candidates are useful binding evidence, not executable NPC Quest bindings.
 
 Do not set `selected_NPC_branch` or a native transition solely because an NPC identity or source reply candidate is unique.
 
@@ -114,7 +119,7 @@ An exact canonical Item target does **not** prove:
 - whether the operation is Item-definition use, map-object use, use-with or another owner;
 - the CommandRef / occurrence root.
 
-The 44 all-exact-target USE rows therefore remain candidates, not executable bindings.
+The 46 all-exact-target USE rows therefore remain candidates, not executable bindings.
 
 ## COLLECT owner boundary
 
@@ -166,7 +171,7 @@ A chosen `complete` stage is a graph intent, not an occurrence.
 
 Every completion transition requires a real cause from the owning producer. Completion must not be invoked simply because the preceding chosen counter reached its goal.
 
-This is especially critical for the nine terminal-count holds.
+This is especially critical for the nine normalized terminal-count recipes.
 
 ## Highest-leverage allocation order
 
@@ -176,16 +181,16 @@ This is especially critical for the nine terminal-count holds.
    Unlock the generic world/movement trigger root needed by large portions of USE and EXPLORE.
 
 2. **NPC-TALK-1 -> NPC-QUEST-1**
-   Unlock the 326 TALK rows, starting with the 79 already-qualified dialogue candidates.
+   Unlock the 329 TALK rows, starting with the 71 stage rows that already have dialogue candidates (the 8 held-only rows need target resolution first).
 
 3. **Inventory collection occurrence owner**
-   Define the accepted event/quantity boundary for the 273 COLLECT rows without polling state into authority.
+   Define the accepted event/quantity boundary for the 277 COLLECT rows without polling state into authority.
 
 4. **Encounter outcome / kill-credit owner**
    Admit exact recipient/credit semantics for KILL rows; consume the 25 exact Encounter seams only after their owner is executable.
 
 5. **Progress-versus-final selector contract**
-   Close the nine non-unit terminal-count recipes using an explicit producer-owned selector, not a content-only completion shortcut.
+   Give the nine normalized non-unit terminal-count recipes (see above) an explicit producer-owned runtime selector, not a content-only completion shortcut.
 
 ## Do not regress
 
