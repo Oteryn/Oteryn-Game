@@ -87,7 +87,8 @@ client, exactly as LCFA §3.
   - `ListPendingCharacterCommandsV1` → `/internal/v1/game-auth/character-commands/pending`;
   - `ReadCharacterCommandIntentV1` → `/internal/v1/game-auth/character-commands/read`;
   - `PublishCharacterCommandReceiptV1` → `/internal/v1/game-auth/character-commands/receipt`.
-- Bounds: connect 1 s, handshake 2 s, exchange 3 s; a read request at most 256 bytes, a
+- Bounds: connect 1 s, handshake 2 s, exchange 3 s; a read request at most 448 bytes (it carries a
+  `issuer_authority` of up to 128 bytes and a `command` of up to 64, 402 bytes at most), a
   pending-list request at most 512 bytes and a receipt at most 1024 bytes (the largest receipt,
   a committed transfer with 20-digit counters, is 699 bytes); a pending-list
   response at most 8192 bytes (a full page of 32 entries with 64-byte commands and 20-digit
@@ -128,6 +129,15 @@ as uint64, then `operation_id` as bytes), unique `operation_id`:
   entry's key, and starts again at `("0", nil)` after a response with fewer than `max_entries`
   entries. An intent that stays PENDING (a transient dependency failure, §6) therefore never hides
   later intents, including ones that share its `source_revision`.
+- Rescan: §5.3 permits Platform to commit a lower `source_revision` after the consumer has passed
+  it, and a continuous stream of full pages would keep the cursor from returning to that key. The
+  consumer therefore runs a bounded rescan: after at most 8 consecutive full pages, or 30 s since
+  its last rescan, whichever comes first, it lists again from `("0", nil)` and pages forward until
+  it passes the key it had reached, then resumes from that key. A rescan lists only PENDING
+  entries, so its cost is the number of unreceipted intents behind the cursor. Re-listing an
+  intent is safe because the per-operation receipt makes deciding idempotent. The 30 s bound is
+  well inside the 300 s intent TTL, so an intent that commits behind the cursor is read before it
+  expires.
 - `source_authority` is the configured Character Authority namespace (LCFA §4 rule).
 
 ### 4.2 Intent read
@@ -135,11 +145,16 @@ as uint64, then `operation_id` as bytes), unique `operation_id`:
 Request:
 
 ```json
-{"contract_version":1,"operation":"ReadCharacterCommandIntentV1","source_authority":"oteryn:character-authority:primary","command":"CreateCharacter","operation_id":"0192a000-0000-7000-8000-000000000001"}
+{"contract_version":1,"operation":"ReadCharacterCommandIntentV1","source_authority":"oteryn:character-authority:primary","issuer_authority":"OTERYN_PLATFORM_CHARACTER_AUTHORITY","command":"CreateCharacter","operation_id":"0192a000-0000-7000-8000-000000000001"}
 ```
 
+`issuer_authority` is a string of 1..128 bytes of ASCII uppercase letters, digits and `_`; Game
+sends its configured constant. Platform keys intent reads by `(issuer_authority, operation_id)`,
+the uniqueness scope of §5.1, and checks the requested `command` against the stored intent.
 Response `200` is the exact stored intent bytes, byte-identical on every read. `404` means
-Platform holds no intent with that `(command, operation_id)`.
+Platform holds no intent with that `(issuer_authority, operation_id)`. `409` means Platform holds
+that pair for another `command`; Game stores a `REJECTED` `CHAR_CMD_OPERATION_CONFLICT` receipt
+(§5.1) and raises an operator alarm.
 
 `CreateCharacter` intent:
 
@@ -570,7 +585,7 @@ The Game implementation and the Platform consumer must prove, with shared exact 
 | Limit | Value |
 |---|---|
 | pending entries per list response | 32 |
-| request bytes (read) | 256 |
+| request bytes (read) | 448 |
 | request bytes (pending list) | 512 |
 | intent bytes | 4096 |
 | receipt request bytes | 1024 |
