@@ -38,11 +38,11 @@ pub use oteryn_protocol_oteryn::chat::{
 /// The capability-4 item types a client sends and draws from, re-exported so it needs no direct
 /// `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::item_view::{
-    CharacterInventory, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
+    CharacterInventory, EquipmentSlot, ItemEntry, ItemHandle, ItemMoveDestination, ItemMoveIntent,
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
 };
-pub use oteryn_protocol_oteryn::world_object::WorldObjectOverlayEntry;
-use oteryn_protocol_oteryn::world_object::{self, UseDisposition, WorldObjectTarget};
+use oteryn_protocol_oteryn::world_object::{self, WorldObjectTarget};
+pub use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
 /// The step types a client names when it walks and reads the outcome (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::world_spatial::{

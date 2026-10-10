@@ -140,6 +140,9 @@ function Assert-Releases([string[]] $Expected) {
 function Assert-Active([string] $Directory) {
     Check ((Current) -ceq $Directory) "current.txt is '$(Current)', expected '$Directory'"
     Check (Test-Path -LiteralPath (Join-Path $InstallDir 'oteryn-launcher.exe') -PathType Leaf) 'oteryn-launcher.exe is missing'
+    $fontNotice = Join-Path $InstallDir 'THIRD-PARTY-FONTS.txt'
+    Check (Test-Path -LiteralPath $fontNotice -PathType Leaf) 'embedded font notices are missing'
+    Check ((Sha256 $fontNotice) -ceq (Sha256 (Join-Path $PSScriptRoot '..\THIRD-PARTY-FONTS.txt'))) 'installed font notices differ from the source'
     Check (-not (Test-Path -LiteralPath (Join-Path $InstallDir 'current.txt.new'))) 'current.txt.new was left behind'
     $releaseDir = Join-Path $InstallDir "releases\$Directory"
     $files = @(Get-ChildItem -LiteralPath $releaseDir -Force | ForEach-Object Name | Sort-Object) -join ','

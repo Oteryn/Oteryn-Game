@@ -1,0 +1,148 @@
+{
+  "upstream": "https://github.com/lucide-icons/lucide",
+  "revision": "f12b0de177fbc2a6795e99be065887e72b237123",
+  "cell_size": 48,
+  "columns": 8,
+  "icons": [
+    {
+      "panel": "skills",
+      "icon": "chart-no-axes-column",
+      "sha256": "4276b34a07295ac22ebb09687bdec9cb9683547bf8d56969166e19a6a13fbdd7"
+    },
+    {
+      "panel": "battle",
+      "icon": "swords",
+      "sha256": "6aad3bab627f5badf888461004aa9b5d2cdcde127a5791d21b96d729e16668d0"
+    },
+    {
+      "panel": "spells",
+      "icon": "book-open",
+      "sha256": "a5eb669f66989fdbc003b1689ebc93769b3b9d680f840573f2a3ac268756f894"
+    },
+    {
+      "panel": "vip",
+      "icon": "contact-round",
+      "sha256": "91f236d7146631e24e3c59777db2c2fbcd55ea73c5dde5e923a11c0f41129911"
+    },
+    {
+      "panel": "help",
+      "icon": "circle-help",
+      "sha256": "975db087da041530dbf59ba1e61a7b99c3519fad43dae6375e42ccc74ba63924"
+    },
+    {
+      "panel": "quest-log",
+      "icon": "scroll-text",
+      "sha256": "57739b59816cedf5b2fd92559784431ce59f3d14eb77eabb659591b6789e223d"
+    },
+    {
+      "panel": "compendium",
+      "icon": "library",
+      "sha256": "892ba1bd1ee2e5bba320eea1c30c83ed83055ded5a0a0c0e7e4ee5fb06c307a5"
+    },
+    {
+      "panel": "cyclopedia",
+      "icon": "globe",
+      "sha256": "82c6b8fa0b8e8d775ec9becd86f74a4e50bff7bee4c81f7362de45348504f14d"
+    },
+    {
+      "panel": "highscores",
+      "icon": "trophy",
+      "sha256": "62c8e95c90781814bfb95672d0b10136e84767ac6b7dccf0ed25457045c4f0e7"
+    },
+    {
+      "panel": "player-guide",
+      "icon": "compass",
+      "sha256": "554b51f38db4af3c7a3a603ce9fc3786d32fe20eb9e3226ec41e7b5fdcbb2b68"
+    },
+    {
+      "panel": "shortcuts",
+      "icon": "panels-top-left",
+      "sha256": "321a2a5500f2b814a2e62eb73c4b01dc65c7334fe2e6f7d77517239383e26bb1"
+    },
+    {
+      "panel": "party",
+      "icon": "users-round",
+      "sha256": "8b41ee3ada1609e25a410d64056aa333952cf27d770f0c379a100065270de7f7"
+    },
+    {
+      "panel": "wheel",
+      "icon": "orbit",
+      "sha256": "ee0c4ffb487344ba7a6e7861221e94d102ca2d958a4b843294c213cfcba6c28c"
+    },
+    {
+      "panel": "quest-tracker",
+      "icon": "list-checks",
+      "sha256": "01516400eab1492cf7abe94a0a58d3809f8d3c59f24116a74658f49bbaf740e4"
+    },
+    {
+      "panel": "unjustified-points",
+      "icon": "shield-alert",
+      "sha256": "803008bc82bc53984204730f0bfc1ef5b20c8a7c588b9779948c691e03158c5c"
+    },
+    {
+      "panel": "prey",
+      "icon": "crosshair",
+      "sha256": "ae9ed8583286ea03bffae85bb69aee5227540e588b0370cf185f2141ebe25e8d"
+    },
+    {
+      "panel": "kill-tracker",
+      "icon": "skull",
+      "sha256": "fa2d1cc99e2a27e18ec6b8cb07cf9ec93d120f7dade3dad3987cf555c75a9724"
+    },
+    {
+      "panel": "reward-wall",
+      "icon": "gift",
+      "sha256": "309aa193e6eb24ca76ccf7b6ab28262eaa1f7d55b53ddb6b2d1af1129f965d37"
+    },
+    {
+      "panel": "analytics",
+      "icon": "chart-no-axes-combined",
+      "sha256": "c78cd9f846108d5edbaf3a16d9df1763a8dde97bd1d4b55f359b78daa01f3c4b"
+    },
+    {
+      "panel": "bosstiary",
+      "icon": "crown",
+      "sha256": "544c1b6181749ae4b4c98861a5a6ed1242940239cda97cc13c74e84a03fd68c0"
+    },
+    {
+      "panel": "boss-slots",
+      "icon": "columns-2",
+      "sha256": "bddf3348a9c82d111a060d118299c90755b1ae8411bd16ea1d5ddb83c5f98a27"
+    },
+    {
+      "panel": "bosstiary-tracker",
+      "icon": "scan-eye",
+      "sha256": "343741486dfe4188a80628e3b8ae7a71f6ac63e0de5fbf474674b053c8f80721"
+    },
+    {
+      "panel": "bestiary-tracker",
+      "icon": "paw-print",
+      "sha256": "578001404e63e57af3da69c739f247f20d4ccc8a40882123c352d4160fe63996"
+    },
+    {
+      "panel": "imbuement-tracker",
+      "icon": "gem",
+      "sha256": "dc83affb60bcf74ebc0391077eb8fdd108c3f7992eda9e6085cd92279e03a839"
+    },
+    {
+      "panel": "weapon-proficiency",
+      "icon": "sword",
+      "sha256": "69623b708df831152a974253a7fcb3905ff7b7b51c7f84ca3de2469f7f69e391"
+    },
+    {
+      "panel": "forge",
+      "icon": "anvil",
+      "sha256": "6587a026dd99c913aa28d348779e0b1e220e648ca1cfd2c5967d64d6169235bb"
+    },
+    {
+      "panel": "social",
+      "icon": "messages-square",
+      "sha256": "eecf35710e7a26095c49f0e8261452f92a3909b4f9e2020ef242211285f7e922"
+    },
+    {
+      "panel": "task-board",
+      "icon": "clipboard-list",
+      "sha256": "2b91abc2e8ee8ba4c2e0f77d506a47a7a9774b0d4de3fa4b27e822a6376ab892"
+    }
+  ]
+}

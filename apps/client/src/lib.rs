@@ -1,11 +1,21 @@
 //! Production pre-native client composition.
 //! Terminal evidence is revalidated after the MPL-2.0 and Linux lint corrections.
 
+pub mod action_bar;
 pub mod combat_input;
 pub mod cyclopedia;
+pub mod device_store;
+pub mod hotkeys;
 pub mod input;
+pub mod layout;
+pub mod minimap;
+pub mod panel_catalog;
 pub mod play;
+/// Disabled remembered-device candidate; no native-login or runtime activation.
+pub mod remembered_device;
 pub mod scene;
+pub mod settings;
+pub mod settings_catalog;
 pub mod spell;
 #[cfg(windows)]
 pub mod win_mutex;
@@ -23,7 +33,9 @@ use oteryn_renderer::SurfaceState;
 use std::fmt::{self, Display, Formatter};
 use std::time::Duration;
 
-pub use native_entry::{AdmittedSession, NativeLoginConfig, NativeLoginSettingError};
+pub use native_entry::{
+    AdmittedSession, NativeLoginConfig, NativeLoginSettingError, SignedInAccount,
+};
 
 /// The release this executable belongs to (CLIENT-INSTALLER-0 §2):
 /// `<client_version>+<channel>.<route>.g<game_commit[0..12]>`, from `OTERYN_RELEASE_ID` at build
@@ -262,6 +274,48 @@ impl ClientBootstrap {
             .map_err(|_error| GameplayEntryError::Rejected(PublicClass::TemporarilyUnavailable))?
     }
 
+    /// Interactive sign-in: returns owner characters before any ticket or admission is issued.
+    pub fn sign_in(&self) -> Result<SignedInAccount, GameplayEntryError> {
+        let config = self
+            .native_login
+            .as_ref()
+            .ok_or(GameplayEntryError::InvalidConfiguration)?;
+        self.runtime
+            .block_on(native_entry::sign_in(config, self.runtime.cancellation()))
+            .map_err(|_error| GameplayEntryError::Rejected(PublicClass::TemporarilyUnavailable))?
+    }
+
+    /// Connects only the selected character from this authenticated owner's projection.
+    pub fn enter_selected(
+        &self,
+        account: SignedInAccount,
+        character_id: &str,
+    ) -> Result<AdmittedSession, GameplayEntryError> {
+        let config = self
+            .native_login
+            .as_ref()
+            .ok_or(GameplayEntryError::InvalidConfiguration)?;
+        let cancellation = self.runtime.cancellation();
+        match self
+            .runtime
+            .block_on(oteryn_foundation::cancellable(
+                cancellation.clone(),
+                native_entry::enter_selected(config, account, character_id, cancellation),
+            ))
+            .map_err(|_error| GameplayEntryError::Rejected(PublicClass::TemporarilyUnavailable))?
+        {
+            oteryn_foundation::Cancellable::Completed(result) => result,
+            oteryn_foundation::Cancellable::Cancelled => {
+                Err(GameplayEntryError::Rejected(PublicClass::RetryLogin))
+            }
+        }
+    }
+
+    #[must_use]
+    pub fn login_cancellation(&self) -> oteryn_foundation::CancellationToken {
+        self.runtime.cancellation()
+    }
+
     /// Starts the admitted session's task on the client runtime, whose reactor its stream is
     /// bound to, and returns the placeholder view with the shell's link to the task.
     pub fn start_play(
@@ -295,10 +349,12 @@ mod native_entry {
     use oteryn_foundation::{Cancellable, CancellationToken, cancellable};
     use oteryn_identity::{IdentityFlow, LoopbackRedirect, PkceMaterial, StateNonce};
     use oteryn_platform_client::native_login::{
-        AttemptRef, GatewayLogin, NativeLoginClient, NativeLoginError, NativeLoginGrant,
-        NativeTicket, PublicClass, RetryPacing, parse_uuid_v7, secure_random,
+        AccessToken, AttemptRef, GatewayLogin, NativeCharacterChoice, NativeLoginClient,
+        NativeLoginError, NativeLoginGrant, NativeTicket, PublicClass, RetryPacing, parse_uuid_v7,
+        secure_random,
     };
     use oteryn_platform_client::{PlatformClient, PlatformClientConfig};
+    use oteryn_platform_contracts::DirectoryWorld;
     use oteryn_session::{
         Admission, AdmissionPublicClass, CLIENT_SUPPORTED_CAPABILITIES, CharacterId, Session,
         SessionError, admission_refusal_class,
@@ -307,6 +363,91 @@ mod native_entry {
     use rustls::pki_types::CertificateDer;
     use std::fmt::{self, Debug, Display, Formatter};
     use std::net::{IpAddr, SocketAddr};
+
+    /// Tokens remain private and in memory; the UI sees only public world and owner character data.
+    pub struct SignedInAccount {
+        pub worlds: Vec<DirectoryWorld>,
+        pub characters: Vec<NativeCharacterChoice>,
+        client: NativeLoginClient,
+        token: AccessToken,
+    }
+
+    pub(crate) async fn sign_in(
+        config: &NativeLoginConfig,
+        cancellation: CancellationToken,
+    ) -> Result<SignedInAccount, GameplayEntryError> {
+        let platform = PlatformClientConfig::new(&config.platform_url)
+            .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
+        let gateway = PlatformClientConfig::new(&config.gateway_url)
+            .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
+        let directory = PlatformClient::new(platform.clone())
+            .map_err(|_error| GameplayEntryError::InvalidConfiguration)?
+            .fetch_directory(cancellation.clone())
+            .await
+            .map_err(|_error| GameplayEntryError::WorldUnavailable)?;
+        if directory.worlds.is_empty() {
+            return Err(GameplayEntryError::WorldUnavailable);
+        }
+        let client = NativeLoginClient::new(&platform, &gateway, &config.oauth_client_id)
+            .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
+        let token = authorize_token(&client, config, cancellation.clone()).await?;
+        let characters = client
+            .account_characters(&token, cancellation)
+            .await
+            .map_err(login_rejected)?;
+        Ok(SignedInAccount {
+            worlds: directory.worlds,
+            characters,
+            client,
+            token,
+        })
+    }
+
+    pub(crate) async fn enter_selected(
+        config: &NativeLoginConfig,
+        account: SignedInAccount,
+        character_id: &str,
+        cancellation: CancellationToken,
+    ) -> Result<AdmittedSession, GameplayEntryError> {
+        let selected = account
+            .characters
+            .iter()
+            .find(|character| {
+                character.character_id == character_id && character.availability == "AVAILABLE"
+            })
+            .ok_or(GameplayEntryError::InvalidConfiguration)?;
+        if !account
+            .worlds
+            .iter()
+            .any(|world| world.world_ref.as_str() == selected.world_id)
+        {
+            return Err(GameplayEntryError::WorldUnavailable);
+        }
+        let mut selected_config = config.clone();
+        selected_config
+            .character_id
+            .clone_from(&selected.character_id);
+        selected_config.world_ref.clone_from(&selected.world_id);
+        let character = parse_uuid_v7(&selected_config.character_id)
+            .and_then(|bytes| CharacterId::decode(&bytes).ok())
+            .ok_or(GameplayEntryError::InvalidConfiguration)?;
+        let root = load_root_certificate(&config.dev_root)
+            .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
+        let ticket = account
+            .client
+            .issue_native_ticket(account.token, cancellation.clone())
+            .await
+            .map_err(login_rejected)?;
+        connect_ticket(
+            &account.client,
+            &selected_config,
+            &root,
+            character,
+            &ticket,
+            cancellation,
+        )
+        .await
+    }
     use std::path::PathBuf;
     use std::sync::Arc;
     use std::time::{Duration, Instant};
@@ -355,6 +496,8 @@ mod native_entry {
         /// Backoff unit of every retry; one second in production.
         pub retry_unit: Duration,
         pub open_browser: BrowserOpener,
+        /// An explicit UI request to sign in with a different browser identity.
+        pub choose_account: bool,
     }
 
     impl Debug for NativeLoginConfig {
@@ -376,6 +519,20 @@ mod native_entry {
         pub fn from_env(
             lookup: impl Fn(&str) -> Option<String>,
         ) -> Result<Option<Self>, NativeLoginSettingError> {
+            Self::read_env(lookup, true)
+        }
+
+        /// Launcher selection comes from the owner's projection, rather than configured IDs.
+        pub fn from_launcher_env(
+            lookup: impl Fn(&str) -> Option<String>,
+        ) -> Result<Option<Self>, NativeLoginSettingError> {
+            Self::read_env(lookup, false)
+        }
+
+        fn read_env(
+            lookup: impl Fn(&str) -> Option<String>,
+            configured_selection: bool,
+        ) -> Result<Option<Self>, NativeLoginSettingError> {
             let setting = |name: &'static str| {
                 lookup(name)
                     .filter(|value| !value.is_empty())
@@ -388,13 +545,22 @@ mod native_entry {
                 platform_url,
                 gateway_url: setting("OTERYN_GATEWAY_URL")?,
                 oauth_client_id: setting("OTERYN_OAUTH_CLIENT_ID")?,
-                world_ref: setting("OTERYN_WORLD")?,
-                character_id: setting("OTERYN_CHARACTER_ID")?,
+                world_ref: if configured_selection {
+                    setting("OTERYN_WORLD")?
+                } else {
+                    String::new()
+                },
+                character_id: if configured_selection {
+                    setting("OTERYN_CHARACTER_ID")?
+                } else {
+                    String::new()
+                },
                 dev_root: PathBuf::from(setting("OTERYN_DEV_ROOT")?),
                 client_build: CLIENT_BUILD.to_owned(),
                 callback_timeout: DEFAULT_CALLBACK_TIMEOUT,
                 retry_unit: Duration::from_secs(1),
                 open_browser: Arc::new(open_system_browser),
+                choose_account: false,
             }))
         }
     }
@@ -520,6 +686,17 @@ mod native_entry {
             });
         let ticket = authorize(&client, config, cancellation.clone()).await?;
 
+        connect_ticket(&client, config, &root, character_id, &ticket, cancellation).await
+    }
+
+    async fn connect_ticket(
+        client: &NativeLoginClient,
+        config: &NativeLoginConfig,
+        root: &CertificateDer<'static>,
+        character_id: CharacterId,
+        ticket: &NativeTicket,
+        cancellation: CancellationToken,
+    ) -> Result<AdmittedSession, GameplayEntryError> {
         // 4. Gateway login: one attempt_ref for this whole attempt.
         let attempt_ref = AttemptRef::generate()
             .map_err(|_error| rejected(PublicClass::TemporarilyUnavailable))?;
@@ -529,7 +706,7 @@ mod native_entry {
             client_build: &config.client_build,
         };
         let mut grant = client
-            .gateway_login(&ticket, &login, cancellation.clone())
+            .gateway_login(ticket, &login, cancellation.clone())
             .await
             .map_err(login_rejected)?;
 
@@ -538,7 +715,7 @@ mod native_entry {
         let mut reconciliations = 0;
         let mut capacity_retried = false;
         loop {
-            let code = match admit(&grant, &root, character_id, config).await {
+            let code = match admit(&grant, root, character_id, config).await {
                 Ok(session) => {
                     return Ok(AdmittedSession {
                         session,
@@ -546,8 +723,14 @@ mod native_entry {
                         channel_id: grant.channel_id.clone(),
                     });
                 }
-                Err(Some(code)) => code,
-                Err(None) => return Err(rejected(PublicClass::TemporarilyUnavailable)),
+                Err(Some(code)) => {
+                    eprintln!("Oteryn diagnostic: admission refused code={code}");
+                    code
+                }
+                Err(None) => {
+                    eprintln!("Oteryn diagnostic: gameplay connection or admission unavailable");
+                    return Err(rejected(PublicClass::TemporarilyUnavailable));
+                }
             };
             let class = admission_refusal_class(code).map_or(
                 PublicClass::TemporarilyUnavailable,
@@ -568,7 +751,7 @@ mod native_entry {
                     // The same attempt_ref and ticket: Platform returns the identical grant.
                     reconciliations += 1;
                     grant = client
-                        .gateway_login(&ticket, &login, cancellation.clone())
+                        .gateway_login(ticket, &login, cancellation.clone())
                         .await
                         .map_err(login_rejected)?;
                     continue;
@@ -585,11 +768,11 @@ mod native_entry {
         }
     }
 
-    async fn authorize(
+    async fn authorize_token(
         client: &NativeLoginClient,
         config: &NativeLoginConfig,
         cancellation: CancellationToken,
-    ) -> Result<NativeTicket, GameplayEntryError> {
+    ) -> Result<AccessToken, GameplayEntryError> {
         let mut entropy = [0_u8; 32];
         secure_random(&mut entropy).map_err(retry_login)?;
         let pkce = PkceMaterial::from_entropy(&entropy).map_err(retry_login)?;
@@ -605,7 +788,12 @@ mod native_entry {
         let redirect = LoopbackRedirect::bind().await.map_err(retry_login)?;
         let redirect_uri = redirect.redirect_uri();
         let url = client
-            .authorization_url(&redirect_uri, state.as_str(), pkce.challenge())
+            .authorization_url_for_login(
+                &redirect_uri,
+                state.as_str(),
+                pkce.challenge(),
+                config.choose_account,
+            )
             .map_err(|_error| GameplayEntryError::InvalidConfiguration)?;
         if !(config.open_browser)(url.as_str()) {
             return Err(rejected(PublicClass::RetryLogin));
@@ -624,6 +812,15 @@ mod native_entry {
             )
             .await
             .map_err(login_rejected)?;
+        Ok(token)
+    }
+
+    async fn authorize(
+        client: &NativeLoginClient,
+        config: &NativeLoginConfig,
+        cancellation: CancellationToken,
+    ) -> Result<NativeTicket, GameplayEntryError> {
+        let token = authorize_token(client, config, cancellation.clone()).await?;
         client
             .issue_native_ticket(token, cancellation)
             .await
@@ -656,7 +853,21 @@ mod native_entry {
         .await
         .map_err(|error| match error {
             SessionError::AdmissionRefused { code } => Some(code),
-            _ => None,
+            SessionError::Timeout(phase) => {
+                eprintln!("Oteryn diagnostic: admission timeout phase={phase}");
+                None
+            }
+            SessionError::Io(error) => {
+                eprintln!(
+                    "Oteryn diagnostic: admission transport error kind={:?}",
+                    error.kind()
+                );
+                None
+            }
+            _ => {
+                eprintln!("Oteryn diagnostic: admission protocol or snapshot error");
+                None
+            }
         })
     }
 
@@ -800,6 +1011,7 @@ mod native_entry {
                     callback_timeout: Duration::from_secs(10),
                     retry_unit: Duration::from_millis(10),
                     open_browser: Arc::new(complete_browser_sign_in),
+                    choose_account: false,
                 }
             }
 
@@ -914,8 +1126,11 @@ mod native_entry {
                 "GET /v1/client/directory" => format!(
                     r#"{{"epoch":1,"worlds":[{{"id":"{WORLD_REF}","name":"Alpha","channels":[],"characters":[]}}]}}"#
                 ),
+                "GET /api/v1/game-auth/native-characters" => format!(
+                    r#"{{"protocol_version":2,"characters":[{{"character_id":"{CHARACTER}","world_id":"{WORLD}","name":"Owned Walker","availability":"AVAILABLE"}}]}}"#
+                ),
                 "POST /oauth/token" => r#"{"token_type":"Bearer","access_token":"access-1","expires_in":300,"scope":"game:ticket"}"#.to_owned(),
-                "POST /v1/game-auth/tickets" => {
+                "POST /api/v1/game-auth/tickets" => {
                     r#"{"protocol_version":1,"ticket":"ticket-1","expires_in":60}"#.to_owned()
                 }
                 "POST /v1/login" => {
@@ -957,6 +1172,65 @@ mod native_entry {
         }
 
         #[test]
+        fn launcher_configuration_does_not_require_preselected_world_or_character() -> TestResult {
+            let lookup = |name: &str| match name {
+                "OTERYN_PLATFORM_URL" => Some("http://127.0.0.1:18584".to_owned()),
+                "OTERYN_GATEWAY_URL" => Some("http://127.0.0.1:18585".to_owned()),
+                "OTERYN_OAUTH_CLIENT_ID" => Some("oteryn-native".to_owned()),
+                "OTERYN_DEV_ROOT" => Some("game-root.pem".to_owned()),
+                _ => None,
+            };
+            let config = NativeLoginConfig::from_launcher_env(lookup)?
+                .ok_or("launcher configuration missing")?;
+            assert!(config.world_ref.is_empty());
+            assert!(config.character_id.is_empty());
+            assert!(NativeLoginConfig::from_env(lookup).is_err());
+            Ok(())
+        }
+
+        #[test]
+        fn interactive_sign_in_reads_owned_characters_without_ticket_or_admission() -> TestResult {
+            let stack = Stack::start(vec![1100])?;
+            let client = ClientBootstrap::new()?.with_native_login(stack.config());
+            let account = client.sign_in()?;
+            assert_eq!(account.characters.len(), 1);
+            assert_eq!(account.characters[0].character_id, CHARACTER);
+            let requests = stack.requests();
+            assert_eq!(
+                count(&requests, "GET /api/v1/game-auth/native-characters"),
+                1
+            );
+            assert_eq!(count(&requests, "POST /api/v1/game-auth/tickets"), 0);
+            assert_eq!(count(&requests, "POST /v1/login"), 0);
+            assert_eq!(stack.admissions.load(Ordering::SeqCst), 0);
+            drop(account);
+            client.shutdown();
+            stack.finish();
+            Ok(())
+        }
+
+        #[test]
+        fn selection_outside_owned_projection_stops_before_ticket_issuance() -> TestResult {
+            let stack = Stack::start(vec![1100])?;
+            let client = ClientBootstrap::new()?.with_native_login(stack.config());
+            let account = client.sign_in()?;
+            assert_eq!(
+                client
+                    .enter_selected(account, "01890a5d-ac96-774b-bcce-b302099a8000")
+                    .map(|_| ()),
+                Err(GameplayEntryError::InvalidConfiguration)
+            );
+            assert_eq!(
+                count(&stack.requests(), "POST /api/v1/game-auth/tickets"),
+                0
+            );
+            assert_eq!(stack.admissions.load(Ordering::SeqCst), 0);
+            client.shutdown();
+            stack.finish();
+            Ok(())
+        }
+
+        #[test]
         fn absent_world_stops_before_any_credential_request() -> TestResult {
             let stack = Stack::start(vec![1100])?;
             let mut config = stack.config();
@@ -982,7 +1256,7 @@ mod native_entry {
             for target in [
                 "GET /v1/client/directory",
                 "POST /oauth/token",
-                "POST /v1/game-auth/tickets",
+                "POST /api/v1/game-auth/tickets",
                 "POST /v1/login",
             ] {
                 assert_eq!(count(&requests, target), 1, "{target}");
@@ -1038,7 +1312,10 @@ mod native_entry {
                 .collect::<Vec<_>>();
             assert_eq!(logins.len(), 2);
             assert_eq!(logins.first(), logins.get(1));
-            assert_eq!(count(&stack.requests(), "POST /v1/game-auth/tickets"), 1);
+            assert_eq!(
+                count(&stack.requests(), "POST /api/v1/game-auth/tickets"),
+                1
+            );
             assert_eq!(stack.admissions.load(Ordering::SeqCst), 2);
             stack.finish();
             Ok(())

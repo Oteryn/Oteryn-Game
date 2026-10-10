@@ -17,6 +17,8 @@ source-disposition = "MIGRATE_AS_IS_AND_SPLIT_GENERIC_RESOURCE_LIFECYCLE"
 oteryn-foundation = { version = "=0.1.0", path = "../foundation" }
 
 [target.'cfg(windows)'.dependencies]
+egui = "=0.35.0"
+egui-wgpu = { version = "=0.35.0", default-features = false }
 pollster.workspace = true
 wgpu.workspace = true
 
