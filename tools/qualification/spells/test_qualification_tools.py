@@ -1,5 +1,6 @@
 """Regression coverage for provisioning refusal and complete scenario mapping."""
 import copy
+import importlib.util
 import hashlib
 import json
 from pathlib import Path
@@ -7,7 +8,7 @@ import tempfile
 import unittest
 
 from build_scenarios import build, read_json
-from prepare_test_manifest import prepare, REQUIRED_V5_PINS
+from prepare_test_manifest import prepare, PINS, REQUIRED_V5_PINS
 
 ROOT = Path(__file__).resolve().parents[3]
 ARTIFACT = ROOT / 'docs/reference/spells/r21-local-candidate/active-artifact'
@@ -85,6 +86,41 @@ class ProvisioningTests(unittest.TestCase):
         self.assertFalse(result['runtime_activation'])
         with self.assertRaises(FileExistsError):
             self.run_prepare()
+
+
+    def test_v7_progression_and_item_key_pins_are_prepared(self):
+        pin = dict(self.manifest['catalog'])
+        self.manifest.update(progression=dict(pin), item_keys=dict(pin))
+        result = self.run_prepare()
+        manifest = json.loads((self.root / 'output/manifest.json').read_text())
+        self.assertEqual(manifest['item_keys']['path'], 'item_keys.json')
+        self.assertEqual(manifest['progression']['path'], 'progression.json')
+        self.assertTrue((self.root / 'output/item_keys.json').is_file())
+        self.assertEqual(result['pinned_payloads'], len(REQUIRED_V5_PINS) + 2)
+
+
+class StagingTests(unittest.TestCase):
+    def test_both_stagers_select_every_manifest_pin_including_item_keys(self):
+        spec = importlib.util.spec_from_file_location(
+            'stage_gameplay', ROOT / 'deploy/synology-game/stage_gameplay.py')
+        stage = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(stage)
+        self.assertEqual(set(stage.FIELDS), set(PINS))
+        run_sh = (ROOT / 'tools/qualification/node_boot/run.sh').read_text()
+        fields = run_sh.split('fields = {', 1)[1].split('}', 1)[0]
+        self.assertEqual({name.strip().strip('"') for name in fields.split(',') if name.strip()},
+                         set(stage.FIELDS))
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            pins = {}
+            for field in ('catalog', 'progression', 'item_keys'):
+                data = field.encode()
+                (root / f'{field}.json').write_bytes(data)
+                pins[field] = {'path': f'{field}.json', 'sha256': hashlib.sha256(data).hexdigest()}
+            (root / 'manifest.json').write_text(json.dumps(pins))
+            stage.main(['stage', 'manifest.json', str(root), str(root / 'staged')])
+            self.assertEqual((root / 'staged/item_keys.json').read_bytes(), b'item_keys')
+            self.assertEqual((root / 'staged/progression.json').read_bytes(), b'progression')
 
 
 class ScenarioTests(unittest.TestCase):

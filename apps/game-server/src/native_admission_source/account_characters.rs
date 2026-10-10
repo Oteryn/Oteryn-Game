@@ -13,9 +13,21 @@ use super::{
     http1_mtls,
     runtime_status::{NotDelivered, ReportClock, canonical_uuid, purpose_descriptor, refusal},
 };
+use rustix::fs::{AtFlags, Mode, OFlags};
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde::{Deserialize, Serialize};
-use std::{future::Future, pin::pin, task::Poll, time::Duration};
+use std::{
+    cmp::Ordering,
+    fs::File,
+    future::Future,
+    io::{Read, Write},
+    os::fd::OwnedFd,
+    path::{Path, PathBuf},
+    pin::pin,
+    sync::atomic::{self, AtomicU64},
+    task::Poll,
+    time::Duration,
+};
 
 /// `LCA-CHARACTERS`: wire bound, not a product slot quota.
 pub const MAX_CHARACTERS: usize = 64;
@@ -311,12 +323,231 @@ pub trait ProjectionStore: Send {
     fn watermark_facts(&mut self) -> impl Future<Output = Result<WatermarkFacts, ()>> + Send;
 }
 
+/// Upper bound on the epoch fence file: a decimal `u64` and a newline.
+pub const FENCE_BYTES: usize = 21;
+static FENCE_TEMP: AtomicU64 = AtomicU64::new(1);
+
+/// The fence is missing, malformed, unreadable or could not be written.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FenceUnusable;
+
+/// The contract §5 epoch fence F: the highest epoch ever published. It lives
+/// outside the Character store and its backups, so a restore never rolls it
+/// back. A missing, unreadable or malformed fence is a refusal, never 0.
+pub trait EpochFence: Send {
+    fn read(&mut self) -> Result<u64, FenceUnusable>;
+    /// Persist F := `epoch` durably before anything of that epoch is sent.
+    fn persist(&mut self, epoch: u64) -> Result<(), FenceUnusable>;
+}
+
+/// Durably record the fence directory's entries.
+pub type DirectorySync = fn(&OwnedFd) -> rustix::io::Result<()>;
+
+/// F as one file: the decimal value with an optional trailing newline.
+/// Its directory is synced before the first read and after any write whose
+/// rename was not followed by a successful directory sync, so F is never
+/// used at a value a crash could still roll back.
+pub struct EpochFenceFile {
+    path: PathBuf,
+    unsynced: bool,
+    sync: DirectorySync,
+}
+
+impl EpochFenceFile {
+    #[must_use]
+    pub fn new(path: PathBuf) -> Self {
+        Self::with_sync(path, |directory| rustix::fs::fsync(directory))
+    }
+
+    #[must_use]
+    pub fn with_sync(path: PathBuf, sync: DirectorySync) -> Self {
+        Self {
+            path,
+            unsynced: true,
+            sync,
+        }
+    }
+}
+
+impl EpochFence for EpochFenceFile {
+    fn read(&mut self) -> Result<u64, FenceUnusable> {
+        if self.unsynced {
+            let (parent, _) = split(&self.path)?;
+            (self.sync)(&open_directory(parent)?).map_err(|_| FenceUnusable)?;
+            self.unsynced = false;
+        }
+        read_fence(&self.path)
+    }
+    fn persist(&mut self, epoch: u64) -> Result<(), FenceUnusable> {
+        match write_fence_with(&self.path, epoch, self.sync) {
+            Ok(()) => Ok(()),
+            Err(FenceWrite::Unsynced) => {
+                self.unsynced = true;
+                Err(FenceUnusable)
+            }
+            Err(FenceWrite::Failed) => Err(FenceUnusable),
+        }
+    }
+}
+
+/// The exact fence grammar: ASCII digits without a leading zero (`0` itself
+/// is valid), then at most one `\n`.
+#[must_use]
+pub fn parse_fence(raw: &[u8]) -> Option<u64> {
+    let digits = raw.strip_suffix(b"\n").unwrap_or(raw);
+    if digits.is_empty()
+        || !digits.iter().all(u8::is_ascii_digit)
+        || (digits.len() > 1 && digits[0] == b'0')
+    {
+        return None;
+    }
+    std::str::from_utf8(digits).ok()?.parse().ok()
+}
+
+fn split(path: &Path) -> Result<(&Path, &std::ffi::OsStr), FenceUnusable> {
+    let name = path.file_name().ok_or(FenceUnusable)?;
+    let parent = path.parent().filter(|p| !p.as_os_str().is_empty());
+    Ok((parent.unwrap_or_else(|| Path::new(".")), name))
+}
+
+/// A regular file not writable by group or others.
+fn fence_file(file: &File) -> Result<rustix::fs::Stat, FenceUnusable> {
+    let stat = rustix::fs::fstat(file).map_err(|_| FenceUnusable)?;
+    if rustix::fs::FileType::from_raw_mode(stat.st_mode) != rustix::fs::FileType::RegularFile
+        || stat.st_mode & 0o022 != 0
+    {
+        return Err(FenceUnusable);
+    }
+    Ok(stat)
+}
+
+fn open_fence(directory: &OwnedFd, name: &std::ffi::OsStr) -> Result<File, FenceUnusable> {
+    let fd = rustix::fs::openat(
+        directory,
+        name,
+        OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+        Mode::empty(),
+    )
+    .map_err(|_| FenceUnusable)?;
+    Ok(File::from(fd))
+}
+
+/// Read F, refusing anything but an existing, well-formed fence.
+pub fn read_fence(path: &Path) -> Result<u64, FenceUnusable> {
+    let (parent, name) = split(path)?;
+    let file = open_fence(&open_directory(parent)?, name)?;
+    fence_file(&file)?;
+    let mut raw = Vec::new();
+    file.take(FENCE_BYTES as u64 + 1)
+        .read_to_end(&mut raw)
+        .map_err(|_| FenceUnusable)?;
+    if raw.len() > FENCE_BYTES {
+        return Err(FenceUnusable);
+    }
+    parse_fence(&raw).ok_or(FenceUnusable)
+}
+
+/// Replace the existing fence with `value`: write and sync a new file in the
+/// same directory, rename it over the fence and sync the directory. The new
+/// file keeps the existing fence's owner and is mode 0600, so a fence the
+/// operator raises stays the service user's. A missing fence is not created.
+pub fn write_fence(path: &Path, value: u64) -> Result<(), FenceUnusable> {
+    write_fence_with(path, value, |directory| rustix::fs::fsync(directory))
+        .map_err(|_| FenceUnusable)
+}
+
+/// A failed fence write: `Unsynced` once the rename replaced the fence but
+/// the directory sync did not succeed, so the new value may not survive a crash.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FenceWrite {
+    Failed,
+    Unsynced,
+}
+
+impl From<FenceUnusable> for FenceWrite {
+    fn from(FenceUnusable: FenceUnusable) -> Self {
+        Self::Failed
+    }
+}
+
+/// The fence directory, opened one component at a time without following a
+/// symbolic link anywhere in its path; every fence access is relative to it.
+fn open_directory(parent: &Path) -> Result<OwnedFd, FenceUnusable> {
+    let flags = OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC;
+    let start = if parent.is_absolute() { "/" } else { "." };
+    let mut current = rustix::fs::openat(rustix::fs::CWD, start, flags, Mode::empty())
+        .map_err(|_| FenceUnusable)?;
+    for component in parent.components() {
+        match component {
+            std::path::Component::RootDir | std::path::Component::CurDir => {}
+            std::path::Component::Normal(name) => {
+                current = rustix::fs::openat(&current, name, flags, Mode::empty())
+                    .map_err(|_| FenceUnusable)?;
+            }
+            std::path::Component::ParentDir | std::path::Component::Prefix(_) => {
+                return Err(FenceUnusable);
+            }
+        }
+    }
+    Ok(current)
+}
+
+fn write_fence_with(path: &Path, value: u64, sync: DirectorySync) -> Result<(), FenceWrite> {
+    let (parent, name) = split(path)?;
+    let directory = open_directory(parent)?;
+    let current = open_fence(&directory, name)?;
+    let stat = fence_file(&current)?;
+    let temp = format!(
+        ".epoch-fence-{}-{}.tmp",
+        std::process::id(),
+        FENCE_TEMP.fetch_add(1, atomic::Ordering::Relaxed)
+    );
+    let fd = rustix::fs::openat(
+        &directory,
+        temp.as_str(),
+        OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+        Mode::RUSR | Mode::WUSR,
+    )
+    .map_err(|_| FenceWrite::Failed)?;
+    let mut file = File::from(fd);
+    let written = (|| {
+        if rustix::process::geteuid().as_raw() != stat.st_uid {
+            rustix::fs::fchown(
+                &file,
+                Some(rustix::fs::Uid::from_raw(stat.st_uid)),
+                Some(rustix::fs::Gid::from_raw(stat.st_gid)),
+            )
+            .map_err(|_| FenceUnusable)?;
+        }
+        file.write_all(format!("{value}\n").as_bytes())
+            .map_err(|_| FenceUnusable)?;
+        file.sync_all().map_err(|_| FenceUnusable)?;
+        rustix::fs::renameat(&directory, temp.as_str(), &directory, name).map_err(|_| FenceUnusable)
+    })();
+    if written.is_err() {
+        let _ = rustix::fs::unlinkat(&directory, temp.as_str(), AtFlags::empty());
+        return Err(FenceWrite::Failed);
+    }
+    sync(&directory).map_err(|_| FenceWrite::Unsynced)
+}
+
+/// The epoch an operator raise produces, exactly as
+/// `game_character_account_projection_resync(true)` (migration 0028) computes
+/// it from the locked epoch and the transaction time (Unix ms), or `None` unless it is
+/// strictly above F (§5 epoch fence).
+#[must_use]
+pub fn raised_epoch(current: i64, transaction_ms: i64, fence: u64) -> Option<u64> {
+    let raised = current.checked_add(1)?.max(transaction_ms);
+    u64::try_from(raised).ok().filter(|epoch| *epoch > fence)
+}
+
 /// One publisher per Character Authority: publications are sequential, so at
 /// most one is in flight.
-pub struct Publisher<C, S, K> {
+pub struct Publisher<C, S, K, F> {
     pub clock: C,
     pub store: S,
     pub sink: K,
+    pub fence: F,
     pub source_authority: String,
     /// Maximum Character transaction duration (§5.1). It also bounds each
     /// store call, since every store call is one such transaction.
@@ -356,11 +587,12 @@ fn class(result: &Result<Delivery, NotDelivered>) -> &'static str {
     }
 }
 
-impl<C: ReportClock, S: ProjectionStore, K: ProjectionSink> Publisher<C, S, K> {
+impl<C: ReportClock, S: ProjectionStore, K: ProjectionSink, F: EpochFence> Publisher<C, S, K, F> {
     pub const fn new(
         clock: C,
         store: S,
         sink: K,
+        fence: F,
         source_authority: String,
         max_transaction: Duration,
     ) -> Self {
@@ -368,10 +600,26 @@ impl<C: ReportClock, S: ProjectionStore, K: ProjectionSink> Publisher<C, S, K> {
             clock,
             store,
             sink,
+            fence,
             source_authority,
             max_transaction,
             watermark_started: Duration::ZERO,
             watermark_due: Duration::ZERO,
+        }
+    }
+
+    /// §5 epoch fence for one publication of `epoch`: refused while the
+    /// fence is unusable or above the epoch (a restored store not yet
+    /// raised); a higher epoch first persists F := `epoch`.
+    fn admit(&mut self, epoch: u64) -> Result<(), &'static str> {
+        let fence = self.fence.read().map_err(|FenceUnusable| "fence_invalid")?;
+        match epoch.cmp(&fence) {
+            Ordering::Less => Err("fence_below"),
+            Ordering::Equal => Ok(()),
+            Ordering::Greater => self
+                .fence
+                .persist(epoch)
+                .map_err(|FenceUnusable| "fence_unwritable"),
         }
     }
 
@@ -389,24 +637,35 @@ impl<C: ReportClock, S: ProjectionStore, K: ProjectionSink> Publisher<C, S, K> {
             let started = self.clock.elapsed();
             self.watermark_started = started;
             self.watermark_due = started + WATERMARK_PERIOD;
+            let mut fenced = None;
             let result = match self.store.watermark_facts().await {
                 Err(()) => Err(NotDelivered::Unavailable),
                 Ok(facts) => {
                     match encode_watermark(&self.source_authority, &facts, self.max_transaction) {
                         Err(_) => Err(NotDelivered::InvalidReport),
-                        Ok(body) => within(
-                            &self.clock,
-                            (started + MAX_WATERMARK_GAP).saturating_sub(self.clock.elapsed()),
-                            self.sink
-                                .send(Operation::PublishProjectionWatermarkV1, &body),
-                        )
-                        .await
-                        .unwrap_or(Err(NotDelivered::Unavailable)),
+                        Ok(body) => match self.admit(facts.projection_epoch) {
+                            Err(refused) => {
+                                fenced = Some(refused);
+                                Err(NotDelivered::InvalidReport)
+                            }
+                            Ok(()) => within(
+                                &self.clock,
+                                (started + MAX_WATERMARK_GAP).saturating_sub(self.clock.elapsed()),
+                                self.sink
+                                    .send(Operation::PublishProjectionWatermarkV1, &body),
+                            )
+                            .await
+                            .unwrap_or(Err(NotDelivered::Unavailable)),
+                        },
                     }
                 }
             };
             let elapsed = self.clock.elapsed().saturating_sub(started);
-            log("PublishProjectionWatermarkV1", class(&result), elapsed);
+            log(
+                "PublishProjectionWatermarkV1",
+                fenced.unwrap_or_else(|| class(&result)),
+                elapsed,
+            );
         }
         let phase_end = self.watermark_started + MAX_WATERMARK_GAP;
         if self.clock.elapsed() + self.max_transaction.saturating_mul(2) >= phase_end {
@@ -421,14 +680,21 @@ impl<C: ReportClock, S: ProjectionStore, K: ProjectionSink> Publisher<C, S, K> {
             // An unpublishable snapshot stays queued, so the watermark stalls
             // and Platform refuses issuance (fail toward no issuance).
             Err(_) => Err(NotDelivered::InvalidReport),
-            Ok(body) if !exchange.is_zero() => within(
-                &self.clock,
-                exchange,
-                self.sink.send(Operation::PublishAccountCharactersV1, &body),
-            )
-            .await
-            .unwrap_or(Err(NotDelivered::Unavailable)),
-            Ok(_) => Err(NotDelivered::Unavailable),
+            Ok(body) => match self.admit(snapshot.projection_epoch) {
+                // A fenced snapshot also stays queued.
+                Err(refused) => {
+                    log("PublishAccountCharactersV1", refused, Duration::ZERO);
+                    return false;
+                }
+                Ok(()) if !exchange.is_zero() => within(
+                    &self.clock,
+                    exchange,
+                    self.sink.send(Operation::PublishAccountCharactersV1, &body),
+                )
+                .await
+                .unwrap_or(Err(NotDelivered::Unavailable)),
+                Ok(()) => Err(NotDelivered::Unavailable),
+            },
         };
         let elapsed = self.clock.elapsed().saturating_sub(started);
         log("PublishAccountCharactersV1", class(&result), elapsed);

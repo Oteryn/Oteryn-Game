@@ -1,0 +1,68 @@
+# Non-secret preproduction topology agreement between Game and Platform
+# (docs/architecture/reviews/OTERYN_GAME_ARCH_PLATFORM_PREPROD_TOPOLOGY_2026-10-06.md, sections 1, 4, 6, 10).
+# It holds no key, no certificate and no address outside the private range. Values in angle brackets are
+# placeholders; a manifest PR fills them from the Platform receipts (rollout step 6). The Game deploy
+# (deploy-ops.sh check-setup) refuses while any placeholder remains and when node.toml, report.toml or
+# scope.env disagree with this file. Root copy: ROOT_BASE/ops/preprod-topology.toml (root, 0644).
+
+[nas]
+# Private LAN address of the Synology host (RFC 1918).
+lan_address = "<NAS_LAN_ADDRESS>"
+
+[scope]
+# Issued once by the Platform Registry (UUIDv7, lowercase), distinct, permanent (D855).
+world_id = "<WORLD_ID>"
+channel_id = "<CHANNEL_ID>"
+channel_key = "ch1"
+
+[node]
+# Subject (RFC 4514) of the runtime-status certificate; equals NODE_IDENTITY in scope.env.
+identity = "CN=oteryn-preprod-node-1-runtime-status"
+
+[platform]
+# Must differ from [readiness] source_authority (NodeConfig::parse); equals the Platform
+# GAME_AUTH_NATIVE_EVIDENCE_SOURCE_AUTHORITY.
+source_authority = "platform"
+# Endpoint is "<nas.lan_address>:<internal_mtls_port>" in node.toml [platform] and report.toml.
+internal_mtls_port = 8543
+peer_name = "platform-internal.preprod.oteryn.internal"
+
+[route]
+# Descriptor published with game-auth:native-route:publish; version and revision come from its receipt.
+host = "<NAS_LAN_ADDRESS>"
+port = "<GAME_PORT>"
+tls_server_name = "node-1.preprod.oteryn.internal"
+route_version = "<ROUTE_VERSION>"
+route_revision = "<ROUTE_REVISION>"
+
+[readiness]
+# Rendered into node.toml [readiness]. Grammar ^[A-Za-z0-9._:-]{1,64}$.
+source_authority = "oteryn:runtime:synology-preprod"
+route_revision = "<ROUTE_REVISION>"
+runtime_observation_revision = "obs.1"
+ruleset_revision = "game.<GAME_COMMIT_12HEX>"
+content_revision = "game.<GAME_COMMIT_12HEX>"
+map_revision = "map.<MAP_SHA256_16HEX>"
+world_policy_revision = "wp.1"
+offer_revision = "offer.1"
+
+[interpretation]
+# The four tokens of `ops character interpretation` and of every character-bootstrap-intent:issue.
+profile_revision = "profile.1"
+ruleset_revision = "game.<GAME_COMMIT_12HEX>"
+content_revision = "game.<GAME_COMMIT_12HEX>"
+starter_template_revision = "starter.1"
+
+[assignment]
+# Declared by Game ops, starts at 1, never decreases; equal in node.toml [platform.runtime_status]
+# and report.toml.
+epoch = 1
+
+[certificates]
+# Subjects only; the certificates and keys never enter a repository.
+platform_internal_san = "platform-internal.preprod.oteryn.internal"
+node_gameplay_san = "node-1.preprod.oteryn.internal"
+node_native_evidence = "CN=oteryn-preprod-node-1-native-evidence"
+node_runtime_status = "CN=oteryn-preprod-node-1-runtime-status"
+game_ops_authority = "CN=oteryn-preprod-game-ops"
+character_projection = "CN=oteryn-preprod-character-projection"

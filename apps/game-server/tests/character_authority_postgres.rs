@@ -3095,3 +3095,5 @@ fn proficiency_read_public_consumers_reject_current_recovery_provenance_substitu
 
 #[path = "support/character_proficiency_postgres_cases.rs"]
 mod character_proficiency_postgres_cases;
+#[path = "support/item_ref_production_postgres_cases.rs"]
+mod item_ref_production_postgres_cases;

@@ -1,0 +1,321 @@
+name: Synology Game Deploy
+
+# Deploys the native Game server to the internal Synology `preproduction`
+# environment, the only environment. Manual dispatch from `main` only; the
+# owner's approval of the GitHub environment `preproduction` is the human gate.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: synology-game-deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Linux x86_64 binaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Refuse any ref other than main
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main" || { echo "deploy runs from main only" >&2; exit 1; }
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Test the supervisor registration-gap check
+        shell: bash
+        run: bash deploy/synology-game/test-supervisor-gap.sh
+
+      - name: Build release binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.94.0 --profile minimal
+          cargo +1.94.0 build --release --locked -p oteryn-game-server --bins
+
+      - name: Stage release bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle="$RUNNER_TEMP/bundle"
+          mkdir -p "$bundle/bin"
+          for name in oteryn-game-server oteryn-game-ops oteryn-game-migrate; do
+            install -m 0755 "target/release/$name" "$bundle/bin/$name"
+          done
+          install -m 0755 deploy/synology-game/supervisor.sh "$bundle/supervisor.sh"
+          install -m 0755 deploy/synology-game/deploy-ops.sh "$bundle/deploy-ops.sh"
+          python3 deploy/synology-game/stage_gameplay.py \
+            content/spells.manifest.json "$GITHUB_WORKSPACE" "$bundle/gameplay"
+          echo "$GITHUB_SHA" > "$bundle/SOURCE_SHA"
+          # Every file is in the bundle before the checksums are computed.
+          (cd "$bundle" && find bin gameplay supervisor.sh deploy-ops.sh SOURCE_SHA -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: game-preprod-bundle
+          path: ${{ runner.temp }}/bundle
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy to preproduction
+    needs: build
+    environment: preproduction
+    runs-on:
+      group: game-runners
+      labels: oteryn-game
+    timeout-minutes: 30
+    env:
+      EXPECTED_RUNNER_NAME: oteryn-synology-game
+      BASE: /volume1/oteryn/game-preprod
+      # Root-owned, runner-unwritable; installed and upgraded by the owner out of band.
+      ROOT_BASE: /volume1/oteryn/game-preprod-root
+    steps:
+      - name: Verify ref and runner identity
+        env:
+          ACTUAL_RUNNER_NAME: ${{ runner.name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$ACTUAL_RUNNER_NAME" = "$EXPECTED_RUNNER_NAME"
+          test "$(id -u)" != 0
+          test ! -e /var/run/docker.sock
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: game-preprod-bundle
+          path: ${{ runner.temp }}/bundle
+
+      - name: Verify bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/bundle"
+          test "$(cat SOURCE_SHA)" = "$GITHUB_SHA"
+          sha256sum --check --strict SHA256SUMS
+          test "$(uname -m)" = x86_64
+
+      - name: Verify the one-time operator setup exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in "$BASE/node/node.toml" "$BASE/ops/migration-url"; do
+            test -f "$path" && test ! -L "$path"
+            test "$(stat -c '%a %u' "$path")" = "600 $(id -u)"
+          done
+          test "$(stat -c '%u' "$BASE")" = 0 && test ! -w "$BASE"
+          ops="$ROOT_BASE/bin/oteryn-game-ops"
+          test -f "$ops" && test ! -L "$ops"
+          test "$(stat -c '%u' "$ops")" = 0
+          wrapper="$ROOT_BASE/bin/oteryn-game-deploy-ops"
+          test -f "$wrapper" && test ! -L "$wrapper" && test "$(stat -c '%u' "$wrapper")" = 0
+          # The root-run binaries must not be replaceable by the runner user.
+          test ! -w "$ops" && test ! -w "$wrapper" && test ! -w "$ROOT_BASE/bin"
+          # ROOT_BASE/ops is root-only (0700): the runner cannot stat anything in it, so the root-owned
+          # config files are checked by the wrapper, and every wrapper subcommand the deploy uses must be
+          # allowed by the sudoers rule (sudo -l with a command exits 0 only when it is permitted).
+          zero=00000000-0000-7000-8000-000000000000
+          for cmd in "check-setup" "issue 1 1" "issue 1 1 $zero" "assign replace 1 1 $zero 1" "reconcile 1 1" "reconcile-launch 1 1"; do
+            # shellcheck disable=SC2086
+            sudo -n -l "$wrapper" $cmd >/dev/null || { echo "::error::sudoers does not allow: oteryn-game-deploy-ops $cmd"; exit 1; }
+          done
+          sudo -n "$wrapper" check-setup
+
+      - name: Require the root-installed ops binary and wrapper to match the bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          installed="$(sha256sum "$ROOT_BASE/bin/oteryn-game-ops" | cut -d ' ' -f 1)"
+          bundled="$(sha256sum "$RUNNER_TEMP/bundle/bin/oteryn-game-ops" | cut -d ' ' -f 1)"
+          echo "OPS_SHA256_INSTALLED=$installed" >> "$GITHUB_STEP_SUMMARY"
+          echo "OPS_SHA256_BUNDLE=$bundled" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$installed" != "$bundled" ]]; then
+            echo "::error::root-installed oteryn-game-ops does not match this bundle (installed $installed, bundle $bundled); the owner upgrades it as root, then re-run"
+            exit 1
+          fi
+          if ! cmp -s "$ROOT_BASE/bin/oteryn-game-deploy-ops" "$RUNNER_TEMP/bundle/deploy-ops.sh"; then
+            echo "::error::root-installed oteryn-game-deploy-ops does not match this bundle; the owner upgrades it as root, then re-run"
+            exit 1
+          fi
+
+      - name: Install binaries, gameplay inputs and supervisor
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle="$RUNNER_TEMP/bundle"
+          # BASE is root-owned; only these runtime subdirectories belong to the runner user.
+          test -d "$BASE/bin" && test -d "$BASE/gameplay" && test -d "$BASE/run" && test -d "$BASE/log"
+          # oteryn-game-ops is never installed here; it runs as root from ROOT_BASE.
+          for name in oteryn-game-server oteryn-game-migrate; do
+            # Replace by rename: a running binary is never rewritten in place.
+            install -m 0755 "$bundle/bin/$name" "$BASE/bin/$name.new"
+            mv -f "$BASE/bin/$name.new" "$BASE/bin/$name"
+          done
+          # Fail closed: changed manifest or pinned inputs need a durable `content activate` first.
+          want="$(cd "$bundle" && find gameplay -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)"
+          have="$(cat "$BASE/run/activated-gameplay.sha256" 2>/dev/null || true)"
+          if [ "$want" != "$have" ]; then
+            echo "::error::gameplay inputs in this bundle ($want) are not the activated ones (${have:-none}); the owner runs 'content activate' as root and records the digest in BASE/run/activated-gameplay.sha256, then re-run"
+            exit 1
+          fi
+          # Replace the contents of BASE/gameplay (the service reads them at boot only).
+          find "$BASE/gameplay" -mindepth 1 -delete
+          cp -R "$bundle/gameplay/." "$BASE/gameplay/"
+          # A cancelled earlier step must not leave a partial tree behind: verify what is installed.
+          got="$(cd "$BASE" && find gameplay -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)"
+          test "$got" = "$want"
+          install -m 0755 "$bundle/supervisor.sh" "$BASE/bin/supervisor.sh.new"
+          mv -f "$BASE/bin/supervisor.sh.new" "$BASE/bin/supervisor.sh"
+
+      - name: Run database migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="$(tr -d '\n' < "$BASE/ops/migration-url")"
+          OTERYN_GAME_MIGRATION_DATABASE_URL="$url" "$BASE/bin/oteryn-game-migrate"
+
+      - name: Issue launch authorization (as root, before touching the service)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # An earlier run whose assignment replace outcome was unknown left the ops writer slot occupied,
+          # and ops refuses new work until it is reconciled. Do it with the ops tool's own reconcile
+          # path before the service is touched; the command (and so its Platform report) must succeed.
+          if [[ -s "$BASE/run/pending-assignment" ]]; then
+            read -r prev_run prev_attempt < "$BASE/run/pending-assignment"
+            sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" reconcile "$prev_run" "$prev_attempt"
+            rm -f "$BASE/run/pending-assignment"
+          fi
+          file="launch-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
+          args=(issue "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT")
+          # Supersede the node that is actually registered: the newest incarnation's log
+          # wins over current-node-id, which a failed earlier deploy may have left stale.
+          # A previous run cancelled after the detached start may leave a node that is running but not
+          # registered yet: wait for it to register, otherwise stop it, before reading the id.
+          if "$BASE/bin/supervisor.sh" status > /dev/null; then
+            for _ in $(seq 1 60); do
+              { grep 'event=registered' "$BASE/log/node.log" || true; } | grep -q . && break
+              "$BASE/bin/supervisor.sh" status > /dev/null || break
+              sleep 2
+            done
+            if "$BASE/bin/supervisor.sh" status > /dev/null &&
+              ! { grep 'event=registered' "$BASE/log/node.log" || true; } | grep -q .; then
+              "$BASE/bin/supervisor.sh" stop # the process has exited, so its log is final
+            fi
+          fi
+          # The log may not show a registration that is durable: the node logs event=registering before
+          # it commits and event=registered after, so a crash, kill or cancel in between (whether the
+          # process was running or had already exited) leaves the database ahead of the log and of
+          # current-node-id. Fail closed on that gap, never fall back to a stale id.
+          if gap_id="$("$BASE/bin/supervisor.sh" registration-gap)"; then :; else
+            date -u +%FT%TZ > "$BASE/run/unreconciled-node"
+            # Keep the evidence, and let the owner's reconciled current-node-id decide the rerun.
+            mv -f "$BASE/log/node.log" "$BASE/log/node.log.unreconciled"
+            echo "::error::an earlier node logged registering ${gap_id} but never registered; its registration cannot be ruled out. The owner writes the node id from the database into BASE/run/current-node-id, removes BASE/run/unreconciled-node, then re-run"
+            exit 1
+          fi
+          if [[ -e "$BASE/run/unreconciled-node" ]]; then
+            echo "::error::BASE/run/unreconciled-node exists: a node of an earlier run was never reconciled; the owner reconciles and removes it, then re-run"
+            exit 1
+          fi
+          previous=""
+          if [[ -f "$BASE/log/node.log" ]]; then
+            previous="$({ grep 'event=registered' "$BASE/log/node.log" || true; } | tail -n 1 | sed -n 's/.*node_id=\([^ ]*\).*/\1/p')"
+          fi
+          if [[ -z "$previous" && -s "$BASE/run/current-node-id" ]]; then
+            previous="$(tr -d '[:space:]' < "$BASE/run/current-node-id")"
+          fi
+          if [[ -n "$previous" ]]; then
+            echo "$previous" > "$BASE/run/current-node-id"
+            args+=("$previous")
+          fi
+          if ! sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" "${args[@]}"; then
+            # Outcome unknown: the ops tool's own reconcile must succeed before anything else happens.
+            sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" reconcile-launch "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" ||
+              { echo "::error::launch authorization was not issued and could not be reconciled"; exit 1; }
+          fi
+          # Point the node at the new authorization (state dir is BASE/state; file handed to the service uid).
+          sed -i "s|^authorization_file = .*|authorization_file = \"$BASE/state/$file\"|" "$BASE/node/node.toml"
+          grep -q "^authorization_file = \"$BASE/state/$file\"" "$BASE/node/node.toml"
+
+      - name: Stop the service
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$BASE/bin/supervisor.sh" stop
+
+      - name: Start the service
+        shell: bash
+        run: |
+          set -euo pipefail
+          export OTERYN_NATIVE_GAMEPLAY_MANIFEST="$BASE/gameplay/content/spells.manifest.json"
+          # Detach from the runner process tree so the service outlives the job.
+          env -u RUNNER_TRACKING_ID setsid "$BASE/bin/supervisor.sh" start
+
+      - name: Health check
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$BASE/bin/supervisor.sh" health
+
+      - name: Assign the scope to the new node (as root) and wait for ready
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$BASE/log/node.log"
+          node_id="$(tr -d '[:space:]' < "$BASE/run/current-node-id")"
+          if [[ "$(cat "$BASE/run/node-state")" = awaiting_assignment ]]; then
+            line="$(grep 'event=awaiting_assignment' "$log" | tail -n 1)"
+            revision="$(sed -n 's/.*registration_revision=\([0-9]\{1,18\}\).*/\1/p' <<< "$line")"
+            test -n "$revision"
+            # The manual first start already assigned the scope, so every deploy replaces.
+            echo "$GITHUB_RUN_ID $GITHUB_RUN_ATTEMPT" > "$BASE/run/pending-assignment"
+            sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" assign replace \
+              "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$node_id" "$revision" ||
+              {
+                # Outcome unknown (or rejected): reconcile at once. Success needs the reconcile command
+                # itself to exit 0 (so its Platform report succeeded) AND to confirm the commit; an
+                # absent or rejected assignment fails the deploy. The marker stays, so the next run
+                # reconciles before it touches the service.
+                rc=0
+                out="$(sudo -n "$ROOT_BASE/bin/oteryn-game-deploy-ops" reconcile "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" 2>&1)" || rc=$?
+                echo "$out"
+                if [[ "$rc" != 0 ]] || ! grep -q 'assignment=committed' <<< "$out"; then
+                  echo "::error::assignment replace did not commit and report"
+                  exit 1
+                fi
+              }
+            rm -f "$BASE/run/pending-assignment"
+          fi
+          # The log belongs to this incarnation (start moves the previous one aside). Ready means the
+          # process is alive and the latest readiness event is ready=true, and it must hold on a re-check.
+          latest_ready() {
+            "$BASE/bin/supervisor.sh" status > /dev/null &&
+              { grep 'event=readiness' "$log" || true; } | tail -n 1 | grep -q 'ready=true'
+          }
+          for _ in $(seq 1 60); do
+            if latest_ready; then
+              sleep 5
+              if latest_ready; then
+                echo ready > "$BASE/run/node-state"
+                {
+                  echo 'GAME_PREPRODUCTION_DEPLOY=PASS'
+                  echo "SOURCE_SHA=$GITHUB_SHA"
+                  echo 'NODE_STATE=ready'
+                } >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+            fi
+            sleep 2
+          done
+          echo "::error::node did not report ready after assignment"
+          exit 1

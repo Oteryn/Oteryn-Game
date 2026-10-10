@@ -114,6 +114,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return false;
         };
+        // Lock order (§1.2): the lane before any Channel guard.
+        let Some(permit) = self.spell_lane_permit().await else {
+            return false;
+        };
         let runtime = self.runtime.lock().await;
         let mut states = self.spell_states.lock().await;
         if runtime.owner_fence().is_err()
@@ -153,7 +157,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         stage("owner_sql_begin");
         if let Err(_error) = self
             .root
-            .initialize_native_map_current_owner(self.character, self.holder, &proof)
+            .initialize_native_map_current_owner(&permit, self.character, self.holder, &proof)
             .await
         {
             #[cfg(test)]
@@ -186,6 +190,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
+        // Lock order (§1.2): the lane before any Channel guard.
+        let Some(permit) = self.spell_lane_permit().await else {
+            return;
+        };
         let runtime = self.runtime.lock().await;
         let mut states = self.spell_states.lock().await;
         let now = self.owner_now().get();
@@ -205,6 +213,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let _ = self
             .root
             .drain_spell_item_deadlines(
+                &permit,
                 self.character,
                 self.holder,
                 scope,

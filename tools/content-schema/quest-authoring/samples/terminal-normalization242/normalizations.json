@@ -1,0 +1,282 @@
+{
+  "canonical_keys": [
+    "oteryn:quest.barbarian_arena_quest",
+    "oteryn:quest.bear_room_quest",
+    "oteryn:quest.behemoth_quest",
+    "oteryn:quest.demon_helmet_quest",
+    "oteryn:quest.dragon_tower_quest",
+    "oteryn:quest.edron_goblin_quest",
+    "oteryn:quest.opticording_sphere_quest",
+    "oteryn:quest.rift_warrior_outfits_quest",
+    "oteryn:quest.the_ancient_tombs_quest"
+  ],
+  "input_completion242_sha256": "6f20eab8efe2023a6a1490846913478d36e54a764f3d73e68316890048ac5321",
+  "input_refinements242_sha256": "b69dbe6d580221b089d03e8952329c54a7e117abc02f11d476f56f18818254cf",
+  "records": [
+    {
+      "after_sha256": "0dfa0ee4ec91aea5489bd7d20fc985e0226359441dc828b7365c056fdec014e9",
+      "before_sha256": "fb9cf324965faf2a966221cfbb0f5d5381974b47d989afe5d43cae3fd1f96f25",
+      "canonical_key": "oteryn:quest.barbarian_arena_quest",
+      "completion_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s6",
+        "kind": "complete",
+        "next": [],
+        "objective": "Complete the Barbarian Arena Quest after collecting all three difficulty trophies.",
+        "targets": []
+      },
+      "old_terminal": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 3,
+        "key": "s5",
+        "kind": "complete",
+        "next": [],
+        "objective": "Collect the three difficulty trophies from Halvar's reward rooms.",
+        "targets": [
+          "Bronze Goblet",
+          "Silver Goblet",
+          "Golden Goblet"
+        ]
+      },
+      "stage_overrides": [],
+      "terminal_action_count": 3,
+      "terminal_action_kind": "collect"
+    },
+    {
+      "after_sha256": "21581f2b6315b5722bdd182ac59c8186cdc7015ded9cf52bb9a700bda4363789",
+      "before_sha256": "a1d15162b671d628bebd71bdbe344f38c72f770718e3f68007d8e080352ad369",
+      "canonical_key": "oteryn:quest.bear_room_quest",
+      "completion_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s6",
+        "kind": "complete",
+        "next": [],
+        "objective": "Complete the Bear Room Quest after opening all three reward boxes.",
+        "targets": []
+      },
+      "old_terminal": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 3,
+        "key": "s5",
+        "kind": "complete",
+        "next": [],
+        "objective": "Open the three bear-room boxes and return by the sewer grate.",
+        "targets": [
+          "bear-room reward boxes"
+        ]
+      },
+      "stage_overrides": [],
+      "terminal_action_count": 3,
+      "terminal_action_kind": "use"
+    },
+    {
+      "after_sha256": "f7bb966fff68d5f386169a523ea823e915b3727bdbd05c520e8359342da7e1db",
+      "before_sha256": "f839d7f09ce1c0e9b433b23b84a49ac862e56bdb44d563e4c2ba6d0fdb35122f",
+      "canonical_key": "oteryn:quest.behemoth_quest",
+      "completion_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s5",
+        "kind": "complete",
+        "next": [],
+        "objective": "Complete the Behemoth Quest after opening all four reward chests.",
+        "targets": []
+      },
+      "old_terminal": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 4,
+        "key": "s4",
+        "kind": "complete",
+        "next": [],
+        "objective": "Open the four Behemoth reward chests beyond the level gate.",
+        "targets": [
+          "Behemoth reward chests"
+        ]
+      },
+      "stage_overrides": [],
+      "terminal_action_count": 4,
+      "terminal_action_kind": "use"
+    },
+    {
+      "after_sha256": "1e79b838eb588149762420113986434ee25b4bc26c63707ad59466029d80abd4",
+      "before_sha256": "6c0b912d0aaf61d44179e6889b02c38e40fdeb90f255018f3598b3ee922fe72f",
+      "canonical_key": "oteryn:quest.demon_helmet_quest",
+      "completion_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s6",
+        "kind": "complete",
+        "next": [],
+        "objective": "Complete the Demon Helmet Quest after opening all three reward chests.",
+        "targets": []
+      },
+      "old_terminal": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 3,
+        "key": "s5",
+        "kind": "complete",
+        "next": [],
+        "objective": "Open the Demon Helmet, Demon Shield and Steel Boots chests.",
+        "targets": [
+          "Demon Helmet reward chests"
+        ]
+      },
+      "stage_overrides": [],
+      "terminal_action_count": 3,
+      "terminal_action_kind": "use"
+    },
+    {
+      "after_sha256": "0128012050f40b5a96776b1eda19475ffdc1107fa4db31ec4f2c243c235ea9aa",
+      "before_sha256": "69d45fa70e6e843e8f3754061f370cff1aea7e2cb3dcb4aa9bd5e657a9caeb97",
+      "canonical_key": "oteryn:quest.dragon_tower_quest",
+      "completion_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s5",
+        "kind": "complete",
+        "next": [],
+        "objective": "Complete the Dragon Tower Quest after opening both supply boxes.",
+        "targets": []
+      },
+      "old_terminal": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 2,
+        "key": "s4",
+        "kind": "complete",
+        "next": [],
+        "objective": "Open the two supply boxes at the top of the tower.",
+        "targets": [
+          "Dragon Tower supply boxes"
+        ]
+      },
+      "stage_overrides": [],
+      "terminal_action_count": 2,
+      "terminal_action_kind": "use"
+    },
+    {
+      "after_sha256": "d9669ba153b96ac1c8eec67be81e60c42acaaa5d215fc617712181b7d1dab9b8",
+      "before_sha256": "33212022da140d9718e8cd379784841dec1c39f13039b3e04bf4bd48f9367b2e",
+      "canonical_key": "oteryn:quest.edron_goblin_quest",
+      "completion_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s5",
+        "kind": "complete",
+        "next": [],
+        "objective": "Complete the Edron Goblin Quest after opening both throne-room chests.",
+        "targets": []
+      },
+      "old_terminal": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 2,
+        "key": "s4",
+        "kind": "complete",
+        "next": [],
+        "objective": "Open the two goblin throne-room chests.",
+        "targets": [
+          "goblin reward chests"
+        ]
+      },
+      "stage_overrides": [],
+      "terminal_action_count": 2,
+      "terminal_action_kind": "use"
+    },
+    {
+      "after_sha256": "ab25f0a1eae7e2642492657415b7746748a09663dea45b208b9796e39650ec3a",
+      "before_sha256": "4b8f03f35bbae5ed8937654f19db1703bf0ec9b076703de1539794256afa975c",
+      "canonical_key": "oteryn:quest.opticording_sphere_quest",
+      "completion_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s16",
+        "kind": "complete",
+        "next": [],
+        "objective": "Complete the Opticording Sphere Quest after opening both final ornate chests.",
+        "targets": []
+      },
+      "old_terminal": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 2,
+        "key": "s15",
+        "kind": "complete",
+        "next": [],
+        "objective": "Otwórz finałowe Mysterious Ornate Chests.",
+        "targets": [
+          "Mysterious Ornate Chest"
+        ]
+      },
+      "stage_overrides": [],
+      "terminal_action_count": 2,
+      "terminal_action_kind": "use"
+    },
+    {
+      "after_sha256": "65e26333b14e1b14f448f4888002e40a7c6854369389c8e6bc3f04fbb2ff858a",
+      "before_sha256": "169d2625857be26fe14c7833aeb6b1e0f0730f96d759fb36f59c53ef68894849",
+      "canonical_key": "oteryn:quest.rift_warrior_outfits_quest",
+      "completion_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s6",
+        "kind": "complete",
+        "next": [],
+        "objective": "Complete the Rift Warrior Outfits Quest after Cledwyn grants the second addon.",
+        "targets": []
+      },
+      "old_terminal": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 100,
+        "key": "s5",
+        "kind": "complete",
+        "next": [],
+        "objective": "Oddaj Cledwynowi drugi komplet i zatwierdź oba dodatki.",
+        "targets": [
+          "Cledwyn",
+          "Silver Token"
+        ]
+      },
+      "stage_overrides": [
+        {
+          "field": "count",
+          "new_value": 1,
+          "old_value": 100,
+          "stage_key": "s3"
+        }
+      ],
+      "terminal_action_count": 1,
+      "terminal_action_kind": "talk"
+    },
+    {
+      "after_sha256": "65714dda94aa55e11edb71c58c3614c0079259761a5a9831d6e75af128f157e5",
+      "before_sha256": "529e00a5a734c538ca0976b8727221da4b0facc24cd0447f33b8e102e12b33f4",
+      "canonical_key": "oteryn:quest.the_ancient_tombs_quest",
+      "completion_stage": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 1,
+        "key": "s14",
+        "kind": "complete",
+        "next": [],
+        "objective": "Complete The Ancient Tombs Quest after combining the seven helmet parts.",
+        "targets": []
+      },
+      "old_terminal": {
+        "basis": "CHOSEN_OTERYN_APPROXIMATION",
+        "count": 7,
+        "key": "s13",
+        "kind": "complete",
+        "next": [],
+        "objective": "Połącz siedem różnych części Helmet of the Ancients w komnacie tworzenia.",
+        "targets": [
+          "Helmet of the Ancients pieces"
+        ]
+      },
+      "stage_overrides": [],
+      "terminal_action_count": 1,
+      "terminal_action_kind": "use"
+    }
+  ],
+  "runtime_enabled": false,
+  "schema": "OTERYN_QUEST_TERMINAL_NORMALIZATION/v1",
+  "source_holds_preserved": true
+}

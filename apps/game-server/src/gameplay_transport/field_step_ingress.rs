@@ -318,6 +318,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(in crate::gameplay_transport) async fn step_with_field_ingress(
         &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
@@ -404,11 +405,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let room=owner.qualified_room.ok_or(crate::durability::DurabilityError::Unavailable)?;
             let objects=owner.door.lock().await;
             let prepared=if crate::movement::source_floor_change::is_source_profile(owner.movement_cells) {
-                Some(crate::movement::source_floor_change::collect_current_source_step(&mut tx,owner.root,owner.character,owner.holder,&fence,room,runtime,&objects,source,actor,session,origin,direction).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)
+                Some(crate::movement::source_floor_change::collect_current_source_step(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,room,runtime,&objects,source,actor,session,origin,direction).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)
             } else {None};
             let destination=if let Some(prepared)=&prepared {prepared.destination()} else {destination(runtime,owner.movement_cells,actor,session,origin,direction).map_err(|_|crate::durability::DurabilityError::Unavailable)?};
             let target=SpellGroundTarget::for_native_tile_read(room,runtime,destination).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
-            let read=crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&fence,source.source_digest(),&target).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+            let read=crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,source.source_digest(),&target).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let mut creator=None;
             for item in read.items(){
                 let Some(policy)=source.item_policy(&item.definition.production_key,&item.definition.revision_ref)else{break};

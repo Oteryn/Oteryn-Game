@@ -434,6 +434,8 @@ mod tests {
             wheel_profile: None,
             source_world: None,
             progression: None,
+            item_keys: None,
+            loot_tables: None,
         };
         let room = crate::content::qualify_native_source_spell_world_with_gameplay(
             world,
@@ -840,6 +842,7 @@ impl PreparedCurrentSourceStep<'_> {
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn collect_current_source_step<'room>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &crate::durability::spell_owner_commit::SpellLanePermit,
     root: &crate::durability::DurabilityRoot,
     recovery: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
     node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
@@ -891,6 +894,7 @@ pub(crate) async fn collect_current_source_step<'room>(
         let read =
             crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(
                 tx,
+                permit,
                 root,
                 recovery,
                 node,

@@ -75,6 +75,7 @@ use super::item_transfer_audit::{
     OneItemTransferCauseV1, OneItemTransferV1, TransferEventIdentity,
 };
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
+use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::domain::CharacterId;
@@ -753,13 +754,27 @@ impl DurabilityRoot {
     /// reacquiring session authority; a changed intent conflicts. A new
     /// TRANSFER commits only under the complete current fence and with the
     /// authoritative before-state admitting it.
+    ///
+    /// `permit` is the Spell lane of the fenced Channel (SPELL-LOCK-2 §1.2): the source Ground
+    /// row's owner-lock trigger takes advisory key 33, so the lane is held from before `begin`
+    /// to the end of the transaction.
     pub async fn commit_item_transfer(
         &self,
+        permit: &SpellLanePermit,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         candidate: &mut ItemTransferCandidate,
     ) -> Result<ItemTransferOutcome> {
+        // A non-Channel scope owns no Ground, so its fence is refused as stale authority
+        // before the lane check, as the transaction refused it before SPELL-LOCK-2.
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) {
+            return Err(ItemTransferError::AuthorityRejected);
+        }
+        permit.check_scope(fence.runtime_scope)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemTransferError::AuthorityRejected)?;
@@ -767,10 +782,12 @@ impl DurabilityRoot {
             .await?;
         let frozen = FrozenTransfer::of(candidate);
         let node = node.clone();
+        let mut context = permit;
 
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
+                    let permit: &SpellLanePermit = permit;
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
@@ -839,7 +856,8 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error.into())),
                     };
                     let committed =
-                        apply_transfer(&mut tx, &frozen, &admitted, &envelope, tuple).await?;
+                        apply_transfer(&mut tx, permit, &frozen, &admitted, &envelope, tuple)
+                            .await?;
                     tx.commit(deadline).await?;
                     Ok(Ok(ItemTransferOutcome::Committed(committed)))
                 })
@@ -1005,6 +1023,84 @@ impl DurabilityRoot {
                     };
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(location))
+                })
+            })
+            .await?
+    }
+
+    /// MAP-ITEM-REF-1 Part B: the live direct entries of the corpse
+    /// `corpse_item_instance_id` in loot order (ascending placement ordinal),
+    /// or `None` when it is not a live corpse on Ground (a corpse MINT
+    /// receipt, a Ground location and a live instance). Read-only; the
+    /// TRANSFER re-derives every source under its own lock.
+    pub async fn read_corpse_contents(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        corpse_item_instance_id: [u8; 16],
+    ) -> Result<Option<Vec<BackpackEntry>>> {
+        use super::item_mint::CORPSE_CONTAINER_ENTRIES_MAX;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ItemTransferError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let live_corpse: bool = sqlx::query_scalar(
+                        "SELECT EXISTS ( \
+                           SELECT 1 FROM game_item_mint_receipts r \
+                             JOIN game_item_ground_locations g \
+                               ON g.item_instance_id = r.item_instance_id \
+                             JOIN game_item_instances i \
+                               ON i.item_instance_id = r.item_instance_id \
+                            WHERE r.item_instance_id = encode($1,'hex')::uuid \
+                              AND r.loot_purpose_key = $2 \
+                              AND i.lifecycle = 1)",
+                    )
+                    .bind(corpse_item_instance_id.as_slice())
+                    .bind(CORPSE_MATERIALIZATION_PURPOSE_KEY)
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    if !live_corpse {
+                        commit_semantic_transaction(tx, deadline).await?;
+                        return Ok(Ok(None));
+                    }
+                    let rows = sqlx::query(
+                        "SELECT e.item_instance_id::text, e.placement_ordinal::text, \
+                                i.definition_family, i.definition_production_key, \
+                                i.definition_revision_ref, i.quantity \
+                           FROM game_item_corpse_container_entries e \
+                           JOIN game_item_instances i USING (item_instance_id, world_id) \
+                          WHERE e.parent_item_instance_id = encode($1,'hex')::uuid \
+                            AND i.lifecycle = 1 \
+                          ORDER BY e.placement_ordinal ASC LIMIT $2",
+                    )
+                    .bind(corpse_item_instance_id.as_slice())
+                    .bind(i64::from(CORPSE_CONTAINER_ENTRIES_MAX) + 1)
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    if rows.len() > CORPSE_CONTAINER_ENTRIES_MAX as usize {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    let entries = rows
+                        .iter()
+                        .map(|row| {
+                            Ok(BackpackEntry {
+                                item: InventoryItem {
+                                    item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
+                                    definition: decode_definition(row)?,
+                                    quantity: decode_quantity(row)?,
+                                },
+                                placement_ordinal: row
+                                    .try_get::<String, _>("placement_ordinal")?
+                                    .parse()
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                            })
+                        })
+                        .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(Some(entries)))
                 })
             })
             .await?
@@ -1586,6 +1682,7 @@ fn transfer_message(
 /// Apply every effect of the admitted plan with its receipt and audit event.
 async fn apply_transfer(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     frozen: &FrozenTransfer,
     admitted: &Admitted,
     envelope: &[u8],
@@ -1607,6 +1704,9 @@ async fn apply_transfer(
     };
     let tx_id = frozen.transaction_id.as_slice();
 
+    // SPELL-LOCK-2 §1.2: the DELETE fires the key-33 owner lock of this Ground (or of the
+    // corpse entry's Ground root), so the lane must be that Channel's.
+    permit.check_stored_channel(&source.world_id, &source.ground.channel_id)?;
     let removed = match source.corpse.as_ref() {
         None => {
             sqlx::query(

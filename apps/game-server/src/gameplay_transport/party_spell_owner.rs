@@ -338,6 +338,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
+        // Lock order (§1.2): the lane before any Channel guard.
+        let Some(permit) = self.spell_lane_permit().await else {
+            return false;
+        };
         let mut runtime = self.runtime.lock().await;
         let states = self.spell_states.lock().await;
         if runtime.assert_actor_spell_unreserved(actor).is_err()
@@ -348,6 +352,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let Ok(view) = self
             .root
             .refresh_current_world_party_presence(
+                &permit,
                 self.character,
                 self.holder,
                 &runtime,
@@ -362,11 +367,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
     }
     /// Idempotent source World deadline pass; no player command or invented caster identity.
     pub(crate) async fn drain_source_party_expiry(&self) -> Option<usize> {
+        // Lock order (§1.2): the lane before any Channel guard.
+        let permit = self.spell_lane_permit().await?;
         let runtime = self.runtime.lock().await;
         let binding = runtime.binding();
         runtime.owner_fence().ok()?;
         self.root
             .drain_world_party_expiry(
+                &permit,
                 self.character,
                 self.holder,
                 crate::foundation::RuntimeScopeRefV1::channel(
@@ -381,11 +389,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
 
     /// Source absence hides presence, never removes an actor or infers a clear combat lock.
     pub(crate) async fn drain_source_party_offline_presence(&self) -> Option<usize> {
+        // Lock order (§1.2): the lane before any Channel guard.
+        let permit = self.spell_lane_permit().await?;
         let runtime = self.runtime.lock().await;
         let binding = runtime.binding();
         runtime.owner_fence().ok()?;
         self.root
             .drain_world_party_offline_presence(
+                &permit,
                 self.character,
                 self.holder,
                 crate::foundation::RuntimeScopeRefV1::channel(
@@ -405,6 +416,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
     ) -> Option<(u64, oteryn_protocol_oteryn::actor_spell::ActorVitals)> {
         use crate::durability::{DurabilityError, spell_item_transaction as item_tx};
+        // Lock order (§1.2): the lane before any Channel guard.
+        let permit = self.spell_lane_permit().await?;
+        let permit = &permit;
         let runtime = self.runtime.lock().await;
         let mut states = self.spell_states.lock().await;
         runtime.assert_actor_spell_unreserved(actor).ok()?;
@@ -433,6 +447,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
                 let authority = item_tx::assert_spell_item_scope_in_transaction(
                     &mut tx,
+                    permit,
                     owner.root,
                     owner.character,
                     owner.holder,

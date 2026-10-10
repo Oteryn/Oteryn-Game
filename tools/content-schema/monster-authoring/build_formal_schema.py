@@ -46,7 +46,7 @@ d['conditionType']=text(pattern=r'^[a-z][a-z0-9_]*$',description='Canonical cond
 d['resistance']=obj({'damage_type':use('damageType'),'reduction_percent':use('ratio')},('damage_type','reduction_percent'))
 d['damageResponse']=obj({'damage_type':use('damageType'),'percent':use('nonnegativePercent')},('damage_type','percent'))
 d['stats']=obj({
-    'max_health':integer(1),'initial_health':integer(1),'experience':integer(),'speed':integer(),
+    'max_health':integer(1,4294967295),'initial_health':integer(1,4294967295),'experience':integer(),'speed':integer(),
     'armor':integer(),'defense':integer(),'mitigation_percent':use('nonnegativePercent'),
     'critical_chance_percent':use('percent')},('max_health','initial_health','experience','speed','armor','defense','critical_chance_percent'))
 d['familiar']=obj({'vocation':text(),'summon_ability':use('AbilityRef'),'duration_ms':use('ms'),

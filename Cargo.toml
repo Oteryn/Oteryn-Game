@@ -19,7 +19,6 @@ members = [
     "crates/input-platform",
     "crates/renderer",
     "crates/client-assets",
-    "crates/placeholder-assets",
     "crates/synthetic-assets",
     "crates/test-support",
     "crates/world-bundle",
@@ -29,6 +28,7 @@ members = [
     "tools/synthetic-asset-compiler",
     "tools/synthetic-client-harness",
     "tools/dev-client",
+    "tools/player-bots",
     "tools/world-bundle-compiler",
 ]
 exclude = [

@@ -22,7 +22,7 @@ from item_official_navigation import admission_ids
 PROFILE = "OTERYN_OFFICIAL_CLIENT_WORLD_APPEARANCE/v1"
 QUALIFICATION = Path(__file__).parent / "samples/qualified-official-corpses-15.30.json"
 QUALIFICATION_SHA256 = (
-    "68c05d009a4f36cf9fa1e9b57152630b783d0709b9980fcdcb502cafb35b35c1"
+    "8944c05413acbb7d16818a7c81af2588d519d836e1651f6adf05b3672c8dba9e"
 )
 CENSUS = Path(__file__).parent / "samples/census-official-corpses-15.30.json"
 IDS = frozenset(

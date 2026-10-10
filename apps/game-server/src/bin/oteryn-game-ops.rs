@@ -25,7 +25,7 @@ use oteryn_game_server::native_admission_source::scope_assignment::{
     self, Assignment, Delivery, NotDelivered, ReportConfig, RetryPolicy, Revocation,
     ScopeAssignmentDescriptor,
 };
-use oteryn_game_server::node::config::{NodeConfig, OpsConfig};
+use oteryn_game_server::node::config::{DatabaseConfig, NodeConfig, OpsConfig};
 use oteryn_game_server::node::descriptor_facts::{MAX_PEM_BYTES, certificates, descriptor_facts};
 use oteryn_game_server::node::operator_files::{
     AssignmentRequestFile, CharacterRecoveryRequestFile, ContentActivationRequestFile,
@@ -1339,6 +1339,56 @@ async fn content(operator: &Operator, mut arguments: Arguments) -> Outcome {
     }
 }
 
+const PROJECTION_USAGE: &str = "projection resync --raise-epoch true|false: re-enqueue every \
+account for ListCharactersForAccount and print the projection epoch. `true` raises the epoch \
+above the epoch fence and then persists the fence; it uses the [projection] operator \
+credential of the ops config. After a Character store restore: stop the node (its publisher), \
+restore, run `projection resync --raise-epoch true`, then start the node.";
+
+/// `projection resync` (contract §5): prints only the epoch. It connects
+/// only the projection login: a process holds one production root, so it
+/// runs before, and instead of, the operator root.
+async fn projection(
+    config: &OpsConfig,
+    mut arguments: Arguments,
+    connect: impl AsyncFn(&DatabaseConfig) -> Result<DurabilityRoot, Failure>,
+) -> Outcome {
+    use oteryn_game_server::native_admission_source::account_characters::EpochFenceFile;
+    use oteryn_game_server::node::serve::{ResyncError, resync};
+    if arguments.words.get(1).map(String::as_str) != Some("resync") || arguments.words.len() != 2 {
+        return Err(Failure::Usage(PROJECTION_USAGE));
+    }
+    let raise = match arguments.take("raise-epoch")?.as_str() {
+        "true" => true,
+        "false" => false,
+        _ => return Err(Failure::Usage(PROJECTION_USAGE)),
+    };
+    arguments.finish()?;
+    let config = config.projection.as_ref().ok_or(Failure::Usage(
+        "projection resync requires the [projection] section",
+    ))?;
+    let root = connect(&config.database).await?;
+    let mut fence = EpochFenceFile::new(config.epoch_fence_file.clone());
+    match resync(&root, raise, &mut fence).await {
+        Ok(epoch) => {
+            println!("{epoch}");
+            Ok(())
+        }
+        Err(error @ ResyncError::FenceInvalid) => Err(Failure::Input(error.to_string())),
+        Err(
+            error @ ResyncError::Durability(
+                oteryn_game_server::durability::DurabilityError::CommitOutcomeUnknown,
+            ),
+        ) => Err(Failure::Ambiguous(error.to_string())),
+        Err(error @ ResyncError::Durability(_)) => Err(Failure::Unavailable(error.to_string())),
+        Err(
+            error @ (ResyncError::NotAboveFence { .. }
+            | ResyncError::Unexpected
+            | ResyncError::FenceUnwritten { .. }),
+        ) => Err(Failure::Rejected(error.to_string())),
+    }
+}
+
 async fn run(raw: Vec<String>) -> Outcome {
     let mut arguments = Arguments::parse(raw)?;
     let config_path = PathBuf::from(arguments.take("config")?);
@@ -1360,9 +1410,27 @@ async fn run(raw: Vec<String>) -> Outcome {
             "oteryn-game-ops refuses to run as the service user",
         ));
     }
+    dispatch(
+        config,
+        invoking,
+        arguments,
+        async |database: &DatabaseConfig| Ok(connect_root(database, invoking).await?),
+    )
+    .await
+}
+
+async fn dispatch(
+    config: OpsConfig,
+    invoking: u32,
+    arguments: Arguments,
+    connect: impl AsyncFn(&DatabaseConfig) -> Result<DurabilityRoot, Failure>,
+) -> Outcome {
+    if arguments.words.first().map(String::as_str) == Some("projection") {
+        return projection(&config, arguments, connect).await;
+    }
     let state = secure_file::open_state_directory(&config.operator.state_directory, invoking)
         .map_err(|error| Failure::Input(format!("operator.state_directory: {error:?}")))?;
-    let root = connect_root(&config.database, invoking).await?;
+    let root = connect(&config.database).await?;
     let operator = Operator {
         config,
         state,
@@ -1376,7 +1444,7 @@ async fn run(raw: Vec<String>) -> Outcome {
         Some("assignment") => assignment(&operator, arguments).await,
         Some("content") => content(&operator, arguments).await,
         _ => Err(Failure::Usage(
-            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content ...",
+            "oteryn-game-ops --config <path> authorization|registration|s2|character|assignment|content|projection ...",
         )),
     }
 }
@@ -1460,6 +1528,54 @@ mod tests {
             assert_eq!(failure.kind().code().number, number);
         }
     }
+    #[test]
+    fn projection_resync_connects_only_the_projection_login() {
+        let database = |username: &str, password: &str| {
+            format!(
+                "transport_ip = \"127.0.0.1\"\nport = 5432\ntls_server_name = \"db.internal\"\n\
+                 database = \"oteryn\"\nusername = \"{username}\"\n\
+                 password_file = \"/etc/oteryn/ops/{password}\"\n\
+                 root_ca_file = \"/etc/oteryn/ops/db-ca.pem\"\n"
+            )
+        };
+        let document = format!(
+            "[operator]\nstate_directory = \"/nonexistent/oteryn-ops-state\"\nservice_uid = 990\n\
+             [database]\n{}\
+             [character]\nfence_directory = \"/var/lib/oteryn/character-fence\"\n\
+             authority_scope_id = \"character-primary\"\nissuer_identity = \"game-ops\"\n\
+             [projection]\nepoch_fence_file = \"/var/lib/oteryn/projection/epoch-fence\"\n\
+             [projection.database]\n{}",
+            database("control_login", "pg-password"),
+            database("projection_owner", "projection-pg-password"),
+        );
+        let config = OpsConfig::parse(document.as_bytes()).unwrap();
+        let block_on = |future| {
+            tokio::runtime::Builder::new_current_thread()
+                .build()
+                .unwrap()
+                .block_on(future)
+        };
+        let connected = RefCell::new(Vec::new());
+        let connect = async |database: &DatabaseConfig| {
+            connected.borrow_mut().push(database.username.clone());
+            Err(Failure::Unavailable("not connected in tests".into()))
+        };
+        let words = |words: &[&str]| {
+            Arguments::parse(words.iter().map(|word| (*word).to_owned()).collect()).unwrap()
+        };
+        // Resync opens only the projection root: no operator root and no state.
+        let resync = words(&["projection", "resync", "--raise-epoch", "true"]);
+        let outcome = block_on(dispatch(config.clone(), 0, resync, &connect));
+        assert!(matches!(outcome, Err(Failure::Unavailable(_))));
+        assert_eq!(*connected.borrow(), ["projection_owner"]);
+        // Every other command needs its state directory before the operator root.
+        connected.borrow_mut().clear();
+        let other = words(&["content", "activate"]);
+        let outcome = block_on(dispatch(config, 0, other, &connect));
+        assert!(matches!(outcome, Err(Failure::Input(_))));
+        assert!(connected.borrow().is_empty());
+    }
+
     use std::cell::RefCell;
 
     #[derive(Default)]

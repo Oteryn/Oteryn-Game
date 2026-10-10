@@ -28,6 +28,7 @@ use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
     LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
 };
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
     AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
@@ -41,6 +42,22 @@ use crate::foundation::{
 };
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
 use sqlx::{Connection, Executor};
+
+/// SPELL-LOCK-2 §1.2: the settle holds the death Channel's lane; a fresh lane stands in for the
+/// Channel runtime this PostgreSQL case does not own.
+async fn settle_on_fresh_lane<const N: usize>(
+    facts: crate::combat::ProjectedCreatureDeathFacts,
+    session: &crate::combat::DurabilitySession<'_, '_, '_>,
+    slot: &mut crate::durability::character_revision_sequencer::RevisionSlot,
+    input: crate::combat::CreatureDeathRewardInput<N>,
+) -> Result<
+    crate::combat::CreatureDeathRewardOutcome,
+    crate::combat::CreatureDeathRewardAdmissionError,
+> {
+    let permit =
+        SpellLanePermit::of_fresh_lane(facts.death.world_id(), facts.death.channel_id()).await;
+    settle_creature_death_rewards(&permit, facts, session, slot, input).await
+}
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -738,7 +755,7 @@ fn one_creature_death_mints_the_plan_and_awards_xp_once() -> TestResult {
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -823,7 +840,7 @@ fn replay_is_idempotent_with_no_duplicate_mint_or_xp() -> TestResult {
             let mut slot = CharacterRevisionSequencer::new()
                 .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
                 .await;
-            let outcome = settle_creature_death_rewards(
+            let outcome = settle_on_fresh_lane(
                 capture(&mut fixture, actor)?,
                 &session,
                 &mut slot,
@@ -906,7 +923,7 @@ fn generation_change_leaves_a_stale_death_rejected_with_no_write() -> TestResult
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -974,7 +991,7 @@ fn a_stale_xp_fence_rejects_xp_without_blocking_loot() -> TestResult {
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1027,7 +1044,7 @@ fn an_unsupported_loot_table_rejects_loot_without_blocking_xp() -> TestResult {
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1090,7 +1107,7 @@ fn a_damage_free_death_names_the_reward_principal_as_the_window_winner() -> Test
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1143,7 +1160,7 @@ fn a_death_with_no_loot_entries_still_materializes_a_corpse() -> TestResult {
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1192,7 +1209,7 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let first = settle_creature_death_rewards(
+        let first = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1236,7 +1253,7 @@ fn a_generation_ending_mid_plan_drops_the_remainder_with_no_duplicate() -> TestR
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1318,7 +1335,13 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
                 .map_err(debug)?;
             harness
                 .root
-                .commit_corpse_mint(&authority, &harness.node, &mut candidate, id(61))
+                .commit_corpse_mint(
+                    &candidate.fresh_death_lane_permit().await,
+                    &authority,
+                    &harness.node,
+                    &mut candidate,
+                    id(61),
+                )
                 .await
                 .map_err(debug)?;
         }
@@ -1334,7 +1357,7 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
         let mut slot = CharacterRevisionSequencer::new()
             .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
             .await;
-        let outcome = settle_creature_death_rewards(
+        let outcome = settle_on_fresh_lane(
             capture(&mut fixture, actor)?,
             &session,
             &mut slot,
@@ -1362,4 +1385,214 @@ fn at_the_corpse_cap_the_death_settles_but_no_corpse_or_loot_is_created() -> Tes
         drop(seal);
         harness.cleanup().await
     })
+}
+
+// KILL-REWARD-COMP-1 Part B (CP D929 option b): the real rat reward row,
+// settled live. The rat's Creature profile (XP, corpse `i5964`) and the
+// admission facts are read from the production pin (`spell-native-profiles`
+// and the `loot_tables` section); the settled table is the rat's pinned
+// table narrowed to its admitted entries (gold `i3031`). The real table also
+// names cheese `i3607`, which is not materializable, so the content row for
+// the rat refuses with `loot_item_inadmissible`
+// (`content::creature_reward` tests); its admission is
+// OTV2-20261007-d3-8-cheese.
+mod kill_reward_live {
+    use super::{
+        Harness, TestResult, capture, configured_admin, death_fixture, debug, ground, id,
+        progression_binding, reward_principal, runtime, settle_on_fresh_lane, uuid_text,
+    };
+    use crate::combat::{
+        CreatureDeathRewardInput, DurabilitySession, LootDefinitionRef, LootSelectionAlgorithm,
+        LootTableDefinition, LootTableEntry,
+    };
+    use crate::domain::CharacterId;
+    use crate::durability::character_progression::ExperienceCommitOutcome;
+    use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
+    use crate::foundation::CombatDeathFixture;
+    use oteryn_simulation_determinism::ExactI64;
+    use serde_json::Value;
+
+    const RAT: &str = "oteryn:creature.rat";
+    const GOLD: &str = "oteryn:item.tibia.i3031";
+    const CHEESE: &str = "oteryn:item.tibia.i3607";
+
+    fn pinned(path: &str) -> TestResult<Value> {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join(path);
+        Ok(serde_json::from_slice(&std::fs::read(path)?)?)
+    }
+
+    fn reference(value: &Value) -> TestResult<LootDefinitionRef> {
+        let field = |name: &str| {
+            value[name]
+                .as_str()
+                .ok_or_else(|| format!("reference without {name}"))
+        };
+        Ok(LootDefinitionRef::new(
+            field("family")?,
+            field("key")?,
+            field("revision")?,
+        ))
+    }
+
+    /// The rat's pinned reward facts, as the content builder reads them.
+    struct RatPin {
+        xp: i64,
+        corpse: LootDefinitionRef,
+        table_ref: LootDefinitionRef,
+        admitted: LootTableDefinition,
+        cheese_refused: bool,
+    }
+
+    fn rat_pin() -> TestResult<RatPin> {
+        let profiles = pinned("content/creatures/definitions/spell-native-profiles.json")?;
+        let profile = profiles["records"]
+            .as_array()
+            .ok_or("profile records")?
+            .iter()
+            .find(|record| record["profile"]["target"]["key"] == RAT)
+            .ok_or("rat profile pinned")?;
+        let data = &profile["profile"]["data"]["profile"];
+        let xp = data["experience"].as_i64().ok_or("rat experience")?;
+        let corpse = &data["details"]["corpse_item"];
+
+        let section = pinned("tools/content-schema/native-gameplay/loot-tables.json")?;
+        let binding = section["creature_loot"]
+            .as_array()
+            .ok_or("creature_loot")?
+            .iter()
+            .find(|row| row["creature"]["key"] == RAT)
+            .ok_or("rat binding pinned")?;
+        let table = section["tables"]
+            .as_array()
+            .ok_or("tables")?
+            .iter()
+            .find(|table| table["identity"] == binding["loot"])
+            .ok_or("rat table pinned")?;
+        let facts = |item: &Value| {
+            section["items"]
+                .as_array()
+                .and_then(|items| items.iter().find(|facts| &facts["item"] == item))
+        };
+        let corpse_facts = facts(corpse).ok_or("corpse admission facts")?;
+        assert_eq!(corpse_facts["materializable"], true);
+        assert_eq!(corpse_facts["container_capacity"], 16);
+
+        let mut entries = Vec::new();
+        let mut cheese_refused = false;
+        for entry in table["entries"].as_array().ok_or("entries")? {
+            let item_facts = facts(&entry["item"]).ok_or("entry admission facts")?;
+            if item_facts["materializable"] != true {
+                cheese_refused |= entry["item"]["key"] == CHEESE;
+                continue;
+            }
+            let count = |name: &str| -> TestResult<u32> {
+                Ok(u32::try_from(entry[name].as_u64().ok_or("count")?)?)
+            };
+            entries.push(LootTableEntry {
+                item: reference(&entry["item"])?,
+                min_count: count("min_count")?,
+                max_count: count("max_count")?,
+                // A guaranteed draw keeps the minted plan exact.
+                probability_ppm: Some(1_000_000),
+            });
+        }
+        assert_eq!(table["algorithm"], "IndependentBernoulliPpm");
+        Ok(RatPin {
+            xp,
+            corpse: reference(corpse)?,
+            table_ref: reference(&binding["loot"])?,
+            admitted: LootTableDefinition {
+                algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+                entries,
+            },
+            cheese_refused,
+        })
+    }
+
+    /// The real rat (corpse `i5964`, XP 5) dies once: its corpse holds the
+    /// admitted gold stack and its killer gains the rat's XP exactly once.
+    #[test]
+    fn the_pinned_rat_row_settles_its_corpse_gold_and_xp() -> TestResult {
+        let pin = rat_pin()?;
+        assert!(
+            pin.cheese_refused,
+            "the pinned rat table still names cheese"
+        );
+        assert_eq!(pin.xp, 5);
+        assert_eq!(pin.corpse.production_key, "oteryn:item.tibia.i5964");
+        assert_eq!(pin.admitted.entries.len(), 1);
+        assert_eq!(pin.admitted.entries[0].item.production_key, GOLD);
+        let Some(admin) = configured_admin() else {
+            return Ok(());
+        };
+        runtime()?.block_on(async move {
+            let harness = Harness::create(admin, "liverat").await?;
+            let seal = harness.recovery.seal_current().map_err(debug)?;
+            let authority = harness
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let session = DurabilitySession {
+                root: &harness.root,
+                authority: &authority,
+                node: &harness.node,
+            };
+            let mut fixture = death_fixture()?;
+            fixture
+                .strike_by(
+                    "fixture:reward.strike.lethal",
+                    CombatDeathFixture::HEALTH,
+                    crate::foundation::CharacterId::decode(&id(41)).map_err(debug)?,
+                )
+                .map_err(debug)?;
+            fixture.project_death().map_err(debug)?;
+            let actor = fixture.actor();
+            let mut slot = CharacterRevisionSequencer::new()
+                .acquire(CharacterId::from_bytes(id(41)).map_err(debug)?)
+                .await;
+            let input = CreatureDeathRewardInput {
+                corpse_item: pin.corpse,
+                loot_table_ref: pin.table_ref,
+                loot_table: pin.admitted,
+                ground: ground(),
+                inflight_loot_mints_before_this_death: 0,
+                reward_principals: vec![reward_principal(1, 1)?],
+                xp_amount: ExactI64::new(pin.xp),
+                progression: Some(progression_binding()),
+            };
+            let outcome =
+                settle_on_fresh_lane(capture(&mut fixture, actor)?, &session, &mut slot, input)
+                    .await
+                    .map_err(debug)?;
+            let minted = outcome.loot.map_err(debug)?;
+            assert_eq!(minted.entries.len(), 1);
+            let ExperienceCommitOutcome::Committed(award) = outcome.xp.map_err(debug)? else {
+                return Err("the rat's XP award must be freshly committed".into());
+            };
+            assert_eq!(award.experience_before.get(), 0);
+            assert_eq!(award.experience_after.get(), pin.xp);
+            assert_eq!(harness.ground_items().await?, 1);
+            assert_eq!(harness.corpse_entries().await?, 1);
+            let item_key: String = sqlx::query_scalar(
+                "SELECT definition_production_key FROM game_item_instances \
+                  WHERE item_instance_id = encode($1,'hex')::uuid",
+            )
+            .bind(minted.entries[0].item_instance_id.as_slice())
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(item_key, GOLD);
+            let (winner, materialized) = harness
+                .corpse_receipt(minted.corpse.item_instance_id)
+                .await?;
+            assert_eq!(winner, uuid_text(id(41)));
+            assert!(materialized);
+            assert_eq!(harness.count("game_character_xp_receipts").await?, 1);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await
+        })
+    }
 }

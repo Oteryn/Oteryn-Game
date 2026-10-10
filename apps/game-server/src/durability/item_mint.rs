@@ -43,6 +43,7 @@ use super::item_mint_audit::{
 };
 use super::item_transfer_audit::OneItemContainerEntryV1;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
+use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::foundation::{ChannelId, CreatureDeathOccurrenceKey, ScopeOwnershipGeneration, WorldId};
@@ -251,6 +252,22 @@ pub struct ItemMintCandidate {
     envelope_sha256: [u8; 32],
     intent_binding: [u8; 33],
     work_units_used: u8,
+}
+
+#[cfg(test)]
+impl ItemMintCandidate {
+    /// A fresh lane permit of this candidate's death Channel, for the PostgreSQL test support.
+    #[allow(
+        dead_code,
+        reason = "used only by the PostgreSQL item-writer test support"
+    )]
+    pub(crate) async fn fresh_death_lane_permit(&self) -> SpellLanePermit {
+        SpellLanePermit::of_fresh_lane(
+            self.request.cause.death.world_id,
+            self.request.cause.death.channel_id,
+        )
+        .await
+    }
 }
 
 impl ItemMintCandidate {
@@ -647,6 +664,7 @@ impl DurabilityRoot {
     /// incarnation, which `node` must prove.
     pub async fn commit_item_mint(
         &self,
+        permit: &SpellLanePermit,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         candidate: &mut ItemMintCandidate,
@@ -656,6 +674,12 @@ impl DurabilityRoot {
         if candidate.corpse_entry.is_some() {
             return Err(ItemMintError::InvalidInput);
         }
+        // SPELL-LOCK-2 §1.2: the Ground (or corpse entry) this writes takes advisory key 33,
+        // so the lane must be the death's Channel, held to the end of the transaction.
+        permit.check_channel(
+            candidate.request.cause.death.world_id,
+            candidate.request.cause.death.channel_id,
+        )?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemMintError::AuthorityRejected)?;
@@ -663,10 +687,12 @@ impl DurabilityRoot {
             .await?;
         let frozen = FrozenMint::of(candidate);
         let node = node.clone();
+        let mut context = permit;
 
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
+                    let permit: &SpellLanePermit = permit;
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
@@ -714,7 +740,7 @@ impl DurabilityRoot {
                         Ok(tuple) => tuple,
                         Err(error) => return Ok(Err(error.into())),
                     };
-                    insert_mint(&mut tx, &frozen, tuple).await?;
+                    insert_mint(&mut tx, permit, &frozen, tuple).await?;
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
                         event_id: frozen.event_id,
@@ -753,6 +779,7 @@ impl DurabilityRoot {
     ///   and both succeed.
     pub async fn commit_corpse_mint(
         &self,
+        permit: &SpellLanePermit,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         candidate: &mut ItemMintCandidate,
@@ -768,6 +795,12 @@ impl DurabilityRoot {
             return Err(ItemMintError::InvalidInput);
         }
         audit::check_uuid_v7(&top_damage_character_id)?;
+        // SPELL-LOCK-2 §1.2: the Ground (or corpse entry) this writes takes advisory key 33,
+        // so the lane must be the death's Channel, held to the end of the transaction.
+        permit.check_channel(
+            candidate.request.cause.death.world_id,
+            candidate.request.cause.death.channel_id,
+        )?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemMintError::AuthorityRejected)?;
@@ -775,10 +808,12 @@ impl DurabilityRoot {
             .await?;
         let frozen = FrozenMint::of(candidate);
         let node = node.clone();
+        let mut context = permit;
 
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
+                    let permit: &SpellLanePermit = permit;
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
@@ -848,7 +883,8 @@ impl DurabilityRoot {
                         Ok(tuple) => tuple,
                         Err(error) => return Ok(Err(error.into())),
                     };
-                    insert_corpse_mint(&mut tx, &frozen, tuple, top_damage_character_id).await?;
+                    insert_corpse_mint(&mut tx, permit, &frozen, tuple, top_damage_character_id)
+                        .await?;
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
                         event_id: frozen.event_id,
@@ -880,6 +916,7 @@ impl DurabilityRoot {
     ///   whose ownership generation ended is refused, never re-reserved.
     pub async fn commit_corpse_loot_mint(
         &self,
+        permit: &SpellLanePermit,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         candidate: &mut ItemMintCandidate,
@@ -887,6 +924,12 @@ impl DurabilityRoot {
         let Some(placement) = candidate.corpse_entry else {
             return Err(ItemMintError::InvalidInput);
         };
+        // SPELL-LOCK-2 §1.2: the Ground (or corpse entry) this writes takes advisory key 33,
+        // so the lane must be the death's Channel, held to the end of the transaction.
+        permit.check_channel(
+            candidate.request.cause.death.world_id,
+            candidate.request.cause.death.channel_id,
+        )?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| ItemMintError::AuthorityRejected)?;
@@ -894,10 +937,12 @@ impl DurabilityRoot {
             .await?;
         let frozen = FrozenMint::of(candidate);
         let node = node.clone();
+        let mut context = permit;
 
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
+                    let permit: &SpellLanePermit = permit;
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
@@ -947,7 +992,7 @@ impl DurabilityRoot {
                         Ok(tuple) => tuple,
                         Err(error) => return Ok(Err(error.into())),
                     };
-                    insert_corpse_loot_mint(&mut tx, &frozen, tuple, &placement).await?;
+                    insert_corpse_loot_mint(&mut tx, permit, &frozen, tuple, &placement).await?;
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
                         event_id: frozen.event_id,
@@ -1408,10 +1453,11 @@ async fn corpse_cap_recount(
 
 async fn insert_mint(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     frozen: &FrozenMint,
     tuple: SelectedType2Tuple,
 ) -> std::result::Result<(), DurabilityError> {
-    insert_mint_with_corpse_attribution(tx, frozen, tuple, None).await
+    insert_mint_with_corpse_attribution(tx, permit, frozen, tuple, None).await
 }
 
 /// D3-1: the corpse's own MINT, identical to [`insert_mint`] except its
@@ -1421,21 +1467,26 @@ async fn insert_mint(
 /// writes it.
 async fn insert_corpse_mint(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     frozen: &FrozenMint,
     tuple: SelectedType2Tuple,
     top_damage_character_id: [u8; 16],
 ) -> std::result::Result<(), DurabilityError> {
-    insert_mint_with_corpse_attribution(tx, frozen, tuple, Some(top_damage_character_id)).await
+    insert_mint_with_corpse_attribution(tx, permit, frozen, tuple, Some(top_damage_character_id))
+        .await
 }
 
 async fn insert_mint_with_corpse_attribution(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     frozen: &FrozenMint,
     tuple: SelectedType2Tuple,
     top_damage_character_id: Option<[u8; 16]>,
 ) -> std::result::Result<(), DurabilityError> {
     let request = &frozen.request;
     let death = &request.cause.death;
+    // SPELL-LOCK-2 §1.2: the Ground INSERT fires the key-33 owner lock of the death's Channel.
+    permit.check_channel(death.world_id, death.channel_id)?;
     insert_item_instance(tx, frozen).await?;
     sqlx::query(
         "INSERT INTO game_item_ground_locations(item_instance_id, world_id, channel_id, \
@@ -1465,11 +1516,25 @@ async fn insert_mint_with_corpse_attribution(
 /// that parent and ordinal (migration 0013).
 async fn insert_corpse_loot_mint(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     frozen: &FrozenMint,
     tuple: SelectedType2Tuple,
     placement: &CorpseContainerPlacement,
 ) -> std::result::Result<(), DurabilityError> {
     let death = &frozen.request.cause.death;
+    // SPELL-LOCK-2 §1.2: the entry INSERT fires the key-33 owner lock of the corpse's Ground
+    // root, so the lane must be that root's Channel.
+    let root: Option<(String, String)> = sqlx::query_as(
+        "SELECT world_id::text, channel_id::text FROM game_item_ground_locations \
+          WHERE item_instance_id = encode($1,'hex')::uuid",
+    )
+    .bind(placement.corpse_item_instance_id.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    let Some((root_world, root_channel)) = root else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    permit.check_stored_channel(&uuid_text(&root_world)?, &uuid_text(&root_channel)?)?;
     insert_item_instance(tx, frozen).await?;
     sqlx::query(
         "INSERT INTO game_item_corpse_container_entries(item_instance_id, world_id, \

@@ -1869,23 +1869,29 @@ dependencies = [
 name = "oteryn-client"
 version = "0.1.0"
 dependencies = [
+ "oteryn-client-assets",
  "oteryn-client-runtime",
  "oteryn-diagnostics",
  "oteryn-foundation",
  "oteryn-identity",
  "oteryn-input-actions",
  "oteryn-input-platform",
- "oteryn-placeholder-assets",
  "oteryn-platform-client",
  "oteryn-platform-contracts",
  "oteryn-renderer",
  "oteryn-session",
  "oteryn-session-tcp",
+ "oteryn-world-bundle",
  "rcgen",
  "rustls",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
  "tokio",
  "tokio-rustls",
+ "windows-sys 0.61.2",
  "winit",
+ "zstd",
 ]
 
 [[package]]
@@ -2011,10 +2017,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "oteryn-placeholder-assets"
-version = "0.1.0"
-
-[[package]]
 name = "oteryn-platform-client"
 version = "0.1.0"
 dependencies = [
@@ -2033,6 +2035,18 @@ name = "oteryn-platform-contracts"
 version = "0.1.0"
 dependencies = [
  "oteryn-foundation",
+]
+
+[[package]]
+name = "oteryn-player-bots"
+version = "0.1.0"
+dependencies = [
+ "oteryn-dev-client",
+ "oteryn-protocol-oteryn",
+ "rcgen",
+ "rustls",
+ "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]

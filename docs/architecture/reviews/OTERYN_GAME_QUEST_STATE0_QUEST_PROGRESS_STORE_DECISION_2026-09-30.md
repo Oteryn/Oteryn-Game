@@ -102,6 +102,9 @@ Where does a character's quest progress live, and how does it change safely?
 - **Request.** An owner calls `request_transition(fence, character, transition_key, cause)`. The
   cause is an occurrence bound 1:1 to its trigger: a CommandRef (NPC-0 §5.1 pattern), a USE
   interaction occurrence, a reward-claim obligation (§5.4) or a creature-death reward occurrence.
+  A trigger's quest child is instead indexed by (root CommandRef, transition_key): its cause is the
+  root's CommandRef (`Use` or `Command`), under the distinct-transition-key invariant of
+  QUEST-GATE-0 §16 (amendment, pending on acceptance of QUEST-GATE-0).
 - **Validation** in the database transaction: every `from` holds on the locked value; the quest
   state's hash equals the current definition hash (or there is no state yet); results stay in
   bounds. A failure writes nothing and returns `STAGE_MISMATCH`, `REVISION_MISMATCH`,

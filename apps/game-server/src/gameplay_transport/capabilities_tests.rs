@@ -5,7 +5,9 @@ use super::super::connection::{
     FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS, ResumeAttempt,
     SessionContinuity, StepOutcome, admit_frame, serve_admitted,
 };
-use super::super::item_view::{InventoryItems, ItemKey, ItemTargetObservation, ViewItem};
+use super::super::item_view::{
+    InventoryItems, ItemKey, ItemTargetObservation, ItemViewContinuity, SessionItemView, ViewItem,
+};
 use super::super::world_object::{
     SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1, STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
 };
@@ -16,9 +18,10 @@ use super::super::world_spatial::{
 };
 use super::*;
 use crate::foundation::{
-    AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, GameSessionId, MessageType,
-    ServerAcceptedValue, ServerResumeAcceptedValue, WorldId, decode_wire_envelope,
-    encode_server_accepted, encode_server_resume_accepted,
+    AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, FoundationProtocolError,
+    GameSessionId, MessageType, ServerAcceptedValue, ServerResumeAcceptedValue, WorldId,
+    decode_wire_envelope, encode_protocol_error, encode_server_accepted,
+    encode_server_resume_accepted,
 };
 use crate::foundation::{DomainSnapshot, encode_single_chunk_snapshot};
 use oteryn_protocol_oteryn::achievement_notices::{
@@ -116,24 +119,34 @@ fn the_production_offered_set_is_the_registry_offered_set_and_registered()
             offered.push((id, ids(&capability["requires"])?));
         }
     }
-    let production: Vec<(u32, Vec<u32>)> = PRODUCTION_OFFERED_CAPABILITIES
+    let pairs = |set: &[OfferedCapability]| -> Vec<(u32, Vec<u32>)> {
+        set.iter()
+            .map(|capability| (capability.id, capability.requires.to_vec()))
+            .collect()
+    };
+    // The registry offered set is the set a generation pinning a non-empty Item key set offers;
+    // without one, production falls back to that set without capability 4.
+    assert_eq!(pairs(ITEM_VIEW_OFFERED_CAPABILITIES), offered);
+    let fallback: Vec<(u32, Vec<u32>)> = offered
         .iter()
-        .map(|capability| (capability.id, capability.requires.to_vec()))
+        .filter(|(id, _)| *id != CAPABILITY_ITEM_VIEW_MOVE_V1)
+        .cloned()
         .collect();
-    assert_eq!(production, offered);
-    assert!(
-        PRODUCTION_OFFERED_CAPABILITIES
-            .windows(2)
-            .all(|pair| pair[0].id < pair[1].id)
-    );
-    assert!(PRODUCTION_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
-    for capability in PRODUCTION_OFFERED_CAPABILITIES {
-        assert!(
-            capability
-                .requires
-                .iter()
-                .all(|required| registered.contains(required))
-        );
+    assert_eq!(pairs(PRODUCTION_OFFERED_CAPABILITIES), fallback);
+    for set in [
+        PRODUCTION_OFFERED_CAPABILITIES,
+        ITEM_VIEW_OFFERED_CAPABILITIES,
+    ] {
+        assert!(set.windows(2).all(|pair| pair[0].id < pair[1].id));
+        assert!(set.len() <= SELECTED_CAPACITY);
+        for capability in set {
+            assert!(
+                capability
+                    .requires
+                    .iter()
+                    .all(|required| registered.contains(required))
+            );
+        }
     }
     // `REGISTERED_CAPABILITY_IDS_V1` is what the acceptance encoder checks a selected set
     // against: the whole offered set, selected at once, is accepted, and an unregistered ID is
@@ -243,7 +256,7 @@ fn selection_keeps_a_capability_only_with_all_its_requires() {
 }
 
 #[test]
-fn the_production_set_selects_only_capabilities_6_13_and_17_whatever_the_client_supports()
+fn the_production_set_selects_only_capabilities_6_7_13_and_17_whatever_the_client_supports()
 -> Result<(), Box<dyn Error>> {
     let mut everything: Vec<u32> = Vec::new();
     for capability in registry_capabilities()? {
@@ -256,7 +269,20 @@ fn the_production_set_selects_only_capabilities_6_13_and_17_whatever_the_client_
         SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &everything)
             .as_ref()
             .map(SelectedCapabilities::as_slice),
-        Some(&[6, 13, 17][..])
+        Some(&[6, 7, 13, 17][..])
+    );
+    // MAP-ITEM-REF-1: the not-yet-offered Item view set adds 4, which requires 6.
+    assert_eq!(
+        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &everything)
+            .as_ref()
+            .map(SelectedCapabilities::as_slice),
+        Some(&[4, 6, 7, 13, 17][..])
+    );
+    assert_eq!(
+        SelectedCapabilities::select(ITEM_VIEW_OFFERED_CAPABILITIES, &[4, 13])
+            .as_ref()
+            .map(SelectedCapabilities::as_slice),
+        Some(&[13][..])
     );
     Ok(())
 }
@@ -331,6 +357,8 @@ impl ConnectionIdentifiers for Identifiers {
 /// connection's own refusal is observable. `offered` is `None` for the production set.
 struct NegotiatingAuthority {
     offered: Option<&'static [OfferedCapability]>,
+    /// MAP-CUTOVER-1b: the capability a bundle World requires at fresh admission.
+    required: Option<u32>,
     lost: Cell<Option<AdmittedSession>>,
     steps: Cell<u32>,
     /// ITEM-USE-WIRE-1: what an item USE observes; the backpack it serves under capability 4.
@@ -341,6 +369,7 @@ impl NegotiatingAuthority {
     fn new(offered: Option<&'static [OfferedCapability]>) -> Self {
         Self {
             offered,
+            required: None,
             lost: Cell::new(None),
             steps: Cell::new(0),
             item_target: RefCell::new(None),
@@ -383,6 +412,10 @@ impl FreshAdmissionAuthority for NegotiatingAuthority {
 
     fn offered_capabilities(&self) -> &'static [OfferedCapability] {
         self.offered.unwrap_or(PRODUCTION_OFFERED_CAPABILITIES)
+    }
+
+    fn required_capability(&self) -> Option<u32> {
+        self.required
     }
 
     async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
@@ -586,18 +619,18 @@ fn fresh_admission_echoes_and_keeps_the_selection() -> Result<(), Box<dyn Error>
 }
 
 #[test]
-fn production_admission_selects_capabilities_6_13_and_17_and_nothing_else()
+fn production_admission_selects_capabilities_6_7_13_and_17_and_nothing_else()
 -> Result<(), Box<dyn Error>> {
     run(async {
-        // SPEED-1, VIS-3 and ATTACK-1b (§1.9): the production offered set selects capabilities
-        // 6, 13 and 17 for a client that supports them, and only them.
+        // SPEED-1, VIS-3, CHAT-WIRE-1 and ATTACK-1b (§1.9): the production offered set selects
+        // capabilities 6, 7, 13 and 17 for a client that supports them, and only them.
         let authority = NegotiatingAuthority::new(None);
         let (admitted, frames) = admit(&authority, &bootstrap(&[1, 6, 7, 8, 10, 13, 17])?).await?;
-        assert_eq!(accepted_selection(&frames)?, [6, 13, 17]);
+        assert_eq!(accepted_selection(&frames)?, [6, 7, 13, 17]);
         let admitted = admitted.map_err(|end| format!("{end:?}"))?;
         assert_eq!(
             admitted.continuity.selected_capabilities.as_slice(),
-            [6, 13, 17]
+            [6, 7, 13, 17]
         );
         assert_eq!(admitted.continuity.achievement_notice_revision, None);
         // ATTACK-1b: 6 and 17 alone select both; 17 without its required 6 selects nothing.
@@ -605,14 +638,136 @@ fn production_admission_selects_capabilities_6_13_and_17_and_nothing_else()
         assert_eq!(accepted_selection(&frames)?, [6, 17]);
         let (_, frames) = admit(&authority, &bootstrap(&[17])?).await?;
         assert_eq!(accepted_selection(&frames)?, Vec::<u32>::new());
+        // CHAT-WIRE-1: 7 requires nothing and is selected alone.
+        let (_, frames) = admit(&authority, &bootstrap(&[7])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [7]);
         // A client without them selects nothing.
-        let (admitted, frames) = admit(&authority, &bootstrap(&[1, 7, 8, 10])?).await?;
+        let (admitted, frames) = admit(&authority, &bootstrap(&[1, 8, 10])?).await?;
         assert_eq!(accepted_selection(&frames)?, Vec::<u32>::new());
         let admitted = admitted.map_err(|end| format!("{end:?}"))?;
         assert_eq!(
             admitted.continuity.selected_capabilities,
             SelectedCapabilities::NONE
         );
+        Ok(())
+    })
+}
+
+#[test]
+fn the_bundle_world_offered_set_is_the_item_view_set_plus_18_requiring_4_and_6()
+-> Result<(), Box<dyn Error>> {
+    // MAP-CUTOVER-1b: the bundle set is the Item view set (which offers 4) plus 18, whose crate
+    // and registry `requires` stay [4, 6]; the registry keeps 18 `offered: false`.
+    let (last, item_view) = BUNDLE_WORLD_OFFERED_CAPABILITIES
+        .split_last()
+        .ok_or("empty bundle set")?;
+    assert_eq!(item_view, ITEM_VIEW_OFFERED_CAPABILITIES);
+    assert_eq!(last.id, CAPABILITY_WORLD_MAP_VIEW_V1);
+    assert_eq!(last.requires, [4, 6]);
+    assert!(
+        BUNDLE_WORLD_OFFERED_CAPABILITIES
+            .windows(2)
+            .all(|pair| pair[0].id < pair[1].id)
+    );
+    assert!(BUNDLE_WORLD_OFFERED_CAPABILITIES.len() <= SELECTED_CAPACITY);
+    let registry = registry_capabilities()?;
+    let entry = registry
+        .iter()
+        .find(|capability| capability["id"].as_u64() == Some(18))
+        .ok_or("capability 18")?;
+    assert_eq!(ids(&entry["requires"])?, [4, 6]);
+    assert_eq!(entry["offered"].as_bool(), Some(false));
+    Ok(())
+}
+
+#[test]
+fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn Error>> {
+    run(async {
+        let mut authority = NegotiatingAuthority::new(Some(BUNDLE_WORLD_OFFERED_CAPABILITIES));
+        authority.required = Some(CAPABILITY_WORLD_MAP_VIEW_V1);
+        let mismatch = encode_protocol_error(FoundationProtocolError::CapabilityMismatch, 0)?;
+        // 4, 6 and 18 select 18 with the rest of the production set the client supports.
+        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [4, 6, 13, 17, 18]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        assert!(
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_WORLD_MAP_VIEW_V1)
+        );
+        // A client without 18, and one selecting 18 without its required 4, are refused with
+        // exactly one CAPABILITY_MISMATCH before the owner admits anything.
+        for supported in [&[4, 6, 13, 17][..], &[6, 13, 17, 18], &[]] {
+            let (refused, frames) = admit(&authority, &bootstrap(supported)?).await?;
+            assert!(matches!(
+                refused,
+                Err(ConnectionEnd::AdmissionRefused(
+                    AdmissionRefusal::Classified(FoundationProtocolError::CapabilityMismatch)
+                ))
+            ));
+            assert_eq!(frames, std::slice::from_ref(&mismatch));
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn a_fixture_world_offers_exactly_the_production_set_and_never_18() -> Result<(), Box<dyn Error>> {
+    run(async {
+        // MAP-CUTOVER-1b: a World without a bundle keeps the production set and domain 2.
+        let authority = NegotiatingAuthority::new(None);
+        assert_eq!(
+            authority.offered_capabilities(),
+            PRODUCTION_OFFERED_CAPABILITIES
+        );
+        assert_eq!(authority.required_capability(), None);
+        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13, 17, 18])?).await?;
+        let selected = accepted_selection(&frames)?;
+        assert!(!selected.contains(&CAPABILITY_WORLD_MAP_VIEW_V1));
+        admitted.map_err(|end| format!("{end:?}"))?;
+        Ok(())
+    })
+}
+
+#[test]
+fn item_view_admission_selecting_4_sends_domain_9_and_without_4_none() -> Result<(), Box<dyn Error>>
+{
+    run(async {
+        // MAP-ITEM-REF-1: the Item view offered set selects 4 with its required 6, and the
+        // admitted session is sent domain 9; a session admitted without 4 is sent none. The
+        // fixture serves no combat state, so the client here does not support 17.
+        let authority = NegotiatingAuthority::new(Some(ITEM_VIEW_OFFERED_CAPABILITIES));
+        let inventory = authority
+            .observe_character_inventory(
+                ExactActorRef::transport_fixture(
+                    WorldId::decode(&WORLD)?,
+                    ChannelId::decode(&CHANNEL)?,
+                ),
+                GameSessionId::decode(&SESSION)?,
+            )
+            .await
+            .ok_or("inventory")?;
+        let [nine, _] = SessionItemView::resume(ItemViewContinuity::default())
+            .snapshot(inventory, None)
+            .map_err(|error| format!("{error:?}"))?;
+        let carries_nine = |frames: &[Vec<u8>]| {
+            frames
+                .concat()
+                .windows(nine.payload.len())
+                .any(|w| w == nine.payload)
+        };
+        let (admitted, frames) = admit(&authority, &bootstrap(&[4, 6, 13])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [4, 6, 13]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        let (_, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(carries_nine(&frames));
+        let (admitted, frames) = admit(&authority, &bootstrap(&[6, 13])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [6, 13]);
+        let admitted = admitted.map_err(|end| format!("{end:?}"))?;
+        let (_, frames) = serve(&authority, admitted, &[]).await?;
+        assert!(!frames.is_empty());
+        assert!(!carries_nine(&frames));
         Ok(())
     })
 }
@@ -1053,4 +1208,297 @@ fn npc_wire_capability_3_is_registered_not_offered_and_gates_commands_7_and_8()
         assert!(written.contains(&rejected(2, 2)?));
         Ok(())
     })
+}
+
+// CHAT-WIRE-1: capability 7 over two connections of one Channel — a say reaches the hearer in
+// range as a domain 12 line delta and never the session out of range.
+
+mod chat_wire {
+    use super::super::super::actor_spell::tests::runtime_with_capacity;
+    use super::super::super::chat_intent::{ChatRuntime, chat_in_channel};
+    use super::*;
+    use crate::foundation::CommandStatus;
+    use oteryn_protocol_oteryn::chat::{
+        ChatDisposition, ChatIntent, ChatLine, ChatRoomSet, ChatSpeechMode,
+        decode_chat_intent_result, decode_chat_line, encode_chat_intent,
+    };
+    use oteryn_protocol_oteryn::{decode_command_result, decode_state_delta};
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+    use std::task::Poll;
+    use std::time::Duration;
+
+    const NOW: SemanticTimeMicros = SemanticTimeMicros::from_micros(1_000_000);
+
+    struct ChatAuthority {
+        runtime: RefCell<crate::foundation::ChannelRuntimeV1>,
+        chat: ChatRuntime,
+        names: Vec<(GameSessionId, &'static str)>,
+    }
+
+    impl FreshAdmissionAuthority for ChatAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Unavailable)
+        }
+
+        async fn resume(
+            &self,
+            _attempt: ResumeAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(WorldSpatialObservation {
+                content_generation: [0x5c; 32],
+                actor_position: ActorPosition {
+                    x: 0,
+                    y: 0,
+                    floor: 0,
+                },
+            })
+        }
+
+        async fn step(&self, _actor: ExactActorRef, _direction: StepDirection) -> StepOutcome {
+            StepOutcome {
+                disposition: StepDisposition::Blocked,
+                moved_to: None,
+            }
+        }
+
+        async fn chat_admit(&self, _actor: ExactActorRef, session: GameSessionId) -> ChatRoomSet {
+            if let Some((_, name)) = self.names.iter().find(|(known, _)| *known == session) {
+                self.chat.admit(session, name, NOW);
+            }
+            ChatRoomSet::default()
+        }
+
+        async fn chat_intent(
+            &self,
+            actor: ExactActorRef,
+            session: GameSessionId,
+            intent: ChatIntent,
+        ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+            chat_in_channel(
+                &self.chat,
+                &self.runtime.borrow(),
+                &Default::default(),
+                actor,
+                session,
+                &intent,
+                NOW,
+            )
+        }
+
+        async fn chat_drain(&self, session: GameSessionId) -> Vec<ChatLine> {
+            self.chat.drain(session)
+        }
+    }
+
+    fn admitted(
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<AdmittedSession, Box<dyn Error>> {
+        let mut admitted = super::session(SessionContinuity {
+            selected_capabilities: super::selection(&[7]),
+            ..SessionContinuity::FRESH
+        })?;
+        admitted.game_session_id = session;
+        admitted.runtime_actor = Some(actor);
+        Ok(admitted)
+    }
+
+    /// Serves `admitted` over `frames`, then keeps the client open for `linger`.
+    async fn serve_lingering(
+        authority: &ChatAuthority,
+        admitted: AdmittedSession,
+        frames: &[Vec<u8>],
+        linger: Duration,
+    ) -> Result<(AdmittedSession, Vec<Vec<u8>>), Box<dyn Error>> {
+        let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 20);
+        for frame in frames {
+            let mut framed = (frame.len() as u32).to_be_bytes().to_vec();
+            framed.extend_from_slice(frame);
+            client.write_all(&framed).await?;
+        }
+        let closing = async {
+            tokio::time::sleep(linger).await;
+            client.shutdown().await?;
+            let mut output = Vec::new();
+            client.read_to_end(&mut output).await?;
+            Ok::<_, std::io::Error>(output)
+        };
+        let serving = async move {
+            let end = serve_admitted(&mut server, admitted, authority, IDLE_LIVENESS).await;
+            drop(server);
+            end
+        };
+        let (mut serving, mut closing) = (std::pin::pin!(serving), std::pin::pin!(closing));
+        let (mut end, mut output) = (None, None);
+        std::future::poll_fn(|context| {
+            if end.is_none()
+                && let Poll::Ready(value) = serving.as_mut().poll(context)
+            {
+                end = Some(value);
+            }
+            if output.is_none()
+                && let Poll::Ready(value) = closing.as_mut().poll(context)
+            {
+                output = Some(value);
+            }
+            if end.is_some() && output.is_some() {
+                Poll::Ready(())
+            } else {
+                Poll::Pending
+            }
+        })
+        .await;
+        let ConnectionEnd::AdmittedThenDisconnected(admitted) = end.ok_or("end")? else {
+            return Err("the connection did not end as a disconnect".into());
+        };
+        Ok((admitted, split(&output.ok_or("output")??)?))
+    }
+
+    fn lines(frames: &[Vec<u8>]) -> Result<Vec<ChatLine>, Box<dyn Error>> {
+        let mut lines = Vec::new();
+        for frame in frames {
+            let envelope = decode_wire_envelope(frame)?;
+            if envelope.message_type() == MessageType::StateDelta {
+                let delta = decode_state_delta(envelope.payload())?;
+                if delta.domain_id == 12 && delta.delta_type == 1 {
+                    assert_eq!(delta.new_revision, delta.base_revision + 1);
+                    lines.push(decode_chat_line(delta.payload).map_err(|e| format!("{e:?}"))?);
+                }
+            }
+        }
+        Ok(lines)
+    }
+
+    #[test]
+    fn a_say_reaches_the_session_in_range_and_not_the_one_out_of_range()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let (mut runtime, speaker, speaker_session) = runtime_with_capacity(0x71, 3);
+            let mut others = Vec::new();
+            for tag in [0x72, 0x73] {
+                let session = GameSessionId::decode(&[
+                    0x01, 0x90, 0x00, 0x00, 0x00, tag, 0x70, 0x00, 0x80, 0x00, 0, 0, 0, 0, 0, tag,
+                ])?;
+                let reservation = runtime
+                    .reserve_fresh_session(session)
+                    .map_err(|e| format!("{e:?}"))?;
+                let actor = runtime
+                    .commit_fresh_session(reservation)
+                    .map_err(|e| format!("{e:?}"))?;
+                others.push((actor, session));
+            }
+            for actor in [speaker, others[0].0, others[1].0] {
+                runtime
+                    .initialize_first_entry_position(actor)
+                    .map_err(|e| format!("{e:?}"))?;
+            }
+            for _ in 0..40 {
+                let at = runtime
+                    .read_actor_position(others[1].0)
+                    .map_err(|e| format!("{e:?}"))?;
+                let mut next = at.position();
+                next.x += 1;
+                runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(at, next)
+                    .map_err(|e| format!("{e:?}"))?;
+            }
+            let (near, far) = (others[0], others[1]);
+            let authority = ChatAuthority {
+                runtime: RefCell::new(runtime),
+                chat: ChatRuntime::default(),
+                names: vec![(speaker_session, "Aela"), (near.1, "Bryn"), (far.1, "Cade")],
+            };
+            let say = encode_chat_intent(&ChatIntent::Say {
+                mode: ChatSpeechMode::Say,
+                text: "hello there".to_owned(),
+            })
+            .map_err(|e| format!("{e:?}"))?;
+            let linger = Duration::from_millis(700);
+            let hearing = serve_lingering(&authority, admitted(near.0, near.1)?, &[], linger);
+            let missing = serve_lingering(&authority, admitted(far.0, far.1)?, &[], linger);
+            let speaking = async {
+                tokio::time::sleep(Duration::from_millis(150)).await;
+                serve_lingering(
+                    &authority,
+                    admitted(speaker, speaker_session)?,
+                    &[command(1, 13, &say)],
+                    Duration::ZERO,
+                )
+                .await
+            };
+            let (hearing, missing, speaking) = join3(hearing, missing, speaking).await;
+            let (near_end, near_frames) = hearing?;
+            let (far_end, far_frames) = missing?;
+            let (_, speaker_frames) = speaking?;
+
+            let mut results = Vec::new();
+            for frame in &speaker_frames {
+                let envelope = decode_wire_envelope(frame)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    let result = decode_command_result(envelope.payload())?;
+                    assert_eq!(result.status, CommandStatus::Accepted);
+                    results.push(
+                        decode_chat_intent_result(result.payload).map_err(|e| format!("{e:?}"))?,
+                    );
+                }
+            }
+            assert_eq!(results.len(), 1);
+            assert_eq!(results[0].disposition, ChatDisposition::Ok);
+
+            let heard = lines(&near_frames)?;
+            assert_eq!(heard.len(), 1, "{heard:?}");
+            assert!(matches!(
+                &heard[0],
+                ChatLine::Local { speaker_name, text, .. }
+                    if speaker_name == "Aela" && text == "hello there"
+            ));
+            // The snapshot (revision 1) and the line (revision 2); the far session has the
+            // snapshot only.
+            assert_eq!(near_end.continuity.chat_revision, 2);
+            assert!(lines(&far_frames)?.is_empty());
+            assert_eq!(far_end.continuity.chat_revision, 1);
+            Ok(())
+        })
+    }
+
+    async fn join3<A: Future, B: Future, C: Future>(
+        a: A,
+        b: B,
+        c: C,
+    ) -> (A::Output, B::Output, C::Output) {
+        let (mut a, mut b, mut c) = (std::pin::pin!(a), std::pin::pin!(b), std::pin::pin!(c));
+        let (mut x, mut y, mut z) = (None, None, None);
+        std::future::poll_fn(|context| {
+            if x.is_none()
+                && let Poll::Ready(value) = a.as_mut().poll(context)
+            {
+                x = Some(value);
+            }
+            if y.is_none()
+                && let Poll::Ready(value) = b.as_mut().poll(context)
+            {
+                y = Some(value);
+            }
+            if z.is_none()
+                && let Poll::Ready(value) = c.as_mut().poll(context)
+            {
+                z = Some(value);
+            }
+            if x.is_some() && y.is_some() && z.is_some() {
+                Poll::Ready(())
+            } else {
+                Poll::Pending
+            }
+        })
+        .await;
+        (x.expect("first"), y.expect("second"), z.expect("third"))
+    }
 }

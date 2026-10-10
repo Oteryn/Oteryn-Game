@@ -103,7 +103,7 @@ returns `QUESTION` and does not edit them.
 
 | Child | Waits for |
 |---|---|
-| NPC-PLACE-1 | NPC-CONTENT-1; MAP-BUNDLE-1 and the map track's bundle World (ARCH-MAP-TRACK-PACKETS-V1) |
+| NPC-PLACE-1 | NPC-CONTENT-1; MAP-BUNDLE-1 and the map track's bundle World (ARCH-MAP-TRACK-PACKETS-V1). Amendment (pending on acceptance of NPC-PLACE-1): packeted there; the precondition is met |
 | NPC-TALK-1 | NPC-WIRE-1, NPC-PLACE-1, the bundle World serving sessions (MAP-CUTOVER-1b) |
 | NPC-TRADE-1, NPC-TRAVEL-1 | NPC-TALK-1 and GOLD-FEE-1b / GOLD-FEE-ACT-1 |
 | NPC-ACTOR-1, NPC-VOICE-1, NPC-VIS-1, NPC-TALK-2, NPC-CONTENT-2 | NPC-BEHAVIOUR-0 order: NPC-PLACE-1, CREATURE-MOVE-1, SPEED-1, NPC-WIRE-1, CHAT-1, VIS-2, NPC-TALK-1, NPC-CONTENT-1 |
@@ -249,7 +249,8 @@ validation:
 - **Offering capability 3 in NPC-WIRE-1.** Rejected: there is no server send path until
   NPC-TALK-1; an offered capability with no domain owner would lie to the client.
 - **Packeting NPC-PLACE-1 now.** Rejected: it maps destinations into the bundle frame and checks
-  walkability against the bundle, which needs the map track's bundle World.
+  walkability against the bundle, which needs the map track's bundle World. Amendment (pending on
+  acceptance of NPC-PLACE-1, 2026-10-06): packeted there; the precondition is met.
 
 ## 4. Decision test
 

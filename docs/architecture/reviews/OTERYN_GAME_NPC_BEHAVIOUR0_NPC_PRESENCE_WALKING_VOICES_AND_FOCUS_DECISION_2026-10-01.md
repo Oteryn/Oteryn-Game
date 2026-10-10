@@ -88,8 +88,9 @@ conversations?
 
 - At channel start the channel owner creates one runtime actor for each admitted NPC placement of
   the World Bundle (NPC-0 §3.2), with its own `ExactActorRef` (runtime actor id and generation), on
-  every channel of the World. Ids are allocated in canonical order of the placement key (NPC key,
-  then position), never container order (SIM-DETERMINISM-01 §10). NPC-0's `npc_actor` in commands 7
+  every channel of the World. Ids are allocated in canonical actor order (NPC key, then native
+  floor, `y`, `x`; amended by NPC-PLACE-1 §3.2, pending on its acceptance), never container order
+  (SIM-DETERMINISM-01 §10). NPC-0's `npc_actor` in commands 7
   and 8 is this D85 identity {16-byte identity, generation} of a visible kind-5 entity; a stale
   generation fails closed. NPCs are runtime only: nothing durable, recreated at a channel restart
   or planned reset at their placements.

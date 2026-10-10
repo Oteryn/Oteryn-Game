@@ -28,6 +28,7 @@ use crate::durability::item_transfer::{
     CurrentCharacterItemFence, ItemTransferDestination, ItemTransferError, ItemTransferOutcome,
     ItemTransferRefusal,
 };
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{
     CommandId, CommandRef, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration, WorldId,
 };
@@ -209,6 +210,9 @@ fn pickup_resolves_content_facts_for_container_slot_and_backpack_entry() -> Test
         // Content resolves the backpack's real facts (capacity 20, a complete container-slot
         // equip pattern) with no caller-supplied `ItemDefinitionFacts` anywhere in this call.
         let equipped = settle_ground_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,
@@ -237,6 +241,9 @@ fn pickup_resolves_content_facts_for_container_slot_and_backpack_entry() -> Test
         // equipped backpack's facts (read via `read_character_backpack`, then Content), so a
         // fresh entry commits with no caller-supplied facts either.
         let placed = settle_ground_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,
@@ -293,6 +300,9 @@ fn pickup_is_refused_before_any_write_when_content_has_no_definition_for_the_cla
         let before = harness.item_state(stray).await?;
 
         let outcome = settle_ground_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,
@@ -372,6 +382,9 @@ fn corpse_pickup_takes_only_from_the_named_corpse_within_the_window_rules() -> T
 
         let backpack_item = harness.mint(&authority, BACKPACK, 1).await?;
         let equipped = settle_ground_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,
@@ -398,6 +411,9 @@ fn corpse_pickup_takes_only_from_the_named_corpse_within_the_window_rules() -> T
         // TRANSFER is frozen, and nothing moves.
         let before = harness.footprint().await?;
         let ground_for_entry = settle_ground_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,
@@ -415,6 +431,9 @@ fn corpse_pickup_takes_only_from_the_named_corpse_within_the_window_rules() -> T
         ));
         for (corpse, entry) in [(foreign, owned_loot), (owned, ground_coin)] {
             let outcome = settle_corpse_pickup(
+                &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                    .await
+                    .map_err(debug)?,
                 &session,
                 &content,
                 fence()?,
@@ -427,6 +446,9 @@ fn corpse_pickup_takes_only_from_the_named_corpse_within_the_window_rules() -> T
 
         // The top-damage Character takes its entry inside the window; a replay transfers once.
         let taken = settle_corpse_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,
@@ -436,6 +458,9 @@ fn corpse_pickup_takes_only_from_the_named_corpse_within_the_window_rules() -> T
         .map_err(debug)?;
         assert!(matches!(taken, ItemTransferOutcome::Committed(_)));
         let replay = settle_corpse_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,
@@ -447,6 +472,9 @@ fn corpse_pickup_takes_only_from_the_named_corpse_within_the_window_rules() -> T
 
         // Someone else's corpse: refused inside the window, allowed at and after its end.
         let early = settle_corpse_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,
@@ -459,6 +487,9 @@ fn corpse_pickup_takes_only_from_the_named_corpse_within_the_window_rules() -> T
         ));
         set_materialized_ago(&harness, foreign, 11_000).await?;
         let late = settle_corpse_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,
@@ -471,6 +502,9 @@ fn corpse_pickup_takes_only_from_the_named_corpse_within_the_window_rules() -> T
         // The corpse item itself: as a corpse "entry" it is a Ground item (mismatch); named as a
         // Ground item it reaches the TRANSFER, which refuses it even now that it is empty.
         let corpse_as_entry = settle_corpse_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,
@@ -482,6 +516,9 @@ fn corpse_pickup_takes_only_from_the_named_corpse_within_the_window_rules() -> T
             Err(GroundPickupError::SourceMismatch)
         ));
         let corpse_as_ground = settle_ground_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,

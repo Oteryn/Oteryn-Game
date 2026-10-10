@@ -1496,6 +1496,7 @@ mod conservative_destroy_tests {
 /// Borrow the already locked native owners for the existing semantic SQL pass.
 /// No copied fence, fabricated Player cast, or independently running scheduler.
 struct CreatureSourceScopeContext<'a> {
+    permit: &'a crate::durability::spell_owner_commit::SpellLanePermit,
     runtime: &'a crate::foundation::ChannelRuntimeV1,
     fence: &'a crate::foundation::ScopeRuntimeFence,
     stamp: crate::foundation::RuntimeWorkStamp,
@@ -1513,6 +1514,7 @@ impl DurabilityRoot {
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn commit_creature_source_items(
         &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         runtime: &crate::foundation::ChannelRuntimeV1,
@@ -1531,6 +1533,7 @@ impl DurabilityRoot {
             crate::foundation::RuntimeScopeRefV1::channel(actor.world_id(), actor.channel_id());
         let generation = actor.scope_generation();
         let mut context = CreatureSourceScopeContext {
+            permit,
             runtime,
             fence,
             stamp,
@@ -1547,6 +1550,7 @@ impl DurabilityRoot {
                     let outcome: Result<CreatureGroundReceipt> = async {
                         let authority = assert_spell_item_scope_with_recovery(
                             &mut tx,
+                            context.permit,
                             &record,
                             &node,
                             scope,

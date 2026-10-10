@@ -869,6 +869,53 @@ impl DurabilityRoot {
     /// D151 ML advance/checkpoint when requested. No row is written merely for live accumulation.
     /// Physical owners remain outside this SQL-only callback, locked in their established order.
     #[allow(clippy::too_many_arguments)]
+    pub(crate) async fn commit_familiar_spell_in_window<
+        F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,
+        T: Send + 'static,
+    >(
+        &self,
+        window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: FamiliarStateRequest,
+        cost: super::spell_items_abi::SpellItemTransactionRequest,
+        training: Option<(super::character_build::BuildChangeRequest, F)>,
+    ) -> Result<FamiliarSpellCommit> {
+        self.commit_familiar_spell_inner(
+            window, authority, node, fence, request, cost, training, true,
+        )
+        .await
+    }
+
+    /// A missing/expired source eligibility observation can only veto a new mutation.
+    /// This path still proves all current DB fences and full historical cast joins; it
+    /// cannot insert a familiar/cost/training successor when the occurrence is absent.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) async fn reconcile_familiar_spell_in_window<
+        F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,
+        T: Send + 'static,
+    >(
+        &self,
+        window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: FamiliarStateRequest,
+        cost: super::spell_items_abi::SpellItemTransactionRequest,
+        training: Option<(super::character_build::BuildChangeRequest, F)>,
+    ) -> Result<FamiliarSpellCommit> {
+        self.commit_familiar_spell_inner(
+            window, authority, node, fence, request, cost, training, false,
+        )
+        .await
+    }
+
+    /// Test-only entry point without the caster's lane: proves the cast under a fresh lane
+    /// permit for the fence's Channel. Production casts commit through
+    /// [`Self::commit_familiar_spell_in_window`] inside the seam's lane.
+    #[cfg(test)]
+    #[allow(clippy::too_many_arguments)]
     pub(crate) async fn commit_familiar_spell<
         F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,
     >(
@@ -880,13 +927,13 @@ impl DurabilityRoot {
         cost: super::spell_items_abi::SpellItemTransactionRequest,
         training: Option<(super::character_build::BuildChangeRequest, F)>,
     ) -> Result<FamiliarSpellCommit> {
-        self.commit_familiar_spell_inner(authority, node, fence, request, cost, training, true)
+        self.familiar_spell_on_fresh_lane(authority, node, fence, request, cost, training, true)
             .await
     }
 
-    /// A missing/expired source eligibility observation can only veto a new mutation.
-    /// This path still proves all current DB fences and full historical cast joins; it
-    /// cannot insert a familiar/cost/training successor when the occurrence is absent.
+    /// Test-only counterpart of [`Self::reconcile_familiar_spell_in_window`]; see
+    /// [`Self::commit_familiar_spell`].
+    #[cfg(test)]
     #[allow(clippy::too_many_arguments)]
     pub(crate) async fn reconcile_familiar_spell<
         F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,
@@ -899,15 +946,54 @@ impl DurabilityRoot {
         cost: super::spell_items_abi::SpellItemTransactionRequest,
         training: Option<(super::character_build::BuildChangeRequest, F)>,
     ) -> Result<FamiliarSpellCommit> {
-        self.commit_familiar_spell_inner(authority, node, fence, request, cost, training, false)
+        self.familiar_spell_on_fresh_lane(authority, node, fence, request, cost, training, false)
             .await
+    }
+
+    #[cfg(test)]
+    #[allow(clippy::too_many_arguments)]
+    async fn familiar_spell_on_fresh_lane<
+        F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,
+    >(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: FamiliarStateRequest,
+        cost: super::spell_items_abi::SpellItemTransactionRequest,
+        training: Option<(super::character_build::BuildChangeRequest, F)>,
+        allow_new_mutation: bool,
+    ) -> Result<FamiliarSpellCommit> {
+        let mut permit =
+            super::spell_owner_commit::SpellLanePermit::of_fresh_scope(fence.runtime_scope).await?;
+        let mut window = permit.open_commit_window((), |attempt| Box::new(attempt));
+        let result = self
+            .commit_familiar_spell_inner(
+                &mut window,
+                authority,
+                node,
+                fence,
+                request,
+                cost,
+                training,
+                allow_new_mutation,
+            )
+            .await;
+        // The window holds no slot: success installs nothing, and an error parks `()` into this
+        // throwaway lane, which is dropped with it.
+        if result.is_ok() {
+            window.install();
+        }
+        result
     }
 
     #[allow(clippy::too_many_arguments)]
     async fn commit_familiar_spell_inner<
         F: super::character_build::BuildFormula + Clone + Send + Sync + 'static,
+        T: Send + 'static,
     >(
         &self,
+        window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
@@ -929,8 +1015,9 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let root = self.clone();
         let node = node.clone();
+        let mut context = window;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, window| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     let item_fence = super::item_transfer::CurrentCharacterItemFence {
@@ -944,6 +1031,7 @@ impl DurabilityRoot {
                     let item_authority =
                         super::spell_item_transaction::assert_spell_item_authority_with_recovery(
                             &mut tx,
+                            window.permit(),
                             &root,
                             &recovery,
                             &node,
@@ -985,7 +1073,13 @@ impl DurabilityRoot {
                             super::spell_items_abi::SpellItemTransactionOutcome::AlreadyCommitted(
                                 cost,
                             ),
-                        ) => (None, Some(value), cost),
+                        ) => {
+                            // Matching historical receipts prove the cast is durable: from here
+                            // every failure, training/join validation or the read-only COMMIT
+                            // included, parks the attempt instead of reclaiming it.
+                            window.mark_already_committed();
+                            (None, Some(value), cost)
+                        }
                         _ => return Err(DurabilityError::InvalidStoredState),
                     };
                     let next_revision = pending
@@ -1058,9 +1152,10 @@ impl DurabilityRoot {
                     )
                     .await
                     .map_err(item_failure)?;
-                    let common =
-                        super::spell_owner_commit::commit_spell_owner_transaction(tx, pending)
-                            .await?;
+                    let common = super::spell_owner_commit::commit_spell_owner_transaction(
+                        tx, pending, window,
+                    )
+                    .await?;
                     let training = training
                         .map(|value| value.after_commit(&common))
                         .transpose()

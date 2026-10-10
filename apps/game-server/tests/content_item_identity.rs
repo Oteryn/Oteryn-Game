@@ -10,7 +10,8 @@ use oteryn_game_server::content::{
     item_identity::{
         APPEARANCE_ONLY_ITEM_IDS, ItemIdentityError, ItemKeyAliasTable, RetiredItemKey,
         apply_tibia_id_key_rule, apply_tibia_id_key_rule_with_appearance_items,
-        is_canonical_item_key, semantic, tibia_item_key,
+        apply_tibia_id_key_rule_with_current_source_items, is_canonical_item_key, semantic,
+        tibia_item_key,
     },
 };
 use serde_json::Value;
@@ -18,6 +19,139 @@ use std::collections::{BTreeMap, BTreeSet};
 
 const ALIASES: &[u8] = include_bytes!("../../../content/items/aliases.json");
 const REFERENCE: &[u8] = include_bytes!("../../../content/world/definitions/reference.json");
+
+#[test]
+fn source_held_identity_closes_54610_without_reinterpreting_history() {
+    let table = table();
+    let mut candidate = draft(
+        &["oteryn:item.registry.i00002921"],
+        &["oteryn:item.tibia.i54610"],
+    );
+    assert!(
+        apply_tibia_id_key_rule_with_appearance_items(
+            &mut candidate.clone(),
+            &table,
+            &source_ids(),
+            vec![item("oteryn:item.tibia.i54610")]
+        )
+        .is_err()
+    );
+    let switch = apply_tibia_id_key_rule_with_current_source_items(
+        &mut candidate,
+        &table,
+        &source_ids(),
+        appearance_items(),
+        vec![item("oteryn:item.tibia.i54610")],
+    )
+    .expect("qualified current-source identity");
+    assert_eq!(switch.item_records, 64);
+    assert_eq!(
+        candidate.state.editor[0].target.key,
+        "oteryn:item.tibia.i54610"
+    );
+    let admitted = candidate.core.records.iter().find(|record| matches!(record,
+        ProjectReferenceRecord::Item { identity, .. } if identity.key == "oteryn:item.tibia.i54610"
+    )).expect("54610 identity");
+    assert_eq!(admitted, &item("oteryn:item.tibia.i54610"));
+}
+
+#[test]
+fn source_held_extension_refuses_substitution_and_gameplay() {
+    let table = table();
+    for key in [
+        "oteryn:item.tibia.i34017",
+        "oteryn:item.tibia.i54609",
+        "oteryn:item.tibia.i054610",
+    ] {
+        assert!(
+            apply_tibia_id_key_rule_with_current_source_items(
+                &mut draft(&[], &[]),
+                &table,
+                &source_ids(),
+                vec![],
+                vec![item(key)]
+            )
+            .is_err()
+        );
+    }
+    let mut record = item("oteryn:item.tibia.i54610");
+    if let ProjectReferenceRecord::Item { materializable, .. } = &mut record {
+        *materializable = true;
+    }
+    assert!(
+        apply_tibia_id_key_rule_with_current_source_items(
+            &mut draft(&[], &[]),
+            &table,
+            &source_ids(),
+            vec![],
+            vec![record]
+        )
+        .is_err()
+    );
+    assert!(
+        apply_tibia_id_key_rule_with_current_source_items(
+            &mut draft(&[], &[]),
+            &table,
+            &source_ids(),
+            vec![],
+            vec![
+                item("oteryn:item.tibia.i54610"),
+                item("oteryn:item.tibia.i54610")
+            ]
+        )
+        .is_err()
+    );
+    let mut bound = source_ids();
+    bound.insert("oteryn:item.registry.already_bound".into(), 54610);
+    assert!(
+        apply_tibia_id_key_rule_with_current_source_items(
+            &mut draft(&[], &[]),
+            &table,
+            &bound,
+            vec![],
+            vec![item("oteryn:item.tibia.i54610")]
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn source_held_identity_shape_is_independently_checked() {
+    let table = table();
+    for mutant in 0..6 {
+        let mut record = item("oteryn:item.tibia.i54610");
+        let ProjectReferenceRecord::Item {
+            identity,
+            client_projection,
+            stack_class,
+            semantics,
+            ..
+        } = &mut record
+        else {
+            panic!("Item fixture")
+        };
+        match mutant {
+            0 => identity.revision = "definition-r2".into(),
+            1 => identity.family = "Creature".into(),
+            2 => *stack_class = ItemStackDocument::NonStackable,
+            3 => semantics.temporal = ReferenceItemField::NotApplicable,
+            4 => *client_projection = ProjectionDocument::ServerOnly,
+            5 => semantics.physical = ReferenceItemField::NotApplicable,
+            _ => unreachable!(),
+        }
+        assert!(
+            apply_tibia_id_key_rule_with_current_source_items(
+                &mut draft(&[], &[]),
+                &table,
+                &source_ids(),
+                vec![],
+                vec![record]
+            )
+            .is_err(),
+            "mutant {mutant}"
+        );
+    }
+}
 
 /// Each retired named key and the constant that replaces it (A12 §4.3, 64 CW2-B1 keys plus
 /// the R7-P04 gold coin).

@@ -24,11 +24,11 @@
 | Child | Worker | Builds | Depends on |
 |---|---|---|---|
 | NPC-CONTENT-1 | impl | Rust NPC, Dialogue, Trade and Travel families read from the content tree; offer and route classification and the validator rules of §3.4; generated minimal replies (§3.3) | this decision |
-| NPC-PLACE-1 | impl, content review | NPC placements generated from the Canary/Crystal NPC spawn data into the World Project, and travel destinations mapped from the `global-target-2026-09-27` frame to the project frame, both checked against the bundle (§3.2) | NPC-CONTENT-1; MAP-BUNDLE-1 |
+| NPC-PLACE-1 | impl, content review | NPC placements generated from the Canary/Crystal NPC spawn data into the World Project, and travel destinations mapped from the `global-target-2026-09-27` frame to the project frame, both checked against the bundle (§3.2). Amendment (pending on acceptance of NPC-PLACE-1): packeted there as NPC-PLACE-1a and 1b | NPC-CONTENT-1; MAP-BUNDLE-1 |
 | NPC-WIRE-1 | impl, protocol review | registry and proto rows of §4, codecs, limits, client views | NPC-CONTENT-1 |
 | NPC-TALK-1 | impl | conversation lifecycle and keyword matching in the channel runtime (§2.1), read-only trade window (boundary gate `NPC_DIALOGUE_TRADE_WIDGET_V1`) | NPC-WIRE-1; NPC-PLACE-1; MAP-CUTOVER-1 |
 | NPC-TRADE-1 | hard, persistence review | BUY and SELL (§5), migration, cause records (boundary gate `NPC_SINGLE_TRADE_COMMIT_V1`) | NPC-TALK-1; GOLD-FEE-1a (merged); GOLD-FEE-1b |
-| NPC-TRAVEL-1 | hard, persistence review | travel with fee and pending arrival (§6), the placement fallback (§6.1), migration, the `commit_character_death` change (`durability/character_death.rs`) that deletes a pending arrival, locking it after `character_root`, and the death receipt's new arrival-occurrence field | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission consumption |
+| NPC-TRAVEL-1 | hard, persistence review | travel with fee and pending arrival (§6), the placement fallback (§6.1), migration, the `commit_character_death` change (`durability/character_death.rs`) that deletes a pending arrival, locking it after `character_root`, and the death receipt's new arrival-occurrence field. Amendment (pending on acceptance of NPC-PLACE-1 §6): in a non-production World, it refuses a route the loaded bundle lists in `npcs.routes_held` by its (Service key, route key) pair, and every route when the bundle's `npcs.catalogue_sha256` differs from the digest of the catalogue loaded at boot (NPC-PLACE-1 §3.1); in a production World that mismatch refuses the bundle at boot; it does not classify destinations itself | NPC-TALK-1; GOLD-FEE-1b; DEATH-1 admission consumption |
 
 Every child keeps the boundary's rules: the client is not an authority, dialogue code never
 commits value, and AI owns no dialogue or trade state.
@@ -97,6 +97,12 @@ shapes are new?
 - An in-bounds NPC position or travel destination that is not a walkable tile is held with a
   diagnostic, and the rest of the World compiles. The held list is a production release gate, like
   drafts (ADR-0021 §4.6).
+- **Amendment (pending on acceptance of NPC-PLACE-1; `reviews/OTERYN_GAME_NPC_PLACE1_NPC_PLACEMENTS_DECISION_2026-10-06.md` §3-§6).**
+  Placements are the `Npc.Placement` family, compiled into the v4 NPC frame. A held position is
+  one of NPC-PLACE-1 §5 (`UnboundNpc`, `UnresolvedDialogue`, `UnresolvedService`, the cell
+  reasons, `SpawnPoint`, `SharedCell`), and a held destination one of §6 (the cell reasons,
+  `SpawnPoint`, `NpcPlacement`, `HouseTile`); a production build stops on any held position or
+  destination. Source-level holds (NPC-PLACE-1 §4.3) are not compiler holds.
 
 ### 3.3 Minimal replies (ruling answer 3b)
 

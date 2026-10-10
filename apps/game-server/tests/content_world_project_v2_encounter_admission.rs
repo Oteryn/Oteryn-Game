@@ -6,6 +6,83 @@
 use oteryn_game_server::content::*;
 use serde_json::{Value, json};
 
+#[test]
+fn max_health_attribute_admission_respects_absolute_u32_bound() {
+    let check = |attribute: &str, operation: &str, value: Option<Value>| {
+        let mut action = json!({"kind": "attribute", "role": "the_hunger",
+            "attribute": attribute, "operation": operation});
+        if let Some(value) = value {
+            action["value"] = value;
+        }
+        admit_with_rule(extra_rule(
+            json!({"kind": "encounter_started"}),
+            json!([action]),
+            json!([]),
+        ))
+    };
+    for value in [1, 60000, u64::from(u32::MAX)] {
+        check(
+            "max_health",
+            "set",
+            Some(json!({"kind": "fixed", "value": value})),
+        )
+        .expect("accepted absolute health bound");
+    }
+    check("max_health", "reset", None).expect("reset to type maximum");
+    for value in [0, u64::from(u32::MAX) + 1] {
+        assert!(
+            check(
+                "max_health",
+                "set",
+                Some(json!({"kind": "fixed", "value": value}))
+            )
+            .is_err()
+        );
+    }
+    assert!(check("max_health", "set", None).is_err());
+    assert!(
+        check(
+            "max_health",
+            "add",
+            Some(json!({"kind": "fixed", "value": 60000}))
+        )
+        .is_err()
+    );
+    assert!(
+        check(
+            "max_health",
+            "reset",
+            Some(json!({"kind": "fixed", "value": 60000}))
+        )
+        .is_err()
+    );
+    assert!(
+        check(
+            "max_health",
+            "set",
+            Some(json!({"kind": "counter", "counter": "hunger_summons"}))
+        )
+        .is_err()
+    );
+    for attribute in ["defense", "outgoing_damage_percent"] {
+        check(
+            attribute,
+            "add",
+            Some(json!({"kind": "fixed", "value": 10})),
+        )
+        .expect("existing add");
+        check(attribute, "reset", None).expect("existing reset");
+        assert!(
+            check(
+                attribute,
+                "set",
+                Some(json!({"kind": "fixed", "value": 10}))
+            )
+            .is_err()
+        );
+    }
+}
+
 const REVISION: &str = "definition-r1";
 const ENCOUNTER: &str = "oteryn:encounter.vortex";
 const BOSS: &str = "oteryn:creature.the_hunger";

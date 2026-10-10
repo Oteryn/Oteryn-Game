@@ -2,9 +2,11 @@
 //! same pins rebuilds an equal World, against a fixture bundle each test assembles.
 
 use std::error::Error as StdError;
+use std::num::NonZeroU32;
 
 use oteryn_game_server::foundation::{ChannelId, WorldId};
 use oteryn_game_server::map::boot::{BootPins, BootRefusal, BundleWorld, boot};
+use oteryn_game_server::map::facts::ItemDefinition;
 use oteryn_game_server::map::overlay::TilePos;
 use oteryn_game_server::map::{BundlePins, LoadError};
 use oteryn_world_bundle_compiler::bundle::{
@@ -110,12 +112,19 @@ fn bundle() -> Result<(Vec<u8>, BundlePins), Box<dyn StdError>> {
     Ok((bytes, pins))
 }
 
-fn solid(key: &str) -> Option<bool> {
-    match key {
-        "item:box" => Some(true),
-        "item:coin" => Some(false),
-        _ => None,
-    }
+/// The served definitions of the fixture's Items; the §1.6 reference is 1 + the palette `id`.
+fn item(key: &str) -> Option<ItemDefinition> {
+    let (id, solid) = match key {
+        "item:box" => (1, true),
+        "item:coin" => (2, false),
+        _ => return None,
+    };
+    Some(ItemDefinition {
+        reference: NonZeroU32::new(id + 1)?,
+        solid: Some(solid),
+        blocks_projectile: solid,
+        pickupable: !solid,
+    })
 }
 
 fn pins(bundle: &BundlePins, x: u16) -> BootPins {
@@ -133,7 +142,7 @@ fn pins(bundle: &BundlePins, x: u16) -> BootPins {
 fn boot_at(bytes: &[u8], pins: &BootPins) -> Result<BundleWorld, BootRefusal> {
     let world = WorldId::decode(&id(1)).map_err(|_| BootRefusal::MapRevision)?;
     let channel = ChannelId::decode(&id(2)).map_err(|_| BootRefusal::MapRevision)?;
-    boot(bytes, pins, world, channel, solid)
+    boot(bytes, pins, world, channel, item)
 }
 
 #[test]

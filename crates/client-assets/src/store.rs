@@ -38,8 +38,30 @@ pub struct AssetStore {
 impl AssetStore {
     /// Opens `dir` against the manifest file at `manifest_path`.
     pub fn open(dir: &Path, manifest_path: &Path) -> Result<Self, AssetError> {
+        Self::open_manifest(dir, manifest_path, None)
+    }
+
+    /// Opens `dir` against the manifest at `manifest_path`, refusing a manifest whose bytes
+    /// do not hash to `manifest_sha256`, so the directory cannot supply its own trust root.
+    /// CRLF is read as LF first, so a Windows checkout of the repository still matches.
+    pub fn open_pinned(
+        dir: &Path,
+        manifest_path: &Path,
+        manifest_sha256: &str,
+    ) -> Result<Self, AssetError> {
+        Self::open_manifest(dir, manifest_path, Some(manifest_sha256))
+    }
+
+    fn open_manifest(
+        dir: &Path,
+        manifest_path: &Path,
+        pinned: Option<&str>,
+    ) -> Result<Self, AssetError> {
         let label = manifest_path.display().to_string();
         let bytes = read_bounded(manifest_path, MAX_MANIFEST_BYTES, &label)?;
+        if pinned.is_some_and(|expected| !text_sha256(&bytes).eq_ignore_ascii_case(expected)) {
+            return Err(AssetError::HashMismatch { file: label });
+        }
         let raw: RawManifest =
             serde_json::from_slice(&bytes).map_err(|error| AssetError::Malformed {
                 file: label.clone(),
@@ -87,6 +109,23 @@ pub(crate) fn is_plain_file_name(name: &str) -> bool {
         || name.contains('/')
         || name.contains('\\')
         || name.contains('\0'))
+}
+
+/// The lowercase hex sha256 of a text file with CRLF read as LF, so a Windows checkout of the
+/// repository hashes like the committed file.
+#[must_use]
+pub fn text_sha256(bytes: &[u8]) -> String {
+    sha256_hex(&lf_only(bytes))
+}
+
+fn lf_only(bytes: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(bytes.len());
+    for (index, byte) in bytes.iter().enumerate() {
+        if !(*byte == b'\r' && bytes.get(index + 1) == Some(&b'\n')) {
+            out.push(*byte);
+        }
+    }
+    out
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {

@@ -760,9 +760,82 @@ class PromotionValidatorTests(unittest.TestCase):
         self.assertIn('a provenance revision without crystal_supplement (D14)', validate_promotion.errors(report))
 
     def test_supplement_lists_are_disjoint(self):
-        self.assertEqual(len(promotion_candidates.SUPPLEMENT_ADMITTED), 7)
-        self.assertEqual(len(promotion_candidates.SUPPLEMENT_HELD), 13)
+        self.assertEqual(len(promotion_candidates.SUPPLEMENT_ADMITTED), 8)
+        self.assertEqual(len(promotion_candidates.SUPPLEMENT_HELD), 12)
         self.assertFalse(promotion_candidates.SUPPLEMENT_ADMITTED & set(promotion_candidates.SUPPLEMENT_HELD))
+
+    # -- D17: Doctor Marrow is admitted with no placements; two conflicting positions stay evidence ----------
+
+    MARROW = 'crystal:npc/doctor_marrow'
+
+    def marrow_row(self):
+        return {'fact': 'placements', 'rule': 'PLACEMENT_HELD', 'reason': 'POSITION_CONFLICT',
+                'positions': promotion_candidates.PLACEMENT_HELD_POSITIONS[self.MARROW]}
+
+    def test_doctor_marrow_is_admitted_without_placements(self):
+        self.assertIn(self.MARROW, promotion_candidates.SUPPLEMENT_ADMITTED)
+        self.assertNotIn(self.MARROW, promotion_candidates.SUPPLEMENT_HELD)
+        self.assertEqual(promotion_candidates.PLACEMENT_HELD, {self.MARROW: 'POSITION_CONFLICT'})
+        positions = {(e['position']['x'], e['position']['y'], e['position']['z']): e['evidence']
+                     for e in promotion_candidates.PLACEMENT_HELD_POSITIONS[self.MARROW]}
+        self.assertEqual(positions, {(34010, 32641, 6): 'OTS_HYPOTHESIS_ONLY', (33992, 32662, 6): 'REFERENCE_PRISON_CELL'})
+        # the lone source position is never taken, with or without a wiki position
+        bundle = make_bundle('Doctor Marrow', placements=[make_placement(34010, 32641, 6)])
+        page = {'pageid': 9, 'title': 'Doctor Marrow', 'name': 'Doctor Marrow', 'actualname': None, 'revid': 1, 'position': None}
+        record = make_builder([page]).candidate({'crystal': bundle})
+        self.assertEqual(record['identity']['key'], 'oteryn:npc.doctor_marrow')
+        self.assertEqual(record['placements'], [])
+        self.assertEqual(record['arbitration'], [self.marrow_row()])
+        self.assertNotIn('34010', json.dumps(record['placements']))
+        builder = make_builder([{'pageid': 9, 'title': 'Doctor Marrow', 'name': 'Doctor Marrow', 'actualname': None, 'revid': 1,
+                                 'position': {'x': 1, 'y': 2, 'z': 3}}])
+        record = builder.candidate({'crystal': bundle})
+        self.assertEqual((record['placements'], [r['rule'] for r in record['arbitration']]), ([], ['PLACEMENT_HELD']))
+
+    def test_npc_outside_the_hold_table_still_merges(self):
+        page = {'pageid': 9, 'title': 'Somebody', 'name': 'Somebody', 'actualname': None, 'revid': 1, 'position': None}
+        record = make_builder([page]).candidate({'crystal': make_bundle('Somebody', placements=[make_placement(1, 2, 7)])})
+        self.assertEqual([p['position'] for p in record['placements']], [{'x': 1, 'y': 2, 'z': 7}])
+        self.assertNotIn('PLACEMENT_HELD', [r['rule'] for r in record['arbitration']])
+
+    def held_report(self, mutate=None):
+        report = load_sample()
+        candidate = next(c for c in report['candidates'] if set(c['provenance']) == {'crystal'})
+        candidate['provenance']['crystal']['key'] = self.MARROW
+        candidate['placements'] = []
+        candidate['arbitration'] = [self.marrow_row()]
+        if mutate:
+            mutate(candidate)
+        return report
+
+    def held_errors(self, mutate=None):
+        return [e for e in validate_promotion.errors(self.held_report(mutate)) if 'PLACEMENT_HELD' in e or 'no placements' in e]
+
+    def test_placement_held_row_validation(self):
+        self.assertEqual(self.held_errors(), [])
+        placed = lambda c: c.update(placements=[make_placement(34010, 32641, 6)])
+        self.assertTrue(self.held_errors(placed))
+        unlisted = lambda c: c['provenance']['crystal'].update(key='crystal:npc/thorim')
+        self.assertTrue(self.held_errors(unlisted))
+        missing = lambda c: c.update(arbitration=[], placements=[])
+        self.assertTrue(self.held_errors(missing))
+        wrong = lambda c: c['arbitration'][0].update(positions=[])
+        self.assertTrue(self.held_errors(wrong))
+
+    def test_placement_held_excludes_a_competing_placements_decision(self):
+        for extra in ({'fact': 'placements', 'rule': 'WIKI_CONFIRMED', 'chosen': 'wiki'},
+                      {'fact': 'placements', 'rule': 'WIKI_ARBITER', 'chosen': 'crystal'}):
+            add = lambda c, extra=extra: c['arbitration'].append(extra)
+            self.assertTrue(any('excludes another placements' in e for e in self.held_errors(add)), extra)
+
+    def test_d17_is_a_decision_exactly_when_a_placement_hold_is_present(self):
+        decisions = lambda report: [e for e in validate_promotion.errors(report) if e.startswith('decisions ')]
+        report = self.held_report()
+        self.assertTrue(decisions(report))  # the sample's decisions end at D16
+        report['decisions'] = report['decisions'] + ['D17']
+        self.assertEqual(decisions(report), [])
+        self.assertTrue(decisions({**load_sample(), 'decisions': load_sample()['decisions'] + ['D17']}))
+        self.assertEqual(decisions(load_sample()), [])
 
 
     # -- D15: Tibiopedia or BR confirms a single-source NPC; a disputed price stays, pending ---------

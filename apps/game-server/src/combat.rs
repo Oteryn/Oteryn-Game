@@ -21,12 +21,12 @@ mod death_reward;
 #[path = "combat/loot_plan.rs"]
 mod loot_plan;
 
-// D2a/D2b have no production caller yet (protocol/admission composition is a
-// later, separate stage), so nothing outside this crate's tests reaches
-// these re-exports today.
+// The live kill-reward caller (`gameplay_transport::kill_reward`) uses only
+// part of these re-exports; the rest serve the path-loaded test harnesses,
+// and `foundation/mod.rs` recompiles this file standalone with none used.
 #[allow(
     unused_imports,
-    reason = "no production caller yet; a later admission stage wires one"
+    reason = "partly used by the live caller; the rest serve path-loaded test crates"
 )]
 pub(crate) use death_reward::{
     COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX, COMBAT01_REWARD_PRINCIPALS_MAX,
@@ -37,12 +37,12 @@ pub(crate) use death_reward::{
     CreatureDeathRewardWithBestiaryOutcome, DeathGroundContext, DurabilitySession,
     GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, ProjectedCreatureDeathFacts, RewardPrincipal,
     RewardProgressionBinding, capture_projected_death_facts, check_corpse_container_capacity,
-    check_inflight_loot_mint_capacity, check_reward_principal_count, settle_creature_death_rewards,
-    settle_creature_death_rewards_with_bestiary,
+    check_inflight_loot_mint_capacity, check_reward_principal_count, loot_plan_seed,
+    settle_creature_death_rewards, settle_creature_death_rewards_with_bestiary,
 };
 #[allow(
     unused_imports,
-    reason = "no production caller yet; a later admission stage wires one"
+    reason = "partly used by the live caller; the rest serve path-loaded test crates"
 )]
 pub(crate) use loot_plan::{
     COMBAT01_LOOT_PLAN_BYTES_MAX, COMBAT01_LOOT_PLAN_ENTRIES_MAX, COMBAT01_LOOT_PLAN_ITEMS_MAX,

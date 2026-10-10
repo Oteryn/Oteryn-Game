@@ -1,5 +1,5 @@
 //! One physical Channel transaction and the existing player-vitals owner.
-//! Both locks remain held from preparation through installation. Every fallible check,
+//! The guards are held through each phase: the check phase and the infallible install phase. Every fallible check,
 //! clone, allocation and effect application occurs before either owner mutates. A physical
 //! receipt replay never charges resources or installs another player successor.
 
@@ -42,13 +42,14 @@ impl PlayerBatchPreflight {
         &self.batch == batch
     }
 
-    /// Complete an already allocated caster successor using the genuine training
-    /// receipt-qualified payment, without rerunning or reallocating combat effects.
-    pub(crate) fn rebind_training(
-        &mut self,
+    /// The borrowing check that completes an already allocated caster successor with the
+    /// genuine training receipt-qualified payment, without rerunning or reallocating combat
+    /// effects (ARCH-SPELL-LOCK-2 §1.6).
+    pub(crate) fn check_rebind_training(
+        &self,
         runtime: &ChannelRuntimeV1,
         states: &ChannelSpellStates,
-        qualified_paid: PlayerSpellState,
+        qualified_paid: &PlayerSpellState,
     ) -> Result<(), SpellCastDisposition> {
         self.validate_current(runtime, states)?;
         let anchor = self
@@ -57,17 +58,36 @@ impl PlayerBatchPreflight {
             .as_ref()
             .ok_or(SpellCastDisposition::Rejected)?;
         let replacement = self
-            .replacements
-            .iter_mut()
-            .find(|value| {
-                value.actor == self.batch.caster
-                    && value.session == self.batch.command.game_session_id()
-            })
+            .caster_replacement()
             .ok_or(SpellCastDisposition::Rejected)?;
         replacement
             .next
-            .rebind_staged_training(&replacement.before, anchor, qualified_paid)
+            .check_rebind_staged_training(&replacement.before, anchor, qualified_paid)
             .map_err(|_| SpellCastDisposition::Rejected)
+    }
+
+    /// The infallible move, only after [`Self::check_rebind_training`] passed under the same
+    /// guards.
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; phase 1 proved the caster replacement"
+    )]
+    pub(crate) fn install_rebind_training(&mut self, qualified_paid: PlayerSpellState) {
+        let caster = self.batch.caster;
+        let session = self.batch.command.game_session_id();
+        self.replacements
+            .iter_mut()
+            .find(|value| value.actor == caster && value.session == session)
+            .expect("checked caster replacement")
+            .next
+            .install_rebind_staged_training(qualified_paid);
+    }
+
+    fn caster_replacement(&self) -> Option<&Replacement> {
+        self.replacements.iter().find(|value| {
+            value.actor == self.batch.caster
+                && value.session == self.batch.command.game_session_id()
+        })
     }
 
     pub(crate) fn validate_current(
@@ -197,14 +217,36 @@ pub(crate) fn stage_player_batch(
     Ok(preflight)
 }
 
+/// Proof that [`check_owner_batch`] passed for one staged batch and preflight under the held
+/// guards. Only that check builds it, and only [`install_owner_batch`] consumes it.
+#[derive(Debug)]
+pub(crate) struct CheckedOwnerBatch {
+    _sealed: (),
+}
+
 pub(crate) fn commit_owner_batch(
     runtime: &mut ChannelRuntimeV1,
     states: &mut ChannelSpellStates,
-    mut staged: StagedSpellBatch,
+    staged: StagedSpellBatch,
     preflight: Option<PlayerBatchPreflight>,
 ) -> Result<CombatBatchReceipt, Error> {
+    let checked = check_owner_batch(runtime, states, &staged, preflight.as_ref())?;
+    Ok(install_owner_batch(
+        runtime, states, staged, preflight, checked,
+    ))
+}
+
+/// The borrowing check of [`commit_owner_batch`] (ARCH-SPELL-LOCK-2 §1.6): it changes no slot,
+/// no player state, no staged batch and no preflight.
+pub(crate) fn check_owner_batch(
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    staged: &StagedSpellBatch,
+    preflight: Option<&PlayerBatchPreflight>,
+) -> Result<CheckedOwnerBatch, Error> {
     if !staged.will_apply() {
-        return runtime.commit_spell_batch(staged);
+        runtime.check_spell_batch_commit(staged)?;
+        return Ok(CheckedOwnerBatch { _sealed: () });
     }
     let preflight = preflight.ok_or(Error::PlayerVitalsOwnerRequired)?;
     preflight
@@ -213,13 +255,37 @@ pub(crate) fn commit_owner_batch(
     if !preflight.matches_batch(staged.batch()) {
         return Err(Error::InvalidBatch);
     }
-    staged.bind_player_preflight(&preflight)?;
-    let receipt = runtime.commit_spell_batch(staged)?;
+    // With the preflight proven to match, the binding below cannot fail, and the bound batch
+    // passes `check_spell_batch_commit` exactly when it passes the staged comparison.
+    runtime.validate_staged_spell_batch(staged)?;
+    Ok(CheckedOwnerBatch { _sealed: () })
+}
+
+/// The infallible install, only after [`check_owner_batch`] passed under the same held guards.
+#[allow(
+    clippy::expect_used,
+    reason = "post-validation commit invariant; phase 1 proved the preflight and its binding"
+)]
+pub(crate) fn install_owner_batch(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    mut staged: StagedSpellBatch,
+    preflight: Option<PlayerBatchPreflight>,
+    _checked: CheckedOwnerBatch,
+) -> CombatBatchReceipt {
+    if !staged.will_apply() {
+        return runtime.install_spell_batch(staged);
+    }
+    let preflight = preflight.expect("checked player preflight");
+    staged
+        .bind_player_preflight(&preflight)
+        .expect("checked matching player preflight");
+    let receipt = runtime.install_spell_batch(staged);
     if receipt.applied {
         preflight.install(states);
         states.owner_wake.notify_one();
     }
-    Ok(receipt)
+    receipt
 }
 
 #[cfg(test)]

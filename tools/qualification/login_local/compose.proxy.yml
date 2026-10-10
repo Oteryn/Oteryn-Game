@@ -1,0 +1,10 @@
+# LOGIN_LOCAL_PUBLIC_PLATFORM_URL + LOGIN_LOCAL_PUBLIC_GATEWAY_URL: a TLS reverse proxy (Synology DSM) fronts the
+# loopback-published Platform (127.0.0.1:18564 -> nginx 8447) and gateway (127.0.0.1:18565). No LAN listener, no LAN CA.
+services:
+  platform:
+    environment:
+      # The Platform's external URL is the public one; nginx 8447 also presents it as https to PHP.
+      APP_URL: ${LL_PUBLIC_PLATFORM_URL:?set LL_PUBLIC_PLATFORM_URL}
+  nginx:
+    volumes:
+      - ${LL_PROXY_CONF:?set LL_PROXY_CONF}:/etc/nginx/login-local-lan:ro

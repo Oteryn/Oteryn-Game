@@ -319,6 +319,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 ));
             }
         }
+        // Lock order (§1.2): the lane before any Channel guard. Due timers stay due.
+        let Some(permit) = self.spell_lane_permit().await else {
+            return Ok(FireReport::default());
+        };
+        let permit = &permit;
         let mut runtime = self.runtime.lock().await;
         let mut states = self.spell_states.lock().await;
         let Some(timer) = states.spell_timers.as_ref() else {
@@ -531,6 +536,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     let due_authority =
                         item_tx::assert_due_spell_item_read_authority_in_transaction(
                             &mut tx,
+                            permit,
                             owner.root,
                             owner.character,
                             owner.holder,
@@ -779,15 +785,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| Error::StaleOwner)?;
             if let Some(report) = accepted {
+                self.record_spell_kills(&mut runtime, report.receipts.iter().map(|r| &r.batch))
+                    .await;
                 return Ok(report);
             }
         }
-        apply_due_under_current_owners(
+        let report = apply_due_under_current_owners(
             &mut runtime,
             &mut states,
             self.spells,
             &casters,
             self.owner_now(),
-        )
+        )?;
+        self.record_spell_kills(&mut runtime, report.receipts.iter().map(|r| &r.batch))
+            .await;
+        Ok(report)
     }
 }
+
+#[cfg(test)]
+#[path = "spell_timer_callbacks_tests.rs"]
+mod tests;

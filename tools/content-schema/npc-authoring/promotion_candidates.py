@@ -69,8 +69,14 @@ Merge rules:
   one more pinned Crystal commit (`CRYSTAL_SUPPLEMENT_REVISION`, the `summer-update` branch), and only the new NPC
   files listed in `SUPPLEMENT_ADMITTED`; they are merged like any Crystal bundle and their provenance records that
   revision. The files listed in `SUPPLEMENT_HELD` (a placeholder outfit, dialogue Crystal wrote itself, or not an
-  NPC on the wiki) are held `SUPPLEMENT_HELD`. The report records the revision and the digest of the supplement
+  NPC) are held `SUPPLEMENT_HELD`. The report records the revision and the digest of the supplement
   bundles it read;
+- D17 (architect ruling 2026-10-06 on #1622): an NPC in the fixed `PLACEMENT_HELD` table (Doctor Marrow, whose Crystal
+  and Make Believe Reference positions disagree) is admitted with no placements; the table is checked before
+  `merge_placements`, so no SINGLE_SOURCE, WIKI_ARBITER, WIKI_POSITION or WIKI_CONFIRMED placement and no wiki-position
+  fallback applies. The row is `{"fact": "placements", "rule": "PLACEMENT_HELD", "reason": "POSITION_CONFLICT",
+  "positions": [{"source", "position", "evidence"}, ...]}`; the validator accepts it only for a table entry with no
+  placements, and the report rebuild covers the table;
 - D15 (with the Tibiopedia facts; architect ruling 2026-09-30 on #162, answers 5a and 6b):
   - a single-source NPC that TibiaWiki Fandom does not know under any name rule above is admitted when Tibiopedia
     or TibiaWiki BR (a page not marked removed) has a page under its name; the row records `{"fact": "identity",
@@ -114,7 +120,7 @@ PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
 WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING',
                            'WIKI_CONFIRMED', 'WIKI_PRICE', 'WIKI_MAJORITY_PRICE', 'WIKI_OFFER',
                            'FAN_WIKI_CONFIRMED', 'WIKI_MAJORITY_ARBITER', 'WIKI_IMAGE', 'OWNER_REVIEW',
-                           'WIKI_IMAGE_FIT')  # kept in the output
+                           'WIKI_IMAGE_FIT', 'PLACEMENT_HELD')  # kept in the output
 DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
 VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
 SPELLING_MIN_LENGTH = 10
@@ -217,13 +223,24 @@ WIKI_SHOP_HELD = {
 # admitted, and the other thirteen new files are held with the reason found in review (owner decision 2026-09-28).
 CRYSTAL_SUPPLEMENT_REVISION = '00ce02a57ca5a12e48f32a3476e37471167e4c3f'
 SUPPLEMENT_ADMITTED = {f'crystal:npc/{stem}' for stem in (
-    'captain_corsarah', 'javala', 'mayor_pocaro', 'pescadu', 'thorim', 'uzon_back', 'wayland_smythers')}
+    'captain_corsarah', 'doctor_marrow', 'javala', 'mayor_pocaro', 'pescadu', 'thorim', 'uzon_back',
+    'wayland_smythers')}
 SUPPLEMENT_HELD = {
     **{f'crystal:npc/{stem}': 'placeholder outfit in the summer-update source'
        for stem in ('dhira', 'nilavarna', 'niral', 'saraki', 'sharai', 'tarisu', 'udu')},
     **{f'crystal:npc/{stem}': 'dialogue written by Crystal, not Tibia text (TODO(text))'
        for stem in ('g_ezkho', 'goldro', 'nekaret', 'omar', 'zofia_bolter')},
-    'crystal:npc/doctor_marrow': 'a boss, not an NPC, on TibiaWiki and Tibiopedia',
+}
+# D17 (architect ruling 2026-10-06 on #1622): Doctor Marrow is a Thalassara roleplay NPC apart from the boss of the
+# same name, so it is admitted, with no placements. Its two positions disagree and only a map-owner record may place it.
+PLACEMENT_HELD = {'crystal:npc/doctor_marrow': 'POSITION_CONFLICT'}
+PLACEMENT_HELD_POSITIONS = {
+    'crystal:npc/doctor_marrow': [
+        {'source': 'crystal:summer-update:data-global/world/world-npc.xml', 'position': {'x': 34010, 'y': 32641, 'z': 6},
+         'evidence': 'OTS_HYPOTHESIS_ONLY'},
+        {'source': 'make-believe-reference', 'position': {'x': 33992, 'y': 32662, 'z': 6},
+         'evidence': 'REFERENCE_PRISON_CELL'},
+    ],
 }
 REMOVED_FROM_GAME = {
     f'{source}:npc/{stem}': DUELLING_ARENA_REMOVED
@@ -759,8 +776,16 @@ class Builder:
             arbitration.append({'fact': 'definition.outfit', 'rule': 'WIKI_IMAGE_FIT', 'chosen': 'crystal', **fit})
         if conflicts:
             return self.hold(name, sources, 'DEFINITION_CONFLICT', ','.join(conflicts))
-        placements, problem = self.merge_placements(bundles, wiki, arbitration)
-        if problem == 'PLACEMENT_CONFLICT_WIKI_UNDECIDED':
+        held_placement = next((b['key'] for b in bundles.values() if b['key'] in PLACEMENT_HELD), None)
+        if held_placement is not None:  # D17: checked before merge_placements, which would take a lone source position
+            placements, problem = [], None
+            arbitration.append({'fact': 'placements', 'rule': 'PLACEMENT_HELD', 'reason': PLACEMENT_HELD[held_placement],
+                                'positions': PLACEMENT_HELD_POSITIONS[held_placement]})
+        else:
+            placements, problem = self.merge_placements(bundles, wiki, arbitration)
+        if held_placement is not None:
+            pass
+        elif problem == 'PLACEMENT_CONFLICT_WIKI_UNDECIDED':
             # D6/D8: both sources disagree with each other and with the wiki; the wiki position
             # wins outright over either source (merge_placements only returns this problem when
             # wiki['position'] is set, so the fallback always succeeds here).
@@ -892,7 +917,9 @@ def build_report(canary_dir, crystal_dir, snapshot_bytes, item_map_bytes, br_fac
         'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY',
         'decisions': ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'] + (['D12'] if br_facts_bytes else [])
         + (['D13'] if tibiopedia_bytes else []) + (['D14'] if supplement_digest else [])
-        + (['D15'] if tibiopedia_bytes else []) + ['D16'],
+        + (['D15'] if tibiopedia_bytes else []) + ['D16']
+        + (['D17'] if any(row.get('rule') == 'PLACEMENT_HELD' for record in promoted for row in record['arbitration'])
+           else []),
         'snapshot_sha256': hashlib.sha256(snapshot_bytes).hexdigest(),
         'item_map_sha256': hashlib.sha256(item_map_bytes).hexdigest(),
         **({'br_facts_sha256': hashlib.sha256(br_facts_bytes).hexdigest()} if br_facts_bytes else {}),

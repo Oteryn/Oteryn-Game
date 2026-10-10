@@ -175,6 +175,10 @@ impl StagedSpellBatch {
     pub(crate) fn batch(&self) -> &OwnerCombatBatch {
         &self.batch
     }
+    /// Slots whose reservation [`ChannelRuntimeV1::install_companion_touch_release`] releases.
+    pub(crate) fn companion_touch_indices(&self) -> &[usize] {
+        &self.companion_touch_indices
+    }
     pub(crate) fn player_effects(&self) -> &[OwnerCombatEffect] {
         &self.player_effects
     }
@@ -654,6 +658,17 @@ impl ChannelRuntimeV1 {
         &mut self,
         staged: &mut StagedSpellBatch,
     ) -> Result<(), Error> {
+        self.check_companion_touch_release(staged)?;
+        self.install_companion_touch_release(staged);
+        Ok(())
+    }
+
+    /// The borrowing check of [`Self::release_companion_touches_for_source_commit`]
+    /// (ARCH-SPELL-LOCK-2 §1.6): it changes no slot and no staged field.
+    pub(crate) fn check_companion_touch_release(
+        &self,
+        staged: &StagedSpellBatch,
+    ) -> Result<(), Error> {
         self.validate_staged_spell_batch(staged)?;
         let reservation = staged.reservation.as_ref().ok_or(Error::InvalidBatch)?;
         for index in &staged.companion_touch_indices {
@@ -661,6 +676,16 @@ impl ChannelRuntimeV1 {
                 return Err(Error::SnapshotChanged);
             }
         }
+        Ok(())
+    }
+
+    /// The infallible release, only after [`Self::check_companion_touch_release`] passed under
+    /// the same held guards.
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
+    pub(crate) fn install_companion_touch_release(&mut self, staged: &mut StagedSpellBatch) {
         // All fallible checks precede the first actual reservation change. The source
         // composition installs its preallocated metadata successors in this owner turn.
         for index in &staged.companion_touch_indices {
@@ -675,6 +700,79 @@ impl ChannelRuntimeV1 {
             .replacements
             .retain(|(index, _)| !staged.companion_touch_indices.contains(index));
         staged.companion_touch_indices.clear();
+    }
+
+    /// The borrowing check of the familiar physical apply (ARCH-SPELL-LOCK-2 §1.6): party
+    /// protection for `marks`, the `dead` despawn and the reserved `spawn` install. It changes
+    /// nothing and reads every `released` slot (the companion touches of a batch whose
+    /// [`Self::install_companion_touch_release`] runs first in the same owner turn) as released.
+    pub(crate) fn check_familiar_companion_apply(
+        &self,
+        released: &[usize],
+        owner: ExactActorRef,
+        session: GameSessionId,
+        marks: &[super::runtime_actor_companion::CompanionSnapshot],
+        dead: Option<&super::runtime_actor_companion::CompanionSnapshot>,
+        spawn: Option<&super::runtime_actor_companion::PreparedCompanionSpawn>,
+    ) -> Result<(), CarrierError> {
+        let unreserved = |actor: ExactActorRef| -> Result<(), CarrierError> {
+            let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+            let spell = match &self.carrier.slots[index] {
+                Slot::Occupied {
+                    generation,
+                    spell_combat,
+                    ..
+                }
+                | Slot::CreatureOccupied {
+                    generation,
+                    spell_combat,
+                    ..
+                } if *generation == actor.0.actor_local_generation.0 => spell_combat,
+                _ => return Err(CarrierError::StaleActorGeneration),
+            };
+            if spell.pending_source.is_some()
+                || (spell.pending_owner.is_some() && !released.contains(&index))
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+            Ok(())
+        };
+        for (at, snapshot) in marks.iter().enumerate() {
+            // Each mark changes its own snapshot; a repeated or despawned one would conflict.
+            if marks[..at].iter().any(|v| v.actor == snapshot.actor)
+                || dead.is_some_and(|v| v.actor == snapshot.actor)
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+            unreserved(snapshot.actor)?;
+            self.validate_companion_snapshot(snapshot)?;
+        }
+        if let Some(dead) = dead {
+            unreserved(dead.actor)?;
+            self.carrier
+                .player_slot_index(&self.continuity, owner.0, session)?;
+            if dead.state.master
+                != Some(super::runtime_actor_companion::CompanionMaster {
+                    actor: owner,
+                    session,
+                })
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+            self.validate_companion_snapshot(dead)?;
+            self.carrier
+                .check_remove(&self.continuity, dead.actor.0, released)?;
+        }
+        if let Some(spawn) = spawn {
+            self.validate_companion_spawn(spawn)?;
+            let index = self
+                .carrier
+                .validate_ref(&self.continuity, spawn.actor().0)?;
+            // Only the already reserved slot stays valid across the despawn above.
+            if !matches!(&self.carrier.slots[index], Slot::CreatureReserved { .. }) {
+                return Err(CarrierError::PlanConflict);
+            }
+        }
         Ok(())
     }
 
@@ -1226,15 +1324,27 @@ impl ChannelRuntimeV1 {
         &mut self,
         staged: StagedSpellBatch,
     ) -> Result<CombatBatchReceipt, Error> {
-        self.validate_staged_spell_batch(&staged)?;
+        self.check_spell_batch_commit(&staged)?;
+        Ok(self.install_spell_batch(staged))
+    }
+
+    /// The borrowing check of [`Self::commit_spell_batch`] (ARCH-SPELL-LOCK-2 §1.6).
+    pub(crate) fn check_spell_batch_commit(&self, staged: &StagedSpellBatch) -> Result<(), Error> {
+        self.validate_staged_spell_batch(staged)?;
         if !staged.player_preflight_bound {
             return Err(Error::PlayerVitalsOwnerRequired);
         }
+        Ok(())
+    }
+
+    /// The infallible write, only after [`Self::check_spell_batch_commit`] passed under the
+    /// same held guards.
+    pub(crate) fn install_spell_batch(&mut self, staged: StagedSpellBatch) -> CombatBatchReceipt {
         // No fallible calculation, allocation or callbacks follow the first replacement.
         for (index, replacement) in staged.replacements {
             self.carrier.slots[index] = replacement;
         }
-        Ok(staged.receipt)
+        staged.receipt
     }
 
     /// Borrow-only compare of the already allocated real slots, also used before consuming

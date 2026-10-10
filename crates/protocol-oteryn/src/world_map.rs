@@ -94,9 +94,12 @@ const fn malformed<T>() -> Result<T> {
 /// Exactly one, non-zero definition reference (contract §3 Definition reference).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MapDefinition {
-    /// `item_definition_ref` (1): the WorldSpatialEntityV1 item reference space.
+    /// `item_definition_ref` (1): the WorldSpatialEntityV1 item reference space, 1 + the Item
+    /// compact id of the definition's key in the session's content generation (ARCH-MAP-TRACK-
+    /// PACKETS-V1 §1.6); a bundle palette Item `id` 0 is sent as 1.
     Item(NonZeroU32),
-    /// `terrain_definition_ref` (8): the bundle palette compact id of a Terrain record.
+    /// `terrain_definition_ref` (8): 1 + the bundle palette compact id of a Terrain record, so a
+    /// palette Terrain `id` 0 is sent as 1.
     Terrain(NonZeroU32),
 }
 

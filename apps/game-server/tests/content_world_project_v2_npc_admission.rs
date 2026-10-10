@@ -220,6 +220,7 @@ fn keyword(
         triggers: triggers.iter().map(|trigger| (*trigger).into()).collect(),
         fallback: false,
         reply: vec![reply.into()],
+        links: vec![],
         only_focus: false,
         only_unfocus: false,
         reset: false,
@@ -240,6 +241,7 @@ fn keyword_owned(
         triggers: vec![trigger],
         fallback: false,
         reply: vec![reply.into()],
+        links: vec![],
         only_focus: false,
         only_unfocus: false,
         reset: false,
@@ -314,6 +316,7 @@ fn dialogue_declaration() -> ProjectV2Declaration {
         ],
         keywords: dialogue_keywords(),
         voices: dialogue_voices(),
+        source_incomplete: vec![],
         fields: vec![],
     }
 }
@@ -923,4 +926,113 @@ fn unknown_dialogue_keyword_fields_fail_closed() {
         serde_json::from_value::<ProjectV2Declaration>(dialogue).is_err(),
         "unknown dialogue keyword field admitted"
     );
+}
+
+/// Doctor Marrow's `stopped` reply links to `{traitor}`, which no source handler answers (D17).
+fn marrow_dialogue(draft: &mut ProjectV2Draft) {
+    if let ProjectV2Declaration::Dialogue {
+        keywords,
+        source_incomplete,
+        ..
+    } = dialogue_mut(draft)
+    {
+        *keywords = vec![
+            ProjectV2DialogueKeyword {
+                links: vec!["stopped".into()],
+                ..keyword(
+                    "unpleasant",
+                    &["unpleasant"],
+                    "It must be {stopped}.",
+                    vec![],
+                )
+            },
+            ProjectV2DialogueKeyword {
+                links: vec!["traitor".into()],
+                ..keyword(
+                    "stopped",
+                    &["stopped"],
+                    "You must confront the majordomo. A {traitor} of the highest order.",
+                    vec![],
+                )
+            },
+            keyword("name", &["name"], "Doctor Marrow.", vec![]),
+        ];
+        *source_incomplete = vec![ProjectV2DialogueSourceIncomplete {
+            node: "stopped".into(),
+            link: "traitor".into(),
+            reason: ProjectV2DialogueIncompleteReason::NoHandler,
+        }];
+    }
+}
+
+#[test]
+fn dialogue_links_and_source_incomplete_round_trip() {
+    let mut marrow = draft();
+    marrow_dialogue(&mut marrow);
+    let documents = CanonicalProjectDocuments::from_v2_draft(marrow, limits()).expect("documents");
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit")
+        .parse(limits())
+        .expect("parse");
+    let ProjectV2Declaration::Dialogue {
+        keywords,
+        source_incomplete,
+        ..
+    } = dialogue(&parsed)
+    else {
+        unreachable!()
+    };
+    assert_eq!(keywords[1].links, ["traitor"]);
+    assert!(keywords[2].links.is_empty());
+    assert_eq!(
+        source_incomplete,
+        &[ProjectV2DialogueSourceIncomplete {
+            node: "stopped".into(),
+            link: "traitor".into(),
+            reason: ProjectV2DialogueIncompleteReason::NoHandler,
+        }]
+    );
+    assert_eq!(
+        parsed
+            .canonical_documents(limits())
+            .expect("canonical rewrite")
+            .documents(),
+        documents.documents(),
+        "the canonical rewrite is byte-identical"
+    );
+}
+
+#[test]
+fn dialogue_without_links_serializes_no_new_field() {
+    let value = serde_json::to_value(dialogue_declaration()).expect("json");
+    assert!(value.get("source_incomplete").is_none());
+    let text = value.to_string();
+    assert!(!text.contains("\"links\""), "{text}");
+    let reparsed: ProjectV2Declaration = serde_json::from_value(value.clone()).expect("reparse");
+    assert_eq!(reparsed, dialogue_declaration());
+    let mut unknown = value;
+    unknown["source_incomplete_extra"] = json!([]);
+    assert!(serde_json::from_value::<ProjectV2Declaration>(unknown).is_err());
+}
+
+#[test]
+fn source_incomplete_entries_must_name_an_emitted_link() {
+    for (node, link) in [("stopped", "nowhere"), ("absent", "traitor")] {
+        let mut broken = draft();
+        marrow_dialogue(&mut broken);
+        if let ProjectV2Declaration::Dialogue {
+            source_incomplete, ..
+        } = dialogue_mut(&mut broken)
+        {
+            source_incomplete[0].node = node.into();
+            source_incomplete[0].link = link.into();
+        }
+        admit(broken).expect_err("rejected");
+    }
+    let mut unsorted = draft();
+    marrow_dialogue(&mut unsorted);
+    if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(&mut unsorted) {
+        keywords[1].links = vec!["traitor".into(), "stopped".into()];
+    }
+    admit(unsorted).expect_err("rejected");
 }

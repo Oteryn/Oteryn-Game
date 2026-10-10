@@ -32,6 +32,7 @@ use crate::durability::reward_claim_mint::{
     ACHIEVEMENT_SOURCE_KIND, GrantNotice, GrantedAchievementNotice, RewardClaimMintError,
     RewardClaimMintOutcome, RewardClaimRefusal,
 };
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{
     CommandId, CommandRef, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration, WorldId,
 };
@@ -365,6 +366,9 @@ async fn equip_backpack(
 ) -> TestResult {
     let backpack = harness.mint(authority, BACKPACK, 1).await?;
     let equipped = settle_ground_pickup(
+        &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+            .await
+            .map_err(debug)?,
         session,
         content,
         fence()?,
@@ -1221,6 +1225,9 @@ fn the_entry_chest_use_mints_once_and_refuses_cleanly_otherwise() -> TestResult 
             .mint_definition(&authority, entry_item(entry_chest::BACKPACK_ITEM), 1)
             .await?;
         let equipped = settle_ground_pickup(
+            &SpellLanePermit::of_fresh_scope((fence()?).runtime_scope)
+                .await
+                .map_err(debug)?,
             &session,
             &content,
             fence()?,

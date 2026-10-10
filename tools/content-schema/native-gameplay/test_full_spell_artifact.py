@@ -123,5 +123,90 @@ class SourceCompositionTests(unittest.TestCase):
             self.assertEqual(6, proof['creature_count'])
 
 
+
+class ItemKeySetTests(unittest.TestCase):
+    """MAP-ITEM-REF-1: the pinned Item key set is generated from the Item definitions."""
+
+    def test_checked_in_key_set_is_generated_byte_ordered_unique_and_bounded(self):
+        raw = full.item_keys()
+        self.assertEqual(raw, full.ITEM_KEYS.read_bytes())
+        document = json.loads(raw)
+        self.assertEqual('OTERYN_NATIVE_ITEM_KEYS/v1', document['schema'])
+        keys = [key.encode('utf-8') for key, _ in document['records']]
+        self.assertTrue(keys)
+        self.assertTrue(all(a < b for a, b in zip(keys, keys[1:])))
+        self.assertLessEqual(len(raw), full.LIMITS['item_keys'])
+
+    def test_non_item_record_and_duplicate_key_are_refused(self):
+        def shard(records, family='Item'):
+            return {'family': family, 'records': [
+                {'definition': {'identity': {'family': f, 'key': k, 'revision': 'r1'}}} for f, k in records]}
+        for shards in ([shard([('Item', 'a:b'), ('Item', 'a:b')])],
+                       [shard([('Terrain', 'a:b')])],
+                       [shard([('Item', 'a:b')], family='Terrain')]):
+            with tempfile.TemporaryDirectory() as directory:
+                for at, value in enumerate(shards):
+                    (Path(directory) / f'items-{at}.json').write_text(json.dumps(value))
+                with self.assertRaises(ValueError):
+                    full.item_keys(Path(directory))
+
+class LootTablesTests(unittest.TestCase):
+    """ARCH-KILL-REWARD-LOGOUT-1 §1.1: the loot section is generated from the Content definitions."""
+
+    def test_checked_in_section_is_generated_from_the_production_profiles(self):
+        _, creatures = full.read(full.CREATURE_PROFILES)
+        raw = full.loot_tables(creatures)
+        self.assertEqual(raw, full.LOOT_TABLES.read_bytes())
+        self.assertLessEqual(len(raw), full.LIMITS['loot_tables'])
+        document = json.loads(raw)
+        self.assertEqual('OTERYN_NATIVE_LOOT_TABLES/v1', document['schema'])
+        bindings = {row['creature']['key']: row['loot'] for row in document['creature_loot']}
+        self.assertEqual({r['profile']['target']['key'] for r in creatures['records']}, set(bindings))
+        rat = {'family': 'Loot', 'key': 'oteryn:loot.creature.rat', 'revision': 'definition-r1'}
+        self.assertEqual(rat, bindings['oteryn:creature.rat'])
+        self.assertIsNone(bindings['canary:creature/rat'])
+        tables = {row['identity']['key'] for row in document['tables']}
+        self.assertEqual({ref['key'] for ref in bindings.values() if ref}, tables)
+        items = {row['item']['key']: row for row in document['items']}
+        self.assertEqual(16, items['oteryn:item.tibia.i5964']['container_capacity'])
+        self.assertTrue(items['oteryn:item.tibia.i3031']['materializable'])
+        self.assertFalse(items['oteryn:item.tibia.i3607']['materializable'])
+
+    def write(self, directory, creatures, loot, items):
+        base = Path(directory)
+        for name, family, records in (('creatures', 'Creature', creatures), ('loot', 'Loot', loot), ('items', 'Item', items)):
+            (base/name).mkdir()
+            (base/name/f'{name}-0.json').write_text(json.dumps({'family': family, 'records': [{'definition': r} for r in records]}))
+        return base/'creatures', base/'loot', base/'items'
+
+    def test_null_binding_is_explicit_and_a_missing_item_refuses(self):
+        ref = lambda family, key: {'family': family, 'key': key, 'revision': 'r1'}
+        corpse, coin = ref('Item', 'a:corpse'), ref('Item', 'a:coin')
+        creature = lambda key, loot: {'identity': ref('Creature', key), 'loot': loot}
+        profile = lambda key: {'profile': {'target': ref('Creature', key),
+                                           'data': {'profile': {'details': {'corpse_item': corpse}}}}}
+        table = {'identity': ref('Loot', 'a:loot'), 'kind': 'Loot', 'algorithm': 'IndependentBernoulliPpm',
+                 'entries': [{'item': coin, 'min_count': 1, 'max_count': 1, 'probability_ppm': 1}]}
+        unused = dict(table, identity=ref('Loot', 'a:unused'))
+        item = lambda r: {'identity': r, 'materializable': True}
+        pinned = {'records': [profile('a:looted'), profile('a:plain')]}
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self.write(directory, [creature('a:looted', ref('Loot', 'a:loot')), creature('a:plain', None)],
+                               [table, unused], [item(corpse), item(coin)])
+            document = json.loads(full.loot_tables(pinned, *paths))
+            self.assertEqual([None, ref('Loot', 'a:loot')][::-1], [r['loot'] for r in document['creature_loot']])
+            self.assertEqual([ref('Loot', 'a:loot')], [t['identity'] for t in document['tables']])
+            self.assertEqual([coin, corpse], [i['item'] for i in document['items']])
+            self.assertIsNone(document['items'][0]['container_capacity'])
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self.write(directory, [creature('a:looted', ref('Loot', 'a:loot'))], [table], [item(corpse)])
+            with self.assertRaisesRegex(ValueError, 'not an exact Item definition'):
+                full.loot_tables({'records': [profile('a:looted')]}, *paths)
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self.write(directory, [creature('a:looted', ref('Loot', 'a:missing'))], [table], [item(corpse), item(coin)])
+            with self.assertRaisesRegex(ValueError, 'no exact loot table'):
+                full.loot_tables({'records': [profile('a:looted')]}, *paths)
+
+
 if __name__ == '__main__':
     unittest.main()

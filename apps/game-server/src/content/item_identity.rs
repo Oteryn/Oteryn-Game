@@ -39,6 +39,14 @@ pub const APPEARANCE_ONLY_ITEM_IDS: [u64; 62] = [
     49124, 51276, 51302, 51560, 53197, 53199, 53201, 53203, 53205, 53855,
 ];
 
+/// SHARDS-I1: independently identified current-source Item, held by the historical import.
+/// Crystal Summer 00ce02a57ca5a12e48f32a3476e37471167e4c3f items.xml, Git blob
+/// 5530bb76d896d31fb75d6cad23969e1cc463b1c5 / SHA256
+/// 13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece, identifies
+/// 54610 distinctly from 34017. Admission here grants identity only, never gameplay facts.
+/// The frozen historical held-id list and the appearance-only cohort remain unchanged.
+pub const CURRENT_SOURCE_HELD_ITEM_IDS: [u64; 1] = [54610];
+
 /// The retired named Item keys as code constants (D147): each is the Tibia key of the item the
 /// name stood for. The retired strings resolve only through the alias table.
 pub mod semantic {
@@ -314,6 +322,48 @@ fn validate_appearance_items(
     index_bytes: &[u8],
     manifest_bytes: &[u8],
 ) -> Result<(), ItemIdentityError> {
+    validate_current_items(
+        items,
+        source_ids,
+        index_bytes,
+        manifest_bytes,
+        &APPEARANCE_ONLY_ITEM_IDS,
+    )
+}
+
+/// Admit separately qualified current-source identities alongside appearance-only identities.
+/// Current appearance membership and the minimal identity-only shape are independently checked
+/// for both cohorts before historical key rewriting or reference closure can succeed.
+pub fn apply_tibia_id_key_rule_with_current_source_items(
+    draft: &mut ProjectV2Draft,
+    table: &ItemKeyAliasTable,
+    source_ids: &BTreeMap<String, u64>,
+    mut appearance_items: Vec<ProjectReferenceRecord>,
+    source_items: Vec<ProjectReferenceRecord>,
+) -> Result<ItemKeySwitch, ItemIdentityError> {
+    let index = include_bytes!("../../../../imports/official/appearance-membership/admitted.json");
+    let manifest = include_bytes!(
+        "../../../../imports/official/appearance-membership/appearances-2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.json"
+    );
+    validate_appearance_items(&appearance_items, source_ids, index, manifest)?;
+    validate_current_items(
+        &source_items,
+        source_ids,
+        index,
+        manifest,
+        &CURRENT_SOURCE_HELD_ITEM_IDS,
+    )?;
+    appearance_items.extend(source_items);
+    apply_key_rule(draft, table, source_ids, appearance_items)
+}
+
+fn validate_current_items(
+    items: &[ProjectReferenceRecord],
+    source_ids: &BTreeMap<String, u64>,
+    index_bytes: &[u8],
+    manifest_bytes: &[u8],
+    accepted_ids: &[u64],
+) -> Result<(), ItemIdentityError> {
     if world_project_sha256(index_bytes)
         != "19f99b709d9a28c1730632e27672adb0a03ef11bf7d1f4b2647a4090f3df0718"
     {
@@ -372,9 +422,7 @@ fn validate_appearance_items(
             || identity.revision != "definition-r1"
             || id.and_then(tibia_item_key).as_deref() != Some(identity.key.as_str())
             || !id.is_some_and(|id| {
-                APPEARANCE_ONLY_ITEM_IDS.contains(&id)
-                    && current.contains(&id)
-                    && !source_ids.contains(&id)
+                accepted_ids.contains(&id) && current.contains(&id) && !source_ids.contains(&id)
             })
             || *client_projection != ProjectionDocument::ClientSafe
             || *materializable

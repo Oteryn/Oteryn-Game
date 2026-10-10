@@ -9,6 +9,7 @@ Semantic rules:
   snapshot_sha256, item_map_sha256, br_facts_sha256 and tibiopedia_facts_sha256 are 64 hex chars;
 - D14: 'D14' exactly when crystal_supplement (the pinned supplement revision and a bundles digest) is present;
   a provenance entry carries a revision only as a crystal entry of a SUPPLEMENT_ADMITTED file at that revision;
+- D17: 'D17' exactly when a PLACEMENT_HELD row is present; a PLACEMENT_HELD NPC carries no other placements row;
 - D15: 'D15' exactly when tibiopedia_facts_sha256 is present; rule 'FAN_WIKI_CONFIRMED' has `fact` == 'identity',
   a single-source candidate with a null `wiki`, `wikis` one or two sorted names from br/tibiopedia, `chosen` the
   first of them and `pages` one page per wiki (BR page id and revision, Tibiopedia url and SHA-256); such a
@@ -241,7 +242,10 @@ def candidate_errors(candidate, index):
     wiki_confirmed = any(row.get('rule') in ('WIKI_CONFIRMED', 'FAN_WIKI_CONFIRMED') for row in arbitration_rows)
 
     placements = candidate.get('placements') or []
-    if not placements and not wiki_confirmed:
+    held_rows = [row for row in arbitration_rows if row.get('rule') == 'PLACEMENT_HELD']
+    held_keys = sorted(entry.get('key') for entry in (candidate.get('provenance') or {}).values()
+                       if isinstance(entry, dict) and entry.get('key') in promotion_candidates.PLACEMENT_HELD)
+    if not placements and not wiki_confirmed and not held_rows:
         errs.append(f'{label}: no placements')
     wiki_placements = [p for p in placements if isinstance(p, dict) and p.get('origin') == 'wiki']
     for i, placement in enumerate(placements):
@@ -403,6 +407,19 @@ def candidate_errors(candidate, index):
                              f"placement, found {len(wiki_placements)}")
             if candidate.get('wiki') is None:
                 errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
+        elif rule == 'PLACEMENT_HELD':
+            # D17: only a listed NPC, with no placements, and exactly the table's reason and positions
+            if len(held_keys) != 1:
+                errs.append(f"{alabel}: rule 'PLACEMENT_HELD' for an NPC outside PLACEMENT_HELD")
+            else:
+                expected = {'fact': 'placements', 'rule': 'PLACEMENT_HELD',
+                            'reason': promotion_candidates.PLACEMENT_HELD[held_keys[0]],
+                            'positions': promotion_candidates.PLACEMENT_HELD_POSITIONS[held_keys[0]]}
+                if row != expected:
+                    errs.append(f"{alabel}: PLACEMENT_HELD row {row!r} != {expected!r}")
+            if placements:
+                errs.append(f"{alabel}: rule 'PLACEMENT_HELD' requires an empty placements list, "
+                             f"found {len(placements)}")
         elif rule == 'WIKI_CONFIRMED':
             if chosen != 'wiki':
                 errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")
@@ -532,8 +549,16 @@ def candidate_errors(candidate, index):
             errs.append(f"{alabel}: rule {rule!r} not in "
                          f"['WIKI_ARBITER', 'WIKI_BASE_NAME', 'WIKI_CONFIRMED', 'WIKI_MAJORITY_PRICE', "
                          f"'WIKI_POSITION', 'WIKI_PRICE', 'WIKI_SPELLING', 'FAN_WIKI_CONFIRMED', 'WIKI_MAJORITY_ARBITER', "
-                         f"'WIKI_IMAGE', 'OWNER_REVIEW', 'WIKI_IMAGE_FIT']")
+                         f"'WIKI_IMAGE', 'OWNER_REVIEW', 'WIKI_IMAGE_FIT', 'PLACEMENT_HELD']")
 
+    if held_keys and len(held_rows) != 1:
+        errs.append(f'{label}: NPC listed in PLACEMENT_HELD needs exactly one PLACEMENT_HELD row, found {len(held_rows)}')
+    if held_rows:  # D17: the hold is the only placements decision of a held NPC
+        for row in arbitration_rows:
+            if row.get('rule') != 'PLACEMENT_HELD' and (
+                    row.get('fact') == 'placements' or row.get('rule') in ('WIKI_CONFIRMED', 'WIKI_POSITION')):
+                errs.append(f"{label}: PLACEMENT_HELD excludes another placements arbitration, found rule "
+                             f"{row.get('rule')!r}")
     # D13 offers: a wiki-origin offer and its WIKI_OFFER row come together, one row per offer
     wiki_offer_facts = sorted(f"trade.{offer.get('source_item_id')}.{offer.get('direction')}"
                               for offer in (candidate.get('trade_service') or {}).get('offers') or []
@@ -585,7 +610,9 @@ def errors(report):
         errs.append(f"evidence {report.get('evidence')!r} != {EVIDENCE!r}")
     expected = DECISIONS + (['D12'] if 'br_facts_sha256' in report else []) + (
         ['D13'] if 'tibiopedia_facts_sha256' in report else []) + (['D14'] if 'crystal_supplement' in report else []) + (
-        ['D15'] if 'tibiopedia_facts_sha256' in report else []) + ['D16']
+        ['D15'] if 'tibiopedia_facts_sha256' in report else []) + ['D16'] + (
+        ['D17'] if any(row.get('rule') == 'PLACEMENT_HELD' for candidate in report.get('candidates') or []
+                       for row in candidate.get('arbitration') or []) else [])
     if report.get('decisions') != expected:
         errs.append(f"decisions {report.get('decisions')!r} != {expected!r}")
     for field in ('br_facts_sha256', 'tibiopedia_facts_sha256'):

@@ -67,6 +67,7 @@ use super::map_item_mint_audit::{
     map_item_spatial_position, map_revision_of,
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
+use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::domain::CharacterId;
@@ -492,13 +493,26 @@ impl DurabilityRoot {
     /// recovery fence without reacquiring session authority; a changed intent
     /// conflicts. A new MINT commits only under the complete current fence
     /// and with the entry still free.
+    ///
+    /// `permit` is the Spell lane of the fenced Channel (SPELL-LOCK-2 §1.2): the Ground INSERT
+    /// fires its key-33 owner lock, so the lane is held to the end of the transaction.
     pub async fn commit_map_item_mint(
         &self,
+        permit: &SpellLanePermit,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         candidate: &mut MapItemMintCandidate,
     ) -> Result<MapItemMintOutcome> {
+        // A non-Channel scope owns no Ground, so its fence is refused as stale authority
+        // before the lane check, as the transaction refused it before SPELL-LOCK-2.
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) {
+            return Err(MapItemMintError::AuthorityRejected);
+        }
+        permit.check_scope(fence.runtime_scope)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| MapItemMintError::AuthorityRejected)?;
@@ -506,10 +520,12 @@ impl DurabilityRoot {
             .await?;
         let frozen = FrozenMint::of(candidate);
         let node = node.clone();
+        let mut context = permit;
 
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
+                    let permit: &SpellLanePermit = permit;
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
@@ -584,9 +600,16 @@ impl DurabilityRoot {
                         Ok(envelope) => envelope,
                         Err(error) => return Ok(Err(error.into())),
                     };
-                    let committed =
-                        apply_mint(&mut tx, &frozen, &reservation, &ground, &envelope, tuple)
-                            .await?;
+                    let committed = apply_mint(
+                        &mut tx,
+                        permit,
+                        &frozen,
+                        &reservation,
+                        &ground,
+                        &envelope,
+                        tuple,
+                    )
+                    .await?;
                     tx.commit(deadline).await?;
                     Ok(Ok(MapItemMintOutcome::Committed(committed)))
                 })
@@ -796,6 +819,7 @@ fn mint_message(
 /// deferred guards prove they commit together.
 async fn apply_mint(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     frozen: &FrozenMint,
     reservation: &Reservation,
     ground: &OneItemGroundV1,
@@ -807,6 +831,8 @@ async fn apply_mint(
         .ok_or(DurabilityError::InvalidStoredState)?;
     let tx_id = frozen.transaction_id.as_slice();
     let item_id = frozen.item_instance_id.as_slice();
+    // SPELL-LOCK-2 §1.2: the Ground INSERT fires the key-33 owner lock of this Channel.
+    permit.check_stored_channel(&reservation.world_id, &reservation.channel_id)?;
     sqlx::query(
         "INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
            definition_production_key, definition_revision_ref, quantity, lifecycle, \

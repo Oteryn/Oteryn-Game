@@ -56,7 +56,10 @@ pub(in crate::gameplay_transport) use training_save::TrainingSave;
 mod owner_commit;
 #[path = "stance_cast.rs"]
 mod stance_cast;
-pub(crate) use owner_commit::{PlayerBatchPreflight, commit_owner_batch, stage_player_batch};
+pub(crate) use owner_commit::{
+    CheckedOwnerBatch, PlayerBatchPreflight, check_owner_batch, commit_owner_batch,
+    install_owner_batch, stage_player_batch,
+};
 
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, SemanticTimeMicros, deterministic_decision_u64,
@@ -87,12 +90,32 @@ pub(crate) struct ChannelSpellStates {
     actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
     /// One real Channel-owner lane; no timer is restored from client intent.
     pub(crate) spell_timers: Option<crate::spell::delayed_execution::SpellTimerOwner>,
-    pub(crate) pending_familiars: Vec<familiar_cast::PreparedFamiliarCast>,
+    pub(crate) pending_familiars: Vec<
+        PendingSpellMarker<
+            oteryn_protocol_oteryn::actor_spell::SpellCastIntent,
+            familiar_cast::PreparedFamiliarCast,
+        >,
+    >,
     pub(crate) pending_familiar_lifecycle: Vec<familiar_cast::PreparedFamiliarLifecycle>,
     pub(crate) pending_familiar_logouts: Vec<familiar_cast::PreparedFamiliarLogout>,
-    pub(crate) pending_native: Vec<native_combat_cast::PendingNativeCast>,
-    pub(crate) pending_world_items: Vec<world_item_cast::PreparedWorldItemCast>,
-    pub(crate) pending_parameters: Vec<parameter_cast::PreparedParameterCast>,
+    pub(crate) pending_native: Vec<
+        PendingSpellMarker<
+            native_combat_cast::NativeMarkerIntent,
+            native_combat_cast::PendingNativeCast,
+        >,
+    >,
+    pub(crate) pending_world_items: Vec<
+        PendingSpellMarker<
+            oteryn_protocol_oteryn::actor_spell::SpellCastIntent,
+            world_item_cast::PreparedWorldItemCast,
+        >,
+    >,
+    pub(crate) pending_parameters: Vec<
+        PendingSpellMarker<
+            oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
+            parameter_cast::PreparedParameterCast,
+        >,
+    >,
     pub(crate) presentations: Option<super::spell_presentations::SpellPresentationOwner>,
     /// One bounded Channel pass per second, shared by all present actors.
     pub(in crate::gameplay_transport) next_item_deadline_pass_us: u64,
@@ -110,6 +133,109 @@ pub(crate) struct ChannelSpellStates {
     source_damage: Vec<NativeSourceMemo<crate::player_lethal::PlayerDamageReceipt>>,
     source_mana: Vec<NativeSourceMemo<crate::player_lethal::PlayerManaDrainReceipt>>,
     source_heal: Vec<NativeSourceMemo<crate::player_lethal::PlayerHealReceipt>>,
+}
+
+/// The pending marker of one committing writer's attempt (ARCH-SPELL-LOCK-2 §1.4). It holds the
+/// attempt's identity only, so `has_pending_spell_commit` reads true for the caster from the start
+/// of its pass to the end that installs or releases the batch. `attempt` is `None` while the pass
+/// holds the attempt, or while the lane holds it in `unresolved`; the marker stays in both cases.
+#[derive(Debug)]
+pub(crate) struct PendingSpellMarker<I, T> {
+    pub(crate) actor: ExactActorRef,
+    pub(crate) session: GameSessionId,
+    pub(crate) command: crate::foundation::CommandRef,
+    pub(crate) intent: I,
+    pub(crate) attempt: Option<T>,
+}
+
+impl<I, T> PendingSpellMarker<I, T> {
+    pub(crate) fn is_for(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.actor == actor && self.session == session
+    }
+
+    /// Puts an attempt back into the caster's marker, creating the marker if none exists.
+    pub(crate) fn restore(
+        markers: &mut Vec<Self>,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command: crate::foundation::CommandRef,
+        intent: I,
+        attempt: T,
+    ) {
+        match markers.iter_mut().find(|m| m.is_for(actor, session)) {
+            Some(marker) => marker.attempt = Some(attempt),
+            None => markers.push(Self {
+                actor,
+                session,
+                command,
+                intent,
+                attempt: Some(attempt),
+            }),
+        }
+    }
+
+    /// The end of a writer's pass: an attempt the pass still holds goes back into the marker.
+    /// Without one, the marker stays only while the lane holds the attempt in `unresolved`; an
+    /// installed, released or never prepared attempt removes it.
+    pub(crate) fn settle(
+        markers: &mut Vec<Self>,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command: crate::foundation::CommandRef,
+        intent: I,
+        leftover: Option<T>,
+        parked: bool,
+    ) {
+        match leftover {
+            Some(attempt) => Self::restore(markers, actor, session, command, intent, attempt),
+            None if !parked => markers.retain(|m| !m.is_for(actor, session)),
+            None => {
+                if !markers.iter().any(|m| m.is_for(actor, session)) {
+                    markers.push(Self {
+                        actor,
+                        session,
+                        command,
+                        intent,
+                        attempt: None,
+                    });
+                }
+            }
+        }
+    }
+
+    /// The original of a resolving attempt from its caster's marker (§1.6): the command id and
+    /// the intent, only while the marker holds the attempt. A marker without one is vacant (its
+    /// writer pass was cancelled after it installed, released or never prepared the attempt) and
+    /// is removed, since the resolution holds the lane and no pass or parked record owns it.
+    pub(crate) fn take_original(
+        markers: &mut Vec<Self>,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<(u64, I)>
+    where
+        I: Clone,
+    {
+        let original = markers
+            .iter()
+            .find(|m| m.is_for(actor, session) && m.attempt.is_some())
+            .map(|m| (m.command.command_id().get(), m.intent.clone()));
+        if original.is_none() {
+            markers.retain(|m| !m.is_for(actor, session));
+        }
+        original
+    }
+
+    /// Takes the attempt out of the caster's marker, leaving the marker in place.
+    pub(crate) fn take_attempt(
+        markers: &mut [Self],
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<T> {
+        markers
+            .iter_mut()
+            .find(|m| m.is_for(actor, session))
+            .and_then(|m| m.attempt.take())
+    }
 }
 
 impl Default for ChannelSpellStates {

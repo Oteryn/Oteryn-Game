@@ -18,6 +18,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if active.familiar_defenses().is_none() {
             return;
         }
+        // Lock order (§1.2): the lane before any Channel guard.
+        let Some(permit) = self.spell_lane_permit().await else {
+            return;
+        };
+        let permit = &permit;
         let mut runtime = self.runtime.lock().await;
         let mut states = self.spell_states.lock().await;
         if states.has_pending_spell_commit(actor, session)
@@ -38,7 +43,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut tx=crate::durability::spell_item_transaction::begin_spell_owner_transaction(holder,deadline).await?;
             let scope=RuntimeScopeRefV1::channel(runtime.binding().world_id(),runtime.binding().channel_id());
             let generation=runtime.binding().scope_generation().get();
-            let _authority=crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(&mut tx,owner.root,owner.character,owner.holder,scope,generation).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+            let _authority=crate::durability::spell_item_transaction::assert_spell_item_scope_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,scope,generation).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let current=FreshAdmissionStore::from_root(owner.root.clone()).current_session_in_transaction(&mut tx,session).await?;
             if current.session_state()!=GameSessionState::Active||current.current_runtime_scope()!=scope||current.current_scope_generation().get()!=generation{return Err(crate::durability::DurabilityError::Unavailable)}
             let active=owner.active_generation.and_then(|g|g.native_gameplay()).ok_or(crate::durability::DurabilityError::Unavailable)?;

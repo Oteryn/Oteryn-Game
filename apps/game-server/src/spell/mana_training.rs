@@ -507,14 +507,24 @@ impl PreparedPlayerTraining {
     }
     /// The caller installs this fully prepared successor with its physical batch.
     /// Call before any owner mutation; mismatch leaves the actual state untouched.
-    #[allow(
-        clippy::expect_used,
-        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
-    )]
     pub(crate) fn prepare_install(
         &mut self,
         current: &super::cast::PlayerSpellState,
         paid: &mut super::cast::PlayerSpellState,
+        anchor: &super::combat_batch::SpellAnchor,
+        receipt: Option<&CommittedBuildChange>,
+    ) -> Result<(), TrainingError> {
+        self.check_install(current, paid, anchor, receipt)?;
+        self.install_into(paid);
+        Ok(())
+    }
+
+    /// The borrowing check of [`Self::prepare_install`] (ARCH-SPELL-LOCK-2 §1.6): it takes
+    /// nothing from the prepared training and changes no payment.
+    pub(crate) fn check_install(
+        &self,
+        current: &super::cast::PlayerSpellState,
+        paid: &super::cast::PlayerSpellState,
         anchor: &super::combat_batch::SpellAnchor,
         receipt: Option<&CommittedBuildChange>,
     ) -> Result<(), TrainingError> {
@@ -552,6 +562,32 @@ impl PreparedPlayerTraining {
         {
             return Err(TrainingError::StaleReceipt);
         }
+        Ok(())
+    }
+
+    /// The payment [`Self::install_into`] would produce, for the phase-1 checks that follow it.
+    /// It clones and takes nothing.
+    pub(crate) fn qualified_preview(
+        &self,
+        paid: &super::cast::PlayerSpellState,
+    ) -> Result<super::cast::PlayerSpellState, TrainingError> {
+        let installation = self
+            .installation
+            .as_ref()
+            .ok_or(TrainingError::StaleReceipt)?;
+        let mut preview = paid.clone();
+        preview.facts.magic_level = u32::from(installation.after.durable().magic().0);
+        preview.training_payment = Some(installation.witness.clone());
+        preview.training = Some(installation.after.clone());
+        Ok(preview)
+    }
+
+    /// The infallible move, only after [`Self::check_install`] passed under the same guards.
+    #[allow(
+        clippy::expect_used,
+        reason = "post-validation commit invariant; a fallible exit here would leave a partial owner write"
+    )]
+    pub(crate) fn install_into(&mut self, paid: &mut super::cast::PlayerSpellState) {
         // No clone, allocation, calculation or fallible branch remains.
         let installation = self
             .installation
@@ -560,7 +596,6 @@ impl PreparedPlayerTraining {
         paid.facts.magic_level = u32::from(installation.after.durable().magic().0);
         paid.training_payment = Some(installation.witness);
         paid.training = Some(installation.after);
-        Ok(())
     }
 }
 
@@ -654,7 +689,19 @@ impl super::cast::PlayerSpellState {
         &mut self,
         before: &Self,
         anchor: &super::combat_batch::SpellAnchor,
-        mut qualified_paid: Self,
+        qualified_paid: Self,
+    ) -> Result<(), TrainingError> {
+        self.check_rebind_staged_training(before, anchor, &qualified_paid)?;
+        self.install_rebind_staged_training(qualified_paid);
+        Ok(())
+    }
+
+    /// The borrowing check of [`Self::rebind_staged_training`] (ARCH-SPELL-LOCK-2 §1.6).
+    pub(crate) fn check_rebind_staged_training(
+        &self,
+        before: &Self,
+        anchor: &super::combat_batch::SpellAnchor,
+        qualified_paid: &Self,
     ) -> Result<(), TrainingError> {
         if !qualified_paid.paid_successor_of(before, anchor)
             || self.training != before.training
@@ -664,10 +711,14 @@ impl super::cast::PlayerSpellState {
         {
             return Err(TrainingError::InvalidBuild);
         }
+        Ok(())
+    }
+
+    /// The infallible move, only after [`Self::check_rebind_staged_training`] passed.
+    pub(crate) fn install_rebind_staged_training(&mut self, mut qualified_paid: Self) {
         self.facts.magic_level = qualified_paid.facts.magic_level;
         self.training = qualified_paid.training.take();
         self.training_payment = qualified_paid.training_payment.take();
-        Ok(())
     }
 }
 

@@ -6,6 +6,7 @@ use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_f
 use super::native_map_items_abi::*;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::spell_item_transaction::SpellItemError;
+use super::spell_owner_commit::SpellLanePermit;
 use serde_json::json;
 use sqlx::{Postgres, Row, Transaction};
 use std::collections::BTreeSet;
@@ -28,6 +29,7 @@ fn intent(binding: &NativeMapOwnerBinding, p: &NativeMapItemPlacement) -> Result
 
 pub(crate) async fn initialize_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
     root: &DurabilityRoot,
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
@@ -37,6 +39,7 @@ pub(crate) async fn initialize_in_transaction(
     if binding.scope_generation == 0 || proof.placements().len() > 128 {
         return Err(SpellItemError::Rejected("map initialization budget/scope"));
     }
+    permit.check_channel(binding.world, binding.channel)?;
     let record = recovery
         .record_for(root)
         .map_err(|_| SpellItemError::Rejected("map recovery authority"))?;
@@ -178,6 +181,7 @@ impl DurabilityRoot {
     /// it cannot create a second map stack or revive an already moved Item.
     pub(crate) async fn initialize_native_map_current_owner<P>(
         &self,
+        permit: &SpellLanePermit,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         proof: &P,
@@ -185,13 +189,13 @@ impl DurabilityRoot {
     where
         P: NativeMapInitializationProof + Sync,
     {
-        let mut context = (self.clone(), recovery, node.clone(), proof);
+        let mut context = (self.clone(), recovery, node.clone(), proof, permit);
         self.try_issue_semantic_pass()?
             .run_with_context(&mut context, |holder, deadline, context| {
                 Box::pin(async move {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     let outcome = initialize_in_transaction(
-                        &mut tx, &context.0, context.1, &context.2, context.3,
+                        &mut tx, context.4, &context.0, context.1, &context.2, context.3,
                     )
                     .await;
                     match outcome {

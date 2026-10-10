@@ -56,6 +56,7 @@ use super::item_mint_audit::{
 };
 use super::item_transfer_audit::{ITEM_LIFECYCLE_RETIRED, OneItemCorpseSourceV1};
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
+use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
@@ -518,11 +519,15 @@ impl DurabilityRoot {
     /// the authoritative before-state still admitting it now.
     pub async fn commit_decay_retire(
         &self,
+        permit: &SpellLanePermit,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CorpseDecayFence,
         candidate: &mut DecayRetireCandidate,
     ) -> Result<DecayRetireOutcome> {
+        // SPELL-LOCK-2 §1.2: the DELETE fires the key-33 owner lock of the corpse's Channel, so
+        // the lane is that Channel's and is held to the end of the transaction.
+        permit.check_channel(fence.world_id, fence.channel_id)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| DecayRetireError::AuthorityRejected)?;
@@ -535,10 +540,12 @@ impl DurabilityRoot {
         let occurred_at_unix_ms = candidate.occurred_at_unix_ms;
         let envelope = candidate.envelope.clone();
         let node = node.clone();
+        let mut context = permit;
 
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, permit| {
                 Box::pin(async move {
+                    let permit: &SpellLanePermit = permit;
                     let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
@@ -595,7 +602,7 @@ impl DurabilityRoot {
                         Err(error) => return Ok(Err(error.into())),
                     };
                     let committed =
-                        apply_retire(&mut tx, step, &admitted, &reservation, tuple).await?;
+                        apply_retire(&mut tx, permit, step, &admitted, &reservation, tuple).await?;
                     tx.commit(deadline).await?;
                     Ok(Ok(DecayRetireOutcome::Committed(committed)))
                 })
@@ -714,12 +721,14 @@ impl DurabilityRoot {
     /// Resuming after a partial drain simply finds fewer live entries.
     pub async fn retire_decayed_corpse(
         &self,
+        permit: &SpellLanePermit,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CorpseDecayFence,
         corpse_item_instance_id: [u8; 16],
     ) -> Result<CorpseDecayReport> {
         check_uuid_v7(&corpse_item_instance_id)?;
+        permit.check_channel(fence.world_id, fence.channel_id)?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| DecayRetireError::AuthorityRejected)?;
@@ -753,7 +762,7 @@ impl DurabilityRoot {
         let mut entries = Vec::with_capacity(live_entries.len());
         for item in live_entries {
             let step = DecayRetireStep::entry(corpse_item_instance_id, item);
-            match self.retire_step(authority, node, fence, step).await {
+            match self.retire_step(permit, authority, node, fence, step).await {
                 Ok(committed) => entries.push(committed),
                 Err(DecayRetireError::Refused(DecayRetireRefusal::NotInCorpse)) => {}
                 Err(error) => return Err(error),
@@ -761,6 +770,7 @@ impl DurabilityRoot {
         }
         let corpse = self
             .retire_step(
+                permit,
                 authority,
                 node,
                 fence,
@@ -772,6 +782,7 @@ impl DurabilityRoot {
 
     async fn retire_step(
         &self,
+        permit: &SpellLanePermit,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CorpseDecayFence,
@@ -781,7 +792,7 @@ impl DurabilityRoot {
             .freeze_decay_retire(authority, node, fence, step)
             .await?;
         Ok(self
-            .commit_decay_retire(authority, node, fence, &mut candidate)
+            .commit_decay_retire(permit, authority, node, fence, &mut candidate)
             .await?
             .into_committed())
     }
@@ -1004,12 +1015,15 @@ async fn admit(
 /// audit event, all in the caller's transaction.
 async fn apply_retire(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     step: DecayRetireStep,
     admitted: &Admitted,
     reservation: &Reservation,
     tuple: SelectedType2Tuple,
 ) -> std::result::Result<CommittedDecayRetire, DurabilityError> {
     let item = step.item_instance_id.as_slice();
+    // SPELL-LOCK-2 §1.2: the DELETE fires the key-33 owner lock of the corpse's Ground Channel.
+    permit.check_stored_channel(&admitted.world_id, &admitted.channel_id)?;
     let removed = match admitted.placement_ordinal {
         None => {
             sqlx::query(

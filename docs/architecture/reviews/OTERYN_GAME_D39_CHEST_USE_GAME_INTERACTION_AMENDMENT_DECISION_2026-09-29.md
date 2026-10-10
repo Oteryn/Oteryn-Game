@@ -79,6 +79,20 @@ they apply to a player `USE` on a placed reward chest:
   the existing freeze, commit and reconcile path of the reward-claim MINT. The cause is the
   `USE` `CommandRef` plus the claim (D40). GAME-INTERACTION keeps correlation only, and an
   ambiguous result stays pending on the same DUR-03 transaction.
+- **Amendment (2026-10-06; pending on acceptance of QUEST-GATE-0;
+  `OTERYN_GAME_QUEST_GATE0_QUEST_GATES_AND_NPC_QUESTS_DECISION_2026-09-30.md` §16.2.5).** When the
+  `USE` is the root of a trigger plan lost after the root committed, the §17.3 reconciliation of
+  its reward-claim MINT reserved with no receipt is the DUR-03 retirement (DUR-03 §39.3
+  amendment). It runs on the same DUR-03 transaction key, the `USE` `CommandRef`, under its cause
+  lock. A receipt settles the occurrence `COMMITTED`. Otherwise a durable retirement row makes it
+  terminal `REJECTED`, and no later pass under that `CommandRef` commits. Until a receipt or a
+  retirement row exists, the MINT stays pending by the existing DUR-03 rule, and a new
+  `CommandRef` for the same claim is refused with `ClaimPending` while it is. Only a reservation
+  marked at reservation as a trigger plan's claim child is retirable. The chest claim of a `USE`
+  that roots a trigger plan carries that mark, so a lost plan retires it and a fresh `USE` claims
+  the chest once. The reconciliation reports a retired occurrence as terminal `Retired`, never as
+  retryable. A chest `USE` whose trigger plan was not lost, and the chest claim of a `USE` with no
+  trigger plan, which has no mark, are unchanged.
 
 - **Identity dependencies of §5.1**, accepted only as §5.1 uses them for the chest:
   - §4.1 `RootSourceOccurrenceRef`: the root is the player's `USE` command occurrence.

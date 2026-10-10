@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   qualify-game-runner:
-    name: Qualify Game runner and local Canary boundary
+    name: Qualify Game runner
     timeout-minutes: 10
     runs-on:
       group: game-runners
@@ -26,9 +26,6 @@ jobs:
       EXPECTED_RUNNER_NAME: oteryn-synology-game
       EXPECTED_RUNNER_UID: "1001"
       EXPECTED_ORG_URL: https://github.com/Oteryn
-      CANARY_HOST: 192.168.1.2
-      CANARY_LOGIN_PORT: "7171"
-      CANARY_GAME_PORT: "7172"
     steps:
       - name: Verify exact Game runner identity and least privilege
         env:
@@ -71,14 +68,6 @@ jobs:
             *) echo 'unexpected persistent runner workFolder' >&2; exit 1 ;;
           esac
 
-      - name: Verify existing local Canary integration reachability
-        shell: bash
-        run: |
-          set -euo pipefail
-          for port in "$CANARY_LOGIN_PORT" "$CANARY_GAME_PORT"; do
-            timeout 5 bash -c "exec 3<>/dev/tcp/$CANARY_HOST/$port; exec 3>&-; exec 3<&-"
-          done
-
       - name: Record sanitized acceptance evidence
         shell: bash
         run: |
@@ -90,8 +79,6 @@ jobs:
             echo 'RUNNER_SCOPE=organization'
             echo 'RUNNER_UID_GID=1001:1001'
             echo 'DOCKER_HOST_CONTROL=ABSENT'
-            echo 'CANARY_LOGIN_REACHABILITY=PASS'
-            echo 'CANARY_GAME_REACHABILITY=PASS'
             echo 'RUNTIME_MUTATION=NONE'
             echo 'ENVIRONMENT_VALUES_EXPOSED=NONE'
           } >> "$GITHUB_STEP_SUMMARY"
