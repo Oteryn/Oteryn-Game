@@ -383,7 +383,7 @@ impl crate::foundation::SourceStepCommitProof for BundleStepProof<'_> {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::expect_used)]
+    #![allow(clippy::expect_used, clippy::panic)]
     use super::*;
     use std::collections::BTreeSet;
 
