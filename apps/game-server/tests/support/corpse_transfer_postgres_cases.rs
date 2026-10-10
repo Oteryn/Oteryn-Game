@@ -23,6 +23,7 @@ use crate::durability::item_transfer::{
     CurrentCharacterItemFence, ItemDefinitionFacts, ItemStackClass, ItemTransferError,
     ItemTransferOutcome, ItemTransferRefusal, ItemTransferRequest, TransferShape,
 };
+use crate::durability::spell_owner_commit::SpellLanePermit;
 use crate::foundation::{
     ChannelId, CommandId, CommandRef, ConnectionGeneration, GameSessionId,
     ScopeOwnershipGeneration, WorldId,
@@ -239,7 +240,13 @@ pub(crate) async fn mint_corpse(
         .map_err(debug)?;
     match harness
         .root
-        .commit_corpse_mint(authority, &harness.node, &mut candidate, top_damage)
+        .commit_corpse_mint(
+            &candidate.fresh_death_lane_permit().await,
+            authority,
+            &harness.node,
+            &mut candidate,
+            top_damage,
+        )
         .await
         .map_err(debug)?
     {
@@ -1023,12 +1030,18 @@ fn two_players_at_the_window_boundary_transfer_the_entry_once() -> TestResult {
         // Both are now admissible; commit them concurrently.
         let (owner_result, other_result) = join_two(
             harness.root.commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope((owner_fence).runtime_scope)
+                    .await
+                    .map_err(debug)?,
                 &first_authority,
                 &harness.node,
                 owner_fence,
                 &mut owner_candidate,
             ),
             second_root.commit_item_transfer(
+                &SpellLanePermit::of_fresh_scope((other_fence).runtime_scope)
+                    .await
+                    .map_err(debug)?,
                 &second_authority,
                 &harness.node,
                 other_fence,
