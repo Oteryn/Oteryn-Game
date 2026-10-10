@@ -32,6 +32,27 @@ impl ClientPanels {
     pub fn take_shortcuts(&mut self) -> Option<Vec<String>> {
         std::mem::take(&mut self.dirty).then(|| self.pinned.saved_ids())
     }
+
+    /// Toggle a known panel through the same state used by the shortcut bar.
+    /// Unknown catalogue identifiers are rejected instead of creating a window
+    /// that has no reference-backed definition.
+    pub fn toggle(&mut self, id: &str) -> bool {
+        let Some(definition) = panel(id) else {
+            return false;
+        };
+        if definition.id == "shortcuts" {
+            self.manage = !self.manage;
+        } else if !self.open.remove(definition.id) {
+            self.open.insert(definition.id);
+        }
+        true
+    }
+
+    #[cfg(test)]
+    fn is_open(&self, id: &str) -> bool {
+        self.open.contains(id)
+    }
+
     pub fn shortcuts(&mut self, ui: &mut egui::Ui, english: bool) {
         ui.horizontal_wrapped(|ui| {
             ui.spacing_mut().item_spacing = Vec2::splat(2.0);
@@ -733,5 +754,16 @@ mod tests {
         assert!(panels.take_shortcuts().is_none());
         panels.initialize(&[]);
         assert!(panels.pinned.ids().is_empty());
+    }
+
+    #[test]
+    fn known_panels_toggle_and_unknown_identifiers_are_rejected() {
+        let mut panels = ClientPanels::default();
+        assert!(panels.toggle("vip"));
+        assert!(panels.is_open("vip"));
+        assert!(panels.toggle("vip"));
+        assert!(!panels.is_open("vip"));
+        assert!(!panels.toggle("not-a-panel"));
+        assert!(!panels.is_open("not-a-panel"));
     }
 }

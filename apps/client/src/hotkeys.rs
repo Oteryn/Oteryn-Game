@@ -33,6 +33,11 @@ pub fn general_action_supported(action: &str) -> bool {
             | "chat.help"
             | "chat.previous"
             | "chat.local"
+            | "dialog.prey"
+            | "dialog.quest_log"
+            | "window.vip"
+            | "window.battle"
+            | "window.skills"
             | "client.options"
             | "client.fullscreen"
             | "action.bottom.1"
@@ -482,7 +487,7 @@ mod tests {
         );
         // A catalogue-only action is retained but cannot masquerade as executable.
         profile.general_chat_off.insert(
-            "dialog.prey".into(),
+            "dialog.lenshelp".into(),
             HotkeyPair {
                 first: Some(binding(19, false)),
                 second: None,

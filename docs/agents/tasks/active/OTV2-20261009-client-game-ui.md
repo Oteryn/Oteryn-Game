@@ -120,3 +120,11 @@ Private. Help uses the accepted `OpenRoom(Help)` session intent when needed;
 Close uses the matching typed room intent and returns to Local only after queueing
 it. Missing chat capability sends nothing and remains visibly unavailable. Loot
 chat, server-message filters and other action families remain disabled.
+
+## Continuation checkpoint — 2026-10-10 panel hotkeys
+
+The observed VIP List, Battle List, Skills, Quest Log and Prey General Hotkeys
+now toggle the same real client-panel state as the HUD shortcut bar. They expose
+only admitted session projections and keep unavailable values unknown. Unknown
+panel identifiers and the unresolved Lenshelp destination remain non-executable;
+persisting a binding still does not count as implementing those actions.

@@ -164,6 +164,18 @@ impl GameUi {
         }
         true
     }
+
+    pub fn route_panel_hotkey(&mut self, action: &str) -> bool {
+        let panel = match action {
+            "window.vip" => "vip",
+            "window.battle" => "battle",
+            "window.skills" => "skills",
+            "dialog.quest_log" => "quest-log",
+            "dialog.prey" => "prey",
+            _ => return false,
+        };
+        self.panels.toggle(panel)
+    }
     pub fn clear_action_row(&mut self, row: usize, settings: &ClientSettings) {
         if self
             .bar(settings)
@@ -205,6 +217,12 @@ impl GameUi {
                 let action = match hotkey {
                     ResolvedHotkey::General(action) if action.starts_with("chat.") => {
                         matched |= self.route_chat_hotkey(&action, link, settings.english);
+                        continue;
+                    }
+                    ResolvedHotkey::General(action)
+                        if action.starts_with("window.") || action.starts_with("dialog.") =>
+                    {
+                        matched |= self.route_panel_hotkey(&action);
                         continue;
                     }
                     ResolvedHotkey::General(_) => continue,
