@@ -85,6 +85,17 @@
         "live GitHub Issue/PR/CI state",
         "current main all373 completion matrix"
       ]
+    },
+    {
+      "handover_id": "OTV2-20261006-make-believe-native-handoff",
+      "path": "docs/agents/evidence/OTV2-20261006-make-believe-native-handoff.md",
+      "status": "historical",
+      "authoritative": false,
+      "expiry_rule": "Retained findings apply only to the recorded revisions. Re-resolve current main, the Make Believe PR/head, ownership, accepted contracts and CI before continuation; changes supersede current-state claims without erasing historical evidence.",
+      "superseded_by": [
+        "live GitHub Issue/PR/CI state",
+        "current main Make Believe content and native bindings"
+      ]
     }
   ]
 }
