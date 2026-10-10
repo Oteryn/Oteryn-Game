@@ -3503,7 +3503,7 @@ mod tests {
             compiled.expectation().package_provenance_digest()
         );
 
-        assert_eq!(staged.runtime_state().server_record_count(), 22);
+        assert_eq!(staged.runtime_state().server_record_count(), 23);
         assert_eq!(staged.runtime_state().client_record_count(), 6);
         assert_eq!(
             staged

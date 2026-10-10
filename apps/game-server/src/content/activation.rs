@@ -975,7 +975,7 @@ mod tests {
         let active = controller.activate(&auth)?;
         assert_eq!(active.identity(), &identity);
         assert_eq!(active.activation_sequence(), 1);
-        assert_eq!(active.server_record_count(), 22);
+        assert_eq!(active.server_record_count(), 23);
         assert_eq!(active.client_record_count(), 6);
         assert_eq!(
             active

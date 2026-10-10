@@ -343,7 +343,7 @@ mod tests {
     fn static_cell_engine_bounded_roundtrip_and_exact_lookup()
     -> Result<(), Box<dyn std::error::Error>> {
         let scope = scope()?;
-        for n in [1, 2, 4] {
+        for n in [1, 2, 4, 6] {
             let claims = (0..n)
                 .map(|x| {
                     claim(
@@ -383,7 +383,7 @@ mod tests {
                 Err(StaticCellEngineError::Absent)
             );
         }
-        let five = (0..5)
+        let seven = (0..7)
             .map(|x| {
                 claim(
                     &scope,
@@ -393,7 +393,7 @@ mod tests {
             })
             .collect();
         assert_eq!(
-            EngineeringStaticCellIndex::from_claims(five),
+            EngineeringStaticCellIndex::from_claims(seven),
             Err(StaticCellEngineError::TooManyCells)
         );
         Ok(())
