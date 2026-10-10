@@ -427,6 +427,14 @@ sudo install -d -o "$SERVICE_UID" -m 0755 "$BASE/node/secrets"
 sudo install -d -o "$SERVICE_UID" -m 0700 "$BASE/projection"
 printf '0\n' > "$WORK/epoch-fence"
 sudo install -o "$SERVICE_UID" -m 0600 "$WORK/epoch-fence" "$BASE/projection/epoch-fence"
+if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
+  # BUNDLE-BUILD-1: the node boots the pinned World Bundle (content/world/pins) instead of the fixture room.
+  PIN="$GAME_SOURCE/content/world/pins/oteryn.json"
+  WB_DIGEST="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["digest"])' "$PIN")"
+  (cd "$GAME_SOURCE" && cargo +1.94.0 run --locked --release -p oteryn-world-bundle-compiler -- pin-check . "$WORK/world-bundle" > /dev/null)
+  sudo install -d -o root -g root -m 0755 "$BASE/world"
+  sudo install -o root -g root -m 0644 "$WORK/world-bundle/oteryn-$WB_DIGEST.otwb" "$BASE/world/world.otbundle"
+fi
 sudo install -o root -m 0755 "$TARGET/oteryn-game-server" "$TARGET/oteryn-game-ops" "$TARGET/oteryn-game-migrate" "$BASE/bin/"
 if [[ "$LL_RUST" == host ]]; then
   OTERYN_GAME_MIGRATION_DATABASE_URL="$ADMIN_URL" "$BASE/bin/oteryn-game-migrate"
@@ -513,6 +521,8 @@ TOML
 sudo install -o root -m 0600 "$WORK/report.toml" "$BASE/ops/report.toml"
 DESCRIPTOR_INSTALLED_AT="$(date +%s)"
 write_node_config() {
+  MAP_REVISION=map-ll-1
+  [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" != 1 ]] || MAP_REVISION="sha256:$WB_DIGEST"
   cat > "$WORK/node.toml" <<TOML
 [listener]
 address = "$LL_HOST:$GAME_PORT"
@@ -546,7 +556,7 @@ route_revision = "$ROUTE_REVISION"
 runtime_observation_revision = "runtime-1"
 ruleset_revision = "rules-ll-1"
 content_revision = "content-ll-1"
-map_revision = "map-ll-1"
+map_revision = "$MAP_REVISION"
 world_policy_revision = "policy-ll-1"
 offer_revision = "offer-ll-1"
 [platform]
@@ -571,6 +581,23 @@ epoch_fence_file = "$BASE/projection/epoch-fence"
 authorization_file = "$BASE/state/launch-a.json"
 s2_authorization_file = "$BASE/state/s2-fresh-store.json"
 TOML
+  if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
+    python3 - "$PIN" "$BASE/world/world.otbundle" >> "$WORK/node.toml" <<'PY'
+import json, sys
+pin = json.load(open(sys.argv[1]))
+start = pin["entry_start"]
+print(f"""[world_bundle]
+path = "{sys.argv[2]}"
+digest = "{pin['digest']}"
+project_format_version = "{pin['project_format_version']}"
+world_schema_version = "{pin['world_schema_version']}"
+content_revision = "{pin['content_revision']}"
+production = false
+start_x = {start['x']}
+start_y = {start['y']}
+start_floor = {start['floor']}""")
+PY
+  fi
   sudo install -o root -m 0644 "$WORK/node.toml" "$BASE/node/node.toml"
 }
 ops() {
@@ -610,6 +637,10 @@ ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CH
   --node-config "$BASE/node/node.toml" --report-config "$BASE/ops/report.toml" | tee "$WORK/assign.out"
 grep -q 'report=ReportScopeAssignmentV1' "$WORK/assign.out" || { echo "assignment was not reported to Platform"; exit 1; }
 await_log "readiness ready=true" 60
+if [[ "${LOGIN_LOCAL_WORLD_BUNDLE:-0}" == 1 ]]; then
+  await_log "event=world_bundle state=booted map_revision=sha256:$WB_DIGEST" 5
+  evidence "world_bundle=booted digest=$WB_DIGEST"
+fi
 evidence "node assigned=operator report=ReportScopeAssignmentV1 assignment_epoch=1 readiness=true runtime_status=configured"
 
 # Character from a real Platform intent; Platform verifies ownership from the projection feed (mode 33a off).

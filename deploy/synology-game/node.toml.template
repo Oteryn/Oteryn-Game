@@ -59,3 +59,7 @@ epoch_fence_file = "<BASE>/projection/epoch-fence"
 [launch]
 authorization_file = "<BASE>/state/launch-initial.json"
 s2_authorization_file = "<BASE>/state/s2-fresh-store.json"
+# Opt-in World Bundle (preproduction only; production is refused by the node). Enable it by appending
+# the [world_bundle] table of preprod-topology.toml with <BASE> replaced and, in [readiness],
+# map_revision = "sha256:<digest>". deploy-ops.sh check-setup refuses any difference from the manifest.
+# Without the table the node serves the fixture entry room.

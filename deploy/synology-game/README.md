@@ -120,3 +120,7 @@ Steps 1 to 10 happen once by hand. Whenever the manifest or any pinned gameplay 
 ## Health check
 
 `supervisor.sh health` waits up to 120 s for the process to stay alive and the log to show `awaiting_assignment` or `readiness ready=true`. `awaiting_assignment` is a reported state, not a failure.
+
+## World Bundle (opt-in)
+
+Without `[world_bundle]` the node serves the fixture room. To boot the pinned World instead (BUNDLE-BUILD-1): download the `world-bundle-<digest>` artifact of the `World bundle` job of a build on `main`, copy its `oteryn-<digest>.otwb` to `BASE/world/world.otbundle` (1001, 0644), set `enabled = true` and `map_revision = "sha256:<digest>"` in the root `preprod-topology.toml`, and append the manifest's `[world_bundle]` table (without `enabled`, `<BASE>` replaced) to `node.toml` with the same `map_revision`; `check-setup` refuses any difference from the pin, and the node logs `event=world_bundle state=booted`. `tools/qualification/login_local` does the same with `LOGIN_LOCAL_WORLD_BUNDLE=1`.

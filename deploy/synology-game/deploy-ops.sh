@@ -41,7 +41,7 @@ not_placeholder() { # <label> <value>
   [[ -n "$2" && "$2" != *"<"* && "$2" != *">"* ]] || fail "manifest: placeholder or empty value for $1"
 }
 mv_() { local v; v="$(m "$1" "$2")"; not_placeholder "[$1] $2" "$v"; printf '%s' "$v"; } # manifest value, no placeholder
-token_ok() { [[ "$2" =~ ^[A-Za-z0-9._:-]{1,64}$ ]] || fail "manifest: invalid token $1"; }
+token_ok() { [[ "$2" =~ ^[A-Za-z0-9._:-]{1,64}$ || ( "$1" = "readiness map_revision" && "$2" =~ ^sha256:[0-9a-f]{64}$ ) ]] || fail "manifest: invalid token $1"; }
 private_ipv4() { # exactly four decimal octets 0-255 (no leading zeros) in 10/8, 172.16/12 or 192.168/16
   local o
   [[ "$1" =~ ^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]] || fail "manifest: $2 is not a dotted IPv4 address"
@@ -65,6 +65,28 @@ expect_eq() { # <label> <file> <section> <key> <expected>
 }
 regular_root_file() { [[ -f "$1" && ! -L "$1" && "$(stat -c %u "$1")" = "$ROOT_UID" ]] || fail "missing or not root-owned: $1"; }
 regular_file() { [[ -f "$1" && ! -L "$1" ]] || fail "missing or not a regular file: $1"; }
+
+# world_bundle_check: [world_bundle] is opt-in. Enabled in the manifest, node.toml must carry exactly the
+# manifest's pinned table and map_revision must be "sha256:<digest>"; disabled, node.toml must carry none.
+world_bundle_check() {
+  local enabled k want
+  enabled="$(m world_bundle enabled)" || fail "manifest: missing [world_bundle] enabled"
+  [[ "$enabled" = true || "$enabled" = false ]] || fail "manifest: [world_bundle] enabled must be true or false"
+  if [[ "$enabled" = false ]]; then
+    ! grep -q '^[[:space:]]*\[world_bundle\]' "$NODE_CONFIG" || fail "node.toml: [world_bundle] present but the manifest does not enable it"
+    return 0
+  fi
+  [[ "$(mv_ world_bundle production)" = false ]] || fail "manifest: [world_bundle] production must be false"
+  want="$(mv_ world_bundle digest)"
+  [[ "$want" =~ ^[0-9a-f]{64}$ ]] || fail "manifest: invalid [world_bundle] digest"
+  [[ "$(mv_ readiness map_revision)" = "sha256:$want" ]] || fail "manifest: map_revision must be sha256:<world_bundle digest>"
+  want="$(m world_bundle path)"; want="${want//<BASE>/$BASE}"
+  [[ "$want" = "$BASE"/* && "$want" != *..* ]] || fail "manifest: [world_bundle] path must be under BASE"
+  expect_eq node.toml "$NODE_CONFIG" world_bundle path "$want"
+  for k in digest project_format_version world_schema_version content_revision production start_x start_y start_floor; do
+    expect_eq node.toml "$NODE_CONFIG" world_bundle "$k" "$(mv_ world_bundle "$k")"
+  done
+}
 
 # topology_check: the manifest is valid and complete, and scope.env, node.toml and report.toml match it.
 topology_check() {
@@ -114,6 +136,7 @@ topology_check() {
   for k in source_authority route_revision runtime_observation_revision ruleset_revision content_revision map_revision world_policy_revision offer_revision; do
     expect_eq node.toml "$NODE_CONFIG" readiness "$k" "$(m readiness "$k")"
   done
+  world_bundle_check
   expect_eq node.toml "$NODE_CONFIG" platform source_authority "$src_p"
   expect_eq node.toml "$NODE_CONFIG" platform endpoint "$endpoint"
   expect_eq node.toml "$NODE_CONFIG" platform peer_name "$peer"

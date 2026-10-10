@@ -93,4 +93,19 @@ fill_manifest; render; sub "$REPORT_CONFIG" "s|^\"$NODE\" = |\"CN=other\" = |"; 
 fill_manifest; render; sub "$REPORT_CONFIG" "s|^node_identities = .*|node_identities = [\"CN=other\"]|"; expect_refused "report.toml node_identities"
 fill_manifest; render; sub "$REPORT_CONFIG" "s|^node_identities = .*|node_identities = [\"$NODE\", \"CN=other\"]|"; expect_refused "report.toml extra node identity"
 fill_manifest; render; sub "$REPORT_CONFIG" "s|^\(\"$NODE\" = .*\)|\1\n\"CN=other\" = \"/x\"|"; expect_refused "report.toml extra certificate key"
+# World Bundle opt-in: enabled needs map_revision sha256:<digest> and the manifest's table in node.toml.
+D=$(sed -n 's/^digest = "\(.*\)"/\1/p' "$here/preprod-topology.toml")
+fill_manifest; render; printf '[world_bundle]\npath = "x"\n' >> "$NODE_CONFIG"; expect_refused "node.toml table without opt-in"
+fill_manifest; sub "$MANIFEST" "s|^enabled = false|enabled = true|;s|^map_revision = .*|map_revision = \"sha256:$D\"|"; render
+{ echo "[world_bundle]"; sed -n '/^\[world_bundle\]/,/^$/p' "$MANIFEST" | grep -v '^\[\|^enabled\|^#\|^$' | sed "s|<BASE>|$BASE|"; } >> "$NODE_CONFIG"
+good_node="$(cat "$NODE_CONFIG")"; good_manifest="$(cat "$MANIFEST")"
+run || { echo "FAIL enabled world bundle: $(cat "$tmp/err")" >&2; exit 1; }
+for key in digest content_revision project_format_version world_schema_version production start_x start_y start_floor path; do
+  printf '%s\n' "$good_manifest" > "$MANIFEST"; printf '%s\n' "$good_node" > "$NODE_CONFIG"
+  sub "$NODE_CONFIG" "/^\[world_bundle\]/,\$s|^$key = .*|$key = \"other\"|"; expect_refused "node.toml world_bundle $key"
+done
+printf '%s\n' "$good_manifest" > "$MANIFEST"; printf '%s\n' "$good_node" > "$NODE_CONFIG"
+sub "$MANIFEST" "s|^map_revision = .*|map_revision = \"map.00112233445566ff\"|"; sub "$NODE_CONFIG" "s|^map_revision = .*|map_revision = \"map.00112233445566ff\"|"; expect_refused "map_revision not the bundle's"
+printf '%s\n' "$good_node" > "$NODE_CONFIG"; printf '%s\n' "$good_manifest" > "$MANIFEST"; sub "$MANIFEST" "s|^production = false|production = true|"; expect_refused "production bundle"
+printf '%s\n' "$good_manifest" > "$MANIFEST"; sub "$NODE_CONFIG" "/^\[world_bundle\]/,\$d"; expect_refused "enabled but node.toml has no table"
 echo "preprod topology check: ok"

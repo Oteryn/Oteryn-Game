@@ -365,3 +365,47 @@ fn pin_check_accepts_the_reviewed_pin_and_refuses_every_drift() {
     let out = dir.check();
     assert!(!out.status.success() && stderr(&out).contains("identity file"));
 }
+
+/// BUNDLE-BUILD-1: the preproduction topology manifest's `[world_bundle]` table is exactly the
+/// committed World pin, and its readiness `map_revision` rule names the pinned digest.
+#[test]
+fn preprod_manifest_world_bundle_equals_the_pin() {
+    let root = repository_root();
+    let pin: Value = serde_json::from_slice(
+        &fs::read(root.join("content/world/pins/oteryn.json")).expect("pin"),
+    )
+    .expect("pin json");
+    let manifest = fs::read_to_string(root.join("deploy/synology-game/preprod-topology.toml"))
+        .expect("manifest");
+    let table: Vec<&str> = manifest
+        .lines()
+        .skip_while(|line| *line != "[world_bundle]")
+        .skip(1)
+        .take_while(|line| !line.starts_with('['))
+        .collect();
+    let get = |key: &str| -> String {
+        let hits: Vec<&str> = table
+            .iter()
+            .filter_map(|line| line.strip_prefix(key)?.strip_prefix(" = "))
+            .collect();
+        assert_eq!(hits.len(), 1, "[world_bundle] {key}");
+        hits[0].trim_matches('"').to_owned()
+    };
+    for key in [
+        "digest",
+        "project_format_version",
+        "world_schema_version",
+        "content_revision",
+    ] {
+        assert_eq!(get(key), pin[key].as_str().expect(key), "{key}");
+    }
+    for (key, value) in [
+        ("start_x", &pin["entry_start"]["x"]),
+        ("start_y", &pin["entry_start"]["y"]),
+        ("start_floor", &pin["entry_start"]["floor"]),
+    ] {
+        assert_eq!(get(key), value.to_string(), "{key}");
+    }
+    assert_eq!(get("production"), "false");
+    assert_eq!(pin["production"], json!(false));
+}
