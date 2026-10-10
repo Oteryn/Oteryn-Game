@@ -144,11 +144,13 @@ arena-only PvP on Optional Worlds and the arena exit rules belong to ARENA-0
 PVP-BLOCK-1 also owns the viewer-relative item variant of a player-made field or wall: a viewer
 not in a PvP situation with its owner receives the harmless or walkable variant; the server
 decides every step and every field application independently of what the viewer was sent.
-PVP-WIRE-1 carries the variant on the existing item entry; no new domain. When an aggression
-relation (§8.2) between a viewer and a field or wall owner starts, is refreshed into existence,
-expires, ends by logout or is restored at admission after a restart, PVP-WIRE-1 republishes every
-affected entry in that viewer's view in the next projection update, as an item update on the same
-entry. A missed republish never changes a server decision.
+The variant rides the existing item entry; no new domain and no PVP-WIRE-1 element. When an
+aggression relation (§8.2) between a viewer and a field or wall owner starts, is refreshed into
+existence, expires or ends by logout, PVP-BLOCK-1 republishes every affected entry in that
+viewer's view in the next projection update, as an item update on the same entry. A channel
+restart clears both the relations (runtime only, §8.2) and player fields and walls
+(WORLD-INTERACTION-0 volatile field overlay), so nothing is republished for it. A missed
+republish never changes a server decision.
 
 ### 6.6 Expert mode restricts attacks (G6)
 
@@ -208,8 +210,8 @@ first World is `OPTIONAL`, so it shows no PvP until GUILD-WAR-0.
 | PVP-1 | hard; persistence, security | four PvP tables and the migration; skull evaluation and commit in the death transaction; World cleanup job; `rulesets/pvp/skulls` rows and `pvp_type` (`OPTIONAL` for the first World); the §6.2 field policy check | DEATH-1 (landed), PARTY-1 (landed) |
 | PVP-RT-1 | hard (combat); combat, security | legality rules 1-7 with 3b (§6.3) and 6b (§6.6); player-made field hits moved onto the legality stage and the `NoPvp` `pvp_zone` field exception removed (§6.4); aggression relations; white (§6.1) and yellow skulls; logout, PZ and kill blocks with durable write-ahead and restore; damage factor; PvP damage ledger and snapshot; kill classification; Join Aggression; friendly fire; Adventurer forfeiture write | PVP-1; ATTACK-1 (landed); COND-1 |
 | PVP-DEATH-1 | hard (persistence); persistence | PvP death test; receipt fields; red/black loss; Twist of Fate; Adventurer's Blessing; black skull respawn | PVP-1; DEATH-3 (not landed) |
-| PVP-WIRE-1 | impl; protocol | `PVP_V1`; `PVP_INTENT`; `expert_mode`; domain `PVP`; VIS-2 skull and frame fields; `PVP_REFUSED` reasons incl. `NO_PVP_TILE`, `EXPERT_MODE`; field and wall variant republish on relation change (§6.5) | PVP-RT-1; VIS-2; ATTACK-WIRE-1 |
-| PVP-BLOCK-1 | impl; movement | walk-through and expert-mode blocking; viewer-relative field and wall variants (§6.5) | PVP-RT-1; SPEED-1 |
+| PVP-WIRE-1 | impl; protocol | `PVP_V1`; `PVP_INTENT`; `expert_mode`; domain `PVP`; VIS-2 skull and frame fields; `PVP_REFUSED` reasons incl. `NO_PVP_TILE`, `EXPERT_MODE` | PVP-RT-1; VIS-2; ATTACK-WIRE-1 |
+| PVP-BLOCK-1 | impl; movement | walk-through and expert-mode blocking; viewer-relative field and wall variants and their republish on relation change (§6.5) | PVP-RT-1; SPEED-1 |
 | PVP-CLIENT-1 | impl; client | expert mode control, skull, frame and shield rendering, PvP refusal text | PVP-WIRE-1 |
 
 PVP-1 and PVP-RT-1 split cleanly at the tables (PVP-1 writes them only from the death
@@ -253,7 +255,7 @@ Each is a focused test in the named slice; "O" = `OPEN`, "P" = `OPTIONAL`, "H" =
 | PVP-CC-29 | WIRE-1 | client-supplied skull, CharacterId or PartyId never changes a server decision; unknown `expert_mode` value → `REJECTED` |
 | PVP-CC-30 | RT-1 | O, secure off: Dove, unmarked non-aggressor → `PVP_REFUSED {EXPERT_MODE}`, aggressor → allowed; White Hand, character aggressive to a party member → allowed; Yellow Hand, white-skulled stranger → allowed, skulled party member → refused (rule 5); Red Fist → any; area effect skips a filtered actor; field damage not filtered |
 | PVP-CC-31 | RT-1, WIRE-1 | black-skulled actor selects Red Fist → `REJECTED`; actor in Red Fist gains a black skull → mode Dove; H → mode fixed at Red Fist |
-| PVP-CC-32 | WIRE-1 | viewer sees the safe variant of a player field; the owner attacks the viewer → that entry republished as the harmful variant in the next update; the relation expires → safe variant again; after a node restart restoring the relation → harmful variant |
+| PVP-CC-32 | BLOCK-1 | viewer sees the safe variant of a player field; the owner attacks the viewer → that entry republished as the harmful variant in the next update; the relation expires or the owner logs out → safe variant again |
 
 ## 10. Owner questions (answered: D971, 1a 2a 3a 4a)
 
