@@ -5,17 +5,21 @@
 //! domain-1 and domain-2 deltas move it. The map is the start area anchored at the join
 //! position (CLIENT-VIS-1 milestone 1) until positions are map positions.
 
-use crate::input::{ClickWalk, StepDir, StepResult};
+use crate::combat_input::{CombatCommand, CombatReport, PlayCommand, run_combat};
+use crate::input::{ClickWalk, StepDir, StepResult, TargetKind, Targetable};
 use crate::scene::Scene;
+use crate::spell::{SPELL_SLOTS, SpellFeedback};
 use crate::world::{START, World};
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
-    ActorPosition, JoinSnapshot, Session, SessionError, SessionEvent, SessionStream, StepDirection,
-    StepDisposition, StepOutcome, WorldObjectOverlayEntry,
+    ActorPosition, EntityKind, EntityRef, JoinSnapshot, Session, SessionError, SessionEvent,
+    SessionStream, StepDirection, StepDisposition, StepOutcome, WorldObjectOverlayEntry,
+    WorldSpatialEntity,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::future::Future;
+use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
@@ -69,6 +73,17 @@ pub const fn public_class(_error: &SessionError) -> PublicClass {
     PublicClass::SessionUnavailable
 }
 
+/// One input waiting for its turn on the session task.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Input {
+    Arrow(StepDir),
+    Cast(NonZeroU32),
+    Attack(EntityRef),
+}
+
+/// Most inputs held while the session task is busy; a later one is dropped.
+const MAX_QUEUED_INPUTS: usize = 16;
+
 #[derive(Debug, Clone)]
 pub struct PlayView {
     own: TileCoord,
@@ -86,8 +101,12 @@ pub struct PlayView {
     walk: ClickWalk,
     /// A step sent to the session task whose outcome has not arrived.
     in_flight: bool,
-    /// An arrow key waiting for the next step; the latest press wins.
-    key_step: Option<StepDir>,
+    /// Arrow, hotkey and click input not yet sent, in the order it was given.
+    inputs: VecDeque<Input>,
+    /// The other entities the server reports as visible.
+    entities: Vec<WorldSpatialEntity>,
+    /// The last combat line the server's answer produced, shown until the next one.
+    combat_line: Option<&'static str>,
 }
 
 impl PlayView {
@@ -118,13 +137,22 @@ impl PlayView {
             map_floor: None,
             walk: ClickWalk::new(),
             in_flight: false,
-            key_step: None,
+            inputs: VecDeque::new(),
+            entities: Vec::new(),
+            combat_line: None,
         };
         for entry in overlay {
             view.set_marker(entry);
         }
         view.rebuild()?;
         Ok(view)
+    }
+
+    /// Draws the other visible entities the join snapshot carried.
+    pub fn with_entities(mut self, entities: Vec<WorldSpatialEntity>) -> Result<Self, BatchError> {
+        self.entities = entities;
+        self.rebuild()?;
+        Ok(self)
     }
 
     #[must_use]
@@ -170,14 +198,53 @@ impl PlayView {
     /// A click on `tile`: a drawn object or actor is selected, any other tile becomes the walk
     /// goal.
     pub fn click(&mut self, tile: TileCoord) -> Result<(), BatchError> {
-        if self.scene.select_tile(tile)?.is_none() {
-            self.walk.set_goal(tile);
+        match self.scene.select_tile(tile)? {
+            None => self.walk.set_goal(tile),
+            Some(Targetable {
+                entity: Some(target),
+                ..
+            }) => self.queue(Input::Attack(target)),
+            Some(_) => {}
         }
         Ok(())
     }
 
-    pub const fn arrow(&mut self, direction: StepDir) {
-        self.key_step = Some(direction);
+    /// A spell hotkey: casts the 1-based spell-book entry. Entries past the bar are ignored and
+    /// at most one press per bar slot waits for the next tick.
+    pub fn cast(&mut self, spell: NonZeroU32) {
+        if spell.get() <= u32::from(SPELL_SLOTS) {
+            self.queue(Input::Cast(spell));
+        }
+    }
+
+    /// Appends `input` unless the same one already waits (a repeated press of a slot or click of
+    /// a target is one command) or the queue is full.
+    fn queue(&mut self, input: Input) {
+        if self.inputs.len() < MAX_QUEUED_INPUTS && !self.inputs.contains(&input) {
+            self.inputs.push_back(input);
+        }
+    }
+
+    /// The minimal spell bar: its hotkeys and the last combat or cast line.
+    #[must_use]
+    pub fn combat_status(&self) -> String {
+        let line = self.combat_line.unwrap_or("");
+        format!("spells 1-{SPELL_SLOTS} {line}")
+            .trim_end()
+            .to_owned()
+    }
+
+    /// Shows the server's answer to a combat command.
+    pub fn apply_combat(&mut self, report: CombatReport) {
+        self.combat_line = report.text();
+    }
+
+    /// An arrow key: the latest press wins over an arrow still waiting at the end of the queue.
+    pub fn arrow(&mut self, direction: StepDir) {
+        if matches!(self.inputs.back(), Some(Input::Arrow(_))) {
+            self.inputs.pop_back();
+        }
+        self.queue(Input::Arrow(direction));
     }
 
     /// The step to send now: an arrow key first, else the next step toward the click goal.
@@ -194,8 +261,14 @@ impl PlayView {
     }
 
     fn pending_step(&mut self) -> Option<StepDir> {
-        if let Some(direction) = self.key_step.take() {
-            return Some(direction);
+        match self.inputs.front() {
+            Some(&Input::Arrow(direction)) => {
+                self.inputs.pop_front();
+                return Some(direction);
+            }
+            // A hotkey or click goes out first, in `tick`.
+            Some(_) => return None,
+            None => {}
         }
         self.walk.next_step(self.own)
     }
@@ -225,6 +298,9 @@ impl PlayView {
         if let Some(position) = pushed.own {
             self.place(position);
         }
+        if let Some(entities) = &pushed.entities {
+            self.entities.clone_from(entities);
+        }
         for entry in &pushed.markers {
             self.set_marker(entry);
         }
@@ -249,12 +325,28 @@ impl PlayView {
 
     fn rebuild(&mut self) -> Result<(), BatchError> {
         let markers = self.drawn_markers().collect::<Vec<_>>();
-        self.scene = Scene::centered_on(
+        let entities = self
+            .entities
+            .iter()
+            .filter(|entity| entity.position.floor == self.floor)
+            .map(|entity| Targetable {
+                tile: TileCoord::new(entity.position.x, entity.position.y),
+                // Only a creature or an NPC may be attacked; the rest is drawn and inspected.
+                kind: match entity.kind {
+                    EntityKind::Corpse | EntityKind::GroundItem => TargetKind::Object,
+                    _ => TargetKind::Entity,
+                },
+                entity: matches!(entity.kind, EntityKind::Creature | EntityKind::Npc)
+                    .then_some(entity.entity),
+            })
+            .collect::<Vec<_>>();
+        self.scene = Scene::centered_with(
             Arc::clone(&self.world),
             (self.map_floor == Some(self.floor)).then_some(self.anchor),
             self.own,
             self.facing,
             &markers,
+            &entities,
         )?;
         Ok(())
     }
@@ -271,12 +363,32 @@ impl PlayView {
                 PlayEvent::Pushed(pushed) => self
                     .apply_pushed(&pushed)
                     .map_err(|_error| PublicClass::SessionUnavailable)?,
+                PlayEvent::Combat(report) => self.apply_combat(report),
                 PlayEvent::Ended(class) => return Err(class),
             }
         }
-        if let Some(direction) = self
-            .send_step()
-            .map_err(|_error| PublicClass::SessionUnavailable)?
+        // One chronological queue: each input goes out in the order it was given. A step still
+        // in flight holds back the arrow and what was given after it.
+        while let Some(&input) = self.inputs.front() {
+            match input {
+                Input::Cast(spell) => link.request_combat(CombatCommand::Cast(spell)),
+                Input::Attack(target) => link.request_combat(CombatCommand::Attack(target)),
+                Input::Arrow(_) => match self
+                    .send_step()
+                    .map_err(|_error| PublicClass::SessionUnavailable)?
+                {
+                    Some(direction) => link.request(direction),
+                    None => break,
+                },
+            }
+            if !matches!(input, Input::Arrow(_)) {
+                self.inputs.pop_front();
+            }
+        }
+        if self.inputs.is_empty()
+            && let Some(direction) = self
+                .send_step()
+                .map_err(|_error| PublicClass::SessionUnavailable)?
         {
             link.request(direction);
         }
@@ -301,6 +413,8 @@ pub enum PlayEvent {
     Stepped(Box<StepOutcome>),
     /// Deltas pushed outside any step, coalesced since the last poll.
     Pushed(Pushed),
+    /// The server's answer to a combat command.
+    Combat(CombatReport),
     /// The session ended; return to login with this public class.
     Ended(PublicClass),
 }
@@ -310,6 +424,8 @@ pub enum PlayEvent {
 pub struct Pushed {
     /// The latest own-actor position pushed by domain 1.
     pub own: Option<ActorPosition>,
+    /// The latest full list of the other visible entities, when it changed.
+    pub entities: Option<Vec<WorldSpatialEntity>>,
     /// The latest domain-2 entry per placement, in first-pushed order of placement.
     pub markers: Vec<WorldObjectOverlayEntry>,
 }
@@ -330,6 +446,7 @@ impl Pushed {
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
         self.own = newer.own.or(self.own);
+        self.entities = newer.entities.or(self.entities.take());
         for entry in newer.markers {
             self.set_marker(entry);
         }
@@ -346,8 +463,12 @@ struct Mailbox {
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
     pushed: Pushed,
+    /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
+    combat: VecDeque<CombatReport>,
     ended: Option<PublicClass>,
 }
+
+const MAX_COMBAT_REPORTS: usize = 8;
 
 type SharedMailbox = Arc<Mutex<Mailbox>>;
 
@@ -383,6 +504,18 @@ impl Outbox {
         }
     }
 
+    fn entities(&self, entities: Vec<WorldSpatialEntity>) {
+        lock(&self.0).pushed.entities = Some(entities);
+    }
+
+    fn combat(&self, report: CombatReport) {
+        let mut mailbox = lock(&self.0);
+        if mailbox.combat.len() == MAX_COMBAT_REPORTS {
+            mailbox.combat.pop_front();
+        }
+        mailbox.combat.push_back(report);
+    }
+
     /// The first end wins.
     fn end(&self, class: PublicClass) {
         lock(&self.0).ended.get_or_insert(class);
@@ -392,14 +525,18 @@ impl Outbox {
 /// The shell's end of the session task: steps out, a bounded mailbox in, neither ever blocking.
 #[derive(Debug)]
 pub struct PlayLink {
-    commands: UnboundedSender<StepDir>,
+    commands: UnboundedSender<PlayCommand>,
     mailbox: SharedMailbox,
 }
 
 impl PlayLink {
     pub fn request(&self, direction: StepDir) {
         // A closed task has already reported or will report `Ended`.
-        let _ = self.commands.send(direction);
+        let _ = self.commands.send(PlayCommand::Step(direction));
+    }
+
+    pub fn request_combat(&self, command: CombatCommand) {
+        let _ = self.commands.send(PlayCommand::Combat(command));
     }
 
     /// The next event: the pushes older than the step outcome, the step outcome, then the coalesced pushes, then the end.
@@ -413,6 +550,9 @@ impl PlayLink {
         }
         if mailbox.pushed != Pushed::default() {
             return Some(PlayEvent::Pushed(std::mem::take(&mut mailbox.pushed)));
+        }
+        if let Some(report) = mailbox.combat.pop_front() {
+            return Some(PlayEvent::Combat(report));
         }
         mailbox.ended.take().map(PlayEvent::Ended)
     }
@@ -431,6 +571,15 @@ pub trait Stepper: Send {
     /// The pushed deltas applied since the last call; the session fails closed when this queue
     /// is left to fill.
     fn drain(&mut self) -> Vec<SessionEvent>;
+    /// Runs one combat command (attack target, cast).
+    fn combat(
+        &mut self,
+        command: CombatCommand,
+    ) -> impl Future<Output = Result<CombatReport, SessionError>> + Send;
+    /// The other visible entities when they differ from `held`.
+    fn entities_changed(&self, _held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
+        None
+    }
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
@@ -451,10 +600,19 @@ impl<S: SessionStream + Send> Stepper for Session<S> {
     fn drain(&mut self) -> Vec<SessionEvent> {
         self.take_events()
     }
+
+    async fn combat(&mut self, command: CombatCommand) -> Result<CombatReport, SessionError> {
+        run_combat(self, &mut SpellFeedback::default(), command).await
+    }
+
+    fn entities_changed(&self, held: &[WorldSpatialEntity]) -> Option<Vec<WorldSpatialEntity>> {
+        let entities = self.world_entities()?;
+        (!entities.others().eq(held.iter())).then(|| entities.others().copied().collect())
+    }
 }
 
 /// The channel pair between the shell and `run_session`.
-pub fn play_channel() -> (PlayLink, UnboundedReceiver<StepDir>, Outbox) {
+pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
     let (commands, command_rx) = tokio::sync::mpsc::unbounded_channel();
     let mailbox = SharedMailbox::default();
     (
@@ -467,20 +625,40 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<StepDir>, Outbox) {
     )
 }
 
+/// Hands the shell what the session pushed, and the visible entities when they changed.
+fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpatialEntity>) {
+    outbox.push(session.drain());
+    if let Some(entities) = session.entities_changed(held) {
+        held.clone_from(&entities);
+        outbox.entities(entities);
+    }
+}
+
 /// The session task, run on the client runtime: sends requested steps and, while none is
 /// pending, keeps servicing liveness so an idle session is not dropped. It ends with the first
 /// session error (reported with its public class) or when the shell drops its link.
 pub async fn run_session<T: Stepper>(
     mut session: T,
-    mut commands: UnboundedReceiver<StepDir>,
+    mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    let mut held = Vec::new();
     loop {
         let ended = match commands.try_recv() {
-            Ok(direction) => match session.step(step_direction(direction)).await {
-                Ok(outcome) => {
-                    outbox.stepped(outcome);
-                    outbox.push(session.drain());
+            Ok(PlayCommand::Step(direction)) => {
+                match session.step(step_direction(direction)).await {
+                    Ok(outcome) => {
+                        outbox.stepped(outcome);
+                        publish(&mut session, &outbox, &mut held);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
+            }
+            Ok(PlayCommand::Combat(command)) => match session.combat(command).await {
+                Ok(report) => {
+                    outbox.combat(report);
+                    publish(&mut session, &outbox, &mut held);
                     continue;
                 }
                 Err(error) => error,
@@ -488,7 +666,7 @@ pub async fn run_session<T: Stepper>(
             Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
                 match session.serve(IDLE_SLICE).await {
                     Ok(()) => {
-                        outbox.push(session.drain());
+                        publish(&mut session, &outbox, &mut held);
                         continue;
                     }
                     Err(error) => error,
@@ -506,7 +684,8 @@ mod tests {
     use super::*;
     use oteryn_client_runtime::ClientRuntime;
     use oteryn_session::{
-        ActorPosition, AppliedDelta, CommandStatus, MAX_QUEUED_EVENTS, WorldSpatialObservation,
+        ActorPosition, AppliedDelta, AttackIntentDisposition, CommandStatus, MAX_QUEUED_EVENTS,
+        SpellCastDisposition, WorldSpatialObservation,
     };
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -598,6 +777,28 @@ mod tests {
         assert_eq!(view.next_step(), None);
         // The player turns to the step sent, moved or not.
         assert_eq!(view.facing(), StepDir::North);
+        Ok(())
+    }
+
+    #[test]
+    fn inputs_keep_their_order_and_a_repeated_cast_is_one() -> Result<(), BatchError> {
+        let mut view = view()?;
+        let one = NonZeroU32::MIN;
+        view.arrow(StepDir::North);
+        view.cast(one);
+        view.cast(one);
+        view.arrow(StepDir::East);
+        assert_eq!(
+            view.inputs.iter().copied().collect::<Vec<_>>(),
+            vec![
+                Input::Arrow(StepDir::North),
+                Input::Cast(one),
+                Input::Arrow(StepDir::East)
+            ]
+        );
+        // A cast waiting at the front holds the step behind it.
+        view.inputs.pop_front();
+        assert_eq!(view.next_step(), None);
         Ok(())
     }
 
@@ -703,6 +904,7 @@ mod tests {
         fail_serve_after: usize,
         queued: Vec<SessionEvent>,
         drained: Arc<AtomicUsize>,
+        combats: Arc<Mutex<Vec<CombatCommand>>>,
     }
 
     impl Stepper for Fake {
@@ -710,6 +912,14 @@ mod tests {
             let events = std::mem::take(&mut self.queued);
             self.drained.fetch_add(events.len(), Ordering::SeqCst);
             events
+        }
+
+        async fn combat(&mut self, command: CombatCommand) -> Result<CombatReport, SessionError> {
+            lock_combats(&self.combats).push(command);
+            Ok(match command {
+                CombatCommand::Cast(_) => CombatReport::Cast(SpellCastDisposition::NotEnoughMana),
+                CombatCommand::Attack(_) => CombatReport::Attack(AttackIntentDisposition::Ok),
+            })
         }
 
         async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
@@ -730,6 +940,10 @@ mod tests {
         }
     }
 
+    fn lock_combats(combats: &Mutex<Vec<CombatCommand>>) -> MutexGuard<'_, Vec<CombatCommand>> {
+        combats.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
     type Task = (PlayLink, Arc<AtomicUsize>, ClientRuntime);
 
     fn task(fail_step: bool, fail_serve_after: usize) -> Result<Task, String> {
@@ -742,6 +956,7 @@ mod tests {
             fail_serve_after,
             queued: Vec::new(),
             drained: Arc::new(AtomicUsize::new(0)),
+            combats: Arc::new(Mutex::new(Vec::new())),
         };
         runtime
             .spawn(run_session(fake, commands, events))
@@ -765,6 +980,53 @@ mod tests {
         std::thread::sleep(Duration::from_millis(300));
         assert!(serves.load(Ordering::SeqCst) >= 5);
         drop(link);
+        runtime.shutdown(Duration::from_millis(250));
+        Ok(())
+    }
+
+    #[test]
+    fn a_hotkey_reaches_the_session_task_in_press_order_and_its_answer_reaches_the_view()
+    -> Result<(), String> {
+        let serves = Arc::new(AtomicUsize::new(0));
+        let combats = Arc::new(Mutex::new(Vec::new()));
+        let (link, commands, events) = play_channel();
+        let runtime = ClientRuntime::new().map_err(|error| error.to_string())?;
+        let fake = Fake {
+            serves,
+            fail_step: false,
+            fail_serve_after: usize::MAX,
+            queued: Vec::new(),
+            drained: Arc::new(AtomicUsize::new(0)),
+            combats: Arc::clone(&combats),
+        };
+        runtime
+            .spawn(run_session(fake, commands, events))
+            .map_err(|error| error.to_string())?;
+        let mut view = view().map_err(|error| format!("{error:?}"))?;
+        let spell = NonZeroU32::new(2).ok_or("spell")?;
+        let first = NonZeroU32::new(1).ok_or("spell")?;
+        view.cast(spell);
+        view.cast(first);
+        // Past the bar: ignored.
+        view.cast(NonZeroU32::new(9).ok_or("spell")?);
+        assert_eq!(view.tick(&link), Ok(()));
+        for _ in 0..200 {
+            assert_eq!(view.tick(&link), Ok(()));
+            if lock_combats(&combats).len() == 2
+                && view.combat_status().ends_with("Not enough mana")
+            {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert_eq!(
+            *lock_combats(&combats),
+            [CombatCommand::Cast(spell), CombatCommand::Cast(first)]
+        );
+        assert_eq!(
+            view.combat_status(),
+            "spells 1-4 Spell cast".replace("Spell cast", "Not enough mana")
+        );
         runtime.shutdown(Duration::from_millis(250));
         Ok(())
     }
@@ -825,6 +1087,10 @@ mod tests {
     }
 
     impl Stepper for Pushing {
+        async fn combat(&mut self, _command: CombatCommand) -> Result<CombatReport, SessionError> {
+            Ok(CombatReport::Cast(SpellCastDisposition::NotEnoughMana))
+        }
+
         async fn step(&mut self, _direction: StepDirection) -> Result<StepOutcome, SessionError> {
             Ok(moved_to(100, 199, 0))
         }
@@ -882,7 +1148,7 @@ mod tests {
                             .map_err(|error| format!("{error:?}"))?;
                     }
                     PlayEvent::Ended(class) => return Err(format!("session ended: {class:?}")),
-                    PlayEvent::Stepped(_) => {}
+                    PlayEvent::Stepped(_) | PlayEvent::Combat(_) => {}
                 }
             }
             if pushed > 4 {
