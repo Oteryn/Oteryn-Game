@@ -2,6 +2,7 @@
 //! Terminal evidence is revalidated after the MPL-2.0 and Linux lint corrections.
 
 pub mod action_bar;
+pub mod combat_input;
 pub mod cyclopedia;
 pub mod device_store;
 pub mod hotkeys;

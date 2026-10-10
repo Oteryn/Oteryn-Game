@@ -20,6 +20,12 @@ use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
 /// Spell types a client names when it casts and draws vitals: re-exported so the client needs no
 /// direct `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellCastDisposition, SpellTarget};
+use oteryn_protocol_oteryn::attack::{self, CAPABILITY_ATTACK_V1};
+/// The capability-17 attack types a client sends and draws from, re-exported so it needs no
+/// direct `protocol-oteryn` edge (ADR-0020 section 1).
+pub use oteryn_protocol_oteryn::attack::{
+    ActorCombatState, AttackIntentDisposition, ChaseMode, FightMode, FightModes,
+};
 use oteryn_protocol_oteryn::chat::{
     self, CAPABILITY_CHAT_V1, COMMAND_TYPE_CHAT_INTENT, STATE_DOMAIN_CHAT,
 };
@@ -115,13 +121,15 @@ impl<T: AsyncRead + AsyncWrite + Unpin> SessionStream for T {}
 /// The capabilities this client implements and advertises by default: 4 `ITEM_VIEW_MOVE_V1`
 /// (domains 9 and 11, command 9, the USE item target and the item handle on domain-1 entities),
 /// 6 `WORLD_SPATIAL_ENTITIES` (the domain-1 type 2 snapshot and delta with every visible entity), 7 `CHAT_V1` (command 13 and
-/// domain 12) and 13 `PACED_MOVEMENT_V1` (the step result `TOO_EARLY`). Add an ID here only
+/// domain 12), 13 `PACED_MOVEMENT_V1` (the step result `TOO_EARLY`) and 17 `ATTACK_V1` (command
+/// types 11 and 12, domain 10; requires 6). Add an ID here only
 /// together with its routing, and keep the set closed under the registry's `requires`.
 pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1,
     CAPABILITY_WORLD_SPATIAL_ENTITIES,
     CAPABILITY_CHAT_V1,
     CAPABILITY_PACED_MOVEMENT_V1,
+    CAPABILITY_ATTACK_V1,
 ];
 
 /// Capability-owned command types and state domains (`PROTOCOL_OTERYN_V1_REGISTRY.json`;
@@ -254,6 +262,8 @@ pub enum SessionError {
     ActorSpell(actor_spell::ActorSpellError),
     /// A chat payload was refused by its codec.
     Chat(ChatWireError),
+    /// A capability-17 attack payload was refused by its codec.
+    Attack(attack::AttackWireError),
     /// A capability-4 item payload was refused by its codec.
     ItemView(ItemViewWireError),
     /// The server closed, or replied with something other than `ServerAccepted`, before
@@ -411,6 +421,7 @@ impl fmt::Display for SessionError {
                 )
             }
             Self::Chat(error) => write!(formatter, "CHAT payload refused: {error:?}"),
+            Self::Attack(error) => write!(formatter, "ATTACK payload refused: {error:?}"),
             Self::ItemView(error) => write!(formatter, "ITEM payload refused: {error:?}"),
             Self::NotAdmitted(message_type) => {
                 write!(formatter, "admission refused: server sent {message_type:?}")
@@ -617,6 +628,16 @@ pub struct CastOutcome {
     pub actor_vitals_delta: Option<AppliedDelta<ActorVitals>>,
 }
 
+/// Outcome of `Session::attack_target` and `Session::set_fight_modes` (ATTACK-0, command types
+/// 11 and 12). The resulting `ACTOR_COMBAT_STATE` delta, if any, goes through the event queue.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AttackOutcome {
+    pub command_id: u64,
+    pub status: CommandStatus,
+    pub disposition: AttackIntentDisposition,
+    pub result_server_sequence: u64,
+}
+
 /// Most applied-but-undrained pushed deltas [`Session::take_events`] holds. The next one fails the
 /// session closed with [`SessionError::EventQueueOverflow`].
 pub const MAX_QUEUED_EVENTS: usize = 256;
@@ -634,6 +655,9 @@ pub enum SessionEvent {
     WorldObjectOverlay(AppliedDelta<WorldObjectOverlayEntry>),
     /// Domain 3 `ACTOR_VITALS`.
     ActorVitals(AppliedDelta<ActorVitals>),
+    /// Domain 10 `ACTOR_COMBAT_STATE`: the own actor's attack target, modes and in-fight flag,
+    /// replaced whole. [`Session::combat_state`] already holds it.
+    ActorCombatState(AppliedDelta<ActorCombatState>),
     /// Domain 12 `CHAT`, delta type 1: one line. [`Session::chat_log`] already holds it.
     ChatLine(AppliedDelta<ChatLine>),
     /// Domain 12 `CHAT`, delta type 2: the open-room set, replaced whole.
@@ -655,6 +679,7 @@ impl SessionEvent {
             }
             Self::WorldObjectOverlay(_) => world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
             Self::ActorVitals(_) => actor_spell::STATE_DOMAIN_ACTOR_VITALS,
+            Self::ActorCombatState(_) => attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             Self::ChatLine(_) | Self::ChatRooms(_) => STATE_DOMAIN_CHAT,
             Self::Inventory(_) => STATE_DOMAIN_CHARACTER_INVENTORY,
             Self::OpenContainer(_) => STATE_DOMAIN_OPEN_CONTAINER,
@@ -856,6 +881,9 @@ pub struct Session<S> {
     spatial_revision: u64,
     overlay_revision: u64,
     vitals_revision: u64,
+    combat_revision: u64,
+    /// `Some` exactly when capability 17 is selected and the server sent domain 10.
+    combat_state: Option<ActorCombatState>,
     /// Own-actor vitals; `None` until the server sends the `ACTOR_VITALS` domain (it is optional
     /// in the join snapshot while the server cast gate is closed).
     actor_vitals: Option<ActorVitals>,
@@ -1078,6 +1106,9 @@ impl<S: SessionStream> Session<S> {
         let mut entities = None;
         let mut world_object_overlay = None;
         let mut actor_vitals = None;
+        let mut combat_state = None;
+        let mut combat_revision = 0;
+        let attack_selected = selected_capabilities.contains(&CAPABILITY_ATTACK_V1);
         let (mut spatial_revision, mut overlay_revision, mut vitals_revision) = (0, 0, 0);
         let chat_selected = selected_capabilities.contains(&CAPABILITY_CHAT_V1);
         let mut chat = chat_selected.then(ChatLog::default);
@@ -1133,6 +1164,27 @@ impl<S: SessionStream> Session<S> {
                 ) => {
                     actor_vitals = Some(actor_spell::decode_actor_vitals(domain.payload)?);
                     vitals_revision = domain.revision;
+                }
+                (
+                    attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
+                    attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
+                ) if attack_selected => {
+                    combat_state = Some(
+                        attack::decode_actor_combat_state(domain.payload)
+                            .map_err(SessionError::Attack)?,
+                    );
+                    combat_revision = domain.revision;
+                }
+                (attack::STATE_DOMAIN_ACTOR_COMBAT_STATE, snapshot_type) if attack_selected => {
+                    return Err(SessionError::UnregisteredSnapshotType {
+                        domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
+                        snapshot_type,
+                    });
+                }
+                (attack::STATE_DOMAIN_ACTOR_COMBAT_STATE, _) => {
+                    return Err(SessionError::UnselectedDomain {
+                        domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
+                    });
                 }
                 (
                     STATE_DOMAIN_CHARACTER_INVENTORY,
@@ -1239,6 +1291,8 @@ impl<S: SessionStream> Session<S> {
             spatial_revision,
             overlay_revision,
             vitals_revision,
+            combat_revision,
+            combat_state,
             actor_vitals,
             world_spatial: snapshot.world_spatial,
             world_object_overlay: snapshot.world_object_overlay.clone(),
@@ -1384,6 +1438,12 @@ impl<S: SessionStream> Session<S> {
     /// The own-actor vitals after every delta applied so far, if the server has sent any.
     pub fn actor_vitals(&self) -> Option<&ActorVitals> {
         self.actor_vitals.as_ref()
+    }
+
+    /// The own-actor combat state after every delta applied so far; `Some` once a session that
+    /// selected capability 17 has received domain 10.
+    pub fn combat_state(&self) -> Option<&ActorCombatState> {
+        self.combat_state.as_ref()
     }
 
     /// The `CommandId` the next `step`/`use_object`/`cast_spell` will send.
@@ -1621,6 +1681,73 @@ impl<S: SessionStream> Session<S> {
         });
         let outcome = self.exchange_cast(&payload).await;
         self.poison_on_error(outcome)
+    }
+
+    /// Sends the FND-02 `ClientCommand` type 11 `ATTACK_TARGET_INTENT` (capability 17): attack
+    /// `target`, or stop attacking with `None`. Refused before anything is sent when capability
+    /// 17 is not selected. Every disposition is a normal outcome; the `ACTOR_COMBAT_STATE` delta
+    /// it causes goes through the domain store and the event queue.
+    pub async fn attack_target(
+        &mut self,
+        target: Option<&EntityRef>,
+    ) -> Result<AttackOutcome, SessionError> {
+        self.ensure_usable()?;
+        self.ensure_attack()?;
+        let payload = attack::encode_attack_target_intent(target).map_err(SessionError::Attack)?;
+        let outcome = self
+            .exchange_attack(attack::COMMAND_TYPE_ATTACK_TARGET_INTENT, &payload)
+            .await;
+        self.poison_on_error(outcome)
+    }
+
+    /// Sends the FND-02 `ClientCommand` type 12 `FIGHT_MODES_INTENT` (capability 17), like
+    /// [`Self::attack_target`].
+    pub async fn set_fight_modes(
+        &mut self,
+        modes: &FightModes,
+    ) -> Result<AttackOutcome, SessionError> {
+        self.ensure_usable()?;
+        self.ensure_attack()?;
+        let payload = attack::encode_fight_modes_intent(modes);
+        let outcome = self
+            .exchange_attack(attack::COMMAND_TYPE_FIGHT_MODES_INTENT, &payload)
+            .await;
+        self.poison_on_error(outcome)
+    }
+
+    fn ensure_attack(&self) -> Result<(), SessionError> {
+        if self.is_selected(CAPABILITY_ATTACK_V1) {
+            Ok(())
+        } else {
+            Err(SessionError::CapabilityNotSelected {
+                capability: CAPABILITY_ATTACK_V1,
+            })
+        }
+    }
+
+    async fn exchange_attack(
+        &mut self,
+        command_type: u32,
+        payload: &[u8],
+    ) -> Result<AttackOutcome, SessionError> {
+        let result = self.send_and_read_result(command_type, payload).await?;
+        // The server's rate limit answers `Rejected` with an empty payload: a normal refusal.
+        let disposition = if result.status == CommandStatus::Rejected && result.payload.is_empty() {
+            AttackIntentDisposition::Rejected
+        } else {
+            attack::decode_attack_intent_result(&result.payload).map_err(SessionError::Attack)?
+        };
+        check_status_pairing(
+            result.command_id,
+            result.status,
+            disposition == AttackIntentDisposition::Rejected,
+        )?;
+        Ok(AttackOutcome {
+            command_id: result.command_id,
+            status: result.status,
+            disposition,
+            result_server_sequence: result.server_sequence,
+        })
     }
 
     /// Sends the FND-02 `ClientCommand` type 13 `CHAT_INTENT` (capability 7) and decodes its
@@ -2022,6 +2149,26 @@ impl<S: SessionStream> Session<S> {
                     new_revision,
                     vitals,
                 )))
+            }
+            attack::STATE_DOMAIN_ACTOR_COMBAT_STATE if self.is_selected(CAPABILITY_ATTACK_V1) => {
+                check_delta(
+                    &delta,
+                    attack::DELTA_TYPE_ACTOR_COMBAT_STATE_V1,
+                    self.combat_revision,
+                )?;
+                let state = attack::decode_actor_combat_state(delta.payload)
+                    .map_err(SessionError::Attack)?;
+                self.combat_state = Some(state);
+                self.combat_revision = new_revision;
+                Ok(SessionEvent::ActorCombatState(applied(
+                    server_sequence,
+                    base_revision,
+                    new_revision,
+                    state,
+                )))
+            }
+            attack::STATE_DOMAIN_ACTOR_COMBAT_STATE => {
+                Err(SessionError::UnselectedDomain { domain_id })
             }
             STATE_DOMAIN_CHAT if self.chat.is_some() => {
                 // Both delta types are registered for domain 12; each is checked against the
@@ -2674,6 +2821,182 @@ mod tests {
             assert_eq!(session.last_server_sequence(), 43);
             // The session stays usable after a rejection.
             assert_eq!(session.next_command_id(), 9);
+            Ok(())
+        })?
+    }
+
+    fn combat_state(target: Option<EntityRef>, in_fight: bool) -> ActorCombatState {
+        ActorCombatState {
+            target,
+            modes: FightModes::DEFAULT,
+            in_fight,
+        }
+    }
+
+    fn target_ref() -> EntityRef {
+        EntityRef {
+            identity: [7; world_spatial_entities::ENTITY_IDENTITY_BYTES],
+            generation: 3,
+        }
+    }
+
+    /// Capability 17 is selected: attack-target and fight-mode intents reach the wire with their
+    /// codec payloads, each result is decoded, and domain 10 (snapshot and delta) is kept.
+    async fn attack_server(mut stream: DuplexStream) -> Result<(), BoxError> {
+        read_frame(&mut stream).await?;
+        write_frame(
+            &mut stream,
+            &encode_server_accepted(&ServerAcceptedValue {
+                game_session_id: GameSessionId::decode(&uuid_v7(1))?,
+                world_id: WorldId::decode(&uuid_v7(2))?,
+                channel_id: ChannelId::decode(&uuid_v7(3))?,
+                connection_generation: 1,
+                current_server_sequence: 0,
+                next_command_id: 7,
+                schema_revision: 1,
+                selected_capabilities: &[attack::CAPABILITY_ATTACK_V1],
+            })?,
+        )
+        .await?;
+        let overlay = encode_world_object_overlay_snapshot(&[])
+            .map_err(|error| format!("overlay snapshot: {error:?}"))?;
+        let combat = attack::encode_actor_combat_state(&combat_state(None, false))
+            .map_err(|error| format!("combat: {error:?}"))?;
+        for frame in encode_single_chunk_snapshot(
+            1,
+            1,
+            40,
+            &[
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    revision: 5,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                    payload: &spatial(0),
+                },
+                DomainSnapshot {
+                    domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    revision: 2,
+                    snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                    payload: &overlay,
+                },
+                DomainSnapshot {
+                    domain_id: attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
+                    revision: 1,
+                    snapshot_type: attack::SNAPSHOT_TYPE_ACTOR_COMBAT_STATE_V1,
+                    payload: &combat,
+                },
+            ],
+        )? {
+            write_frame(&mut stream, &frame).await?;
+        }
+        let command = read_frame(&mut stream).await?;
+        let command = decode_wire_envelope(&command)?.client_command(1)?;
+        assert_eq!(
+            (command.command_id, command.command_type),
+            (7, attack::COMMAND_TYPE_ATTACK_TARGET_INTENT)
+        );
+        assert_eq!(
+            attack::decode_attack_target_intent(command.payload),
+            Ok(Some(target_ref()))
+        );
+        write_frame(
+            &mut stream,
+            &encode_command_result(
+                1,
+                41,
+                7,
+                CommandStatus::Accepted,
+                &attack::encode_attack_intent_result(AttackIntentDisposition::Ok),
+            )?,
+        )
+        .await?;
+        write_frame(
+            &mut stream,
+            &encode_state_delta(
+                1,
+                42,
+                attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
+                1,
+                2,
+                attack::DELTA_TYPE_ACTOR_COMBAT_STATE_V1,
+                &attack::encode_actor_combat_state(&combat_state(Some(target_ref()), true))
+                    .map_err(|error| format!("combat: {error:?}"))?,
+            )?,
+        )
+        .await?;
+        let command = read_frame(&mut stream).await?;
+        let command = decode_wire_envelope(&command)?.client_command(1)?;
+        assert_eq!(
+            (command.command_id, command.command_type),
+            (8, attack::COMMAND_TYPE_FIGHT_MODES_INTENT)
+        );
+        assert_eq!(
+            attack::decode_fight_modes_intent(command.payload),
+            Ok(FightModes {
+                fight_mode: FightMode::Offensive,
+                chase: ChaseMode::Stand,
+                secure: true,
+            })
+        );
+        write_frame(
+            &mut stream,
+            &encode_command_result(
+                1,
+                43,
+                8,
+                CommandStatus::Rejected,
+                &attack::encode_attack_intent_result(AttackIntentDisposition::Rejected),
+            )?,
+        )
+        .await?;
+        Ok(())
+    }
+
+    #[test]
+    fn attack_and_fight_mode_intents_are_sent_and_the_combat_state_is_kept() -> Result<(), BoxError>
+    {
+        block_on(async {
+            let (client, server) = tokio::io::duplex(64 * 1024);
+            let server = tokio::spawn(attack_server(server));
+            let mut admission = admission()?;
+            admission.supported_capabilities = &[attack::CAPABILITY_ATTACK_V1];
+            let mut session = Session::admit(client, admission).await?;
+            assert_eq!(session.combat_state(), Some(&combat_state(None, false)));
+            let attack = session.attack_target(Some(&target_ref())).await?;
+            assert_eq!(attack.status, CommandStatus::Accepted);
+            assert_eq!(attack.disposition, AttackIntentDisposition::Ok);
+            // The delta follows the result; it applies on the next read, here the next command.
+            let modes = FightModes {
+                fight_mode: FightMode::Offensive,
+                chase: ChaseMode::Stand,
+                secure: true,
+            };
+            let refused = session.set_fight_modes(&modes).await?;
+            server.await??;
+            assert_eq!(refused.status, CommandStatus::Rejected);
+            assert_eq!(refused.disposition, AttackIntentDisposition::Rejected);
+            assert_eq!(
+                session.combat_state(),
+                Some(&combat_state(Some(target_ref()), true))
+            );
+            assert!(matches!(
+                session.take_events().as_slice(),
+                [SessionEvent::ActorCombatState(delta)] if delta.new_revision == 2
+            ));
+            Ok(())
+        })?
+    }
+
+    #[test]
+    fn attack_intents_are_refused_before_sending_when_capability_17_is_not_selected()
+    -> Result<(), BoxError> {
+        block_on(async {
+            let (mut session, _peer) = vitals_pair().await?;
+            assert!(matches!(
+                session.attack_target(None).await,
+                Err(SessionError::CapabilityNotSelected { capability: 17 })
+            ));
+            assert_eq!(session.next_command_id(), 7);
             Ok(())
         })?
     }
@@ -3918,7 +4241,15 @@ mod tests {
     ) -> (DuplexStream, tokio::task::JoinHandle<Result<(), BoxError>>) {
         let (client, mut server) = tokio::io::duplex(256 * 1024);
         let peer = tokio::spawn(async move {
-            join_peer_with(&mut server, &[4, 6, 7, 13], selected, &[], snapshot, &[]).await?;
+            join_peer_with(
+                &mut server,
+                &[4, 6, 7, 13, 17],
+                selected,
+                &[],
+                snapshot,
+                &[],
+            )
+            .await?;
             for step in script {
                 match step {
                     Step::Send(frame) => write_frame(&mut server, &frame).await?,
@@ -4390,7 +4721,7 @@ mod tests {
     fn the_advertised_set_carries_chat_and_stays_closed() {
         assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
         // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
-        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13]);
+        assert_eq!(CLIENT_SUPPORTED_CAPABILITIES, &[4, 6, 7, 13, 17]);
     }
 
     #[test]
@@ -4987,7 +5318,7 @@ mod tests {
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                &[4, 6, 7, 13],
+                &[4, 6, 7, 13, 17],
                 ITEM_SELECTED,
                 &[],
                 snapshot,

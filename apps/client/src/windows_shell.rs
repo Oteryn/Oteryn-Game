@@ -2,6 +2,7 @@ use oteryn_client::hotkeys::ResolvedHotkey;
 use oteryn_client::input::{MouseActions, StepDir, click_tile};
 use oteryn_client::play::{PlayLink, PlayView};
 use oteryn_client::scene::Scene;
+use oteryn_client::spell::SpellHotkeys;
 use oteryn_client::world::{START, World};
 use oteryn_client::{AdmittedSession, ClientBootstrap, GameplayEntryError};
 use oteryn_foundation::ProcessGeneration;
@@ -71,6 +72,7 @@ struct Application {
     generation: ProcessGeneration,
     input: InputPlatformAdapter,
     actions: MouseActions,
+    hotkeys: SpellHotkeys,
     fatal_error: Option<ShellError>,
 }
 
@@ -78,6 +80,8 @@ struct Application {
 struct Play {
     view: PlayView,
     link: PlayLink,
+    /// The spell bar and combat line last shown in the title.
+    status: String,
 }
 
 impl Application {
@@ -90,7 +94,14 @@ impl Application {
                 let (view, link) = client
                     .start_play(admitted)
                     .map_err(|_error| ShellError::RendererInitialization)?;
-                (Some(client), Some(Play { view, link }))
+                (
+                    Some(client),
+                    Some(Play {
+                        view,
+                        link,
+                        status: String::new(),
+                    }),
+                )
             }
             None => (None, None),
         };
@@ -126,6 +137,7 @@ impl Application {
             generation: ProcessGeneration::new(1),
             input: InputPlatformAdapter::new(),
             actions: MouseActions::new().map_err(|_error| ShellError::InputInitialization)?,
+            hotkeys: SpellHotkeys::new().map_err(|_error| ShellError::InputInitialization)?,
             fatal_error: None,
         })
     }
@@ -189,6 +201,9 @@ impl Application {
             });
             if let Some(direction) = direction {
                 play.view.arrow(direction);
+            }
+            for spell in self.hotkeys.route(events) {
+                play.view.cast(spell);
             }
             let mut render_failed = false;
             for click in clicks
@@ -766,6 +781,13 @@ impl ApplicationHandler for Application {
             && let Err(class) = play.view.tick(&play.link)
         {
             self.return_to_login(class);
+        }
+        if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
+            let status = play.view.combat_status();
+            if status != play.status {
+                window.set_title(&format!("Oteryn — {status}"));
+                play.status = status;
+            }
         }
         if let Some(window) = &self.window
             && redraw_eligible(
