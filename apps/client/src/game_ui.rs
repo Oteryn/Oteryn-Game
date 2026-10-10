@@ -117,6 +117,53 @@ impl GameUi {
     pub fn take_preferences(&mut self) -> Option<ClientSettings> {
         self.preferences_changes.take()
     }
+    pub fn route_chat_hotkey(&mut self, action: &str, link: &PlayLink, english: bool) -> bool {
+        let rooms = link.game_state().chat.map(|chat| chat.rooms());
+        match action {
+            "chat.next" | "chat.previous" => {
+                if let Some(rooms) = rooms {
+                    self.channel = cycle_chat_channel(self.channel, rooms, action == "chat.next");
+                }
+            }
+            "chat.local" => self.channel = 0,
+            "chat.help" => {
+                self.channel = 3;
+                match rooms {
+                    Some(rooms) if !rooms.contains(ChatRoom::Help) => {
+                        self.notice = if link.send_chat(ChatIntent::OpenRoom(ChatRoom::Help)) {
+                            None
+                        } else {
+                            Some(action_busy(english).into())
+                        };
+                    }
+                    Some(_) => self.notice = None,
+                    None => {
+                        self.notice =
+                            Some(chat_feedback(ChatDisposition::ChatUnavailable, english).into());
+                    }
+                }
+            }
+            "chat.close" => {
+                let room = self
+                    .channel
+                    .checked_sub(1)
+                    .and_then(|index| ChatRoom::ALL.get(index).copied());
+                if let Some(room) = room
+                    && rooms.is_some_and(|rooms| rooms.contains(room))
+                {
+                    if link.send_chat(ChatIntent::CloseRoom(room)) {
+                        self.channel = 0;
+                        self.notice = None;
+                    } else {
+                        self.notice = Some(action_busy(english).into());
+                    }
+                }
+            }
+            "chat.list" => self.dialogs.open_chat_channels(),
+            _ => return false,
+        }
+        true
+    }
     pub fn clear_action_row(&mut self, row: usize, settings: &ClientSettings) {
         if self
             .bar(settings)
@@ -155,8 +202,13 @@ impl GameUi {
         let mut matched = false;
         if !modal {
             for hotkey in settings.hotkeys.resolve(events, typing) {
-                let ResolvedHotkey::Custom(action) = hotkey else {
-                    continue;
+                let action = match hotkey {
+                    ResolvedHotkey::General(action) if action.starts_with("chat.") => {
+                        matched |= self.route_chat_hotkey(&action, link, settings.english);
+                        continue;
+                    }
+                    ResolvedHotkey::General(_) => continue,
+                    ResolvedHotkey::Custom(action) => action,
                 };
                 matched = true;
                 match action {
@@ -835,6 +887,27 @@ fn chat_intent(channel: usize, recipient: &str, text: String) -> Option<ChatInte
     })
 }
 
+fn cycle_chat_channel(current: usize, rooms: oteryn_session::ChatRoomSet, forward: bool) -> usize {
+    let mut available = vec![0];
+    available.extend(
+        ChatRoom::ALL
+            .iter()
+            .enumerate()
+            .filter_map(|(index, room)| rooms.contains(*room).then_some(index + 1)),
+    );
+    available.push(5);
+    let current = available
+        .iter()
+        .position(|channel| *channel == current)
+        .unwrap_or(0);
+    let next = if forward {
+        (current + 1) % available.len()
+    } else {
+        current.checked_sub(1).unwrap_or(available.len() - 1)
+    };
+    available[next]
+}
+
 fn chat_contents(chat: &oteryn_session::ChatLog, channel: usize, english: bool) -> String {
     chat.lines()
         .filter_map(|line| chat_line_text(line, channel, english))
@@ -1265,8 +1338,25 @@ fn chat_feedback(value: ChatDisposition, english: bool) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use super::{chat_line_text, export_chat_contents_to, item_button, show_window_recovery};
+    use super::{
+        chat_line_text, cycle_chat_channel, export_chat_contents_to, item_button,
+        show_window_recovery,
+    };
     use crate::preferences_browser::test_support::{button_position, click, frame};
+
+    #[test]
+    fn chat_channel_cycle_uses_only_local_open_rooms_and_private() {
+        let mut rooms = oteryn_session::ChatRoomSet::default();
+        rooms.insert(oteryn_session::ChatRoom::World);
+        rooms.insert(oteryn_session::ChatRoom::Help);
+        assert_eq!(cycle_chat_channel(0, rooms, true), 1);
+        assert_eq!(cycle_chat_channel(1, rooms, true), 3);
+        assert_eq!(cycle_chat_channel(3, rooms, true), 5);
+        assert_eq!(cycle_chat_channel(5, rooms, true), 0);
+        assert_eq!(cycle_chat_channel(0, rooms, false), 5);
+        assert_eq!(cycle_chat_channel(5, rooms, false), 3);
+        assert_eq!(cycle_chat_channel(2, rooms, true), 1);
+    }
 
     #[test]
     fn chat_export_partitions_tabs_and_never_overwrites_an_existing_snapshot()

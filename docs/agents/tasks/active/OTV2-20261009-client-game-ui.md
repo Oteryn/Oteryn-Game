@@ -110,3 +110,13 @@ Linux test builds through `cfg(test)`; the application target therefore exercise
 matches the existing pinned Windows dependency and does not change production
 composition. Native Windows cross-check still requires the missing MinGW compiler
 in this environment and remains a CI lane.
+
+## Continuation checkpoint — 2026-10-10 chat hotkeys
+
+The existing General Hotkeys inventory now exposes six additional executable
+actions: local, next, previous, Help, channel list and close. Next/previous cycle
+only through Local, rooms confirmed open by the current chat projection, and
+Private. Help uses the accepted `OpenRoom(Help)` session intent when needed;
+Close uses the matching typed room intent and returns to Local only after queueing
+it. Missing chat capability sends nothing and remains visibly unavailable. Loot
+chat, server-message filters and other action families remain disabled.

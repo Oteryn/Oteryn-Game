@@ -27,6 +27,12 @@ pub fn general_action_supported(action: &str) -> bool {
             | "movement.east"
             | "movement.south"
             | "movement.west"
+            | "chat.close"
+            | "chat.next"
+            | "chat.list"
+            | "chat.help"
+            | "chat.previous"
+            | "chat.local"
             | "client.options"
             | "client.fullscreen"
             | "action.bottom.1"
@@ -467,6 +473,13 @@ mod tests {
                 second: None,
             },
         );
+        profile.general_chat_off.insert(
+            "chat.next".into(),
+            HotkeyPair {
+                first: Some(binding(21, false)),
+                second: None,
+            },
+        );
         // A catalogue-only action is retained but cannot masquerade as executable.
         profile.general_chat_off.insert(
             "dialog.prey".into(),
@@ -495,6 +508,10 @@ mod tests {
         assert_eq!(
             preferences.resolve(&[pressed(18, true)?], true),
             vec![ResolvedHotkey::General("client.options".into())]
+        );
+        assert_eq!(
+            preferences.resolve(&[pressed(21, false)?], false),
+            vec![ResolvedHotkey::General("chat.next".into())]
         );
         assert!(
             preferences

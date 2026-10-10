@@ -66,7 +66,7 @@ not proof of every hidden control or runtime effect. Do not restart those pages.
 | Group | Established | Remaining targeted checks |
 | --- | --- | --- |
 | Basic / Controls | Page layouts; three mouse presets | Classic loot-button selector and dependent controls |
-| General / Action Bar / Custom Hotkeys | Profiles, chat contexts, two binding columns, key capture/conflict, spell/object/text editors | Gap between general-action captures 02/03; auto-switch rules, profile removal confirmation, full spell-dependent fields |
+| General / Action Bar / Custom Hotkeys | Profiles, chat contexts, two binding columns, key capture/conflict, spell/object/text editors; Oteryn routes local/next/previous/help/list/close chat actions through the live console/session | Gap between general-action captures 02/03; exact auto-switch rules, profile removal confirmation, full spell-dependent fields and the remaining disabled action families |
 | Interface / HUD / Console / Game Window | Pages inspected; 35 HUD conditions; target-marking and loot-colour choices | HUD ordering, master/child and aggregate semantics; Console/context details not explicitly enumerated |
 | Action Bars / Shortcuts | All nine bars individually verified at 50 slots; all shortcut identities | Edge-master/retained-child behavior, clear confirmations and persistence |
 | Graphics / Effects | Linux engines, antialiasing, lighting and opacity controls | Platform-specific availability and actual effect/dependency checks |

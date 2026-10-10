@@ -153,6 +153,10 @@ impl ReferenceDialogs {
     pub fn open(&mut self, kind: ReferenceDialogKind) {
         self.opened[kind as usize] = true;
     }
+    pub fn open_chat_channels(&mut self) {
+        self.context_tab = 1;
+        self.open(ReferenceDialogKind::ContextControls);
+    }
     pub fn any_open(&self) -> bool {
         self.manage || self.opened.iter().any(|open| *open)
     }
