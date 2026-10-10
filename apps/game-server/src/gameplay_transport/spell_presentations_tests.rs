@@ -227,3 +227,205 @@ pub(crate) fn commit_fixture(
     let receipt = runtime.commit_spell_batch(staged).unwrap();
     owner.install_preflighted(prepared, &receipt);
 }
+
+/// Actual source activation/decoder and committed Channel owner; this fixture
+/// qualifies cue provenance and positioned actors, not party/cast eligibility.
+fn ordinary_passive_cue_fixture() -> (
+    NativeGameplayState,
+    ChannelRuntimeV1,
+    ExactActorRef,
+    GameSessionId,
+) {
+    let controller = crate::content::native_gameplay::tests::activated_with_item_keys(None);
+    let generation = controller.active().unwrap();
+    let identity = generation.identity();
+    let active = generation.native_gameplay().unwrap().clone();
+    let pin = ChannelContentPin::from_activation(
+        identity.world_id(),
+        1,
+        identity.server_artifact_digest(),
+        identity.client_artifact_digest(),
+        [3; 32],
+        [4; 32],
+        (0, 0, 0),
+    );
+    let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+        identity.world_id(),
+        ChannelId::decode(&id(2)).unwrap(),
+        NodeId::decode(&id(3)).unwrap(),
+        1,
+        1,
+        1,
+        "runtime-scope-assignment:1",
+        4,
+        pin,
+    )
+    .unwrap();
+    let session = GameSessionId::decode(&id(4)).unwrap();
+    let reservation = runtime.reserve_fresh_session(session).unwrap();
+    let actor = runtime.commit_fresh_session(reservation).unwrap();
+    runtime.initialize_first_entry_position(actor).unwrap();
+    (active, runtime, actor, session)
+}
+
+fn ordinary_passive_cue_definition(
+    active: &NativeGameplayState,
+    key: &str,
+) -> (NonZeroU32, crate::spell::SpellDefinition) {
+    (1..=active.spell_book().source_len())
+        .filter_map(|i| NonZeroU32::new(u32::try_from(i).unwrap()))
+        .find_map(|i| {
+            active
+                .spell_book()
+                .indexed(i)
+                .filter(|spell| spell.key == key)
+                .map(|spell| (i, spell.clone()))
+        })
+        .unwrap()
+}
+
+fn ordinary_passive_cue_batch(actor: ExactActorRef, session: GameSessionId) -> OwnerCombatBatch {
+    OwnerCombatBatch {
+        caster: actor,
+        attacker: CharacterId::decode(&id(6)).unwrap(),
+        current_lease_generation: 1,
+        command: CommandRef::new(session, CommandId::new(1).unwrap()),
+        occurrence: SpellOccurrenceBinding {
+            id: "passive-cue-owner-test".into(),
+            revisions: ["rules:1", "content:1", "world:1", "formula:1", "sim:1"].map(str::to_owned),
+        },
+        binding: b"{}".to_vec(),
+        anchor: None,
+        now_ms: 100,
+        deferred: None,
+        effects: vec![OwnerCombatEffect {
+            target: actor,
+            sub_ordinal: 0,
+            change: OwnerCombatChange::Heal {
+                target_atom: crate::spell::combat_execution::actor_atom(actor),
+                magnitude: 84,
+            },
+        }],
+    }
+}
+
+fn ordinary_passive_cue_request(actor: ExactActorRef, binding: &str) -> LocatedCueRequest {
+    LocatedCueRequest {
+        binding: binding.into(),
+        target: CueTarget::Actor(actor),
+    }
+}
+
+#[test]
+fn ordinary_passive_cue_all_seven_actual_builders_qualify_accepted_focus_binding() {
+    let (active, runtime, actor, session) = ordinary_passive_cue_fixture();
+    let profile = crate::spell::actor_execution::harmony_gain_profile().unwrap();
+    let binding = profile["presentation"]["effect_asset_binding"]
+        .as_str()
+        .unwrap();
+    assert_eq!(binding, "appearance:effect/magic_blue");
+    for key in [
+        "chained_penance",
+        "double_jab",
+        "forceful_uppercut",
+        "greater_flurry_of_blows",
+        "mystic_repulse",
+        "swift_jab",
+        "thousand_fist_blows",
+    ] {
+        let (index, definition) =
+            ordinary_passive_cue_definition(&active, &format!("candidate:spell/{key}"));
+        assert_eq!(
+            definition.harmony_role,
+            Some(crate::spell::HarmonyRole::Builder)
+        );
+        assert!(!matches!(definition.execution, Execution::NativeProfile(_)));
+        let mut owner = SpellPresentationOwner::new(&runtime);
+        let mut batch = ordinary_passive_cue_batch(actor, session);
+        let prepared = owner
+            .prepare_source_definition(
+                &runtime,
+                &active,
+                index,
+                &definition,
+                &mut batch,
+                vec![ordinary_passive_cue_request(actor, binding)],
+            )
+            .unwrap();
+        assert_eq!(prepared.events.len(), 1, "{key}");
+        assert_eq!(prepared.events[0].source_binding, binding, "{key}");
+        assert_eq!(prepared.events[0].actor, Some(actor), "{key}");
+        assert_eq!(
+            prepared.events[0].position,
+            runtime.read_actor_position(actor).unwrap().position()
+        );
+        assert!(owner.pending.is_empty());
+        assert_eq!(prepared.batch, batch);
+    }
+}
+
+#[test]
+fn ordinary_passive_cue_rejects_nonbuilder_wrong_definition_and_arbitrary_cue() {
+    let (active, runtime, actor, session) = ordinary_passive_cue_fixture();
+    let (swift_index, swift) =
+        ordinary_passive_cue_definition(&active, "candidate:spell/swift_jab");
+    let (nonbuilder_index, nonbuilder) =
+        ordinary_passive_cue_definition(&active, "candidate:spell/berserk");
+    assert_eq!(nonbuilder.harmony_role, None);
+    let mut altered = swift.clone();
+    altered.harmony_role = None;
+    for (index, definition, cue) in [
+        (nonbuilder_index, nonbuilder, "appearance:effect/magic_blue"),
+        (swift_index, altered, "appearance:effect/magic_blue"),
+        (swift_index, swift, "appearance:effect/magic_green"),
+    ] {
+        let mut owner = SpellPresentationOwner::new(&runtime);
+        let mut batch = ordinary_passive_cue_batch(actor, session);
+        let before = batch.clone();
+        assert_eq!(
+            owner
+                .prepare_source_definition(
+                    &runtime,
+                    &active,
+                    index,
+                    &definition,
+                    &mut batch,
+                    vec![ordinary_passive_cue_request(actor, cue)],
+                )
+                .err(),
+            Some(Error::UnqualifiedSource)
+        );
+        assert_eq!(batch, before);
+        assert!(owner.pending.is_empty());
+        assert!(owner.held.is_empty());
+    }
+}
+
+#[test]
+fn ordinary_passive_cue_rejects_retired_current_owner_before_preparing() {
+    let (active, mut runtime, actor, session) = ordinary_passive_cue_fixture();
+    let (index, definition) = ordinary_passive_cue_definition(&active, "candidate:spell/swift_jab");
+    let mut owner = SpellPresentationOwner::new(&runtime);
+    let mut batch = ordinary_passive_cue_batch(actor, session);
+    let before = batch.clone();
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        owner
+            .prepare_source_definition(
+                &runtime,
+                &active,
+                index,
+                &definition,
+                &mut batch,
+                vec![ordinary_passive_cue_request(
+                    actor,
+                    "appearance:effect/magic_blue"
+                )],
+            )
+            .err(),
+        Some(Error::StaleOwner)
+    );
+    assert_eq!(batch, before);
+    assert!(owner.pending.is_empty());
+    assert!(owner.held.is_empty());
+}
