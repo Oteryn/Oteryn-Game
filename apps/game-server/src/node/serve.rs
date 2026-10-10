@@ -2356,8 +2356,8 @@ mod tests {
             .expect("world");
         let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
             .expect("channel");
-        let node = NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3])
-            .expect("node");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
         let room = crate::content::qualify_native_entry_room(world).expect("entry room");
         let runtime = || {
             ChannelRuntimeV1::from_committed_assignment(
