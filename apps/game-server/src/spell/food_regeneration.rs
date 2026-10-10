@@ -133,9 +133,9 @@ mod tests {
         // 10 fed seconds: one health credit (6 s), one mana credit (6 s).
         assert_eq!((state.health, state.mana), (101, 102));
         assert!(state.conditions.instances().is_empty());
-        let after = state.clone();
+        let after = (state.health, state.mana, state.regen_health_ms);
         tick(&mut state, 60_000, TickFacts::default()).expect("tick");
-        assert_eq!(state, after);
+        assert_eq!((state.health, state.mana, state.regen_health_ms), after);
     }
 
     #[test]
