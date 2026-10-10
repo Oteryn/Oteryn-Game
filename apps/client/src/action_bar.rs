@@ -79,6 +79,18 @@ pub struct ActionBarPreferences {
         serialize_with = "serialize_shortcuts"
     )]
     pub secondary_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub chat_on_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub chat_on_secondary_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
     /// Three bottom, three left, three right rows; the legacy fields remain bottom row 1.
     #[serde(default)]
     pub extra_rows: [ActionRowPreferences; ACTION_BAR_ROWS - 1],
@@ -109,6 +121,18 @@ pub struct ActionRowPreferences {
         serialize_with = "serialize_shortcuts"
     )]
     pub secondary_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub chat_on_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
+    #[serde(
+        default = "empty_shortcuts",
+        deserialize_with = "deserialize_shortcuts",
+        serialize_with = "serialize_shortcuts"
+    )]
+    pub chat_on_secondary_shortcuts: [Option<SlotShortcut>; ACTION_BAR_SLOTS],
 }
 
 const fn empty_shortcuts() -> [Option<SlotShortcut>; ACTION_BAR_SLOTS] {
@@ -122,6 +146,8 @@ impl Default for ActionRowPreferences {
             locked: false,
             shortcuts: empty_shortcuts(),
             secondary_shortcuts: empty_shortcuts(),
+            chat_on_shortcuts: empty_shortcuts(),
+            chat_on_secondary_shortcuts: empty_shortcuts(),
         }
     }
 }
@@ -165,6 +191,8 @@ impl Default for ActionBarPreferences {
             locked: false,
             shortcuts,
             secondary_shortcuts: empty_shortcuts(),
+            chat_on_shortcuts: empty_shortcuts(),
+            chat_on_secondary_shortcuts: empty_shortcuts(),
             extra_rows: [ActionRowPreferences::default(); ACTION_BAR_ROWS - 1],
             edge_enabled: default_edge_enabled(),
         }
@@ -200,6 +228,8 @@ impl ActionBarPreferences {
                 locked: self.locked,
                 shortcuts: self.shortcuts,
                 secondary_shortcuts: self.secondary_shortcuts,
+                chat_on_shortcuts: self.chat_on_shortcuts,
+                chat_on_secondary_shortcuts: self.chat_on_secondary_shortcuts,
             })
         } else {
             self.extra_rows.get(row - 1).copied()
@@ -212,6 +242,8 @@ impl ActionBarPreferences {
             self.locked = preferences.locked;
             self.shortcuts = preferences.shortcuts;
             self.secondary_shortcuts = preferences.secondary_shortcuts;
+            self.chat_on_shortcuts = preferences.chat_on_shortcuts;
+            self.chat_on_secondary_shortcuts = preferences.chat_on_secondary_shortcuts;
         } else {
             *self.extra_rows.get_mut(row - 1).ok_or_else(|| {
                 io::Error::new(io::ErrorKind::InvalidInput, "Unknown action row")
@@ -221,33 +253,54 @@ impl ActionBarPreferences {
     }
 
     pub fn all_shortcuts(&self) -> impl Iterator<Item = &Option<SlotShortcut>> {
-        self.shortcuts
+        self.shortcuts_for_context(false)
+            .chain(self.shortcuts_for_context(true))
+    }
+
+    pub fn shortcuts_for_context(
+        &self,
+        chat_on: bool,
+    ) -> impl Iterator<Item = &Option<SlotShortcut>> {
+        let (primary, secondary) = if chat_on {
+            (&self.chat_on_shortcuts, &self.chat_on_secondary_shortcuts)
+        } else {
+            (&self.shortcuts, &self.secondary_shortcuts)
+        };
+        primary
             .iter()
-            .chain(self.secondary_shortcuts.iter())
-            .chain(
-                self.extra_rows
-                    .iter()
-                    .flat_map(|row| row.shortcuts.iter().chain(row.secondary_shortcuts.iter())),
-            )
+            .chain(secondary.iter())
+            .chain(self.extra_rows.iter().flat_map(move |row| {
+                if chat_on {
+                    row.chat_on_shortcuts
+                        .iter()
+                        .chain(row.chat_on_secondary_shortcuts.iter())
+                } else {
+                    row.shortcuts.iter().chain(row.secondary_shortcuts.iter())
+                }
+            }))
     }
 
     /// Reserve application Escape/Enter/F10 and the configured movement chords. Reject
     /// conflicts before replacing any live bindings or saving preferences.
     pub fn validate(&self, movement_keys: &[u16]) -> io::Result<()> {
-        let mut seen = Vec::new();
-        for shortcut in self.all_shortcuts() {
-            let Some(shortcut) = shortcut else { continue };
-            if shortcut.chord().is_err()
-                || matches!(shortcut.key, 40 | 41 | 67)
-                || (shortcut.modifiers == 0 && movement_keys.contains(&shortcut.key))
-                || seen.contains(shortcut)
-            {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "Invalid or conflicting action shortcut",
-                ));
+        for chat_on in [false, true] {
+            let mut seen = Vec::new();
+            for shortcut in self.shortcuts_for_context(chat_on) {
+                let Some(shortcut) = shortcut else { continue };
+                if shortcut.chord().is_err()
+                    || matches!(shortcut.key, 40 | 41 | 67)
+                    || (!chat_on
+                        && shortcut.modifiers == 0
+                        && movement_keys.contains(&shortcut.key))
+                    || seen.contains(shortcut)
+                {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Invalid or conflicting action shortcut",
+                    ));
+                }
+                seen.push(*shortcut);
             }
-            seen.push(*shortcut);
         }
         Ok(())
     }
@@ -340,20 +393,35 @@ impl ActionBar {
         let mut bindings = Vec::new();
         for row in 0..ACTION_BAR_ROWS {
             if let Some(row_preferences) = preferences.row(row) {
-                for (slot, shortcut) in row_preferences
-                    .shortcuts
-                    .iter()
-                    .zip(row_preferences.secondary_shortcuts.iter())
-                    .enumerate()
-                    .flat_map(|(slot, pair)| [(slot, pair.0), (slot, pair.1)])
-                {
-                    if let Some(shortcut) = shortcut {
-                        bindings.push(Binding::new(
-                            gameplay.clone(),
-                            shortcut.chord()?,
-                            ActionId::new(format!("{PREFIX}{}", row * ACTION_BAR_SLOTS + slot))?,
-                            RepeatPolicy::Ignore,
-                        ));
+                for (context, primary, secondary) in [
+                    (
+                        gameplay.clone(),
+                        &row_preferences.shortcuts,
+                        &row_preferences.secondary_shortcuts,
+                    ),
+                    (
+                        text.clone(),
+                        &row_preferences.chat_on_shortcuts,
+                        &row_preferences.chat_on_secondary_shortcuts,
+                    ),
+                ] {
+                    for (slot, shortcut) in primary
+                        .iter()
+                        .zip(secondary.iter())
+                        .enumerate()
+                        .flat_map(|(slot, pair)| [(slot, pair.0), (slot, pair.1)])
+                    {
+                        if let Some(shortcut) = shortcut {
+                            bindings.push(Binding::new(
+                                context.clone(),
+                                shortcut.chord()?,
+                                ActionId::new(format!(
+                                    "{PREFIX}{}",
+                                    row * ACTION_BAR_SLOTS + slot
+                                ))?,
+                                RepeatPolicy::Ignore,
+                            ));
+                        }
                     }
                 }
             }
@@ -628,6 +696,42 @@ mod tests {
         assert!(bar.route(&[event(ButtonState::Pressed, true)?]).is_empty());
         bar.route(&[event(ButtonState::Released, false)?]);
         assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn chat_on_and_chat_off_shortcuts_route_only_in_their_own_context()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut preferences = ActionBarPreferences::default();
+        preferences.chat_on_shortcuts[0] = Some(SlotShortcut {
+            key: 4,
+            modifiers: 0,
+        });
+        let mut bar = ActionBar::new(preferences, &[82, 79, 81, 80])?;
+        bar.assign(
+            0,
+            Some(SlotAssignment {
+                label: "Help".into(),
+                command: ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::Help)),
+            }),
+        )?;
+
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
+        bar.route(&[event(ButtonState::Released, false)?]);
+        assert!(
+            bar.route(&[key_event(4, 0, ButtonState::Pressed, false)?])
+                .is_empty()
+        );
+        bar.route(&[key_event(4, 0, ButtonState::Released, false)?]);
+
+        bar.set_input_context(true, false)?;
+        assert!(bar.route(&[event(ButtonState::Pressed, false)?]).is_empty());
+        bar.route(&[event(ButtonState::Released, false)?]);
+        assert_eq!(
+            bar.route(&[key_event(4, 0, ButtonState::Pressed, false)?])
+                .len(),
+            1
+        );
         Ok(())
     }
 

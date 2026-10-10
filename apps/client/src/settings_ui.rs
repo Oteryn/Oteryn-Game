@@ -96,6 +96,17 @@ impl SettingsPanel {
                     self.browser.open = false;
                     self.tab = 5;
                 }
+                PreferenceAction::ExportOptions => self.export_options(),
+                PreferenceAction::ImportOptions => self.import_options(),
+                PreferenceAction::ResetOptions => {
+                    self.draft = ClientSettings::default();
+                    self.message = Some(if en {
+                        "Defaults are ready. Select Apply or OK to save them."
+                    } else {
+                        "Ustawienia domyślne są gotowe. Wybierz Zastosuj lub OK, aby je zapisać."
+                    }
+                    .into());
+                }
             }
             return false;
         }
@@ -124,7 +135,12 @@ impl SettingsPanel {
                     PreferenceAction::Ok => self.save_preferences(true),
                     PreferenceAction::Apply => self.save_preferences(false),
                     PreferenceAction::Cancel => { self.draft = self.current.clone(); self.open = false; self.message = None; }
-                    PreferenceAction::None | PreferenceAction::Defaults | PreferenceAction::QuickSettings => {}
+                    PreferenceAction::None
+                    | PreferenceAction::Defaults
+                    | PreferenceAction::QuickSettings
+                    | PreferenceAction::ExportOptions
+                    | PreferenceAction::ImportOptions
+                    | PreferenceAction::ResetOptions => {}
                 }
                 let body_size = body_rect.size().max(egui::Vec2::splat(1.0));
                 let mut body_ui = ui.new_child(egui::UiBuilder::new().max_rect(body_rect));
@@ -284,6 +300,59 @@ impl SettingsPanel {
         self.finish_save(result, close_after_save);
     }
 
+    fn options_export_path() -> Option<std::path::PathBuf> {
+        ClientSettings::path().map(|path| path.with_file_name("oteryn-options-export.json"))
+    }
+
+    fn export_options(&mut self) {
+        let result = Self::options_export_path()
+            .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
+            .and_then(|path| self.export_options_to(&path).map(|()| path));
+        self.message = Some(match result {
+            Ok(path) if self.draft.english => {
+                format!("Options exported to {}", path.display())
+            }
+            Ok(path) => format!("Wyeksportowano ustawienia do {}", path.display()),
+            Err(_) if self.draft.english => "Options were not exported.".into(),
+            Err(_) => "Nie wyeksportowano ustawień.".into(),
+        });
+    }
+
+    fn import_options(&mut self) {
+        let result = Self::options_export_path()
+            .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
+            .and_then(|path| self.import_options_from(&path));
+        match result {
+            Ok(()) => {
+                self.message = Some(
+                    if self.draft.english {
+                        "Options imported. Select Apply or OK to activate them."
+                    } else {
+                        "Zaimportowano ustawienia. Wybierz Zastosuj lub OK, aby je aktywować."
+                    }
+                    .into(),
+                );
+            }
+            Err(_) => {
+                self.message = Some(if self.draft.english {
+                    "Options were not imported. The export file is missing or invalid."
+                } else {
+                    "Nie zaimportowano ustawień. Plik eksportu nie istnieje lub jest nieprawidłowy."
+                }
+                .into());
+            }
+        }
+    }
+
+    fn export_options_to(&self, path: &std::path::Path) -> std::io::Result<()> {
+        self.draft.save(path)
+    }
+
+    fn import_options_from(&mut self, path: &std::path::Path) -> std::io::Result<()> {
+        self.draft = ClientSettings::load(path)?;
+        Ok(())
+    }
+
     fn finish_save(&mut self, result: std::io::Result<()>, close_after_save: bool) {
         match result {
             Ok(()) => { self.current = self.draft.clone(); self.applied = true; self.message = Some(if self.current.english { "Preferences saved." } else { "Zapisano ustawienia." }.into()); if close_after_save { self.open = false; self.message = None; } }
@@ -385,6 +454,41 @@ mod tests {
                 }
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn options_export_and_import_round_trip_a_validated_draft_without_applying_it()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-options-round-trip-{}-{nonce}.json",
+            std::process::id()
+        ));
+        let current = ClientSettings::default();
+        let exported = ClientSettings {
+            fullscreen: true,
+            ui_scale: 1.4,
+            ..current.clone()
+        };
+        let mut panel = SettingsPanel {
+            draft: exported.clone(),
+            current: current.clone(),
+            open: true,
+            applied: false,
+            tab: 0,
+            message: None,
+            browser: PreferencesBrowser::default(),
+        };
+        panel.export_options_to(&path)?;
+        panel.draft = current.clone();
+        panel.import_options_from(&path)?;
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(panel.draft, exported);
+        assert_eq!(panel.current, current);
+        assert!(!panel.applied);
         Ok(())
     }
 

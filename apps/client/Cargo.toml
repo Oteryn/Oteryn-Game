@@ -2,7 +2,7 @@
 name = "oteryn-client"
 version.workspace = true
 edition.workspace = true
-rust-version = "1.95"
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 publish.workspace = true
@@ -43,8 +43,8 @@ url = "=2.5.8"
 zeroize = "=1.9.0"
 
 [target.'cfg(windows)'.dependencies]
-egui = "=0.36.2"
-egui-winit = { version = "=0.36.2", default-features = false }
+egui = "=0.35.0"
+egui-winit = { version = "=0.35.0", default-features = false }
 image = { version = "=0.25.8", default-features = false, features = ["webp"] }
 windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging"] }
 winit.workspace = true
@@ -55,6 +55,7 @@ windows-native-keyring-store = { version = "=1.1.0", default-features = false }
 secret-service = { version = "=5.2.0", default-features = false, features = ["rt-async-io-crypto-rust"] }
 
 [dev-dependencies]
+egui = "=0.35.0"
 rcgen.workspace = true
 tokio-rustls.workspace = true
 

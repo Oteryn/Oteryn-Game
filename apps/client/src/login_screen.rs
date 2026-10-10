@@ -8,7 +8,7 @@ use oteryn_platform_client::{PlatformClient, PlatformClientConfig};
 use std::sync::mpsc::{self, Receiver};
 
 type AccountResult = Result<(ClientBootstrap, SignedInAccount), String>;
-type EntryResult = Result<(ClientBootstrap, AdmittedSession), String>;
+type EntryResult = Result<(ClientBootstrap, AdmittedSession, String), String>;
 const BLUE: Color32 = Color32::from_rgb(10, 77, 157);
 const BORDER: Color32 = Color32::from_rgb(54, 64, 74);
 const MUTED: Color32 = Color32::from_rgb(167, 178, 189);
@@ -147,7 +147,7 @@ impl LoginScreen {
         });
     }
 
-    pub fn poll(&mut self) -> Option<(ClientBootstrap, AdmittedSession)> {
+    pub fn poll(&mut self) -> Option<(ClientBootstrap, AdmittedSession, String)> {
         if let Some(receiver) = &self.directory {
             match receiver.try_recv() {
                 Ok(result) => {
@@ -272,6 +272,7 @@ impl LoginScreen {
             return;
         };
         let character_id = character.character_id.clone();
+        let character_name = character.name.clone();
         self.cancellation = Some(client.login_cancellation());
         let (sender, receiver) = mpsc::channel();
         self.connecting = Some(receiver);
@@ -280,7 +281,7 @@ impl LoginScreen {
         std::thread::spawn(move || {
             let result = client
                 .enter_selected(account, &character_id)
-                .map(|session| (client, session))
+                .map(|session| (client, session, character_name))
                 .map_err(|error| public_error(error, english));
             let _ = sender.send(result);
         });

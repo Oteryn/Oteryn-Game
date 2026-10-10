@@ -18,6 +18,22 @@ pub(super) struct PageState {
     available: Option<String>,
     last_frame_limit: Option<u16>,
     hotkeys: hotkeys::State,
+    help_action: Option<HelpAction>,
+    help_reset_confirmation: bool,
+    help_info: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum HelpAction {
+    Export,
+    Import,
+    Reset,
+}
+
+impl PageState {
+    pub(super) fn take_help_action(&mut self) -> Option<HelpAction> {
+        self.help_action.take()
+    }
 }
 
 pub(super) fn show(
@@ -34,6 +50,7 @@ pub(super) fn show(
         "sound" => sound(ui, draft, english),
         "battle_sounds" => battle(ui, draft, english),
         "ui_sounds" => ui_sound(ui, draft, english),
+        "help" => help(ui, english, state),
         _ => {
             return hotkeys::show(ui, draft, section, english, &mut state.hotkeys)
                 || hud::show(ui, draft, section, english)
@@ -41,6 +58,122 @@ pub(super) fn show(
         }
     }
     true
+}
+
+fn help(ui: &mut egui::Ui, en: bool, state: &mut PageState) {
+    boxed(ui, if en { "Support" } else { "Pomoc" }, |ui| {
+        egui::Grid::new("help-support-actions")
+            .num_columns(2)
+            .show(ui, |ui| {
+                for (index, (pl, english)) in [
+                    ("Pomoc klienta", "Client Help"),
+                    ("Kompendium", "Compendium"),
+                    ("Naruszenia zasad", "Rule Violations"),
+                    ("Instrukcja", "Manual"),
+                    ("Najczęstsze pytania", "FAQ"),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    ui.add_enabled(false, egui::Button::new(if en { english } else { pl }))
+                        .on_hover_text(if en {
+                            "No verified Oteryn destination is configured for this reference action."
+                        } else {
+                            "Dla tej czynności referencyjnej nie skonfigurowano zweryfikowanego celu Oteryn."
+                        });
+                    if index % 2 == 1 {
+                        ui.end_row();
+                    }
+                }
+                if ui.button(if en { "Info" } else { "Informacje" }).clicked() {
+                    state.help_info = !state.help_info;
+                }
+                ui.end_row();
+            });
+        if state.help_info {
+            ui.separator();
+            ui.label(format!(
+                "Oteryn {} · protocol-oteryn",
+                env!("CARGO_PKG_VERSION")
+            ));
+            ui.weak(if en {
+                "Identity and authoritative game state remain server-owned."
+            } else {
+                "Tożsamość i autorytatywny stan gry pozostają po stronie serwera."
+            });
+        }
+    });
+    boxed(ui, if en { "Local Data" } else { "Dane lokalne" }, |ui| {
+        if ui
+            .button(if en {
+                "Export All Options"
+            } else {
+                "Eksportuj wszystkie ustawienia"
+            })
+            .clicked()
+        {
+            state.help_action = Some(HelpAction::Export);
+        }
+        if ui
+            .button(if en {
+                "Import Options"
+            } else {
+                "Importuj ustawienia"
+            })
+            .clicked()
+        {
+            state.help_action = Some(HelpAction::Import);
+        }
+        for label in if en {
+            ["Export Minimap", "Import Minimap"]
+        } else {
+            ["Eksportuj minimapę", "Importuj minimapę"]
+        } {
+            ui.add_enabled(false, egui::Button::new(label))
+                .on_hover_text(if en {
+                    "No versioned minimap import/export format is available yet."
+                } else {
+                    "Brak jeszcze wersjonowanego formatu importu/eksportu minimapy."
+                });
+        }
+        if !state.help_reset_confirmation {
+            if ui
+                .button(if en {
+                    "Reset All Options"
+                } else {
+                    "Przywróć wszystkie ustawienia"
+                })
+                .clicked()
+            {
+                state.help_reset_confirmation = true;
+            }
+        } else {
+            egui::Modal::new(egui::Id::new("reset-all-options-confirmation")).show(
+                ui.ctx(),
+                |ui| {
+                    ui.heading(if en {
+                        "Reset All Options"
+                    } else {
+                        "Przywróć wszystkie ustawienia"
+                    });
+                    ui.label(if en {
+                        "Reset every local option?"
+                    } else {
+                        "Przywrócić wszystkie ustawienia lokalne?"
+                    });
+                    ui.horizontal(|ui| {
+                        if ui.button(if en { "Reset" } else { "Przywróć" }).clicked() {
+                            state.help_action = Some(HelpAction::Reset);
+                            state.help_reset_confirmation = false;
+                        }
+                        if ui.button(if en { "Cancel" } else { "Anuluj" }).clicked() {
+                            state.help_reset_confirmation = false;
+                        }
+                    });
+                },
+            );
+        }
+    });
 }
 
 fn row(

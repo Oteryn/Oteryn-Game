@@ -172,6 +172,17 @@ impl ClientSettings {
         Ok(())
     }
 
+    /// Validate the hotkey editor against the currently edited action-bar
+    /// bindings before Apply commits the draft.
+    pub fn validate_hotkey_draft(&self) -> io::Result<()> {
+        let mut hotkeys = self.hotkeys.clone();
+        hotkeys
+            .active_mut()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing hotkey profile"))?
+            .action_bar = self.action_bar.clone();
+        hotkeys.validate(&self.movement_keys)
+    }
+
     pub fn select_hotkey_profile(&mut self, index: usize) -> io::Result<()> {
         if index >= self.hotkeys.profiles.len() {
             return Err(io::Error::new(
@@ -186,6 +197,29 @@ impl ClientSettings {
         self.hotkeys.selected = index;
         self.action_bar = self.hotkeys.profiles[index].action_bar.clone();
         Ok(())
+    }
+
+    /// Select the profile named exactly like the admitted character when the
+    /// observed Auto-Switch option is enabled. No profile is created or guessed.
+    /// The previous profile's current action bars are retained before switching.
+    pub fn auto_switch_hotkey_profile(&mut self, character_name: &str) -> io::Result<bool> {
+        if !self.hotkeys.auto_switch {
+            return Ok(false);
+        }
+        let candidate = character_name.trim();
+        let Some(index) = self
+            .hotkeys
+            .profiles
+            .iter()
+            .position(|profile| profile.name.eq_ignore_ascii_case(candidate))
+        else {
+            return Ok(false);
+        };
+        if index == self.hotkeys.selected {
+            return Ok(false);
+        }
+        self.select_hotkey_profile(index)?;
+        Ok(true)
     }
 
     pub fn validate(&self) -> io::Result<()> {
@@ -214,7 +248,7 @@ impl ClientSettings {
             ));
         }
         self.action_bar.validate(&self.movement_keys)?;
-        self.hotkeys.validate(&self.movement_keys)?;
+        self.validate_hotkey_draft()?;
         crate::panel_catalog::ShortcutOrder::from_saved(&self.panel_shortcuts)?;
         crate::settings_catalog::validate_future_preferences(&self.future_preferences)
     }
@@ -325,6 +359,30 @@ mod tests {
         settings = ClientSettings::default();
         settings.version = 2;
         assert!(settings.validate().is_err());
+    }
+
+    #[test]
+    fn hotkey_auto_switch_uses_only_an_existing_character_named_profile()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut settings = ClientSettings::default();
+        let mut knight = crate::hotkeys::HotkeyProfile {
+            name: "Owned Knight".into(),
+            ..Default::default()
+        };
+        knight.action_bar.edge_enabled = [false, true, false];
+        settings.hotkeys.profiles.push(knight.clone());
+        settings.hotkeys.auto_switch = true;
+        assert!(!settings.auto_switch_hotkey_profile("Unknown")?);
+        assert_eq!(settings.hotkeys.selected, 0);
+        assert!(settings.auto_switch_hotkey_profile("owned knight")?);
+        assert_eq!(settings.hotkeys.selected, 1);
+        assert_eq!(settings.action_bar, knight.action_bar);
+        assert!(!settings.auto_switch_hotkey_profile("Owned Knight")?);
+        settings.hotkeys.auto_switch = false;
+        assert!(!settings.auto_switch_hotkey_profile("Default")?);
+        assert_eq!(settings.hotkeys.selected, 1);
+        settings.validate()?;
+        Ok(())
     }
 
     #[test]

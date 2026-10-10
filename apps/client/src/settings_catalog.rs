@@ -269,6 +269,28 @@ const LOOT_COLOUR: &[LocalizedChoice] = &[
         en: "Corners",
     },
 ];
+const TARGET_MARKING: &[LocalizedChoice] = &[
+    LocalizedChoice {
+        id: "frame_and_highlight",
+        pl: "Ramka i wyróżnienie",
+        en: "Frame & Highlight",
+    },
+    LocalizedChoice {
+        id: "frame_only",
+        pl: "Tylko ramka",
+        en: "Frame Only",
+    },
+    LocalizedChoice {
+        id: "highlight_only",
+        pl: "Tylko wyróżnienie",
+        en: "Highlight Only",
+    },
+    LocalizedChoice {
+        id: "none",
+        pl: "Brak",
+        en: "None",
+    },
+];
 const PERCENT: OptionKind = Integer { min: 0, max: 100 };
 #[rustfmt::skip]
 pub const CONTAINER_SORT_CHOICES: &[LocalizedChoice] = &[
@@ -462,6 +484,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         n!("console.join_leave", "Komunikaty wejścia i wyjścia z kanału", "Channel join/leave messages", Toggle, "chat membership projection", "consoleShowJoinLeaveMessages"),
     ]),
     section!("game_window", "Okno gry", "Game Window", [
+        p!("window.target_marking", "Oznaczaj cel wizualnie", "Mark Target Visually", Choice(TARGET_MARKING), "target projection"),
         p!("window.textual_effects", "Efekty tekstowe", "Show Textual Effects", Toggle, "effect projection"),
         p!("window.potion_sounds", "Efekty dźwiękowe mikstur", "Show Potion Sound Effects", Toggle, "effect projection"),
         q!("window.fit", "Dopasowanie obszaru gry", "Game viewport fit", UNKNOWN_CHOICES, "scene layout"),
@@ -650,6 +673,13 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         n!("capture.reward_chest", "Przy skrzyni nagród", "Reward chest", Toggle, "reward events", "screenshotsRewardChestEnabled"),
     ]),
     section!("help", "Pomoc i dane lokalne", "Help", [
+        p!("help.client_help", "Pomoc klienta", "Client Help", Action, "safe link routing"),
+        p!("help.compendium", "Kompendium", "Compendium", Action, "safe link routing"),
+        p!("help.rule_violations", "Naruszenia zasad", "Rule Violations", Action, "safe link routing"),
+        p!("help.manual", "Instrukcja", "Manual", Action, "safe link routing"),
+        p!("help.faq", "Najczęstsze pytania", "FAQ", Action, "safe link routing"),
+        p!("help.info", "Informacje o kliencie", "Info", Action, "local client information"),
+        p!("help.export_all_options", "Eksportuj wszystkie ustawienia", "Export All Options", Action, "credential-free preference export"),
         p!("help.documentation", "Otwórz dokumentację", "Open documentation", Action, "safe link routing"),
         p!("help.import_options", "Importuj ustawienia", "Import options", Action, "validated preference import"),
         p!("help.export_options", "Eksportuj ustawienia", "Export options", Action, "credential-free preference export"),

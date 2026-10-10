@@ -31,6 +31,9 @@ pub enum PreferenceAction {
     Cancel,
     Defaults,
     QuickSettings,
+    ExportOptions,
+    ImportOptions,
+    ResetOptions,
 }
 
 impl PreferencesBrowser {
@@ -163,7 +166,15 @@ impl PreferencesBrowser {
                         if self.overview { overview::show(ui, draft, english); }
                         else if section.id == "basic" { basic_page(ui, draft, english); }
                         else if section.id == "action_bars" { action_bars_page(ui, draft, english, self.action_bar_available, &mut self.clear_action_row); }
-                        else if search.is_empty() && pages::show(ui, draft, section.id, english, &mut self.page_state) {}
+                        else if search.is_empty() && pages::show(ui, draft, section.id, english, &mut self.page_state) {
+                            if let Some(help_action) = self.page_state.take_help_action() {
+                                action = match help_action {
+                                    pages::HelpAction::Export => PreferenceAction::ExportOptions,
+                                    pages::HelpAction::Import => PreferenceAction::ImportOptions,
+                                    pages::HelpAction::Reset => PreferenceAction::ResetOptions,
+                                };
+                            }
+                        }
                         else {
 
                         let mut matching = 0;
@@ -1089,6 +1100,67 @@ pub(crate) mod test_support {
 mod tests {
     use super::*;
     use test_support::{button_position, click, frame, reveal, scroll_geometry};
+
+    #[test]
+    fn every_reference_settings_page_renders_in_the_compiled_client_at_native_size()
+    -> Result<(), &'static str> {
+        let pages = [
+            ("basic", "Gameplay"),
+            ("controls", "Mouse Preset:"),
+            ("general_hotkeys", "Auto-Switch Hotkey Preset"),
+            ("action_hotkeys", "Bottom Action Bar: Action Button 1.01"),
+            ("custom_hotkeys", "New Action"),
+            ("interface", "Highlight Mouse Target"),
+            ("hud", "Special conditions · 35"),
+            ("console", "Show Info Messages"),
+            ("game_window", "Show Textual Effects"),
+            ("action_bars", "Show Bottom Action Bars:"),
+            ("shortcuts", "Displayed Shortcuts:"),
+            ("graphics", "Graphics Engine:"),
+            ("effects", "Lighting"),
+            ("sound", "Sound Device:"),
+            ("battle_sounds", "Own Battle Sounds"),
+            ("ui_sounds", "UI Volume: —"),
+            ("miscellaneous", "Ask Before Buying Products"),
+            ("gameplay", "Allow Others to Inspect Your Character"),
+            ("screenshots", "Only Capture Game Window"),
+            ("help", "Client Help"),
+        ];
+        let ctx = egui::Context::default();
+        ctx.set_theme(egui::Theme::Dark);
+        crate::client_chrome::install(&ctx, false);
+        let size = egui::vec2(900.0, 620.0);
+        let mut browser = PreferencesBrowser::new();
+        browser.overview = false;
+        let mut draft = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        for (section, marker) in pages {
+            browser.section = SETTINGS_SECTIONS
+                .iter()
+                .position(|entry| entry.id == section)
+                .ok_or("missing settings section")?;
+            let mut output = egui::FullOutput::default();
+            for _ in 0..6 {
+                output = frame(&ctx, size, Vec::new(), |ctx| {
+                    browser.show(ctx, &mut draft, None)
+                })
+                .1;
+            }
+            assert!(
+                button_position(&output, size, marker).is_some(),
+                "compiled page marker is not reachable: {section} / {marker}"
+            );
+            for footer in ["Reset", "OK", "Apply", "Cancel"] {
+                assert!(
+                    button_position(&output, size, footer).is_some(),
+                    "compiled page footer is not reachable"
+                );
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn quick_settings_hud_navigation_opens_the_requested_page() -> Result<(), &'static str> {

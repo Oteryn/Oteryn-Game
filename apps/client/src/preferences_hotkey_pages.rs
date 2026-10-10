@@ -1,11 +1,10 @@
 //! Profile-based hotkey pages matching the reference table structure.
 
-use super::boxed;
 use oteryn_client::{
     action_bar::{ACTION_BAR_ROWS, ACTION_BAR_SLOTS, SlotShortcut},
     hotkeys::{
         CustomHotkey, CustomHotkeyAction, HotkeyPair, HotkeyProfile, MAX_HOTKEY_PROFILES,
-        ObjectUseMode,
+        ObjectUseMode, general_action_supported,
     },
     settings::ClientSettings,
     settings_catalog::ShortcutBinding,
@@ -272,6 +271,8 @@ const GENERAL_ACTIONS: &[(&str, [&str; 2])] = &[
 #[derive(Default)]
 pub(super) struct State {
     search: String,
+    search_applied: String,
+    search_changed_at: Option<f64>,
     chat_on: bool,
     profile_edit: Option<ProfileEdit>,
     remove_confirmation: bool,
@@ -283,6 +284,35 @@ pub(super) struct State {
     learned_spells_only: bool,
     object_definition: String,
     object_use_mode: ObjectUseMode,
+    binding_editor: Option<BindingEditor>,
+}
+
+#[derive(Clone)]
+struct BindingEditor {
+    target: BindingTarget,
+    action: String,
+    captured: Option<ShortcutBinding>,
+    listening: bool,
+}
+
+#[derive(Clone)]
+enum BindingTarget {
+    General {
+        action: &'static str,
+        chat_on: bool,
+        second: bool,
+    },
+    ActionBar {
+        row: usize,
+        slot: usize,
+        chat_on: bool,
+        second: bool,
+    },
+    Custom {
+        index: usize,
+        chat_on: bool,
+        second: bool,
+    },
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -324,6 +354,17 @@ pub(super) fn show(
         "action_hotkeys" => action_bars(ui, draft, en, state),
         "custom_hotkeys" => custom(ui, draft, en, state),
         _ => unreachable!(),
+    }
+    binding_editor(ui, draft, en, state);
+    if draft.validate_hotkey_draft().is_err() {
+        ui.colored_label(
+            ui.visuals().error_fg_color,
+            if en {
+                "Conflicting or invalid shortcut. Clear one binding before applying."
+            } else {
+                "Skrót jest nieprawidłowy lub użyty ponownie. Wyczyść jedno przypisanie przed zastosowaniem."
+            },
+        );
     }
     true
 }
@@ -389,57 +430,89 @@ fn header(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
         let valid_name = profile_name_available(draft, edit);
         let show_invalid_name = !edit.name.trim().is_empty() && !valid_name;
         let mut close_editor = false;
-        ui.horizontal(|ui| {
+        egui::Modal::new(egui::Id::new("hotkey-profile-editor")).show(ui.ctx(), |ui| {
+            ui.heading(match edit.operation {
+                ProfileOperation::Add => {
+                    if en {
+                        "Add Hotkey Preset"
+                    } else {
+                        "Dodaj profil skrótów"
+                    }
+                }
+                ProfileOperation::Copy => {
+                    if en {
+                        "Copy Hotkey Preset"
+                    } else {
+                        "Kopiuj profil skrótów"
+                    }
+                }
+                ProfileOperation::Rename => {
+                    if en {
+                        "Rename Hotkey Preset"
+                    } else {
+                        "Zmień nazwę profilu skrótów"
+                    }
+                }
+            });
             ui.label(if en {
                 "Profile name:"
             } else {
                 "Nazwa profilu:"
             });
             ui.add(egui::TextEdit::singleline(&mut edit.name).char_limit(48));
-            if ui
-                .add_enabled(valid_name, egui::Button::new("OK"))
-                .clicked()
-            {
-                apply_profile_edit(draft, edit);
-                close_editor = true;
+            if show_invalid_name {
+                ui.colored_label(
+                    ui.visuals().error_fg_color,
+                    if en {
+                        "Profile names must be unique."
+                    } else {
+                        "Nazwy profili muszą być unikalne."
+                    },
+                );
             }
-            if ui.button(if en { "Cancel" } else { "Anuluj" }).clicked() {
-                close_editor = true;
-            }
+            ui.horizontal(|ui| {
+                if ui
+                    .add_enabled(valid_name, egui::Button::new("OK"))
+                    .clicked()
+                {
+                    apply_profile_edit(draft, edit);
+                    close_editor = true;
+                }
+                if ui.button(if en { "Cancel" } else { "Anuluj" }).clicked() {
+                    close_editor = true;
+                }
+            });
         });
-        if show_invalid_name {
-            ui.colored_label(
-                ui.visuals().error_fg_color,
-                if en {
-                    "Profile names must be unique."
-                } else {
-                    "Nazwy profili muszą być unikalne."
-                },
-            );
-        }
         if close_editor {
             state.profile_edit = None;
         }
     }
     if state.remove_confirmation {
-        ui.horizontal(|ui| {
+        egui::Modal::new(egui::Id::new("hotkey-profile-remove")).show(ui.ctx(), |ui| {
+            ui.heading(if en {
+                "Remove Hotkey Preset"
+            } else {
+                "Usuń profil skrótów"
+            });
             ui.label(if en {
                 "Remove the selected profile?"
             } else {
                 "Usunąć wybrany profil?"
             });
-            if ui.button(if en { "Remove" } else { "Usuń" }).clicked() {
-                let selected = draft.hotkeys.selected;
-                draft.hotkeys.profiles.remove(selected);
-                draft.hotkeys.selected = selected.min(draft.hotkeys.profiles.len() - 1);
-                draft.action_bar = draft.hotkeys.profiles[draft.hotkeys.selected]
-                    .action_bar
-                    .clone();
-                state.remove_confirmation = false;
-            }
-            if ui.button(if en { "Cancel" } else { "Anuluj" }).clicked() {
-                state.remove_confirmation = false;
-            }
+            ui.horizontal(|ui| {
+                if ui.button(if en { "Remove" } else { "Usuń" }).clicked() {
+                    let selected = draft.hotkeys.selected;
+                    draft.hotkeys.profiles.remove(selected);
+                    draft.hotkeys.selected = selected.min(draft.hotkeys.profiles.len() - 1);
+                    draft.action_bar = draft.hotkeys.profiles[draft.hotkeys.selected]
+                        .action_bar
+                        .clone();
+                    state.remove_confirmation = false;
+                }
+                if ui.button(if en { "Cancel" } else { "Anuluj" }).clicked() {
+                    state.remove_confirmation = false;
+                }
+            });
         });
     }
     ui.checkbox(
@@ -476,15 +549,30 @@ fn header(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
         } else {
             "Wyszukaj skrót:"
         });
-        ui.add(
+        let response = ui.add(
             egui::TextEdit::singleline(&mut state.search)
                 .desired_width(ui.available_width() - 28.0)
                 .char_limit(128),
         );
+        if response.changed() {
+            state.search_changed_at = Some(ui.input(|input| input.time));
+        }
         if ui.button("×").clicked() {
             state.search.clear();
+            state.search_applied.clear();
+            state.search_changed_at = None;
         }
     });
+    if let Some(changed_at) = state.search_changed_at {
+        let elapsed = ui.input(|input| input.time) - changed_at;
+        if elapsed >= 0.25 {
+            state.search_applied.clone_from(&state.search);
+            state.search_changed_at = None;
+        } else {
+            ui.ctx()
+                .request_repaint_after(std::time::Duration::from_secs_f64(0.25 - elapsed));
+        }
+    }
 }
 
 fn apply_profile_edit(draft: &mut ClientSettings, edit: &ProfileEdit) {
@@ -531,7 +619,7 @@ fn profile_name_available(draft: &ClientSettings, edit: &ProfileEdit) -> bool {
             })
 }
 
-fn general(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &State) {
+fn general(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut State) {
     let Some(profile) = draft.hotkeys.active_mut() else {
         return;
     };
@@ -547,33 +635,53 @@ fn general(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &Stat
         .show(ui, |ui| {
             for (id, labels) in GENERAL_ACTIONS {
                 let label = labels[usize::from(en)];
-                if !matches_search(&state.search, label) {
+                if !matches_search(&state.search_applied, label) {
                     continue;
                 }
                 ui.label(label);
-                let mut pair = map.get(*id).copied().unwrap_or_default();
-                let changed = binding(ui, (id, 0), &mut pair.first, en)
-                    | binding(ui, (id, 1), &mut pair.second, en);
-                if changed {
-                    if pair == HotkeyPair::default() {
-                        map.remove(*id);
-                    } else {
-                        map.insert((*id).into(), pair);
-                    }
+                let pair = map.get(*id).copied().unwrap_or_default();
+                if general_action_supported(id) {
+                    binding_button(
+                        ui,
+                        pair.first,
+                        BindingTarget::General {
+                            action: id,
+                            chat_on: state.chat_on,
+                            second: false,
+                        },
+                        label,
+                        en,
+                        &mut state.binding_editor,
+                    );
+                    binding_button(
+                        ui,
+                        pair.second,
+                        BindingTarget::General {
+                            action: id,
+                            chat_on: state.chat_on,
+                            second: true,
+                        },
+                        label,
+                        en,
+                        &mut state.binding_editor,
+                    );
+                } else {
+                    unavailable_binding(ui, pair.first, en);
+                    unavailable_binding(ui, pair.second, en);
                 }
                 ui.end_row();
             }
         });
 }
 
-fn action_bars(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &State) {
+fn action_bars(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut State) {
     table_header(ui, en);
     egui::Grid::new("action-hotkey-table")
         .striped(true)
         .num_columns(3)
         .show(ui, |ui| {
             for row in 0..ACTION_BAR_ROWS {
-                let Some(mut preferences) = draft.action_bar.row(row) else {
+                let Some(preferences) = draft.action_bar.row(row) else {
                     continue;
                 };
                 for slot in 0..ACTION_BAR_SLOTS {
@@ -583,20 +691,46 @@ fn action_bars(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &
                         row + 1,
                         slot + 1
                     );
-                    if !matches_search(&state.search, &label) {
+                    if !matches_search(&state.search_applied, &label) {
                         continue;
                     }
                     ui.label(&label);
-                    let _ = binding_slot(ui, (row, slot, 0), &mut preferences.shortcuts[slot], en);
-                    let _ = binding_slot(
+                    let (primary, secondary) = if state.chat_on {
+                        (
+                            &preferences.chat_on_shortcuts,
+                            &preferences.chat_on_secondary_shortcuts,
+                        )
+                    } else {
+                        (&preferences.shortcuts, &preferences.secondary_shortcuts)
+                    };
+                    binding_button(
                         ui,
-                        (row, slot, 1),
-                        &mut preferences.secondary_shortcuts[slot],
+                        primary[slot].map(slot_to_binding),
+                        BindingTarget::ActionBar {
+                            row,
+                            slot,
+                            chat_on: state.chat_on,
+                            second: false,
+                        },
+                        &label,
                         en,
+                        &mut state.binding_editor,
+                    );
+                    binding_button(
+                        ui,
+                        secondary[slot].map(slot_to_binding),
+                        BindingTarget::ActionBar {
+                            row,
+                            slot,
+                            chat_on: state.chat_on,
+                            second: true,
+                        },
+                        &label,
+                        en,
+                        &mut state.binding_editor,
                     );
                     ui.end_row();
                 }
-                let _ = draft.action_bar.set_row(row, preferences);
             }
         });
 }
@@ -613,10 +747,10 @@ fn custom(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
         .show(ui, |ui| {
             for (index, action) in profile.custom.iter_mut().enumerate() {
                 let label = custom_label(&action.action, en);
-                if !matches_search(&state.search, &label) {
+                if !matches_search(&state.search_applied, &label) {
                     continue;
                 }
-                ui.label(label).context_menu(|ui| {
+                ui.label(&label).context_menu(|ui| {
                     if ui.button(if en { "Remove" } else { "Usuń" }).clicked() {
                         remove = Some(index);
                         ui.close();
@@ -627,8 +761,35 @@ fn custom(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
                 } else {
                     &mut action.chat_off
                 };
-                let _ = binding(ui, ("custom", index, 0), &mut pair.first, en);
-                let _ = binding(ui, ("custom", index, 1), &mut pair.second, en);
+                if matches!(&action.action, CustomHotkeyAction::Text { .. }) {
+                    binding_button(
+                        ui,
+                        pair.first,
+                        BindingTarget::Custom {
+                            index,
+                            chat_on: state.chat_on,
+                            second: false,
+                        },
+                        &label,
+                        en,
+                        &mut state.binding_editor,
+                    );
+                    binding_button(
+                        ui,
+                        pair.second,
+                        BindingTarget::Custom {
+                            index,
+                            chat_on: state.chat_on,
+                            second: true,
+                        },
+                        &label,
+                        en,
+                        &mut state.binding_editor,
+                    );
+                } else {
+                    unavailable_binding(ui, pair.first, en);
+                    unavailable_binding(ui, pair.second, en);
+                }
                 ui.end_row();
             }
         });
@@ -649,14 +810,34 @@ fn custom(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
 }
 
 fn choose_new_action(ui: &mut egui::Ui, en: bool, state: &mut State) {
-    boxed(ui, if en { "New Action" } else { "Nowa czynność" }, |ui| {
+    egui::Modal::new(egui::Id::new("custom-action-choose")).show(ui.ctx(), |ui| {
+        ui.heading(if en { "New Action" } else { "Nowa czynność" });
         ui.horizontal(|ui| {
-            for (kind, pl, english) in [
-                (NewAction::Spell, "Przypisz czar", "Assign Spell"),
-                (NewAction::Object, "Przypisz przedmiot", "Assign Object"),
-                (NewAction::Text, "Przypisz tekst", "Assign Text"),
+            for (kind, pl, english, available) in [
+                (NewAction::Spell, "Przypisz czar", "Assign Spell", false),
+                (
+                    NewAction::Object,
+                    "Przypisz przedmiot",
+                    "Assign Object",
+                    false,
+                ),
+                (NewAction::Text, "Przypisz tekst", "Assign Text", true),
             ] {
-                if ui.button(if en { english } else { pl }).clicked() {
+                if ui
+                    .add_enabled(available, egui::Button::new(if en { english } else { pl }))
+                    .on_hover_text(if available {
+                        if en {
+                            "Text actions are routed to the real chat composer."
+                        } else {
+                            "Akcje tekstowe trafiają do rzeczywistego pola czatu."
+                        }
+                    } else if en {
+                        "Requires an authoritative live spell or inventory picker."
+                    } else {
+                        "Wymaga autorytatywnego katalogu czarów lub ekwipunku sesji."
+                    })
+                    .clicked()
+                {
                     state.new_action = Some(kind);
                 }
             }
@@ -680,7 +861,8 @@ fn edit_new_action(
         NewAction::Text => ("Przypisz tekst", "Assign Text"),
         NewAction::Choose => return,
     };
-    boxed(ui, if en { title.1 } else { title.0 }, |ui| {
+    egui::Modal::new(egui::Id::new("custom-action-editor")).show(ui.ctx(), |ui| {
+        ui.heading(if en { title.1 } else { title.0 });
         match kind {
             NewAction::Spell => {
                 ui.label(if en {
@@ -842,71 +1024,336 @@ fn table_header(ui: &mut egui::Ui, en: bool) {
     });
 }
 
-fn binding_slot(
+fn binding_button(
     ui: &mut egui::Ui,
-    id: impl std::hash::Hash + std::fmt::Debug,
-    value: &mut Option<SlotShortcut>,
+    value: Option<ShortcutBinding>,
+    target: BindingTarget,
+    action: &str,
     en: bool,
+    editor: &mut Option<BindingEditor>,
+) {
+    let response =
+        ui.button(value.map_or_else(|| if en { "None".into() } else { "Brak".into() }, chord));
+    if response.clicked() {
+        *editor = Some(BindingEditor {
+            target,
+            action: action.into(),
+            captured: value,
+            listening: true,
+        });
+    }
+}
+
+fn binding_editor(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut State) {
+    let Some(mut editor) = state.binding_editor.take() else {
+        return;
+    };
+    let mut close = false;
+    if editor.listening {
+        let event = ui.input(|input| {
+            input.events.iter().find_map(|event| {
+                let egui::Event::Key {
+                    key,
+                    physical_key,
+                    pressed: true,
+                    repeat: false,
+                    modifiers,
+                } = event
+                else {
+                    return None;
+                };
+                Some((*key, physical_key.unwrap_or(*key), *modifiers))
+            })
+        });
+        if let Some((logical, physical, modifiers)) = event {
+            if logical == egui::Key::Escape {
+                close = true;
+            } else if let Some(key) = egui_key_to_hid(physical) {
+                editor.captured = Some(ShortcutBinding {
+                    key,
+                    ctrl: modifiers.ctrl,
+                    alt: modifiers.alt,
+                    shift: modifiers.shift,
+                    meta: modifiers.mac_cmd,
+                });
+                editor.listening = false;
+            }
+        }
+    }
+    let valid = binding_candidate_valid(draft, &editor.target, editor.captured);
+    egui::Modal::new(egui::Id::new("hotkey-binding-editor")).show(ui.ctx(), |ui| {
+        ui.heading(if en { "Set Hotkey" } else { "Ustaw skrót" });
+        ui.label(&editor.action);
+        ui.weak(if editor.target.chat_on() {
+            if en {
+                "Chat Mode On"
+            } else {
+                "Tryb czatu włączony"
+            }
+        } else if en {
+            "Chat Mode Off"
+        } else {
+            "Tryb czatu wyłączony"
+        });
+        ui.add_space(6.0);
+        ui.label(if editor.listening {
+            if en {
+                "Press a key…"
+            } else {
+                "Naciśnij klawisz…"
+            }
+        } else {
+            ""
+        });
+        ui.strong(
+            editor
+                .captured
+                .map_or_else(|| if en { "None".into() } else { "Brak".into() }, chord),
+        );
+        if !valid && editor.captured.is_some() {
+            ui.colored_label(
+                ui.visuals().error_fg_color,
+                if en {
+                    "This key conflicts with another action or is reserved."
+                } else {
+                    "Ten klawisz koliduje z inną czynnością lub jest zarezerwowany."
+                },
+            );
+        }
+        ui.horizontal(|ui| {
+            if ui
+                .button(if en { "Capture" } else { "Przechwyć" })
+                .clicked()
+            {
+                editor.listening = true;
+            }
+            if ui.add_enabled(valid, egui::Button::new("OK")).clicked() {
+                let _ = set_binding(draft, &editor.target, editor.captured);
+                close = true;
+            }
+            if ui.button(if en { "Clear" } else { "Wyczyść" }).clicked() {
+                let _ = set_binding(draft, &editor.target, None);
+                close = true;
+            }
+            if ui.button(if en { "Cancel" } else { "Anuluj" }).clicked() {
+                close = true;
+            }
+        });
+    });
+    if !close {
+        state.binding_editor = Some(editor);
+    }
+}
+
+impl BindingTarget {
+    const fn chat_on(&self) -> bool {
+        match self {
+            Self::General { chat_on, .. }
+            | Self::ActionBar { chat_on, .. }
+            | Self::Custom { chat_on, .. } => *chat_on,
+        }
+    }
+}
+
+fn binding_candidate_valid(
+    draft: &ClientSettings,
+    target: &BindingTarget,
+    value: Option<ShortcutBinding>,
 ) -> bool {
-    let mut converted = value.map(|value| ShortcutBinding {
+    let mut candidate = draft.clone();
+    set_binding(&mut candidate, target, value) && candidate.validate_hotkey_draft().is_ok()
+}
+
+fn set_binding(
+    draft: &mut ClientSettings,
+    target: &BindingTarget,
+    value: Option<ShortcutBinding>,
+) -> bool {
+    match target {
+        BindingTarget::General {
+            action,
+            chat_on,
+            second,
+        } => {
+            let Some(profile) = draft.hotkeys.active_mut() else {
+                return false;
+            };
+            let map = if *chat_on {
+                &mut profile.general_chat_on
+            } else {
+                &mut profile.general_chat_off
+            };
+            let mut pair = map.get(*action).copied().unwrap_or_default();
+            if *second {
+                pair.second = value;
+            } else {
+                pair.first = value;
+            }
+            if pair == HotkeyPair::default() {
+                map.remove(*action);
+            } else {
+                map.insert((*action).into(), pair);
+            }
+            true
+        }
+        BindingTarget::ActionBar {
+            row,
+            slot,
+            chat_on,
+            second,
+        } => {
+            let Some(mut preferences) = draft.action_bar.row(*row) else {
+                return false;
+            };
+            let Some(shortcut) = (if *chat_on && *second {
+                preferences.chat_on_secondary_shortcuts.get_mut(*slot)
+            } else if *chat_on {
+                preferences.chat_on_shortcuts.get_mut(*slot)
+            } else if *second {
+                preferences.secondary_shortcuts.get_mut(*slot)
+            } else {
+                preferences.shortcuts.get_mut(*slot)
+            }) else {
+                return false;
+            };
+            *shortcut = value.map(binding_to_slot);
+            draft.action_bar.set_row(*row, preferences).is_ok()
+        }
+        BindingTarget::Custom {
+            index,
+            chat_on,
+            second,
+        } => {
+            let Some(action) = draft
+                .hotkeys
+                .active_mut()
+                .and_then(|profile| profile.custom.get_mut(*index))
+            else {
+                return false;
+            };
+            let pair = if *chat_on {
+                &mut action.chat_on
+            } else {
+                &mut action.chat_off
+            };
+            if *second {
+                pair.second = value;
+            } else {
+                pair.first = value;
+            }
+            true
+        }
+    }
+}
+
+fn slot_to_binding(value: SlotShortcut) -> ShortcutBinding {
+    ShortcutBinding {
         key: value.key,
         shift: value.modifiers & 1 != 0,
         ctrl: value.modifiers & 2 != 0,
         alt: value.modifiers & 4 != 0,
         meta: value.modifiers & 8 != 0,
-    });
-    let changed = binding(ui, id, &mut converted, en);
-    if changed {
-        *value = converted.map(|value| SlotShortcut {
-            key: value.key,
-            modifiers: u8::from(value.shift)
-                | (u8::from(value.ctrl) << 1)
-                | (u8::from(value.alt) << 2)
-                | (u8::from(value.meta) << 3),
-        });
     }
-    changed
 }
 
-fn binding(
-    ui: &mut egui::Ui,
-    id: impl std::hash::Hash + std::fmt::Debug,
-    value: &mut Option<ShortcutBinding>,
-    en: bool,
-) -> bool {
-    let before = *value;
-    ui.push_id(id, |ui| {
-        egui::ComboBox::from_id_salt("key")
-            .selected_text(
-                value.map_or_else(|| if en { "None".into() } else { "Brak".into() }, chord),
-            )
-            .show_ui(ui, |ui| {
-                ui.selectable_value(value, None, if en { "None" } else { "Brak" });
-                for key in (4..=39).chain(43..=44).chain(58..=69).chain(79..=82) {
-                    let modifiers = value.unwrap_or(ShortcutBinding {
-                        key,
-                        ctrl: false,
-                        alt: false,
-                        shift: false,
-                        meta: false,
-                    });
-                    ui.selectable_value(
-                        value,
-                        Some(ShortcutBinding { key, ..modifiers }),
-                        key_name(key),
-                    );
+fn binding_to_slot(value: ShortcutBinding) -> SlotShortcut {
+    SlotShortcut {
+        key: value.key,
+        modifiers: u8::from(value.shift)
+            | (u8::from(value.ctrl) << 1)
+            | (u8::from(value.alt) << 2)
+            | (u8::from(value.meta) << 3),
+    }
+}
+
+fn egui_key_to_hid(key: egui::Key) -> Option<u16> {
+    use egui::Key;
+    Some(match key {
+        Key::A => 4,
+        Key::B => 5,
+        Key::C => 6,
+        Key::D => 7,
+        Key::E => 8,
+        Key::F => 9,
+        Key::G => 10,
+        Key::H => 11,
+        Key::I => 12,
+        Key::J => 13,
+        Key::K => 14,
+        Key::L => 15,
+        Key::M => 16,
+        Key::N => 17,
+        Key::O => 18,
+        Key::P => 19,
+        Key::Q => 20,
+        Key::R => 21,
+        Key::S => 22,
+        Key::T => 23,
+        Key::U => 24,
+        Key::V => 25,
+        Key::W => 26,
+        Key::X => 27,
+        Key::Y => 28,
+        Key::Z => 29,
+        Key::Num1 => 30,
+        Key::Num2 => 31,
+        Key::Num3 => 32,
+        Key::Num4 => 33,
+        Key::Num5 => 34,
+        Key::Num6 => 35,
+        Key::Num7 => 36,
+        Key::Num8 => 37,
+        Key::Num9 => 38,
+        Key::Num0 => 39,
+        Key::Enter => 40,
+        Key::Backspace => 42,
+        Key::Tab => 43,
+        Key::Space => 44,
+        Key::Insert => 73,
+        Key::Home => 74,
+        Key::PageUp => 75,
+        Key::Delete => 76,
+        Key::End => 77,
+        Key::PageDown => 78,
+        Key::ArrowRight => 79,
+        Key::ArrowLeft => 80,
+        Key::ArrowDown => 81,
+        Key::ArrowUp => 82,
+        Key::F1 => 58,
+        Key::F2 => 59,
+        Key::F3 => 60,
+        Key::F4 => 61,
+        Key::F5 => 62,
+        Key::F6 => 63,
+        Key::F7 => 64,
+        Key::F8 => 65,
+        Key::F9 => 66,
+        Key::F10 => 67,
+        Key::F11 => 68,
+        Key::F12 => 69,
+        _ => return None,
+    })
+}
+
+fn unavailable_binding(ui: &mut egui::Ui, value: Option<ShortcutBinding>, en: bool) {
+    ui.add_enabled(
+        false,
+        egui::Button::new(value.map_or_else(
+            || {
+                if en {
+                    "Unavailable".into()
+                } else {
+                    "Niedostępne".into()
                 }
-            });
-        if let Some(binding) = value {
-            ui.menu_button("…", |ui| {
-                ui.checkbox(&mut binding.ctrl, "Ctrl");
-                ui.checkbox(&mut binding.shift, "Shift");
-                ui.checkbox(&mut binding.alt, "Alt");
-                ui.checkbox(&mut binding.meta, "Super");
-            });
-        }
+            },
+            chord,
+        )),
+    )
+    .on_hover_text(if en {
+        "This action has no client consumer yet."
+    } else {
+        "Ta czynność nie ma jeszcze obsługi w kliencie."
     });
-    *value != before
 }
 
 fn matches_search(search: &str, label: &str) -> bool {
@@ -1066,6 +1513,105 @@ mod tests {
                 ..
             }
         ));
+        Ok(())
+    }
+
+    #[test]
+    fn binding_editor_keeps_chat_contexts_and_rejects_conflicts() -> Result<(), &'static str> {
+        let mut settings = ClientSettings::default();
+        let first = ShortcutBinding {
+            key: 9,
+            ctrl: true,
+            alt: false,
+            shift: false,
+            meta: false,
+        };
+        let options_off = BindingTarget::General {
+            action: "client.options",
+            chat_on: false,
+            second: false,
+        };
+        assert!(set_binding(&mut settings, &options_off, Some(first)));
+        let profile = settings.hotkeys.active().ok_or("default profile")?;
+        assert_eq!(
+            profile.general_chat_off["client.options"].first,
+            Some(first)
+        );
+        assert!(profile.general_chat_on.is_empty());
+
+        let fullscreen_off = BindingTarget::General {
+            action: "client.fullscreen",
+            chat_on: false,
+            second: false,
+        };
+        let fullscreen_on = BindingTarget::General {
+            action: "client.fullscreen",
+            chat_on: true,
+            second: false,
+        };
+        assert!(!binding_candidate_valid(
+            &settings,
+            &fullscreen_off,
+            Some(first)
+        ));
+        assert!(binding_candidate_valid(
+            &settings,
+            &fullscreen_on,
+            Some(first)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn binding_editor_preserves_action_bar_modifiers_and_key_identity() {
+        let mut settings = ClientSettings::default();
+        let target = BindingTarget::ActionBar {
+            row: 8,
+            slot: 49,
+            chat_on: false,
+            second: true,
+        };
+        let binding = ShortcutBinding {
+            key: 69,
+            ctrl: true,
+            alt: true,
+            shift: true,
+            meta: false,
+        };
+        assert!(set_binding(&mut settings, &target, Some(binding)));
+        assert_eq!(
+            settings.action_bar.extra_rows[7].secondary_shortcuts[49].map(slot_to_binding),
+            Some(binding)
+        );
+        assert_eq!(egui_key_to_hid(egui::Key::F12), Some(69));
+        assert_eq!(egui_key_to_hid(egui::Key::ArrowUp), Some(82));
+        assert_eq!(egui_key_to_hid(egui::Key::Escape), None);
+    }
+
+    #[test]
+    fn action_bar_binding_editor_keeps_chat_contexts_separate() -> Result<(), &'static str> {
+        let mut settings = ClientSettings::default();
+        let chat_on = BindingTarget::ActionBar {
+            row: 8,
+            slot: 49,
+            chat_on: true,
+            second: false,
+        };
+        let binding = ShortcutBinding {
+            key: 4,
+            ctrl: false,
+            alt: false,
+            shift: false,
+            meta: false,
+        };
+        assert!(set_binding(&mut settings, &chat_on, Some(binding)));
+        let row = settings.action_bar.row(8).ok_or("row 9")?;
+        assert_eq!(
+            row.chat_on_shortcuts[49].map(slot_to_binding),
+            Some(binding)
+        );
+        assert_eq!(row.shortcuts[49], None);
+        assert!(settings.validate_hotkey_draft().is_ok());
         Ok(())
     }
 }

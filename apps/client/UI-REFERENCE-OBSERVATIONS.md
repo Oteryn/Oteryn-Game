@@ -4,6 +4,13 @@ Status: incomplete audit; not implementation or visual acceptance. The owner
 rejected incremental reskinning of incomplete forms. Inspect the original first,
 then design the replacement from the complete interaction inventory.
 
+Implementation continuation 2026-10-10: the historical mismatch statements in
+this record describe the draft inspected on 2026-10-09. The current branch now
+contains all 35 listed HUD conditions, ordering controls and nine 50-slot action
+rows. Current acceptance status and remaining consumers are tracked in
+[UI-FIDELITY.md](UI-FIDELITY.md); these cardinality repairs do not retroactively
+turn this observation log into visual or runtime acceptance.
+
 Source: running proprietary reference client on the authorized Synology session.
 Only independently written observations are published. Screenshots remain private.
 Do not infer factory defaults from the logged-in character's current selections.

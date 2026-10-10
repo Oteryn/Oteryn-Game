@@ -4,6 +4,7 @@ use oteryn_client::action_bar::{ActionBar, ActionBarCommand, ActionBarOutcome};
 use oteryn_client::layout::{HUD_CHAT_HEIGHT, HUD_MARGIN, HUD_SIDEBAR_WIDTH, HUD_TOP_HEIGHT};
 use oteryn_client::minimap::{LoadedMinimap, MINIMAP_SIDE, MinimapZoom};
 use oteryn_client::{
+    hotkeys::{CustomHotkeyAction, ResolvedHotkey},
     play::{PlayLink, PlayView},
     settings::ClientSettings,
 };
@@ -35,9 +36,9 @@ impl GameUi {
     pub fn preferences_save_failed(&mut self, english: bool) {
         self.notice = Some(
             if english {
-                "Panel shortcuts were not saved. Check access to the preferences directory."
+                "Preferences were not saved. Check access to the preferences directory."
             } else {
-                "Nie zapisano skrótów paneli. Sprawdź dostęp do folderu ustawień."
+                "Nie zapisano ustawień. Sprawdź dostęp do folderu ustawień."
             }
             .into(),
         );
@@ -80,6 +81,50 @@ impl GameUi {
         typing: bool,
         modal: bool,
     ) {
+        if !modal {
+            for hotkey in settings.hotkeys.resolve(events, typing) {
+                let ResolvedHotkey::Custom(action) = hotkey else {
+                    continue;
+                };
+                match action {
+                    CustomHotkeyAction::Text {
+                        text,
+                        send_automatically,
+                    } => {
+                        if !send_automatically {
+                            self.draft = text;
+                        } else if let Some(intent) =
+                            chat_intent(self.channel, &self.recipient, text)
+                        {
+                            if link.send_chat(intent) {
+                                self.notice = None;
+                            } else {
+                                self.notice = Some(action_busy(settings.english).into());
+                            }
+                        } else {
+                            self.notice = Some(
+                                if settings.english {
+                                    "Choose a valid private-message recipient first."
+                                } else {
+                                    "Najpierw wybierz prawidłowego odbiorcę wiadomości prywatnej."
+                                }
+                                .into(),
+                            );
+                        }
+                    }
+                    CustomHotkeyAction::Spell { .. } | CustomHotkeyAction::Object { .. } => {
+                        self.notice = Some(
+                            if settings.english {
+                                "This custom action has no authoritative session assignment."
+                            } else {
+                                "Ta własna czynność nie ma autorytatywnego przypisania sesji."
+                            }
+                            .into(),
+                        );
+                    }
+                }
+            }
+        }
         if let Some(bar) = self.bar(settings) {
             if bar.set_input_context(typing, modal).is_err() {
                 return;
@@ -635,6 +680,33 @@ impl GameUi {
         }
         open_settings
     }
+}
+
+fn chat_intent(channel: usize, recipient: &str, text: String) -> Option<ChatIntent> {
+    if text.is_empty() || text.len() > oteryn_session::MAX_CHAT_TEXT_BYTES {
+        return None;
+    }
+    if channel == 5 {
+        let recipient = recipient.trim();
+        if recipient.is_empty() || recipient.len() > oteryn_session::MAX_CHAT_NAME_BYTES {
+            return None;
+        }
+        return Some(ChatIntent::Private {
+            recipient_name: recipient.into(),
+            text,
+        });
+    }
+    let room = channel
+        .checked_sub(1)
+        .and_then(|index| ChatRoom::ALL.get(index).copied());
+    Some(if let Some(room) = room {
+        ChatIntent::Room { room, text }
+    } else {
+        ChatIntent::Say {
+            mode: ChatSpeechMode::Say,
+            text,
+        }
+    })
 }
 
 fn show_window_recovery(ctx: &egui::Context, english: bool) -> bool {

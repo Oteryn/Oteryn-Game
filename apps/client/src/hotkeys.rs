@@ -2,12 +2,47 @@
 //! commands still pass through the existing typed client/session boundaries.
 
 use crate::{action_bar::ActionBarPreferences, settings_catalog::ShortcutBinding};
-use oteryn_input_actions::KeyCode;
+use oteryn_input_actions::{ButtonState, KeyCode, Modifier, NormalizedInputEvent};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, io};
 
 pub const MAX_HOTKEY_PROFILES: usize = 32;
 pub const MAX_CUSTOM_HOTKEYS: usize = 256;
+
+/// A profile binding that has a concrete client consumer. Unknown general
+/// actions remain persisted reference inventory, but are never reported as
+/// executable until their owning client/domain path exists.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ResolvedHotkey {
+    General(String),
+    Custom(CustomHotkeyAction),
+}
+
+/// General actions currently connected to real local behavior.
+#[must_use]
+pub fn general_action_supported(action: &str) -> bool {
+    matches!(
+        action,
+        "movement.north"
+            | "movement.east"
+            | "movement.south"
+            | "movement.west"
+            | "client.options"
+            | "client.fullscreen"
+            | "action.bottom.1"
+            | "action.bottom.2"
+            | "action.bottom.3"
+            | "action.bottom.all"
+            | "action.left.1"
+            | "action.left.2"
+            | "action.left.3"
+            | "action.left.all"
+            | "action.right.1"
+            | "action.right.2"
+            | "action.right.3"
+            | "action.right.all"
+    )
+}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -103,6 +138,40 @@ impl HotkeyPreferences {
         self.profiles.get_mut(self.selected)
     }
 
+    /// Resolve pressed, non-repeating physical keys in the active chat context.
+    /// Validation guarantees that one chord cannot name two actions in the same
+    /// context, including action-bar and custom-action families.
+    #[must_use]
+    pub fn resolve(&self, events: &[NormalizedInputEvent], chat_on: bool) -> Vec<ResolvedHotkey> {
+        let Some(profile) = self.active() else {
+            return Vec::new();
+        };
+        let general = if chat_on {
+            &profile.general_chat_on
+        } else {
+            &profile.general_chat_off
+        };
+        let mut resolved = Vec::new();
+        for event in events {
+            for (action, pair) in general {
+                if general_action_supported(action) && pair_matches(*pair, event) {
+                    resolved.push(ResolvedHotkey::General(action.clone()));
+                }
+            }
+            for custom in &profile.custom {
+                let pair = if chat_on {
+                    custom.chat_on
+                } else {
+                    custom.chat_off
+                };
+                if pair_matches(pair, event) {
+                    resolved.push(ResolvedHotkey::Custom(custom.action.clone()));
+                }
+            }
+        }
+        resolved
+    }
+
     pub fn validate(&self, movement_keys: &[u16]) -> io::Result<()> {
         if self.profiles.is_empty()
             || self.profiles.len() > MAX_HOTKEY_PROFILES
@@ -132,6 +201,30 @@ impl HotkeyPreferences {
     }
 }
 
+fn pair_matches(pair: HotkeyPair, event: &NormalizedInputEvent) -> bool {
+    [pair.first, pair.second]
+        .into_iter()
+        .flatten()
+        .any(|binding| binding_matches(binding, event))
+}
+
+fn binding_matches(binding: ShortcutBinding, event: &NormalizedInputEvent) -> bool {
+    let NormalizedInputEvent::Key {
+        code,
+        state: ButtonState::Pressed,
+        modifiers,
+        repeat: false,
+    } = event
+    else {
+        return false;
+    };
+    code.get() == binding.key
+        && modifiers.contains(Modifier::Control) == binding.ctrl
+        && modifiers.contains(Modifier::Alt) == binding.alt
+        && modifiers.contains(Modifier::Shift) == binding.shift
+        && modifiers.contains(Modifier::Super) == binding.meta
+}
+
 fn validate_profile_conflicts(profile: &HotkeyProfile) -> io::Result<()> {
     let mut chat_on = Vec::new();
     let mut chat_off = Vec::new();
@@ -145,16 +238,23 @@ fn validate_profile_conflicts(profile: &HotkeyProfile) -> io::Result<()> {
         append_pair(&mut chat_on, action.chat_on)?;
         append_pair(&mut chat_off, action.chat_off)?;
     }
-    for shortcut in profile.action_bar.all_shortcuts().flatten() {
-        let binding = ShortcutBinding {
-            key: shortcut.key,
-            shift: shortcut.modifiers & 1 != 0,
-            ctrl: shortcut.modifiers & 2 != 0,
-            alt: shortcut.modifiers & 4 != 0,
-            meta: shortcut.modifiers & 8 != 0,
-        };
-        append_binding(&mut chat_on, binding)?;
-        append_binding(&mut chat_off, binding)?;
+    for (shortcuts, seen) in [
+        (profile.action_bar.shortcuts_for_context(true), &mut chat_on),
+        (
+            profile.action_bar.shortcuts_for_context(false),
+            &mut chat_off,
+        ),
+    ] {
+        for shortcut in shortcuts.flatten() {
+            let binding = ShortcutBinding {
+                key: shortcut.key,
+                shift: shortcut.modifiers & 1 != 0,
+                ctrl: shortcut.modifiers & 2 != 0,
+                alt: shortcut.modifiers & 4 != 0,
+                meta: shortcut.modifiers & 8 != 0,
+            };
+            append_binding(seen, binding)?;
+        }
     }
     Ok(())
 }
@@ -260,6 +360,30 @@ fn invalid() -> io::Error {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oteryn_input_actions::{Modifier, Modifiers};
+
+    fn binding(key: u16, ctrl: bool) -> ShortcutBinding {
+        ShortcutBinding {
+            key,
+            ctrl,
+            alt: false,
+            shift: false,
+            meta: false,
+        }
+    }
+
+    fn pressed(key: u16, ctrl: bool) -> Result<NormalizedInputEvent, Box<dyn std::error::Error>> {
+        Ok(NormalizedInputEvent::Key {
+            code: KeyCode::new(key)?,
+            state: ButtonState::Pressed,
+            modifiers: if ctrl {
+                Modifiers::one(Modifier::Control)
+            } else {
+                Modifiers::NONE
+            },
+            repeat: false,
+        })
+    }
 
     #[test]
     fn profiles_round_trip_and_reject_duplicate_names() -> Result<(), Box<dyn std::error::Error>> {
@@ -321,6 +445,69 @@ mod tests {
                 chat_off: HotkeyPair::default(),
             });
         assert!(preferences.validate(&[82, 79, 81, 80]).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn resolver_obeys_chat_context_modifiers_and_real_consumer_boundary()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut preferences = HotkeyPreferences::default();
+        let profile = preferences.active_mut().ok_or("default profile")?;
+        profile.general_chat_off.insert(
+            "movement.north".into(),
+            HotkeyPair {
+                first: Some(binding(26, false)),
+                second: None,
+            },
+        );
+        profile.general_chat_on.insert(
+            "client.options".into(),
+            HotkeyPair {
+                first: Some(binding(18, true)),
+                second: None,
+            },
+        );
+        // A catalogue-only action is retained but cannot masquerade as executable.
+        profile.general_chat_off.insert(
+            "dialog.prey".into(),
+            HotkeyPair {
+                first: Some(binding(19, false)),
+                second: None,
+            },
+        );
+        profile.custom.push(CustomHotkey {
+            action: CustomHotkeyAction::Text {
+                text: "hello".into(),
+                send_automatically: true,
+            },
+            chat_on: HotkeyPair::default(),
+            chat_off: HotkeyPair {
+                first: Some(binding(20, false)),
+                second: None,
+            },
+        });
+        assert_eq!(
+            preferences.resolve(&[pressed(26, false)?], false),
+            vec![ResolvedHotkey::General("movement.north".into())]
+        );
+        assert!(preferences.resolve(&[pressed(26, false)?], true).is_empty());
+        assert!(preferences.resolve(&[pressed(18, false)?], true).is_empty());
+        assert_eq!(
+            preferences.resolve(&[pressed(18, true)?], true),
+            vec![ResolvedHotkey::General("client.options".into())]
+        );
+        assert!(
+            preferences
+                .resolve(&[pressed(19, false)?], false)
+                .is_empty()
+        );
+        assert_eq!(
+            preferences.resolve(&[pressed(20, false)?], false),
+            vec![ResolvedHotkey::Custom(CustomHotkeyAction::Text {
+                text: "hello".into(),
+                send_automatically: true,
+            })]
+        );
         Ok(())
     }
 }

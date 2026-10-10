@@ -1,19 +1,23 @@
-#[cfg(windows)]
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod actor_hud;
 #[cfg(windows)]
 mod login_backdrop;
 #[cfg(windows)]
 mod login_screen;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
 mod preferences_browser;
 #[cfg(windows)]
 mod reference_dialogs;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod settings_ui;
 
-#[cfg(windows)]
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod action_bar_ui;
-#[cfg(windows)]
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod client_chrome;
 #[cfg(windows)]
 mod client_panels;

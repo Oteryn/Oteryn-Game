@@ -274,9 +274,7 @@ where
                 )
             });
             for (id, delta) in &output.textures_delta.set {
-                for patch in delta {
-                    renderer.update_texture(&self.device, &self.queue, *id, patch);
-                }
+                renderer.update_texture(&self.device, &self.queue, *id, delta);
             }
             let jobs = context.tessellate(output.shapes, output.pixels_per_point);
             let screen = egui_wgpu::ScreenDescriptor {
@@ -339,7 +337,7 @@ where
                 renderer.free_texture(&id);
             }
         }
-        self.queue.present(frame);
+        frame.present();
 
         let decision = self.state.apply(SurfaceEvent::Presented {
             generation,

@@ -378,30 +378,20 @@ fn game_window(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
     ] {
         row(ui, draft, "game_window", id, labels, en);
     }
-    // Capture confirms Frame & Highlight, not the dropdown's full membership.
-    // Keep separate legacy intent instead of inventing a combined enum/migration.
     boxed(
         ui,
         if en {
-            "Target Marking · pending composition"
+            "Target Marking"
         } else {
-            "Oznaczanie celu · układ w przygotowaniu"
+            "Oznaczanie celu"
         },
         |ui| {
             reference_option(
                 ui,
                 draft,
                 "game_window",
-                "window.target_frame",
-                ["Ramka", "Frame"],
-                en,
-            );
-            reference_option(
-                ui,
-                draft,
-                "game_window",
-                "window.target_highlight",
-                ["Wyróżnienie", "Highlight"],
+                "window.target_marking",
+                ["Oznaczaj cel wizualnie:", "Mark Target Visually:"],
                 en,
             );
         },

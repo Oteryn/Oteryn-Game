@@ -1,3 +1,4 @@
+use oteryn_client::hotkeys::ResolvedHotkey;
 use oteryn_client::input::{MouseActions, StepDir, click_tile};
 use oteryn_client::play::{PlayLink, PlayView};
 use oteryn_client::scene::Scene;
@@ -142,14 +143,10 @@ impl Application {
             .as_ref()
             .is_some_and(|ui| ui.context.egui_wants_keyboard_input());
         if let Some(play) = &self.play {
-            self.hud.route_actions(
-                events,
-                &play.link,
-                &self.preferences,
-                typing || consumed,
-                modal,
-            );
+            self.hud
+                .route_actions(events, &play.link, &self.preferences, typing, modal);
         }
+        let (hotkey_direction, hotkey_matched) = self.route_general_hotkeys(events, typing, modal);
         let Ok(clicks) =
             self.actions
                 .route_with_ui(events, typing, modal || self.login.is_some(), consumed)
@@ -157,16 +154,17 @@ impl Application {
             self.fail(event_loop, ShellError::InputInitialization);
             return;
         };
-        if consumed {
+        if consumed && hotkey_direction.is_none() {
             return;
         }
         if self.login.is_some() || modal {
             return;
         }
-        if self
-            .game_ui
-            .as_ref()
-            .is_some_and(|ui| ui.context.egui_wants_keyboard_input())
+        if hotkey_direction.is_none()
+            && self
+                .game_ui
+                .as_ref()
+                .is_some_and(|ui| ui.context.egui_wants_keyboard_input())
         {
             return;
         }
@@ -184,7 +182,12 @@ impl Application {
             return;
         }
         if let Some(play) = &mut self.play {
-            if let Some(direction) = self.preferences.direction(events) {
+            let direction = hotkey_direction.or_else(|| {
+                (!hotkey_matched)
+                    .then(|| self.preferences.direction(events))
+                    .flatten()
+            });
+            if let Some(direction) = direction {
                 play.view.arrow(direction);
             }
             let mut render_failed = false;
@@ -203,7 +206,12 @@ impl Application {
             }
             return;
         }
-        if let Some(direction) = self.preferences.direction(events) {
+        let direction = hotkey_direction.or_else(|| {
+            (!hotkey_matched)
+                .then(|| self.preferences.direction(events))
+                .flatten()
+        });
+        if let Some(direction) = direction {
             self.offline_own = direction.from(self.offline_own);
             self.offline_facing = direction;
             if self.rebuild_offline().is_err() {
@@ -221,6 +229,109 @@ impl Application {
                 self.fail(event_loop, ShellError::RendererRender);
             }
         }
+    }
+
+    fn route_general_hotkeys(
+        &mut self,
+        events: &[oteryn_input_actions::NormalizedInputEvent],
+        chat_on: bool,
+        modal: bool,
+    ) -> (Option<StepDir>, bool) {
+        if self.login.is_some() {
+            return (None, false);
+        }
+        let actions = self.preferences.hotkeys.resolve(events, chat_on);
+        let matched = actions.iter().any(|action| {
+            matches!(action, ResolvedHotkey::General(_))
+                || self.play.is_some() && matches!(action, ResolvedHotkey::Custom(_))
+        });
+        let mut movement = None;
+        let mut settings_changed = false;
+        for action in actions {
+            let ResolvedHotkey::General(action) = action else {
+                continue;
+            };
+            if action == "client.options" {
+                if let Some(ui) = self.game_ui.as_mut() {
+                    ui.settings.open = !ui.settings.open;
+                }
+                continue;
+            }
+            if modal {
+                continue;
+            }
+            match action.as_str() {
+                "movement.north" => movement = Some(StepDir::North),
+                "movement.east" => movement = Some(StepDir::East),
+                "movement.south" => movement = Some(StepDir::South),
+                "movement.west" => movement = Some(StepDir::West),
+                "client.fullscreen" => {
+                    self.preferences.fullscreen = !self.preferences.fullscreen;
+                    settings_changed = true;
+                }
+                "action.bottom.all" => {
+                    self.preferences.action_bar.edge_enabled[0] =
+                        !self.preferences.action_bar.edge_enabled[0];
+                    settings_changed = true;
+                }
+                "action.left.all" => {
+                    self.preferences.action_bar.edge_enabled[1] =
+                        !self.preferences.action_bar.edge_enabled[1];
+                    settings_changed = true;
+                }
+                "action.right.all" => {
+                    self.preferences.action_bar.edge_enabled[2] =
+                        !self.preferences.action_bar.edge_enabled[2];
+                    settings_changed = true;
+                }
+                action if action.starts_with("action.") => {
+                    let row = match action {
+                        "action.bottom.1" => Some(0),
+                        "action.bottom.2" => Some(1),
+                        "action.bottom.3" => Some(2),
+                        "action.left.1" => Some(3),
+                        "action.left.2" => Some(4),
+                        "action.left.3" => Some(5),
+                        "action.right.1" => Some(6),
+                        "action.right.2" => Some(7),
+                        "action.right.3" => Some(8),
+                        _ => None,
+                    };
+                    if let Some(row) = row
+                        && let Some(mut preferences) = self.preferences.action_bar.row(row)
+                    {
+                        preferences.visible = !preferences.visible;
+                        if self
+                            .preferences
+                            .action_bar
+                            .set_row(row, preferences)
+                            .is_ok()
+                        {
+                            settings_changed = true;
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        if settings_changed {
+            if let Some(window) = &self.window {
+                window.set_fullscreen(if self.preferences.fullscreen {
+                    Some(winit::window::Fullscreen::Borderless(None))
+                } else {
+                    None
+                });
+            }
+            if let Some(ui) = self.game_ui.as_mut() {
+                ui.settings.replace_current(self.preferences.clone());
+            }
+            let saved = oteryn_client::settings::ClientSettings::path()
+                .is_some_and(|path| self.preferences.save(&path).is_ok());
+            if !saved {
+                self.hud.preferences_save_failed(self.preferences.english);
+            }
+        }
+        (movement, matched)
     }
 
     /// The offline scene around `offline_own`, over the loaded world.
@@ -616,8 +727,20 @@ impl ApplicationHandler for Application {
             }
         }
         if let Some(login) = &mut self.login
-            && let Some((client, admitted)) = login.poll()
+            && let Some((client, admitted, character_name)) = login.poll()
         {
+            if self
+                .preferences
+                .auto_switch_hotkey_profile(&character_name)
+                .unwrap_or(false)
+            {
+                let saved = oteryn_client::settings::ClientSettings::path()
+                    .is_some_and(|path| self.preferences.save(&path).is_ok());
+                login.settings.replace_current(self.preferences.clone());
+                if !saved {
+                    self.hud.preferences_save_failed(self.preferences.english);
+                }
+            }
             match client.start_play(admitted) {
                 Ok((mut view, link)) => {
                     if let Some(world) = &self.world

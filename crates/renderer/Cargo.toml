@@ -3,7 +3,7 @@ name = "oteryn-renderer"
 version.workspace = true
 description = "Deterministic DX12 renderer surface ownership for Oteryn"
 edition.workspace = true
-rust-version = "1.95"
+rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 publish.workspace = true
@@ -17,8 +17,8 @@ source-disposition = "MIGRATE_AS_IS_AND_SPLIT_GENERIC_RESOURCE_LIFECYCLE"
 oteryn-foundation = { version = "=0.1.0", path = "../foundation" }
 
 [target.'cfg(windows)'.dependencies]
-egui = "=0.36.2"
-egui-wgpu = { version = "=0.36.2", default-features = false }
+egui = "=0.35.0"
+egui-wgpu = { version = "=0.35.0", default-features = false }
 pollster.workspace = true
 wgpu.workspace = true
 

@@ -7,10 +7,11 @@ assets remain private; the product ships independently authored code/artwork.
 ## Reference audit correction
 
 [Live observations](UI-REFERENCE-OBSERVATIONS.md) establish **35 HUD conditions**
-and **50 slots in the first bottom action bar**, versus six conditions and 12
-slots per row in this draft. Dedicated composition means a page exists; it does
-not mean all reference controls were inventoried or implemented. Full replacement
-design must follow the completed interaction inventory, not the current forms.
+and the later [settings inventory](UI-REFERENCE-SETTINGS.md) establishes **50 slots
+in each of all nine action bars**. The draft now carries those cardinalities and
+the observed target-marking membership. Dedicated composition and persistence
+still do not establish runtime behavior; only the consumers named below count as
+implemented.
 
 ## Page matrix
 
@@ -18,13 +19,13 @@ design must follow the completed interaction inventory, not the current forms.
 | --- | --- | --- |
 | Basic | Yes | Display controls/action-row visibility work; own-resource bars/arcs now have a vitals renderer behind explicit HUD selections; audio remains pending |
 | Controls | Yes | Movement bindings work; three modifier-only controls and grouped delay intent prepared; input consumers pending |
-| General Hotkeys | Partial: dedicated profile/action table | Add/copy/rename/remove, two chat contexts, search, two bindings and cross-family conflict validation persist; most general-action runtime consumers and automatic character-profile switching remain pending |
-| Action Bar Hotkeys | Dedicated 9 × 50 table | Two chords per slot, migration from 12 slots, modal/held-key routing and both-chord activation work; compiled Windows visual acceptance remains pending |
-| Custom Hotkeys | Partial: spell/object/text editors | All three reference editor routes, six object-use modes, two chat contexts and persistence exist; authoritative live spell/item pickers and runtime command consumers remain pending |
+| General Hotkeys | Partial: dedicated profile/action table | Add/copy/rename/remove, two chat contexts, delayed-search layout, two captured bindings and cross-family conflict validation work. Character-name profile auto-switch, movement, Options, fullscreen and individual/edge action-bar visibility have consumers; unsupported inventory rows are disabled and most observed actions remain pending |
+| Action Bar Hotkeys | Dedicated 9 × 50 table | Two captured chords per slot in distinct Chat On/Off contexts, migration from 12 slots, modal/held-key routing and both-chord activation work; compiled Windows cross-check and headless page reachability pass, while native Windows visual acceptance remains pending |
+| Custom Hotkeys | Partial: observed editor inventory | Text assignments fill the real composer or send through the typed chat intent. Spell/object assignment and legacy bindings are disabled because no authoritative live picker/assignment exists; their persisted presence is not counted as behavior |
 | Interface | Yes | Language/contrast work; cursor, link-copy warning and expiry intents prepared; consumers pending |
-| HUD | Partial: groups/arcs and only 6 of 35 observed conditions | Native PL/EN reachability, master-dependent editing and six-flag header batch edits verified; complete inventory, ordering and visual acceptance pending; own-health/mana bars/arcs consume real session vitals (live-session visual acceptance pending); names/marks/conditions/order incomplete |
+| HUD | Partial: groups/arcs and all 35 observed conditions | Native PL/EN reachability, per-condition HUD/bar fields, aggregate edits and ordering controls are present; own-health/mana bars/arcs consume real session vitals. Condition-state projection and native live-session visual acceptance remain pending |
 | Console | Yes | Chat visibility works; timestamp/message filters await chat/event projection |
-| Game Window | Yes | Effect/message rows prepared; target dropdown membership unverified, legacy frame/highlight intent retained |
+| Game Window | Yes | The verified Frame & Highlight / Frame Only / Highlight Only / None dropdown is present; target/effect projection consumers remain pending |
 | Action Bars | Yes | Three masters/nine independent 50-slot rows, locks, two chords per slot and session action clearing work |
 | Shortcuts | Yes, two lists | Add/remove/order edits affect draft only; Apply updates live registry, Cancel discards |
 | Graphics | Yes | Fullscreen/VSync/FPS work; reference arrangement prepared; engine/AA consumers pending |
@@ -35,7 +36,20 @@ design must follow the completed interaction inventory, not the current forms.
 | Miscellaneous | Yes, seven rows | Confirmation and session selections require explicit consumers; secure remembered sign-in stays OFF/unwired |
 | Gameplay | Yes | Inspection/chase/loot intent prepared; engine contracts/consumers pending |
 | Screenshots | Yes, two trigger columns | Seventeen individual triggers prepared; capture pipeline/storage/folder action incomplete |
-| Help | Pending | Reference compositions/support actions incomplete |
+| Help | Partial | Info is local; complete options export/import and confirmed reset work. Client Help, Compendium, Rule Violations, Manual and FAQ stay visibly disabled because no verified Oteryn destination exists; minimap import/export is likewise disabled because no versioned format exists |
+
+## Compiled-page verification — 2026-10-10
+
+- A binary-target `egui` regression renders all 20 audited reference pages at
+  900 × 620 and requires a page-specific marker plus Reset/OK/Apply/Cancel.
+- PL/EN composition tests render the dedicated page families without mutating a
+  default draft merely by opening them.
+- Rust 1.94 locked client tests and strict all-target Clippy pass on Linux; the
+  complete Windows-only client and renderer modules also pass locked cross-target
+  check and strict Clippy.
+- This is compiled reachability and behavior evidence, not a native Windows
+  screenshot comparison. Native visual acceptance and every row whose consumer
+  remains pending are still open and must not be reported as 1:1 complete.
 
 ## Required evidence per page/panel
 

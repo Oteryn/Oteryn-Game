@@ -72,3 +72,24 @@ the target design. Publish bounded increments through the guarded single-writer
 path in /workspace/publish-client. Root workspace contains unrelated server/login
 changes and task files; do not stage or alter them. Use isolated publication
 checkout for governance checks because unrelated task docs fail its current gate.
+
+## Continuation checkpoint — 2026-10-10
+
+The current branch supersedes the historical 6-condition/12-slot/missing-auto-switch
+implementation notes above without changing their audit provenance. It now has the
+35 observed HUD rows with ordering, nine 50-slot action rows, captured two-column
+hotkey editing in distinct Chat On/Off contexts with conflict blocking,
+character-name preset auto-switch, and real
+consumers for movement, Options, fullscreen, action-row visibility and text custom
+actions. Unsupported general actions and spell/object assignments are disabled;
+persisted intent is not completion credit. Help options export/import/reset are
+real local operations, while support destinations and minimap import/export stay
+disabled because no verified target/format exists.
+
+Rust remains pinned to repository MSRV 1.94. The incompatible client-only Rust
+1.95 / egui 0.36 change was replaced with egui 0.35 and its matching wgpu 29,
+including the renderer API adjustments. Locked Linux client tests, strict client
+and workspace Clippy, Windows cross-target check/Clippy and the compiled 20-page
+reachability test are the local evidence for this checkpoint. Native Windows
+screenshot comparison and every explicitly pending engine/server consumer remain
+open; do not describe the whole matrix as 1:1 complete.
