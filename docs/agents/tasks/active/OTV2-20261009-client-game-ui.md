@@ -151,7 +151,7 @@ remains unchanged rather than inventing another profile.
 Attack First/Next/Previous Target now selects from the admitted visible-entity
 projection and queues the existing typed attack command. Cycling follows the
 server projection order, wraps deterministically and shares pointer targeting's
-current Creature/NPC boundary; players, objects, off-floor and off-view entities
+current Creature-only boundary; players, NPCs, objects, off-floor and off-view entities
 are not guessed to be attackable. Exact reference battle-list sorting/filtering
 remains a separate acceptance gap.
 
