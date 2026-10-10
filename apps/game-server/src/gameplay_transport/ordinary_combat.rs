@@ -2251,6 +2251,342 @@ mod tests {
         assert_eq!(current.revision(), f.before.revision());
     }
 
+    struct BuilderOwnerFixture {
+        runtime: ChannelRuntimeV1,
+        states: ChannelSpellStates,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        target: ExactActorRef,
+        paid: PaidOrdinaryCast,
+        batch: OwnerCombatBatch,
+        before: PlayerSpellState,
+    }
+
+    fn builder_owner_fixture(charges: u8) -> BuilderOwnerFixture {
+        use crate::gameplay_transport::actor_spell::tests::{runtime_with_player, wound};
+        use crate::spell::cast::CharacterCastFacts;
+        use crate::spell::{CasterState, Vocation};
+        let (mut runtime, actor, session) = runtime_with_player(31);
+        runtime
+            .initialize_movement_test_position(
+                actor,
+                MovementLocalPosition {
+                    x: 10,
+                    y: 10,
+                    floor: 7,
+                },
+            )
+            .unwrap();
+        // admit_test_creature binds target_identity to this creature key, not its placement atom.
+        let target = runtime
+            .admit_test_creature(MovementLocalPosition {
+                x: 11,
+                y: 10,
+                floor: 7,
+            })
+            .unwrap();
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                CharacterCastFacts {
+                    vocation: Vocation::Monk,
+                    level: 200,
+                    magic_level: 0,
+                    max_health: 2000,
+                    max_mana: 2000,
+                    max_soul: 100,
+                },
+                (charges, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        wound(&mut states, actor, session, 10);
+        let before = states.get(&runtime, actor, session).unwrap().clone();
+        let spell = source("candidate:spell/swift_jab");
+        // Genuine free/no-learning source header: no premium/group/party proof is fabricated.
+        assert!(!spell.premium);
+        assert!(!spell.learning_required);
+        let book = crate::spell::SpellBook::canonical(vec![spell.clone()]).unwrap();
+        let caster = CasterState {
+            harmony_multiplier: crate::spell::harmony::HarmonyMultiplier::ONE,
+            vocation: Vocation::Monk,
+            level: 200,
+            magic_level: 0,
+            premium: false,
+            mana: 2000,
+            max_mana: 2000,
+            soul: 100,
+            learned: BTreeSet::new(),
+            attack_skill: 10,
+            attack_value: 7,
+            attack_factor: 1.0,
+            shielding_skill: 10,
+            melee_weapon: true,
+            shield_defense: None,
+        };
+        let position = |actor| {
+            let p = runtime.read_actor_position(actor).unwrap().position();
+            TilePosition {
+                x: p.x,
+                y: p.y,
+                floor: p.floor,
+            }
+        };
+        let operational = OperationalCastFacts {
+            caster_position: position(actor),
+            target_position: Some(position(target)),
+            target: Some(crate::spell::target::CastTarget {
+                caster: u64::from(actor.actor_local_id()),
+                creature: u64::from(target.actor_local_id()),
+                actor: "test:creature".into(),
+                master: None,
+            }),
+            line_of_sight_clear: Some(true),
+            direction_available: true,
+            wheel_unlocked: None,
+            in_protection_zone: false,
+            target_tile_solid: Some(false),
+            target_tile_creature: Some(true),
+        };
+        let now = SemanticTimeMicros::from_micros(100_000);
+        let paid = prepare_ordinary_owner_cast_with_caster(
+            &book,
+            &before,
+            &spell,
+            &operational,
+            now,
+            &caster,
+            None,
+            None,
+            &mut |minimum, _| minimum,
+        )
+        .unwrap();
+        let magnitude = paid
+            .resolution
+            .effects
+            .iter()
+            .find_map(|e| {
+                if let ResolvedEffect::Damage { magnitude, .. } = e {
+                    Some(*magnitude)
+                } else {
+                    None
+                }
+            })
+            .expect("genuine Swift Jab damage");
+        let occurrence = AbilityOccurrence::new(
+            "spell-cast:builder-owner",
+            crate::ability::RevisionSet::new(
+                "rules:1",
+                "content:1",
+                "world:1",
+                "formula:1",
+                "sim:1",
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let batch = OwnerCombatBatch {
+            caster: actor,
+            attacker: CharacterId::decode(&[
+                1, 0x90, 0, 0, 0, 40, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 40,
+            ])
+            .unwrap(),
+            current_lease_generation: 1,
+            command: CommandRef::new(session, crate::foundation::CommandId::new(1).unwrap()),
+            occurrence: occurrence.into(),
+            binding: b"builder-current-owner-boundary".to_vec(),
+            anchor: Some(paid.anchor.clone()),
+            now_ms: 100,
+            deferred: None,
+            effects: vec![OwnerCombatEffect {
+                target,
+                sub_ordinal: 0,
+                change: OwnerCombatChange::Damage {
+                    target_atom: "test:creature".into(),
+                    magnitude,
+                },
+            }],
+        };
+        BuilderOwnerFixture {
+            runtime,
+            states,
+            actor,
+            session,
+            target,
+            paid,
+            batch,
+            before,
+        }
+    }
+
+    fn builder_target_health(f: &BuilderOwnerFixture) -> i64 {
+        f.runtime
+            .creature_combat_facts(f.target, 100)
+            .unwrap()
+            .health
+    }
+
+    #[test]
+    fn ordinary_builder_lowered_self_heal_commits_damage_payment_harmony_once_and_replays() {
+        let mut f = builder_owner_fixture(3);
+        let original_target = builder_target_health(&f);
+        let healing = f.paid.harmony_gain_healing.as_ref().unwrap();
+        let amount = healing.finish_draw(healing.bounds.minimum).unwrap() as u32;
+        let cue = append_harmony_gain_healing(
+            &mut f.batch,
+            Some(healing),
+            Some(f.actor),
+            1,
+            0,
+            &mut |minimum, _| minimum,
+        )
+        .unwrap();
+        assert!(cue.is_some());
+        assert_eq!(f.batch.effects.len(), 2);
+        let staged = f.runtime.stage_spell_batch(&f.batch).unwrap();
+        let proof =
+            stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.paid.next.clone())).unwrap();
+        assert_eq!(
+            f.states.get(&f.runtime, f.actor, f.session),
+            Some(&f.before)
+        );
+        assert!(
+            commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+                .unwrap()
+                .applied
+        );
+        let after = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .clone();
+        assert_eq!(
+            (
+                after.vitals().health,
+                after.vitals().mana,
+                after.vitals().harmony
+            ),
+            (10 + amount, 1997, 4)
+        );
+        assert_eq!(after.revision(), f.before.revision() + 1);
+        let after_target = builder_target_health(&f);
+        assert!(after_target < original_target);
+        let replay = f.runtime.stage_spell_batch(&f.batch).unwrap();
+        assert!(
+            !commit_owner_batch(&mut f.runtime, &mut f.states, replay, None)
+                .unwrap()
+                .applied
+        );
+        assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&after));
+        assert_eq!(builder_target_health(&f), after_target);
+    }
+
+    #[test]
+    fn ordinary_builder_at_cap_lowers_no_heal_but_commits_single_damage_payment() {
+        let mut f = builder_owner_fixture(5);
+        assert_eq!(f.paid.harmony_gained, 0);
+        assert!(f.paid.harmony_gain_healing.is_none());
+        assert!(
+            append_harmony_gain_healing(&mut f.batch, None, None, 1, 0, &mut |_, _| panic!(
+                "cap must not draw a passive heal"
+            ))
+            .unwrap()
+            .is_none()
+        );
+        assert_eq!(f.batch.effects.len(), 1);
+        let staged = f.runtime.stage_spell_batch(&f.batch).unwrap();
+        let proof =
+            stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.paid.next.clone())).unwrap();
+        assert!(
+            commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+                .unwrap()
+                .applied
+        );
+        let after = f.states.get(&f.runtime, f.actor, f.session).unwrap();
+        assert_eq!(
+            (
+                after.vitals().health,
+                after.vitals().mana,
+                after.vitals().harmony
+            ),
+            (10, 1997, 5)
+        );
+        assert_eq!(after.revision(), f.before.revision() + 1);
+    }
+
+    #[test]
+    fn ordinary_builder_stale_player_predecessor_rolls_back_damage_heal_payment_and_harmony() {
+        let mut f = builder_owner_fixture(3);
+        let target_before = builder_target_health(&f);
+        append_harmony_gain_healing(
+            &mut f.batch,
+            f.paid.harmony_gain_healing.as_ref(),
+            Some(f.actor),
+            1,
+            0,
+            &mut |minimum, _| minimum,
+        )
+        .unwrap();
+        let staged = f.runtime.stage_spell_batch(&f.batch).unwrap();
+        let proof =
+            stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.paid.next.clone())).unwrap();
+        f.states
+            .get_mut(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .advance_batch_revision()
+            .unwrap();
+        let current = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .clone();
+        assert!(matches!(
+            commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof)),
+            Err(Error::SnapshotChanged)
+        ));
+        assert_eq!(f.states.get(&f.runtime, f.actor, f.session), Some(&current));
+        assert_eq!(
+            (
+                current.vitals().health,
+                current.vitals().mana,
+                current.vitals().harmony
+            ),
+            (10, 2000, 3)
+        );
+        assert_eq!(builder_target_health(&f), target_before);
+    }
+
+    #[test]
+    fn ordinary_builder_missing_selected_heal_target_refuses_before_draw_without_batch_mutation() {
+        let mut f = builder_owner_fixture(3);
+        let before = format!("{:?}", f.batch);
+        let mut draws = 0;
+        assert!(
+            append_harmony_gain_healing(
+                &mut f.batch,
+                f.paid.harmony_gain_healing.as_ref(),
+                None,
+                1,
+                0,
+                &mut |minimum, _| {
+                    draws += 1;
+                    minimum
+                }
+            )
+            .is_err()
+        );
+        assert_eq!(draws, 0);
+        assert_eq!(format!("{:?}", f.batch), before);
+        assert_eq!(
+            f.states.get(&f.runtime, f.actor, f.session),
+            Some(&f.before)
+        );
+        assert_eq!(builder_target_health(&f), 20);
+    }
+
     #[test]
     fn genuine_lightning_selects_and_pays_once_without_cast_time_draw_then_uses_due_stats() {
         use crate::spell::cast::CharacterCastFacts;
