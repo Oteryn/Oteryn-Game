@@ -38,14 +38,14 @@ The packet never treats current inventory as Quest authority and never admits a 
 
 ## Result
 
-Current binding plan contains **273** collect stages.
+Current binding plan contains **277** collect stages.
 
 | Classification | Count |
 | --- | ---: |
 | `ONE_SAME_QUEST_READY_CLAIM_COVERS_ALL_EXACT_TARGETS` | **2** |
 | `AMBIGUOUS_OR_PARTIAL_SAME_QUEST_CLAIM_MATCH` | **2** |
-| `NO_SAME_QUEST_REWARD_CLAIM_MATCH` | **141** |
-| `TARGET_IDENTITY_INCOMPLETE` | **128** |
+| `NO_SAME_QUEST_REWARD_CLAIM_MATCH` | **143** |
+| `TARGET_IDENTITY_INCOMPLETE` | **130** |
 
 The only two exact acquisition candidates are:
 
