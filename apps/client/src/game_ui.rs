@@ -80,12 +80,14 @@ impl GameUi {
         settings: &ClientSettings,
         typing: bool,
         modal: bool,
-    ) {
+    ) -> bool {
+        let mut matched = false;
         if !modal {
             for hotkey in settings.hotkeys.resolve(events, typing) {
                 let ResolvedHotkey::Custom(action) = hotkey else {
                     continue;
                 };
+                matched = true;
                 match action {
                     CustomHotkeyAction::Text {
                         text,
@@ -127,14 +129,17 @@ impl GameUi {
         }
         if let Some(bar) = self.bar(settings) {
             if bar.set_input_context(typing, modal).is_err() {
-                return;
+                return matched;
             }
-            for command in bar.route(events) {
+            let (commands, action_bar_matched) = bar.route_with_match(events);
+            matched |= action_bar_matched;
+            for command in commands {
                 if !link.send_action(command) {
                     self.notice = Some(action_busy(settings.english).into());
                 }
             }
         }
+        matched
     }
 
     pub fn show(

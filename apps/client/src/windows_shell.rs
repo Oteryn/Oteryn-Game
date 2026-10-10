@@ -154,11 +154,18 @@ impl Application {
             .game_ui
             .as_ref()
             .is_some_and(|ui| ui.context.egui_wants_keyboard_input());
-        if let Some(play) = &self.play {
+        let configured_action_matched = if let Some(play) = &self.play {
             self.hud
-                .route_actions(events, &play.link, &self.preferences, typing, modal);
-        }
+                .route_actions(events, &play.link, &self.preferences, typing, modal)
+        } else {
+            false
+        };
         let (hotkey_direction, hotkey_matched) = self.route_general_hotkeys(events, typing, modal);
+        if self.hotkeys.set_text_active(typing || modal).is_err() {
+            self.fail(event_loop, ShellError::InputInitialization);
+            return;
+        }
+        let spell_casts = self.hotkeys.route(events);
         let Ok(clicks) =
             self.actions
                 .route_with_ui(events, typing, modal || self.login.is_some(), consumed)
@@ -202,8 +209,10 @@ impl Application {
             if let Some(direction) = direction {
                 play.view.arrow(direction);
             }
-            for spell in self.hotkeys.route(events) {
-                play.view.cast(spell);
+            if !configured_action_matched && !hotkey_matched {
+                for spell in spell_casts {
+                    play.view.cast(spell);
+                }
             }
             let mut render_failed = false;
             for click in clicks
@@ -765,7 +774,11 @@ impl ApplicationHandler for Application {
                         return;
                     }
                     self.client = Some(client);
-                    self.play = Some(Play { view, link });
+                    self.play = Some(Play {
+                        view,
+                        link,
+                        status: String::new(),
+                    });
                     self.game_ui = self.login.take();
                     if let Some(gui) = &self.game_ui {
                         crate::client_chrome::install(&gui.context, self.preferences.high_contrast);

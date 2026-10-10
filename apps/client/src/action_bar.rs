@@ -553,6 +553,15 @@ impl ActionBar {
     /// each accepted press/release pulse stays inside this private semantic router and
     /// does not change the physical state or the movement/platform input stream.
     pub fn route(&mut self, events: &[NormalizedInputEvent]) -> Vec<ActionBarCommand> {
+        self.route_with_match(events).0
+    }
+
+    /// Route commands and report whether a configured shortcut claimed this
+    /// press, even when the session has no assignment for its slot yet.
+    pub fn route_with_match(
+        &mut self,
+        events: &[NormalizedInputEvent],
+    ) -> (Vec<ActionBarCommand>, bool) {
         let mut slots = Vec::new();
         for event in events {
             match event {
@@ -629,10 +638,12 @@ impl ActionBar {
                 });
             }
         }
-        slots
+        let matched = !slots.is_empty();
+        let commands = slots
             .into_iter()
             .filter_map(|slot| self.activate(slot))
-            .collect()
+            .collect();
+        (commands, matched)
     }
 
     /// Hidden rows keep shortcuts active, matching the legacy visibility preference.
@@ -732,6 +743,16 @@ mod tests {
                 .len(),
             1
         );
+        Ok(())
+    }
+
+    #[test]
+    fn configured_shortcut_claims_a_press_before_its_session_assignment_exists()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut bar = ActionBar::new(ActionBarPreferences::default(), &[82, 79, 81, 80])?;
+        let (commands, matched) = bar.route_with_match(&[event(ButtonState::Pressed, false)?]);
+        assert!(matched);
+        assert!(commands.is_empty());
         Ok(())
     }
 
