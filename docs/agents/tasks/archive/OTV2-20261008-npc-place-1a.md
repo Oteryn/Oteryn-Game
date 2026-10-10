@@ -23,6 +23,8 @@ owned_paths:
   - tools/content-schema/npc-authoring/npc_placement_scope.json
   - tools/content-schema/npc-authoring/test_convert_placements.py
   - docs/agents/tasks/archive/OTV2-20261008-npc-place-1a.md
+  - tools/content-schema/validate_materialized_game_tree.py
+  - apps/game-server/tests/content_world_project_repository.rs
 public_contracts: []
 depends_on: [NPC-PLACE-1]
 blocks: [NPC-PLACE-1b]
@@ -42,6 +44,9 @@ blocks: [NPC-PLACE-1b]
   hold origin, repository, revision, source key, definition sha256 and the arbitration rows, not
   path and blob (§4.1). Closing it needs the Canary and Crystal checkouts; later packets that widen
   the scope should supply them.
+- Scope extended by the control plane (D607, D977): the successor-file validator and the package scan test
+  learn the `npc-placements/` family, following the `spawns/` precedent; the scan budget grows by the measured 11.
+  Provenance now keeps only `placements` arbitration and attributes an arbitrated cell to the chosen source.
 - Not touched: crates/world-bundle, COIN-PROFILE-1, SPELL-AVAIL-1. `regenerate_content.py` rewrites
   unrelated item and world-project files on this checkout; those changes were not taken.
 
@@ -54,3 +59,5 @@ blocks: [NPC-PLACE-1b]
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
 - `git diff --check`: pass
+- `cargo test --locked -p oteryn-game-server --test content_world_project_repository`: pass (5)
+- `cargo fmt -p oteryn-game-server -- --check`: pass

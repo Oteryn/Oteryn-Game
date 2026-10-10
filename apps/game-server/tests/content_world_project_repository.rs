@@ -201,9 +201,9 @@ fn filesystem_limits() -> ProjectFilesystemLimits {
         // branch's spell imports the capture scans that sibling twice more: 2 more, measured.
         // The reviewed World pins (`pins/`, WORLD-BUNDLE-CI-1) add one sibling to the package root, seen by
         // each of the 11 locator lookups: 11 more, measured.
-        // The `npc-placements/` family directory adds one more sibling to the package root, which
-        // the capture scans: 1 more, measured.
-        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 1,
+        // The `npc-placements/` family directory (NPC-PLACE-1a) adds one more sibling to the package
+        // root, seen by each of the 11 locator lookups: 11 more, measured.
+        max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11,
     }
 }
 
