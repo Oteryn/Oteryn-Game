@@ -216,7 +216,11 @@ the `HARDCORE` branch it touches). PvP goes live on a World only when PVP-1, PVP
 PVP-DEATH-1, PVP-WIRE-1, PVP-BLOCK-1 and PVP-CLIENT-1 have merged (without the client's expert
 mode control a character stays in the default Dove mode and cannot start aggression, §6.6;
 without PVP-BLOCK-1 a viewer whom field legality protects, or one it exposes, could be sent a
-variant that disagrees with the server, §6.5); until then `attackable_kind` stays creature-only. The
+variant that disagrees with the server, §6.5), and the channel scope's
+`required_gameplay_capabilities` (ADMIT-0, ADMIT-CAP-1) include `PVP_V1`, deployed with a new
+`world_policy_revision`, so admission, reconnect and recovery refuse a session without it (a
+session that did not negotiate `PVP_V1` would stay in Dove mode and see no skull or frame state);
+until then `attackable_kind` stays creature-only. The
 first World is `OPTIONAL`, so it shows no PvP until GUILD-WAR-0. PvP going live does not activate
 player-made field or wall effects on players: they stay inactive until WORLDINT-ADMIT-1 and
 FIELD-2 have merged (WORLD-INTERACTION-0 §8.6, ADMIT-0), and PVP-BLOCK-1 variants apply from then.
@@ -272,6 +276,7 @@ Each is a focused test in the named slice; "O" = `OPEN`, "P" = `OPTIONAL`, "H" =
 | PVP-CC-30 | RT-1 | O, secure off: Dove, unmarked non-aggressor → `PVP_REFUSED {EXPERT_MODE}`, aggressor → allowed; White Hand, character aggressive to a party member → allowed; Yellow Hand, white-skulled stranger → allowed, skulled party member → refused (rule 5); Red Fist → any; area effect skips a filtered actor; field damage not filtered |
 | PVP-CC-31 | RT-1, WIRE-1 | black-skulled actor selects Red Fist → `REJECTED`; actor in Red Fist gains a black skull → mode Dove; H → mode fixed at Red Fist |
 | PVP-CC-32 | BLOCK-1 | O, viewer in the owner's party sees the safe variant of the owner's field; the viewer leaves the party → that entry republished as the real variant in the next update; the viewer moves onto a `no_pvp_zone` tile → safe variant again; an owner creates a field during its own post-login immunity → an unrelated viewer receives the safe variant, and the owner's immunity expiring → real variant in the next update; a viewer inside its own post-login immunity receives the real variant of an unrelated owner's field |
+| PVP-CC-33 | WIRE-1 | O, PvP live: the channel scope requires `PVP_V1`; a session that does not negotiate it is refused at admission, reconnect and recovery (ADMIT-0 required-capability check) |
 
 ## 10. Owner questions (answered: D971, 1a 2a 3a 4a)
 
