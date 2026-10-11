@@ -215,6 +215,7 @@ impl Dependencies {
             chat: crate::gameplay_transport::chat_intent::ChatRuntime::default(),
             wheel_ruleset: None,
             wheel_sessions: std::sync::Mutex::default(),
+            progression_sessions: std::sync::Mutex::default(),
             premium: crate::premium::refresh::PremiumRefresher::new(
                 Default::default(),
                 harness.root.clone(),
