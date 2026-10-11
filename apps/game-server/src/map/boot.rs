@@ -342,8 +342,8 @@ type SpawnCell = (i32, i32, i16);
 pub(crate) const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
 
 /// A point whose creature has a period other than `All` is outside the activation set. The
-/// points of one source that share a creature and a respawn delay form one group, in authored
-/// order; a creature `health` does not serve refuses the whole family (`None`). The point
+/// consecutive points of one source that share a creature and a respawn delay form one group,
+/// so the canonical (source key, point ordinal) order is kept; a creature `health` does not serve refuses the whole family (`None`). The point
 /// direction is not realized yet.
 pub(crate) fn table_activation_spawns(
     table: &oteryn_world_bundle::spawn::Table,
@@ -363,12 +363,11 @@ pub(crate) fn table_activation_spawns(
                 i32::from(point.y),
                 i16::from(source.floor).checked_neg()?,
             );
-            match groups
-                .iter_mut()
-                .find(|(c, r, _)| *c == point.creature && *r == point.respawn_ms)
-            {
-                Some((_, _, cells)) => cells.push(cell),
-                None => groups.push((point.creature, point.respawn_ms, vec![cell])),
+            match groups.last_mut() {
+                Some((c, r, cells)) if *c == point.creature && *r == point.respawn_ms => {
+                    cells.push(cell)
+                }
+                _ => groups.push((point.creature, point.respawn_ms, vec![cell])),
             }
         }
         for (creature, respawn_ms, cells) in groups {
@@ -572,6 +571,7 @@ pub(crate) mod tests {
                     point(1, 2, 60_000),
                     point(0, 3, 60_000),
                     point(0, 4, 30_000),
+                    point(0, 5, 30_000),
                 ],
             }],
         };
@@ -588,7 +588,7 @@ pub(crate) mod tests {
                     20
                 ),
                 (
-                    vec![(4, 5, 7)],
+                    vec![(4, 5, 7), (5, 5, 7)],
                     30_000,
                     BUNDLE_OCCUPANCY_RETRY_MS,
                     "oteryn:creature.rat".to_string(),
@@ -601,6 +601,48 @@ pub(crate) mod tests {
         assert_eq!(
             table_activation_spawns(&Table::default(), health),
             Some(vec![])
+        );
+    }
+
+    #[test]
+    fn spawn1b_keeps_point_order_for_interleaved_creatures() {
+        use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+        let point = |creature, x| Point {
+            creature,
+            x,
+            y: 5,
+            direction: Direction::South,
+            respawn_ms: 60_000,
+        };
+        let creature = |key: &str| Creature {
+            key: key.into(),
+            period: Period::All,
+        };
+        let table = Table {
+            creatures: vec![
+                creature("oteryn:creature.rat"),
+                creature("oteryn:creature.bat"),
+            ],
+            sources: vec![Source {
+                key: "oteryn:spawn/a".into(),
+                floor: -7,
+                x: 3,
+                y: 5,
+                points: vec![point(0, 1), point(1, 2), point(0, 3)],
+            }],
+        };
+        let facts = table_activation_spawns(&table, |_| Some(20)).expect("facts");
+        let order: Vec<(&str, Vec<i32>)> = facts
+            .iter()
+            .map(|f| (f.3.as_str(), f.0.iter().map(|c| c.0).collect()))
+            .collect();
+        assert_eq!(
+            order,
+            vec![
+                ("oteryn:creature.rat", vec![1]),
+                ("oteryn:creature.bat", vec![2]),
+                ("oteryn:creature.rat", vec![3]),
+            ]
         );
     }
 
