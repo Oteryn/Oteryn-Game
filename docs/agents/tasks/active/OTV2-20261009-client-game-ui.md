@@ -11,8 +11,11 @@ branch: feat/client-completion-20261009
 owner: root
 ```
 
-AUTHORING on draft #1942, predecessor 580b31689837b2e2dd78ffad76f0571de96e6113.
-Root is sole publisher; no freeze, merge, production deployment or DB reset.
+AUTHORING on draft #1942; remote predecessor
+`c177231dee65188909049f0b26ce5cd12d35f4cd`; local authoring base
+`b000e20fb0bc0f03ddd450141c6f975bb15ded45` merges main
+`907412c53dec6f85a21c47a59be0f716cc7de4e6`; no freeze. Root is sole
+publisher; no production deployment or DB reset.
 Owner permits client/Platform/engine work; preserve unrelated modifications.
 Do not publish proprietary reference assets or private account data.
 
@@ -69,9 +72,9 @@ from untested behavior. Then replace incomplete compositions using the complete
 inventory and a consistent Oteryn component system; verify compiled native views
 and actual actions. Preserve working runtime code without treating its forms as
 the target design. Publish bounded increments through the guarded single-writer
-path in /workspace/publish-client. Root workspace contains unrelated server/login
-changes and task files; do not stage or alter them. Use isolated publication
-checkout for governance checks because unrelated task docs fail its current gate.
+path. The current workspace is a clean single-writer checkout; inherited
+server/content files are ancestry from main, not work owned by this task. Preserve
+them and stage only the explicit client/governance batch.
 
 ## Continuation checkpoint — 2026-10-10
 
@@ -176,3 +179,21 @@ The current Linux worker has the `x86_64-pc-windows-gnu` Rust target but no
 `aws-lc-sys` C probe before reaching Oteryn's Windows shell. Linux locked tests,
 strict all-target Clippy and compiled page coverage remain green; native Windows
 CI is still required for the complete composition.
+
+## Continuation checkpoint — 2026-10-11 main synchronization
+
+Normal AUTHORING merge `b000e20f` brought main `907412c5` onto the draft without
+rebasing or rewriting its predecessor. The two textual conflicts in
+`REFERENCE-AUDIT.md` and `SETTINGS.md` were resolved by retaining main's privacy
+sanitization together with the branch's newer fidelity evidence. CI evidence on
+remote predecessor `c177231d` does not qualify any successor; each published
+candidate still requires fresh exact-head Linux and Windows checks.
+
+The targeted reference pass closed the former General Hotkeys capture gap without
+applying a reference preference. Current AUTHORING work restores reference key
+semantics in a bounded increment: movement bindings accept only an unmodified
+physical key, an explicitly cleared profile movement binding cannot fall through
+to legacy global movement, Escape is exclusive to Stop All, and F10 is available
+to the admitted action-bar/hotkey router while remaining the pre-admission
+settings shortcut. New action-bar defaults use F1–F12. These claims require the
+batch's locked tests, strict Clippy and a new native Windows check before freeze.

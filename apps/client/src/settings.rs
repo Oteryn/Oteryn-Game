@@ -10,6 +10,7 @@ use std::{
 /// Bound hostile or corrupt local input while leaving room for all 32 complete
 /// hotkey profiles, their two bindings per action, and custom actions.
 const MAX_SETTINGS_BYTES: u64 = 8 * 1024 * 1024;
+const SETTINGS_VERSION: u8 = 2;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -66,7 +67,7 @@ fn default_panel_shortcuts() -> Vec<String> {
 impl Default for ClientSettings {
     fn default() -> Self {
         Self {
-            version: 1,
+            version: SETTINGS_VERSION,
             english: false,
             fullscreen: false,
             window_width: 900,
@@ -218,6 +219,30 @@ impl ClientSettings {
         Ok(())
     }
 
+    fn migrate_settings_version(&mut self) -> io::Result<()> {
+        match self.version {
+            1 => {
+                self.reconcile_active_hotkey_profile()?;
+                self.hotkeys.migrate_v1_reference_defaults();
+                self.action_bar = self
+                    .hotkeys
+                    .active()
+                    .ok_or_else(|| {
+                        io::Error::new(io::ErrorKind::InvalidData, "Missing hotkey profile")
+                    })?
+                    .action_bar
+                    .clone();
+                self.version = SETTINGS_VERSION;
+                Ok(())
+            }
+            SETTINGS_VERSION => Ok(()),
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Unsupported client preferences version",
+            )),
+        }
+    }
+
     pub(crate) fn reconcile_active_hotkey_profile(&mut self) -> io::Result<()> {
         let active = self
             .hotkeys
@@ -298,7 +323,7 @@ impl ClientSettings {
                 .iter()
                 .enumerate()
                 .all(|(i, key)| !self.movement_keys[..i].contains(key));
-        if self.version != 1
+        if self.version != SETTINGS_VERSION
             || !(800..=3840).contains(&self.window_width)
             || !(600..=2160).contains(&self.window_height)
             || !(self.fps == 0 || (30..=360).contains(&self.fps))
@@ -338,6 +363,7 @@ impl ClientSettings {
             ));
         }
         let mut settings: Self = serde_json::from_slice(&fs::read(path)?)?;
+        settings.migrate_settings_version()?;
         settings.migrate_legacy_action_rows()?;
         settings.migrate_legacy_action_edge_masters()?;
         settings.reconcile_active_hotkey_profile()?;
@@ -383,6 +409,15 @@ impl ClientSettings {
                 .movement_keys
                 .iter()
                 .position(|key| KeyCode::new(*key).ok() == Some(*code))?;
+            let action = [
+                "movement.north",
+                "movement.east",
+                "movement.south",
+                "movement.west",
+            ][index];
+            if self.hotkeys.profile_owns_movement_action(action) {
+                return None;
+            }
             [StepDir::North, StepDir::East, StepDir::South, StepDir::West]
                 .get(index)
                 .copied()
@@ -423,8 +458,156 @@ mod tests {
         settings.ui_scale = f32::NAN;
         assert!(settings.validate().is_err());
         settings = ClientSettings::default();
-        settings.version = 2;
+        settings.version = 3;
         assert!(settings.validate().is_err());
+    }
+
+    #[test]
+    fn v1_settings_load_save_reload_reference_defaults_without_inventing_stop()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let legacy = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 68, 69];
+        let mut settings = ClientSettings {
+            version: 1,
+            ..ClientSettings::default()
+        };
+        for (shortcut, key) in settings.action_bar.shortcuts.iter_mut().zip(legacy) {
+            *shortcut = Some(crate::action_bar::SlotShortcut { key, modifiers: 0 });
+        }
+        settings.action_bar.chat_on_shortcuts.fill(None);
+        let profile = settings
+            .hotkeys
+            .active_mut()
+            .ok_or_else(|| io::Error::other("missing default profile"))?;
+        profile.general_chat_on.clear();
+        profile.general_chat_off.clear();
+        profile.general_chat_off.insert(
+            "movement.north".into(),
+            crate::hotkeys::HotkeyPair {
+                first: Some(crate::settings_catalog::ShortcutBinding {
+                    key: 26,
+                    ctrl: true,
+                    alt: false,
+                    shift: false,
+                    meta: false,
+                }),
+                second: None,
+            },
+        );
+        profile.action_bar = settings.action_bar.clone();
+        let mut inactive = crate::hotkeys::HotkeyProfile {
+            name: "Inactive".into(),
+            ..crate::hotkeys::HotkeyProfile::default()
+        };
+        inactive.general_chat_on.clear();
+        inactive.general_chat_off.clear();
+        inactive.action_bar = settings.action_bar.clone();
+        settings.hotkeys.profiles.push(inactive);
+
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-settings-v1-hotkeys-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&settings)?)?;
+        let settings = ClientSettings::load(&path)?;
+        assert_eq!(settings.version, SETTINGS_VERSION);
+        assert_eq!(
+            settings.action_bar.shortcuts[0].map(|key| key.key),
+            Some(58)
+        );
+        assert_eq!(
+            settings.action_bar.shortcuts[9].map(|key| key.key),
+            Some(67)
+        );
+        let profile = settings
+            .hotkeys
+            .active()
+            .ok_or_else(|| io::Error::other("missing default profile"))?;
+        assert!(!profile.general_chat_on.contains_key("client.stop"));
+        assert!(!profile.general_chat_off.contains_key("client.stop"));
+        assert_eq!(
+            profile.general_chat_off["movement.north"].first,
+            Some(crate::settings_catalog::ShortcutBinding {
+                key: 26,
+                ctrl: false,
+                alt: false,
+                shift: false,
+                meta: false,
+            })
+        );
+        assert_eq!(
+            profile.action_bar.shortcuts[11].map(|key| key.key),
+            Some(69)
+        );
+        assert_eq!(
+            profile.action_bar.chat_on_shortcuts[11].map(|key| key.key),
+            Some(69)
+        );
+        assert_eq!(
+            settings.hotkeys.profiles[1].action_bar.shortcuts[0].map(|key| key.key),
+            Some(58)
+        );
+        assert!(
+            !settings.hotkeys.profiles[1]
+                .general_chat_off
+                .contains_key("client.stop")
+        );
+        settings.validate()?;
+        settings.save(&path)?;
+        assert_eq!(ClientSettings::load(&path)?, settings);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn v1_action_default_collision_preserves_legacy_chords_and_other_settings()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let legacy = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 68, 69];
+        let mut settings = ClientSettings {
+            version: 1,
+            english: true,
+            ..ClientSettings::default()
+        };
+        for (shortcut, key) in settings.action_bar.shortcuts.iter_mut().zip(legacy) {
+            *shortcut = Some(crate::action_bar::SlotShortcut { key, modifiers: 0 });
+        }
+        settings.action_bar.chat_on_shortcuts.fill(None);
+        let profile = settings
+            .hotkeys
+            .active_mut()
+            .ok_or_else(|| io::Error::other("missing default profile"))?;
+        profile.action_bar = settings.action_bar.clone();
+        profile.general_chat_off.insert(
+            "client.options".into(),
+            crate::hotkeys::HotkeyPair {
+                first: Some(crate::settings_catalog::ShortcutBinding {
+                    key: 58,
+                    ctrl: false,
+                    alt: false,
+                    shift: false,
+                    meta: false,
+                }),
+                second: None,
+            },
+        );
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-settings-v1-hotkey-collision-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&settings)?)?;
+        let migrated = ClientSettings::load(&path)?;
+        assert!(migrated.english);
+        assert_eq!(
+            migrated.action_bar.shortcuts[0].map(|key| key.key),
+            Some(30)
+        );
+        assert_eq!(
+            migrated.hotkeys.profiles[0].general_chat_off["client.options"]
+                .first
+                .map(|binding| binding.key),
+            Some(58)
+        );
+        fs::remove_file(path)?;
+        Ok(())
     }
 
     #[test]
@@ -532,6 +715,44 @@ mod tests {
             *modifiers = Modifiers::NONE;
         }
         assert_eq!(settings.direction(&[event]), Some(StepDir::North));
+        Ok(())
+    }
+
+    #[test]
+    fn profile_movement_presence_disables_the_legacy_global_fallback()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut settings = ClientSettings {
+            movement_keys: [26, 7, 22, 4],
+            ..ClientSettings::default()
+        };
+        let event = NormalizedInputEvent::Key {
+            code: KeyCode::new(26)?,
+            state: ButtonState::Pressed,
+            modifiers: oteryn_input_actions::Modifiers::NONE,
+            repeat: false,
+        };
+        assert_eq!(
+            settings.direction(std::slice::from_ref(&event)),
+            Some(StepDir::North)
+        );
+        settings
+            .hotkeys
+            .active_mut()
+            .ok_or("default profile")?
+            .general_chat_off
+            .insert(
+                "movement.north".into(),
+                crate::hotkeys::HotkeyPair::default(),
+            );
+        settings.validate()?;
+        assert_eq!(settings.direction(&[event]), None);
+        let east = NormalizedInputEvent::Key {
+            code: KeyCode::new(7)?,
+            state: ButtonState::Pressed,
+            modifiers: oteryn_input_actions::Modifiers::NONE,
+            repeat: false,
+        };
+        assert_eq!(settings.direction(&[east]), Some(StepDir::East));
         Ok(())
     }
 

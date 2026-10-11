@@ -4,7 +4,7 @@ use oteryn_client::{
     action_bar::{ACTION_BAR_ROWS, ACTION_BAR_SLOTS, SlotShortcut},
     hotkeys::{
         CustomHotkey, CustomHotkeyAction, HotkeyPair, HotkeyProfile, MAX_HOTKEY_PROFILES,
-        ObjectUseMode, general_action_supported,
+        ObjectUseMode, general_action_supported, is_movement_action,
     },
     settings::ClientSettings,
     settings_catalog::ShortcutBinding,
@@ -1067,7 +1067,18 @@ fn binding_editor(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state
         });
         if let Some((logical, physical, modifiers)) = event {
             if logical == egui::Key::Escape {
-                close = true;
+                if editor.target.is_stop_all() {
+                    editor.captured = Some(ShortcutBinding {
+                        key: 41,
+                        ctrl: modifiers.ctrl,
+                        alt: modifiers.alt,
+                        shift: modifiers.shift,
+                        meta: modifiers.mac_cmd,
+                    });
+                    editor.listening = false;
+                } else {
+                    close = true;
+                }
             } else if let Some(key) = egui_key_to_hid(physical) {
                 editor.captured = Some(ShortcutBinding {
                     key,
@@ -1153,6 +1164,16 @@ impl BindingTarget {
             | Self::Custom { chat_on, .. } => *chat_on,
         }
     }
+
+    fn is_stop_all(&self) -> bool {
+        matches!(
+            self,
+            Self::General {
+                action: "client.stop",
+                ..
+            }
+        )
+    }
 }
 
 fn binding_candidate_valid(
@@ -1189,7 +1210,7 @@ fn set_binding(
             } else {
                 pair.first = value;
             }
-            if pair == HotkeyPair::default() {
+            if pair == HotkeyPair::default() && !is_movement_action(action) {
                 map.remove(*action);
             } else {
                 map.insert((*action).into(), pair);
@@ -1306,6 +1327,7 @@ fn egui_key_to_hid(key: egui::Key) -> Option<u16> {
         Key::Num9 => 38,
         Key::Num0 => 39,
         Key::Enter => 40,
+        Key::Escape => 41,
         Key::Backspace => 42,
         Key::Tab => 43,
         Key::Space => 44,
@@ -1374,6 +1396,8 @@ fn key_name(key: u16) -> String {
             .to_string(),
         30..=38 => (key - 29).to_string(),
         39 => "0".into(),
+        40 => "Enter".into(),
+        41 => "Esc".into(),
         43 => "Tab".into(),
         44 => "Space".into(),
         58..=69 => format!("F{}", key - 57),
@@ -1537,7 +1561,8 @@ mod tests {
             profile.general_chat_off["client.options"].first,
             Some(first)
         );
-        assert!(profile.general_chat_on.is_empty());
+        assert_eq!(profile.general_chat_on.len(), 1);
+        assert!(profile.general_chat_on.contains_key("client.stop"));
 
         let fullscreen_off = BindingTarget::General {
             action: "client.fullscreen",
@@ -1585,7 +1610,7 @@ mod tests {
         );
         assert_eq!(egui_key_to_hid(egui::Key::F12), Some(69));
         assert_eq!(egui_key_to_hid(egui::Key::ArrowUp), Some(82));
-        assert_eq!(egui_key_to_hid(egui::Key::Escape), None);
+        assert_eq!(egui_key_to_hid(egui::Key::Escape), Some(41));
     }
 
     #[test]
@@ -1612,6 +1637,59 @@ mod tests {
         );
         assert_eq!(row.shortcuts[49], None);
         assert!(settings.validate_hotkey_draft().is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn movement_clear_is_retained_and_reserved_keys_follow_action_semantics()
+    -> Result<(), &'static str> {
+        let mut settings = ClientSettings::default();
+        let movement = BindingTarget::General {
+            action: "movement.north",
+            chat_on: false,
+            second: false,
+        };
+        assert!(set_binding(&mut settings, &movement, None));
+        assert!(
+            settings
+                .hotkeys
+                .active()
+                .ok_or("default profile")?
+                .general_chat_off
+                .contains_key("movement.north")
+        );
+        let modified = ShortcutBinding {
+            key: 26,
+            ctrl: true,
+            alt: false,
+            shift: false,
+            meta: false,
+        };
+        assert!(!binding_candidate_valid(
+            &settings,
+            &movement,
+            Some(modified)
+        ));
+
+        let stop = BindingTarget::General {
+            action: "client.stop",
+            chat_on: false,
+            second: false,
+        };
+        let options = BindingTarget::General {
+            action: "client.options",
+            chat_on: false,
+            second: false,
+        };
+        let escape = ShortcutBinding {
+            key: 41,
+            ctrl: false,
+            alt: false,
+            shift: false,
+            meta: false,
+        };
+        assert!(binding_candidate_valid(&settings, &stop, Some(escape)));
+        assert!(!binding_candidate_valid(&settings, &options, Some(escape)));
         Ok(())
     }
 }

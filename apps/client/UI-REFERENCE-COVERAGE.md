@@ -66,12 +66,12 @@ not proof of every hidden control or runtime effect. Do not restart those pages.
 | Group | Established | Remaining targeted checks |
 | --- | --- | --- |
 | Basic / Controls | Page layouts; three mouse presets | Classic loot-button selector and dependent controls |
-| General / Action Bar / Custom Hotkeys | Profiles, chat contexts, two binding columns, key capture/conflict, spell/object/text editors; Oteryn routes next-profile/direct-Hotkeys navigation, first/next/previous admitted battle targets, Stop All Actions, local/next/previous/help/list/close chat actions, VIP/Battle/Skills/Quest Log/Prey panel toggles, FPS overlay and minimap zoom/pan through live client consumers | Gap between general-action captures 02/03; exact auto-switch rules, profile removal confirmation, full spell-dependent fields and the remaining disabled action families |
+| General / Action Bar / Custom Hotkeys | Profiles, chat contexts, two binding columns, key capture/conflict, spell/object/text editors; the formerly missing 02/03 interval is now directly captured; Oteryn routes next-profile/direct-Hotkeys navigation, first/next/previous admitted battle targets, Stop All Actions, local/next/previous/help/list/close chat actions, VIP/Battle/Skills/Quest Log/Prey panel toggles, FPS overlay and minimap zoom/pan through live client consumers | Profile removal confirmation, full spell-dependent fields and the remaining disabled action families |
 | Interface / HUD / Console / Game Window | Pages inspected; 35 HUD conditions; target-marking and loot-colour choices | HUD ordering, master/child and aggregate semantics; Console/context details not explicitly enumerated |
 | Action Bars / Shortcuts | All nine bars individually verified at 50 slots; all shortcut identities | Edge-master/retained-child behavior, clear confirmations and persistence |
 | Graphics / Effects | Linux engines, antialiasing, lighting and opacity controls | Platform-specific availability and actual effect/dependency checks |
 | Sound / Battle Sounds / UI Sounds | Volume/filter families and device selection | Audio consumers, unavailable-device handling, master/child behavior |
-| Misc / Gameplay / Screenshots / Help | Controls and 18 screenshot triggers; help/import/export/reset routes | Trigger effects, validation and non-destructive dialog inspection |
+| Misc / Gameplay / Screenshots / Help | Controls, automatic capture master plus 17 event triggers; help/import/export/reset routes | Trigger effects, validation and non-destructive dialog inspection |
 
 ## Nested and non-shortcut gaps
 

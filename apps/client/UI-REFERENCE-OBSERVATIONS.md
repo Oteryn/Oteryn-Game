@@ -102,8 +102,14 @@ player guide, quest tracker, skills, spell list and supply analyser.
 
 Private evidence: `/tmp/oteryn-general-hotkeys-01.png` through `-10.png`,
 `/tmp/oteryn-hotkeys-dialogs.png`, `/tmp/oteryn-hotkeys-chat.png` and
-`/tmp/oteryn-controls-presets-20261009.png`. There is an unverified interval
-between general captures 02 and 03; do not call the full action inventory complete.
+`/tmp/oteryn-controls-presets-20261009.png`. A targeted, cancelled scroll pass on
+2026-10-11 closed the former interval between captures 02 and 03. It directly
+recorded Chat Text Copy/Select All, Chat Send Current Line, Show/Hide Server
+Messages in Current Channel, Combat Toggle Chase/Secure Mode, Containers Toggle
+Manual Sort Mode, Bugreport and Compendium before the already recorded Cyclopedia
+rows. Private evidence: `/tmp/oteryn-reference-general-current-20261011.png` and
+`/tmp/oteryn-reference-general-gap-a-20261011.png` through `-d-20261011.png`.
+The Options dialog was cancelled; no reference preference was applied.
 
 ## Action-bar capacity
 

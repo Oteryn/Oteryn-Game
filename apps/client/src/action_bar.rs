@@ -181,17 +181,19 @@ where
 
 impl Default for ActionBarPreferences {
     fn default() -> Self {
-        let keys = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 68, 69];
+        let keys = [58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69];
         let mut shortcuts = [None; ACTION_BAR_SLOTS];
+        let mut chat_on_shortcuts = [None; ACTION_BAR_SLOTS];
         for (slot, key) in keys.into_iter().enumerate() {
             shortcuts[slot] = Some(SlotShortcut { key, modifiers: 0 });
+            chat_on_shortcuts[slot] = Some(SlotShortcut { key, modifiers: 0 });
         }
         Self {
             visible: true,
             locked: false,
             shortcuts,
             secondary_shortcuts: empty_shortcuts(),
-            chat_on_shortcuts: empty_shortcuts(),
+            chat_on_shortcuts,
             chat_on_secondary_shortcuts: empty_shortcuts(),
             extra_rows: [ActionRowPreferences::default(); ACTION_BAR_ROWS - 1],
             edge_enabled: default_edge_enabled(),
@@ -200,6 +202,52 @@ impl Default for ActionBarPreferences {
 }
 
 impl ActionBarPreferences {
+    /// Version-one clients shipped number-row defaults for the first twelve
+    /// buttons. Upgrade only that exact untouched primary sequence.
+    pub(crate) fn migrate_v1_default_shortcuts(&mut self) -> bool {
+        let legacy = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 68, 69];
+        let matches_legacy = self.shortcuts[..legacy.len()]
+            .iter()
+            .zip(legacy)
+            .all(|(shortcut, key)| *shortcut == Some(SlotShortcut { key, modifiers: 0 }));
+        let target_key = |shortcut: &Option<SlotShortcut>| {
+            shortcut.is_some_and(|shortcut| {
+                shortcut.modifiers == 0 && (58..=69).contains(&shortcut.key)
+            })
+        };
+        let chat_off_conflict = self.shortcuts[legacy.len()..].iter().any(target_key)
+            || self.secondary_shortcuts.iter().any(target_key)
+            || self.extra_rows.iter().any(|row| {
+                row.shortcuts.iter().any(target_key)
+                    || row.secondary_shortcuts.iter().any(target_key)
+            });
+        let chat_on_conflict = self.chat_on_shortcuts[..legacy.len()]
+            .iter()
+            .any(Option::is_some)
+            || self.chat_on_shortcuts[legacy.len()..]
+                .iter()
+                .any(target_key)
+            || self.chat_on_secondary_shortcuts.iter().any(target_key)
+            || self.extra_rows.iter().any(|row| {
+                row.chat_on_shortcuts.iter().any(target_key)
+                    || row.chat_on_secondary_shortcuts.iter().any(target_key)
+            });
+        if matches_legacy && !chat_off_conflict && !chat_on_conflict {
+            for (shortcut, key) in self.shortcuts[..legacy.len()].iter_mut().zip(58_u16..=69) {
+                *shortcut = Some(SlotShortcut { key, modifiers: 0 });
+            }
+            for (shortcut, key) in self.chat_on_shortcuts[..legacy.len()]
+                .iter_mut()
+                .zip(58_u16..=69)
+            {
+                *shortcut = Some(SlotShortcut { key, modifiers: 0 });
+            }
+            true
+        } else {
+            false
+        }
+    }
+
     /// Effective rendering visibility, separate from the retained raw row selection.
     #[must_use]
     pub fn row_is_visible(&self, row: usize) -> bool {
@@ -280,7 +328,7 @@ impl ActionBarPreferences {
             }))
     }
 
-    /// Reserve application Escape/Enter/F10 and the configured movement chords. Reject
+    /// Reserve application Escape/Enter and the configured movement chords. Reject
     /// conflicts before replacing any live bindings or saving preferences.
     pub fn validate(&self, movement_keys: &[u16]) -> io::Result<()> {
         for chat_on in [false, true] {
@@ -288,7 +336,7 @@ impl ActionBarPreferences {
             for shortcut in self.shortcuts_for_context(chat_on) {
                 let Some(shortcut) = shortcut else { continue };
                 if shortcut.chord().is_err()
-                    || matches!(shortcut.key, 40 | 41 | 67)
+                    || matches!(shortcut.key, 40 | 41)
                     || (!chat_on
                         && shortcut.modifiers == 0
                         && movement_keys.contains(&shortcut.key))
@@ -663,7 +711,7 @@ mod tests {
     use oteryn_session::ChatRoom;
 
     fn event(state: ButtonState, repeat: bool) -> Result<NormalizedInputEvent, InputError> {
-        key_event(30, 0, state, repeat)
+        key_event(58, 0, state, repeat)
     }
 
     fn key_event(
@@ -693,11 +741,11 @@ mod tests {
     }
 
     #[test]
-    fn typing_modal_and_repeat_never_submit_gameplay_commands()
+    fn chat_context_routes_its_default_while_modal_and_repeat_stay_suppressed()
     -> Result<(), Box<dyn std::error::Error>> {
         let mut bar = assigned_bar()?;
         bar.set_input_context(true, false)?;
-        assert!(bar.route(&[event(ButtonState::Pressed, false)?]).is_empty());
+        assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
         bar.route(&[event(ButtonState::Released, false)?]);
         bar.set_input_context(false, true)?;
         assert!(bar.route(&[event(ButtonState::Pressed, false)?]).is_empty());
@@ -790,22 +838,22 @@ mod tests {
         )?;
         assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
         assert_eq!(
-            bar.route(&[key_event(31, 0, ButtonState::Pressed, false)?]),
+            bar.route(&[key_event(59, 0, ButtonState::Pressed, false)?]),
             vec![world]
         );
         assert!(
             bar.route(&[
                 event(ButtonState::Pressed, false)?,
-                key_event(31, 0, ButtonState::Pressed, false)?,
+                key_event(59, 0, ButtonState::Pressed, false)?,
                 event(ButtonState::Pressed, true)?,
-                key_event(31, 0, ButtonState::Pressed, true)?,
+                key_event(59, 0, ButtonState::Pressed, true)?,
             ])
             .is_empty()
         );
         bar.route(&[event(ButtonState::Released, false)?]);
         assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
         assert!(
-            bar.route(&[key_event(31, 0, ButtonState::Pressed, false)?])
+            bar.route(&[key_event(59, 0, ButtonState::Pressed, false)?])
                 .is_empty()
         );
         Ok(())
@@ -817,58 +865,58 @@ mod tests {
         let mut bar = assigned_bar()?;
         let mut preferences = bar.preferences().clone();
         preferences.shortcuts[1] = Some(SlotShortcut {
-            key: 31,
+            key: 59,
             modifiers: 1,
         });
         bar.reconfigure(preferences, &[])?;
         bar.assign(1, bar.assignment(0).cloned())?;
         assert_eq!(bar.route(&[event(ButtonState::Pressed, false)?]).len(), 1);
         assert_eq!(
-            bar.route(&[key_event(31, 1, ButtonState::Pressed, false)?])
+            bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
                 .len(),
             1
         );
         assert!(
-            bar.route(&[key_event(30, 1, ButtonState::Pressed, false)?])
+            bar.route(&[key_event(58, 1, ButtonState::Pressed, false)?])
                 .is_empty()
         );
-        bar.route(&[key_event(31, 1, ButtonState::Released, false)?]);
+        bar.route(&[key_event(59, 1, ButtonState::Released, false)?]);
         for (text, modal) in [(true, false), (false, true)] {
             bar.set_input_context(text, modal)?;
             assert!(
-                bar.route(&[key_event(31, 1, ButtonState::Pressed, false)?])
+                bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
                     .is_empty()
             );
             bar.set_input_context(false, false)?;
             assert!(
-                bar.route(&[key_event(31, 1, ButtonState::Pressed, false)?])
+                bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
                     .is_empty()
             );
-            bar.route(&[key_event(31, 1, ButtonState::Released, false)?]);
+            bar.route(&[key_event(59, 1, ButtonState::Released, false)?]);
             assert_eq!(
-                bar.route(&[key_event(31, 1, ButtonState::Pressed, false)?])
+                bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
                     .len(),
                 1
             );
-            bar.route(&[key_event(31, 1, ButtonState::Released, false)?]);
+            bar.route(&[key_event(59, 1, ButtonState::Released, false)?]);
         }
         bar.route(&[NormalizedInputEvent::FocusChanged { focused: false }]);
         assert!(
-            bar.route(&[key_event(31, 1, ButtonState::Pressed, false)?])
+            bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
                 .is_empty()
         );
         bar.route(&[NormalizedInputEvent::FocusChanged { focused: true }]);
         assert!(
-            bar.route(&[key_event(31, 1, ButtonState::Pressed, true)?])
+            bar.route(&[key_event(59, 1, ButtonState::Pressed, true)?])
                 .is_empty()
         );
         assert!(
-            bar.route(&[key_event(31, 1, ButtonState::Pressed, false)?])
+            bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
                 .is_empty()
         );
-        bar.route(&[key_event(31, 1, ButtonState::Released, false)?]);
+        bar.route(&[key_event(59, 1, ButtonState::Released, false)?]);
         assert_eq!(
-            bar.route(&[key_event(31, 1, ButtonState::Pressed, false)?])
+            bar.route(&[key_event(59, 1, ButtonState::Pressed, false)?])
                 .len(),
             1
         );
@@ -919,7 +967,7 @@ mod tests {
         let mut preferences = ActionBarPreferences::default();
         preferences.shortcuts[0] = None;
         preferences.secondary_shortcuts[0] = Some(SlotShortcut {
-            key: 30,
+            key: 58,
             modifiers: 0,
         });
         let mut bar = ActionBar::new(preferences, &[])?;
@@ -1030,10 +1078,6 @@ mod tests {
                 modifiers: 0,
             },
             SlotShortcut {
-                key: 67,
-                modifiers: 2,
-            },
-            SlotShortcut {
                 key: 30,
                 modifiers: 16,
             },
@@ -1053,6 +1097,68 @@ mod tests {
         preferences.extra_rows[0].shortcuts[0] = preferences.extra_rows[7].shortcuts[11];
         assert!(preferences.validate(&[82]).is_err());
         Ok(())
+    }
+
+    #[test]
+    fn default_action_buttons_use_f1_through_f12_including_f10() -> io::Result<()> {
+        let preferences = ActionBarPreferences::default();
+        for shortcuts in [
+            &preferences.shortcuts[..12],
+            &preferences.chat_on_shortcuts[..12],
+        ] {
+            let keys = shortcuts
+                .iter()
+                .map(|shortcut| shortcut.map(|shortcut| shortcut.key))
+                .collect::<Vec<_>>();
+            assert_eq!(keys, (58_u16..=69).map(Some).collect::<Vec<Option<u16>>>());
+        }
+        preferences.validate(&[82, 79, 81, 80])
+    }
+
+    #[test]
+    fn v1_default_shortcuts_migrate_once_without_overwriting_custom_bindings() {
+        let legacy = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 68, 69];
+        let mut preferences = ActionBarPreferences::default();
+        for (shortcut, key) in preferences.shortcuts.iter_mut().zip(legacy) {
+            *shortcut = Some(SlotShortcut { key, modifiers: 0 });
+        }
+        preferences.chat_on_shortcuts = empty_shortcuts();
+        assert!(preferences.migrate_v1_default_shortcuts());
+        assert_eq!(
+            preferences.chat_on_shortcuts[9].map(|shortcut| shortcut.key),
+            Some(67)
+        );
+        assert!(!preferences.migrate_v1_default_shortcuts());
+
+        let mut customized = ActionBarPreferences::default();
+        for (shortcut, key) in customized.shortcuts.iter_mut().zip(legacy) {
+            *shortcut = Some(SlotShortcut { key, modifiers: 0 });
+        }
+        customized.chat_on_shortcuts = empty_shortcuts();
+        customized.shortcuts[0] = Some(SlotShortcut {
+            key: 4,
+            modifiers: 2,
+        });
+        assert!(!customized.migrate_v1_default_shortcuts());
+        assert_eq!(
+            customized.shortcuts[0].map(|shortcut| shortcut.key),
+            Some(4)
+        );
+
+        let mut collision = ActionBarPreferences::default();
+        for (shortcut, key) in collision.shortcuts.iter_mut().zip(legacy) {
+            *shortcut = Some(SlotShortcut { key, modifiers: 0 });
+        }
+        collision.chat_on_shortcuts = empty_shortcuts();
+        collision.extra_rows[0].secondary_shortcuts[0] = Some(SlotShortcut {
+            key: 58,
+            modifiers: 0,
+        });
+        assert!(!collision.migrate_v1_default_shortcuts());
+        assert_eq!(
+            collision.shortcuts[0].map(|shortcut| shortcut.key),
+            Some(30)
+        );
     }
 
     #[test]
@@ -1128,7 +1234,7 @@ mod tests {
         let mut preferences = bar.preferences().clone();
         preferences.shortcuts[0] = None;
         preferences.extra_rows[7].shortcuts[ACTION_BAR_SLOTS - 1] = Some(SlotShortcut {
-            key: 30,
+            key: 58,
             modifiers: 0,
         });
         bar.reconfigure(preferences, &[])?;

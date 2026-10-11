@@ -183,7 +183,10 @@ impl SettingsPanel {
                             ui.selectable_value(&mut self.tab, index, *label);
                         }
                         ui.add_space(16.0);
-                        ui.small(tr("F10 — ustawienia w grze", "F10 — settings in game"));
+                        ui.small(tr(
+                            "F10 — ustawienia przed logowaniem",
+                            "F10 — pre-login settings",
+                        ));
                     });
                     ui.separator();
                     }
@@ -244,7 +247,7 @@ impl SettingsPanel {
                                         });
                                 }
                                 ui.checkbox(&mut self.draft.click_to_walk, tr("Chodzenie lewym kliknięciem", "Walk with left mouse click"));
-                                ui.small(tr("Każdy kierunek wymaga innego klawisza. F10 otwiera ustawienia.", "Each direction requires a different key. F10 opens settings."));
+                                ui.small(tr("Każdy kierunek wymaga innego klawisza bez modyfikatorów.", "Each direction requires a distinct key without modifiers."));
                                 ui.separator();
                                 ui.heading(tr("Paski akcji", "Action bars"));
                                 crate::action_bar_ui::preferences_editor(ui, &mut self.draft.action_bar, en);

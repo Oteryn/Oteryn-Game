@@ -587,10 +587,11 @@ impl ApplicationHandler for Application {
             WindowEvent::KeyboardInput { event, .. }
                 if event.state == winit::event::ElementState::Pressed
                     && !event.repeat
+                    && self.login.is_some()
                     && event.physical_key
                         == winit::keyboard::PhysicalKey::Code(winit::keyboard::KeyCode::F10) =>
             {
-                if let Some(ui) = self.login.as_mut().or(self.game_ui.as_mut()) {
+                if let Some(ui) = self.login.as_mut() {
                     ui.settings.open = !ui.settings.open;
                 }
             }

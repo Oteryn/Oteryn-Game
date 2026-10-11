@@ -627,7 +627,7 @@ mod tests {
     }
 
     #[test]
-    fn shortcut_digits_are_rendered_on_the_second_line_including_nine_rows()
+    fn shortcut_labels_are_rendered_on_the_second_line_including_nine_rows()
     -> Result<(), Box<dyn std::error::Error>> {
         for nine_rows in [false, true] {
             let mut preferences = ActionBarPreferences::default();
@@ -674,13 +674,13 @@ mod tests {
                 .iter()
                 .find_map(|shape| match &shape.shape {
                     egui::epaint::Shape::Text(text)
-                        if text.galley.job.text == "1" && glyphs(text) == "1" =>
+                        if text.galley.job.text == "F1" && glyphs(text) == "F1" =>
                     {
                         Some((shape.clip_rect, text))
                     }
                     _ => None,
                 })
-                .ok_or("Default digit was not rendered")?;
+                .ok_or("Default F1 shortcut was not rendered")?;
             assert!(!shortcut.galley.elided);
             assert_eq!(shortcut.galley.rows.len(), 1);
             assert_eq!(

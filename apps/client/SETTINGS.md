@@ -9,9 +9,11 @@ authoring candidate, not merged main or production readiness.
 
 ## Implemented
 
-The Windows client opens the same preferences panel from the login toolbar and
-with F10 during an admitted session. Opening the panel suppresses gameplay input;
-the session continues ticking. Apply and save validates the draft, persists it,
+The Windows client opens preferences from the login toolbar; F10 is a
+pre-admission shortcut. During an admitted session Options remains available from
+the client UI or an assigned General Hotkey, while F10 belongs to the reference
+F1–F12 action-button defaults. Opening the panel suppresses gameplay input; the
+session continues ticking. Apply and save validates the draft, persists it,
 then updates the current configuration. Cancel discards edits. Defaults resets
 the draft and requires Apply to persist. An invalid file falls back to defaults
 and reports the read failure inside the panel. A failed save preserves the active
@@ -183,9 +185,9 @@ sign-in yet. Browser PKCE remains current behavior; rotation recovery, per-origi
 process serialization and reviewed Platform HTTP integration remain outstanding.
 
 
-The full preferences tree is the default F10/login entry, with search and its own
-Apply/Cancel/Defaults footer. Connection/account details remain accessible from
-that footer. 65 additional controls have names-only reference provenance; their
+The full preferences tree is reachable from the pre-admission settings entry,
+with search and its own Apply/Cancel/Defaults footer. Connection/account details
+remain accessible from that footer. 65 additional controls have names-only reference provenance; their
 precise original behavior is not inferred from configuration-key names. Future
 preferences store user choices without pretending to enable absent consumers.
 
@@ -237,3 +239,22 @@ translations and assets are not redistributed. Native tests/Clippy/release and
 Linux headless geometry checks pass. Live-session visual acceptance is still
 required. Names, marks, Harmony, other actors and condition ordering/projection
 remain incomplete; this renderer does not complete the HUD screen.
+
+## Reference hotkey semantics checkpoint — 2026-10-11
+
+Official static defaults establish Escape for Stop All in both chat contexts and
+F1–F12 for action buttons 1.01–1.12. New profiles use those chords. Settings
+schema v2 upgrades only the exact untouched v1 number-row action sequence and
+only when the target chords are conflict-free; customized bindings remain intact.
+Existing v1 profiles do not acquire a missing Stop binding because absence may
+represent an intentional clear; fresh and reset profiles use Escape in both chat
+contexts.
+F10 opens settings only before admission so the admitted action router can own
+button 1.10. Movement editor validation accepts a single unmodified physical key,
+and clearing a profile movement binding is retained so the legacy global mapping
+cannot silently make the cleared action continue working.
+
+This completes those key-routing semantics, not the full General Hotkeys
+inventory. The remaining official actions stay disabled until their owning local
+or protocol consumer exists, and native Windows interaction evidence is still
+required for the current candidate.

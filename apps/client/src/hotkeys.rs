@@ -68,6 +68,13 @@ pub fn general_action_supported(action: &str) -> bool {
     )
 }
 
+/// Movement bindings are profile-owned and, unlike other hotkeys, must be a
+/// single unmodified physical key in the reference client.
+#[must_use]
+pub fn is_movement_action(action: &str) -> bool {
+    action.starts_with("movement.")
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct HotkeyPair {
@@ -125,10 +132,11 @@ pub struct HotkeyProfile {
 
 impl Default for HotkeyProfile {
     fn default() -> Self {
+        let stop = default_stop_pair();
         Self {
             name: "Default".into(),
-            general_chat_on: BTreeMap::new(),
-            general_chat_off: BTreeMap::new(),
+            general_chat_on: BTreeMap::from([("client.stop".into(), stop)]),
+            general_chat_off: BTreeMap::from([("client.stop".into(), stop)]),
             custom: Vec::new(),
             action_bar: ActionBarPreferences::default(),
         }
@@ -154,12 +162,30 @@ impl Default for HotkeyPreferences {
 }
 
 impl HotkeyPreferences {
+    pub(crate) fn migrate_v1_reference_defaults(&mut self) {
+        for profile in &mut self.profiles {
+            migrate_v1_movement_bindings(profile, true);
+            migrate_v1_movement_bindings(profile, false);
+            if !profile_uses_reference_action_chord(profile) {
+                profile.action_bar.migrate_v1_default_shortcuts();
+            }
+        }
+    }
+
     pub fn active(&self) -> Option<&HotkeyProfile> {
         self.profiles.get(self.selected)
     }
 
     pub fn active_mut(&mut self) -> Option<&mut HotkeyProfile> {
         self.profiles.get_mut(self.selected)
+    }
+
+    /// Presence, including an explicitly cleared pair, disables the matching
+    /// legacy direction without affecting the other three directions.
+    #[must_use]
+    pub fn profile_owns_movement_action(&self, action: &str) -> bool {
+        self.active()
+            .is_some_and(|profile| profile.general_chat_off.contains_key(action))
     }
 
     /// Resolve pressed, non-repeating physical keys in the active chat context.
@@ -223,6 +249,111 @@ impl HotkeyPreferences {
         }
         Ok(())
     }
+}
+
+fn default_stop_pair() -> HotkeyPair {
+    HotkeyPair {
+        first: Some(ShortcutBinding {
+            key: 41,
+            ctrl: false,
+            alt: false,
+            shift: false,
+            meta: false,
+        }),
+        second: None,
+    }
+}
+
+fn migrate_v1_movement_bindings(profile: &mut HotkeyProfile, chat_on: bool) {
+    let mut used = Vec::new();
+    let bindings = if chat_on {
+        &profile.general_chat_on
+    } else {
+        &profile.general_chat_off
+    };
+    for pair in bindings.values() {
+        for binding in [pair.first, pair.second].into_iter().flatten() {
+            if !has_modifiers(binding) {
+                used.push(binding);
+            }
+        }
+    }
+    for custom in &profile.custom {
+        let pair = if chat_on {
+            custom.chat_on
+        } else {
+            custom.chat_off
+        };
+        used.extend(
+            [pair.first, pair.second]
+                .into_iter()
+                .flatten()
+                .filter(|binding| !has_modifiers(*binding)),
+        );
+    }
+    used.extend(
+        profile
+            .action_bar
+            .shortcuts_for_context(chat_on)
+            .flatten()
+            .filter(|shortcut| shortcut.modifiers == 0)
+            .map(|shortcut| ShortcutBinding {
+                key: shortcut.key,
+                shift: false,
+                ctrl: false,
+                alt: false,
+                meta: false,
+            }),
+    );
+
+    let bindings = if chat_on {
+        &mut profile.general_chat_on
+    } else {
+        &mut profile.general_chat_off
+    };
+    for (action, pair) in bindings {
+        if !is_movement_action(action) {
+            continue;
+        }
+        for slot in [&mut pair.first, &mut pair.second] {
+            let Some(binding) = *slot else { continue };
+            if !has_modifiers(binding) {
+                continue;
+            }
+            let candidate = ShortcutBinding {
+                key: binding.key,
+                shift: false,
+                ctrl: false,
+                alt: false,
+                meta: false,
+            };
+            if used.contains(&candidate) {
+                *slot = None;
+            } else {
+                *slot = Some(candidate);
+                used.push(candidate);
+            }
+        }
+    }
+}
+
+fn profile_uses_reference_action_chord(profile: &HotkeyProfile) -> bool {
+    let target =
+        |binding: ShortcutBinding| !has_modifiers(binding) && (58..=69).contains(&binding.key);
+    profile
+        .general_chat_on
+        .values()
+        .chain(profile.general_chat_off.values())
+        .any(|pair| [pair.first, pair.second].into_iter().flatten().any(target))
+        || profile.custom.iter().any(|custom| {
+            [custom.chat_on, custom.chat_off]
+                .into_iter()
+                .any(|pair| [pair.first, pair.second].into_iter().flatten().any(target))
+        })
+}
+
+fn has_modifiers(binding: ShortcutBinding) -> bool {
+    binding.ctrl || binding.alt || binding.shift || binding.meta
 }
 
 fn pair_matches(pair: HotkeyPair, event: &NormalizedInputEvent) -> bool {
@@ -307,7 +438,7 @@ fn validate_general(bindings: &BTreeMap<String, HotkeyPair>) -> io::Result<()> {
         if action.is_empty() || action.len() > 96 || action.chars().any(char::is_control) {
             return Err(invalid());
         }
-        validate_pair(*pair)?;
+        validate_general_pair(action, *pair)?;
         for binding in [pair.first, pair.second].into_iter().flatten() {
             if seen.contains(&binding) {
                 return Err(invalid());
@@ -367,7 +498,24 @@ fn validate_custom(actions: &[CustomHotkey]) -> io::Result<()> {
 fn validate_pair(pair: HotkeyPair) -> io::Result<()> {
     for binding in [pair.first, pair.second].into_iter().flatten() {
         KeyCode::new(binding.key).map_err(|_| invalid())?;
-        if matches!(binding.key, 40 | 41 | 67) {
+        if matches!(binding.key, 40 | 41) {
+            return Err(invalid());
+        }
+    }
+    if pair.first.is_some() && pair.first == pair.second {
+        return Err(invalid());
+    }
+    Ok(())
+}
+
+fn validate_general_pair(action: &str, pair: HotkeyPair) -> io::Result<()> {
+    for binding in [pair.first, pair.second].into_iter().flatten() {
+        KeyCode::new(binding.key).map_err(|_| invalid())?;
+        if binding.key == 40
+            || (binding.key == 41 && action != "client.stop")
+            || (is_movement_action(action)
+                && (binding.ctrl || binding.alt || binding.shift || binding.meta))
+        {
             return Err(invalid());
         }
     }
@@ -431,7 +579,7 @@ mod tests {
     -> Result<(), Box<dyn std::error::Error>> {
         let binding = ShortcutBinding {
             key: 4,
-            ctrl: true,
+            ctrl: false,
             alt: false,
             shift: false,
             meta: false,
@@ -543,6 +691,141 @@ mod tests {
                 send_automatically: true,
             })]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn movement_is_unmodified_and_an_explicit_clear_owns_the_profile()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut preferences = HotkeyPreferences::default();
+        let profile = preferences.active_mut().ok_or("default profile")?;
+        profile.general_chat_off.insert(
+            "movement.north".into(),
+            HotkeyPair {
+                first: Some(binding(26, true)),
+                second: None,
+            },
+        );
+        assert!(preferences.validate(&[82, 79, 81, 80]).is_err());
+        preferences
+            .active_mut()
+            .ok_or("default profile")?
+            .general_chat_off
+            .insert("movement.north".into(), HotkeyPair::default());
+        assert!(preferences.validate(&[82, 79, 81, 80]).is_ok());
+        assert!(preferences.profile_owns_movement_action("movement.north"));
+        assert!(!preferences.profile_owns_movement_action("movement.east"));
+        Ok(())
+    }
+
+    #[test]
+    fn escape_is_exclusive_to_stop_all_and_f10_is_assignable()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut preferences = HotkeyPreferences::default();
+        let escape_event = pressed(41, false)?;
+        for chat_on in [false, true] {
+            assert_eq!(
+                preferences.resolve(std::slice::from_ref(&escape_event), chat_on),
+                vec![ResolvedHotkey::General("client.stop".into())]
+            );
+        }
+        let profile = preferences.active_mut().ok_or("default profile")?;
+        profile.general_chat_off.insert(
+            "client.stop".into(),
+            HotkeyPair {
+                first: Some(binding(41, false)),
+                second: None,
+            },
+        );
+        profile.general_chat_off.insert(
+            "client.options".into(),
+            HotkeyPair {
+                first: Some(binding(67, false)),
+                second: None,
+            },
+        );
+        profile.action_bar.shortcuts[9] = None;
+        assert!(preferences.validate(&[82, 79, 81, 80]).is_ok());
+        preferences
+            .active_mut()
+            .ok_or("default profile")?
+            .general_chat_off
+            .get_mut("client.options")
+            .ok_or("options binding")?
+            .first = Some(binding(41, false));
+        assert!(preferences.validate(&[82, 79, 81, 80]).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn v1_migration_normalizes_movement_and_skips_conflicting_action_defaults()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let legacy = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 68, 69];
+        let mut preferences = HotkeyPreferences::default();
+        let profile = preferences.active_mut().ok_or("default profile")?;
+        profile.general_chat_on.clear();
+        profile.general_chat_off.clear();
+        profile.general_chat_off.insert(
+            "movement.north".into(),
+            HotkeyPair {
+                first: Some(binding(26, true)),
+                second: None,
+            },
+        );
+        profile.general_chat_off.insert(
+            "client.options".into(),
+            HotkeyPair {
+                first: Some(binding(58, false)),
+                second: None,
+            },
+        );
+        for (shortcut, key) in profile.action_bar.shortcuts.iter_mut().zip(legacy) {
+            *shortcut = Some(crate::action_bar::SlotShortcut { key, modifiers: 0 });
+        }
+        profile.action_bar.chat_on_shortcuts.fill(None);
+
+        preferences.migrate_v1_reference_defaults();
+        let profile = preferences.active().ok_or("default profile")?;
+        assert_eq!(
+            profile.general_chat_off["movement.north"].first,
+            Some(binding(26, false))
+        );
+        assert_eq!(
+            profile.action_bar.shortcuts[0].map(|shortcut| shortcut.key),
+            Some(30)
+        );
+        assert!(!profile.general_chat_on.contains_key("client.stop"));
+        preferences.validate(&[82, 79, 81, 80])?;
+        Ok(())
+    }
+
+    #[test]
+    fn v1_movement_collision_becomes_an_explicit_clear() -> Result<(), Box<dyn std::error::Error>> {
+        let mut preferences = HotkeyPreferences::default();
+        let profile = preferences.active_mut().ok_or("default profile")?;
+        profile.general_chat_off.insert(
+            "client.options".into(),
+            HotkeyPair {
+                first: Some(binding(26, false)),
+                second: None,
+            },
+        );
+        profile.general_chat_off.insert(
+            "movement.north".into(),
+            HotkeyPair {
+                first: Some(binding(26, true)),
+                second: None,
+            },
+        );
+        preferences.migrate_v1_reference_defaults();
+        assert_eq!(
+            preferences
+                .active()
+                .ok_or("default profile")?
+                .general_chat_off["movement.north"],
+            HotkeyPair::default()
+        );
+        preferences.validate(&[82, 79, 81, 80])?;
         Ok(())
     }
 }
