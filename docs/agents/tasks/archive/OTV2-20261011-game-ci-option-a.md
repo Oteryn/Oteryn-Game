@@ -28,8 +28,10 @@ owned_paths:
   - tools/repository/test_validate_merge_group_pg_sim.py
   - docs/repository/GITHUB_GOVERNANCE.md
   - docs/agents/BUILD_TEST_MATRIX.md
+  - docs/architecture/CLIENT-INSTALLER-0_WINDOWS_CLIENT_INSTALLER_CONTRACT_CANDIDATE.md
+  - apps/client/installer/ci-installer.ps1
   - docs/agents/tasks/archive/OTV2-20261011-game-ci-option-a.md
-public_contracts: []
+public_contracts: [CLIENT-INSTALLER-0]
 depends_on: [1997]
 blocks: []
 external_repositories: []
@@ -60,9 +62,10 @@ Independent review on the original #1998 head found that its removed Windows
 PR job was the sole installer caller (review comment 4243099652). The repair
 moves the existing release-identity, hash-verified Inno Setup, unsigned installer
 lifecycle and artifact steps into the exact-candidate MQ Windows job. Identity
-is derived from `merge_group.head_sha` before the release build. The unchanged
-installer script retains installation, reinstall, concurrency and uninstall
-checks. Routing regression and policy mutation checks protect that coverage.
+is derived from `merge_group.head_sha` before the release build. The installer
+script retains installation, reinstall, concurrency and uninstall checks; only
+its caller comment is updated. Routing regression and policy mutation checks
+protect that coverage.
 
 The existing MQ Linux/PostgreSQL qualification remains intact. #1990 is not a
 dependency: its independent optimization has unresolved review findings. Any
@@ -85,11 +88,15 @@ procedure with independent deep review and the normal exact-candidate game-gate
 and protected Merge Queue. Owner authorization and exact frozen heads are
 recorded on coordination Issue #1622.
 
-Both repaired heads completed independent review without new findings. A final
-documentation reconciliation updates the active build/test matrix to describe the
-reviewed PR/MQ/main behavior; workflow bytes and approved pins are unchanged.
-#1998 returns to AUTHORING for that coherent documentation delta, then freezes
-and qualifies the successor head. Live PR review/checks govern that final head.
+The installer-preserving implementation completed independent review without new
+findings. Review of the matrix reconciliation then raised P2 comment 4243217459:
+CLIENT-INSTALLER-0 still named the retired PR caller. Its CI-placement clauses now
+explicitly supersede that part of D854 under the owner's option A instruction;
+all package/lifecycle/signing/distribution contracts stay binding. The task
+records the affected contract and updates the script's caller comment only.
+Workflow, executable PowerShell and approval-pin bytes are unchanged by this
+contract repair. #1998 returns to AUTHORING, freezes the complete successor and
+qualifies that exact head. Live PR review/checks govern the final candidate.
 One GitHub Codex review is dispatched per frozen head without duplicate paid-review triggers.
 Review preservation of exact-candidate coverage (including installer lifecycle),
 full-ci retirement, metadata cancellation/live fences, `--no-run` semantics,
