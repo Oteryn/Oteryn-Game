@@ -99,11 +99,15 @@ Keyboard delay was published in `5bf89893` and passed native Windows tests
 (192/163/5), strict Clippy and the 20-page/78-capture DX12 audit; the private
 manifest SHA-256 is
 `a6b2866c47a4a84e9442e7a406520fd220520312e46824bbdfb4819443e200e0`.
-The current AUTHORING repair cancels a held unmodified movement when modifiers
-change and accepts an explicit first selection of zero delay without treating it
-as unknown. Its regression checks and fresh native qualification remain required.
+The modifier/explicit-zero repair `597fda90` passed native Windows tests, strict
+Clippy and the DX12 audit. The current AUTHORING batch supplies the independently
+drawn custom arrow and its Big variant, while restoring the OS pointer under
+Native and retaining specialized OS cursor semantics. The reference's Animated
+cursor is a contextual walk/use/view/container/attack/NPC/quick-loot family;
+its unavailable consumers stay disabled. Fresh native qualification remains
+required for this successor.
 
-The current client tree passes 193 client-library, 160 native-binary
+The current client tree passes 193 client-library, 161 native-binary
 and 5 launcher tests, strict client all-target Clippy, rustfmt and
 `git diff --check`. These checks must be repeated on any repaired final
 candidate. The native audit must then be built and run from a fresh exact-SHA

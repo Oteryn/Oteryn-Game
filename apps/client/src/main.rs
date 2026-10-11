@@ -33,6 +33,9 @@ mod client_panels;
 mod game_ui;
 #[cfg(any(windows, test))]
 #[cfg_attr(test, allow(dead_code))]
+mod mouse_cursor;
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod panel_icons;
 #[cfg(any(windows, test))]
 #[cfg_attr(test, allow(dead_code))]

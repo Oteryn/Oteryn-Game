@@ -474,7 +474,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
     ]),
     section!("interface", "Interfejs", "Interface", [
         s!("interface.highlight_mouse", "Wyróżnij cel myszy", "Highlight Mouse Target", Toggle, "scene hover projection"),
-        p!("interface.big_cursor", "Duży kursor myszy", "Show Big Mouse Cursor", Toggle, "cursor integration"),
+        s!("interface.big_cursor", "Duży kursor myszy", "Show Big Mouse Cursor", Toggle, "native/custom pointer renderer"),
         p!("interface.link_copy_warning", "Ostrzeżenie przy kopiowaniu linku", "Show Link Copy Warning", Toggle, "safe clipboard UI"),
         p!("interface.expiry_inventory", "Wygaśnięcie w ekwipunku", "Show Expiry in Inventory", Toggle, "item expiry projection"),
         p!("interface.expiry_containers", "Wygaśnięcie w pojemnikach", "Show Expiry in Containers", Toggle, "item expiry projection"),
@@ -484,9 +484,9 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         r!("interface.contrast", "Wyższy kontrast paneli", "Higher panel contrast", Toggle, "high_contrast"),
         r!("interface.reduced_motion", "Ograniczone animacje", "Reduced animation", Toggle, "reduced_motion"),
         q!("interface.cursor_size", "Rozmiar kursora", "Cursor size", UNKNOWN_CHOICES, "cursor integration"),
-        q!("interface.cursor_animation", "Animowany kursor", "Animated cursor", Toggle, "cursor integration"),
+        p!("interface.cursor_animation", "Animowany kursor", "Animated cursor", Toggle, "contextual interaction cursor"),
         q!("interface.link_confirmation", "Potwierdzaj otwieranie linków", "Confirm external links", Toggle, "safe link routing"),
-        n!("interface.system_cursor", "Używaj kursora systemowego", "Use system cursor", Toggle, "cursor integration", "mouseSystemCursor"),
+        sn!("interface.system_cursor", "Używaj kursora systemowego", "Use system cursor", Toggle, "native/custom pointer renderer", "mouseSystemCursor"),
     ]),
     section!("hud", "HUD i wskaźniki", "HUD", [
         s!("arc_size_preset", "Rozmiar łuków", "Arc Size", Choice(&[LocalizedChoice {id:"default",pl:"Rozmiar domyślny",en:"Default Size"}, LocalizedChoice {id:"small",pl:"Mały rozmiar",en:"Small Size"}, LocalizedChoice {id:"large",pl:"Duży rozmiar",en:"Large Size"}]), "own-resource HUD"),
@@ -1118,6 +1118,8 @@ mod tests {
             ("hud.hud.resource_bars", "own-resource HUD"),
             ("hud.show_harmony", "own-resource HUD"),
             ("interface.interface.highlight_mouse", "scene hover projection"),
+            ("interface.interface.big_cursor", "native/custom pointer renderer"),
+            ("interface.interface.system_cursor", "native/custom pointer renderer"),
             ("screenshots.capture.game_only", "native renderer viewport crop"),
         ]
         .into_iter()

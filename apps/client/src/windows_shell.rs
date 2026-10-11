@@ -921,7 +921,10 @@ impl ApplicationHandler for Application {
                         .set_zoom_factor(zoom * self.preferences.ui_scale);
                     let input = state.take_egui_input(window);
                     let context = login.context.clone();
-                    let output = context.run_ui(input, |ui| login.show(ui.ctx()));
+                    let output = context.run_ui(input, |ui| {
+                        login.show(ui.ctx());
+                        crate::mouse_cursor::show(ui.ctx(), &self.preferences);
+                    });
                     state.handle_platform_output(window, output.platform_output.clone());
                     if renderer
                         .render_ui(self.generation, &context, output)
@@ -1003,6 +1006,7 @@ impl ApplicationHandler for Application {
                         while let Some(row) = gui.settings.take_clear_action_row() {
                             self.hud.clear_action_row(row, &self.preferences);
                         }
+                        crate::mouse_cursor::show(ui.ctx(), &self.preferences);
                     });
                     if let Some(preferences) = self.hud.take_preferences() {
                         let saved = oteryn_client::settings::ClientSettings::path()
