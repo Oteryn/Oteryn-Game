@@ -15,7 +15,7 @@ ROOT_UID=0 # plain variable, never read from the environment; only test-preprod-
 WORLD_UID=1001 # owner of the staged World Bundle: the service user (same rule: plain variable, tests only)
 WORLD_GID=1001
 WORLD_MODE=644
-WORLD_BUNDLE_FORMAT="OTERYN_WORLD_BUNDLE/v3" # crates/world-bundle FORMAT; the digest covers FORMAT, a NUL byte, then the body
+WORLD_BUNDLE_FORMAT="OTERYN_WORLD_BUNDLE/v4" # crates/world-bundle FORMAT; the digest covers FORMAT, a NUL byte, then the body
 WORLD_BUNDLE_MAX=1073741824 # bytes; a larger incoming file is refused
 
 uuid='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'

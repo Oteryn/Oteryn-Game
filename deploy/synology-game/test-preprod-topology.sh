@@ -94,6 +94,9 @@ fill_manifest; render; sub "$REPORT_CONFIG" "s|^\"$NODE\" = |\"CN=other\" = |"; 
 fill_manifest; render; sub "$REPORT_CONFIG" "s|^node_identities = .*|node_identities = [\"CN=other\"]|"; expect_refused "report.toml node_identities"
 fill_manifest; render; sub "$REPORT_CONFIG" "s|^node_identities = .*|node_identities = [\"$NODE\", \"CN=other\"]|"; expect_refused "report.toml extra node identity"
 fill_manifest; render; sub "$REPORT_CONFIG" "s|^\(\"$NODE\" = .*\)|\1\n\"CN=other\" = \"/x\"|"; expect_refused "report.toml extra certificate key"
+# The wrapper hashes with the domain the compiler writes: it must equal crates/world-bundle FORMAT, not a copy of itself.
+rust_format="$(sed -n 's/^pub const FORMAT: &str = "\(.*\)";$/\1/p' "$here/../../crates/world-bundle/src/bundle.rs")"
+[ -n "$rust_format" ] && [ "$WORLD_BUNDLE_FORMAT" = "$rust_format" ] || { echo "FAIL: WORLD_BUNDLE_FORMAT '$WORLD_BUNDLE_FORMAT' != crates/world-bundle FORMAT '$rust_format'"; exit 1; }
 # World Bundle opt-in: enabled needs the bare digest as map_revision and the manifest's table in node.toml.
 # A synthetic bundle: body, then sha256(FORMAT 0x00 body) as the 32-byte trailer. The manifest pin is set to its digest.
 mkbundle() { # <file> <body text>

@@ -132,6 +132,10 @@ jobs:
           # Runs before check-setup, which requires an enabled World Bundle to be staged already.
           wrapper="$ROOT_BASE/bin/oteryn-game-deploy-ops"
           test -f "$wrapper" && test ! -L "$wrapper" && test "$(stat -c '%u' "$wrapper")" = 0
+          # Trust boundaries first: nothing below runs sudo until the root-run wrapper, its directory and BASE
+          # are known to be unwritable by this runner user (root ownership alone does not exclude group/ACL write).
+          test ! -w "$wrapper" && test ! -w "$ROOT_BASE/bin" && test "$(stat -c '%u' "$ROOT_BASE/bin")" = 0
+          test "$(stat -c '%u' "$BASE")" = 0 && test ! -w "$BASE"
           cmp -s "$wrapper" "$RUNNER_TEMP/bundle/deploy-ops.sh" ||
             { echo "::error::root-installed oteryn-game-deploy-ops does not match this bundle; the owner upgrades it as root, then re-run"; exit 1; }
           sudo -n -l "$wrapper" stage-world >/dev/null ||
