@@ -1,9 +1,10 @@
-//! `OTERYN_WORLD_BUNDLE/v3`: the writer. The byte layout, its limits and the fail-closed reader
+//! `OTERYN_WORLD_BUNDLE/v4`: the writer. The byte layout, its limits and the fail-closed reader
 //! live in `oteryn-world-bundle` and are re-exported here.
 
 use sha2::{Digest, Sha256};
 
 use crate::Error;
+use crate::npc;
 use crate::sector;
 use crate::spawn;
 pub use oteryn_world_bundle::bundle::*;
@@ -43,14 +44,25 @@ fn u32_of(value: usize) -> [u8; 4] {
     (value as u32).to_le_bytes()
 }
 
-/// Writes a bundle. `sectors` must be strictly ascending by `(floor, sy, sx)`.
+/// Writes a bundle without NPCs: [`write_with_npcs`] with the empty NPC table.
 pub fn write(
     manifest: &Manifest,
     sectors: &[Sector],
     spawns: &spawn::Table,
 ) -> Result<Vec<u8>, Error> {
+    write_with_npcs(manifest, sectors, spawns, &npc::Table::default())
+}
+
+/// Writes a bundle. `sectors` must be strictly ascending by `(floor, sy, sx)`.
+pub fn write_with_npcs(
+    manifest: &Manifest,
+    sectors: &[Sector],
+    spawns: &spawn::Table,
+    npcs: &npc::Table,
+) -> Result<Vec<u8>, Error> {
     validate_manifest(manifest)?;
     validate_spawns(manifest, spawns)?;
+    validate_npcs(manifest, npcs)?;
     let json = serde_json::to_vec(manifest).map_err(|e| Error::Format(e.to_string()))?;
     limit(json.len() <= MAX_MANIFEST_BYTES, "manifest too large")?;
     limit(sectors.len() <= MAX_SECTORS, "too many sectors")?;
@@ -97,6 +109,19 @@ pub fn write(
         "spawn ratio too high",
     )?;
     total_raw += spawn_raw.len();
+    // The NPC frame likewise (decision NPC-PLACE-1 §3), the last frame.
+    let npc_raw = npc::encode(npcs);
+    limit(npc_raw.len() <= npc::MAX_RAW_BYTES, "NPC payload too large")?;
+    check(
+        npc::decode(&npc_raw, &manifest.world)? == *npcs,
+        "NPC family does not round-trip",
+    )?;
+    let npc_frame = compressor.compress(&npc_raw).map_err(zstd_error)?;
+    limit(
+        npc_raw.len() <= npc_frame.len().saturating_mul(MAX_SECTOR_RATIO),
+        "NPC ratio too high",
+    )?;
+    total_raw += npc_raw.len();
     limit(total_raw <= MAX_TOTAL_RAW_BYTES, "bundle payload too large")?;
     for key in &manifest.dropped_teleports {
         check(
@@ -111,7 +136,7 @@ pub fn write(
     out.extend_from_slice(&u32_of(json.len()));
     out.extend_from_slice(&u32_of(sectors.len()));
     out.extend_from_slice(&json);
-    let mut offset = out.len() + ENTRY * sectors.len() + SPAWN_ROW;
+    let mut offset = out.len() + ENTRY * sectors.len() + SPAWN_ROW + NPC_ROW;
     for (sector, (raw_length, frame)) in sectors.iter().zip(&frames) {
         out.extend_from_slice(&[sector.floor as u8, 0]);
         out.extend_from_slice(&sector.sx.to_le_bytes());
@@ -126,10 +151,15 @@ pub fn write(
     out.extend_from_slice(&u32_of(spawn_frame.len()));
     out.extend_from_slice(&u32_of(spawn_raw.len()));
     out.extend_from_slice(&Sha256::digest(&spawn_frame));
+    out.extend_from_slice(&u32_of(offset + spawn_frame.len()));
+    out.extend_from_slice(&u32_of(npc_frame.len()));
+    out.extend_from_slice(&u32_of(npc_raw.len()));
+    out.extend_from_slice(&Sha256::digest(&npc_frame));
     frames
         .iter()
         .for_each(|(_, frame)| out.extend_from_slice(frame));
     out.extend_from_slice(&spawn_frame);
+    out.extend_from_slice(&npc_frame);
     let digest = digest_of(&out);
     out.extend_from_slice(&digest);
     limit(out.len() <= MAX_FILE_BYTES, "bundle file too large")?;

@@ -12,7 +12,7 @@ regeneration. Owner decisions of 2026-09-28: the soul maximum follows the accoun
 
 Usage:
     python vocation_vitals.py fetch --cache <dir>        # network: current Fandom Formulae and Soul Point
-    python vocation_vitals.py build --cache <dir> --canary <canary@99902524> --crystal <crystalserver@ff7ede5> \
+    python vocation_vitals.py build --cache <dir> --reference-engine <canary@99902524> --crystal <crystalserver@ff7ede5> \
         --out samples/vocation-vitals-candidate.json
     python vocation_vitals.py self-test
 """
@@ -254,7 +254,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('command', choices=('fetch', 'build', 'self-test'))
     parser.add_argument('--cache', type=Path)
-    parser.add_argument('--canary', type=Path)
+    parser.add_argument('--reference-engine', type=Path)
     parser.add_argument('--crystal', type=Path)
     parser.add_argument('--out', type=Path)
     args = parser.parse_args(argv)
@@ -264,7 +264,7 @@ def main(argv=None):
         fetch(args.cache)
         return 0
     formulae, soul = (json.loads((args.cache / f'fandom-{key}.json').read_text(encoding='utf-8')) for key in PAGES)
-    sources = {'canary': source_vocations(args.canary, 'canary'), 'crystal': source_vocations(args.crystal, 'crystal')}
+    sources = {'canary': source_vocations(args.reference_engine, 'canary'), 'crystal': source_vocations(args.crystal, 'crystal')}
     document = build(formulae, soul, sources)
     write_lines(args.out, document, None)
     print(json.dumps({'vocations': len(document['vocations']), 'conflicts': len(document['conflicts'])}))

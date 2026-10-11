@@ -8,7 +8,7 @@ length/spread cone, matrix), a directional area is anchored on the caster (the m
 front of it) and a targeted area on its target. Both hit sets are compared relative to their anchor,
 without the anchor tile, under the four rotations (the wiki draws a scene in one facing).
 
-Usage: python wiki_scenes.py --canary <Canary checkout> [--cache DIR]
+Usage: python wiki_scenes.py --reference-engine <Canary checkout> [--cache DIR]
 """
 import argparse
 import json
@@ -346,21 +346,21 @@ def compare_monster(wiki, canary):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('--canary', required=True, type=Path)
+    parser.add_argument('--reference-engine', required=True, type=Path)
     parser.add_argument('--cache', type=Path, default=Path('/tmp/oteryn-wiki-cache'))
     args = parser.parse_args()
     args.cache.mkdir(parents=True, exist_ok=True)
-    objects = cb.load_appearance_objects(args.canary / 'data/items/appearances.dat')
-    items = cb.load_items_xml(args.canary / 'data/items/items.xml')
+    objects = cb.load_appearance_objects(args.reference_engine / 'data/items/appearances.dat')
+    items = cb.load_items_xml(args.reference_engine / 'data/items/items.xml')
     names, index = cb.name_index(objects, items)
-    converter = cb.Converter(args.canary, objects, items, names, index)
+    converter = cb.Converter(args.reference_engine, objects, items, names, index)
     converter.wiki = {}
     effect_ids = {k[len('CONST_ME_'):].lower(): v for k, v in converter.magic_effects.items() if k.startswith('CONST_ME_')}
     missile_ids = {k[len('CONST_ANI_'):].lower(): v for k, v in converter.missiles.items() if k.startswith('CONST_ANI_')}
     scene_record, shapes = scene_shapes(args.cache)
     ids, results, totals = {}, [], {}
-    for path in sorted((args.canary / cb.MONSTER_DIR).rglob('*.lua')):
-        relative = str(path.relative_to(args.canary / cb.MONSTER_DIR))[:-4]
+    for path in sorted((args.reference_engine / cb.MONSTER_DIR).rglob('*.lua')):
+        relative = str(path.relative_to(args.reference_engine / cb.MONSTER_DIR))[:-4]
         converter.pending_definitions = set()
         try:
             name = cb.load_monster(path, [])[0]

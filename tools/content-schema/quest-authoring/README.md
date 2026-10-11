@@ -43,14 +43,14 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 ```sh
 pip install -r ../monster-authoring/requirements.txt
 python verify_quest_schema.py
-python ots_chests.py --canary <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
-python ots_doors.py --canary <canary checkout> --crystal <crystalserver checkout>
+python ots_chests.py --reference-engine <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
+python ots_doors.py --reference-engine <canary checkout> --crystal <crystalserver checkout>
 python ots_questlog.py --canary <canary checkout> --crystal <crystalserver checkout>
 python ots_interactions.py --canary <canary checkout> --crystal <crystalserver checkout>
 python refresh_quest_source_checks.py
 python ots_readiness.py
-python ots_gap_triage.py --canary <canary checkout> --crystal <crystalserver checkout>
-python ots_map_check.py <otservbr.otbm> --crystalserver <decompressed world.otbm> --canary <canary checkout>
+python ots_gap_triage.py --reference-engine <canary checkout> --crystal <crystalserver checkout>
+python ots_map_check.py <otservbr.otbm> --crystalserver <decompressed world.otbm> --reference-engine <canary checkout>
 python validate_quest_content.py samples/chests/claims.json samples/questlog/quests.json \
   --catalog samples/chests/catalog.json --manifest samples/chests/manifest.json \
   --gates samples/doors/gates.json --gates-manifest samples/doors/manifest.json \

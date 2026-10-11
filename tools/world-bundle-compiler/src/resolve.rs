@@ -87,6 +87,38 @@ struct Classified {
     ground_speed: Option<Value>,
 }
 
+/// The parts of a native item profile the game server's bundle collision reads
+/// (`NativeGameplayState::item_policy`, `blocks_movement`).
+#[derive(Debug, Deserialize)]
+struct Profile {
+    authoring: ProfileAuthoring,
+    production_definition: ProfileProduction,
+    attributes: ProfileAttributes,
+}
+
+#[derive(Debug, Deserialize)]
+struct ProfileAuthoring {
+    item: Reference,
+}
+
+#[derive(Debug, Deserialize)]
+struct ProfileProduction {
+    production_key: String,
+    revision_ref: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ProfileAttributes {
+    #[serde(default)]
+    blocks_movement: Option<bool>,
+}
+
+#[derive(Deserialize)]
+struct Profiles {
+    schema: String,
+    records: Vec<Profile>,
+}
+
 #[derive(Deserialize)]
 struct Provenance {
     #[serde(default)]
@@ -109,6 +141,11 @@ pub struct Registry {
     /// Every Terrain and WorldObject identity, `(family, key)`.
     catalogue: BTreeSet<(String, String)>,
     provisional: BTreeSet<String>,
+    /// The native item profiles, in file order (`OTERYN_NATIVE_ITEM_PROFILES/v1`).
+    profiles: Vec<Profile>,
+    /// Item keys whose native profile says they do not block movement, set by
+    /// [`Registry::seal`].
+    open: BTreeSet<String>,
     /// Compact ids, set by [`Registry::seal`]; nothing resolves before it.
     ids: BTreeMap<String, (Family, u32)>,
 }
@@ -190,6 +227,18 @@ impl Registry {
         Ok(())
     }
 
+    /// Adds the native item profiles (`spell-native-profiles.json`), which say whether an Item
+    /// blocks movement. An Item without a profile blocks, as in the game server.
+    pub fn add_item_profiles(&mut self, bytes: &[u8]) -> Result<(), Error> {
+        let profiles: Profiles = serde_json::from_slice(bytes)
+            .map_err(|e| format(format!("native item profiles: {e}")))?;
+        if profiles.schema != "OTERYN_NATIVE_ITEM_PROFILES/v1" {
+            return Err(format("not an OTERYN_NATIVE_ITEM_PROFILES/v1 file"));
+        }
+        self.profiles.extend(profiles.records);
+        Ok(())
+    }
+
     /// Flags the provisional keys of the placements index (ADR-0021 §4.5).
     pub fn add_provisional(&mut self, key: String) {
         self.provisional.insert(key);
@@ -215,6 +264,17 @@ impl Registry {
                     "{item} routed_to {} disagrees with the catalogue item_pointer",
                     routed_to.key
                 )));
+            }
+        }
+        // The first profile of the item's key and revision decides, as `item_policy` does.
+        for (key, (identity, _)) in &self.items {
+            let profile = self.profiles.iter().find(|p| {
+                (p.authoring.item.key == *key && p.authoring.item.revision == identity.revision)
+                    || (p.production_definition.production_key == *key
+                        && p.production_definition.revision_ref == identity.revision)
+            });
+            if profile.is_some_and(|p| p.attributes.blocks_movement == Some(false)) {
+                self.open.insert(key.clone());
             }
         }
         let too_many = || Error::Limit("more than 2^32 keys in one family".into());
@@ -377,5 +437,9 @@ impl KeyResolver for Registry {
 
     fn floor_change(&self, key: &str) -> bool {
         self.floor_change_of(key)
+    }
+
+    fn solid(&self, key: &str) -> bool {
+        !self.open.contains(key)
     }
 }

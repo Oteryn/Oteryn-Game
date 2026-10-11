@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 use std::num::NonZeroU64;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use oteryn_protocol_oteryn::chat::{
     ChatDisposition, ChatIntent, ChatIntentResult, ChatLine, ChatSpeaker, ChatSpeechMode,
@@ -16,6 +16,7 @@ use oteryn_protocol_oteryn::chat::{
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::actor_spell::ChannelSpellStates;
+use super::npc_talk::{NpcTalkBook, TalkNpc, talk};
 use super::{ComposedFreshAdmission, FreshAdmissionStore};
 use crate::chat::{
     ChatEgress, ChatLimiter, ChatPosition, ChatRefusal, ChatText, SpeechMode, YellGate, local_line,
@@ -40,6 +41,8 @@ struct ChatSession {
     name: String,
     limiter: ChatLimiter,
     egress: ChatEgress,
+    /// The NPC this session is in conversation with (NPC-TALK-1).
+    engaged: Option<ExactActorRef>,
 }
 
 /// The chat state of the admitted sessions of one Channel. The lock is never held across an
@@ -47,6 +50,8 @@ struct ChatSession {
 #[derive(Default)]
 pub(crate) struct ChatRuntime {
     sessions: Mutex<HashMap<GameSessionId, ChatSession>>,
+    /// What the NPCs of the Channel say; unset until the boot wiring installs it.
+    npc_talk: OnceLock<Arc<NpcTalkBook>>,
 }
 
 impl ChatRuntime {
@@ -58,10 +63,21 @@ impl ChatRuntime {
                 name: name.to_owned(),
                 limiter: ChatLimiter::new(now),
                 egress: ChatEgress::new(),
+                engaged: None,
             });
             entry.name = name.to_owned();
             entry.egress.clear();
+            entry.engaged = None;
         }
+    }
+
+    /// Installs the NPC talk of the Channel once; a second install is ignored.
+    #[allow(
+        dead_code,
+        reason = "boot wiring follows NPC-PLACE-1b (no runtime NPC before it)"
+    )]
+    pub(crate) fn install_npc_talk(&self, book: Arc<NpcTalkBook>) {
+        let _ = self.npc_talk.set(book);
     }
 
     pub(crate) fn knows(&self, session: GameSessionId) -> bool {
@@ -76,6 +92,7 @@ impl ChatRuntime {
             && let Some(entry) = sessions.get_mut(&session)
         {
             entry.egress.clear();
+            entry.engaged = None;
         }
     }
 
@@ -198,7 +215,7 @@ pub(crate) fn chat_in_channel(
             ))
         })
         .collect();
-    for (listener, heard) in local_listeners(mode, at, listeners) {
+    for (listener, heard) in local_listeners(mode, at, listeners.iter().copied()) {
         if let Some(entry) = sessions.get_mut(&listener) {
             entry.egress.push(local_line(
                 speaker_id,
@@ -210,7 +227,80 @@ pub(crate) fn chat_in_channel(
             ));
         }
     }
+    if mode == SpeechMode::Say
+        && let Some(book) = chat.npc_talk.get()
+    {
+        npc_answer(book, runtime, &mut sessions, session, at, &text, &listeners);
+    }
     result(ChatDisposition::Ok)
+}
+
+/// The answer of a nearby NPC to a `say`, queued like any other local line (NPC-TALK-1).
+fn npc_answer(
+    book: &NpcTalkBook,
+    runtime: &ChannelRuntimeV1,
+    sessions: &mut HashMap<GameSessionId, ChatSession>,
+    session: GameSessionId,
+    at: ChatPosition,
+    text: &ChatText,
+    listeners: &[(GameSessionId, ChatPosition)],
+) {
+    let visible = runtime.visible_entities();
+    let mut spots = Vec::new();
+    for npc in &visible.npcs {
+        let (Some(entry), Ok(floor), Some(generation)) = (
+            runtime.npc_key(npc.actor).and_then(|key| book.get(key)),
+            u8::try_from(npc.position.floor),
+            NonZeroU64::new(npc.generation),
+        ) else {
+            continue;
+        };
+        let position = ChatPosition {
+            x: npc.position.x,
+            y: npc.position.y,
+            floor,
+        };
+        spots.push((npc.actor, generation, position, entry));
+    }
+    let npcs: Vec<TalkNpc<'_, ExactActorRef>> = spots
+        .iter()
+        .map(|(actor, _, position, entry)| TalkNpc {
+            id: *actor,
+            position: *position,
+            entry,
+        })
+        .collect();
+    let Some(speaking) = sessions.get_mut(&session) else {
+        return;
+    };
+    let Some(reply) = talk(at, text, &npcs, &mut speaking.engaged) else {
+        return;
+    };
+    let Some((actor, generation, position, entry)) =
+        spots.iter().find(|(actor, ..)| *actor == reply.id)
+    else {
+        return;
+    };
+    let Ok(line) = ChatText::parse(&reply.text) else {
+        return;
+    };
+    let npc_speaker = ChatSpeaker {
+        identity: actor.placement_identity(),
+        generation: *generation,
+    };
+    for (listener, heard) in local_listeners(SpeechMode::Say, *position, listeners.iter().copied())
+    {
+        if let Some(entry_of) = sessions.get_mut(&listener) {
+            entry_of.egress.push(local_line(
+                npc_speaker,
+                &entry.name,
+                SpeechMode::Say,
+                &line,
+                *position,
+                heard,
+            ));
+        }
+    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -262,6 +352,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 mod tests {
     use super::*;
     use crate::gameplay_transport::actor_spell::tests::runtime_with_capacity;
+    use crate::gameplay_transport::npc_talk::NpcTalkEntry;
 
     const BASE: SemanticTimeMicros = SemanticTimeMicros::from_micros(1_000_000);
 
@@ -281,7 +372,7 @@ mod tests {
         (ExactActorRef, GameSessionId),
         (ExactActorRef, GameSessionId),
     ) {
-        let (mut runtime, first, first_session) = runtime_with_capacity(0x71, 2);
+        let (mut runtime, first, first_session) = runtime_with_capacity(0x71, 3);
         let second_session = session_of(0x72);
         let reservation = runtime
             .reserve_fresh_session(second_session)
@@ -443,5 +534,54 @@ mod tests {
         assert!(chat.drain(second.1).is_empty());
         chat.forget(second.1);
         assert!(!chat.knows(second.1));
+    }
+
+    #[test]
+    fn a_greeting_near_an_npc_is_answered_by_the_npc_to_everyone_in_range() {
+        use crate::foundation::{MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements};
+        let (mut runtime, chat, first, second) = two_players(0);
+        let spot = runtime
+            .read_actor_position(first.0)
+            .expect("position")
+            .position();
+        let table = NpcPlacementTable {
+            npcs: vec![NpcPlacements {
+                key: "oteryn:npc.alice".to_owned(),
+                placements: vec![NpcPlacement {
+                    floor: -i8::try_from(spot.floor).expect("floor"),
+                    y: u16::try_from(spot.y).expect("y"),
+                    x: u16::try_from(spot.x + 2).expect("x"),
+                    direction: MovementFacing::South,
+                }],
+            }],
+        };
+        runtime.place_npcs(&table, |_| true, true).expect("placed");
+        let book = NpcTalkBook::default().with(
+            "oteryn:npc.alice",
+            NpcTalkEntry::new("Alice", Some("Alice buys and sells goods.")),
+        );
+        chat.install_npc_talk(Arc::new(book));
+        let said = |who, text: &str| speak(&chat, &runtime, who, &say(text), BASE);
+        // A topic before a greeting is not answered.
+        said(first, "trade");
+        assert_eq!(texts(chat.drain(second.1)).len(), 1);
+        chat.drain(first.1);
+        said(first, "hello");
+        let expected = vec![
+            ("Aela".to_owned(), "hello".to_owned()),
+            ("Alice".to_owned(), "Greetings, I am Alice.".to_owned()),
+        ];
+        assert_eq!(texts(chat.drain(first.1)), expected);
+        assert_eq!(texts(chat.drain(second.1)), expected);
+        said(first, "job");
+        assert_eq!(
+            texts(chat.drain(first.1)).last().map(|l| l.1.clone()),
+            Some("Alice buys and sells goods.".to_owned())
+        );
+        said(first, "bye");
+        assert_eq!(
+            texts(chat.drain(second.1)).last().map(|l| l.1.clone()),
+            Some("Farewell.".to_owned())
+        );
     }
 }

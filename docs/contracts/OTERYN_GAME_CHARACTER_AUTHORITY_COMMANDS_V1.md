@@ -1,8 +1,13 @@
 # Oteryn Game Character Authority Commands v1
 
-- Status: **Candidate**, revision 1 (GAME-CHAR-CMD-0), 2026-10-08. Not accepted. It authorizes no
-  implementation, no Platform change and no enablement until the owner accepts it after the
-  independent review of the frozen head.
+- Status: **Accepted**, revision 1 (GAME-CHAR-CMD-0, revised by GAME-CHAR-CMD-0b), accepted by
+  the owner on 2026-10-11 (D1004, D1007) after independent review of the frozen head. The lock
+  entry `GAME-CHAR-CMD-0` pins the accepted wire at commit `cfe82f98` (#1959). Acceptance only
+  locks this Game-side wire contract; it is the accepted owning contract for the Game
+  implementation (§14 step 2), disabled by default. It grants no Oteryn/Oteryn-Platform authority:
+  Platform work (§14 step 3) proceeds only under its own task allocation and owner decisions
+  recorded in the #1622 STATE (for the Bazaar: D1004, D1005, D1007). Enablement still waits for
+  §14 step 4.
 - Contract ID: `oteryn-game-character-authority-commands-v1`
 - Coordination: #1622 (plan comment 6056637549, packet P4, inventory rows C7 and C8);
   Oteryn/Oteryn-Platform#1476.
@@ -626,7 +631,7 @@ The implementation packet registers the new limits in `docs/contracts/RESOURCE_L
 ## 14. Rollout
 
 1. Owner acceptance of this candidate after independent review; the lock entry becomes `LOCKED`
-   at the merged commit.
+   at the merged commit. Done 2026-10-11 (D1004, D1007; pinned at `cfe82f98`).
 2. Game implementation (consumer, receipt store, decision transactions), disabled by default.
 3. Platform consumer: intent store, the three routes, receipt handling, the account page and the
    Bazaar saga change (packets DECANARY-CREATE-1 and DECANARY-BAZAAR-1).
@@ -635,5 +640,10 @@ The implementation packet registers the new limits in `docs/contracts/RESOURCE_L
 
 ## 15. Acceptance
 
-Not accepted. Acceptance makes revision 1 the frozen v1 wire; any later change to a member, path,
-bound, code or response is a new `contract_version`.
+Accepted by the owner on 2026-10-11 (D1004, D1007). Revision 1 as pinned in the lock entry
+(commit `cfe82f983daf22c7d653015d8e034254f9b72182`, document sha256
+`25359aa161096be15e42a0dca56dd9b75762e6ba0912b36784194a7c5eb1de7f`) is the frozen v1 wire. The
+status line, §14 step 1 and this section were later edited only to record the acceptance. Any
+later change to a member, path, bound, code or response is a new `contract_version`. Acceptance
+locks the Game-side wire only; Platform implementation needs its own separate authority (status
+line).

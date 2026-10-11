@@ -24,6 +24,30 @@ evidence hashes direct concatenation of exact producer records while raw bytes
 remain ephemeral. Output classifications remain
 `MIGRATION_EVIDENCE / OTS_HYPOTHESIS_ONLY`.
 
+## B6 interaction-binding catalogue
+
+The tracked B6 evidence
+(`docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings*`)
+is regenerated locally with `interaction_binding_catalog.py`, against the pinned
+source recorded in the evidence index `source` field and the pinned parser
+lineage and 15.32 asset inputs that the generator checks. Run it twice and with
+`--enumeration reverse`, and require byte-identical output before replacing the
+tracked files. Since GAME-DECANARY-2a, Game CI no longer fetches that source:
+the `Content World B6 interaction bindings` workflow runs the offline
+self-tests and an offline closure check. The check requires that:
+
+- the `game_inputs` blobs recorded in the index match the checked-out files,
+  both the committed blob and the worktree bytes;
+- every recorded `tracked_path` is the full path the generator writes;
+- the tracked file set is exactly the referenced set;
+- each record re-normalizes unchanged with the checked-out mapper;
+- the index, family and shard files are byte-identical to an offline rebuild
+  with the checked-out generator.
+
+The external source and parser pins can only be compared with the checked-out
+generator's constants, because CI does not fetch them. The check runs whenever
+the tracked evidence, the generator or a recorded Game input changes.
+
 
 ## Scope evolution
 

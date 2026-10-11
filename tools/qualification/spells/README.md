@@ -75,7 +75,7 @@ integration. No automatic retry turns a refused/failed attempt into a pass.
 ## Existing Thalom map and full spell input
 
 The existing `tools/content-schema/native-gameplay/canary-thalom-world.json`
-contains 2,833 tiles imported from the pinned Canary Thalom rectangle, with Item
+contains 2,833 tiles imported from the pinned reference-engine Thalom rectangle, with Item
 policies and native bindings. The preserved `r21-local-candidate/active-artifact/`
 manifest pins the exact map SHA. Reuse it rather than create a new arena.
 

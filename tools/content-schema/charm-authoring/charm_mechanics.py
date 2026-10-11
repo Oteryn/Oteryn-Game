@@ -496,7 +496,7 @@ def validate_index(index: dict) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=["check", "validate", "verify-sources"])
-    parser.add_argument("--canary", type=Path)
+    parser.add_argument("--reference-engine", type=Path)
     parser.add_argument("--crystal", type=Path)
     parser.add_argument("--tibiapal", type=Path)
     args = parser.parse_args(argv)
@@ -509,7 +509,7 @@ def main(argv: list[str] | None = None) -> int:
             repo: p
             for repo, p in [
                 ("Oteryn/Oteryn-Game", REPO),
-                ("opentibiabr/canary", args.canary),
+                ("opentibiabr/canary", args.reference_engine),
                 ("zimbadev/crystalserver", args.crystal),
                 ("PawelKusnierek/TibiaPal", args.tibiapal),
             ]
