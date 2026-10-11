@@ -20,6 +20,7 @@ mod monster_ai_cycle;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod monster_quest_death;
+mod npc_talk;
 #[cfg(test)]
 mod qualification;
 #[cfg(test)]
