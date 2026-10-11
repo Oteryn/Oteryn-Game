@@ -102,6 +102,13 @@ pub use model::*;
 pub use npc_catalogue::{
     NpcDataCatalogue, load_data_only_npc_catalogue, npc_catalogue_preproduction_limits,
 };
+#[allow(
+    unused_imports,
+    reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
+)]
+pub(crate) use npc_catalogue::{
+    NpcEntry, NpcGeneratedReplies, NpcReplyLine, NpcReplyTemplate, NpcServiceModel,
+};
 pub use production::{
     CompiledFirstProductionContent, ContentLockBinding, ContentLockEntry, DurableMigrationClass,
     FIRST_PRODUCTION_ARTIFACT_PROFILE_ID, FIRST_PRODUCTION_CAPABILITY_PROFILE,
