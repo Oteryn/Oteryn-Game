@@ -35,7 +35,11 @@ DOOR_CLOSED=(1629,1632,1638,1640,1642,1644,1651,1654,1656,1658,1660,1662,1669,16
  17572,17701,17703,17710,17712,20444,20446,20450,20453,20455,20459,22506,22508,24541,
  24543,30041,30045,30047,31568,31570,31663,31665,33271,33273,34221,34223,42744,43953,
  44916,48496,48500,48529,49681,49687)
-DOOR_IDS=tuple(sorted({c for c in DOOR_CLOSED}|{c+1 for c in DOOR_CLOSED}));DOORS='door-item-profiles.json'
+# Open doors outside the C+1 pairs, by the pinned Canary items.xml transformOnUse chain: 43953 opens into 43955
+# (not 43954, which opens back into 43952), and 42629 is an open door the map places by itself (it closes into
+# 42627). Both are walkable DOOR profiles so the placement or the source transform never lands on a profile-less item.
+DOOR_OPEN_EXTRA=(42629,43955)
+DOOR_IDS=tuple(sorted({c for c in DOOR_CLOSED}|{c+1 for c in DOOR_CLOSED}|set(DOOR_OPEN_EXTRA)));DOORS='door-item-profiles.json'
 SECTIONS=('presentation','classification','physical','stack','equipment','weapon','protection','skill_modifiers','charges','temporal','container','imbuement','use_transform','trade_restrictions','fluid','readable_writeable')
 
 def pinned(root,path):return subprocess.check_output(['git','-C',str(root),'show',f'{CANARY_PIN}:{path}'])
@@ -172,7 +176,7 @@ def build(canary,crystal,bundles,out):
  if len(doors)!=len(DOOR_IDS)-len(set(DOOR_IDS)&MAP_IDS):raise ValueError('door overlay record set')
  (out/DOORS).write_bytes((json.dumps({'schema':'OTERYN_NATIVE_DOOR_ITEM_PROFILES/v1','sources':[canary_source,crystal_source],
   'producer':'tools/content-schema/native-gameplay/build_source_item_profiles.py','item_profiles_sha256':hashlib.sha256(raw).hexdigest(),
-  'closed_door_ids':list(DOOR_CLOSED),'records':doors},indent=2,ensure_ascii=False)+'\n').encode())
+  'closed_door_ids':list(DOOR_CLOSED),'open_door_extra_ids':list(DOOR_OPEN_EXTRA),'records':doors},indent=2,ensure_ascii=False)+'\n').encode())
  # The overlays register_spell_families.py adds to the pinned r25 Item provider; with them, the
  # provider is exactly item-profiles.json.
  (out/COINS).write_bytes((json.dumps({'schema':'OTERYN_NATIVE_COIN_ITEM_PROFILES/v1','sources':[canary_source,crystal_source],

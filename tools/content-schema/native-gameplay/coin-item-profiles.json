@@ -15,7 +15,7 @@
     }
   ],
   "producer": "tools/content-schema/native-gameplay/build_source_item_profiles.py",
-  "item_profiles_sha256": "9431a719ed9dc62ca1958e73027cf6c77e13367da6a12b6d71c908b13dc0bafd",
+  "item_profiles_sha256": "e44e6f39681565e81777fc73ee8d3c8b61169071d67f28bf9a238fb02534de0f",
   "records": [
     {
       "authoring": {

@@ -74,7 +74,8 @@ def check_door_profiles(doors: dict, present: set[str]) -> list[dict]:
     """The door overlay: each registry pair's profile, closed doors first by item type, never twice."""
     closed = set(doors["closed_door_ids"])
     keys = [r["production_definition"]["production_key"] for r in doors["records"]]
-    expected = {f"oteryn:item.tibia.i{i}" for i in closed | {c + 1 for c in closed}}
+    extra = set(doors["open_door_extra_ids"])
+    expected = {f"oteryn:item.tibia.i{i}" for i in closed | {c + 1 for c in closed} | extra}
     if (
         doors["schema"] != "OTERYN_NATIVE_DOOR_ITEM_PROFILES/v1"
         or len(set(keys)) != len(keys) or not set(keys) <= expected or set(keys) & present
