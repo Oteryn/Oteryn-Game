@@ -54,8 +54,38 @@ All label-only and ordinary metadata edits re-run the exact-head PR gate in an
 isolated concurrency group without cancelling a running qualification; retargets
 still require canonical qualification.
 
-Runtime selection (Merge Queue):
+Fast Rust selection on the PR:
 
+| Proven PR surface | Fast PR evidence |
+|---|---|
+| Unconsumed auxiliary inputs: neutral docs, agent governance, standalone workflows and non-Cargo offline tooling | no Rust product lanes; always-required governance/security/routing and any dedicated workflow remain |
+| Auxiliary file referenced by exact-candidate Cargo package source/build input | route as the consuming package, then apply normal reverse Cargo closure |
+| Audited Atlas fullworld producer/self-test surface | always-required fast PR checks and any applicable dedicated workflow; add Rust checks only if another consumer selects them |
+| Server-only, including server-consumed auxiliary inputs | changed-crate Clippy/unit tests + Rust policy/supply chain |
+| Client/shared/simulation, including their consumed auxiliary inputs | changed-crate Clippy/unit tests + Rust policy/supply chain |
+| Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | conservative workspace fast Rust checks + policy/supply chain |
+
+Physical server qualification runs only in Merge Queue. It runs node boot and Server Seam against the real Platform (`Merge Queue / Node boot against the real Platform`, `Merge Queue / Server Seam over TCP+TLS`). These run when a change can reach the shipped server's boot, admission, transport, durability or reconnect paths:
+
+- `apps/game-server/src/**`, except `ability/`, `ai/`, `interaction/`, `combat.rs` and Content authoring;
+- the native entry room Content, its WorldProject/v2 model and its activation;
+- `apps/game-server/migrations/**`;
+- `tools/qualification/**`;
+- `vendor/**`;
+- Cargo/toolchain inputs;
+- `merge-gate.yml`.
+
+They also run when the changed-file evidence is incomplete or malformed, or when the trusted-base classifier emits no selection. Only an explicit `false` skips them. Only the Merge Queue runs these physical qualifications, and its `game-gate` requires both to succeed whenever selected.
+
+Reduced lanes are derived from the exact candidate tree. Cargo metadata owns package/reverse dependency closure; literal file/directory references from exact-candidate Cargo package sources attach non-Cargo files to their real consumers. Canonical product-CI workflows conservatively attach literal file and directory consumers too. Only explicitly audited routing-only directory predicates registered in the protected classifier may be omitted from consumer attachment; every unregistered or ambiguous workflow directory predicate/reference remains fail-closed/FULL. There is no historical document-consumer SHA or source-drift snapshot to refresh.
+
+`docs/agents/evidence/**` is not blanket runtime material. Evidence that current Rust source/tests actually consume through paths such as `include_str!` / `include_bytes!` inherits the consuming package lane; unconsumed evidence remains auxiliary.
+
+Cross product/auxiliary renames, symlinks/submodules, special modes, malformed consumer evidence and incomplete file enumeration fail closed. The classifier itself and canonical routing controls always self-qualify through FULL.
+
+## Merge Queue gate
+
+The canonical Merge Queue workflow is `.github/workflows/merge-group-gate.yml`; it validates GitHub's exact synthetic `merge_group` head.
 
 | Exact queue classification | Selected jobs |
 |---|---|
