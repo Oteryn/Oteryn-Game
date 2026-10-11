@@ -142,6 +142,19 @@ Trackpad/pixel-wheel equivalence and native interactive acceptance remain open.
   acceptance and every row whose consumer remains pending are still open and
   must not be reported as 1:1 complete.
 
+Half-native scaling source head `985fe6b499979ac8420079a418731b1e373c8088`
+passed Linux locked tests (195/169/5), strict Clippy, formatting, governance and
+all 60 governance tests. Fresh MSVC tests passed (194/173/5), including half-size
+tile picking and 125%-DPI bounds; strict Clippy and the DX12 release audit passed
+20 pages/78 captures with zero invalid entries. The Graphics capture was visually
+inspected. Private directory:
+`C:\Users\barte\Downloads\oteryn-settings-audit-985fe6b4`; manifest SHA-256
+`11066619eb47a8730cc0fdf0662cd1f539927c1d73385f96e6d3c1ac43e93425`.
+The page audit does not exercise an admitted half-size live scene or qualify AA,
+lighting, physical input or disabled rows. Exact source-head recovery bundle:
+`/workspace/oteryn-client-publication-985fe6b4.bundle`, SHA-256
+`7ebcb54fdae881dd392d071136b4b4b2670e4545055086625991716fce6f1fd3`.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

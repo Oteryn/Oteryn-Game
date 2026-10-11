@@ -107,12 +107,13 @@ remaining source-derived Interface dependencies and real graphics/audio runtime
 capabilities/consumers. Do not repeat completed source inventory or count disabled
 audio as playback. Qualify any new client source head independently.
 
-Graphics continuation read the actual MapWindowPane scale/AA handlers and pinned
-OTClient framebuffer/light consumers. Details and source hash are retained in
-UI-REFERENCE-EXTRACTED.md. The bounded repair retains a half-native viewport when
+Graphics source contracts and hashes are in UI-REFERENCE-EXTRACTED.md.
+The bounded repair retains a half-native viewport when
 integral scaling cannot fit 1x, matching the original minimum without HUD overflow.
-Tests must verify each tile's pointer transform at half-size and 125% DPI. Native
-exact-head qualification remains required. AA needs whole-scene resampling, not
+Tests verify each tile's pointer transform at half-size and 125% DPI. Exact source
+head `985fe6b499979ac8420079a418731b1e373c8088` passed Linux 195/169/5 and MSVC
+194/173/5 tests, strict Clippy and 20-page/78-capture DX12 audit. Full manifest and
+recovery evidence are in UI-FIDELITY.md. AA needs whole-scene resampling, not
 atlas filtering/MSAA; lighting lacks real source/environment projections. Stock
 Qt qsb 6.4.2 rejects QSB serialization v9 (with exit zero): compatible upstream
 decoding remains pending, not a reason to invent a parser or enable controls.
