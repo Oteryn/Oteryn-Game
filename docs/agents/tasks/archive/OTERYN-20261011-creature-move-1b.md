@@ -4,12 +4,14 @@
 task_id: OTERYN-20261011-creature-move-1b
 title: "CREATURE-MOVE-1b: creature steps admitted on the accepted entry room without a tile document"
 mode: REPAIR
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/creature-move-1b-20261011
 issue: 1622
+pr: 1987
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
+final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 owner: claude-code-session_01CwP6d84eCPvpgoEuyci8Tx
 created_at: 2026-10-11
 updated_at: 2026-10-11
@@ -69,15 +71,31 @@ On the owner PC, against the 1a head with this change:
   - `cargo fmt --all -- --check`: pass.
   - `cargo test --locked -p oteryn-game-server --lib monster_ai_cycle`: 8 passed, 0 failed.
   - `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: pass.
-- `python tools/agents/validate_governance.py`: the only findings are handover paths missing from the sparse worktree.
+- `python tools/agents/validate_governance.py`: pass (full checkout on the owner PC; the sparse cloud worktree lacks the handover evidence files)
+- `python -m unittest discover -s tools/agents/tests`: OK (60 tests)
+
+## Self-review
+
+- exact head: the frozen head
+- method/reviewer: task writer
+- material findings: none open (Codex P1 4242296150 on #1987, task record not archived: #1987 merged from the merge queue before this move could be pushed, so the move lands in this docs-only follow-up)
+- verdict: ready for independent review
+
+## PR and closeout
+
+- PR: https://github.com/Oteryn/Oteryn-Game/pull/1987
+- changed-file review: owned paths only
+- unresolved review threads: Codex 4242296150 answered; repaired by this archive follow-up
+- merge commit/result: squash merge of #1987 (`21308b7f1`); record archived in a docs-only follow-up PR
+- ownership release: on merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: fix applied on main, pushed for the control plane to open the PR
-status: implementing
+last_progress: #1987 merged; task record archived in a docs-only follow-up
+status: completed
 branch: claude/creature-move-1b-20261011
-pr: null
+pr: 1987
 blocker: null
-next_action: control plane opens the PR and freezes
+next_action: none (control plane integrates the archive follow-up)
 ```
