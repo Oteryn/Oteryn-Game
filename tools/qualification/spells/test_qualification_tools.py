@@ -122,6 +122,24 @@ class StagingTests(unittest.TestCase):
             self.assertEqual((root / 'staged/item_keys.json').read_bytes(), b'item_keys')
             self.assertEqual((root / 'staged/progression.json').read_bytes(), b'progression')
 
+    def test_stager_stages_every_file_the_canonical_manifest_pins(self):
+        spec = importlib.util.spec_from_file_location(
+            'stage_gameplay', ROOT / 'deploy/synology-game/stage_gameplay.py')
+        stage = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(stage)
+        manifest = ROOT / 'content/spells.manifest.json'
+        document = json.loads(manifest.read_bytes())
+        pinned = {k: v for k, v in document.items() if isinstance(v, dict) and 'sha256' in v}
+        self.assertIn('loot_tables', pinned)
+        with tempfile.TemporaryDirectory() as temp:
+            staged = Path(temp) / 'staged'
+            stage.main(['stage', str(manifest.relative_to(ROOT)), str(ROOT), str(staged)])
+            for field, pin in pinned.items():
+                source = (manifest.parent / pin['path']).resolve()
+                target = staged / source.relative_to(ROOT.resolve())
+                self.assertTrue(target.is_file(), f'{field} is pinned but not staged')
+                self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(), pin['sha256'])
+
 
 class ScenarioTests(unittest.TestCase):
     @classmethod
