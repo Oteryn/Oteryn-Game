@@ -42,7 +42,7 @@ pub(crate) fn greeted_npc(
 }
 
 /// Lower-cased words: runs of letters and digits.
-fn words(text: &str) -> Vec<String> {
+pub(crate) fn words(text: &str) -> Vec<String> {
     text.split(|c: char| !c.is_alphanumeric())
         .filter(|word| !word.is_empty())
         .map(str::to_lowercase)
@@ -50,7 +50,7 @@ fn words(text: &str) -> Vec<String> {
 }
 
 /// Whether `needle` occurs in `haystack` as consecutive words.
-fn contains_words(haystack: &[String], needle: &[String]) -> bool {
+pub(crate) fn contains_words(haystack: &[String], needle: &[String]) -> bool {
     !needle.is_empty()
         && haystack
             .windows(needle.len())

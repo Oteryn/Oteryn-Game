@@ -8,6 +8,16 @@ use super::{
 };
 mod replies;
 mod service;
+#[allow(
+    unused_imports,
+    reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
+)]
+pub(crate) use replies::{NpcGeneratedReplies, NpcReplyLine, NpcReplyTemplate};
+#[allow(
+    unused_imports,
+    reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"
+)]
+pub(crate) use service::{NpcEntry, NpcServiceModel};
 #[cfg(test)]
 mod service_tests;
 

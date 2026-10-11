@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-10-08T12:00:00Z",
+  "updated_at": "2026-10-11T19:00:00Z",
   "policy": {
     "canonical_revisions_must_be_merged": true,
     "mutable_pr_heads_are_canonical": false,
@@ -269,18 +269,30 @@
     {
       "coordination_id": "GAME-CHAR-CMD-0",
       "contract_name": "oteryn-game-character-authority-commands-v1",
-      "status": "PENDING_CANONICAL_MERGE",
+      "status": "LOCKED",
       "canonical_repository": "Oteryn/Oteryn-Game",
+      "canonical_commit": "cfe82f983daf22c7d653015d8e034254f9b72182",
+      "schema_revision": 1,
+      "schema_sha256": "25359aa161096be15e42a0dca56dd9b75762e6ba0912b36784194a7c5eb1de7f",
       "canonical_contract_path": "docs/contracts/OTERYN_GAME_CHARACTER_AUTHORITY_COMMANDS_V1.md",
-      "pending_pull_request": 1936,
-      "contract_status": "CANDIDATE_NOT_ACCEPTED",
+      "source_pull_request": 1959,
+      "source_pull_request_repository": "Oteryn/Oteryn-Game",
+      "merged_at": "2026-10-10T20:58:50Z",
+      "reviewed_head_commit": "7cf33d2a8f616f7d4f4f535170fbf15961f312f1",
+      "candidate_pull_requests": [
+        1936,
+        1959
+      ],
+      "contract_status": "ACCEPTED_BY_OWNER_D1004_D1007_DISABLED_UNTIL_ENABLEMENT",
       "governing_issues": [
         "Oteryn/Oteryn-Game#1622",
         "Oteryn/Oteryn-Platform#1476"
       ],
       "owner_decisions": [
         "D963",
-        "D965"
+        "D965",
+        "D1004",
+        "D1007"
       ],
       "game_dependencies": [
         "docs/contracts/CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md",
@@ -292,13 +304,13 @@
       "producers": [
         {
           "repository": "Oteryn/Oteryn-Game",
-          "status": "CONTRACT_CANDIDATE_ONLY_NOT_IMPLEMENTED"
+          "status": "ACCEPTED_NOT_IMPLEMENTED"
         }
       ],
       "consumers": [
         {
           "repository": "Oteryn/Oteryn-Platform",
-          "status": "NOT_IMPLEMENTED_CREATE_AND_TRANSFER_DISABLED_D963"
+          "status": "PARTIAL_INTENT_STORE_AND_ROUTES_DEFAULT_OFF_NOT_MOUNTED_PLATFORM_1532"
         }
       ],
       "rollout_order": [
@@ -309,7 +321,7 @@
         "enable together in one testing stack with shared fixtures, then preproduction; production needs separate authority"
       ],
       "production_enabled": false,
-      "notes": "Packet P4 of the #1622 plan (rows C7, C8). Platform keeps creation and transfer disabled until this contract is accepted and the Game implementation exists (D963 Q2=A). Creation happens only on the Platform account page; the client opens it through the Create character deep link (D965 Q5=A)."
+      "notes": "Packet P4 of the #1622 plan (rows C7, C8). Platform keeps creation and transfer disabled until this contract is accepted and the Game implementation exists (D963 Q2=A). Creation happens only on the Platform account page; the client opens it through the Create character deep link (D965 Q5=A). Accepted by the owner (D1004, D1007) at the pinned revision; the later contract edit that records the acceptance (status line, section 14 step 1, section 15) is editorial and changes no member, path, bound, code or response. Implementation and the Platform consumer stay disabled by default until section 14 step 4 (U-CC7, U-CC9). Acceptance locks the Game-side wire only; Platform implementation needs its own task allocation and owner decisions in the #1622 STATE (for the Bazaar: D1004, D1005, D1007)."
     }
   ]
 }
