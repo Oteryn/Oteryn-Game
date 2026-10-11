@@ -41,6 +41,7 @@ No original settings were applied, profiles changed, or assignments accepted.
 | Page / control | Observed choices or controls |
 | --- | --- |
 | Controls / Mouse preset | Classic Controls, Regular Controls, Left Smart-Click. Classic alone adds `Loot:` with Right, SHIFT+Right, Left; the dependent selector disappears under Regular and Left Smart-Click |
+| Controls / Keyboard Delay | Targeted cancelled draft probe on 2026-10-11 establishes slider endpoints 0 and 1000 ms and the explicit `Use Default Keyboard Delay (250 ms)` label. The default master disables the retained custom value; no reference settings were applied |
 | Interface / Colourise Loot Value | None, Frames, Corners |
 | Game Window / Mark Target Visually | Frame & Highlight, Frame Only, Highlight Only, None |
 | Graphics / Engine on Linux | auto-select, Vulkan, OpenGL; platform-specific, not a Windows renderer contract |

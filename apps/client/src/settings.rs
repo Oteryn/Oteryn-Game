@@ -102,6 +102,20 @@ impl Default for ClientSettings {
 }
 
 impl ClientSettings {
+    /// Unset reference preferences retain the existing OS-repeat behavior.
+    /// Selecting the reference default explicitly uses its observed 250 ms.
+    #[must_use]
+    pub fn movement_repeat_delay(&self) -> Option<std::time::Duration> {
+        match self.stored_bool("controls.controls.default_key_delay") {
+            Some(true) => Some(std::time::Duration::from_millis(250)),
+            Some(false) => self
+                .stored_int("controls.controls.key_delay_ms")
+                .and_then(|delay| u64::try_from(delay).ok())
+                .map(std::time::Duration::from_millis),
+            None => None,
+        }
+    }
+
     #[must_use]
     pub fn stored_bool(&self, key: &str) -> Option<bool> {
         match self.future_preferences.get(key) {

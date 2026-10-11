@@ -444,9 +444,10 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         q!("controls.held_keys", "Działanie przytrzymanych klawiszy", "Held-key behavior", UNKNOWN_CHOICES, "input router"),
         q!("controls.drag_modifier", "Modyfikator przeciągania", "Drag modifier", Binding, "inventory commands"),
         n!("controls.face_movement", "Zawsze obracaj w kierunku ruchu", "Always turn towards the direction of movement", Toggle, "movement presentation", "alwaysTurnTowardsMoveDirection"),
-        n!("controls.default_key_delay", "Używaj domyślnego opóźnienia klawiatury", "Use Default Keyboard Delay", Toggle, "input repeat policy", "keyboardDelayUseDefault"),
-        // Nonnegative i32 is the local draft bound; the reference's supported delay range is unknown.
-        n!("controls.key_delay_ms", "Opóźnienie klawiatury", "Keyboard Delay", Integer { min: 0, max: i32::MAX }, "input repeat policy", "keyboardDelayMs"),
+        sn!("controls.default_key_delay", "Używaj domyślnego opóźnienia klawiatury", "Use Default Keyboard Delay", Toggle, "movement repeat scheduler", "keyboardDelayUseDefault"),
+        // Preserve legacy nonnegative values. The reference slider range is
+        // 0–1000 ms; displaying a page must not rewrite a retained wider value.
+        sn!("controls.key_delay_ms", "Opóźnienie klawiatury", "Keyboard Delay", Integer { min: 0, max: i32::MAX }, "movement repeat scheduler", "keyboardDelayMs"),
         n!("controls.drag_all", "Domyślnie przenoś cały stos", "Move whole stack by default", Toggle, "item-move amount intent", "dragAndDropDefaultActionIsMoveAll"),
     ]),
     section!("general_hotkeys", "Skróty ogólne", "General Hotkeys", [
@@ -1096,6 +1097,8 @@ mod tests {
             ("action_bars.bars.labels", "action-bar renderer"),
             ("basic.basic.advanced", "settings discovery"),
             ("console.console.font_size", "chat text renderer"),
+            ("controls.controls.default_key_delay", "movement repeat scheduler"),
+            ("controls.controls.key_delay_ms", "movement repeat scheduler"),
             ("effects.effects.ambient_light", "scene lighting overlay"),
             ("effects.effects.lighting", "scene lighting overlay"),
             ("game_window.window.target_marking", "scene target projection"),

@@ -1,5 +1,5 @@
 use oteryn_client::hotkeys::{ClaimedKeyLifecycle, ResolvedHotkey};
-use oteryn_client::input::{MouseActions, StepDir, click_tile};
+use oteryn_client::input::{MouseActions, MovementRepeat, StepDir, click_tile};
 use oteryn_client::play::{BattleTargetSelection, PlayLink, PlayView};
 use oteryn_client::scene::Scene;
 use oteryn_client::spell::SpellHotkeys;
@@ -76,6 +76,8 @@ struct Application {
     actions: MouseActions,
     hotkeys: SpellHotkeys,
     claimed_keyboard: ClaimedKeyLifecycle,
+    movement_repeat: MovementRepeat,
+    repeat_chat_context: bool,
     screenshot_requested: bool,
     fatal_error: Option<ShellError>,
     settings_audit: Option<crate::settings_audit::NativeSettingsAudit>,
@@ -191,6 +193,8 @@ impl Application {
             actions: MouseActions::new().map_err(|_error| ShellError::InputInitialization)?,
             hotkeys: SpellHotkeys::new().map_err(|_error| ShellError::InputInitialization)?,
             claimed_keyboard: ClaimedKeyLifecycle::default(),
+            movement_repeat: MovementRepeat::default(),
+            repeat_chat_context: false,
             screenshot_requested: false,
             fatal_error: None,
             settings_audit,
@@ -203,6 +207,7 @@ impl Application {
         events: &[oteryn_input_actions::NormalizedInputEvent],
         consumed: bool,
     ) -> bool {
+        self.movement_repeat.reconcile(events);
         let modal = self.game_ui.as_ref().is_some_and(|ui| ui.settings.open)
             || self.hud.blocks_game_input();
         let egui_keyboard_input = self
@@ -214,6 +219,9 @@ impl Application {
             .as_ref()
             .is_some_and(|ui| self.hud.chat_routes_keyboard(&ui.context));
         let gameplay_modal = modal || egui_keyboard_input && !chat_on;
+        if gameplay_modal || self.login.is_some() || !self.focused {
+            self.movement_repeat.clear();
+        }
         let resolved_hotkeys = self.preferences.hotkeys.resolve(events, chat_on);
         let configured_action_matched = if let Some(play) = &self.play {
             self.hud.route_actions(
@@ -282,8 +290,30 @@ impl Application {
                     .then(|| self.preferences.direction(events))
                     .flatten()
             });
-            if let Some(direction) = direction {
+            let repeat_owned = self.preferences.movement_repeat_delay().is_some();
+            let os_repeat = events.iter().any(|event| {
+                matches!(
+                    event,
+                    oteryn_input_actions::NormalizedInputEvent::Key { repeat: true, .. }
+                )
+            });
+            if let Some(direction) = direction.filter(|_| !repeat_owned || !os_repeat) {
                 play.view.arrow(direction);
+                if repeat_owned
+                    && let Some(code) = events.iter().find_map(|event| match event {
+                        oteryn_input_actions::NormalizedInputEvent::Key {
+                            code,
+                            state: oteryn_input_actions::ButtonState::Pressed,
+                            repeat: false,
+                            ..
+                        } => Some(*code),
+                        _ => None,
+                    })
+                {
+                    self.movement_repeat
+                        .pressed(code, direction, std::time::Instant::now());
+                    self.repeat_chat_context = chat_on;
+                }
             }
             if !configured_action_matched && !hotkey_matched {
                 for spell in spell_casts {
@@ -441,6 +471,7 @@ impl Application {
                         || settings_changed;
                 }
                 "client.stop" => {
+                    self.movement_repeat.clear();
                     if let Some(play) = self.play.as_mut() {
                         play.view.stop_all();
                     }
@@ -499,6 +530,7 @@ impl Application {
             };
         }
         if settings_changed {
+            self.movement_repeat.clear();
             if let Some(window) = &self.window {
                 window.set_fullscreen(if self.preferences.fullscreen {
                     Some(winit::window::Fullscreen::Borderless(None))
@@ -1095,6 +1127,7 @@ impl ApplicationHandler for Application {
             && ui.settings.applied
         {
             ui.settings.applied = false;
+            self.movement_repeat.clear();
             self.preferences = ui.settings.current.clone();
             if let Some(window) = &self.window {
                 window.set_fullscreen(if self.preferences.fullscreen {
@@ -1175,6 +1208,28 @@ impl ApplicationHandler for Application {
                 Err(_) => self.fail(event_loop, ShellError::RendererInitialization),
             }
         }
+        let chat_context = self
+            .game_ui
+            .as_ref()
+            .is_some_and(|ui| self.hud.chat_routes_keyboard(&ui.context));
+        let blocked = !self.focused
+            || chat_context != self.repeat_chat_context
+            || self.hud.blocks_game_input()
+            || self.game_ui.as_ref().is_some_and(|ui| {
+                ui.settings.open
+                    || ui.context.egui_wants_keyboard_input()
+                        && !self.hud.chat_routes_keyboard(&ui.context)
+            });
+        let repeat_delay = self.preferences.movement_repeat_delay();
+        if blocked || self.play.is_none() || repeat_delay.is_none() {
+            self.movement_repeat.clear();
+        } else if let Some(delay) = repeat_delay
+            && let Some(direction) = self.movement_repeat.poll(std::time::Instant::now(), delay)
+            && let Some(play) = &mut self.play
+        {
+            play.view.arrow(direction);
+        }
+        let repeat_deadline = repeat_delay.and_then(|delay| self.movement_repeat.deadline(delay));
         if let Some(play) = &mut self.play
             && let Err(class) = play.view.tick(&play.link)
         {
@@ -1205,10 +1260,20 @@ impl ApplicationHandler for Application {
                 self.last_redraw = std::time::Instant::now();
                 window.request_redraw();
                 event_loop.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(
-                    self.last_redraw + interval.max(std::time::Duration::from_millis(1)),
+                    repeat_deadline.map_or(
+                        self.last_redraw + interval.max(std::time::Duration::from_millis(1)),
+                        |repeat| {
+                            repeat.min(
+                                self.last_redraw
+                                    + interval.max(std::time::Duration::from_millis(1)),
+                            )
+                        },
+                    ),
                 ));
             } else {
-                event_loop.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(deadline));
+                event_loop.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(
+                    repeat_deadline.map_or(deadline, |repeat| repeat.min(deadline)),
+                ));
             }
         }
     }

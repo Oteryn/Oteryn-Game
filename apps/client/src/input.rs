@@ -16,7 +16,64 @@ use oteryn_input_actions::{
 use oteryn_renderer::{TileCoord, TileView};
 use oteryn_session::EntityRef;
 use std::sync::OnceLock;
-use std::time::Duration;
+use std::time::{Duration, Instant};
+
+/// Client-owned movement repeat, independent of the operating system's key
+/// repeat rate. Releases and focus/device loss always reconcile held keys.
+#[derive(Debug, Default)]
+pub struct MovementRepeat {
+    held: Vec<(KeyCode, StepDir)>,
+    last_step: Option<Instant>,
+}
+
+impl MovementRepeat {
+    pub fn clear(&mut self) {
+        self.held.clear();
+        self.last_step = None;
+    }
+
+    pub fn reconcile(&mut self, events: &[NormalizedInputEvent]) {
+        for event in events {
+            match event {
+                NormalizedInputEvent::Key {
+                    code,
+                    state: ButtonState::Released,
+                    ..
+                } => {
+                    self.held.retain(|(held, _)| held != code);
+                }
+                NormalizedInputEvent::FocusChanged { focused: false }
+                | NormalizedInputEvent::DeviceLost => self.clear(),
+                _ => {}
+            }
+        }
+    }
+
+    /// The caller has resolved this initial press using the active hotkey
+    /// profile and dispatched its first step through the normal session path.
+    pub fn pressed(&mut self, code: KeyCode, direction: StepDir, now: Instant) {
+        self.held.retain(|(held, _)| *held != code);
+        self.held.push((code, direction));
+        self.last_step = Some(now);
+    }
+
+    #[must_use]
+    pub fn deadline(&self, delay: Duration) -> Option<Instant> {
+        (!self.held.is_empty()).then_some(())?;
+        self.last_step?
+            .checked_add(delay.max(Duration::from_millis(1)))
+    }
+
+    /// Emit at most one step per poll; never replay missed repeats in a burst.
+    pub fn poll(&mut self, now: Instant, delay: Duration) -> Option<StepDir> {
+        if now < self.deadline(delay)? {
+            return None;
+        }
+        let direction = self.held.last()?.1;
+        self.last_step = Some(now);
+        Some(direction)
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StepDir {
@@ -387,6 +444,83 @@ impl MouseActions {
 mod tests {
     use super::*;
     use oteryn_input_actions::ButtonState;
+
+    #[test]
+    fn movement_repeat_obeys_delay_releases_and_lifecycle() -> Result<(), InputError> {
+        let now = Instant::now();
+        let north = KeyCode::new(26)?;
+        let east = KeyCode::new(7)?;
+        let delay = Duration::from_millis(250);
+        let mut repeat = MovementRepeat::default();
+        repeat.pressed(north, StepDir::North, now);
+        assert_eq!(repeat.poll(now + Duration::from_millis(249), delay), None);
+        assert_eq!(repeat.poll(now + delay, delay), Some(StepDir::North));
+        assert_eq!(
+            repeat.poll(now + Duration::from_secs(10), delay),
+            Some(StepDir::North)
+        );
+        assert_eq!(repeat.poll(now + Duration::from_secs(10), delay), None);
+        repeat.pressed(east, StepDir::East, now + Duration::from_secs(11));
+        assert_eq!(
+            repeat.poll(now + Duration::from_secs(12), delay),
+            Some(StepDir::East)
+        );
+        repeat.reconcile(&[NormalizedInputEvent::Key {
+            code: east,
+            state: ButtonState::Released,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        }]);
+        assert_eq!(
+            repeat.poll(now + Duration::from_secs(13), delay),
+            Some(StepDir::North)
+        );
+        repeat.reconcile(&[NormalizedInputEvent::FocusChanged { focused: false }]);
+        assert_eq!(repeat.poll(now + Duration::from_secs(14), delay), None);
+        repeat.pressed(north, StepDir::North, now);
+        repeat.reconcile(&[NormalizedInputEvent::DeviceLost]);
+        assert_eq!(repeat.deadline(delay), None);
+        repeat.pressed(north, StepDir::North, now);
+        assert_eq!(repeat.poll(now, Duration::ZERO), None);
+        assert_eq!(
+            repeat.poll(now + Duration::from_millis(1), Duration::ZERO),
+            Some(StepDir::North)
+        );
+        repeat.clear();
+        assert_eq!(repeat.poll(now + delay, delay), None);
+        Ok(())
+    }
+
+    #[test]
+    fn movement_repeat_settings_retain_custom_delay_under_default_master() {
+        use crate::{settings::ClientSettings, settings_catalog::FutureValue};
+        let mut settings = ClientSettings::default();
+        assert_eq!(settings.movement_repeat_delay(), None);
+        settings.future_preferences.insert(
+            "controls.controls.default_key_delay".into(),
+            FutureValue::Bool(false),
+        );
+        settings.future_preferences.insert(
+            "controls.controls.key_delay_ms".into(),
+            FutureValue::Int(93),
+        );
+        assert_eq!(
+            settings.movement_repeat_delay(),
+            Some(Duration::from_millis(93))
+        );
+        settings.future_preferences.insert(
+            "controls.controls.default_key_delay".into(),
+            FutureValue::Bool(true),
+        );
+        assert_eq!(
+            settings.movement_repeat_delay(),
+            Some(Duration::from_millis(250))
+        );
+        assert_eq!(
+            settings.stored_int("controls.controls.key_delay_ms"),
+            Some(93)
+        );
+    }
 
     fn t(x: i32, y: i32) -> TileCoord {
         TileCoord::new(x, y)

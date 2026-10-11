@@ -44,8 +44,8 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             "controls",
             "controls.default_key_delay",
             [
-                "Używaj domyślnego opóźnienia klawiatury",
-                "Use Default Keyboard Delay",
+                "Używaj domyślnego opóźnienia klawiatury (250 ms)",
+                "Use Default Keyboard Delay (250 ms)",
             ],
             en,
         );
@@ -59,7 +59,7 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             let selected = draft.stored_int("controls.controls.key_delay_ms");
             let mut delay = selected.unwrap_or(0);
             let value = selected.map_or_else(|| "—".to_owned(), |delay| format!("{delay} ms"));
-            let _response = ui
+            let response = ui
                 .horizontal(|ui| {
                     ui.label(if en {
                         format!("Keyboard Delay: {value}")
@@ -67,22 +67,20 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                         format!("Opóźnienie klawiatury: {value}")
                     });
                     ui.spacing_mut().slider_width = ui.available_width().clamp(45.0, 185.0);
-                    ui.add_enabled(
-                        false,
-                        egui::Slider::new(&mut delay, 0..=i32::MAX).show_value(false),
-                    )
-                    .on_hover_text(if en {
-                        "Unavailable: keyboard repeat has no runtime consumer."
-                    } else {
-                        "Niedostępne: powtarzanie klawiszy nie ma obsługi wykonawczej."
-                    })
+                    ui.add(egui::Slider::new(&mut delay, 0..=1000).show_value(false))
                 })
                 .inner;
+            if response.changed() {
+                draft.future_preferences.insert(
+                    "controls.controls.key_delay_ms".into(),
+                    FutureValue::Int(delay),
+                );
+            }
             #[cfg(test)]
             ui.ctx().data_mut(|data| {
                 data.insert_temp(
                     egui::Id::new("controls-keyboard-delay-slider"),
-                    (_response.rect, ui.clip_rect(), _response.enabled()),
+                    (response.rect, ui.clip_rect(), response.enabled()),
                 );
             });
         });
@@ -472,7 +470,7 @@ mod tests {
         let (controls_ctx, controls_output) =
             render_page("controls-content", size, &mut controls_draft, controls);
         for label in [
-            "Use Default Keyboard Delay",
+            "Use Default Keyboard Delay (250 ms)",
             "Keyboard Delay: 347 ms",
             "Always turn towards the direction of movement",
         ] {
@@ -501,7 +499,7 @@ mod tests {
         assert_eq!(
             texts.iter().filter(|text| text.contains("347")).count(),
             1,
-            "the keyboard-delay value must not be repeated by the disabled slider"
+            "the keyboard-delay value must not be repeated by the slider"
         );
         let (slider, clip, enabled) = controls_ctx
             .data(|data| {
@@ -511,11 +509,37 @@ mod tests {
             })
             .ok_or("keyboard-delay slider geometry")?;
         assert!(
-            !enabled,
-            "the unconsumed keyboard-delay slider must be disabled"
+            enabled,
+            "custom keyboard delay must reach the movement repeat scheduler"
         );
         assert!(clip.contains_rect(slider));
         assert!(slider.width() >= 45.0, "keyboard-delay slider collapsed");
+
+        controls_draft.future_preferences.insert(
+            "controls.controls.default_key_delay".into(),
+            FutureValue::Bool(true),
+        );
+        let (default_ctx, _) = render_page(
+            "controls-default-delay",
+            size,
+            &mut controls_draft,
+            controls,
+        );
+        let default_enabled = default_ctx.data(|data| {
+            data.get_temp::<(egui::Rect, egui::Rect, bool)>(egui::Id::new(
+                "controls-keyboard-delay-slider",
+            ))
+            .map(|(_, _, enabled)| enabled)
+        });
+        assert_eq!(default_enabled, Some(false));
+        assert_eq!(
+            controls_draft.stored_int("controls.controls.key_delay_ms"),
+            Some(347)
+        );
+        assert_eq!(
+            controls_draft.movement_repeat_delay(),
+            Some(std::time::Duration::from_millis(250))
+        );
 
         let mouse =
             button_position(&controls_output, size, "Mouse Preset:").ok_or("mouse-preset label")?;

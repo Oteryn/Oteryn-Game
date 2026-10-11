@@ -90,12 +90,17 @@ Native Windows scissor rounding was repaired in `08495a50`; the exact SHA passed
 MSVC tests/strict Clippy and the DX12 release page audit (20 pages, 78 captures,
 all markers/footer buttons and no overflow/draft mutation). Private captures are
 under `C:\Users\barte\Downloads\oteryn-settings-audit-08495a50`.
-The current AUTHORING batch adds actual integral sprite scaling with a shared
-physical transform for rendering, picking, HUD overlays and screenshot crops.
-Its UI-to-renderer regression covers 125% DPI; validate and publish this successor
-then repeat native qualification before recording acceptance for it.
+Integral sprite scaling with a shared physical transform for rendering, picking,
+HUD overlays and screenshot crops was published in `1b3a3be5`, then passed native
+Windows tests (190/163/5), strict Clippy and the 20-page/78-capture DX12 audit.
+Its private manifest SHA-256 is
+`b0bcedda748b9622147e63000a33057dac9736fe7378beb165f7acf8826db460`.
+The current AUTHORING batch closes the newly observed keyboard-delay range and
+connects its default/custom choices to held cardinal movement through the existing
+paced typed step path. Repeat cancellation and retained values have regressions;
+fresh Windows qualification of this successor remains required.
 
-The current client tree passes 191 client-library, 159 native-binary
+The current client tree passes 193 client-library, 159 native-binary
 and 5 launcher tests, strict client all-target Clippy, rustfmt and
 `git diff --check`. These checks must be repeated on any repaired final
 candidate. The native audit must then be built and run from a fresh exact-SHA
