@@ -2015,6 +2015,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if self.spell_states.lock().await.is_dead(actor) {
             return UseOutcome::rejected();
         }
+        // Admission is taken under the owner lock that also covers the commit below, and the
+        // owner pass resets the turn cap under the same lock, so an act is counted in the turn
+        // that commits it and its order is the owner lock's.
+        let admitted = self
+            .world_gate
+            .lock()
+            .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()));
+        if !admitted {
+            return UseOutcome {
+                disposition: world_object::UseDisposition::Exhausted,
+                committed: None,
+                earned: connection::EarnedNotice::NoneEarned,
+            };
+        }
         let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
             return UseOutcome::rejected();
         };
@@ -2567,17 +2581,6 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return UseOutcome::rejected();
         }
         if let Some(map) = self.bundle_map() {
-            let admitted = self
-                .world_gate
-                .lock()
-                .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()));
-            if !admitted {
-                return UseOutcome {
-                    disposition: world_object::UseDisposition::Exhausted,
-                    committed: None,
-                    earned: connection::EarnedNotice::NoneEarned,
-                };
-            }
             return self.use_bundle_door(actor, map, &target).await;
         }
         if let Some(chest) = Self::chest_target(self.chest, &target.placement) {

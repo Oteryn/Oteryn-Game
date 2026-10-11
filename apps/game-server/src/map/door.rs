@@ -18,6 +18,7 @@ pub(crate) use super::door_registry::open_of;
 use super::overlay::TilePos;
 use super::view::EntryFacts;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
 /// The palette key of the open item that pairs with the closed door `key` (the key names Item id
 /// `closed` as its trailing digits): the same key with `open` in place of `closed`.
@@ -61,7 +62,7 @@ impl Door {
 /// The state of every door of a [`DoorBook`] at one read ([`DoorBook::snapshot`]), in the book's
 /// order.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub(crate) struct DoorStates(Vec<u64>);
+pub(crate) struct DoorStates(Arc<[u64]>);
 
 /// The outcome of one `USE` on a door.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,6 +80,10 @@ pub(crate) enum DoorUse {
 pub struct DoorBook {
     doors: Vec<Door>,
     sealed: usize,
+    /// Bumped after every committed transition; keys the shared snapshot.
+    version: AtomicU64,
+    /// The last snapshot and the version it was read at, shared by every session's read.
+    cached: Mutex<Option<(u64, DoorStates)>>,
 }
 
 impl DoorBook {
@@ -134,6 +139,24 @@ impl DoorBook {
     /// lock is released, so both must come from the same value or a concurrent `USE` could pair
     /// a closed appearance with an open revision. One `u64` per door.
     pub(crate) fn snapshot(&self) -> DoorStates {
+        // One shared snapshot per version: sessions reading between transitions clone an Arc
+        // instead of each walking every door. A transition racing the build leaves the cached
+        // version stale, so the next read rebuilds.
+        let version = self.version.load(Ordering::Acquire);
+        let Ok(mut cached) = self.cached.lock() else {
+            return self.read_states();
+        };
+        match cached.as_ref() {
+            Some((at, states)) if *at == version => states.clone(),
+            _ => {
+                let states = self.read_states();
+                *cached = Some((version, states.clone()));
+                states
+            }
+        }
+    }
+
+    fn read_states(&self) -> DoorStates {
         DoorStates(
             self.doors
                 .iter()
@@ -241,10 +264,13 @@ impl DoorBook {
                 .state
                 .compare_exchange(current, next, Ordering::AcqRel, Ordering::Acquire)
             {
-                Ok(_) => DoorUse::Toggled {
-                    revision: next,
-                    open: !closing,
-                },
+                Ok(_) => {
+                    self.version.fetch_add(1, Ordering::AcqRel);
+                    DoorUse::Toggled {
+                        revision: next,
+                        open: !closing,
+                    }
+                }
                 Err(_) => DoorUse::Stale,
             },
         )
