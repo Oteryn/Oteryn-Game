@@ -24,17 +24,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// all connections; player count never multiplies monster attack frequency.
     pub(in crate::gameplay_transport) async fn drain_monster_melee(&self) {
         let now = self.owner_now();
-        // Lock order (§1.2): the lane before any Channel guard. Without it a step cannot read the
-        // durable ground and is refused (fail closed); the rest of the pass still runs.
-        let permit = if self.qualified_room.is_some() {
-            self.spell_lane_permit().await
-        } else {
-            None
-        };
-        let (ground_generation, ground) = match permit.as_ref() {
-            Some(permit) => self.snapshot_creature_step_ground(permit, now.get()).await,
-            None => (None, BTreeMap::new()),
-        };
+        // The ground read takes and releases the spell lane itself; the lane is never held
+        // across the think pass below (player input never waits for AI work).
+        let (ground_generation, ground) = self.snapshot_creature_step_ground(now.get()).await;
         let mut runtime = self.runtime.lock().await;
         // SPAWN-1a (CREATURE-AI-0 §6.3): the respawn occurrences due on this owner turn run
         // before the creature think pass, whether or not melee content is active.
@@ -403,7 +395,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// the caller applies the rows only to the scope generation they were read in.
     async fn snapshot_creature_step_ground(
         &self,
-        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
         now: u64,
     ) -> (Option<u64>, BTreeMap<(i32, i32, i16), bool>) {
         use crate::spell::world_items_execution::SpellGroundTarget;
@@ -415,6 +406,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return none;
         };
+        // Lock order (§1.2): the lane before any Channel guard. It is held only for this
+        // snapshot and the one SQL read, and dropped when this function returns; without it
+        // the steps are refused (fail closed).
+        let Some(permit) = self.spell_lane_permit().await else {
+            return none;
+        };
+        let permit = &permit;
         let (scope, generation, targets) = {
             let runtime = self.runtime.lock().await;
             if self.spell_states.lock().await.next_monster_ai_pass_us > now
