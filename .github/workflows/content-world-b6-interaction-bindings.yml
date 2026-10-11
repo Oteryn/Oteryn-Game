@@ -5,7 +5,9 @@ run-name: Content World B6 interaction bindings • PR #${{ github.event.pull_re
 # The pinned-source rebuild of the B6 catalogue was removed in GAME-DECANARY-2a: Game CI no longer
 # fetches external server repositories. The tracked evidence is regenerated locally with
 # interaction_binding_catalog.py (see tools/reference-world-corridor-census/README.md). CI runs
-# the offline self-tests and an offline closure check of the tracked index and family shards.
+# the offline self-tests and an offline closure check: the recorded Game inputs must match the
+# checked-out files, and every tracked index, family and shard file must equal an offline rebuild
+# of its records with the checked-out generator.
 
 on:
   pull_request:
@@ -83,99 +85,134 @@ jobs:
           set -euo pipefail
           python -B - <<'PY'
           import hashlib
+          import importlib.util
           import json
+          import stat
+          import subprocess
+          import sys
           from pathlib import Path
 
-          def canonical_bytes(value):
-              return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n').encode('utf-8')
+          sys.dont_write_bytecode = True
 
-          root = Path('docs/agents/evidence')
-          family_root = root / 'OTV2-20260920-content-world-cw2-b6-interaction-bindings'
-          index_path = root / 'OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
-          assert index_path.is_file() and not index_path.is_symlink()
-          assert family_root.is_dir() and not family_root.is_symlink()
-          for child in family_root.iterdir():
-              assert child.is_file() and not child.is_symlink(), f'unexpected entry {child}'
+          # Expected values come from the checked-out generator, never from a second hand-kept copy.
+          generator_path = Path('tools/reference-world-corridor-census/interaction_binding_catalog.py')
+          spec = importlib.util.spec_from_file_location('b6_interaction_binding_catalog', generator_path)
+          gen = importlib.util.module_from_spec(spec)
+          sys.modules[spec.name] = gen
+          spec.loader.exec_module(gen)
 
-          index = json.loads(index_path.read_text(encoding='utf-8'))
-          expected_stream = {'map_header': 1, 'tile': 18_997_668, 'town': 33, 'waypoint': 18}
-          expected_families = {
-              'ACTION_ID': 0,
-              'UNIQUE_ID': 0,
-              'TELEPORT_DESTINATION': 2_405,
-              'HOUSE_DOOR_ID': 4_527,
-          }
-          expected_shards = {'TELEPORT_DESTINATION': 3, 'HOUSE_DOOR_ID': 5}
+          # Pinned logical product of the tracked evidence; a regeneration updates it here in the same PR.
           expected_product = '793ea8072e56a1070f29cab071e5d9b2c1e029522984a268f18c76d038c0616e'
-          expected_game_inputs = {
-              'tools/game-atlas-fullworld-source/producer.py': '740a96fe1b1d97f32c56e278725ab9c2de6e724b',
-              'tools/reference-world-corridor-census/census.py': 'f056063ad1ae1476fcb73d97e918553a977a0a15',
-              'tools/game-atlas-thais-fixture/export.py': '0e36ca9e43d78a919eb673f9dc423ed1c178c727',
-          }
 
-          assert index['source_stream_counts'] == expected_stream
-          assert index['source']['revision'] == 'ff7ede593c69d4c658b382c97443e8155926924a'
-          assert index['source']['sha256'] == '09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb'
-          assert index['game_inputs'] == expected_game_inputs
-          assert index['logical_product_digest_sha256'] == expected_product
-          assert index['silent_drop'] == 0
-          assert index['unclassified'] == 0
-          assert index['native_promotions'] == 0
-          assert index['executable_promotions'] == 0
-          assert index['quest_runtime_promotions'] == 0
-          assert index['dispositions']['UNKNOWN'] == index['total_occurrences'] == 6_932
-          for name in ('UNSUPPORTED', 'AMBIGUOUS', 'CONFLICT', 'LOSS'):
-              assert index['dispositions'][name] == 0
 
-          family_counts = {}
-          referenced = set()
-          for item in index['storage']['family_files']:
-              family_name = item['family']
-              name = Path(item['tracked_path']).name
-              referenced.add(name)
-              payload = (family_root / name).read_bytes()
-              assert len(payload) == item['bytes']
-              assert hashlib.sha256(payload).hexdigest() == item['sha256']
-              family = json.loads(payload.decode('utf-8'))
-              assert family['logical_product_digest_sha256'] == expected_product
-              assert family['counts']['occurrences'] == item['records'] == expected_families[family_name]
-              assert family['records_digest_sha256'] == item['records_digest_sha256']
+          def git(*args):
+              return subprocess.run(('git', *args), check=True, stdout=subprocess.PIPE, text=True).stdout
 
-              if item['storage_mode'] == 'SHARDED':
-                  assert item['shard_count'] == expected_shards[family_name]
-                  assert family['storage']['mode'] == 'SHARDED'
-                  assert family['storage']['max_shard_bytes'] == 600_000
-                  assert family['storage']['shard_count'] == item['shard_count']
-                  assert len(family['storage']['shards']) == item['shard_count']
-                  reconstructed = []
-                  for expected_ordinal, shard_meta in enumerate(family['storage']['shards'], start=1):
-                      assert shard_meta['ordinal'] == expected_ordinal
-                      shard_name = Path(shard_meta['tracked_path']).name
-                      referenced.add(shard_name)
-                      shard_payload = (family_root / shard_name).read_bytes()
-                      assert len(shard_payload) == shard_meta['bytes'] <= 600_000
-                      assert hashlib.sha256(shard_payload).hexdigest() == shard_meta['sha256']
-                      shard = json.loads(shard_payload.decode('utf-8'))
-                      assert shard['family'] == family_name
-                      assert shard['ordinal'] == expected_ordinal
-                      assert shard['shard_count'] == item['shard_count']
-                      assert shard['logical_product_digest_sha256'] == expected_product
-                      assert shard['family_records_digest_sha256'] == item['records_digest_sha256']
-                      assert shard['record_count'] == shard_meta['record_count'] == len(shard['records'])
-                      assert hashlib.sha256(canonical_bytes(shard['records'])).hexdigest() == shard['records_digest_sha256'] == shard_meta['records_digest_sha256']
-                      reconstructed.extend(shard['records'])
-                  assert len(reconstructed) == item['records']
-                  assert hashlib.sha256(canonical_bytes(reconstructed)).hexdigest() == item['records_digest_sha256']
+
+          def regular_file(relative):
+              current = Path('.')
+              for part in Path(relative).parts:
+                  current = current / part
+                  assert not stat.S_ISLNK(current.lstat().st_mode), f'symlink in path: {relative}'
+              assert stat.S_ISREG(current.lstat().st_mode), f'not a regular file: {relative}'
+              return current
+
+
+          def worktree_blob(path):
+              payload = path.read_bytes()
+              return hashlib.sha1(b'blob %d\0' % len(payload) + payload, usedforsecurity=False).hexdigest()
+
+
+          evidence_root = 'docs/agents/evidence'
+          family_prefix = gen.FINAL_FAMILY_PREFIX
+          # Literals match the `on.pull_request.paths` triggers; a moved evidence location must update both.
+          assert gen.FINAL_INDEX_PATH == 'docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
+          assert family_prefix == 'docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings'
+          assert gen.FINAL_INDEX_PATH == f'{evidence_root}/{gen.INDEX_NAME}'
+          assert family_prefix == f'{evidence_root}/{gen.FAMILY_DIR_NAME}'
+          index = json.loads(regular_file(gen.FINAL_INDEX_PATH).read_bytes().decode('utf-8'))
+          assert index['storage']['index_tracked_path'] == gen.FINAL_INDEX_PATH
+
+          # 1. Recorded Game inputs must be the checked-out files (committed blob and worktree bytes).
+          assert set(index['game_inputs']) == set(gen.GAME_INPUT_BLOBS), 'game_inputs path set differs from generator'
+          for relative, recorded_blob in sorted(index['game_inputs'].items()):
+              committed_blob = git('rev-parse', f'HEAD:{relative}').strip()
+              assert committed_blob == recorded_blob, f'game input {relative}: checked-out blob {committed_blob} != recorded {recorded_blob}'
+              assert worktree_blob(regular_file(relative)) == recorded_blob, f'game input {relative}: worktree bytes differ from recorded blob'
+              assert gen.GAME_INPUT_BLOBS[relative] == recorded_blob, f'game input {relative}: generator pin differs from evidence'
+
+          # 2. Every recorded tracked_path must be the full path the generator writes.
+          family_entries = index['storage']['family_files']
+          assert [entry['family'] for entry in family_entries] == list(gen.FAMILIES)
+          referenced = {gen.FINAL_INDEX_PATH}
+          records_by_family = {}
+          for entry in family_entries:
+              family = entry['family']
+              expected_path = f'{family_prefix}/{gen.FAMILY_FILENAMES[family]}'
+              assert entry['tracked_path'] == expected_path, f'{family}: tracked_path {entry["tracked_path"]!r} != {expected_path!r}'
+              referenced.add(expected_path)
+              document = json.loads(regular_file(expected_path).read_bytes().decode('utf-8'))
+              if entry['storage_mode'] == 'SHARDED':
+                  records = []
+                  shards = document['storage']['shards']
+                  assert [shard['ordinal'] for shard in shards] == list(range(1, len(shards) + 1))
+                  for shard_meta in shards:
+                      shard_path = f'{family_prefix}/{gen._shard_filename(family, shard_meta["ordinal"])}'
+                      assert shard_meta['tracked_path'] == shard_path, f'{family}: shard tracked_path {shard_meta["tracked_path"]!r} != {shard_path!r}'
+                      referenced.add(shard_path)
+                      records.extend(json.loads(regular_file(shard_path).read_bytes().decode('utf-8'))['records'])
               else:
-                  assert item['storage_mode'] == 'INLINE'
-                  assert item['shard_count'] == 0
-                  assert hashlib.sha256(canonical_bytes(family['records'])).hexdigest() == item['records_digest_sha256']
+                  assert entry['storage_mode'] == 'INLINE'
+                  records = document['records']
+              records_by_family[family] = records
 
-              family_counts[family_name] = item['records']
+          # 3. The tracked file set is exactly the referenced set, in git and on disk.
+          tracked = set(git('ls-files', '-z', '--', gen.FINAL_INDEX_PATH, f'{family_prefix}/').split('\0')) - {''}
+          on_disk = {f'{family_prefix}/{child.name}' for child in Path(family_prefix).iterdir()} | {gen.FINAL_INDEX_PATH}
+          assert tracked == referenced, f'tracked vs referenced: {sorted(tracked ^ referenced)}'
+          assert on_disk == referenced, f'on disk vs referenced: {sorted(on_disk ^ referenced)}'
 
-          assert family_counts == expected_families
-          assert sum(family_counts.values()) == index['total_occurrences']
-          tracked = {child.name for child in family_root.iterdir()}
-          assert tracked == referenced, f'unreferenced or missing files: {sorted(tracked ^ referenced)}'
-          print(f'B6 evidence closure ok: {len(tracked)} files, {index["total_occurrences"]} occurrences')
+          # 4. Rebuild every payload offline with the checked-out mapper and storage code; bytes must match.
+          observations = []
+          for family in gen.FAMILIES:
+              for record in records_by_family[family]:
+                  assert record['family'] == family
+                  observation = {
+                      'structural_kind': record['family'],
+                      'position': record['position'],
+                      'item_order': record['item_order'],
+                      'source_item_id': record['source_item_id'],
+                      'source_value': record['source_value'],
+                  }
+                  assert gen.normalize_observation(observation) == record, f'record {record.get("record_id")} differs from the checked-out mapper'
+                  observations.append(observation)
+          gen.validate_real_source_counts(index['source_stream_counts'])
+          rebuilt_index, family_docs = gen.build_catalog(observations, index['source_stream_counts'])
+          gen.validate_real_family_counts(family_docs)
+          payloads = gen.storage_payloads(rebuilt_index, family_docs)
+          rebuilt = {f'{evidence_root}/{name}': payload for name, payload in payloads.items()}
+          assert set(rebuilt) == referenced, f'rebuilt vs referenced: {sorted(set(rebuilt) ^ referenced)}'
+          for relative, payload in sorted(rebuilt.items()):
+              assert Path(relative).read_bytes() == payload, f'{relative}: tracked bytes differ from offline rebuild'
+
+          # 5. Pinned outcome.
+          assert rebuilt_index['logical_product_digest_sha256'] == expected_product
+          # Candidate-only: no promotion, at index level, per record and in the authority block.
+          for key in ('silent_drop', 'unclassified', 'native_promotions', 'executable_promotions', 'quest_runtime_promotions'):
+              assert rebuilt_index[key] == 0, f'{key} must stay 0'
+          assert rebuilt_index['closure'] == 'CANDIDATE_ONLY'
+          assert rebuilt_index['authority'] == {
+              'durable_value_authority': 'NONE', 'lua_execution': False, 'native_identity_promotion': 'NONE',
+              'quest_runtime_authority': 'NONE', 'reference_parity_claim': 'NONE', 'runtime_authority': 'NONE',
+              'storage_integer_promotion': False,
+          }, 'authority block promoted'
+          for family, records in records_by_family.items():
+              for record in records:
+                  assert record['native_binding_disposition'] == 'UNRESOLVED' and record['semantic_disposition'] == 'UNKNOWN', record['record_id']
+                  assert record['executable_eligible'] is False and record['runtime_authority'] == 'NONE', record['record_id']
+                  assert record['reference_parity_claim'] == 'NONE' and record['candidate_semantics'] == 'SOURCE_STRUCTURAL_BINDING_ONLY', record['record_id']
+          assert rebuilt_index['total_occurrences'] == rebuilt_index['dispositions']['UNKNOWN'] == 6_932
+          for name in ('UNSUPPORTED', 'AMBIGUOUS', 'CONFLICT', 'LOSS'):
+              assert rebuilt_index['dispositions'][name] == 0
+          print(f'B6 evidence closure ok: {len(referenced)} files, {rebuilt_index["total_occurrences"]} occurrences, game inputs bound to checkout')
           PY
