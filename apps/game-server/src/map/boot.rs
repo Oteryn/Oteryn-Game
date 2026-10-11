@@ -334,6 +334,10 @@ fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
 /// (ms), creature key and initial health.
 pub(crate) type BundleSpawnFacts = (Vec<(i32, i32, i16)>, u64, u64, String, u64);
 
+/// One spawn group under construction: creature index, respawn delay (ms) and placement cells.
+type SpawnGroup = (u32, u32, Vec<SpawnCell>);
+type SpawnCell = (i32, i32, i16);
+
 /// CREATURE-AI-0 §6.3: the occupancy retry interval of a bundle spawn (the D116 value).
 pub(crate) const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
 
@@ -348,7 +352,7 @@ pub(crate) fn table_activation_spawns(
     use oteryn_world_bundle::spawn::Period;
     let mut out = Vec::new();
     for source in &table.sources {
-        let mut groups: Vec<(u32, u32, Vec<(i32, i32, i16)>)> = Vec::new();
+        let mut groups: Vec<SpawnGroup> = Vec::new();
         for point in &source.points {
             let creature = table.creatures.get(usize::try_from(point.creature).ok()?)?;
             if creature.period != Period::All {
