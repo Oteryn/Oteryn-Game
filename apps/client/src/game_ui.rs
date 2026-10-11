@@ -135,6 +135,11 @@ fn panel_hotkey_destination(action: &str) -> Option<PanelHotkeyDestination> {
             PanelHotkeyDestination::OpenTab("cyclopedia", "archive")
         }
         "dialog.cyclopedia.map" => PanelHotkeyDestination::OpenTab("cyclopedia", "map"),
+        "dialog.exaltation_forge" => PanelHotkeyDestination::Open("forge"),
+        "dialog.reward_wall" => PanelHotkeyDestination::Open("reward-wall"),
+        "dialog.task_board" => PanelHotkeyDestination::Open("task-board"),
+        "dialog.weapon_proficiency" => PanelHotkeyDestination::Open("weapon-proficiency"),
+        "dialog.wheel_of_destiny" => PanelHotkeyDestination::Open("wheel"),
         _ => return None,
     })
 }
@@ -1759,7 +1764,18 @@ mod tests {
                 Some(PanelHotkeyDestination::OpenTab("cyclopedia", tab))
             );
         }
-        assert_eq!(panel_hotkey_destination("dialog.exaltation_forge"), None);
+        for (action, panel) in [
+            ("dialog.exaltation_forge", "forge"),
+            ("dialog.reward_wall", "reward-wall"),
+            ("dialog.task_board", "task-board"),
+            ("dialog.weapon_proficiency", "weapon-proficiency"),
+            ("dialog.wheel_of_destiny", "wheel"),
+        ] {
+            assert_eq!(
+                panel_hotkey_destination(action),
+                Some(PanelHotkeyDestination::Open(panel))
+            );
+        }
         assert_eq!(panel_hotkey_destination("dialog.lenshelp"), None);
     }
 

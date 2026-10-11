@@ -199,8 +199,13 @@ pub fn general_action_supported(action: &str) -> bool {
             | "dialog.cyclopedia.items"
             | "dialog.cyclopedia.magical_archive"
             | "dialog.cyclopedia.map"
+            | "dialog.exaltation_forge"
             | "dialog.prey"
             | "dialog.quest_log"
+            | "dialog.reward_wall"
+            | "dialog.task_board"
+            | "dialog.weapon_proficiency"
+            | "dialog.wheel_of_destiny"
             | "window.vip"
             | "window.battle"
             | "window.skills"
@@ -1127,7 +1132,38 @@ window.vip=19:C,-"#
                 );
             }
         }
-        assert!(!general_action_supported("dialog.exaltation_forge"));
+        Ok(())
+    }
+
+    #[test]
+    fn standalone_dialog_actions_resolve_in_both_chat_contexts()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for action in [
+            "dialog.exaltation_forge",
+            "dialog.reward_wall",
+            "dialog.task_board",
+            "dialog.weapon_proficiency",
+            "dialog.wheel_of_destiny",
+        ] {
+            assert!(general_action_supported(action));
+            let mut preferences = HotkeyPreferences::default();
+            let profile = preferences.active_mut().ok_or("default profile")?;
+            profile.general_chat_off.clear();
+            profile.general_chat_on.clear();
+            let pair = HotkeyPair {
+                first: Some(binding(30, true)),
+                second: None,
+            };
+            profile.general_chat_off.insert(action.into(), pair);
+            profile.general_chat_on.insert(action.into(), pair);
+
+            for chat_on in [false, true] {
+                assert_eq!(
+                    preferences.resolve(&[pressed(30, true)?], chat_on),
+                    vec![ResolvedHotkey::General(action.into())]
+                );
+            }
+        }
         Ok(())
     }
 
