@@ -9060,7 +9060,7 @@
         "apps/game-server/src/ai/spawn.rs RESPAWN_PENDING_PER_CHANNEL_MAX: RespawnSchedule::creature_gone",
         "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::drive_spawn_respawns"
       ],
-      "notes": "CREATURE-AI-0 \u00a76.3; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs pending_occurrences_are_bounded_by_rl_12. Registered by OTV2-20261004-spawn-1a."
+      "notes": "CREATURE-AI-0 \u00a76.3; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs pending_occurrences_are_bounded_by_rl_12. Registered by OTV2-20261004-spawn-1a. SPAWN-CEILINGS-1 (Codex 4242270322): ChannelRuntimeV1::drive_spawn_respawns runs at most SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX = 32 respawn steps per 50 ms owner window (an implementation work budget, not a registered limit); occurrences past it stay pending and run first in the next window. Test: apps/game-server/src/foundation/runtime_actor_carrier.rs simultaneous_respawns_run_a_bounded_number_of_steps_per_owner_window."
     },
     {
       "id": "CREATUREAI0-RL-14",

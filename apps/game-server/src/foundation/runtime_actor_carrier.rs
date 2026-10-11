@@ -1500,6 +1500,14 @@ const fn spawn_activation_player_headroom(capacity: usize) -> usize {
     }
 }
 
+/// SPAWN-CEILINGS-1 (Codex 4242270322): respawn steps (a warning or blocked check, an
+/// admission or an Occupied check) one Channel owner window runs, however many occurrences
+/// fall due together. A step reads at most one pass over the slots (the cell occupancy check)
+/// and one over the occupied index (the dead creature's removal, or the present players once
+/// per drive), so this bounds the drive's work per window; the occurrences left over stay
+/// pending and run first in the next window, by deadline then point.
+pub(crate) const SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX: usize = 32;
+
 /// `AI01-SPAWN-SOURCES-PER-SCOPE` and `AI01-SPAWN-POPULATION` (AI-RL-11, D57): the first
 /// slice's 16 sources × 4 creatures = 64-creature envelope. Spawn realization no longer reads
 /// them (CREATURE-AI-0 §10 replaced them by the `CREATUREAI0_SPAWN_*` rows above); they stay
@@ -1983,6 +1991,8 @@ struct SpawnDriveWindow {
     horizon: u64,
     /// Occurrences due by `horizon`, by deadline then point.
     due: std::collections::VecDeque<(spawn::SpawnPoint, spawn::PendingRespawn)>,
+    /// Steps this window may still run ([`SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX`]).
+    steps_left: usize,
 }
 
 impl ChannelRuntimeV1 {
@@ -2853,11 +2863,15 @@ impl ChannelRuntimeV1 {
                 // Every creature the activation admitted is recorded in a realized source (a
                 // partly realized one included); they go with their sources. Removal relinks
                 // the free list itself, so other owner work between windows is never undone.
-                for spawn in std::mem::take(&mut self.carrier.spawns) {
-                    for actor in spawn.cells.iter().filter_map(|cell| cell.live) {
-                        let _ = self.carrier.remove(&self.continuity, actor.0);
-                    }
-                }
+                // One pass over the occupied index for all of them (Codex 4242270322).
+                let spawns = std::mem::take(&mut self.carrier.spawns);
+                self.carrier.remove_all(
+                    &self.continuity,
+                    spawns
+                        .iter()
+                        .flat_map(|spawn| spawn.cells.iter().filter_map(|cell| cell.live))
+                        .map(|actor| actor.0),
+                );
                 Err(error)
             }
         }
@@ -3032,6 +3046,14 @@ impl ChannelRuntimeV1 {
     /// occurrences due by that window's end. A later drive of the same window costs only the
     /// occurrences whose deadline it reaches, each still run at its exact deadline.
     ///
+    /// SPAWN-CEILINGS-1 (Codex 4242270322): one window runs at most
+    /// [`SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX`] steps, so a mass death costs each window a bounded
+    /// amount of work; the rest stay pending and run first in the following windows, late by
+    /// the windows they wait (their successors are timed from the step that runs). A step reads
+    /// the present players once per drive (only their positions, from the occupied index),
+    /// checks the cell once and admits without snapshotting the slots
+    /// ([`ChannelActorCarrier::respawn_into_free_cell`]).
+    ///
     /// `sees(observer, cell)` is the reference view (MOVE-RL-11) the owner supplies.
     pub(crate) fn drive_spawn_respawns(
         &mut self,
@@ -3057,14 +3079,18 @@ impl ChannelRuntimeV1 {
                 window,
                 horizon,
                 due: self.spawn_schedule.due(horizon).into(),
+                steps_left: SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX,
             });
         }
         let context = self.pinned_position_context();
+        // The present players' positions, read on the first blockable step of this drive.
+        let mut players: Option<Vec<MovementLocalPosition>> = None;
         loop {
             let Some(drive_window) = self.spawn_drive_window.as_ref() else {
                 break;
             };
             let horizon = drive_window.horizon;
+            let steps_left = drive_window.steps_left;
             let Some(&(point, pending)) = drive_window.due.front() else {
                 break;
             };
@@ -3075,13 +3101,24 @@ impl ChannelRuntimeV1 {
                 self.pop_spawn_drive_due();
                 continue;
             }
+            if steps_left == 0 {
+                break;
+            }
             let timing = self.spawn_timing(point)?;
             let cell = self.spawn_cell(point)?;
             let outcome = match pending.step {
                 RespawnStep::Due | RespawnStep::Retry => {
-                    let blocked = timing.blockable
-                        && pending.step == RespawnStep::Due
-                        && self.player_interest_contains(cell, &sees)?;
+                    let blocked = timing.blockable && pending.step == RespawnStep::Due && {
+                        let present = match players.take() {
+                            Some(present) => present,
+                            None => self.present_player_positions()?,
+                        };
+                        let blocked = present
+                            .iter()
+                            .any(|position| position.floor == cell.floor && sees(*position, cell));
+                        players = Some(present);
+                        blocked
+                    };
                     self.spawn_schedule
                         .run_warning_step(point, timing, blocked, now_micros)
                 }
@@ -3093,21 +3130,14 @@ impl ChannelRuntimeV1 {
                     };
                     let occupied = self.carrier.cell_occupied(context, local);
                     if !occupied {
-                        match self.carrier.resolve_respawn_timer(
+                        let actor = self.carrier.respawn_into_free_cell(
                             &self.continuity,
                             SpawnSourceId(point.source),
                             usize::from(point.ordinal),
                             context,
-                        )? {
-                            RespawnResolution::Admitted(actor) => {
-                                self.bind_spawned_creature_policy(actor);
-                                report.admitted.push(actor);
-                            }
-                            RespawnResolution::Postponed { .. }
-                            | RespawnResolution::Skipped { .. } => {
-                                return Err(CarrierError::PlanConflict);
-                            }
-                        }
+                        )?;
+                        self.bind_spawned_creature_policy(actor);
+                        report.admitted.push(actor);
                     }
                     self.spawn_schedule
                         .run_admit_step(point, timing, occupied, now_micros)
@@ -3115,6 +3145,9 @@ impl ChannelRuntimeV1 {
             }
             .map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
             self.pop_spawn_drive_due();
+            if let Some(drive_window) = self.spawn_drive_window.as_mut() {
+                drive_window.steps_left -= 1;
+            }
             // A successor due within this window joins its queue in deadline order.
             if let Some(next) = self.spawn_schedule.pending(point)
                 && next.due_micros <= horizon
@@ -3199,21 +3232,42 @@ impl ChannelRuntimeV1 {
         })
     }
 
-    /// §6.3 Blocked: a present player's interest area (MOVE-RL-11, the reference view)
-    /// contains `cell` on its floor.
-    fn player_interest_contains(
-        &self,
-        cell: MovementLocalPosition,
-        sees: &impl Fn(MovementLocalPosition, MovementLocalPosition) -> bool,
-    ) -> Result<bool, CarrierError> {
-        Ok(self
-            .positioned_actor_census()?
-            .iter()
-            .filter(|(_, _, session)| session.is_some())
-            .any(|(_, snapshot, _)| {
-                let position = snapshot.position();
-                position.floor == cell.floor && sees(position, cell)
-            }))
+    /// §6.3 Blocked reads the present players of [`Self::positioned_actor_census`] (committed,
+    /// positioned and in control); their interest area (MOVE-RL-11) is the caller's view
+    /// around these positions. SPAWN-CEILINGS-1 (Codex 4242270322): they are read from the
+    /// occupied index without building the census of every creature; a player under a foreign
+    /// position context refuses, as in the census.
+    fn present_player_positions(&self) -> Result<Vec<MovementLocalPosition>, CarrierError> {
+        self.carrier.validate_current_continuity(&self.continuity)?;
+        self.owner_fence()?;
+        let context = self.pinned_position_context();
+        let mut players = Vec::new();
+        for index in &self.carrier.occupied {
+            let Some(Slot::Occupied {
+                game_session_id: Some(_),
+                committed: true,
+                lifecycle,
+                position: Some(version),
+                ..
+            }) = usize::try_from(*index)
+                .ok()
+                .and_then(|index| self.carrier.slots.get(index))
+            else {
+                continue;
+            };
+            if lifecycle.control_loss.is_some() {
+                continue;
+            }
+            if version.context != context {
+                return Err(CarrierError::PositionContextMismatch);
+            }
+            players.push(MovementLocalPosition {
+                x: version.position.x,
+                y: version.position.y,
+                floor: version.position.floor,
+            });
+        }
+        Ok(players)
     }
 
     /// Test only: one live creature at `position`, under the same synthetic context as
@@ -3661,15 +3715,7 @@ impl ChannelActorCarrier {
             return Err(CarrierError::InvalidCreatureHealth);
         }
         self.validate_current_continuity(continuity)?;
-        if target_identity.is_empty()
-            || target_identity.len() > MAX_OWNER_COMMIT_BINDING_BYTES
-            || !target_identity.bytes().all(|byte| {
-                byte.is_ascii_alphanumeric() || matches!(byte, b':' | b'.' | b'_' | b'-' | b'/')
-            })
-        {
-            return Err(CarrierError::InvalidCreatureTarget);
-        }
-        let target_identity = Arc::from(copy_bounded_binding(target_identity.as_bytes())?);
+        let target_identity = creature_target_binding(target_identity)?;
         self.admit_inner(
             continuity,
             actor,
@@ -3981,6 +4027,59 @@ impl ChannelActorCarrier {
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
     ) -> Result<ActorState, CarrierError> {
+        let (actor, index) = self.remove_keeping_indexes(continuity, actor_ref)?;
+        self.unindex_slot(index);
+        Ok(actor)
+    }
+
+    /// Drops the vacated slot `index` from the occupied index and its attacker lease.
+    fn unindex_slot(&mut self, index: usize) {
+        if let Ok(free_index) = u32::try_from(index) {
+            self.unindex_occupied(free_index);
+        }
+        // A2: the slot's bound lease and fence go with it.
+        self.attackers.retain(|entry| entry.index != index);
+    }
+
+    /// SPAWN-CEILINGS-1 (Codex 4242270322): removes every actor of `actors` (best effort, as
+    /// [`Self::remove`] each), then drops their vacated slots from the occupied index and the
+    /// attacker leases in one pass each, so removing `n` actors costs `n` plus one pass over
+    /// each list instead of a pass per actor. Returns the actors removed.
+    fn remove_all(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actors: impl IntoIterator<Item = ActorRef>,
+    ) -> usize {
+        let mut vacated = Vec::new();
+        if vacated.try_reserve_exact(self.slots.len()).is_err() {
+            return actors
+                .into_iter()
+                .filter(|actor| self.remove(continuity, *actor).is_ok())
+                .count();
+        }
+        vacated.resize(self.slots.len(), false);
+        let mut removed = 0;
+        for actor in actors {
+            if let Ok((_, index)) = self.remove_keeping_indexes(continuity, actor) {
+                vacated[index] = true;
+                removed += 1;
+            }
+        }
+        self.occupied.retain(|index| {
+            !usize::try_from(*index).is_ok_and(|index| vacated.get(index) == Some(&true))
+        });
+        self.attackers
+            .retain(|entry| vacated.get(entry.index) != Some(&true));
+        removed
+    }
+
+    /// [`Self::remove`] except the occupied index and the attacker leases, which the caller
+    /// updates for the returned vacated slot.
+    fn remove_keeping_indexes(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+    ) -> Result<(ActorState, usize), CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
         self.assert_slot_spell_unreserved(index)?;
         let (generation, actor) = match &self.slots[index] {
@@ -4037,9 +4136,6 @@ impl ChannelActorCarrier {
             next_free: self.free_head,
         };
         self.free_head = Some(free_index);
-        self.unindex_occupied(free_index);
-        // A2: the slot's bound lease and fence go with it.
-        self.attackers.retain(|entry| entry.index != index);
         // A retained corpse projection / reward occurrence deliberately outlives this slot
         // (existing Combat D1/D2 behavior: a lost-response retry must still reconcile after
         // administrative removal, `projection_failures_preserve_retry_and_lost_response_idempotency`).
@@ -4048,7 +4144,7 @@ impl ChannelActorCarrier {
         // here (SPAWN-CEILINGS-1: that would cost every removal O(spawn points)); every reader
         // of `SpawnCellState::live` checks the exact generation (`creature_alive`, `remove`),
         // so the stale reference reads as gone.
-        Ok(actor)
+        Ok((actor, index))
     }
 
     /// D140-D142: up to [`COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX`] receipts are
@@ -5750,6 +5846,80 @@ impl ChannelActorCarrier {
         state.attempt = 0;
         Ok(RespawnResolution::Admitted(ExactActorRef(actor)))
     }
+
+    /// SPAWN-CEILINGS-1 (Codex 4242270322): the respawn drive's admission at point
+    /// `cell_index` of `source`, whose cell the caller has just found free under
+    /// `position_context`. Unlike [`Self::resolve_respawn_timer`] it neither checks the cell
+    /// again nor snapshots the slots: it costs the dead creature's removal (one pass over the
+    /// occupied index) and one admission. Every refusal it can foresee (continuity, context,
+    /// source, cell, the creature's health and identity, the identity's allocation) precedes the
+    /// first mutation. The dead creature's removal is best effort, as in the timer resolution;
+    /// after it only the protected generation exhaustion of the freed slot (#541) can refuse,
+    /// and that slot is retired either way. A refused position initialization removes the new
+    /// creature again.
+    fn respawn_into_free_cell(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        source: SpawnSourceId,
+        cell_index: usize,
+        position_context: PreProductionPositionContext,
+    ) -> Result<ExactActorRef, CarrierError> {
+        self.validate_current_continuity(continuity)?;
+        self.validate_position_context(position_context)?;
+        let spawn_index = self
+            .spawn_index(source)
+            .ok_or(CarrierError::UnknownSpawnSource)?;
+        let realization = &self.spawns[spawn_index];
+        let cell = *realization
+            .definition
+            .placement_cells
+            .get(cell_index)
+            .ok_or(CarrierError::UnknownSpawnCell)?;
+        let dead_actor = realization
+            .cells
+            .get(cell_index)
+            .ok_or(CarrierError::UnknownSpawnCell)?
+            .live;
+        let initial_health = realization.definition.creature_initial_health;
+        if initial_health <= 0 {
+            return Err(CarrierError::InvalidCreatureHealth);
+        }
+        let target_identity =
+            creature_target_binding(&realization.definition.creature_target_identity)?;
+        if let Some(dead_actor) = dead_actor {
+            // Best effort: an already-removed actor (e.g. a repeated call) is not an error here.
+            let _ = self.remove(continuity, dead_actor.0);
+        }
+        let actor = self.admit_inner(
+            continuity,
+            ActorState(0),
+            None,
+            true,
+            Some((initial_health, target_identity)),
+            false,
+        )?;
+        if let Err(error) = self.initialize_position(continuity, actor, position_context, cell) {
+            let _ = self.remove(continuity, actor);
+            return Err(error);
+        }
+        let state = &mut self.spawns[spawn_index].cells[cell_index];
+        state.live = Some(ExactActorRef(actor));
+        state.attempt = 0;
+        Ok(ExactActorRef(actor))
+    }
+}
+
+/// A creature's validated target identity, copied for its slot.
+fn creature_target_binding(target_identity: &str) -> Result<Arc<[u8]>, CarrierError> {
+    if target_identity.is_empty()
+        || target_identity.len() > MAX_OWNER_COMMIT_BINDING_BYTES
+        || !target_identity.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b':' | b'.' | b'_' | b'-' | b'/')
+        })
+    {
+        return Err(CarrierError::InvalidCreatureTarget);
+    }
+    Ok(Arc::from(copy_bounded_binding(target_identity.as_bytes())?))
 }
 
 fn copy_bounded_binding(bytes: &[u8]) -> Result<Box<[u8]>, CarrierError> {
@@ -7999,10 +8169,10 @@ mod tests {
     /// `CREATUREAI0-RL-01` points refuses with nothing kept.
     #[test]
     fn activation_keeps_player_headroom_in_the_pre_production_carrier() {
-        let capacity =
-            usize::try_from(crate::node::config::PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY)
-                .expect("capacity");
-        assert_eq!(capacity, CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX);
+        // The pre-production carrier capacity (`PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY`,
+        // 131,072) equals `CREATUREAI0-RL-01`; this file is also built into crates without
+        // the node configuration, so the test names the equal ceiling.
+        let capacity = CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX;
         assert_eq!(
             spawn_activation_player_headroom(capacity),
             SPAWN_ACTIVATION_PLAYER_HEADROOM
@@ -8011,7 +8181,7 @@ mod tests {
             let mut definitions = (0..total / 64)
                 .map(|index| row_definition(i32::try_from(index % 4).expect("small") * 64, 64))
                 .collect::<Vec<_>>();
-            if total % 64 > 0 {
+            if !total.is_multiple_of(64) {
                 definitions.push(row_definition(0, total % 64));
             }
             definitions
@@ -8092,6 +8262,93 @@ mod tests {
             runtime.drive_spawn_respawns(due + 1, reference_view),
             Ok(SpawnDriveReport::default())
         );
+    }
+
+    /// SPAWN-CEILINGS-1 (Codex 4242270322): when many respawns fall due at once, each owner
+    /// window runs at most [`SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX`] steps however many drives it
+    /// gets; the rest stay pending, run first in the next windows, and every point is admitted
+    /// again in the end.
+    #[test]
+    fn simultaneous_respawns_run_a_bounded_number_of_steps_per_owner_window() {
+        let sources = 4;
+        let total = sources * CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX;
+        let mut runtime = runtime(2 * total);
+        let definitions = (0..sources)
+            .map(|source| {
+                row_definition(
+                    i32::try_from(source * CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX).expect("small"),
+                    CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX,
+                )
+            })
+            .collect();
+        assert_eq!(runtime.realize_spawn_definitions(definitions), Ok(total));
+        let points = runtime.spawn_point_creatures();
+        assert_eq!(points.len(), total);
+        for (_, _, live) in &points {
+            kill_creature(&mut runtime, live.expect("realized creature"));
+        }
+        // One drive observes every death: all occurrences fall due at the same deadline.
+        assert_eq!(
+            runtime.drive_spawn_respawns(0, reference_view),
+            Ok(SpawnDriveReport::default())
+        );
+        assert!(points.iter().all(|(point, _, _)| {
+            runtime.pending_respawn(*point).map(|p| p.due_micros) == Some(SPAWN_DELAY)
+        }));
+        let steps = |report: &SpawnDriveReport| {
+            report.warnings.len()
+                + report.admitted.len()
+                + report.blocked
+                + report.retried
+                + report.skipped
+        };
+        let first = runtime
+            .drive_spawn_respawns(SPAWN_DELAY, reference_view)
+            .expect("deadline");
+        assert_eq!(first.warnings.len(), SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX);
+        // Later drives of the same window (one per session) run nothing more.
+        for session_drive in 1..=64 {
+            assert_eq!(
+                runtime.drive_spawn_respawns(SPAWN_DELAY + session_drive, reference_view),
+                Ok(SpawnDriveReport::default())
+            );
+        }
+        let mut admitted = 0;
+        let mut warned = first.warnings.len();
+        let mut window_start = SPAWN_DELAY - SPAWN_DELAY % spawn::OWNER_WINDOW_MICROS;
+        let mut windows = 0;
+        while admitted < total {
+            window_start += spawn::OWNER_WINDOW_MICROS;
+            windows += 1;
+            assert!(windows < 10_000, "every respawn completes");
+            let mut window_steps = 0;
+            for offset in [0, 1, spawn::OWNER_WINDOW_MICROS - 1] {
+                let report = runtime
+                    .drive_spawn_respawns(window_start + offset, reference_view)
+                    .expect("drive");
+                assert_eq!(report.blocked + report.retried + report.skipped, 0);
+                window_steps += steps(&report);
+                warned += report.warnings.len();
+                admitted += report.admitted.len();
+            }
+            assert!(window_steps <= SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX);
+        }
+        assert_eq!((warned, admitted), (total, total));
+        for (point, cell, live) in runtime.spawn_point_creatures() {
+            assert_eq!(runtime.pending_respawn(point), None);
+            let fresh = live.expect("respawned creature");
+            assert!(runtime.carrier.creature_alive(&runtime.continuity, fresh));
+            assert!(!points.iter().any(|(_, _, dead)| *dead == Some(fresh)));
+            assert_eq!(
+                points
+                    .iter()
+                    .find(|(dead_point, _, _)| *dead_point == point)
+                    .map(|(_, dead_cell, _)| *dead_cell),
+                Some(cell)
+            );
+        }
+        // The dead creatures are gone: the occupied index holds exactly the respawned ones.
+        assert_eq!(runtime.carrier.occupied.len(), total);
     }
 
     /// The single-source path enforces `CREATUREAI0-RL-01` against the points already
