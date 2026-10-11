@@ -90,8 +90,8 @@
       "owner": "World communication (current ChannelRuntime for local speech)",
       "command_types": [13],
       "state_domains": [12],
-      "offered": false,
-      "offer_gate": "CHAT-1b-2: the server does not offer this capability before the connection composes chat (capability negotiation from CHARM-5-COMP, the per-session egress queue of CHAT0-RL-11). Without it selected, domain 12 is never sent and command type 13 is refused as unsupported."
+      "offered": true,
+      "offer_gate": "CHAT-WIRE-1: offered. The dispatch of command type 13 and the domain 12 emission are composed for local say, whisper and yell, and a production-path admission test selects it. Private messages, rooms and the World relay answer CHAT_UNAVAILABLE until CHAT-2, and no room is open. Without it selected, domain 12 is never sent and command type 13 is refused as unsupported."
     },
     {
       "id": 8,

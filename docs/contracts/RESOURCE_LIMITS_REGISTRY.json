@@ -3634,20 +3634,20 @@
     },
     {
       "id": "DUR04-FIRST-PROD-REFERENCES",
-      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_04",
       "resource": "Semantic references in one first-production graph/artifact",
       "unit": "references",
-      "hard_maximum": 3087,
+      "hard_maximum": 3090,
       "configurable_range": {
         "minimum": 24,
-        "maximum": 3087
+        "maximum": 3090
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Count with checked arithmetic before reference-vector/set materialization.",
       "client_visible": false,
       "boundary_tests": [
-        "3,087 accepted when semantically valid",
-        "3,088 rejected before resolution growth",
+        "3,090 accepted when semantically valid",
+        "3,091 rejected before resolution growth",
         "reference-count overflow rejected"
       ]
     },
@@ -3871,39 +3871,39 @@
     },
     {
       "id": "DUR04-FIRST-PROD-SPAWN-POPULATION-PER-SPAWN",
-      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_01",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_01+AMENDMENT_04",
       "resource": "Concurrent content-spawned population for one FIRST_PRODUCTION_CONTENT_PROFILE/v1 spawn",
       "unit": "content-spawned actors per spawn",
-      "hard_maximum": 1,
+      "hard_maximum": 2,
       "configurable_range": {
         "minimum": 1,
-        "maximum": 1
+        "maximum": 2
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Validate the production spawn population before artifact lowering or any runtime actor/container/task allocation; never clamp/default a value outside the profile.",
       "client_visible": false,
       "boundary_tests": [
-        "population 1 accepted for the single semantically valid production spawn",
+        "population 1 and 2 accepted for the single semantically valid production spawn",
         "population 0 rejected as semantically incomplete",
-        "population 2 rejected before artifact lowering/runtime actor allocation"
+        "population 3 rejected before artifact lowering/runtime actor allocation"
       ]
     },
     {
       "id": "DUR04-FIRST-PROD-SPAWN-POPULATION-PER-SCOPE",
-      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_01",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_01+AMENDMENT_04",
       "resource": "Aggregate concurrent content-spawned population in one authoritative scope",
       "unit": "content-spawned actors per authoritative scope",
-      "hard_maximum": 1,
+      "hard_maximum": 2,
       "configurable_range": {
         "minimum": 1,
-        "maximum": 1
+        "maximum": 2
       },
       "failure_category": "CAPACITY_EXCEEDED",
-      "allocation_impact": "Use checked aggregate arithmetic across all accepted spawn records before staging/runtime actor allocation; the first profile has exactly one spawn and aggregate population 1.",
+      "allocation_impact": "Use checked aggregate arithmetic across all accepted spawn records before staging/runtime actor allocation; the first profile has exactly one spawn and aggregate population at most 2.",
       "client_visible": false,
       "boundary_tests": [
-        "aggregate population 1 accepted",
-        "aggregate population 2 rejected before staging/runtime actor allocation",
+        "aggregate population 2 accepted",
+        "aggregate population 3 rejected before staging/runtime actor allocation",
         "aggregate population checked-add overflow rejected"
       ]
     },
@@ -4091,20 +4091,20 @@
     },
     {
       "id": "DUR04-FIRST-PROD-SERVER-RECORDS",
-      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_04",
       "resource": "Server-authoritative body records",
       "unit": "records",
-      "hard_maximum": 1043,
+      "hard_maximum": 1045,
       "configurable_range": {
         "minimum": 22,
-        "maximum": 1043
+        "maximum": 1045
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Check count before record-vector allocation and parsing.",
       "client_visible": false,
       "boundary_tests": [
-        "1,043 records accepted when semantic-family limits pass",
-        "1,044 rejected before vector allocation"
+        "1,045 records accepted when semantic-family limits pass",
+        "1,046 rejected before vector allocation"
       ]
     },
     {
@@ -4146,20 +4146,20 @@
     },
     {
       "id": "DUR04-FIRST-PROD-SECTION-BYTES",
-      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_04",
       "resource": "One bootstrap artifact section",
       "unit": "bytes",
-      "hard_maximum": 4295078,
+      "hard_maximum": 4303314,
       "configurable_range": {
         "minimum": 1,
-        "maximum": 4295078
+        "maximum": 4303314
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Validate section length and checked range before retaining or parsing section bytes.",
       "client_visible": false,
       "boundary_tests": [
-        "4,295,078-byte section accepted only when total artifact also passes",
-        "4,295,079 rejected",
+        "4,303,314-byte section accepted only when total artifact also passes",
+        "4,303,315 rejected",
         "offset+length overflow rejected"
       ]
     },
@@ -4202,20 +4202,20 @@
     },
     {
       "id": "DUR04-FIRST-PROD-SERVER-ARTIFACT-BYTES",
-      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_03",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_03+AMENDMENT_04",
       "resource": "One server-authoritative bootstrap artifact",
       "unit": "bytes",
-      "hard_maximum": 4304614,
+      "hard_maximum": 4312850,
       "configurable_range": {
         "minimum": 1,
-        "maximum": 4304614
+        "maximum": 4312850
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Check server slice length before header parse or input-sized allocation.",
       "client_visible": false,
       "boundary_tests": [
-        "4,304,614 bytes accepted only when nested limits pass",
-        "4,304,615 rejected before parse/allocation"
+        "4,312,850 bytes accepted only when nested limits pass",
+        "4,312,851 rejected before parse/allocation"
       ]
     },
     {
@@ -4238,20 +4238,20 @@
     },
     {
       "id": "DUR04-FIRST-PROD-GENERATION-PAIR-BYTES",
-      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_03",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_03+AMENDMENT_04",
       "resource": "Combined server and client-safe artifact bytes in one staging request",
       "unit": "bytes",
-      "hard_maximum": 4338862,
+      "hard_maximum": 4347098,
       "configurable_range": {
         "minimum": 2,
-        "maximum": 4338862
+        "maximum": 4347098
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Use checked addition of the two projection-bounded inputs before staging either as a generation pair.",
       "client_visible": false,
       "boundary_tests": [
-        "4,338,862 cumulative bytes accepted only when both projection maxima pass",
-        "4,338,863 rejected",
+        "4,347,098 cumulative bytes accepted only when both projection maxima pass",
+        "4,347,099 rejected",
         "pair-byte checked-add overflow rejected"
       ]
     },
@@ -4313,20 +4313,20 @@
     },
     {
       "id": "DUR04-FIRST-PROD-DECODED-FIELDS",
-      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02+AMENDMENT_04",
       "resource": "Decoded manifest/body field instances processed for one staged server+client pair",
       "unit": "fields",
-      "hard_maximum": 8432,
+      "hard_maximum": 8448,
       "configurable_range": {
         "minimum": 1,
-        "maximum": 8432
+        "maximum": 8448
       },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Track cumulative decoded fields with checked arithmetic; nested record/profile checks occur before each retained field.",
       "client_visible": false,
       "boundary_tests": [
-        "8,432 fields accepted only when all nested limits pass",
-        "8,433rd field cannot be materialized",
+        "8,448 fields accepted only when all nested limits pass",
+        "8,449th field cannot be materialized",
         "cumulative counter overflow rejected"
       ]
     },
@@ -9032,6 +9032,52 @@
       "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md",
       "resource": "Respawn delay of one spawn point",
       "unit": "milliseconds"
+    },
+    {
+      "id": "CREATUREAI0-RL-12",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+      "resource": "Pending respawn occurrences of one Channel",
+      "unit": "occurrences",
+      "hard_maximum": 131072,
+      "configurable_range": {
+        "minimum": 131072,
+        "maximum": 131072
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "One pending occurrence per spawn point in an ordered map owned by the Channel runtime; an occurrence beyond it is refused before insertion and nothing is reserved.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=131072: the 131,072nd pending occurrence is scheduled",
+        "max+1=131073: the next occurrence is refused with the schedule unchanged"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai/spawn.rs RESPAWN_PENDING_PER_CHANNEL_MAX: RespawnSchedule::creature_gone",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::drive_spawn_respawns"
+      ],
+      "notes": "CREATURE-AI-0 \u00a76.3; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs pending_occurrences_are_bounded_by_rl_12. Registered by OTV2-20261004-spawn-1a."
+    },
+    {
+      "id": "CREATUREAI0-RL-14",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_CREATURE_AI0_CREATURE_AI_SPAWNS_AND_SUMMONS_DECISION_2026-10-01.md",
+      "resource": "Spawn point realizations in one 50 ms window of Channel activation",
+      "unit": "realizations per window",
+      "hard_maximum": 4096,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Activation realizes points in canonical (source, point ordinal) order in windows of at most this many; the next point starts the next window. It reserves nothing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=4096: 4,096 points realize in one window",
+        "max+1=4097: the 4,097th point realizes first in the next window"
+      ],
+      "consumers": [
+        "apps/game-server/src/ai/spawn.rs REALIZATIONS_PER_WINDOW_MAX: realization_windows",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::realize_activation_spawns"
+      ],
+      "notes": "CREATURE-AI-0 \u00a76.2; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs realization_windows_are_canonical_and_bounded_by_rl_14. Registered by OTV2-20261004-spawn-1a."
     },
     {
       "id": "CREATUREAI0-RL-05",

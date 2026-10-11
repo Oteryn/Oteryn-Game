@@ -1,0 +1,112 @@
+{
+  "source_id": 55015,
+  "name": "Lakeside Mansion",
+  "old_layout_sha256": "9f9b00f33b8cbe7fb1b98961be85e03ea3b62299455121c3b21b07bf36ef2ee8",
+  "new_layout_sha256": "f5115995f6c54aab8658203a90ea2e8d6ef6a127a3f9054b022b3939fe9e8dea",
+  "old_origin": {
+    "x": 32322,
+    "y": 31142,
+    "z": 4
+  },
+  "new_origin": {
+    "x": 32322,
+    "y": 31142,
+    "z": 4
+  },
+  "old_dimensions": {
+    "floors": 4,
+    "height": 18,
+    "width": 10
+  },
+  "new_dimensions": {
+    "width": 10,
+    "height": 18,
+    "floors": 4
+  },
+  "old_cell_count": 287,
+  "new_cell_count": 287,
+  "changed_cells": [
+    {
+      "position": [
+        32326,
+        31154,
+        7
+      ],
+      "old": {
+        "items": [
+          799,
+          6629,
+          6757,
+          4982
+        ]
+      },
+      "new": {
+        "items": [
+          4600,
+          6675,
+          4982
+        ]
+      }
+    },
+    {
+      "position": [
+        32326,
+        31155,
+        7
+      ],
+      "old": {
+        "items": [
+          4600,
+          4733,
+          1755
+        ]
+      },
+      "new": {
+        "items": [
+          4600,
+          1755
+        ]
+      }
+    },
+    {
+      "position": [
+        32327,
+        31154,
+        7
+      ],
+      "old": {
+        "items": [
+          4599,
+          6682,
+          6675
+        ]
+      },
+      "new": {
+        "items": [
+          4599,
+          6675
+        ]
+      }
+    },
+    {
+      "position": [
+        32329,
+        31150,
+        7
+      ],
+      "old": {
+        "items": [
+          4598,
+          4736,
+          6677
+        ]
+      },
+      "new": {
+        "items": [
+          4598,
+          6677
+        ]
+      }
+    }
+  ]
+}
