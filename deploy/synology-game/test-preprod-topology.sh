@@ -18,6 +18,10 @@ fill_manifest() {
   sed -e "s|<NAS_LAN_ADDRESS>|192.168.10.5|" -e "s|<WORLD_ID>|$W|" -e "s|<CHANNEL_ID>|$C|" -e "s|<GAME_PORT>|7172|" \
     -e "s|<ROUTE_VERSION>|1|" -e "s|<ROUTE_REVISION>|$RR|" -e "s|<GAME_COMMIT_12HEX>|0123456789ab|" \
     -e "s|<MAP_SHA256_16HEX>|00112233445566ff|" "$here/preprod-topology.toml" > "$MANIFEST"
+  # The committed manifest carries the issued staging ids; the fixtures use their own constants.
+  sed -i -e "s|^lan_address = .*|lan_address = \"192.168.10.5\"|" -e "s|^host = .*|host = \"192.168.10.5\"|" \
+    -e "s|^world_id = .*|world_id = \"$W\"|" -e "s|^channel_id = .*|channel_id = \"$C\"|" -e "s|^channel_key = .*|channel_key = \"ch1\"|" \
+    -e "s|^port = .*|port = \"7172\"|" -e "s|^route_version = .*|route_version = \"1\"|" -e "s|^route_revision = .*|route_revision = \"$RR\"|" "$MANIFEST"
 }
 render() { # rebuild node.toml, report.toml and scope.env from the manifest values
   r() { toml_get "$MANIFEST" "$1" "$2"; }
