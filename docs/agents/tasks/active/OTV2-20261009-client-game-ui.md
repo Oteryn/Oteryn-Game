@@ -60,7 +60,8 @@ must not be claimed as complete.
 - The observed mouse preset choices and Classic-only `Loot: Right / SHIFT+Right /
   Left` dependency are composed but disabled until an actual input consumer
   exists.
-- The foreground FPS control uses the observed integer 1–200 range. No-limit
+- The foreground FPS control uses the source-corrected integer 10–200 editable
+  range; legacy 1–9 values remain loadable and executable. No-limit
   retains its prior numeric value across Apply/restart and the native redraw
   scheduler consumes the enabled/disabled result.
 - Action bars have nine independent 50-slot rows and two Chat On/Off chords.
@@ -85,6 +86,15 @@ must not be claimed as complete.
   legacy movement fallbacks.
 
 ## Acceptance evidence and next actions
+
+Installed-original extraction now precedes further guesswork. Independently
+written evidence is in `apps/client/UI-REFERENCE-EXTRACTED.md`: actual 15.33 QML
+contracts, source digests, resource/audio/spell counts and explicit backend gaps.
+Original source, artwork, sounds and account data are not published. The current
+bounded repair corrects FPS editable minimum, delay warning thresholds, Off
+markers and anthem/item-volume child dependencies. It preserves legacy values
+and keeps audio disabled without a real consumer. New native qualification is
+required; earlier exact-head evidence cannot qualify this successor.
 
 Native Windows scissor rounding was repaired in `08495a50`; the exact SHA passed
 MSVC tests/strict Clippy and the DX12 release page audit (20 pages, 78 captures,
@@ -124,7 +134,7 @@ red World bundle job locally; the AUTHORING repair refreshes only the pin's
 `inputs_digest`, preserving world content, identity, production=false and the
 bundle digest. Qualification uses the unchanged double-build gate.
 
-The current client tree passes 194 client-library, 162 native-binary
+The current client tree passes 194 client-library, 165 native-binary
 and 5 launcher tests, strict client all-target Clippy, rustfmt and
 `git diff --check`. These checks must be repeated on any repaired final
 candidate. The native audit must then be built and run from a fresh exact-SHA

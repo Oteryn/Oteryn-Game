@@ -14,6 +14,8 @@ const SETTINGS_VERSION: u8 = 3;
 const DEFAULT_FRAME_LIMIT: u16 = 120;
 const LEGACY_UNLIMITED_FRAME_LIMIT: u16 = 60;
 const MIN_FRAME_LIMIT: u16 = 1;
+/// Original 15.33 UI bounds; legacy 1–9 values remain loadable and executable.
+pub const EDITABLE_FRAME_LIMIT: std::ops::RangeInclusive<u16> = 10..=200;
 const MAX_FRAME_LIMIT: u16 = 200;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -173,7 +175,7 @@ impl ClientSettings {
     /// Change the retained foreground limit. The live scheduler follows it
     /// immediately unless the no-limit switch is active.
     pub fn set_frame_limit(&mut self, limit: u16) -> io::Result<()> {
-        if !(MIN_FRAME_LIMIT..=MAX_FRAME_LIMIT).contains(&limit) {
+        if !EDITABLE_FRAME_LIMIT.contains(&limit) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "Invalid foreground frame limit",
@@ -1124,7 +1126,7 @@ mod tests {
     }
 
     #[test]
-    fn v2_frame_limits_migrate_to_the_observed_one_through_two_hundred_range() -> io::Result<()> {
+    fn v2_frame_limits_preserve_legacy_low_values_and_bound_wide_values() -> io::Result<()> {
         let path =
             std::env::temp_dir().join(format!("oteryn-v2-frame-limit-{}.json", std::process::id()));
         for (fps, expected_fps, expected_last) in [
@@ -1154,8 +1156,19 @@ mod tests {
     #[test]
     fn frame_limit_setter_enforces_the_observed_slider_bounds() {
         let mut settings = ClientSettings::default();
-        assert!(settings.set_frame_limit(1).is_ok());
-        assert_eq!(settings.fps, 1);
+        assert!(settings.set_frame_limit(10).is_ok());
+        assert_eq!(settings.fps, 10);
+        assert_eq!(settings.redraw_fps(true), 10);
+        for legacy in 1..10 {
+            assert!(settings.set_frame_limit(legacy).is_err());
+            let retained = ClientSettings {
+                fps: legacy,
+                last_frame_limit: legacy,
+                ..ClientSettings::default()
+            };
+            assert!(retained.validate().is_ok());
+            assert_eq!(retained.redraw_fps(true), legacy);
+        }
         assert!(settings.set_frame_limit(200).is_ok());
         assert_eq!(settings.fps, 200);
         assert!(settings.set_frame_limit(0).is_err());

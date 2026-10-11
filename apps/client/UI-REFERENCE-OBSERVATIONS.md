@@ -16,6 +16,12 @@ Only independently written observations are published. Screenshots remain privat
 Do not infer factory defaults from the logged-in character's current selections.
 No Apply, Reset, profile mutation, purchases or character actions were performed.
 
+2026-10-11 source-first continuation: [installed-original resource evidence](UI-REFERENCE-EXTRACTED.md)
+records actual 15.33 QML bounds/dependencies and recoverable graphics/audio/spell
+metadata. It corrects the historical FPS minimum to 10; original source/assets
+remain private. Source recovery is not evidence of working Oteryn playback or
+complete world rendering.
+
 ## Critical correction: HUD condition list
 
 The six initially visible rows are a viewport, NOT the complete condition list.

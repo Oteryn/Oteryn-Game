@@ -13,6 +13,15 @@ the observed target-marking membership. Dedicated composition and persistence
 still do not establish runtime behavior; only the consumers named below count as
 implemented.
 
+Installed-original 15.33 source contracts and recovered-resource boundaries are
+recorded in [UI-REFERENCE-EXTRACTED.md](UI-REFERENCE-EXTRACTED.md). They correct the
+old 1–200 FPS observation: editable bounds are **10–200**. Legacy 1–9 values remain
+loadable and are not rewritten on page opening. Controls now distinguish critical
+custom delays below 50 ms from warning delays below 250 ms; the default master
+hides both. Clouds/audio zero values carry Off markers. Anthem/item children
+follow their positive group volume, but all audio remains disabled without a
+backend; these dependency repairs are not playback acceptance.
+
 ## Page matrix
 
 | Reference page | Dedicated composition | Actual consumer / remaining acceptance |
@@ -28,7 +37,7 @@ implemented.
 | Game Window | Yes | Frame & Highlight / Frame Only / Highlight Only / None drive the real target frame and scene overlay. Text/combat/effect projections remain disabled |
 | Action Bars | Partial | Three masters and nine independent 50-slot rows drive the live layout; visible stored hotkey labels affect that renderer. Global lock migration, a single trailing lock per nonempty edge group, clear and primary-button move/swap primitives are tested against in-memory session assignments. Production still has no authoritative spell/object assignment source, so an admitted client starts empty; assignment menus, binding/item-amount/tooltip controls, clear controls and both lock surfaces remain disabled. Those primitives are not counted as reachable behavior. |
 | Shortcuts | Yes, two lists | Add/remove/order edits for destinations with real local compositions affect draft only; Apply updates the live registry and Cancel discards. Clean profiles and Defaults omit Lenshelp; a Lenshelp entry retained from an existing profile remains visible and removable but disabled, and cannot be added while its destination is unverified. |
-| Graphics | Yes | Fullscreen/VSync, the observed integer 1–200 limit, retained disabled value under No Frame Rate Limit, live frame-rate readout and the optional FPS overlay work. Integral-multiple scaling now fits whole physical multiples of the 32-pixel sprite cells and shares its transform with picking, HUD and renderer capture; windows smaller than one native scene expose the existing recovery UI. Engine/AA controls stay disabled pending verified platform capabilities |
+| Graphics | Yes | Fullscreen/VSync, the source-corrected integer 10–200 editable limit (legacy 1–9 retained), retained disabled value under No Frame Rate Limit, live frame-rate readout and the optional FPS overlay work. Integral-multiple scaling now fits whole physical multiples of the 32-pixel sprite cells and shares its transform with picking, HUD and renderer capture; windows smaller than one native scene expose the existing recovery UI. Engine/AA controls stay disabled pending verified platform capabilities |
 | Effects | Yes, lighting + opacity groups | The Light master gates its retained Ambient, Level Separator and combined Clouds & Indoor children; ambient intensity drives the bounded scene overlay. Level separation, the combined attenuation row and spell-effect controls stay disabled pending projections/renderers |
 | Sound | Yes, device + five volume groups | Food/move-item controls belong in item group; all controls are disabled because no audio backend/content exists |
 | Battle Sounds | Yes, own/others/creatures | Nested spell categories are present but disabled because no mixer/events exist |

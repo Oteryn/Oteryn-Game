@@ -86,6 +86,25 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 );
             });
         });
+        if custom && let Some(delay) = draft.stored_int("controls.controls.key_delay_ms") {
+            let warning = match (delay, en) {
+                (0..50, true) => Some("Critical: keyboard delay below 50 ms."),
+                (0..50, false) => Some("Krytyczne: opóźnienie klawiatury poniżej 50 ms."),
+                (50..250, true) => Some("Warning: keyboard delay below 250 ms."),
+                (50..250, false) => Some("Uwaga: opóźnienie klawiatury poniżej 250 ms."),
+                _ => None,
+            };
+            if let Some(warning) = warning {
+                ui.colored_label(
+                    if delay < 50 {
+                        egui::Color32::RED
+                    } else {
+                        egui::Color32::from_rgb(255, 165, 0)
+                    },
+                    warning,
+                );
+            }
+        }
     });
     boxed(ui, "", |ui| {
         ui.label(if en {
@@ -257,11 +276,11 @@ fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
         let mut limit = draft.last_frame_limit;
         ui.add_enabled_ui(!unlimited, |ui| {
             if ui
-                .add(egui::Slider::new(&mut limit, 1..=200).text(if en {
-                    "Frame Rate Limit"
-                } else {
-                    "Limit FPS"
-                }))
+                .add(
+                    egui::Slider::new(&mut limit, oteryn_client::settings::EDITABLE_FRAME_LIMIT)
+                        .clamping(egui::SliderClamping::Edits)
+                        .text(if en { "Frame Rate Limit" } else { "Limit FPS" }),
+                )
                 .changed()
             {
                 let _ = draft.set_frame_limit(limit);
@@ -647,6 +666,82 @@ mod tests {
             "{frame_rate}"
         );
         Ok(())
+    }
+
+    #[test]
+    fn extracted_graphics_range_does_not_rewrite_legacy_values_on_render()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for en in [false, true] {
+            for fps in 1..10 {
+                let ctx = egui::Context::default();
+                crate::client_chrome::install(&ctx, false);
+                let mut draft = ClientSettings {
+                    fps,
+                    last_frame_limit: fps,
+                    ..Default::default()
+                };
+                let before = draft.clone();
+                for _ in 0..3 {
+                    let _ = frame(&ctx, egui::vec2(650.0, 650.0), vec![], |ctx| {
+                        egui::Window::new("legacy-graphics")
+                            .show(ctx, |ui| graphics(ui, &mut draft, en));
+                    });
+                }
+                assert_eq!(draft, before);
+                draft.validate()?;
+                draft.set_frame_limit(10)?;
+                assert_eq!(draft.redraw_fps(true), 10);
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn keyboard_delay_warnings_use_extracted_boundaries_and_retain_intent() {
+        for (delay, expected) in [
+            (0, Some("Critical: keyboard delay below 50 ms.")),
+            (49, Some("Critical: keyboard delay below 50 ms.")),
+            (50, Some("Warning: keyboard delay below 250 ms.")),
+            (249, Some("Warning: keyboard delay below 250 ms.")),
+            (250, None),
+            (1000, None),
+        ] {
+            for default in [false, true] {
+                let mut draft = ClientSettings::default();
+                draft.future_preferences.extend([
+                    (
+                        "controls.controls.default_key_delay".into(),
+                        FutureValue::Bool(default),
+                    ),
+                    (
+                        "controls.controls.key_delay_ms".into(),
+                        FutureValue::Int(delay),
+                    ),
+                ]);
+                let before = draft.clone();
+                let (_, output) = render_page(
+                    "delay-warning",
+                    egui::vec2(750.0, 700.0),
+                    &mut draft,
+                    controls,
+                );
+                let warnings: Vec<_> = rendered_texts(&output)
+                    .into_iter()
+                    .filter(|text| text.starts_with("Critical:") || text.starts_with("Warning:"))
+                    .collect();
+                let expected: Vec<_> = expected.filter(|_| !default).into_iter().collect();
+                assert_eq!(warnings, expected);
+                assert_eq!(draft, before);
+                assert_eq!(
+                    draft.movement_repeat_delay(),
+                    Some(std::time::Duration::from_millis(if default {
+                        250
+                    } else {
+                        delay as u64
+                    }))
+                );
+            }
+        }
     }
 
     #[test]

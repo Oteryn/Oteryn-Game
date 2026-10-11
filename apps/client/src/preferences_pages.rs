@@ -370,7 +370,18 @@ fn percent(
         _ => None,
     };
     let mut value = selected.unwrap_or(0);
-    let text = selected.map_or_else(|| "—".into(), |v| format!("{v} %"));
+    let off_at_minimum =
+        id == "effects.cloud_light" || matches!(section, "sound" | "battle_sounds" | "ui_sounds");
+    let text = selected.map_or_else(
+        || "—".into(),
+        |v| {
+            if v == 0 && off_at_minimum {
+                if en { "0 % (Off)" } else { "0 % (Wył.)" }.into()
+            } else {
+                format!("{v} %")
+            }
+        },
+    );
     let consumer = oteryn_client::settings_catalog::runtime_consumer(&key);
     let response = ui
         .push_id(&key, |ui| {
@@ -553,23 +564,44 @@ fn sound(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
         boxed(ui, "", |ui| {
             percent(ui, draft, "sound", id, labels, en);
             if id == "sound.music" {
-                reference_option(ui, draft, "sound", "sound.anthem", ["Hymn", "Anthem"], en);
-            } else if id == "sound.items" {
-                reference_option(
+                retained_children(
                     ui,
-                    draft,
-                    "sound",
-                    "sound.eating",
-                    ["Jedzenie i napoje", "Food and Beverages"],
-                    en,
+                    draft.stored_int("sound.sound.music").is_some_and(|v| v > 0),
+                    "sound-music",
+                    |ui| {
+                        reference_option(
+                            ui,
+                            draft,
+                            "sound",
+                            "sound.anthem",
+                            ["Hymn", "Anthem"],
+                            en,
+                        );
+                    },
                 );
-                reference_option(
+            } else if id == "sound.items" {
+                retained_children(
                     ui,
-                    draft,
-                    "sound",
-                    "sound.item_movement",
-                    ["Przenoszenie przedmiotów", "Move Item"],
-                    en,
+                    draft.stored_int("sound.sound.items").is_some_and(|v| v > 0),
+                    "sound-items",
+                    |ui| {
+                        reference_option(
+                            ui,
+                            draft,
+                            "sound",
+                            "sound.eating",
+                            ["Jedzenie i napoje", "Food and Beverages"],
+                            en,
+                        );
+                        reference_option(
+                            ui,
+                            draft,
+                            "sound",
+                            "sound.item_movement",
+                            ["Przenoszenie przedmiotów", "Move Item"],
+                            en,
+                        );
+                    },
                 );
             }
         });
@@ -1689,6 +1721,69 @@ mod tests {
         }
         assert_eq!(state.take_help_action(), None);
         Ok(())
+    }
+
+    #[test]
+    fn extracted_zero_volume_and_item_music_dependencies_preserve_saved_intent() {
+        for en in [false, true] {
+            for master in [0, 100] {
+                for volume in [0, 50] {
+                    let ctx = egui::Context::default();
+                    crate::client_chrome::install(&ctx, false);
+                    let size = egui::vec2(750.0, 800.0);
+                    let mut draft = ClientSettings::default();
+                    draft.future_preferences.extend([
+                        ("sound.sound.master".into(), FutureValue::Int(master)),
+                        ("sound.sound.music".into(), FutureValue::Int(volume)),
+                        ("sound.sound.items".into(), FutureValue::Int(volume)),
+                        ("sound.sound.anthem".into(), FutureValue::Bool(true)),
+                        ("sound.sound.eating".into(), FutureValue::Bool(true)),
+                        ("sound.sound.item_movement".into(), FutureValue::Bool(true)),
+                    ]);
+                    let before = draft.clone();
+                    let mut output = egui::FullOutput::default();
+                    for _ in 0..3 {
+                        output = frame(&ctx, size, vec![], |ctx| {
+                            egui::Window::new("extracted-sound")
+                                .fixed_size([650.0, 700.0])
+                                .show(ctx, |ui| sound(ui, &mut draft, en));
+                        })
+                        .1;
+                    }
+                    for gate in ["sound-music", "sound-items"] {
+                        assert_eq!(
+                            ctx.data(|data| data
+                                .get_temp::<bool>(egui::Id::new(("retained-child-gate", gate)))),
+                            Some(volume > 0)
+                        );
+                    }
+                    if volume == 0 {
+                        assert!(
+                            button_position(
+                                &output,
+                                size,
+                                if en {
+                                    "Music Volume: 0 % (Off)"
+                                } else {
+                                    "Muzyka: 0 % (Wył.)"
+                                }
+                            )
+                            .is_some()
+                        );
+                    }
+                    // Reference dependencies do not invent a mixer/playback consumer.
+                    for key in [
+                        "sound.sound.master",
+                        "sound.sound.music",
+                        "sound.sound.anthem",
+                        "sound.sound.eating",
+                    ] {
+                        assert!(oteryn_client::settings_catalog::runtime_consumer(key).is_none());
+                    }
+                    assert_eq!(draft, before);
+                }
+            }
+        }
     }
 
     #[test]

@@ -47,7 +47,7 @@ No original settings were applied, profiles changed, or assignments accepted.
 | Game Window / Mark Target Visually | Frame & Highlight, Frame Only, Highlight Only, None |
 | Graphics / Engine on Linux | auto-select, Vulkan, OpenGL; platform-specific, not a Windows renderer contract |
 | Graphics / Antialiasing | None, Antialiasing, Smooth Retro |
-| Graphics | Fullscreen, integral-multiple scaling, V-Sync, No Frame Rate Limit, integer 1–200 limit slider and measured current FPS. Unlimited disables the slider while retaining and displaying its prior number |
+| Graphics | Fullscreen, integral-multiple scaling, V-Sync, No Frame Rate Limit, integer limit slider and measured current FPS. Historical 1–200 note corrected to **10–200** by [installed-original QML](UI-REFERENCE-EXTRACTED.md). Unlimited disables the slider while retaining and displaying its prior number |
 | Effects | Light master with dependent ambient light, level separator and one combined Clouds & Indoor Effect control; separate own/other/creature/boss-area spell opacity |
 | Sound device | auto-select and this machine's Dummy Output; enumerate runtime devices instead of hardcoding |
 | Sound | Master, Music plus Anthem, Ambience, Item plus Food and Beverages / Move Item, Event volume |

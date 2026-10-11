@@ -16,6 +16,9 @@ it does not claim that historical screenshots were all re-inspected in this pass
 - [E: pinned OTClient source map](UI-REFERENCE-OTCLIENT.md): layouts, handlers
   and explicit implementation gaps at upstream revision `53c3878a`. Read this
   before a new live probe; source evidence is not official-client verification.
+- [F: installed-original resources](UI-REFERENCE-EXTRACTED.md): actual 15.33 QML
+  bounds/dependencies and reusable resource metadata; source-first correction
+  of the historical FPS minimum from 1 to 10, without applying preferences.
 
 Observed means an existing record establishes visible controls or a stated
 interaction. Restricted means only the restricted state is established for that
@@ -69,7 +72,7 @@ not proof of every hidden control or runtime effect. Do not restart those pages.
 | General / Action Bar / Custom Hotkeys | Full 120-action label inventory; profiles, chat contexts, two binding columns, key capture/conflict, spell/object/text editors; the formerly missing 02/03 interval is now directly captured; Oteryn routes next-profile/direct-Hotkeys navigation, first/next/previous admitted battle targets, Stop All Actions, local/next/previous/help/list/close chat actions, VIP/Battle/Skills/Quest Log/Prey panel toggles, FPS overlay and minimap zoom/pan through live client consumers | Profile removal confirmation, full spell-dependent fields and the remaining disabled action families |
 | Interface / HUD / Console / Game Window | Pages inspected; exact HUD masters and Harmony choices, 35 conditions/symbols, exact private-message-tab label; target-marking and loot-colour choices | HUD aggregate semantics and condition consumers; remaining Console/context details |
 | Action Bars / Shortcuts | All nine bars individually verified at 50 slots; all shortcut identities | Edge-master/retained-child behavior, clear confirmations and persistence |
-| Graphics / Effects | Linux engines, antialiasing, integer 1–200 FPS slider, retained disabled limit under Unlimited, lighting and opacity controls; Light master dependency and retained children | Platform-specific availability and actual rendering checks beyond ambient light |
+| Graphics / Effects | Linux engines, antialiasing, integer FPS slider (historical 1–200 note corrected to **10–200** by F), retained disabled limit under Unlimited, lighting and opacity controls; Light master dependency and retained children | Platform-specific availability and actual rendering checks beyond ambient light |
 | Sound / Battle Sounds / UI Sounds | Volume/filter families and device selection | Audio consumers, unavailable-device handling, master/child behavior |
 | Misc / Gameplay / Screenshots / Help | Controls, automatic capture master plus 17 event triggers; help/import/export/reset routes | Trigger effects, validation and non-destructive dialog inspection |
 
