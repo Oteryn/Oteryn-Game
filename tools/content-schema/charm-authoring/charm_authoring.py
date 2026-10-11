@@ -721,7 +721,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "capture":
         SOURCES.parent.mkdir(exist_ok=True)
-        SOURCES.write_text(dumps(capture(args.reference_engine)), encoding="utf-8", newline="\n")
+        SOURCES.write_text(
+            dumps(capture(args.reference_engine)), encoding="utf-8", newline="\n"
+        )
         return 0
     if args.command == "build":
         catalogue, report = build(json.loads(SOURCES.read_text(encoding="utf-8")))

@@ -188,7 +188,10 @@ def main():
 
     catalogs = {}
     censuses = {}
-    for engine, root_arg in (("canary", args.reference_engine), ("crystal", args.crystal)):
+    for engine, root_arg in (
+        ("canary", args.reference_engine),
+        ("crystal", args.crystal),
+    ):
         if root_arg:
             census, catalog = census_one(engine, Path(root_arg))
             censuses[engine] = census
