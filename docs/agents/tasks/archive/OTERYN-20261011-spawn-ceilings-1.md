@@ -111,12 +111,30 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
 - Summons past the D57 envelope (Codex 4242954089): native summon and masterless encounter
   admission check `CREATUREAI0-RL-04` (the occupied count `admit_creature` uses) in place of
   64 live creatures; the native summon links are bounded by RL-04 (one per child actor);
-  `retire_native_summons` retires every dead child instead of refusing at the 65th. The native
+  `retire_native_summons` no longer refuses at the 65th dead child (it is now bounded per
+  call, see the next item). The native
   summon owner's memos are bounded by RL-04 creatures times the 8 entries of
   `CREATUREAI0-RL-08`, and the defence summon owner's and the creature self-heal ledger's by
   RL-04 times the 8 defences of `CREATUREAI0-RL-07`, in place of 64 x 8. `CREATUREAI0-RL-08` is
   registered. Tested: 100 summoners each summon, retire their 100 dead children in one call and
   summon again; 100 defence summoners each summon.
+- Summon link and memo work (Codex 4243039217, 4243039220): the native summon links are indexed
+  (`NativeSummonLinks`: ordered maps by admission ordinal, by child actor and by (parent,
+  ordinal)), so a lookup, a child removal and a parent's children cost O(log n) instead of a
+  scan of every link. `retire_native_summons` examines at most `SPAWNCEIL-RL-02` = 256 links
+  per call from a persisted cursor (wrapping), and the dead children found are removed with one
+  pass over the occupied index and the attacker leases; the links left over are examined by
+  later calls. A summon is never refused for retirement backlog: admission first retires the
+  dead children of its own parent (at most 16, targeted through the parent index), so the
+  per-parent RL-08 count is exact. The native summon owner's memos, the defence summon owner's
+  memos and the creature self-heal ledger are `ActorMemoTable`s: ordered maps by carrier slot,
+  each holding its exact creature and that creature's memos by entry or ability, so a lookup is
+  O(log n), a memo of an older generation of the slot is dropped when the slot is next used, and
+  the full-table prune runs only when the RL-04 x RL-07/RL-08 cap is reached; the caps,
+  replay, superseded and per-creature limits are unchanged. Tested: 40 summoners x 16 dead
+  children are retired 256 links per call, an admission retires its parent's dead children
+  first and later calls retire the rest; 300 creatures x 8 memos are looked up by exact
+  creature, and a reused slot's stale memos are dropped.
 
 ## Implementation / findings
 
@@ -234,6 +252,15 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   - Residual per-pass O(N) work (`wake_for_player` per player over the table, the melee
     qualification of non-melee monsters, `forget_dead`) is bounded by RL-17, measured by
     CREATURE-MOVE-1, and is the scope of CREATURE-POSITION-INDEX-1.
+- Summon links and memos (Codex 4243039217, 4243039220): the retirement made unbounded in the
+  previous round cost O(links) per dead child (the death projection and the removal each
+  scanned the link Vec, plus one occupied-index pass per child), and admission ran it before
+  every summon; the memo ledgers did a `retain` and a `position` scan of up to RL-04 x 8
+  entries per proposal. Now indexed and bounded as in Acceptance. `SPAWNCEIL-RL-02` (256) is
+  registered at control-plane request; unlike `SPAWNCEIL-RL-01` it has no owner decision yet
+  (owner question in the report). The link and memo maps allocate on insert like the other
+  ordered-map ledgers of this task; the old `try_reserve` on the link Vec is gone, and a
+  failed link insert (duplicate child or ordinal overflow) restores the admission snapshot.
 - At reference scale the 64-entry corpse projection FIFO may evict before a lost-response
   replay; that is an owner question, not changed here.
 - The test-only cheese source uses `SpawnSourceId(u16::MAX)`; at 65,536 realized sources it
@@ -285,6 +312,16 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
     --all-targets --locked -- -D warnings` pass; `cargo test -p oteryn-game-server --no-run
     --locked` pass; `cargo test -p oteryn-game-server --lib --locked` pass (2,760 passed, 0
     failed, 28 ignored); governance validation and `tools/agents/tests` pass
+  - Ledger/retirement round (Codex 4243039217, 4243039220), on the PC before the push, in the
+    same private checkout of main 9080588d plus this branch's delta (apps and registry diff hash
+    equal to the pushed head's): the first runs found the carrier's derived `PartialEq` needing
+    one on the link index (now the links in admission order, as the list compared) and two
+    clippy `explicit_counter_loop`s, fixed before the push; then `cargo fmt --all -- --check`
+    pass; `cargo clippy -p oteryn-game-server --all-targets --locked -- -D warnings` pass;
+    `cargo test -p oteryn-game-server --no-run --locked` pass; `cargo test -p
+    oteryn-game-server --lib --locked` pass (2,762 passed, 0 failed,
+    28 ignored); governance validation and `tools/agents/tests`
+    pass
 - Earlier round: `cargo fmt --all --check`, `python tools/agents/validate_governance.py` and
   `python -m unittest discover -s tools/agents/tests`: pass
 

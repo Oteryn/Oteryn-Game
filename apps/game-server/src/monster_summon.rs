@@ -8,9 +8,9 @@ use crate::content::{
     ProjectV2Draft, ProjectV2Family, ProjectV2SourceIdentityDisposition,
 };
 use crate::foundation::{
-    CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX, CarrierError, ChannelRuntimeV1, ExactActorRef,
-    MovementLocalPosition, NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX, NativeSummonAdmissionSpec,
-    RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
+    ActorMemoTable, CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX, CarrierError, ChannelRuntimeV1,
+    ExactActorRef, MovementLocalPosition, NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX,
+    NativeSummonAdmissionSpec, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
@@ -228,15 +228,14 @@ pub(crate) struct SummonReceipt {
     pub(crate) position: MovementLocalPosition,
 }
 struct SummonMemo {
-    parent: ExactActorRef,
-    index: usize,
     sequence: u64,
     binding: [u8; 32],
     result: Result<SummonReceipt, SummonError>,
 }
 #[derive(Default)]
 pub(crate) struct NativeSummonOwner {
-    memos: Vec<SummonMemo>,
+    /// By parent and summon entry (Codex 4243039220).
+    memos: ActorMemoTable<usize, SummonMemo>,
 }
 impl NativeSummonOwner {
     pub(crate) fn execute(
@@ -287,14 +286,11 @@ impl NativeSummonOwner {
             return Err(SummonError::InvalidSource);
         }
         let binding = Sha256::digest(format!("{:?}:{proposal:?}", source).as_bytes()).into();
-        self.memos
-            .retain(|m| runtime.contains_live_creature(m.parent));
-        let index = self
-            .memos
-            .iter()
-            .position(|m| m.parent == proposal.occurrence.actor && m.index == source.index);
-        if let Some(i) = index {
-            let m = &self.memos[i];
+        let parent = proposal.occurrence.actor;
+        // The live parent's slot drops its former occupant's memos; the memos of other dead
+        // parents go only when the table is full (Codex 4243039220).
+        self.memos.evict_stale_at(parent);
+        if let Some(m) = self.memos.get(parent, &source.index) {
             if proposal.occurrence.sequence < m.sequence {
                 return Err(SummonError::Superseded);
             }
@@ -308,29 +304,23 @@ impl NativeSummonOwner {
                     Err(SummonError::ReplayConflict)
                 };
             }
-        }
-        if index.is_none() {
+        } else {
             // `CREATUREAI0-RL-04` live summoners times `CREATUREAI0-RL-08` entries (Codex
-            // 4242954089); the memos of dead parents were dropped above.
+            // 4242954089): when full, the memos of dead parents are dropped first.
+            if self.memos.len() >= NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX {
+                self.memos.prune(|a| runtime.contains_live_creature(a));
+            }
             if self.memos.len() >= NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX {
                 return Err(SummonError::Capacity);
             }
-            self.memos
-                .try_reserve(1)
-                .map_err(|_| SummonError::Capacity)?;
         }
         let result = self.place(runtime, fence, stamp, source, proposal, policy);
         let memo = SummonMemo {
-            parent: proposal.occurrence.actor,
-            index: source.index,
             sequence: proposal.occurrence.sequence,
             binding,
             result: result.clone(),
         };
-        match index {
-            Some(i) => self.memos[i] = memo,
-            None => self.memos.push(memo),
-        }
+        self.memos.insert(parent, source.index, memo);
         result
     }
     fn place(
@@ -1354,15 +1344,14 @@ pub(crate) struct DefenseSummonBatch {
     pub(crate) project_current_free_cell_selection: bool,
 }
 struct DefenseSummonMemo {
-    parent: ExactActorRef,
-    ability: Ref,
     sequence: u64,
     binding: [u8; 32],
     batch: DefenseSummonBatch,
 }
 #[derive(Default)]
 pub(crate) struct DefenseSummonOwner {
-    memos: Vec<DefenseSummonMemo>,
+    /// By parent and defence Ability (Codex 4243039220).
+    memos: ActorMemoTable<Ref, DefenseSummonMemo>,
 }
 impl DefenseSummonOwner {
     // Keep execute ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.
@@ -1415,16 +1404,12 @@ impl DefenseSummonOwner {
         {
             return Err(SummonError::StaleParent);
         }
-        self.memos
-            .retain(|m| runtime.contains_live_creature(m.parent));
+        // The live parent's slot drops its former occupant's memos; the memos of other dead
+        // parents go only when the table is full (Codex 4243039220).
+        self.memos.evict_stale_at(think.actor);
         let binding: [u8; 32] =
             Sha256::digest(format!("{source:?}:{proposal:?}").as_bytes()).into();
-        let at = self
-            .memos
-            .iter()
-            .position(|m| m.parent == think.actor && m.ability == source.ability);
-        if let Some(i) = at {
-            let m = &self.memos[i];
+        if let Some(m) = self.memos.get(think.actor, &source.ability) {
             if think.sequence < m.sequence {
                 return Err(SummonError::Superseded);
             }
@@ -1438,16 +1423,15 @@ impl DefenseSummonOwner {
                 }
                 return Ok(batch);
             }
-        }
-        if at.is_none() {
+        } else {
             // `CREATUREAI0-RL-04` live parents times `CREATUREAI0-RL-07` defences (Codex
-            // 4242954089); the memos of dead parents were dropped above.
+            // 4242954089): when full, the memos of dead parents are dropped first.
+            if self.memos.len() >= CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX {
+                self.memos.prune(|a| runtime.contains_live_creature(a));
+            }
             if self.memos.len() >= CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX {
                 return Err(SummonError::Capacity);
             }
-            self.memos
-                .try_reserve(1)
-                .map_err(|_| SummonError::Capacity)?;
         }
         let current = runtime.native_summon_count(think.actor, None);
         let requested = if current >= source.threshold {
@@ -1483,17 +1467,11 @@ impl DefenseSummonOwner {
             }
         }
         let memo = DefenseSummonMemo {
-            parent: think.actor,
-            ability: source.ability.clone(),
             sequence: think.sequence,
             binding,
             batch: batch.clone(),
         };
-        if let Some(i) = at {
-            self.memos[i] = memo
-        } else {
-            self.memos.push(memo)
-        }
+        self.memos.insert(think.actor, source.ability.clone(), memo);
         Ok(batch)
     }
     // Keep place ABI explicit: current runtime owner, independent fence/stamp, exact actor/session/source and occurrence/policy facts are separate admission inputs.

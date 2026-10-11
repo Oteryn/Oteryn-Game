@@ -29,6 +29,7 @@ pub(crate) mod runtime_actor_source_step;
 #[path = "runtime_actor_spell.rs"]
 pub(crate) mod runtime_actor_spell;
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::mem::size_of;
 use std::sync::Arc;
 
@@ -1429,7 +1430,7 @@ struct ChannelActorCarrier {
     /// ascending source order, so a source is found by binary search (`spawn_index`) and
     /// the iteration order is the canonical (source, point ordinal) order.
     spawns: Vec<SpawnRealization>,
-    native_summons: Vec<NativeSummonLink>,
+    native_summons: NativeSummonLinks,
     native_summon_deaths: [Option<NativeSummonDeath>; 64],
     native_summon_death_cursor: usize,
     bone_shared_groups: Vec<NativeBoneSharedGroup>,
@@ -1497,17 +1498,26 @@ pub(crate) const CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX: usize = 262_144;
 pub(crate) const CREATUREAI0_SUMMON_ENTRIES_PER_CREATURE_MAX: usize = 8;
 /// `CREATUREAI0-RL-07`: defence Ability proposals per creature (8 of the 24 per think).
 pub(crate) const CREATUREAI0_DEFENCES_PER_CREATURE_MAX: usize = 8;
-/// SPAWN-CEILINGS-1 (Codex 4242954089): the replay memos of the native summon owner, one per
-/// live summoner and summon entry. Memos of dead parents are dropped before an insert, so the
-/// table holds at most `CREATUREAI0-RL-04` creatures times `CREATUREAI0-RL-08` entries; it replaces
-/// the D57 envelope of 64 creatures times 8.
+/// SPAWN-CEILINGS-1 (Codex 4242954089, 4243039220): the replay memos of the native summon owner,
+/// one per summoner and summon entry, in an [`ActorMemoTable`]. A creature's memos go when its
+/// slot's next occupant first touches the table, or when the table is full, so the table holds at
+/// most `CREATUREAI0-RL-04` creatures times `CREATUREAI0-RL-08` entries; it replaces the D57
+/// envelope of 64 creatures times 8.
 pub(crate) const NATIVE_SUMMON_MEMOS_PER_CHANNEL_MAX: usize =
     CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX * CREATUREAI0_SUMMON_ENTRIES_PER_CREATURE_MAX;
-/// SPAWN-CEILINGS-1 (Codex 4242954089): the replay memos keyed by a live creature and one of its
-/// defence entries (the defence summon owner and the creature self-heal ledger), at most
-/// `CREATUREAI0-RL-04` creatures times `CREATUREAI0-RL-07` defences; it replaces 64 times 8.
+/// SPAWN-CEILINGS-1 (Codex 4242954089, 4243039220): the replay memos keyed by a creature and one
+/// of its defence entries (the defence summon owner and the creature self-heal ledger, each an
+/// [`ActorMemoTable`]), at most `CREATUREAI0-RL-04` creatures times `CREATUREAI0-RL-07` defences;
+/// it replaces 64 times 8.
 pub(crate) const CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX: usize =
     CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX * CREATUREAI0_DEFENCES_PER_CREATURE_MAX;
+/// `SPAWNCEIL-RL-02` (SPAWN-CEILINGS-1, Codex 4243039217): native summon links one call of
+/// [`ChannelRuntimeV1::retire_native_summons`] examines, and so the dead children it retires. The
+/// pass resumes where the previous call stopped and wraps, so every link is examined within
+/// `ceil(links / 256)` calls; a summon admission first retires its own parent's dead children (at
+/// most 16), so a deferred retirement never refuses a summon or lets a parent hold more than 16
+/// links.
+pub(crate) const NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX: usize = 256;
 /// SPAWN-CEILINGS-1 (Codex 4242245064): carrier slots an activation leaves free for player
 /// admission, the D128 design target of 500 concurrent players per Channel. The pre-production
 /// carrier holds 131,072 actors (`PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY`), as many as
@@ -3732,7 +3742,7 @@ impl ChannelActorCarrier {
             corpse_projections: Vec::new(),
             death_reward_occurrences: Vec::new(),
             spawns: Vec::new(),
-            native_summons: Vec::new(),
+            native_summons: NativeSummonLinks::default(),
             native_summon_deaths: [None; 64],
             native_summon_death_cursor: 0,
             bone_shared_groups: Vec::new(),
@@ -4060,20 +4070,18 @@ impl ChannelActorCarrier {
                 return Err(CarrierError::PlanConflict);
             }
         }
-        let mut child_count = 0;
-        for link in &self.native_summons {
-            if link.parent == ExactActorRef(actor_ref) {
-                if child_count == 16 {
-                    return Err(CarrierError::CapacityExceeded);
-                }
-                self.validate_summon_actor(continuity, link.child)?;
-                child_count += 1;
+        for (child_count, link) in self
+            .native_summons
+            .children(ExactActorRef(actor_ref))
+            .enumerate()
+        {
+            if child_count == 16 {
+                return Err(CarrierError::CapacityExceeded);
             }
+            self.validate_summon_actor(continuity, link.child)?;
         }
-        for link in &self.native_summons {
-            if link.parent == ExactActorRef(actor_ref) {
-                self.check_remove(continuity, link.child.0, released)?;
-            }
+        for link in self.native_summons.children(ExactActorRef(actor_ref)) {
+            self.check_remove(continuity, link.child.0, released)?;
         }
         u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
         Ok(())
@@ -4156,24 +4164,23 @@ impl ChannelActorCarrier {
         // Parent despawn removes children, without death/corpse/rewards. The relation never
         // admits child masters, so this bounded cleanup cannot recurse into another family.
         let mut children = [None; 16];
-        let mut child_count = 0;
-        for link in &self.native_summons {
-            if link.parent == ExactActorRef(actor_ref) {
-                if child_count == 16 {
-                    return Err(CarrierError::CapacityExceeded);
-                }
-                self.validate_summon_actor(continuity, link.child)?;
-                children[child_count] = Some(link.child);
-                child_count += 1;
+        for (child_count, link) in self
+            .native_summons
+            .children(ExactActorRef(actor_ref))
+            .enumerate()
+        {
+            if child_count == 16 {
+                return Err(CarrierError::CapacityExceeded);
             }
+            self.validate_summon_actor(continuity, link.child)?;
+            children[child_count] = Some(link.child);
         }
         for child in children.into_iter().flatten() {
             self.remove(continuity, child.0)?;
         }
         if let Some(death) = self
             .native_summons
-            .iter()
-            .find(|link| link.child == ExactActorRef(actor_ref))
+            .child(ExactActorRef(actor_ref))
             .and_then(|link| link.death)
             && !self
                 .native_summon_deaths
@@ -4184,8 +4191,7 @@ impl ChannelActorCarrier {
             self.native_summon_deaths[self.native_summon_death_cursor] = Some(death);
             self.native_summon_death_cursor = (self.native_summon_death_cursor + 1) % 64;
         }
-        self.native_summons
-            .retain(|link| link.child != ExactActorRef(actor_ref));
+        self.native_summons.remove_child(ExactActorRef(actor_ref));
         let free_index =
             u32::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
         self.slots[index] = Slot::VacantReusable {
@@ -9869,15 +9875,111 @@ pub(crate) struct CreatureSelfHealRegistration {
     minimum: i64,
     maximum: i64,
 }
+/// SPAWN-CEILINGS-1 (Codex 4243039220): replay memos keyed by an exact creature and one of its
+/// entries (a summon entry or a defence Ability), deterministic ordered maps throughout. The
+/// memos of a creature live under its slot, which holds one creature at a time: a creature's
+/// first touch drops what the slot's former occupant left (at most its entries), so a lookup,
+/// an insert or that cleanup costs the logarithm of the table plus the entries of one slot,
+/// never a pass over every memo. The memos of a dead creature whose slot nobody reuses stay
+/// until [`Self::prune`], which the owners run only when the table is full.
+#[derive(Debug)]
+pub(crate) struct ActorMemoTable<K, V> {
+    slots: BTreeMap<u32, ActorMemos<K, V>>,
+    len: usize,
+}
+#[derive(Debug)]
+struct ActorMemos<K, V> {
+    actor: ExactActorRef,
+    entries: BTreeMap<K, V>,
+}
+impl<K, V> Default for ActorMemoTable<K, V> {
+    fn default() -> Self {
+        Self {
+            slots: BTreeMap::new(),
+            len: 0,
+        }
+    }
+}
+impl<K: Ord, V> ActorMemoTable<K, V> {
+    /// Every memo held, a dead creature's included.
+    pub(crate) fn len(&self) -> usize {
+        self.len
+    }
+    /// The memos of exactly `actor`.
+    pub(crate) fn actor_len(&self, actor: ExactActorRef) -> usize {
+        self.slots
+            .get(&actor.actor_local_id())
+            .filter(|memos| memos.actor == actor)
+            .map_or(0, |memos| memos.entries.len())
+    }
+    pub(crate) fn get<Q>(&self, actor: ExactActorRef, key: &Q) -> Option<&V>
+    where
+        K: std::borrow::Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        self.slots
+            .get(&actor.actor_local_id())
+            .filter(|memos| memos.actor == actor)?
+            .entries
+            .get(key)
+    }
+    /// Drops the memos `actor`'s slot holds for any other actor: its former occupant, dead
+    /// because the slot was taken again, or one of another scope. Returns how many it dropped.
+    pub(crate) fn evict_stale_at(&mut self, actor: ExactActorRef) -> usize {
+        let slot = actor.actor_local_id();
+        if self
+            .slots
+            .get(&slot)
+            .is_none_or(|memos| memos.actor == actor)
+        {
+            return 0;
+        }
+        let dropped = self
+            .slots
+            .remove(&slot)
+            .map_or(0, |memos| memos.entries.len());
+        self.len -= dropped;
+        dropped
+    }
+    /// Sets `actor`'s memo of `key`, first dropping its slot's stale memos; returns the memo it
+    /// replaced.
+    pub(crate) fn insert(&mut self, actor: ExactActorRef, key: K, value: V) -> Option<V> {
+        self.evict_stale_at(actor);
+        let memos = self
+            .slots
+            .entry(actor.actor_local_id())
+            .or_insert_with(|| ActorMemos {
+                actor,
+                entries: BTreeMap::new(),
+            });
+        let replaced = memos.entries.insert(key, value);
+        if replaced.is_none() {
+            self.len += 1;
+        }
+        replaced
+    }
+    /// Drops the memos of every actor `live` refuses: one pass over the slots that hold memos,
+    /// which the owners run only when the table is full.
+    pub(crate) fn prune(&mut self, live: impl Fn(ExactActorRef) -> bool) {
+        let mut len = 0;
+        self.slots.retain(|_, memos| {
+            let keep = live(memos.actor);
+            if keep {
+                len += memos.entries.len();
+            }
+            keep
+        });
+        self.len = len;
+    }
+}
 #[derive(Debug, Default)]
 pub(crate) struct CreatureSelfHealLedger {
-    entries: Vec<CreatureSelfHealEntry>,
+    /// By creature and defence Ability (Codex 4243039220).
+    entries: ActorMemoTable<Box<str>, CreatureSelfHealEntry>,
 }
 #[derive(Debug)]
 struct CreatureSelfHealEntry {
-    actor: ExactActorRef,
     sequence: u64,
-    ability: Box<str>,
     draw: i64,
     result: OwnerDamageResult,
 }
@@ -9963,42 +10065,36 @@ impl ChannelRuntimeV1 {
         if before > registration.max_health {
             return Err(CarrierError::InvalidCreatureHealth);
         }
-        ledger
-            .entries
-            .retain(|e| self.contains_live_creature(e.actor));
-        if let Some(entry) = ledger
-            .entries
-            .iter()
-            .find(|e| e.actor == actor && e.ability == registration.ability)
-        {
-            if sequence < entry.sequence {
-                return Err(CarrierError::StaleAttackerSequence);
-            }
-            if sequence == entry.sequence {
-                if entry.ability != registration.ability || entry.draw != server_draw {
-                    return Err(CarrierError::PlanConflict);
+        // The live actor's slot drops its former occupant's entries; the other dead actors'
+        // entries go only when the ledger is full (Codex 4243039220).
+        ledger.entries.evict_stale_at(actor);
+        let known = match ledger.entries.get(actor, &*registration.ability) {
+            Some(entry) => {
+                if sequence < entry.sequence {
+                    return Err(CarrierError::StaleAttackerSequence);
                 }
-                return Ok(OwnerDamageResult {
-                    applied: false,
-                    ..entry.result
-                });
+                if sequence == entry.sequence {
+                    if entry.draw != server_draw {
+                        return Err(CarrierError::PlanConflict);
+                    }
+                    return Ok(OwnerDamageResult {
+                        applied: false,
+                        ..entry.result
+                    });
+                }
+                true
             }
-        }
-        if !ledger
-            .entries
-            .iter()
-            .any(|e| e.actor == actor && e.ability == registration.ability)
-        {
+            None => false,
+        };
+        if !known {
+            if ledger.entries.len() >= CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX {
+                ledger.entries.prune(|e| self.contains_live_creature(e));
+            }
             if ledger.entries.len() >= CREATURE_DEFENCE_MEMOS_PER_CHANNEL_MAX
-                || ledger.entries.iter().filter(|e| e.actor == actor).count()
-                    >= CREATUREAI0_DEFENCES_PER_CREATURE_MAX
+                || ledger.entries.actor_len(actor) >= CREATUREAI0_DEFENCES_PER_CREATURE_MAX
             {
                 return Err(CarrierError::AllocationFailed);
             }
-            ledger
-                .entries
-                .try_reserve(1)
-                .map_err(|_| CarrierError::AllocationFailed)?;
         }
         // Existing native authoring admits at most8 defenses; AI active actors ceiling64.
         // Aggregate current-owner ScopeRuntimeFence is required at the composition call.
@@ -10017,21 +10113,11 @@ impl ChannelRuntimeV1 {
             health_after: after,
         };
         let entry = CreatureSelfHealEntry {
-            actor,
             sequence,
-            ability,
             draw: server_draw,
             result,
         };
-        if let Some(old) = ledger
-            .entries
-            .iter_mut()
-            .find(|e| e.actor == actor && e.ability == registration.ability)
-        {
-            *old = entry
-        } else {
-            ledger.entries.push(entry)
-        }
+        ledger.entries.insert(actor, ability, entry);
         Ok(result)
     }
 }
@@ -10431,6 +10517,142 @@ struct NativeSummonLink {
     origin: NativeSummonOrigin,
     death: Option<NativeSummonDeath>,
 }
+/// A slot and its generation: the part of an [`ExactActorRef`] that tells this carrier's actors
+/// apart. A lookup by it still compares the whole reference.
+type NativeSummonActorKey = (u32, u64);
+fn native_summon_actor_key(actor: ExactActorRef) -> NativeSummonActorKey {
+    (actor.0.actor_local_id.0, actor.0.actor_local_generation.0)
+}
+/// SPAWN-CEILINGS-1 (Codex 4243039217): the native summon links, indexed so that finding,
+/// replacing or dropping a child's link and listing a parent's children cost the logarithm of the
+/// links, never a pass over all of them. Links keep their admission order (the order of the
+/// former list), so every per-parent and retirement pass visits them in the same order as before.
+///
+/// Equality compares the links in admission order, like the former list: not the ordinals nor
+/// `retire_cursor`, which only order the links and schedule the bounded retirement work.
+#[derive(Debug, Clone, Default)]
+struct NativeSummonLinks {
+    /// Every link by its admission ordinal.
+    links: BTreeMap<u64, NativeSummonLink>,
+    /// The admission ordinal of each child's link.
+    by_child: BTreeMap<NativeSummonActorKey, u64>,
+    /// The parent and admission ordinal of every link.
+    by_parent: BTreeSet<(NativeSummonActorKey, u64)>,
+    /// The admission ordinal of the next link.
+    next: u64,
+    /// The admission ordinal the next bounded retirement pass starts at
+    /// (`NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX`).
+    retire_cursor: u64,
+}
+impl PartialEq for NativeSummonLinks {
+    fn eq(&self, other: &Self) -> bool {
+        // The links in admission order, as the former list compared; `by_child` and `by_parent`
+        // are derived from `links`, and the ordinals only order them.
+        self.links.values().eq(other.links.values())
+    }
+}
+impl Eq for NativeSummonLinks {}
+impl NativeSummonLinks {
+    fn len(&self) -> usize {
+        self.links.len()
+    }
+    #[cfg(test)]
+    fn is_empty(&self) -> bool {
+        self.links.is_empty()
+    }
+    fn ordinal_of_child(&self, child: ExactActorRef) -> Option<u64> {
+        let ordinal = *self.by_child.get(&native_summon_actor_key(child))?;
+        self.links
+            .get(&ordinal)
+            .is_some_and(|link| link.child == child)
+            .then_some(ordinal)
+    }
+    /// The link whose child is exactly `child`.
+    fn child(&self, child: ExactActorRef) -> Option<&NativeSummonLink> {
+        self.links.get(&self.ordinal_of_child(child)?)
+    }
+    fn child_mut(&mut self, child: ExactActorRef) -> Option<&mut NativeSummonLink> {
+        let ordinal = self.ordinal_of_child(child)?;
+        self.links.get_mut(&ordinal)
+    }
+    /// The links whose parent is exactly `parent`, in admission order.
+    fn children(&self, parent: ExactActorRef) -> impl Iterator<Item = &NativeSummonLink> + '_ {
+        let key = native_summon_actor_key(parent);
+        self.by_parent
+            .range((key, 0)..=(key, u64::MAX))
+            .filter_map(|(_, ordinal)| self.links.get(ordinal))
+            .filter(move |link| link.parent == parent)
+    }
+    fn has_children(&self, parent: ExactActorRef) -> bool {
+        self.children(parent).next().is_some()
+    }
+    /// The links whose parent or child is `actor`, in admission order.
+    fn touching(&self, actor: ActorRef) -> Vec<&NativeSummonLink> {
+        let exact = ExactActorRef(actor);
+        let mut found = self
+            .ordinal_of_child(exact)
+            .into_iter()
+            .chain(
+                self.by_parent
+                    .range(
+                        (native_summon_actor_key(exact), 0)
+                            ..=(native_summon_actor_key(exact), u64::MAX),
+                    )
+                    .map(|(_, ordinal)| *ordinal),
+            )
+            .collect::<Vec<_>>();
+        found.sort_unstable();
+        found.dedup();
+        found
+            .into_iter()
+            .filter_map(|ordinal| self.links.get(&ordinal))
+            .filter(|link| link.parent.0 == actor || link.child.0 == actor)
+            .collect()
+    }
+    fn insert(&mut self, link: NativeSummonLink) -> Result<(), CarrierError> {
+        let child = native_summon_actor_key(link.child);
+        if self.by_child.contains_key(&child) {
+            return Err(CarrierError::PlanConflict);
+        }
+        let ordinal = self.next;
+        self.next = ordinal
+            .checked_add(1)
+            .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+        self.by_child.insert(child, ordinal);
+        self.by_parent
+            .insert((native_summon_actor_key(link.parent), ordinal));
+        self.links.insert(ordinal, link);
+        Ok(())
+    }
+    /// Drops the link whose child is exactly `child`.
+    fn remove_child(&mut self, child: ExactActorRef) -> Option<NativeSummonLink> {
+        let ordinal = self.ordinal_of_child(child)?;
+        let link = self.links.remove(&ordinal)?;
+        self.by_child.remove(&native_summon_actor_key(child));
+        self.by_parent
+            .remove(&(native_summon_actor_key(link.parent), ordinal));
+        Some(link)
+    }
+    /// The children of at most `budget` links from the retirement cursor on, wrapping once, and
+    /// the cursor after them.
+    fn retirement_window(&self, budget: usize) -> Result<(Vec<ExactActorRef>, u64), CarrierError> {
+        let mut window = Vec::new();
+        window
+            .try_reserve(budget.min(self.links.len()))
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let mut cursor = self.retire_cursor;
+        for (ordinal, link) in self
+            .links
+            .range(self.retire_cursor..)
+            .chain(self.links.range(..self.retire_cursor))
+            .take(budget)
+        {
+            window.push(link.child);
+            cursor = ordinal.saturating_add(1);
+        }
+        Ok((window, cursor))
+    }
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct NativeSummonDeath {
     pub(crate) child: ExactActorRef,
@@ -10444,12 +10666,7 @@ impl ChannelRuntimeV1 {
     ) -> Result<Option<ExactActorRef>, CarrierError> {
         self.carrier
             .validate_summon_actor(&self.continuity, actor)?;
-        Ok(self
-            .carrier
-            .native_summons
-            .iter()
-            .find(|l| l.child == actor)
-            .map(|l| l.parent))
+        Ok(self.carrier.native_summons.child(actor).map(|l| l.parent))
     }
     pub(crate) fn native_summon_master(&self, actor: ExactActorRef) -> Option<ExactActorRef> {
         self.native_summon_role(actor).ok().flatten()
@@ -10457,10 +10674,9 @@ impl ChannelRuntimeV1 {
     pub(crate) fn native_summon_count(&self, parent: ExactActorRef, target: Option<&str>) -> u32 {
         self.carrier
             .native_summons
-            .iter()
+            .children(parent)
             .filter(|l| {
-                l.parent == parent
-                    && self.contains_live_creature(l.child)
+                self.contains_live_creature(l.child)
                     && target.is_none_or(|t| l.target.as_ref() == t.as_bytes())
             })
             .count() as u32
@@ -10498,6 +10714,30 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::CreatureTargetMismatch);
         }
+        // The bounded pass above may not have reached this parent's links (Codex 4243039217):
+        // retire its own dead children, at most 16, so its links stay its live children and so
+        // at most 16 with the one admitted below.
+        let mut dead = [None; 16];
+        let mut count = 0;
+        for link in self.carrier.native_summons.children(parent) {
+            if count == 16 {
+                return Err(CarrierError::CapacityExceeded);
+            }
+            let index = self
+                .carrier
+                .validate_summon_actor(&self.continuity, link.child)?;
+            if matches!(
+                &self.carrier.slots[index],
+                Slot::CreatureOccupied { health: 0, .. }
+            ) {
+                dead[count] = Some(link.child);
+                count += 1;
+            }
+        }
+        if count > 0 {
+            self.carrier
+                .retire_dead_summons(&self.continuity, dead.iter().flatten().copied())?;
+        }
         if self.native_summon_count(parent, None) >= spec.total()
             || self.native_summon_count(parent, Some(spec.child_key())) >= spec.count()
         {
@@ -10513,10 +10753,6 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::CapacityExceeded);
         }
-        self.carrier
-            .native_summons
-            .try_reserve(1)
-            .map_err(|_| CarrierError::AllocationFailed)?;
         let target = copy_bounded_binding(spec.child_key().as_bytes())?;
         let origin = spec.origin.try_owned()?;
         let context = self.pinned_position_context();
@@ -10546,13 +10782,18 @@ impl ChannelRuntimeV1 {
             return Err(e);
         }
         let child = ExactActorRef(actor);
-        self.carrier.native_summons.push(NativeSummonLink {
+        if let Err(e) = self.carrier.native_summons.insert(NativeSummonLink {
             parent,
             child,
             target,
             origin,
             death: None,
-        });
+        }) {
+            self.carrier.slots = slots;
+            self.carrier.free_head = free;
+            self.carrier.occupied = occupied;
+            return Err(e);
+        }
         Ok(child)
     }
     /// Summon death has its own sealed native key/position, never an ordinary corpse/reward.
@@ -10586,8 +10827,52 @@ impl ChannelActorCarrier {
         }
     }
 
+    /// Seals the death of each dead child of `dead` and removes it, as
+    /// [`Self::project_native_summon_death_inner`] then [`Self::remove`] each, but drops the
+    /// vacated slots from the occupied index and the attacker leases in one pass each (Codex
+    /// 4243039217). On a failure the children removed so far stay removed, as before.
+    fn retire_dead_summons(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        dead: impl IntoIterator<Item = ExactActorRef>,
+    ) -> Result<(), CarrierError> {
+        let dead = dead.into_iter();
+        let mut vacated = Vec::new();
+        vacated
+            .try_reserve(dead.size_hint().0)
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        let mut result = Ok(());
+        for child in dead {
+            let removed = self
+                .project_native_summon_death_inner(continuity, child)
+                .and_then(|_| self.remove_keeping_indexes(continuity, child.0));
+            match removed {
+                Ok((_, index)) => {
+                    if vacated.try_reserve(1).is_err() {
+                        self.unindex_slot(index);
+                    } else {
+                        vacated.push(index);
+                    }
+                }
+                Err(e) => {
+                    result = Err(e);
+                    break;
+                }
+            }
+        }
+        vacated.sort_unstable();
+        if !vacated.is_empty() {
+            self.occupied.retain(|index| {
+                !usize::try_from(*index).is_ok_and(|index| vacated.binary_search(&index).is_ok())
+            });
+            self.attackers
+                .retain(|entry| vacated.binary_search(&entry.index).is_err());
+        }
+        result
+    }
+
     fn is_native_summon(&self, actor: ExactActorRef) -> bool {
-        self.native_summons.iter().any(|l| l.child == actor)
+        self.native_summons.child(actor).is_some()
             || self
                 .native_summon_deaths
                 .iter()
@@ -10609,12 +10894,12 @@ impl ChannelActorCarrier {
             return Ok(*death);
         }
         self.validate_summon_actor(continuity, actor)?;
-        let index = self
+        if let Some(death) = self
             .native_summons
-            .iter()
-            .position(|l| l.child == actor)
-            .ok_or(CarrierError::NotCreature)?;
-        if let Some(death) = self.native_summons[index].death {
+            .child(actor)
+            .ok_or(CarrierError::NotCreature)?
+            .death
+        {
             return Ok(death);
         }
         let receipt = self.committed_lethal_receipt_inner(continuity, actor.0)?;
@@ -10629,7 +10914,10 @@ impl ChannelActorCarrier {
                 floor: p.floor,
             },
         };
-        self.native_summons[index].death = Some(death);
+        self.native_summons
+            .child_mut(actor)
+            .ok_or(CarrierError::NotCreature)?
+            .death = Some(death);
         Ok(death)
     }
     /// Under the same exclusive physical owner turn as ordinary parent projection. A failure
@@ -10641,14 +10929,12 @@ impl ChannelActorCarrier {
     ) -> Result<(), CarrierError> {
         let mut children = [None; 16];
         let mut count = 0;
-        for link in &self.native_summons {
-            if link.parent == parent {
-                if count == 16 {
-                    return Err(CarrierError::CapacityExceeded);
-                }
-                children[count] = Some(link.child);
-                count += 1;
+        for link in self.native_summons.children(parent) {
+            if count == 16 {
+                return Err(CarrierError::CapacityExceeded);
             }
+            children[count] = Some(link.child);
+            count += 1;
         }
         if count == 0 {
             return Ok(());
@@ -10715,11 +11001,7 @@ impl ChannelActorCarrier {
             return Err(e);
         }
         for death in deaths {
-            if let Some(link) = self
-                .native_summons
-                .iter_mut()
-                .find(|l| l.child == death.child)
-            {
+            if let Some(link) = self.native_summons.child_mut(death.child) {
                 link.death = Some(death)
             }
         }
@@ -10822,28 +11104,33 @@ impl ChannelRuntimeV1 {
         {
             return Err(CarrierError::WrongScope);
         }
-        // Every dead child is retired, however many summoners there are (Codex 4242954089): the
-        // old fixed array of 64 refused the whole retirement, and with it every summon admission,
-        // once a 65th child was dead. The list holds links, bounded by `CREATUREAI0-RL-04`.
+        // A bounded pass (`SPAWNCEIL-RL-02`, Codex 4243039217): at most 256 links from where the
+        // previous call stopped, wrapping, so any number of dead children is retired over later
+        // calls without one call costing every link. It never refuses: the old fixed array of 64
+        // refused the whole retirement, and with it every summon admission, once a 65th child was
+        // dead (Codex 4242954089), and an admission retires its own parent's dead children.
+        let (window, cursor) = self
+            .carrier
+            .native_summons
+            .retirement_window(NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX)?;
         let mut dead = Vec::new();
-        for link in &self.carrier.native_summons {
+        dead.try_reserve(window.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        for child in window {
             let index = self
                 .carrier
-                .validate_summon_actor(&self.continuity, link.child)?;
+                .validate_summon_actor(&self.continuity, child)?;
             if matches!(
                 &self.carrier.slots[index],
                 Slot::CreatureOccupied { health: 0, .. }
             ) {
-                dead.try_reserve(1)
-                    .map_err(|_| CarrierError::AllocationFailed)?;
-                dead.push(link.child);
+                dead.push(child);
             }
         }
+        self.carrier.native_summons.retire_cursor = cursor;
         let count = dead.len();
-        for child in dead {
-            self.carrier
-                .project_native_summon_death_inner(&self.continuity, child)?;
-            self.carrier.remove(&self.continuity, child.0)?;
+        if count > 0 {
+            self.carrier.retire_dead_summons(&self.continuity, dead)?;
         }
         Ok(count)
     }
@@ -10890,10 +11177,7 @@ impl ChannelActorCarrier {
     ) -> Result<[Option<ExactActorRef>; 64], CarrierError> {
         let mut removed = [None; 64];
         let mut count = 0;
-        for link in &self.native_summons {
-            if link.parent.0 != actor && link.child.0 != actor {
-                continue;
-            }
+        for link in self.native_summons.touching(actor) {
             let child = self.validate_summon_actor(continuity, link.child)?;
             let parent = match self.validate_summon_actor(continuity, link.parent) {
                 Ok(index) => index,
@@ -14557,7 +14841,13 @@ mod selfheal_generation_guard_tests {
             Slot::CreatureOccupied { health: 200, .. }
         ));
         assert_eq!(ledger.entries.len(), 1);
-        assert_eq!(ledger.entries[0].sequence, 0);
+        assert_eq!(
+            ledger
+                .entries
+                .get(actor, "oteryn:ability.creature.boreth.fixture_heal")
+                .map(|entry| entry.sequence),
+            Some(0)
+        );
     }
 }
 
@@ -14715,24 +15005,17 @@ impl ChannelRuntimeV1 {
         // Existing removal cascades intrinsic children. Preflight every fallible current-slot
         // check before entering it; no mutation can occur between checks in this owner turn.
         let mut count = 0;
-        for link in &self.carrier.native_summons {
-            if link.parent == actor {
-                count += 1;
-                if count > 16 {
-                    return Err(CarrierError::CapacityExceeded);
-                }
-                let child = self
-                    .carrier
-                    .validate_summon_actor(&self.continuity, link.child)?;
-                self.carrier.assert_slot_spell_unreserved(child)?;
-                if self
-                    .carrier
-                    .native_summons
-                    .iter()
-                    .any(|l| l.parent == link.child)
-                {
-                    return Err(CarrierError::CreatureTargetMismatch);
-                }
+        for link in self.carrier.native_summons.children(actor) {
+            count += 1;
+            if count > 16 {
+                return Err(CarrierError::CapacityExceeded);
+            }
+            let child = self
+                .carrier
+                .validate_summon_actor(&self.continuity, link.child)?;
+            self.carrier.assert_slot_spell_unreserved(child)?;
+            if self.carrier.native_summons.has_children(link.child) {
+                return Err(CarrierError::CreatureTargetMismatch);
             }
         }
         self.carrier.remove(&self.continuity, actor.0).map(|_| ())
@@ -14801,8 +15084,7 @@ impl ChannelRuntimeV1 {
         Ok(self
             .carrier
             .native_summons
-            .iter()
-            .find(|l| l.child == actor)
+            .child(actor)
             .map(|l| l.origin.clone()))
     }
 }
@@ -14886,5 +15168,161 @@ mod native_callback_origin_tests {
         r.remove_test_actor(parent)
             .expect("valid native fixture operation must succeed");
         assert!(r.native_summon_origin(child).is_err());
+    }
+
+    /// `SPAWNCEIL-RL-02` (SPAWN-CEILINGS-1, Codex 4243039217): one retirement call examines at
+    /// most 256 links, from where the previous one stopped, so it never costs every link of 640;
+    /// the dead children it did not reach retire on later calls, and an admission first retires
+    /// its own parent's dead children, so the deferred ones never refuse a summon.
+    #[test]
+    fn summon_retirement_is_bounded_per_call_and_an_admission_retires_its_parent_first() {
+        const SUMMONERS: usize = 40;
+        const CHILDREN: usize = 16;
+        const LINKS: usize = SUMMONERS * CHILDREN;
+        const BUDGET: usize = NATIVE_SUMMON_RETIREMENT_LINKS_PER_CALL_MAX;
+        let mut r = super::tests::runtime(SUMMONERS * (CHILDREN + 1) + 8);
+        let b = r.binding();
+        let (f, stamp) = super::super::crystal_timer_fixture(
+            super::super::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.scope_generation(),
+        )
+        .expect("the fixture fence is current");
+        let spec = NativeSummonAdmissionSpec::qualified(
+            "oteryn:creature.gaz_haragoth",
+            "oteryn:creature.minion_of_gaz_haragoth",
+            1000,
+            0,
+            16,
+            16,
+            r.content_pin().server_artifact_digest(),
+        )
+        .expect("the summon spec qualifies");
+        let at = |i: usize, dx: usize, dy: usize| MovementLocalPosition {
+            x: 100 + i32::try_from(6 * (i % 20) + dx).expect("a small column"),
+            y: 100 + i32::try_from(6 * (i / 20) + dy).expect("a small row"),
+            floor: 7,
+        };
+        let mut parents = Vec::new();
+        let mut children = Vec::new();
+        for i in 0..SUMMONERS {
+            let parent = r
+                .admit_monster_lab_creature(at(i, 0, 0), "oteryn:creature.gaz_haragoth", 10000)
+                .expect("a summoner is admitted");
+            for k in 0..CHILDREN {
+                children.push((
+                    i,
+                    r.admit_native_summon(&f, stamp, parent, &spec, at(i, 1 + k % 4, 1 + k / 4))
+                        .expect("every summoner summons 16 children"),
+                ));
+            }
+            parents.push(parent);
+        }
+        assert_eq!(r.carrier.native_summons.len(), LINKS);
+        // A pass over live links examines 256 of them and retires none.
+        r.carrier.native_summons.retire_cursor = 0;
+        assert_eq!(r.retire_native_summons(&f, stamp), Ok(0));
+        assert_eq!(r.carrier.native_summons.retire_cursor, 256);
+        for &(_, child) in &children {
+            r.commit_monster_lab_damage(child, b"native-child-lethal", 1000)
+                .expect("a child dies");
+        }
+        // 640 dead children: one call retires 256 of them (ordinals 256..512, summoners 16..31).
+        assert_eq!(r.retire_native_summons(&f, stamp), Ok(BUDGET));
+        assert_eq!(r.carrier.native_summons.len(), LINKS - BUDGET);
+        assert_eq!(r.carrier.native_summons.retire_cursor, 512);
+        // Summoner 15's dead children (ordinals 240..256) lie past the next pass (ordinals
+        // 512..640, then wrapping, 0..128): its admission retires that pass and then them.
+        const LAST: usize = 15;
+        let last = parents[LAST];
+        let summoned = r
+            .admit_native_summon(&f, stamp, last, &spec, at(LAST, 1, 1))
+            .expect("deferred dead children never refuse a summon");
+        assert_eq!(r.native_summon_role(summoned), Ok(Some(last)));
+        assert_eq!(r.native_summon_count(last, None), 1);
+        assert_eq!(
+            r.carrier.native_summons.len(),
+            LINKS - 2 * BUDGET - CHILDREN + 1
+        );
+        assert_eq!(r.carrier.native_summons.retire_cursor, 128);
+        for &(i, child) in &children {
+            if i == LAST {
+                assert!(r.native_summon_role(child).is_err());
+            }
+        }
+        // The remaining dead children (summoners 8..14) retire on the next call; then nothing.
+        let remaining = children
+            .iter()
+            .filter(|(_, child)| r.native_summon_role(*child).is_ok())
+            .count();
+        assert_eq!(remaining, 7 * CHILDREN);
+        assert_eq!(r.retire_native_summons(&f, stamp), Ok(remaining));
+        assert_eq!(r.retire_native_summons(&f, stamp), Ok(0));
+        assert_eq!(r.carrier.native_summons.len(), 1);
+        for &parent in &parents {
+            assert_eq!(
+                r.native_summon_count(parent, None),
+                u32::from(parent == last)
+            );
+        }
+    }
+
+    /// SPAWN-CEILINGS-1 (Codex 4243039220): the memo table answers by exact creature and entry
+    /// past the D57 envelope; a creature's first touch drops only what its slot's former
+    /// occupant left, and the full-table prune drops only dead creatures' memos.
+    #[test]
+    fn actor_memo_table_is_keyed_by_exact_creature_and_drops_stale_memos_by_slot() {
+        const CREATURES: usize = 300;
+        const ENTRIES: usize = CREATUREAI0_SUMMON_ENTRIES_PER_CREATURE_MAX;
+        let mut r = super::tests::runtime(CREATURES + 8);
+        let mut table = ActorMemoTable::<usize, u64>::default();
+        let mut actors = Vec::new();
+        for i in 0..CREATURES {
+            let actor = ExactActorRef(
+                r.carrier
+                    .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.boreth", 1000)
+                    .expect("a creature is admitted"),
+            );
+            for entry in 0..ENTRIES {
+                assert_eq!(
+                    table.insert(actor, entry, (i * ENTRIES + entry) as u64),
+                    None
+                );
+            }
+            actors.push(actor);
+        }
+        assert_eq!(table.len(), CREATURES * ENTRIES);
+        for (i, &actor) in actors.iter().enumerate() {
+            assert_eq!(table.actor_len(actor), ENTRIES);
+            assert_eq!(table.get(actor, &3), Some(&((i * ENTRIES + 3) as u64)));
+        }
+        assert_eq!(
+            table.insert(actors[7], 3, 1),
+            Some((7 * ENTRIES + 3) as u64)
+        );
+        assert_eq!(table.len(), CREATURES * ENTRIES);
+        // The first creature's slot is taken again: its memos never answer the new occupant,
+        // and the new occupant's first touch drops exactly them.
+        r.remove_test_actor(actors[0]).expect("removed");
+        let next = ExactActorRef(
+            r.carrier
+                .admit_creature(&r.continuity, ActorState(0), "oteryn:creature.boreth", 1000)
+                .expect("a creature is admitted"),
+        );
+        assert_eq!(next.actor_local_id(), actors[0].actor_local_id());
+        assert_eq!(table.get(next, &3), None);
+        assert_eq!(table.actor_len(next), 0);
+        assert_eq!(table.evict_stale_at(actors[1]), 0);
+        assert_eq!(table.evict_stale_at(next), ENTRIES);
+        assert_eq!(table.len(), (CREATURES - 1) * ENTRIES);
+        assert_eq!(table.get(actors[0], &3), None);
+        // A dead creature whose slot nobody reuses keeps its memos until the full-table prune.
+        r.remove_test_actor(actors[1]).expect("removed");
+        assert_eq!(table.insert(next, 0, 9), None);
+        assert_eq!(table.len(), (CREATURES - 1) * ENTRIES + 1);
+        table.prune(|actor| r.contains_live_creature(actor));
+        assert_eq!(table.len(), (CREATURES - 2) * ENTRIES + 1);
+        assert_eq!(table.actor_len(actors[1]), 0);
+        assert_eq!(table.actor_len(actors[2]), ENTRIES);
+        assert_eq!(table.get(next, &0), Some(&9));
     }
 }
