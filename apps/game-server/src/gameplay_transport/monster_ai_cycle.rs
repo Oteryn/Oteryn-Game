@@ -149,7 +149,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // CREATURE-MOVE-1: a think's one cardinal step (chase, flee or wander within the spawn
         // radius) is committed here when its destination is a walkable, open, ordinary cell.
         // Lock order: runtime, spell states, attack, then the door runtime (read only).
-        let doors = self.door.lock().await.blocking_cells().clone();
+        // Every door cell, open or closed: a creature never stands in a doorway (CREATURE-DOOR-1).
+        let doors = self.door.lock().await.collision_cells().clone();
         let cells = room.movement_cells();
         let _ = melee_owner.creature_ai.run_due_thinks(
             &mut runtime,
@@ -322,7 +323,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 /// CREATURE-MOVE-1 (CREATURE-AI-0 §5.3, R2): whether a creature may step onto `cell`. It is a
-/// Walkable cell of the qualified room, no closed door covers it, and it is neither a
+/// Walkable cell of the qualified room, no door cell (open or closed) covers it, and it is neither a
 /// protection-zone nor a floor-change tile. A creature never opens a door and never changes
 /// floors by a step. The check reads only; the step is committed by the Channel owner.
 ///
@@ -582,6 +583,12 @@ mod tests {
         assert!(cell_open(true, false, Some((false, false))));
         assert!(!cell_open(false, false, Some((false, false))), "blocked");
         assert!(!cell_open(true, true, Some((false, false))), "closed door");
+        // `doors` holds every door cell, open or closed, so an open doorway is refused too: a
+        // creature standing there would not count in the door-close occupancy.
+        assert!(
+            !cell_open(true, true, Some((false, false))),
+            "open door cell (CREATURE-DOOR-1)"
+        );
         assert!(
             !cell_open(true, false, Some((true, false))),
             "protection zone"
