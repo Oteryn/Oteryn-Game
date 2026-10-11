@@ -213,7 +213,7 @@ impl NpcDataCatalogue {
     pub fn records(
         &self,
     ) -> impl Iterator<Item = (&ProjectV2DefinitionRef, &ProjectV2Declaration)> {
-        self.declarations.iter().filter_map(|(reference, _)| {
+        self.declarations.keys().filter_map(|reference| {
             self.declaration(reference)
                 .map(|declaration| (reference, declaration))
         })

@@ -1016,14 +1016,13 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
         ])
         .map_err(debug)?;
         let context = xp_request(1)?.context;
-        let mut kill_revision = 1;
-        for (tag, name) in [
+        for (kill_revision, (tag, name)) in (1_u64..).zip([
             (80, "rat"),
             (81, "rat"),
             (82, "rat"),
             (83, "wolf"),
             (84, "wolf"),
-        ] {
+        ]) {
             let outcome = harness
                 .root
                 .commit_bestiary_kill(
@@ -1044,7 +1043,6 @@ fn bestiary_kill_counters_earn_points_and_admit_assignments() -> TestResult {
                 matches!(outcome, BestiaryKillOutcome::Committed(_)),
                 "{outcome:?}"
             );
-            kill_revision += 1;
         }
         // Only the completed rat entry earns points: its 300 buy wound stage 1 (240); zap
         // (320) would then need 560.

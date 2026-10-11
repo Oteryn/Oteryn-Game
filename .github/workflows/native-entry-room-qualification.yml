@@ -46,7 +46,7 @@ jobs:
         run: test "$(git -C _platform rev-parse HEAD)" = eb65ce453949a352fdc0e3ed0132d2cde0084fb7
 
       - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.94.0 --profile minimal
+        run: rustup toolchain install 1.95.0 --profile minimal
 
       - name: Issue WorldId and qualify the committed room
         env:

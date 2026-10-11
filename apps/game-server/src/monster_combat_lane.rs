@@ -6710,3 +6710,173 @@ mod project_native_registration_membership_tests {
         assert_eq!(lane.actors.len(), 1);
     }
 }
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod native_ability_coverage {
+    //! Data-coverage gate: every authored monster attack in `content/` must have a runtime owner
+    //! constructor in this lane, or be listed in the reviewed baseline of known gaps.
+    use super::*;
+    use std::collections::BTreeSet;
+    type Key = (String, String);
+    fn root() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content")
+    }
+    fn shards(dir: &str) -> Vec<serde_json::Value> {
+        let mut paths: Vec<_> = std::fs::read_dir(root().join(dir))
+            .expect("content dir")
+            .map(|e| e.expect("entry").path())
+            .filter(|p| {
+                p.file_name()
+                    .and_then(|n| n.to_str())
+                    .is_some_and(|n| n.contains("-") && n.ends_with(".json") && n != "index.json")
+                    && !p.to_string_lossy().contains("spell-native")
+            })
+            .collect();
+        paths.sort();
+        paths
+            .into_iter()
+            .map(|p| serde_json::from_slice(&std::fs::read(p).expect("read")).expect("json"))
+            .collect()
+    }
+    fn refs(v: &serde_json::Value, out: &mut BTreeSet<Key>) {
+        match v {
+            serde_json::Value::Object(m) => {
+                if let (Some(f), Some(k), Some(_)) =
+                    (m.get("family"), m.get("key"), m.get("revision"))
+                    && let (Some(f), Some(k)) = (f.as_str(), k.as_str())
+                {
+                    out.insert((f.to_owned(), k.to_owned()));
+                }
+                m.values().for_each(|x| refs(x, out));
+            }
+            serde_json::Value::Array(a) => a.iter().for_each(|x| refs(x, out)),
+            _ => {}
+        }
+    }
+    struct Entry {
+        record: ProjectReferenceRecord,
+        profile: ProjectV2AuthoringProfile,
+        refs: BTreeSet<Key>,
+    }
+    fn load() -> BTreeMap<Key, Entry> {
+        let mut all = BTreeMap::new();
+        for dir in [
+            "creatures/definitions",
+            "behaviors",
+            "abilities/definitions",
+            "abilities/effects",
+            "abilities/formulas",
+        ] {
+            for shard in shards(dir) {
+                let Some(rows) = shard["records"].as_array() else {
+                    continue;
+                };
+                for r in rows {
+                    let (Some(def), Some(auth)) = (r.get("definition"), r.get("authoring")) else {
+                        continue;
+                    };
+                    let Ok(record) = serde_json::from_value::<ProjectReferenceRecord>(def.clone())
+                    else {
+                        continue;
+                    };
+                    let Ok(data) = serde_json::from_value::<Data>(auth.clone()) else {
+                        continue;
+                    };
+                    let Ok(target) = serde_json::from_value::<Ref>(def["identity"].clone()) else {
+                        continue;
+                    };
+                    let mut refs_set = BTreeSet::new();
+                    refs(def, &mut refs_set);
+                    refs(auth, &mut refs_set);
+                    all.insert(
+                        (format!("{:?}", target.family), target.key.clone()),
+                        Entry {
+                            record,
+                            profile: ProjectV2AuthoringProfile { target, data },
+                            refs: refs_set,
+                        },
+                    );
+                }
+            }
+        }
+        all
+    }
+    /// Known set of authored attacks with no source constructor (`UnsupportedShape`): the exact
+    /// count is pinned. Any new authored attack that is not qualified, or any fix that qualifies
+    /// one of them, changes the histogram and must update this baseline in the same change.
+    #[test]
+    fn authored_monster_attacks_have_a_runtime_source_or_are_in_the_pinned_gap_set() {
+        let all = load();
+        let creatures: Vec<_> = all.iter().filter(|(k, _)| k.0 == "Creature").collect();
+        let mut stats: BTreeMap<String, usize> = BTreeMap::new();
+        let mut gaps: Vec<String> = Vec::new();
+        for (ck, ce) in creatures {
+            let mut seen = BTreeSet::new();
+            let mut todo = vec![ck.clone()];
+            while let Some(k) = todo.pop() {
+                if !seen.insert(k.clone()) {
+                    continue;
+                }
+                if let Some(e) = all.get(&k) {
+                    for r in &e.refs {
+                        if !matches!(r.0.as_str(), "Creature" | "Item" | "Loot" | "Presentation") {
+                            todo.push(r.clone());
+                        }
+                    }
+                }
+            }
+            let records: Vec<_> = seen
+                .iter()
+                .filter_map(|k| all.get(k))
+                .map(|e| e.record.clone())
+                .collect();
+            let profiles: Vec<_> = seen
+                .iter()
+                .filter_map(|k| all.get(k))
+                .map(|e| e.profile.clone())
+                .collect();
+            let ProjectReferenceRecord::Creature { identity, .. } = &ce.record else {
+                continue;
+            };
+            let cref = Ref {
+                family: ProjectV2Family::Creature,
+                key: identity.key.clone(),
+                revision: identity.revision.clone(),
+            };
+            let Some(Data::Behavior(b)) = profiles
+                .iter()
+                .find(|p| p.target.family == ProjectV2Family::Behavior)
+                .map(|p| &p.data)
+            else {
+                *stats.entry("no-behavior".to_owned()).or_default() += 1;
+                continue;
+            };
+            for (i, a) in b.attacks.iter().enumerate() {
+                let melee = profiles.iter().any(|p| p.target == a.ability && matches!(&p.data, Data::Ability(x) if x.details.as_ref().is_some_and(|d| d.kind == ProjectV2AbilityKind::Melee)));
+                let r = if melee {
+                    MeleeSource::from_native(&cref, i, &records, &profiles, [0; 32]).map(|_| ())
+                } else {
+                    SpellSource::from_native(&cref, i, &records, &profiles, [0; 32]).map(|_| ())
+                };
+                if r.is_err() {
+                    gaps.push(format!("{} #{} {} {:?}", cref.key, i, a.ability.key, r));
+                }
+                *stats
+                    .entry(format!("{}:{:?}", if melee { "melee" } else { "spell" }, r))
+                    .or_default() += 1;
+            }
+        }
+        gaps.sort();
+        eprintln!("GAPS {}\n{}", gaps.len(), gaps.join("\n"));
+        eprintln!("COVERAGE {stats:?}");
+        let expected: BTreeMap<String, usize> = [
+            ("melee:Ok(())", 1689),
+            ("spell:Err(UnsupportedShape)", 116),
+            ("spell:Ok(())", 4198),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.to_owned(), v))
+        .collect();
+        assert_eq!(stats, expected);
+    }
+}
