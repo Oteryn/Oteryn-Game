@@ -38,6 +38,7 @@ A player moves between z-levels on bundle worlds using the catalogue `floor_chan
 
 - PROVEN: ADR-0021 and the world bundle format: floor changes come from the catalogue fact, not a bundle family.
 - PROVEN: destination rules ported from `source_floor_change.rs` (Canary queryDestination); sealed `SourceStepCommitProof` reused.
+- NARROWED: the floor-change facts are server-build-bound tables (`floor_catalogue.rs`, generated from `content/world` and kept equal to it by the `catalogue_matches_content` test at the repository revision this PR merges at), not semantics authenticated by the bundle digest. A bundle compiled from a content revision whose floor-change catalogue differs from the server build resolves against the server's tables. This is accepted for MAP-FLOOR-1 and does not claim ADR-0021 D189 / `OTERYN_WORLD_BUNDLE_FORMAT_V1` digest-authenticated catalogue semantics. Named follow-up FLOOR-FACTS-BUNDLE-1: encode the floor-change facts (and their collision fact) in a versioned bundle field so the digest authenticates them; no bundle schema change is made here.
 - UNKNOWN: the source height-3 climb rule (the bundle carries no height facts); not modelled.
 
 ## Acceptance criteria
@@ -46,6 +47,7 @@ A player moves between z-levels on bundle worlds using the catalogue `floor_chan
 - [x] Step commit through the proof on both step paths; stale proof refused.
 - [x] Catalogue drift test against content/world.
 - [x] Scripted-peer player-bot test.
+- [ ] FLOOR-FACTS-BUNDLE-1 (bundle-encoded floor-change facts): deferred, not part of this task.
 - [ ] Real-node player-bot and PostgreSQL integration: not done (see Excluded scope).
 
 ## Excluded scope
