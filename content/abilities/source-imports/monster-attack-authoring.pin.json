@@ -1,0 +1,32 @@
+{
+  "meaning": "Numbers are donor-attested (Canary/Crystal pinned revisions) and carry no Global verification; records without a closed donor derivation stay explicitly unavailable.",
+  "profile_artifact": {
+    "path": "content/creatures/definitions/spell-native-profiles.json",
+    "record_count": 1870,
+    "schema": "OTERYN_NATIVE_CREATURE_PROFILES/v1",
+    "sha256": "1a3cb27567930e34f99ff916ab105e2d73afd833d695ded8505cd2c51b1344bc",
+    "source_definitions_sha256": "98adaf921fe5b262e3e5408874a7efc92d0eab12335a3bc7fd38ec6911049ad3"
+  },
+  "qualification": "DONOR_ATTESTED_NOT_GLOBAL_VERIFIED",
+  "records": {
+    "authored": 5115,
+    "count": 5776,
+    "path": "content/abilities/source-imports/monster-attack-authoring.jsonl",
+    "schema": "OTERYN_MONSTER_ATTACK_AUTHORING/v1",
+    "sha256": "7a093723941be95526566c52f84fb7737d1c687f48a606a5ac21f62ea194d159",
+    "unavailable": 661,
+    "unavailable_by_reason": {
+      "attack_count_differs_from_donor": 24,
+      "conflicting_creature_bindings": 33,
+      "donor_ability_has_no_effects": 36,
+      "donor_health_conflict": 295,
+      "no_unique_donor_bundle": 269,
+      "source_provenance_ambiguous": 4
+    }
+  },
+  "schema": "OTERYN_MONSTER_ATTACK_AUTHORING_PIN/v1",
+  "source_archive": {
+    "path": "docs/agents/evidence/monster-completion-final-20261002/prepared-population.tar.gz",
+    "sha256": "f8e442796f20e9d92066a36f94b0992b1aefd2539e7d592e42b9e76a6bc68356"
+  }
+}
