@@ -15,6 +15,7 @@
 //! - **Overlay.** The Channel overlay stays empty until MAP-CUTOVER-1c, so no added entry has
 //!   facts and every object revision is 0.
 
+use super::floor::palette_mask;
 use super::overlay::{AddedItem, TilePos};
 use super::view::{self, EntryFacts, MapFacts, placement_key};
 use super::{LoadError, palette_appearance};
@@ -225,7 +226,12 @@ fn palette_facts(
         facts.definition = MapDefinition::Item(reference);
         facts.blocks_projectile = definition.blocks_projectile;
         facts.pickupable = definition.pickupable;
-        solid = definition.solid != Some(false);
+        // A definition that does not say blocks, unless the entry is a catalogue floor change
+        // (stairs, a hole): the compiler routes those to Item entries that production
+        // definitions leave without a solidity fact, and they are walkable by nature.
+        solid = definition
+            .solid
+            .unwrap_or_else(|| palette_mask(Family::Item, &entry.key) == 0);
     }
     Ok(PaletteFacts {
         family: entry.family,
@@ -269,5 +275,37 @@ impl MapFacts for BundleFacts {
 
     fn object_revision(&self, _placement_key: u64) -> u64 {
         0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used)]
+    use super::*;
+    use crate::foundation::{ChannelId, WorldId};
+    use crate::map::boot::{boot, tests as fixture};
+
+    /// Production item definitions carry no solidity fact: a stair routed to an Item entry is
+    /// still walkable through its catalogue floor change, a box without the fact still blocks.
+    #[test]
+    fn floor_change_items_without_a_solidity_fact_are_walkable() {
+        let (bytes, load) = fixture::floor_bundle();
+        let unknown = |key: &str| {
+            fixture::floor_items(key).map(|definition| ItemDefinition {
+                solid: None,
+                ..definition
+            })
+        };
+        let world = boot(
+            &bytes,
+            &fixture::floor_pins(load),
+            WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).expect("id"),
+            ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2]).expect("id"),
+            unknown,
+        )
+        .expect("boot");
+        let at = |x, floor| TilePos { x, y: 0, floor };
+        assert!(world.enterable(at(1, -8)), "east stair");
+        assert!(!world.enterable(at(1, -7)), "box");
     }
 }
