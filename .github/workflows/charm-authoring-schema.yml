@@ -57,6 +57,6 @@ jobs:
         working-directory: .
         run: test -z "$(git status --short --untracked-files=all)"
 
-  # `charm_authoring.py capture` needs the network (tibia.fandom.com) and a pinned Canary
+  # `charm_authoring.py capture` needs the network (tibia.fandom.com) and a pinned reference-engine
   # checkout, which this CI does not fetch; like the store census it is run locally and its
   # result is the committed `samples/charm-sources-2026-09-29.json`.

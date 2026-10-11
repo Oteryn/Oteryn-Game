@@ -26,7 +26,7 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "a9e9fcb9e64b8f8f907f783974d6af17b9673c8b"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "cb48993d2f1f2aed34a472e66437e82b91f5d2c0"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "eda4b9f3a006633328ffd48bd64c791274b50b08"
       EXPECTED_MERGE_GATE_BLOB: "f2a6a873901c1aa4ae674cdf5d4619427cd25e33"
     steps:
