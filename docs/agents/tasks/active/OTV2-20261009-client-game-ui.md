@@ -64,17 +64,20 @@ must not be claimed as complete.
   retains its prior numeric value across Apply/restart and the native redraw
   scheduler consumes the enabled/disabled result.
 - Action bars have nine independent 50-slot rows and two Chat On/Off chords.
-  Context assignment and Clear are available. The settings lock row remains
-  disabled because pointer drag/drop is not implemented, and the observed single
-  trailing lock per nonempty edge group remains open. The exact six observed
-  context-category labels are present and unsupported categories are disabled
-  instead of fabricated.
+  Global lock migration, the observed single trailing lock per nonempty edge
+  group, clear and primary-button move/swap primitives are covered against
+  in-memory session assignments. Production still has no authoritative
+  spell/object assignment source, so assignment menus, binding/item-amount/
+  tooltip controls, clear controls and both lock surfaces stay disabled and are
+  not counted as reachable behavior. The exact six observed context-category
+  labels are present and unsupported categories are disabled instead of
+  fabricated.
 - Manual screenshot hotkey captures the real renderer, optionally crops the game
   viewport, writes lossless non-overwriting PNG and reports success/failure. The
   17 automatic event triggers remain disabled without an event pipeline.
-- Help exposes the observed local-data order. Options export/import and confirmed
-  reset are real; minimap/support destinations stay disabled without a verified
-  format/route.
+- Help exposes the observed local-data order. Options export and confirmed reset
+  are real; the combined options/minimap import, minimap export and unsupported
+  support destinations stay disabled without an honest format/route.
 - Settings migration preserves legacy action rows, sound keys and prior wide FPS
   values. Exact untouched v2 single-Stop maps upgrade to the 49/38 reference
   matrices while customized and explicitly cleared maps stay unchanged.
@@ -83,11 +86,10 @@ must not be claimed as complete.
 
 ## Acceptance evidence and next actions
 
-The current uncommitted tree passes 178 client-library, 108 native-binary and 5
-launcher tests, strict client all-target Clippy, 37 renderer tests and strict
-renderer Clippy, governance validation/policy tests, rustfmt and
-`git diff --check`. These checks must be repeated on the final committed and
-main-merged candidate. The native audit must then be built and run from a fresh exact-SHA
+The current committed client tree passes 190 client-library, 158 native-binary
+and 5 launcher tests, strict client all-target Clippy, rustfmt and
+`git diff --check`. These checks must be repeated on any repaired final
+candidate. The native audit must then be built and run from a fresh exact-SHA
 checkout on the authorized owner Windows machine; verify all 20 manifest entries
 and captures before launching that same binary for the owner. The existing dirty
 checkout at `C:\Users\barte\Downloads\oteryn-client-main-20261007` must not be
@@ -108,9 +110,8 @@ one AUTHORING batch. CI on an older head never qualifies a successor.
 - Mouse preset/loot semantics, most Console and Game Window filters, graphics
   engine/AA/integer scaling, non-ambient effects, all audio families,
   Misc/Gameplay options and automatic screenshots remain pending.
-- Action-bar global trailing lock placement needs exact reference composition;
-  Clear/profile-remove confirmation semantics and edge-master behavior are not
-  reference-proven.
+- Action-bar production assignment sourcing remains absent; Clear/profile-remove
+  confirmation semantics and edge-master behavior are not reference-proven.
 - HUD condition projection/ordering, native visual comparison, populated module
   states and platform-specific graphics/audio choices remain open.
 - Graphics Engine and Sound Device need real platform/runtime enumeration; their
