@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 lane_id: decanary
 base_branch: main
 branch: claude/decanary-game-1-20261011
-pr: 0
+pr: 1985
 base_sha: 3ce431413
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
