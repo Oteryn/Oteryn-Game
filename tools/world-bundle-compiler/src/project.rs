@@ -1,6 +1,8 @@
 //! World Project families the compiler reads besides the B3 placements (ADR-0021 §4.3, §4.6):
 //! the World record, `Transition.Teleport`, the House catalogue, the minimap draft areas, the
-//! spawn sources (`Spawn.Source`, format v3) and the creature facts the spawns are checked with.
+//! spawn sources (`Spawn.Source`, format v3) and the creature facts the spawns are checked with,
+//! and the NPC placements (`Npc.Placement`, format v4) with the NPC, Dialogue and Service records
+//! they are admitted by (decision NPC-PLACE-1 §5, §6).
 //!
 //! Every position stays in the project frame `global-target-2026-09-27` (`floor` = legacy `z`)
 //! until the compiler maps it (§4.3).
@@ -31,6 +33,54 @@ pub struct Families {
     pub spawns: Vec<SpawnSource>,
     /// Creature definition key to the facts a spawn point is checked with.
     pub creatures: BTreeMap<String, CreatureFacts>,
+    /// NPC definition key to its references (NPC-PLACE-1 §5 item 1).
+    pub npcs: BTreeMap<String, NpcFacts>,
+    /// Every Dialogue record, as the reference an NPC names it by.
+    pub dialogues: BTreeSet<Reference>,
+    /// Every Service record, as the reference an NPC names it by (family `Service`).
+    pub services: BTreeSet<Reference>,
+    /// The travel routes of the `Service.Travel` records, in file order (§6).
+    pub routes: Vec<TravelRoute>,
+    /// `Npc.Placement` records in file order, positions in the project frame.
+    pub npc_placements: Vec<NpcPlacement>,
+    /// The family's held list (§4.3): NPC key and reason, in file order.
+    pub npc_source_held: Vec<(String, String)>,
+    /// `npc::catalogue_sha256` of the content tree the NPC, Dialogue and Service records were
+    /// read from; `None` is the empty catalogue.
+    pub catalogue_sha256: Option<String>,
+}
+
+/// A typed definition reference `{family, key, revision}`.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Reference {
+    pub family: String,
+    pub key: String,
+    pub revision: String,
+}
+
+/// What NPC admission needs of an NPC definition (`NpcServiceModel`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NpcFacts {
+    pub dialogue: Option<Reference>,
+    pub services: Vec<Reference>,
+}
+
+/// One route of a `Service.Travel` record: a route key is unique only within its Service.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TravelRoute {
+    pub service: String,
+    pub route: String,
+    pub destination: LegacyPosition,
+}
+
+/// One `Npc.Placement` record (NPC-PLACE-1 §4.1).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NpcPlacement {
+    pub key: String,
+    pub npc: String,
+    pub cell: LegacyPosition,
+    pub direction: Direction,
 }
 
 /// One point of a spawn source: a creature definition, a cell, a direction and a respawn delay.
@@ -253,6 +303,16 @@ struct Identity {
     key: String,
 }
 
+fn direction(text: &str) -> Result<Direction, Error> {
+    match text {
+        "north" => Ok(Direction::North),
+        "east" => Ok(Direction::East),
+        "south" => Ok(Direction::South),
+        "west" => Ok(Direction::West),
+        other => Err(format(format!("direction `{other}`"))),
+    }
+}
+
 #[derive(Deserialize)]
 struct SpawnShard {
     coordinate_frame: String,
@@ -302,13 +362,7 @@ impl Families {
                 if !(spawn::MIN_RESPAWN_MS..=spawn::MAX_RESPAWN_MS).contains(&point.respawn_ms) {
                     return limit("respawn delay outside CREATUREAI0-RL-13");
                 }
-                let direction = match point.direction.as_str() {
-                    "north" => Direction::North,
-                    "east" => Direction::East,
-                    "south" => Direction::South,
-                    "west" => Direction::West,
-                    other => return Err(format(format!("spawn direction `{other}`"))),
-                };
+                let direction = direction(&point.direction)?;
                 points.push(SpawnPoint {
                     creature: point.creature,
                     cell: (point.cell.x, point.cell.y, point.cell.floor),
@@ -355,6 +409,197 @@ impl Families {
             if self.creatures.insert(key.to_owned(), facts).is_some() {
                 return Err(format(format!("Creature key {key} given twice")));
             }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Deserialize)]
+struct Revisioned {
+    key: String,
+    revision: String,
+}
+
+#[derive(Deserialize)]
+struct NpcRecord {
+    identity: Revisioned,
+    #[serde(default)]
+    dialogue: Option<Reference>,
+    #[serde(default)]
+    services: Vec<Reference>,
+}
+
+#[derive(Deserialize)]
+struct Identified {
+    identity: Revisioned,
+}
+
+#[derive(Deserialize)]
+struct ServiceRecord {
+    identity: Revisioned,
+    #[serde(default)]
+    routes: Vec<RouteRecord>,
+}
+
+#[derive(Deserialize)]
+struct RouteRecord {
+    key: String,
+    destination: Position,
+}
+
+#[derive(Deserialize)]
+struct PlacementRecord {
+    identity: Identity,
+    npc: String,
+    cell: Cell,
+    direction: String,
+}
+
+#[derive(Deserialize)]
+struct PlacementShard {
+    coordinate_frame: String,
+    family: String,
+    records: Vec<Record<PlacementRecord>>,
+}
+
+#[derive(Deserialize)]
+struct HeldEntry {
+    npc: String,
+    reason: String,
+}
+
+#[derive(Deserialize)]
+struct HeldList {
+    schema: String,
+    family: String,
+    coordinate_frame: String,
+    held: Vec<HeldEntry>,
+}
+
+/// The closed reasons of the family's held list (NPC-PLACE-1 §4.3).
+const SOURCE_HOLDS: [&str; 4] = [
+    "NO_PLACEMENT_SOURCE",
+    "POSITION_CONFLICT",
+    "SCHEDULE_VARIANT",
+    "SHARED_CELL",
+];
+
+impl Families {
+    /// Adds the records of one NPC definitions shard. A key given twice fails.
+    pub fn add_npcs(&mut self, shard: &[u8]) -> Result<(), Error> {
+        let shard: Shard<Record<NpcRecord>> = parse(shard, "NPC shard")?;
+        if shard.family != "NPC" {
+            return Err(format("not an NPC shard"));
+        }
+        for record in shard.records {
+            let npc = record.declaration;
+            let facts = NpcFacts {
+                dialogue: npc.dialogue,
+                services: npc.services,
+            };
+            if self.npcs.insert(npc.identity.key.clone(), facts).is_some() {
+                return Err(format(format!("NPC key {} given twice", npc.identity.key)));
+            }
+        }
+        Ok(())
+    }
+
+    /// Adds the records of one Dialogue definitions shard.
+    pub fn add_dialogues(&mut self, shard: &[u8]) -> Result<(), Error> {
+        let shard: Shard<Record<Identified>> = parse(shard, "Dialogue shard")?;
+        if shard.family != "Dialogue" {
+            return Err(format("not a Dialogue shard"));
+        }
+        for record in shard.records {
+            let Revisioned { key, revision } = record.declaration.identity;
+            let family = "Dialogue".to_owned();
+            if !self.dialogues.insert(Reference {
+                family,
+                key: key.clone(),
+                revision,
+            }) {
+                return Err(format(format!("Dialogue {key} given twice")));
+            }
+        }
+        Ok(())
+    }
+
+    /// Adds the records of one Service shard (`Service.Trade` or `Service.Travel`), and the
+    /// routes of a travel record. Every Service record is named by the family `Service`.
+    pub fn add_services(&mut self, shard: &[u8]) -> Result<(), Error> {
+        let shard: Shard<Record<ServiceRecord>> = parse(shard, "Service shard")?;
+        if !shard.family.starts_with("Service.") {
+            return Err(format("not a Service shard"));
+        }
+        for record in shard.records {
+            let ServiceRecord { identity, routes } = record.declaration;
+            let reference = Reference {
+                family: "Service".to_owned(),
+                key: identity.key.clone(),
+                revision: identity.revision,
+            };
+            if !self.services.insert(reference) {
+                return Err(format(format!("Service {} given twice", identity.key)));
+            }
+            let mut keys = BTreeSet::new();
+            for route in routes {
+                if !keys.insert(route.key.clone()) {
+                    return Err(format(format!(
+                        "route {} given twice in {}",
+                        route.key, identity.key
+                    )));
+                }
+                self.routes.push(TravelRoute {
+                    service: identity.key.clone(),
+                    route: route.key,
+                    destination: route.destination.legacy()?,
+                });
+            }
+        }
+        Ok(())
+    }
+
+    /// Adds the records of one `Npc.Placement` shard. A record key given twice fails.
+    pub fn add_npc_placements(&mut self, shard: &[u8]) -> Result<(), Error> {
+        let shard: PlacementShard = parse(shard, "Npc.Placement shard")?;
+        if shard.family != "Npc.Placement" || shard.coordinate_frame != FRAME {
+            return Err(format("Npc.Placement shard family or coordinate frame"));
+        }
+        for record in shard.records {
+            let record = record.declaration;
+            if record.cell.floor > 15 {
+                return Err(Error::Bounds(format!(
+                    "NPC placement floor {}",
+                    record.cell.floor
+                )));
+            }
+            self.npc_placements.push(NpcPlacement {
+                key: record.identity.key,
+                npc: record.npc,
+                cell: (record.cell.x, record.cell.y, record.cell.floor),
+                direction: direction(&record.direction)?,
+            });
+        }
+        Ok(())
+    }
+
+    /// Adds the family's held list (`held.json`, NPC-PLACE-1 §4.3). Each reason is one of the
+    /// closed set.
+    pub fn add_npc_source_held(&mut self, held: &[u8]) -> Result<(), Error> {
+        let held: HeldList = parse(held, "Npc.Placement held list")?;
+        if held.schema != "OTERYN_NPC_PLACEMENT_HELD/v1"
+            || held.family != "Npc.Placement"
+            || held.coordinate_frame != FRAME
+        {
+            return Err(format(
+                "Npc.Placement held list schema, family or coordinate frame",
+            ));
+        }
+        for entry in held.held {
+            if !SOURCE_HOLDS.contains(&entry.reason.as_str()) {
+                return Err(format(format!("NPC hold reason `{}`", entry.reason)));
+            }
+            self.npc_source_held.push((entry.npc, entry.reason));
         }
         Ok(())
     }
