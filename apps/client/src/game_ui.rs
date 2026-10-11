@@ -127,6 +127,13 @@ fn panel_hotkey_destination(action: &str) -> Option<PanelHotkeyDestination> {
         "window.spell_list" => PanelHotkeyDestination::Toggle("spells"),
         "dialog.quest_log" => PanelHotkeyDestination::Open("quest-log"),
         "dialog.prey" => PanelHotkeyDestination::Open("prey"),
+        "dialog.cyclopedia.bestiary" => PanelHotkeyDestination::OpenTab("cyclopedia", "bestiary"),
+        "dialog.cyclopedia.character" => PanelHotkeyDestination::OpenTab("cyclopedia", "character"),
+        "dialog.cyclopedia.charms" => PanelHotkeyDestination::OpenTab("cyclopedia", "charms"),
+        "dialog.cyclopedia.items" => PanelHotkeyDestination::OpenTab("cyclopedia", "items"),
+        "dialog.cyclopedia.magical_archive" => {
+            PanelHotkeyDestination::OpenTab("cyclopedia", "archive")
+        }
         "dialog.cyclopedia.map" => PanelHotkeyDestination::OpenTab("cyclopedia", "map"),
         _ => return None,
     })
@@ -1739,10 +1746,20 @@ mod tests {
             panel_hotkey_destination("dialog.quest_log"),
             Some(PanelHotkeyDestination::Open("quest-log"))
         );
-        assert_eq!(
-            panel_hotkey_destination("dialog.cyclopedia.map"),
-            Some(PanelHotkeyDestination::OpenTab("cyclopedia", "map"))
-        );
+        for (action, tab) in [
+            ("dialog.cyclopedia.map", "map"),
+            ("dialog.cyclopedia.items", "items"),
+            ("dialog.cyclopedia.character", "character"),
+            ("dialog.cyclopedia.bestiary", "bestiary"),
+            ("dialog.cyclopedia.charms", "charms"),
+            ("dialog.cyclopedia.magical_archive", "archive"),
+        ] {
+            assert_eq!(
+                panel_hotkey_destination(action),
+                Some(PanelHotkeyDestination::OpenTab("cyclopedia", tab))
+            );
+        }
+        assert_eq!(panel_hotkey_destination("dialog.exaltation_forge"), None);
         assert_eq!(panel_hotkey_destination("dialog.lenshelp"), None);
     }
 

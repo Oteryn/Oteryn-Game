@@ -120,6 +120,16 @@ do not extrapolate the capacity of other original rows before checking them.
 Private evidence: `/tmp/oteryn-action-hotkeys-current.png` and
 `/tmp/oteryn-action-bottom-one-end.png`.
 
+## Settings surface opacity
+
+The reference Options window is opaque. Two authorized captures of the same
+Controls page over unrelated login and in-world backgrounds were aligned and a
+430 × 250 empty-content sample matched in all 322,500 RGB channel values. The
+full dialog matched in 99.822% of channels; the small remainder contains dynamic
+controls and cursor pixels, while regions outside the dialog differ strongly.
+Private evidence: `/tmp/reference-options-login.png` and
+`/tmp/oteryn-reference-live-options2-20261011.png`.
+
 ## Custom action entry points
 
 New Action opens a menu with Assign Spell, Assign Object and Assign Text. The spell

@@ -77,11 +77,7 @@ impl PreferencesBrowser {
             return PreferenceAction::None;
         }
         let previous_style = ctx.style_of(egui::Theme::Dark);
-        crate::client_chrome::install_preferences(
-            ctx,
-            draft.high_contrast,
-            draft.settings_transparency,
-        );
+        crate::client_chrome::install_preferences(ctx, draft.high_contrast);
         let mut action = PreferenceAction::None;
         let english = draft.english;
         let tr = |pl, en| if english { en } else { pl };
@@ -171,7 +167,9 @@ impl PreferencesBrowser {
                 egui::CentralPanel::default().frame(egui::Frame::new().inner_margin(if size.x<700.0 {12} else {22}))
                     .show(&mut body_ui, |ui| {
                         let search = self.search.trim().to_lowercase();
+                        let mut body_content_clip = egui::Rect::NOTHING;
                         let _body_output = egui::ScrollArea::vertical().id_salt(("all-preferences-options", reference_settings_sections()[self.section].id)).auto_shrink([false,false]).show(ui, |ui| {
+                            body_content_clip = ui.clip_rect();
                             ui.set_width(ui.available_width());
                             ui.label(egui::RichText::new(tr("USTAWIENIA KLIENTA", "CLIENT SETTINGS")).size(10.0).color(egui::Color32::from_rgb(185,164,130)));
                             ui.add_space(3.0);
@@ -245,6 +243,7 @@ impl PreferencesBrowser {
                         crate::settings_audit::record_settings_scroll(
                             ctx,
                             reference_settings_sections()[self.section].id,
+                            body_content_clip,
                             &_body_output,
                         );
                         #[cfg(test)]

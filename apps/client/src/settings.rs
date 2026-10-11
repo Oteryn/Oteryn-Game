@@ -33,7 +33,7 @@ pub struct ClientSettings {
     pub background_fps: u16,
     pub ui_scale: f32,
     pub high_contrast: bool,
-    /// Background transparency of the settings window, in percent.
+    /// Legacy compatibility value. Reference settings surfaces remain opaque.
     #[serde(default = "default_settings_transparency")]
     pub settings_transparency: u8,
     pub reduced_motion: bool,

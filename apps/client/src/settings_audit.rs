@@ -15,6 +15,7 @@ use std::{
 const SETTINGS_SCROLL_FRAME_ID: &str = "native-settings-audit-scroll-frame";
 const SETTINGS_AUDIT_EXPAND_NESTED_ID: &str = "native-settings-audit-expand-nested";
 const GEOMETRY_TOLERANCE: f32 = 1.0;
+const GEOMETRY_SETTLE_TOLERANCE: f32 = 0.05;
 
 #[derive(Clone, Copy, Debug)]
 pub struct SettingsScrollFrame {
@@ -22,6 +23,7 @@ pub struct SettingsScrollFrame {
     pub scroll_id: egui::Id,
     pub scroll_y: f32,
     pub inner_rect: egui::Rect,
+    pub content_clip_rect: egui::Rect,
     pub content_size: egui::Vec2,
     completed_pass_nr: u64,
 }
@@ -30,6 +32,7 @@ pub struct SettingsScrollFrame {
 pub fn record_settings_scroll(
     context: &egui::Context,
     page_id: &'static str,
+    content_clip_rect: egui::Rect,
     output: &egui::scroll_area::ScrollAreaOutput<()>,
 ) {
     // `cumulative_pass_nr` counts completed passes. This probe is recorded
@@ -44,6 +47,10 @@ pub fn record_settings_scroll(
                 scroll_id: output.id,
                 scroll_y: output.state.offset.y,
                 inner_rect: output.inner_rect,
+                // Egui's content clip can extend through panel margins. Keep it
+                // only to identify shapes painted by this page; `inner_rect`
+                // remains the authoritative fit and visibility boundary.
+                content_clip_rect,
                 content_size: output.content_size,
                 completed_pass_nr,
             },
@@ -250,6 +257,7 @@ pub struct SettingsAuditPageEvidence {
     pub id: String,
     pub marker: String,
     pub marker_visible: bool,
+    /// Widest stable layout or painted right edge, measured from the page viewport's left edge.
     pub content_width: f32,
     pub content_height: f32,
     pub viewport_width: f32,
@@ -444,9 +452,18 @@ fn run_error(error: impl Display) -> SettingsAuditRunError {
 #[derive(Clone, Copy)]
 struct CaptureObservation {
     scroll: SettingsScrollFrame,
+    painted_content_width: f32,
     marker_visible: bool,
     footer: AuditFooterEvidence,
     draft_unchanged: bool,
+}
+
+#[cfg(any(windows, test))]
+#[derive(Clone, Copy)]
+struct SettledGeometry {
+    content_size: egui::Vec2,
+    inner_rect: egui::Rect,
+    content_clip_rect: egui::Rect,
 }
 
 #[cfg(any(windows, test))]
@@ -490,6 +507,8 @@ pub struct NativeSettingsAudit {
     page_index: usize,
     desired_scroll: f32,
     settle_frames: u8,
+    settled_geometry: Option<SettledGeometry>,
+    stable_geometry_frames: u8,
     attempts: u16,
     pending_observation: Option<CaptureObservation>,
     pending_page: PendingPage,
@@ -538,6 +557,8 @@ impl NativeSettingsAudit {
             page_index: 0,
             desired_scroll: 0.0,
             settle_frames: 3,
+            settled_geometry: None,
+            stable_geometry_frames: 0,
             attempts: 0,
             pending_observation: None,
             pending_page: PendingPage::new(),
@@ -595,19 +616,49 @@ impl NativeSettingsAudit {
             || !scroll.inner_rect.height().is_finite()
             || scroll.inner_rect.width() <= 0.0
             || scroll.inner_rect.height() <= 0.0
+            || !scroll.content_clip_rect.width().is_finite()
+            || !scroll.content_clip_rect.height().is_finite()
+            || scroll.content_clip_rect.width() <= 0.0
+            || scroll.content_clip_rect.height() <= 0.0
         {
             return Err(run_error("settings audit received invalid scroll geometry"));
         }
         if self.settle_frames > 0 {
             self.settle_frames -= 1;
+            context.request_repaint();
+            return Ok(false);
+        }
+        let geometry = SettledGeometry {
+            content_size: scroll.content_size,
+            inner_rect: scroll.inner_rect,
+            content_clip_rect: scroll.content_clip_rect,
+        };
+        if self
+            .settled_geometry
+            .is_some_and(|previous| geometry_approximately_equal(previous, geometry))
+        {
+            self.stable_geometry_frames = self.stable_geometry_frames.saturating_add(1);
+        } else {
+            self.stable_geometry_frames = 0;
+        }
+        self.settled_geometry = Some(geometry);
+        if self.stable_geometry_frames < 2 {
+            context.request_repaint();
             return Ok(false);
         }
         if (scroll.scroll_y - self.desired_scroll).abs() > 1.0 {
+            context.request_repaint();
             return Ok(false);
         }
         let viewport = context.content_rect();
         self.pending_observation = Some(CaptureObservation {
             scroll,
+            painted_content_width: painted_content_width(
+                output,
+                scroll.content_clip_rect,
+                scroll.inner_rect.left(),
+            )
+            .ok_or_else(|| run_error("settings audit found no painted page content"))?,
             marker_visible: output_has_visible_text(output, reference.marker, scroll.inner_rect),
             footer: AuditFooterEvidence {
                 reset: output_has_visible_text(output, "Reset", viewport),
@@ -689,19 +740,35 @@ impl NativeSettingsAudit {
         self.pending_page.footer.apply &= observation.footer.apply;
         self.pending_page.footer.cancel &= observation.footer.cancel;
         self.pending_page.draft_unchanged &= observation.draft_unchanged;
-        let content_width = observation.scroll.content_size.x;
+        let content_width = observation
+            .painted_content_width
+            .max(observation.scroll.content_size.x);
         let content_height = observation.scroll.content_size.y;
         let viewport_width = observation.scroll.inner_rect.width();
         let viewport_height = observation.scroll.inner_rect.height();
-        check_stable_dimension(&mut self.pending_page.content_width, content_width)?;
-        check_stable_dimension(&mut self.pending_page.content_height, content_height)?;
-        check_stable_dimension(&mut self.pending_page.viewport_width, viewport_width)?;
-        check_stable_dimension(&mut self.pending_page.viewport_height, viewport_height)?;
+        keep_worst_horizontal_fit(
+            &mut self.pending_page.content_width,
+            &mut self.pending_page.viewport_width,
+            content_width,
+            viewport_width,
+        );
+        check_stable_dimension(
+            "settings content height",
+            &mut self.pending_page.content_height,
+            content_height,
+        )?;
+        check_stable_dimension(
+            "settings viewport height",
+            &mut self.pending_page.viewport_height,
+            viewport_height,
+        )?;
         let maximum = (content_height - viewport_height).max(0.0);
         if observation.scroll.scroll_y < maximum - 1.0 {
             self.desired_scroll =
                 (observation.scroll.scroll_y + viewport_height * 0.9).min(maximum);
             self.settle_frames = 2;
+            self.settled_geometry = None;
+            self.stable_geometry_frames = 0;
             self.attempts = 0;
             self.prepare_frame(context);
             return Ok(false);
@@ -760,6 +827,8 @@ impl NativeSettingsAudit {
         self.page_index += 1;
         self.desired_scroll = 0.0;
         self.settle_frames = 3;
+        self.settled_geometry = None;
+        self.stable_geometry_frames = 0;
         self.attempts = 0;
         if let Some(next) = REFERENCE_SETTINGS_PAGES.get(self.page_index)
             && !settings.open_complete_section(next.id)
@@ -772,16 +841,80 @@ impl NativeSettingsAudit {
 
 #[cfg(any(windows, test))]
 fn check_stable_dimension(
+    label: &str,
     stored: &mut Option<f32>,
     received: f32,
 ) -> Result<(), SettingsAuditRunError> {
-    if stored.is_some_and(|expected| (expected - received).abs() > GEOMETRY_TOLERANCE) {
-        return Err(run_error(
-            "settings scroll geometry changed between captures",
-        ));
+    if let Some(expected) = *stored
+        && (expected - received).abs() > GEOMETRY_TOLERANCE
+    {
+        return Err(run_error(format!(
+            "{label} changed between captures: expected {expected}, received {received}",
+        )));
     }
     stored.get_or_insert(received);
     Ok(())
+}
+
+#[cfg(any(windows, test))]
+fn keep_worst_horizontal_fit(
+    stored_content: &mut Option<f32>,
+    stored_viewport: &mut Option<f32>,
+    content: f32,
+    viewport: f32,
+) {
+    let received_overflow = content - viewport;
+    let stored_overflow = stored_content
+        .zip(*stored_viewport)
+        .map(|(content, viewport)| content - viewport);
+    if stored_overflow.is_none_or(|stored| received_overflow > stored) {
+        *stored_content = Some(content);
+        *stored_viewport = Some(viewport);
+    }
+}
+
+#[cfg(any(windows, test))]
+fn geometry_approximately_equal(left: SettledGeometry, right: SettledGeometry) -> bool {
+    (left.content_size.x - right.content_size.x).abs() <= GEOMETRY_SETTLE_TOLERANCE
+        && (left.content_size.y - right.content_size.y).abs() <= GEOMETRY_SETTLE_TOLERANCE
+        && (left.inner_rect.min.x - right.inner_rect.min.x).abs() <= GEOMETRY_SETTLE_TOLERANCE
+        && (left.inner_rect.min.y - right.inner_rect.min.y).abs() <= GEOMETRY_SETTLE_TOLERANCE
+        && (left.inner_rect.max.x - right.inner_rect.max.x).abs() <= GEOMETRY_SETTLE_TOLERANCE
+        && (left.inner_rect.max.y - right.inner_rect.max.y).abs() <= GEOMETRY_SETTLE_TOLERANCE
+        && (left.content_clip_rect.min.x - right.content_clip_rect.min.x).abs()
+            <= GEOMETRY_SETTLE_TOLERANCE
+        && (left.content_clip_rect.min.y - right.content_clip_rect.min.y).abs()
+            <= GEOMETRY_SETTLE_TOLERANCE
+        && (left.content_clip_rect.max.x - right.content_clip_rect.max.x).abs()
+            <= GEOMETRY_SETTLE_TOLERANCE
+        && (left.content_clip_rect.max.y - right.content_clip_rect.max.y).abs()
+            <= GEOMETRY_SETTLE_TOLERANCE
+}
+
+#[cfg(any(windows, test))]
+fn painted_content_width(
+    output: &egui::FullOutput,
+    page_clip: egui::Rect,
+    page_left: f32,
+) -> Option<f32> {
+    output
+        .shapes
+        .iter()
+        // Nested controls can own smaller, intentional clip rectangles. Only
+        // shapes painted through the production page viewport establish page
+        // fit; layout cursor width alone is not visible content.
+        .filter(|shape| rect_approximately_equal(shape.clip_rect, page_clip))
+        .map(|shape| shape.shape.visual_bounding_rect().right() - page_left)
+        .filter(|width| width.is_finite() && *width > 0.0)
+        .reduce(f32::max)
+}
+
+#[cfg(any(windows, test))]
+fn rect_approximately_equal(left: egui::Rect, right: egui::Rect) -> bool {
+    (left.min.x - right.min.x).abs() <= GEOMETRY_TOLERANCE
+        && (left.min.y - right.min.y).abs() <= GEOMETRY_TOLERANCE
+        && (left.max.x - right.max.x).abs() <= GEOMETRY_TOLERANCE
+        && (left.max.y - right.max.y).abs() <= GEOMETRY_TOLERANCE
 }
 
 #[cfg(any(windows, test))]
@@ -1110,12 +1243,14 @@ mod tests {
         let _ = context.run_ui(input(), |ui| {
             let context = ui.ctx().clone();
             egui::CentralPanel::default().show(ui, |ui| {
+                let mut viewport = egui::Rect::NOTHING;
                 let output = egui::ScrollArea::vertical()
                     .id_salt("audit-probe-test")
                     .show(ui, |ui| {
+                        viewport = ui.clip_rect();
                         ui.label("page body");
                     });
-                record_settings_scroll(&context, "basic", &output);
+                record_settings_scroll(&context, "basic", viewport, &output);
             });
         });
         assert_eq!(
@@ -1125,6 +1260,151 @@ mod tests {
 
         let _ = context.run_ui(input(), |_ui| {});
         assert!(settings_scroll(&context).is_none());
+    }
+
+    #[test]
+    fn horizontal_fit_keeps_the_worst_capture_pair() {
+        let mut content = None;
+        let mut viewport = None;
+        keep_worst_horizontal_fit(&mut content, &mut viewport, 640.0, 630.0);
+        keep_worst_horizontal_fit(&mut content, &mut viewport, 635.0, 634.0);
+        assert_eq!((content, viewport), (Some(640.0), Some(630.0)));
+
+        keep_worst_horizontal_fit(&mut content, &mut viewport, 646.5, 634.0);
+        assert_eq!((content, viewport), (Some(646.5), Some(634.0)));
+    }
+
+    #[test]
+    fn geometry_settle_rejects_scrollbar_animation_drift() {
+        let baseline = SettledGeometry {
+            content_size: egui::vec2(640.0, 900.0),
+            inner_rect: egui::Rect::from_min_size(egui::pos2(20.0, 30.0), egui::vec2(630.0, 500.0)),
+            content_clip_rect: egui::Rect::from_min_size(
+                egui::pos2(10.0, 27.0),
+                egui::vec2(650.0, 506.0),
+            ),
+        };
+        let mut close = baseline;
+        close.content_size.x += GEOMETRY_SETTLE_TOLERANCE / 2.0;
+        assert!(geometry_approximately_equal(baseline, close));
+
+        let mut drifting = baseline;
+        drifting.inner_rect.max.x += GEOMETRY_SETTLE_TOLERANCE * 2.0;
+        assert!(!geometry_approximately_equal(baseline, drifting));
+    }
+
+    #[test]
+    fn painted_width_ignores_cursor_only_layout_overflow_but_detects_shapes()
+    -> Result<(), &'static str> {
+        fn render(overdraw: f32) -> (egui::FullOutput, egui::Rect) {
+            let context = egui::Context::default();
+            let viewport = std::cell::Cell::new(egui::Rect::NOTHING);
+            let output = context.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(320.0, 120.0),
+                    )),
+                    ..Default::default()
+                },
+                |ui| {
+                    egui::CentralPanel::default()
+                        .frame(egui::Frame::new().inner_margin(12))
+                        .show(ui, |ui| {
+                            egui::ScrollArea::vertical().show(ui, |ui| {
+                                let clip = ui.clip_rect();
+                                viewport.set(clip);
+                                ui.label("painted page content");
+                                // Layout cursor extent is not visual content and must not
+                                // manufacture a horizontal-overflow failure.
+                                ui.allocate_space(egui::vec2(clip.width() + 40.0, 1.0));
+                                if overdraw > 0.0 {
+                                    ui.painter().rect_filled(
+                                        egui::Rect::from_min_max(
+                                            clip.left_top(),
+                                            egui::pos2(clip.right() + overdraw, clip.top() + 4.0),
+                                        ),
+                                        0.0,
+                                        egui::Color32::WHITE,
+                                    );
+                                } else {
+                                    let nested_clip = clip.shrink(16.0);
+                                    ui.painter().with_clip_rect(nested_clip).rect_filled(
+                                        egui::Rect::from_min_max(
+                                            nested_clip.left_top(),
+                                            egui::pos2(
+                                                clip.right() + 40.0,
+                                                nested_clip.top() + 4.0,
+                                            ),
+                                        ),
+                                        0.0,
+                                        egui::Color32::WHITE,
+                                    );
+                                }
+                            });
+                        });
+                },
+            );
+            (output, viewport.get())
+        }
+
+        let (output, viewport) = render(0.0);
+        let width = painted_content_width(&output, viewport, viewport.left())
+            .ok_or("missing painted label")?;
+        assert!(width <= viewport.width() + GEOMETRY_TOLERANCE);
+
+        let (output, viewport) = render(12.0);
+        let width = painted_content_width(&output, viewport, viewport.left())
+            .ok_or("missing painted rectangle")?;
+        assert!(width >= viewport.width() + 11.0);
+        Ok(())
+    }
+
+    #[test]
+    fn every_audited_page_paints_within_the_native_viewport() -> Result<(), &'static str> {
+        for reference in REFERENCE_SETTINGS_PAGES {
+            let context = egui::Context::default();
+            crate::client_chrome::install(&context, false);
+            context.data_mut(|data| {
+                data.insert_temp(egui::Id::new(SETTINGS_AUDIT_EXPAND_NESTED_ID), true);
+            });
+            let mut browser = crate::preferences_browser::PreferencesBrowser::new();
+            if !browser.open_section(reference.id) {
+                return Err("missing settings page");
+            }
+            let mut draft = oteryn_client::settings::ClientSettings {
+                english: true,
+                ..Default::default()
+            };
+            let mut output = egui::FullOutput::default();
+            for _ in 0..14 {
+                output = crate::preferences_browser::test_support::frame(
+                    &context,
+                    egui::vec2(900.0, 620.0),
+                    Vec::new(),
+                    |context| browser.show(context, &mut draft, None),
+                )
+                .1;
+            }
+            let scroll = settings_scroll(&context).ok_or("missing settings scroll geometry")?;
+            assert!(
+                scroll.content_size.x <= scroll.inner_rect.width() + GEOMETRY_TOLERANCE,
+                "{} has stable horizontal layout overflow: {} in {}",
+                reference.id,
+                scroll.content_size.x,
+                scroll.inner_rect.width(),
+            );
+            let width =
+                painted_content_width(&output, scroll.content_clip_rect, scroll.inner_rect.left())
+                    .ok_or("missing painted settings content")?;
+            assert!(
+                width <= scroll.inner_rect.width() + GEOMETRY_TOLERANCE,
+                "{} paints beyond the native page viewport: {width} in {}",
+                reference.id,
+                scroll.inner_rect.width(),
+            );
+        }
+        Ok(())
     }
 
     #[test]

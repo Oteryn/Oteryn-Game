@@ -193,6 +193,11 @@ pub fn general_action_supported(action: &str) -> bool {
             | "chat.mode.on"
             | "chat.mode.temporary"
             | "chat.send"
+            | "dialog.cyclopedia.bestiary"
+            | "dialog.cyclopedia.character"
+            | "dialog.cyclopedia.charms"
+            | "dialog.cyclopedia.items"
+            | "dialog.cyclopedia.magical_archive"
             | "dialog.cyclopedia.map"
             | "dialog.prey"
             | "dialog.quest_log"
@@ -1090,6 +1095,39 @@ window.vip=19:C,-"#
             );
         }
         assert!(!general_action_supported("minimap.floor_up"));
+        Ok(())
+    }
+
+    #[test]
+    fn cyclopedia_page_actions_resolve_through_the_general_hotkey_router()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for action in [
+            "dialog.cyclopedia.bestiary",
+            "dialog.cyclopedia.character",
+            "dialog.cyclopedia.charms",
+            "dialog.cyclopedia.items",
+            "dialog.cyclopedia.magical_archive",
+        ] {
+            assert!(general_action_supported(action));
+            let mut preferences = HotkeyPreferences::default();
+            let profile = preferences.active_mut().ok_or("default profile")?;
+            profile.general_chat_off.clear();
+            profile.general_chat_on.clear();
+            let pair = HotkeyPair {
+                first: Some(binding(30, true)),
+                second: None,
+            };
+            profile.general_chat_off.insert(action.into(), pair);
+            profile.general_chat_on.insert(action.into(), pair);
+
+            for chat_on in [false, true] {
+                assert_eq!(
+                    preferences.resolve(&[pressed(30, true)?], chat_on),
+                    vec![ResolvedHotkey::General(action.into())]
+                );
+            }
+        }
+        assert!(!general_action_supported("dialog.exaltation_forge"));
         Ok(())
     }
 

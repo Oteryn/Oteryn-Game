@@ -681,38 +681,42 @@ fn shortcuts(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mu
         "Wyświetlane skróty:"
     });
     ui.horizontal_top(|ui| {
-        let width = (ui.available_width() - 32.0).max(20.0);
-        egui::Frame::new()
+        let list_frame = egui::Frame::new()
             .stroke(egui::Stroke::new(
                 1.0,
                 ui.visuals().widgets.noninteractive.bg_stroke.color,
             ))
-            .inner_margin(3.0)
-            .show(ui, |ui| {
-                ui.vertical(|ui| {
-                    ui.set_width(width);
-                    crate::settings_audit::show_bounded_vertical(
-                        ui,
-                        "displayed-panel-shortcuts",
-                        130.0,
-                        None,
-                        |ui| {
-                            for id in order.ids() {
-                                if let Some(definition) = panel(id)
-                                    && ui
-                                        .selectable_label(
-                                            state.displayed.as_deref() == Some(id),
-                                            definition.label(en),
-                                        )
-                                        .clicked()
-                                {
-                                    state.displayed = Some((*id).into());
-                                }
+            .inner_margin(3.0);
+        let width = (ui.available_width()
+            - ui.spacing().interact_size.x
+            - ui.spacing().item_spacing.x
+            - list_frame.total_margin().sum().x)
+            .max(20.0);
+        list_frame.show(ui, |ui| {
+            ui.vertical(|ui| {
+                ui.set_width(width);
+                crate::settings_audit::show_bounded_vertical(
+                    ui,
+                    "displayed-panel-shortcuts",
+                    130.0,
+                    None,
+                    |ui| {
+                        for id in order.ids() {
+                            if let Some(definition) = panel(id)
+                                && ui
+                                    .selectable_label(
+                                        state.displayed.as_deref() == Some(id),
+                                        definition.label(en),
+                                    )
+                                    .clicked()
+                            {
+                                state.displayed = Some((*id).into());
                             }
-                        },
-                    );
-                });
+                        }
+                    },
+                );
             });
+        });
         ui.vertical(|ui| {
             let index = state
                 .displayed
@@ -753,39 +757,41 @@ fn shortcuts(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mu
         "Dostępne skróty:"
     });
     ui.horizontal_top(|ui| {
-        let width = (ui.available_width() - 32.0).max(20.0);
-        egui::Frame::new()
+        let list_frame = egui::Frame::new()
             .stroke(egui::Stroke::new(
                 1.0,
                 ui.visuals().widgets.noninteractive.bg_stroke.color,
             ))
-            .inner_margin(3.0)
-            .show(ui, |ui| {
-                ui.vertical(|ui| {
-                    ui.set_width(width);
-                    crate::settings_audit::show_bounded_vertical(
-                        ui,
-                        "available-panel-shortcuts",
-                        110.0,
-                        None,
-                        |ui| {
-                            for definition in
-                                PANELS.iter().filter(|entry| !order.contains(entry.id))
+            .inner_margin(3.0);
+        let width = (ui.available_width()
+            - ui.spacing().interact_size.x
+            - ui.spacing().item_spacing.x
+            - list_frame.total_margin().sum().x)
+            .max(20.0);
+        list_frame.show(ui, |ui| {
+            ui.vertical(|ui| {
+                ui.set_width(width);
+                crate::settings_audit::show_bounded_vertical(
+                    ui,
+                    "available-panel-shortcuts",
+                    110.0,
+                    None,
+                    |ui| {
+                        for definition in PANELS.iter().filter(|entry| !order.contains(entry.id)) {
+                            if ui
+                                .selectable_label(
+                                    state.available.as_deref() == Some(definition.id),
+                                    definition.label(en),
+                                )
+                                .clicked()
                             {
-                                if ui
-                                    .selectable_label(
-                                        state.available.as_deref() == Some(definition.id),
-                                        definition.label(en),
-                                    )
-                                    .clicked()
-                                {
-                                    state.available = Some(definition.id.into());
-                                }
+                                state.available = Some(definition.id.into());
                             }
-                        },
-                    );
-                });
+                        }
+                    },
+                );
             });
+        });
         if ui
             .add_enabled(state.available.is_some(), egui::Button::new("+"))
             .on_hover_text(if en {

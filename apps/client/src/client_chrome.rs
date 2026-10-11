@@ -85,8 +85,8 @@ pub fn install(ctx: &Context, high_contrast: bool) {
     ctx.set_style_of(egui::Theme::Dark, style);
 }
 
-/// Settings-only design tokens. Text and interactive controls remain opaque.
-pub fn install_preferences(ctx: &Context, high_contrast: bool, transparency: u8) {
+/// Settings-only design tokens. The reference window and its controls are opaque.
+pub fn install_preferences(ctx: &Context, high_contrast: bool) {
     install(ctx, high_contrast);
     let mut style = (*ctx.style_of(egui::Theme::Dark)).clone();
     for text in [egui::TextStyle::Body, egui::TextStyle::Button] {
@@ -108,13 +108,12 @@ pub fn install_preferences(ctx: &Context, high_contrast: bool, transparency: u8)
     style.spacing.icon_width = 16.0;
     style.spacing.icon_width_inner = 10.0;
     style.spacing.icon_spacing = 7.0;
-    let alpha = ((100 - transparency.min(70)) as f32 * 2.55).round() as u8;
     style.visuals.window_fill = if high_contrast {
-        Color32::from_rgba_unmultiplied(0, 0, 0, alpha)
+        Color32::BLACK
     } else {
-        Color32::from_rgba_unmultiplied(25, 28, 31, alpha)
+        Color32::from_rgb(25, 28, 31)
     };
-    // One translucent backing avoids stacking opacity under nested sections.
+    // The opaque window is the sole backing; nested panels add only local tint.
     style.visuals.panel_fill = Color32::TRANSPARENT;
     style.visuals.extreme_bg_color = Color32::from_rgba_unmultiplied(18, 21, 24, 24);
     style.visuals.faint_bg_color = Color32::from_rgba_unmultiplied(35, 39, 42, 24);
@@ -187,16 +186,14 @@ fn surrounding(bounds: Rect, scene: Option<Rect>) -> Vec<Rect> {
 mod tests {
     use super::*;
     #[test]
-    fn preferences_transparency_only_fades_surfaces() {
+    fn preferences_surface_and_controls_are_opaque() {
         let ctx = Context::default();
-        install_preferences(&ctx, false, 10);
+        install_preferences(&ctx, false);
         let style = ctx.style_of(egui::Theme::Dark);
-        assert_eq!(style.visuals.window_fill.a(), 230);
+        assert_eq!(style.visuals.window_fill.a(), 255);
         assert_eq!(style.visuals.text_color().a(), 255);
         assert_eq!(style.visuals.widgets.inactive.bg_fill.a(), 255);
         assert_eq!(style.visuals.panel_fill, Color32::TRANSPARENT);
-        install_preferences(&ctx, false, 70);
-        assert_eq!(ctx.style_of(egui::Theme::Dark).visuals.window_fill.a(), 77);
     }
 
     #[test]

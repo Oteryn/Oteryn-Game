@@ -1004,9 +1004,10 @@ fn header(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut S
         } else {
             "Wyszukaj skrót:"
         });
+        let reserved_clear_width = ui.spacing().interact_size.x + ui.spacing().item_spacing.x;
         let response = ui.add(
             egui::TextEdit::singleline(&mut state.search)
-                .desired_width(ui.available_width() - 28.0)
+                .desired_width((ui.available_width() - reserved_clear_width).max(0.0))
                 .char_limit(128),
         );
         if response.changed() {
