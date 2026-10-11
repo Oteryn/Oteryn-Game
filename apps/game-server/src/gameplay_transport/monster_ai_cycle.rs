@@ -121,12 +121,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         }
         // §2.1 item 1: players wake the idle creatures they see; a creature already thinking is
-        // unaffected.
-        for (player, ..) in &targets {
-            let _ = melee_owner
-                .creature_ai
-                .wake_for_player(&runtime, *player, now.get());
-        }
+        // unaffected. One indexed pass for all players (Codex 4242808144): its work does not grow
+        // with players times creatures.
+        let players = targets
+            .iter()
+            .map(|(player, ..)| *player)
+            .collect::<Vec<_>>();
+        let _ = melee_owner
+            .creature_ai
+            .wake_for_players(&runtime, &players, now.get());
         // §2.1 item 3: protected players are ineligible, and invisible ones to a creature that
         // does not sense invisibility. The native artifact carries no player vitals or damage
         // contributors yet, so the strategies that read them see equal candidates.

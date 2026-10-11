@@ -583,3 +583,162 @@ fn three_hundred_rats_are_censused_in_slot_order_think_in_one_pass_and_the_dead_
     assert!(in_slot_order(&channel.runtime));
     assert_eq!(channel.table.len(), RATS);
 }
+
+/// SPAWN-CEILINGS-1 (Codex 4242808144): the wake's view box holds every cell a player sees, on
+/// every floor pair, VIS-1's 0..=15 and the source-world floors outside it.
+#[test]
+fn the_wake_view_box_holds_every_cell_a_player_sees() {
+    for player_floor in -2..=17 {
+        let player = MovementLocalPosition {
+            x: 1_000,
+            y: 1_000,
+            floor: player_floor,
+        };
+        for floor in -2..=17 {
+            let wake_box = wake_view_box(player, floor);
+            if let Some((columns, rows)) = &wake_box {
+                assert_eq!((columns.clone().count(), rows.clone().count()), (19, 19));
+            }
+            for dx in -30..=30 {
+                for dy in -30..=30 {
+                    let creature = MovementLocalPosition {
+                        x: player.x + dx,
+                        y: player.y + dy,
+                        floor,
+                    };
+                    if targeting::sees(player, creature) {
+                        let (columns, rows) = wake_box.clone().expect("seen floor in the box");
+                        assert!(columns.contains(&creature.x) && rows.contains(&creature.y));
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// SPAWN-CEILINGS-1 (Codex 4242808144): one wake pass for many players equals their wakes in
+/// turn, reads each idle creature's position once, and examines only the creatures in each
+/// player's view box, not every creature once per player.
+#[test]
+fn one_wake_pass_for_many_players_equals_their_wakes_in_turn_and_is_bounded() {
+    const PLAYERS: u8 = 40;
+    let mut channel = Channel::with_capacity(usize::from(PLAYERS) + 1);
+    let mut players = vec![channel.player];
+    for tag in 0..PLAYERS {
+        let session = GameSessionId::decode(&uuid(10 + tag)).expect("session");
+        let reservation = channel
+            .runtime
+            .reserve_fresh_session(session)
+            .expect("reserve");
+        let player = channel
+            .runtime
+            .commit_fresh_session(reservation)
+            .expect("commit");
+        let (row, column) = (i32::from(tag / 8), i32::from(tag % 8));
+        let floor = if tag % 5 == 0 { 6 } else { 7 };
+        channel
+            .runtime
+            .initialize_pinned_test_position(
+                player,
+                MovementLocalPosition {
+                    x: 101 + 4 * column,
+                    y: 101 + 6 * row,
+                    floor,
+                },
+            )
+            .expect("player position");
+        players.push(player);
+    }
+    // The players stand on odd cells; 600 rats on even cells of floors 6 and 7 around them,
+    // 200 far away.
+    let mut rats = Vec::new();
+    for floor in [6, 7] {
+        for x in (100..140).step_by(2) {
+            for y in (100..130).step_by(2) {
+                let rat = channel
+                    .runtime
+                    .admit_pinned_test_creature(MovementLocalPosition { x, y, floor })
+                    .expect("rat");
+                rats.push(rat);
+            }
+        }
+    }
+    for index in 0..200 {
+        let rat = channel
+            .runtime
+            .admit_pinned_test_creature(at(10_000 + 2 * index, 100))
+            .expect("far rat");
+        rats.push(rat);
+    }
+    // Three tables with every rat idle: one per wake path.
+    let mut tables = [(); 3].map(|()| CreatureAiTable::default());
+    for table in &mut tables {
+        for rat_actor in &rats {
+            table
+                .admit_creature(&channel.runtime, *rat_actor, Some(&rat(1)), &abilities(), 0)
+                .expect("admitted");
+        }
+        assert_eq!(
+            table
+                .run_due_thinks(
+                    &mut channel.runtime,
+                    0,
+                    &channel.root,
+                    &channel.revisions,
+                    &[],
+                    |_| false,
+                )
+                .len(),
+            rats.len()
+        );
+        assert_eq!(table.pending(), 0);
+    }
+    let [mut in_turn, mut indexed, mut production] = tables;
+    let runtime = &channel.runtime;
+    let viewers = players
+        .iter()
+        .map(|player| channel.position(*player))
+        .collect::<Vec<_>>();
+    let now = SECOND;
+
+    let expected = viewers
+        .iter()
+        .flat_map(|viewer| in_turn.wake(*viewer, |rat| live_position(runtime, rat), now))
+        .collect::<Vec<_>>();
+    assert!(expected.len() > viewers.len());
+
+    let reads = std::cell::Cell::new(0_usize);
+    let (woken, examined) = indexed.wake_indexed(
+        &viewers,
+        |rat| {
+            reads.set(reads.get() + 1);
+            live_position(runtime, rat)
+        },
+        now,
+    );
+    assert_eq!(woken, expected);
+    assert_eq!(reads.get(), rats.len());
+    let in_box = viewers
+        .iter()
+        .map(|viewer| {
+            rats.iter()
+                .map(|rat| channel.position(*rat))
+                .filter(|position| {
+                    wake_view_box(*viewer, position.floor).is_some_and(|(columns, rows)| {
+                        columns.contains(&position.x) && rows.contains(&position.y)
+                    })
+                })
+                .count()
+        })
+        .sum::<usize>();
+    assert_eq!(examined, in_box);
+    assert!(examined * 4 < viewers.len() * rats.len());
+
+    assert_eq!(
+        production.wake_for_players(&channel.runtime, &players, now),
+        expected
+    );
+    for rat_actor in &rats {
+        assert_eq!(production.due(*rat_actor), in_turn.due(*rat_actor));
+    }
+}

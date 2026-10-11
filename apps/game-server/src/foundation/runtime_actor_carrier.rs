@@ -3114,10 +3114,7 @@ impl ChannelRuntimeV1 {
         let context = self.pinned_position_context();
         // The present players' positions, read on the first blockable step of this drive.
         let mut players: Option<Vec<MovementLocalPosition>> = None;
-        loop {
-            let Some(drive_window) = self.spawn_drive_window.as_ref() else {
-                break;
-            };
+        while let Some(drive_window) = self.spawn_drive_window.as_ref() {
             let horizon = drive_window.horizon;
             let steps_left = drive_window.steps_left;
             let Some(&(point, pending)) = drive_window.due.front() else {

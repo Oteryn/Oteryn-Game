@@ -96,6 +96,14 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   it at most 32 times (Codex 4242715016). Neither has a dedicated test: the first needs a
   262,144-actor carrier with a pending respawn, and the second needs a carrier with no free
   slot during a due admission.
+- Wake fan-out (Codex 4242808144): the monster pass wakes for all its players in one indexed
+  pass (`wake_for_players`): one walk of the think table and one position read per idle
+  creature build a (floor, x, y) index, and each player examines only its view box (at most
+  16 floors of 19 rows), so the work no longer grows with players times creatures. The result
+  equals one wake per player in turn. Tested: the view box holds every cell a player sees on
+  every floor pair, and 41 players over 800 rats wake the same creatures as wakes in turn,
+  read each rat once and examine only the rats in their boxes. The registry no longer lists
+  the creature bite ledger among the 64-entry D57 ledgers (Codex 4242808147).
 
 ## Implementation / findings
 
@@ -246,6 +254,8 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
     --all-targets --locked -- -D warnings` pass; `cargo test -p oteryn-game-server --no-run
     --locked` pass; `cargo test -p oteryn-game-server --lib --locked` pass (2,756 passed, 0
     failed, 28 ignored); governance validation and `tools/agents/tests` pass
+  - Wake fan-out round (Codex 4242808144, 4242808147, clippy `while_let_loop`), on the PC
+    before the push: PCRESULT
 - Earlier round: `cargo fmt --all --check`, `python tools/agents/validate_governance.py` and
   `python -m unittest discover -s tools/agents/tests`: pass
 
