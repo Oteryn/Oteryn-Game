@@ -1,0 +1,32 @@
+{
+  "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition",
+  "npcs": [
+    "oteryn:npc.al_dee",
+    "oteryn:npc.amber",
+    "oteryn:npc.asralius",
+    "oteryn:npc.billy",
+    "oteryn:npc.blind_orc",
+    "oteryn:npc.carlos",
+    "oteryn:npc.cipfried",
+    "oteryn:npc.cledwyn",
+    "oteryn:npc.dallheim",
+    "oteryn:npc.dixi",
+    "oteryn:npc.emael",
+    "oteryn:npc.hyacinth",
+    "oteryn:npc.kepar",
+    "oteryn:npc.lily",
+    "oteryn:npc.norma",
+    "oteryn:npc.obi",
+    "oteryn:npc.paulie",
+    "oteryn:npc.santiago",
+    "oteryn:npc.seymour",
+    "oteryn:npc.the_oracle",
+    "oteryn:npc.tom",
+    "oteryn:npc.vascalir",
+    "oteryn:npc.willie",
+    "oteryn:npc.zethra",
+    "oteryn:npc.zirella"
+  ],
+  "position_conflicts": []
+}

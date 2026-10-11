@@ -1,0 +1,65 @@
+{
+  "status": "OFFLINE_EVIDENCE_ADDITION_CANDIDATE",
+  "date": "2026-10-09",
+  "facts": [
+    {
+      "charm_key": "oteryn:charm.adrenaline_burst",
+      "parameter": "displayed_speed_increase_percent",
+      "value": 150,
+      "evidence_status": "DIRECT_OFFICIAL_CLIENT_PANEL_OBSERVATION",
+      "screenshot_sha256": "31fe955d93acf51a137e107c90659ce2f51dea5ab7e2733652ea389f36831d3a",
+      "scope": "Displayed description only; no combat or underlying algorithm qualification",
+      "capture_id": "adrenaline_burst.png"
+    },
+    {
+      "charm_key": "oteryn:charm.adrenaline_burst",
+      "parameter": "duration_ms",
+      "value": 10000,
+      "evidence_status": "DIRECT_OFFICIAL_CLIENT_PANEL_OBSERVATION",
+      "screenshot_sha256": "31fe955d93acf51a137e107c90659ce2f51dea5ab7e2733652ea389f36831d3a",
+      "scope": "Displayed description only; no combat or underlying algorithm qualification",
+      "capture_id": "adrenaline_burst.png"
+    },
+    {
+      "charm_key": "oteryn:charm.cleanse",
+      "parameter": "immunity_duration_ms",
+      "value": 11000,
+      "evidence_status": "DIRECT_OFFICIAL_CLIENT_PANEL_OBSERVATION",
+      "screenshot_sha256": "10b3fe59d42db7d498983b4104bfbab50f1aad4495c093e3bdb7868b07092684",
+      "scope": "Displayed description only; no combat or underlying algorithm qualification",
+      "capture_id": "cleanse.png"
+    },
+    {
+      "charm_key": "oteryn:charm.cripple",
+      "parameter": "duration_ms",
+      "value": 10000,
+      "evidence_status": "DIRECT_OFFICIAL_CLIENT_PANEL_OBSERVATION",
+      "screenshot_sha256": "66189349627fc9600149d412131ece797f9dc78699fa6a16dae56ef73fc588aa",
+      "scope": "Displayed description only; no combat or underlying algorithm qualification",
+      "capture_id": "cripple.png"
+    },
+    {
+      "charm_key": "oteryn:charm.numb",
+      "parameter": "duration_ms",
+      "value": 10000,
+      "evidence_status": "DIRECT_OFFICIAL_CLIENT_PANEL_OBSERVATION",
+      "screenshot_sha256": "1279b7d5a7bfa3c20cc08d1edb0362402547f9ae75fbc663e5e0785e44ee2919",
+      "scope": "Displayed description only; no combat or underlying algorithm qualification",
+      "capture_id": "numb.png"
+    },
+    {
+      "charm_key": "oteryn:charm.fatal_hold",
+      "parameter": "duration_ms",
+      "value": 30000,
+      "evidence_status": "DIRECT_OFFICIAL_CLIENT_PANEL_OBSERVATION",
+      "screenshot_sha256": "e1ba324e81fb6f29a7ee5469b1db13b3582ce9c8e8cde9b1b89455fec650355e",
+      "scope": "Displayed description only; no combat or underlying algorithm qualification",
+      "capture_id": "fatal_hold.png"
+    }
+  ],
+  "notes": [
+    "No existing source pins or accepted rulesets changed.",
+    "This supports displayed durations and displayed haste percentage; does not establish emulator formulas, stacking, exact trigger gates or condition eligibility.",
+    "Repository promotion requires the owning provenance contract and validation."
+  ]
+}

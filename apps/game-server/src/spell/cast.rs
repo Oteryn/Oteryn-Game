@@ -686,7 +686,11 @@ fn cast_resolved(
     for effect in &plan.side_effects {
         match effect {
             ResolvedEffect::RemoveCondition { condition } => {
-                super::actor_conditions::remove_condition(&mut next, condition)?;
+                super::actor_conditions::remove_condition_at(
+                    &mut next,
+                    condition,
+                    context.now.get(),
+                )?;
             }
             ResolvedEffect::ResolvedOther { profile, .. }
                 if qualified.is_some()
@@ -941,6 +945,8 @@ pub(crate) struct PaidOrdinaryCast {
     pub(crate) next: PlayerSpellState,
     pub(crate) anchor: super::combat_batch::SpellAnchor,
     pub(crate) resolution: super::CastResolution,
+    pub(crate) harmony_gained: u8,
+    pub(crate) harmony_gain_healing: Option<super::native_actor_states::HealingRollPlan>,
 }
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn prepare_ordinary_owner_cast_with_caster(
@@ -974,6 +980,9 @@ pub(crate) fn prepare_ordinary_owner_cast_with_caster(
         return Err(SpellCastDisposition::Rejected);
     }
     super::check_operational_rules(spell, operational, false).map_err(|e| disposition(&e))?;
+    if spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield" {
+        super::actor_conditions::require_active_mana_shield(&state.conditions, now.get())?;
+    }
     let resolution = if matches!(spell.execution, super::Execution::PartyBuff(_)) {
         super::resolve_party_cast(
             spell,
@@ -1019,13 +1028,31 @@ pub(crate) fn prepare_ordinary_owner_cast_with_caster(
         .revision
         .checked_add(1)
         .ok_or(SpellCastDisposition::Rejected)?;
+    let mut harmony_gained = 0;
+    let mut harmony_gain_healing = None;
     if let Some(role) = spell.harmony_role {
         let monk = next.monk.as_mut().ok_or(SpellCastDisposition::Rejected)?;
         match role {
-            HarmonyRole::Builder => monk.commit_builder().map(|_| ()),
-            HarmonyRole::Spender => monk.commit_spender().map(|_| ()),
+            HarmonyRole::Builder => {
+                harmony_gained = monk
+                    .commit_builder()
+                    .map_err(|_| SpellCastDisposition::Rejected)?;
+                if harmony_gained > 0 {
+                    harmony_gain_healing = super::native_actor_states::plan_harmony_gain_healing(
+                        super::actor_execution::harmony_gain_profile()?,
+                        harmony_gained,
+                        next.facts.level,
+                        monk.serene(),
+                        next.stance == Some(super::native_actor_states::StandardStance::Sustain),
+                    )
+                    .map_err(|_| SpellCastDisposition::Rejected)?;
+                }
+            }
+            HarmonyRole::Spender => {
+                monk.commit_spender()
+                    .map_err(|_| SpellCastDisposition::Rejected)?;
+            }
         }
-        .map_err(|_| SpellCastDisposition::Rejected)?;
     }
     let anchor = super::combat_batch::SpellAnchor {
         expected_revision: state.revision,
@@ -1038,6 +1065,8 @@ pub(crate) fn prepare_ordinary_owner_cast_with_caster(
         next,
         anchor,
         resolution,
+        harmony_gained,
+        harmony_gain_healing,
     })
 }
 /// Source chain callbacks obtain a fresh numerical cast from actual due owner

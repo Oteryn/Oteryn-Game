@@ -64,6 +64,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: &AdmittedSession,
         actor: ExactActorRef,
     ) -> MonkSave {
+        #[cfg(test)]
+        postgres_tests::record_save_attempt();
         for attempt in 0..RECONCILE_ATTEMPTS {
             if attempt > 0 {
                 tokio::time::sleep(RECONCILE_BACKOFF).await;
@@ -165,3 +167,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }))
     }
 }
+
+#[cfg(test)]
+#[path = "monk_save_postgres_tests.rs"]
+pub(super) mod postgres_tests;
