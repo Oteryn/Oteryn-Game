@@ -212,9 +212,17 @@ fn interface(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 ],
             ),
         ] {
-            reference_option(ui, draft, "interface", id, labels, en);
+            let dependent = id != "interface.expiry_unused" || expiry_unused_available(draft);
+            ui.add_enabled_ui(dependent, |ui| {
+                reference_option(ui, draft, "interface", id, labels, en);
+            });
         }
     });
+}
+
+fn expiry_unused_available(draft: &ClientSettings) -> bool {
+    draft.stored_bool("interface.interface.expiry_inventory") == Some(true)
+        || draft.stored_bool("interface.interface.expiry_containers") == Some(true)
 }
 
 fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
@@ -443,6 +451,42 @@ mod tests {
             collect(&shape.shape, &mut texts);
         }
         texts
+    }
+
+    #[test]
+    fn unused_expiry_depends_on_either_parent_without_mutating_stored_intent() {
+        for inventory in [None, Some(false), Some(true)] {
+            for containers in [None, Some(false), Some(true)] {
+                let mut draft = ClientSettings::default();
+                for (id, value) in [
+                    ("expiry_inventory", inventory),
+                    ("expiry_containers", containers),
+                ] {
+                    if let Some(value) = value {
+                        draft.future_preferences.insert(
+                            format!("interface.interface.{id}"),
+                            FutureValue::Bool(value),
+                        );
+                    }
+                }
+                draft.future_preferences.insert(
+                    "interface.interface.expiry_unused".into(),
+                    FutureValue::Bool(true),
+                );
+                let before = draft.clone();
+                assert_eq!(
+                    super::expiry_unused_available(&draft),
+                    inventory == Some(true) || containers == Some(true)
+                );
+                let _ = render_page(
+                    "expiry-dependency",
+                    egui::vec2(760.0, 900.0),
+                    &mut draft,
+                    interface,
+                );
+                assert_eq!(draft, before);
+            }
+        }
     }
 
     #[test]

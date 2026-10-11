@@ -94,7 +94,10 @@ Whole-scene AA/Smooth Retro source head `28565f4fbd1c92adc84ff2c71dddf7ad08bc3b3
 passed Linux/MSVC checks, physical DX12 pixel readback and all 20 pages/78 captures.
 Full counts, manifest and recovery evidence are in UI-FIDELITY.md. The owner's
 running binary was retained; release uses a separate build directory.
-All other lanes remain pending; protocol/authority changes need owning contracts.
+Select All drives Unicode composer selection; expiry retains the source OR gate,
+still disabled without data. Upstream Windows OS clipboard is enabled instead of
+the in-app fallback. World input pin/checks pass; native checks pending. UI-FIDELITY.md
+records all nine lane gaps and contracts. No lane is 100%.
 
 Slider/volume semantics and private source hashes are in UI-REFERENCE-EXTRACTED.md;
 the following exact-head evidence supersedes the authoring checkpoint. Pixel-wheel,

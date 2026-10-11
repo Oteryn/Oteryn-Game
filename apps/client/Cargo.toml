@@ -45,7 +45,7 @@ zeroize = "=1.9.0"
 
 [target.'cfg(windows)'.dependencies]
 egui = "=0.35.0"
-egui-winit = { version = "=0.35.0", default-features = false }
+egui-winit = { version = "=0.35.0", default-features = false, features = ["clipboard"] }
 image = { version = "=0.25.8", default-features = false, features = ["png", "webp"] }
 windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging"] }
 winit.workspace = true

@@ -193,6 +193,7 @@ pub fn general_action_supported(action: &str) -> bool {
             | "chat.mode.on"
             | "chat.mode.temporary"
             | "chat.send"
+            | "chat.text.select_all"
             | "dialog.cyclopedia.bestiary"
             | "dialog.cyclopedia.character"
             | "dialog.cyclopedia.charms"
@@ -1267,6 +1268,19 @@ window.vip=19:C,-"#
     }
 
     #[test]
+    fn chat_select_all_resolves_only_its_exact_default_context()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let preferences = HotkeyPreferences::default();
+        assert!(general_action_supported("chat.text.select_all"));
+        assert_eq!(
+            preferences.resolve(&[pressed(4, true)?], true),
+            vec![ResolvedHotkey::General("chat.text.select_all".into())]
+        );
+        assert!(preferences.resolve(&[pressed(4, true)?], false).is_empty());
+        Ok(())
+    }
+
+    #[test]
     fn audited_actions_without_behavioral_consumers_remain_unsupported() {
         for action in [
             "chat.loot",
@@ -1274,7 +1288,6 @@ window.vip=19:C,-"#
             "chat.server",
             "chat.server_messages",
             "chat.text.copy",
-            "chat.text.select_all",
             "client.bug_report",
             "client.change_character",
             "client.clear_message",

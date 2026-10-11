@@ -76,6 +76,19 @@ gates. It uses upstream egui sliders with a bounded Oteryn adapter, not copied Q
 or a dependency fork. Pixel/trackpad wheel equivalence and full native interactive
 comparison remain pending; these changes do not establish audio playback.
 
+## Chat selection continuation
+
+Offline `Chat.qml` SHA-256
+`247665b41f1251993c94a7d03ed8657d2f8de0068845d4762b1811392771a0d2`
+lines 36–38 delegates Select All to the chat input, not the output history.
+`ChatInput.qml` SHA-256
+`0bff9ce851998ca5c01c523c68164923dc284b55b5db5093c6627fd1482938fd`
+lines 22–26 exposes selected input text and delegates selection to its editor.
+Oteryn uses upstream egui character-range selection for the actual composer;
+Unicode selection/replacement and the exact Chat On default chord are tested.
+Unavailable/read-only chat cannot activate it. This does not qualify clipboard
+copy, link-warning policy or NPC-dialog routing.
+
 ## Graphics continuation: scaling and lighting
 
 Offline `MapWindowPane.qml` inspection (SHA-256

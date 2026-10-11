@@ -44,12 +44,12 @@ These changes do not qualify full lighting, engine switching or visual 1:1 parit
 | --- | --- | --- |
 | Basic | Yes | Display controls/action-row visibility work; own-resource bars/arcs have a vitals renderer behind explicit HUD selections. Audio stays disabled because no backend/content exists |
 | Controls | Yes | Four cardinal movement bindings work; diagonal rows remain disabled because the accepted movement wire has no diagonal intent. Keyboard Delay has the observed 0–1000 ms slider and explicit default 250 ms master; applied selections drive a client-owned held-key scheduler independently of OS repeat and frame-rate limits, using the existing paced session step queue. Releases, lost focus/device, modal/text editors, chat-context/profile changes and Stop All cancel repeats. The custom delay is retained under the default master. The exact three mouse presets and the Classic-only `Loot: Right / SHIFT+Right / Left` selector are composed with the observed dependency, but stay disabled because their input consumers are pending; persistence alone is not counted. Fresh native qualification for the repeat scheduler remains pending |
-| General Hotkeys | Partial: dedicated profile/action table | All 120 official English action labels are present with unique stable IDs; Polish labels are Oteryn-authored. Add/copy/rename/remove, two chat contexts, delayed-search layout, two captured bindings and cross-family conflict validation work. Cardinal movement accepts one unmodified physical key and an explicit clear cannot reactivate the legacy fallback; diagonal movement stays disabled until the wire supports it. Escape is reserved for Stop All and defaults there in both chat contexts. Character-name profile auto-switch, next-profile cycling, cardinal movement, first/next/previous admitted battle targets, Stop All Actions, Options, exact Custom Hotkeys navigation, the Map/Items/Character/Bestiary/Charms/Magical Archive Cyclopedia destinations, Compendium, all seven observed Social route identities, the existing Exaltation Forge/Reward Wall/Task Board/Weapon Proficiency/Wheel of Destiny compositions, fullscreen, FPS overlay (not yet the labelled lag indicator), minimap zoom/pan, individual/edge action-bar visibility, local/next/previous/help/list/close chat actions and the VIP/Battle/Skills/Spell List/Analytics Selector/Bestiary Tracker/Bosstiary Tracker/Imbuement Tracker/Kill Tracker/Party/Player Guide/Quest Tracker/Quest Log/Prey panel routes have consumers. Dialog actions open idempotently; window actions toggle. Unknown Social interiors are explicit unavailable views. These panel routes expose only existing local compositions and do not imply server-backed content. Chat-text editing actions, unsupported inventory rows and most other observed actions stay disabled until they have exact runtime consumers. |
+| General Hotkeys | Partial: dedicated profile/action table | All 120 official English labels have stable IDs; Polish labels are Oteryn-authored. Profile management, both chat contexts, delayed search, two bindings and cross-family conflict validation work. Real consumers cover cardinal movement/explicit clearing, Stop All, profile cycling/character auto-switch, admitted battle targets, Options/Custom Hotkeys, existing Cyclopedia/dialog/panel navigation, fullscreen/FPS, minimap and action-row visibility, channel/mode/send operations and composer Select All. Escape remains reserved for Stop All. Dialogs open idempotently; windows toggle. Existing local panel compositions are not server-backed data, and unknown interiors remain unavailable. Diagonals, clipboard-copy assignments, unsupported inventory actions and most other observed actions remain disabled without exact consumers |
 | Action Bar Hotkeys | Dedicated visible 9 × 50 table; editing disabled | Both stored chord columns remain visible in the distinct Chat On/Off contexts, and legacy 12-slot/default migration remains loadable and validated. The runtime router executes a slot only when that session has an executable assignment and no longer claims an empty slot's key. Production has no authoritative spell/object assignment source, so every binding cell stays disabled and the internal assignment/migration primitives are not counted as reachable activation behavior. A fresh native Windows acceptance for this candidate remains pending. |
 | Custom Hotkeys | Partial: observed editor inventory | Text assignments fill the real composer or send through the typed chat intent. Spell/object assignment and legacy bindings are disabled because no authoritative live picker/assignment exists; their persisted presence is not counted as behavior |
 | Interface | Yes | Tile-under-pointer highlighting works. Explicit Native off draws an independently authored Oteryn arrow, Native on restores the OS pointer, and Big doubles the custom arrow around the same pointer hotspot. Specialized text/resize cursors retain their OS semantics; contextual Animated cursor states, native/Big combination acceptance, link-copy warning, loot-colour and expiry remain pending. Fresh native qualification of the custom arrow is required. Oteryn language, contrast, motion and scale controls are intentionally absent from this reference page |
 | HUD | Partial: groups/arcs and all 35 observed conditions | Exact master labels, the two Harmony radio positions and 35 locally drawn condition symbols are present. Own name and harmony use admitted/session data; own health/mana bars/arcs and other-actor health bars consume real projections. Condition controls and ordering are visible but disabled because the protocol exposes no condition projection; native live-session visual acceptance remains pending |
-| Console | Yes | Per-tab read-only mode works; the private-message-tab option uses the exact reference label but stays disabled without routing. Copy uses the clipboard and Save Window writes a bounded, non-overwriting local snapshot. Clear Window hides the current tab's received lines without mutating server/session history; a per-tab accepted sequence cutoff admits later identical messages. Show Timestamps / Show Seconds in Timestamps consume bounded client receipt times from accepted ChatLine events. Missing local-clock metadata has no invented prefix; these are not server timestamps. A retained legacy text-size value still affects chat rendering, but it has no reference-page control and is not counted as an available function. The live console now owns explicit Chat Off / Chat On / temporary Chat On* focus and send behavior; participants, secondary console and event filters remain pending. Fresh native qualification of the clock/clear batch is required |
+| Console | Yes | Per-tab read-only, bounded/non-overwriting Save Window, receipt-time timestamps and sequence-cutoff Clear Window work without mutating session history or inventing server timestamps. Chat Off / Chat On / temporary Chat On* own focus and send behavior. Select All now selects the real Unicode composer. Earlier system-clipboard acceptance was overstated: egui-winit had only its in-app fallback. The continuation enables its upstream Windows clipboard backend; external clipboard acceptance is still required. Participants, secondary console, private tabs and event filters remain pending. Legacy text size is retained but has no reference-page control |
 | Game Window | Yes | Frame & Highlight / Frame Only / Highlight Only / None drive the real target frame and scene overlay. Text/combat/effect projections remain disabled |
 | Action Bars | Partial | Three masters and nine independent 50-slot rows drive the live layout; visible stored hotkey labels affect that renderer. Global lock migration, a single trailing lock per nonempty edge group, clear and primary-button move/swap primitives are tested against in-memory session assignments. Production still has no authoritative spell/object assignment source, so an admitted client starts empty; assignment menus, binding/item-amount/tooltip controls, clear controls and both lock surfaces remain disabled. Those primitives are not counted as reachable behavior. |
 | Shortcuts | Yes, two lists | Add/remove/order edits for destinations with real local compositions affect draft only; Apply updates the live registry and Cancel discards. Clean profiles and Defaults omit Lenshelp; a Lenshelp entry retained from an existing profile remains visible and removable but disabled, and cannot be added while its destination is unverified. |
@@ -166,7 +166,7 @@ lighting, physical input or disabled rows. Exact source-head recovery bundle:
 `/workspace/oteryn-client-publication-985fe6b4.bundle`, SHA-256
 `7ebcb54fdae881dd392d071136b4b4b2670e4545055086625991716fce6f1fd3`.
 
-## Required evidence per page/panel
+## Whole-scene sampling qualification
 
 AA source head `28565f4fbd1c92adc84ff2c71dddf7ad08bc3b3d` passed Linux client
 tests (196/169/5), renderer tests (39), strict Clippy, formatting and governance.
@@ -182,6 +182,52 @@ Recovery bundle: `/workspace/oteryn-client-publication-28565f4f.bundle`, SHA-256
 `1f6569da680a33c2dbce9885d79fbd9ec1eb4dd4070315f8df35ce6510a45bcc`.
 This proves a working sampling consumer, not complete original-client visual
 parity, real lightmap composition or every physical Apply/Cancel interaction.
+
+## Continued nine-lane work
+
+The next bounded batch connects Chat Text: Select All to the real composer using
+upstream egui selection state, rather than retaining an unconsumed binding. Tests
+select the complete Unicode draft and replace it through the real TextEdit,
+preserve the recipient, reject unavailable/read-only contexts and verify Ctrl+A
+is bound only in the observed default Chat On map. Interface now applies the
+source-confirmed inventory OR container expiry dependency; all expiry controls
+remain disabled because no authoritative item-expiry projection exists.
+Native qualification for this source successor is required independently.
+
+The same batch corrects the Windows `egui-winit` feature selection: explicit
+`clipboard` enables the mature upstream OS backend instead of its fallback string.
+No native clipboard contents were inspected or overwritten during this audit;
+external clipboard transfer remains an interactive acceptance item. Dependency
+resolution changes Cargo.lock. The World input pin was refreshed to
+`8bc3d815169e801cfb374e2f02161a8a3262ff2806324ba91a3e2e8b6ca1cd84`;
+pin-check rebuilt the unchanged 25,086,645-byte World bundle twice, retaining
+digest `f8b11ebcd96a4140f71dcbb5944519434d3a8e6b0b0f2ecf9fecb9c74f67b6c8`.
+Linux client tests pass 197/171/5, strict Clippy, formatting and governance
+(60 tests) pass. The added native clipboard dependencies still require MSVC
+qualification before this feature is counted as accepted.
+
+No lane is claimed 100% complete. Remaining activation requirements are:
+
+| Lane | Missing input or consumer |
+| --- | --- |
+| Graphics | Runtime engine capabilities/switching and original live image/gamma comparison |
+| Effects | Floor/light/environment and spell-effect projections; real compositing |
+| Audio | Licensed playable assets, device/mixer backend and authoritative sound events; the pinned 15.30 manifest contains no sound files |
+| Controls | Mouse/loot consumers; diagonal movement requires an accepted contract beyond the four cardinal wire directions |
+| Action bars | Authoritative learned-spell/object assignment sources, cooldown/count metadata and reachable pickers |
+| Interface/HUD | Contextual cursor states, safe link-copy warning, loot values, expiry and condition projections |
+| Console/Game Window | Accepted filter/participant/private/secondary routing and clipboard semantics |
+| Misc/Gameplay | Supported purchase/container/inspection/chase/loot operations and accepted remembered-sign-in lifetime policy |
+| Screenshots/Help | Accepted automatic event pipeline, supported destinations and original-compatible minimap/import formats |
+
+The existing session event inventory has spatial/entities/objects/vitals/combat,
+chat/rooms, inventory and container projections. It does not supply the missing
+learned-spell, cooldown, condition, light/environment or screenshot-trigger
+catalogues. Original reference metadata is not authoritative Oteryn session data.
+Changing those server/protocol/identity contracts requires the owning contract
+and review; this client authoring task cannot silently allocate them.
+
+## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private
   capture; dropdown membership and defaults only when actually observed.

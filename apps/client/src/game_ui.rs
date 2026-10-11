@@ -102,6 +102,7 @@ pub struct GameUi {
     chat_cleared_at: [Option<u64>; 6],
     chat_mode: ChatMode,
     chat_focus_request: Option<bool>,
+    chat_select_all_request: bool,
     chat_composer_id: Option<egui::Id>,
     chat_recipient_id: Option<egui::Id>,
     notice: Option<String>,
@@ -237,6 +238,18 @@ impl GameUi {
                 return;
             };
             ctx.memory_mut(|memory| memory.request_focus(id));
+            if self.chat_select_all_request {
+                self.chat_select_all_request = false;
+                if let Some(mut state) = egui::TextEdit::load_state(ctx, id) {
+                    state
+                        .cursor
+                        .set_char_range(Some(egui::text::CCursorRange::two(
+                            egui::text::CCursor::new(0),
+                            egui::text::CCursor::new(self.draft.chars().count()),
+                        )));
+                    state.store(ctx, id);
+                }
+            }
         } else {
             ctx.memory_mut(|memory| {
                 if let Some(id) = self.chat_composer_id {
@@ -251,6 +264,9 @@ impl GameUi {
     }
 
     fn set_chat_mode(&mut self, mode: ChatMode) {
+        if mode == ChatMode::Off {
+            self.chat_select_all_request = false;
+        }
         self.chat_mode = mode;
         self.chat_focus_request = Some(mode != ChatMode::Off);
     }
@@ -399,6 +415,9 @@ impl GameUi {
         if self.route_chat_mode_hotkey(action, chat_visible && rooms.is_some(), english) {
             return true;
         }
+        if self.route_chat_text_hotkey(action, chat_visible && rooms.is_some(), english) {
+            return true;
+        }
         match action {
             "chat.next" | "chat.previous" => {
                 if let Some(rooms) = rooms {
@@ -448,6 +467,17 @@ impl GameUi {
                 }
             }
             _ => return false,
+        }
+        true
+    }
+
+    fn route_chat_text_hotkey(&mut self, action: &str, available: bool, english: bool) -> bool {
+        if action != "chat.text.select_all" {
+            return false;
+        }
+        if self.chat_composer_ready(available, english) && self.chat_composer_id.is_some() {
+            self.chat_select_all_request = true;
+            self.chat_focus_request = Some(true);
         }
         true
     }
@@ -2249,6 +2279,58 @@ mod tests {
         };
         assert!(ui.route_chat_mode_hotkey(action, true, true));
         assert_eq!(ui.chat_mode, ChatMode::Off);
+        Ok(())
+    }
+
+    #[test]
+    fn select_all_hotkey_selects_real_unicode_composer_without_changing_text()
+    -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(320.0, 80.0);
+        let mut ui = super::GameUi {
+            draft: "Zażółć 🦀".into(),
+            recipient: "recipient".into(),
+            ..Default::default()
+        };
+        let draw = |ctx: &egui::Context, ui: &mut super::GameUi| {
+            egui::Window::new("select-all-chat-test")
+                .show(ctx, |frame_ui| {
+                    let recipient = frame_ui.text_edit_singleline(&mut ui.recipient);
+                    ui.observe_chat_text_focus(&recipient);
+                    let edit = frame_ui.text_edit_singleline(&mut ui.draft);
+                    ui.apply_chat_composer_focus(&edit, true);
+                    edit.id
+                })
+                .and_then(|window| window.inner)
+        };
+        let (initial, _) = frame(&ctx, size, Vec::new(), |ctx| draw(ctx, &mut ui));
+        let composer = initial.ok_or("composer")?;
+        let recipient = ui.chat_recipient_id.ok_or("recipient")?;
+        ctx.memory_mut(|memory| memory.request_focus(recipient));
+        assert!(ui.route_chat_text_hotkey("chat.text.select_all", true, true));
+        ui.apply_chat_focus_transition(&ctx);
+        let state = egui::TextEdit::load_state(&ctx, composer).ok_or("selection state")?;
+        assert_eq!(
+            state.cursor.char_range().ok_or("selection")?,
+            egui::text::CCursorRange::two(egui::text::CCursor::new(0), egui::text::CCursor::new(8),)
+        );
+        assert_eq!(ctx.memory(|memory| memory.focused()), Some(composer));
+        assert_eq!(ui.draft, "Zażółć 🦀");
+        assert!(!ui.chat_select_all_request);
+        let _ = frame(
+            &ctx,
+            size,
+            vec![egui::Event::Text("replacement".into())],
+            |ctx| draw(ctx, &mut ui),
+        );
+        assert_eq!(ui.draft, "replacement");
+        assert_eq!(ui.recipient, "recipient");
+        assert!(!ui.route_chat_text_hotkey("chat.text.copy", true, true));
+        for available in [false, true] {
+            ui.chat_read_only[ui.channel] = available;
+            assert!(ui.route_chat_text_hotkey("chat.text.select_all", available, true));
+            assert!(!ui.chat_select_all_request);
+        }
         Ok(())
     }
 
