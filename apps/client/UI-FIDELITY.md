@@ -90,6 +90,14 @@ implemented.
   Its private manifest SHA-256 is
   `40cc3e17a964666a2ea8a4ea7c4ce331d988109d062f63b6cd0dd3d29316e5eb`.
   Page-audit evidence does not qualify contextual cursor behavior or live chat.
+- Receipt-clock/Clear successor `1b2928fbfb8d14bf566f06df334c2f312a2fb6f0`
+  passed native MSVC tests (193 library/166 binary/5 launcher), including actual
+  Windows local-clock availability, strict Clippy and the 20-page/78-capture
+  DX12 audit with no invalid page. The changed Console capture was visually
+  inspected. Its private manifest SHA-256 is
+  `3bfb69468bb3505fdb0a85bf535c6f781bfe267bcc4c0f7d00cf2d39452a9a3f`.
+  The lockfile delta invalidated the World bundle input pin; the repair updates
+  only that input digest and must preserve the existing bundle digest.
 - This establishes native compiled-page reachability, not exhaustive reference
   comparison or working behavior for disabled rows. Native live-session visual
   acceptance and every row whose consumer remains pending are still open and

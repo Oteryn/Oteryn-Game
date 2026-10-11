@@ -114,7 +114,15 @@ Window sequence cutoffs. Later identical messages survive Clear; the session
 projection and server history are never mutated. An unavailable local clock
 produces no invented timestamp. Upstream `time` 0.3.55 supplies safe platform
 local-time retrieval; Windows regressions require actual clock availability.
-The exact committed successor still needs native qualification.
+The exact committed successor `1b2928fb` passed native MSVC tests
+(193 library/166 binary/5 launcher), strict Clippy and the DX12 audit
+(20 pages/78 captures/no invalid page). The Console capture was visually
+inspected; private manifest SHA-256 is
+`3bfb69468bb3505fdb0a85bf535c6f781bfe267bcc4c0f7d00cf2d39452a9a3f`.
+The root lockfile is a World compiler input. Its changed digest reproduced the
+red World bundle job locally; the AUTHORING repair refreshes only the pin's
+`inputs_digest`, preserving world content, identity, production=false and the
+bundle digest. Qualification uses the unchanged double-build gate.
 
 The current client tree passes 194 client-library, 162 native-binary
 and 5 launcher tests, strict client all-target Clippy, rustfmt and
