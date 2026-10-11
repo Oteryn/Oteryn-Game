@@ -1725,6 +1725,24 @@ fn boot_bundle_world(
     Ok(booted)
 }
 
+/// MAP-FLOOR-1: activates the floor changes of the booted bundle World, which its movement
+/// cells serve to every step (`map::floor`). The boot already refused a floor change whose
+/// destinations never end; a served bundle must also place at least one, so a bundle whose
+/// stairs, ladders and holes all failed to resolve against the content catalogue refuses
+/// readiness instead of silently serving a flat map. Returns the number of floor-change tiles.
+fn activate_floor_changes(world: &crate::map::boot::BundleWorld) -> Result<usize, BootError> {
+    let count = world.floors().count();
+    if count == 0 {
+        return Err(BootError::WorldBundle(
+            crate::map::boot::BootRefusal::NoFloorChanges,
+        ));
+    }
+    event(&format!(
+        "event=world_bundle_floors state=active floor_changes={count}"
+    ));
+    Ok(count)
+}
+
 /// The Channel content pin of a bundle World: the activated generation's pin with the bundle's
 /// frame binding and map-revision identities and its start (native floor `-z`) as the
 /// first-entry start.
@@ -1746,6 +1764,23 @@ fn bundle_channel_pin(
         world.map_revision_digest(),
         (i32::from(start.x), i32::from(start.y), i16::from(floor)),
     ))
+}
+
+/// SPAWN-1a (CREATURE-AI-0 §6.2): the fixture World's spawn source is realized at Channel
+/// activation, before the listener binds. A bundle World has no fixture spawn source.
+fn realize_fixture_spawns(
+    runtime: &mut ChannelRuntimeV1,
+    spawn_source: Option<crate::content::NativeEntrySpawnSource>,
+    bundle_world: bool,
+) -> Result<usize, BootError> {
+    let sources = spawn_source
+        .filter(|_| !bundle_world)
+        .map(|source| source.activation_facts())
+        .into_iter()
+        .collect();
+    runtime
+        .realize_activation_spawns(sources)
+        .map_err(|_| BootError::Readiness("creature spawn realization"))
 }
 
 async fn boot_and_serve(
@@ -1800,7 +1835,7 @@ async fn boot_and_serve(
     let (active_content, content) =
         activate_content(root, material.world, material.channel).await?;
     let qualified_room = content.qualified_room().clone();
-    let (channel_pin, movement_cells, door_content) = content.into_channel_parts();
+    let (channel_pin, movement_cells, door_content, spawn_source) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
     let gameplay = active_content
@@ -1813,6 +1848,9 @@ async fn boot_and_serve(
     let bundle = bundle
         .map(|checked| boot_bundle_world(checked, material.world, material.channel, gameplay))
         .transpose()?;
+    if let Some(world) = &bundle {
+        activate_floor_changes(world)?;
+    }
     let (channel_pin, movement_cells) = match &bundle {
         Some(world) => (
             bundle_channel_pin(&channel_pin, world)?,
@@ -1922,6 +1960,11 @@ async fn boot_and_serve(
             .install_companion_policies(&mut channel_runtime)
             .map_err(|_| BootError::ContentActivation("active creature policies"))?;
     }
+    let spawned_monsters =
+        realize_fixture_spawns(&mut channel_runtime, spawn_source, bundle.is_some())?;
+    event(&format!(
+        "event=creature_spawns state=realized spawned_monsters={spawned_monsters}"
+    ));
     let runtime = Mutex::new(channel_runtime);
     event(&format!(
         "event=channel_runtime state=bootstrapped ownership_generation={} source_revision={} capacity={}",
@@ -2329,6 +2372,49 @@ mod tests {
     /// generation's Item key set and profiles, not from the entry room's content, and its
     /// Channel pin carries the bundle's identities.
     #[test]
+    fn boot_realizes_both_d116_rats_on_the_den_cells_before_readiness() {
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let room = crate::content::qualify_native_entry_room(world).expect("entry room");
+        let runtime = || {
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                channel,
+                node,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                8,
+                crate::foundation::ChannelContentPin::test(world),
+            )
+            .expect("runtime")
+        };
+        let mut booted = runtime();
+        assert_eq!(
+            realize_fixture_spawns(&mut booted, room.spawn_source().cloned(), false).ok(),
+            Some(2)
+        );
+        let rats = booted
+            .spawn_point_creatures()
+            .into_iter()
+            .map(|(_, cell, live)| ((cell.x, cell.y, cell.floor), live.is_some()))
+            .collect::<Vec<_>>();
+        assert_eq!(rats, vec![((2, 0, 0), true), ((2, -1, 0), true)]);
+        // A bundle World realizes no fixture spawn.
+        let mut bundle = runtime();
+        assert_eq!(
+            realize_fixture_spawns(&mut bundle, room.spawn_source().cloned(), true).ok(),
+            Some(0)
+        );
+        assert!(bundle.spawn_point_creatures().is_empty());
+    }
+
+    #[test]
     fn map_cutover_b_a_bundle_with_items_boots_from_the_active_generation() {
         const KEYS: &[u8] =
             include_bytes!("../../../../tools/content-schema/native-gameplay/item-keys.json");
@@ -2406,6 +2492,54 @@ mod tests {
         assert!(matches!(
             boot_bundle_world(checked(), world, channel, gameplay),
             Err(BootError::WorldBundle(_))
+        ));
+    }
+
+    #[test]
+    fn map_floor_activation_counts_floor_changes_and_refuses_a_flat_bundle() {
+        use crate::map::boot::tests::{bundle, floor_bundle, floor_items, floor_pins, items};
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let (bytes, pins) = floor_bundle();
+        let floors = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
+            .expect("floor bundle");
+        assert_eq!(activate_floor_changes(&floors).expect("activated"), 2);
+
+        // A bundle none of whose entries is a catalogue floor change refuses readiness.
+        let (bytes, pins) = bundle();
+        let mut revision = String::from("sha256:");
+        for byte in pins.digest {
+            revision.push_str(&format!("{byte:02x}"));
+        }
+        let flat = crate::map::boot::boot(
+            &bytes,
+            &crate::map::boot::BootPins {
+                bundle: pins,
+                map_revision: revision,
+                start: crate::map::overlay::TilePos {
+                    x: 2,
+                    y: 0,
+                    floor: -7,
+                },
+            },
+            world,
+            channel,
+            items,
+        )
+        .expect("flat bundle");
+        assert!(matches!(
+            activate_floor_changes(&flat),
+            Err(BootError::WorldBundle(
+                crate::map::boot::BootRefusal::NoFloorChanges
+            ))
+        ));
+        // Bad floor-change data refuses the boot before it can be activated.
+        let (bytes, pins) = crate::map::boot::tests::floor_bundle_with(true);
+        assert!(matches!(
+            crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items),
+            Err(crate::map::boot::BootRefusal::FloorChain(_))
         ));
     }
 

@@ -1,6 +1,6 @@
 {
   "schema": "oteryn.spell-party-behaviours.v1",
-  "note": "Candidate party_buff parameters (owner S27; OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md C.3). The area is the radius-3 circle of 37 tiles on the caster's floor; min_affected 2 counts the caster. Train, Protect, Heal and Enchant use ceil(base x 0.9^(X-1) x X), rounded up; Enlighten uses fixed mana 75. Each member gets one condition for 120 s. Enlighten's regeneration follows the owner handover supplied for this offline candidate; live #162 decision readback remains required before publication. A 'blocked' entry stays blocked.",
+  "note": "Candidate party_buff parameters (owner S27; OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md C.3). The area is the radius-3 circle of 37 tiles on the caster's floor; min_affected 2 counts the caster. Train, Protect, Heal and Enchant use ceil(base x 0.9^(X-1) x X), rounded up; Enlighten uses fixed mana 75. Each member gets one condition for 120 s. Enlighten's values are confirmed by the live readback of owner decision #162 comment 5914941038. A 'blocked' entry stays blocked.",
   "area": [
     "..xxx..",
     ".xxxxx.",
@@ -81,7 +81,13 @@
         "type": "regeneration",
         "regeneration": {"mana_gain": 2, "mana_interval_ms": 2000}
       },
-      "sources": "Owner handover supplied in this task, referring to #162 comments 5914928258 and 5914941038 (live readback unavailable): 2 mana every 2 s for 120 s. Fixed mana 75, cooldown 300 s and support group 2 s are corroborated by F1182676, BR434658 and the owner's official spell list capture. Canary/Crystal regeneration values are superseded in this candidate."
+      "sources": "Owner handover supplied in this task, referring to #162 comments 5914928258 and 5914941038 (live readback unavailable): 2 mana every 2 s for 120 s. Fixed mana 75, cooldown 300 s and support group 2 s are corroborated by F1182676, BR434658 and the owner's official spell list capture. Canary/Crystal regeneration values are superseded in this candidate.",
+      "owner_decision_readback": {
+        "url": "https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5914941038",
+        "decision_date": "2026-09-30",
+        "readback_date": "2026-10-09",
+        "confirmed": "Fixed mana 75, cooldown 300 s, support group 2 s, and 2 mana every 2 s for 120 s (120 mana total). The sources string above is the historical converter evidence retained for existing exact C.3 bindings; its live-readback-unavailable qualification is superseded by this receipt. These parameters do not by themselves establish runtime composition."
+      }
     }
   }
 }

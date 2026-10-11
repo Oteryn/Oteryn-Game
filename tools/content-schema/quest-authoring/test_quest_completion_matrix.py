@@ -54,12 +54,12 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             [row["key"] for row in by_title["To Outfox a Fox Quest"]["canonical"]],
         )
         self.assertEqual(
-            "REWARD_ONLY_RUNTIME_PENDING",
+            "REWARD_CLAIM_USE_PENDING",
             by_title["To Outfox a Fox Quest"]["work_state"],
         )
         reward_only = [
             row for row in self.result["records"]
-            if row["work_state"] == "REWARD_ONLY_RUNTIME_PENDING"
+            if row["work_state"] == "REWARD_CLAIM_USE_PENDING"
         ]
         self.assertEqual(42, len(reward_only))
         self.assertTrue(
@@ -71,9 +71,26 @@ class QuestCompletionMatrixTest(unittest.TestCase):
         self.assertEqual(
             {
                 "NATIVE_BINDINGS_PENDING": 331,
-                "REWARD_ONLY_RUNTIME_PENDING": 42,
+                "REWARD_CLAIM_USE_PENDING": 42,
             },
             self.result["summary"]["implementation_state"],
+        )
+        self.assertEqual(123, self.result["summary"]["reward_claim_ready_refs"])
+        self.assertEqual(126, self.result["summary"]["reward_claim_placements"])
+        self.assertEqual(
+            {
+                "REWARD_CLAIM_DATA_PENDING": 17,
+                "REWARD_CLAIM_IMPLEMENTATION_PENDING": 40,
+                "REWARD_CLAIM_USE_PENDING": 48,
+            },
+            self.result["summary"]["reward_claim_owner_state"],
+        )
+        self.assertEqual(
+            self.result["summary"]["reward_claim_ready_refs"],
+            sum(
+                (row["reward_claim_owner"] or {}).get("ready_claims", 0)
+                for row in self.result["records"]
+            ),
         )
         self.assertEqual(
             {
@@ -92,6 +109,47 @@ class QuestCompletionMatrixTest(unittest.TestCase):
             },
             self.result["summary"]["source_fidelity_state"],
         )
+
+    def test_reward_only_runtime_owner_requires_ready_bound_claim_content(self):
+        definition = {
+            "kind": "reward_only",
+            "claims": [
+                {
+                    "family": "RewardClaim",
+                    "key": "oteryn:reward-claim.test",
+                    "revision": "reward-claim-r1",
+                }
+            ],
+        }
+        ready = {
+            "oteryn:reward-claim.test": {
+                "readiness": "ready",
+                "placements": [{"source_binding": {"project_position": {"x": 1, "y": 1, "z": 1}}}],
+            }
+        }
+        self.assertEqual(
+            "REWARD_CLAIM_USE_PENDING",
+            matrix.reward_claim_owner([definition], ready)["state"],
+        )
+        waiting = {
+            "oteryn:reward-claim.test": {
+                "readiness": "waiting_implementation",
+                "placements": [{}],
+            }
+        }
+        self.assertEqual(
+            "REWARD_CLAIM_IMPLEMENTATION_PENDING",
+            matrix.reward_claim_owner([definition], waiting)["state"],
+        )
+        for broken in [
+            {},
+            {"oteryn:reward-claim.test": {"readiness": "waiting_data", "placements": [{}]}},
+            {"oteryn:reward-claim.test": {"readiness": "ready", "placements": []}},
+        ]:
+            self.assertEqual(
+                "REWARD_CLAIM_DATA_PENDING",
+                matrix.reward_claim_owner([definition], broken)["state"],
+            )
 
     def test_canonical_inventory_is_not_assumed_one_to_one(self):
         self.assertEqual(352, self.result["summary"]["canonical_definitions"])

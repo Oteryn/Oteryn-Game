@@ -56,11 +56,15 @@ pub(crate) struct OfferedCapability {
 /// The production offered set for a generation without a non-empty Item key set: the registry's
 /// `offered: true` entries except capability 4, ascending by ID. VIS-3 offers capability 6
 /// `WORLD_SPATIAL_ENTITIES`, SPEED-1 capability 13 `PACED_MOVEMENT_V1` and ATTACK-1b capability
-/// 17 `ATTACK_V1`, which requires 6. A test keeps it equal to the registry and within
+/// 17 `ATTACK_V1`, which requires 6; CHAT-WIRE-1 offers capability 7 `CHAT_V1`. A test keeps it equal to the registry and within
 /// `REGISTERED_CAPABILITY_IDS_V1`.
 pub(crate) const PRODUCTION_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     OfferedCapability {
         id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_CHAT_V1,
         requires: &[],
     },
     OfferedCapability {
@@ -106,6 +110,10 @@ pub(crate) const ITEM_VIEW_OFFERED_CAPABILITIES: &[OfferedCapability] = &[
     },
     OfferedCapability {
         id: CAPABILITY_WORLD_SPATIAL_ENTITIES,
+        requires: &[],
+    },
+    OfferedCapability {
+        id: CAPABILITY_CHAT_V1,
         requires: &[],
     },
     OfferedCapability {
