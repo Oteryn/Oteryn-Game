@@ -46,6 +46,13 @@ many panels and remaining engine contracts are still absent.
 
 ## Acceptance evidence and next actions
 
+Help ZIP export AUTHORING uses upstream window-owned `rfd`, `zip` and atomic
+`tempfile` replacement, reusing the existing validated Oteryn preferences.
+Linux 209/175/5, strict Clippy, formatting, boundaries and governance pass.
+World input pin `5e2707ac` double-builds the unchanged bundle (`f8b11ebc`).
+Fresh MSVC/DX12 qualification and actual picker interaction remain pending;
+unknown original ZIP contents/minimap import are not claimed as implemented.
+
 Owner renewed implementation scope for all nine settings lanes: Graphics,
 Effects, Audio, Controls/General Hotkeys, Action Bars/Custom Hotkeys,
 Interface/HUD, Console/Game Window, Misc/Gameplay and Screenshots/Help.
@@ -119,7 +126,8 @@ one AUTHORING batch. CI on an older head never qualifies a successor.
 ## Known completion gaps
 
 - Original Help source and a live SaveFile dialog confirm ZIP export/import
-  filters. Current fixed-path JSON export is only an Oteryn backup, not parity.
+  filters. AUTHORING replaces fixed-path JSON with native ZIP selection and
+  atomic Oteryn-only export, with cancellation/error/round-trip regressions.
   ZIP contents remain unknown: the probe produced no archive and the original
   reference process disappeared; do not restart/sign in or copy global identity
   configuration. Schema-only metadata and private evidence are recorded in

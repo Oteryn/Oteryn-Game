@@ -103,6 +103,7 @@ pub(crate) const fn prelogin_settings_hotkey(
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum SettingsRuntimeAction {
+    ExportOptions,
     OpenCompendium,
 }
 
@@ -257,7 +258,9 @@ impl SettingsPanel {
                     self.browser.clear_transient_route();
                     self.runtime_action = Some(SettingsRuntimeAction::OpenCompendium);
                 }
-                PreferenceAction::ExportOptions => self.export_options(),
+                PreferenceAction::ExportOptions => {
+                    self.runtime_action = Some(SettingsRuntimeAction::ExportOptions);
+                }
                 PreferenceAction::ResetOptions => {
                     self.draft = ClientSettings::default();
                     self.message = Some(if en {
@@ -505,10 +508,6 @@ impl SettingsPanel {
         self.finish_save(result, close_after_save);
     }
 
-    fn options_export_path() -> Option<std::path::PathBuf> {
-        ClientSettings::path().map(|path| path.with_file_name("oteryn-options-export.json"))
-    }
-
     fn open_screenshot_folder(&mut self) {
         let result = screenshot_directory()
             .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
@@ -525,10 +524,18 @@ impl SettingsPanel {
         });
     }
 
-    fn export_options(&mut self) {
-        let result = Self::options_export_path()
-            .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
-            .and_then(|path| self.export_options_to(&path).map(|()| path));
+    #[cfg(windows)]
+    pub(crate) fn export_options(&mut self, parent: &winit::window::Window) {
+        let selected = crate::options_export::choose_destination(self.draft.english, parent);
+        self.export_options_selected(selected.as_deref());
+    }
+
+    fn export_options_selected(&mut self, selected: Option<&std::path::Path>) {
+        // Cancelling the native picker has no draft, active state or file effect.
+        let Some(path) = selected else {
+            return;
+        };
+        let result = self.export_options_to(path).map(|()| path);
         self.message = Some(match result {
             Ok(path) if self.draft.english => {
                 format!("Options exported to {}", path.display())
@@ -540,13 +547,7 @@ impl SettingsPanel {
     }
 
     fn export_options_to(&self, path: &std::path::Path) -> std::io::Result<()> {
-        self.draft.save(path)
-    }
-
-    #[cfg(test)]
-    fn import_options_from(&mut self, path: &std::path::Path) -> std::io::Result<()> {
-        self.draft = ClientSettings::load(path)?;
-        Ok(())
+        crate::options_export::save(&self.draft, path)
     }
 
     fn finish_save(&mut self, result: std::io::Result<()>, close_after_save: bool) {
@@ -614,6 +615,38 @@ mod tests {
         assert!(!prelogin_settings_hotkey(false, true, false, false, true));
         assert!(!prelogin_settings_hotkey(false, true, true, true, true));
         assert!(!prelogin_settings_hotkey(false, true, true, false, false));
+    }
+
+    #[test]
+    fn help_export_dispatches_a_native_action_without_closing_or_applying_the_draft()
+    -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(900.0, 620.0);
+        let current = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let mut panel = SettingsPanel::for_settings_audit(current.clone());
+        assert!(panel.open_complete_section("help"));
+        panel.draft.fullscreen = !current.fullscreen;
+        let unsaved = panel.draft.clone();
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = frame(&ctx, size, Vec::new(), |ctx| panel.show(ctx, None, None)).1;
+        }
+        let export =
+            button_position(&output, size, "Export All Options").ok_or("Export action visible")?;
+        let _ = click(&ctx, size, export, |ctx| panel.show(ctx, None, None));
+        assert_eq!(
+            panel.take_runtime_action(),
+            Some(SettingsRuntimeAction::ExportOptions)
+        );
+        assert_eq!(panel.take_runtime_action(), None);
+        assert_eq!(panel.draft, unsaved);
+        assert_eq!(panel.current, current);
+        assert!(panel.open);
+        assert!(!panel.applied);
+        Ok(())
     }
 
     #[test]
@@ -781,17 +814,18 @@ mod tests {
     }
 
     #[test]
-    fn options_export_and_import_round_trip_a_validated_draft_without_applying_it()
+    fn options_export_preserves_the_draft_and_does_not_apply_it()
     -> Result<(), Box<dyn std::error::Error>> {
         let nonce = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_nanos();
         let path = std::env::temp_dir().join(format!(
-            "oteryn-options-round-trip-{}-{nonce}.json",
+            "oteryn-options-round-trip-{}-{nonce}.zip",
             std::process::id()
         ));
         let current = ClientSettings::default();
         let exported = ClientSettings {
+            english: true,
             fullscreen: true,
             ui_scale: 1.4,
             ..current.clone()
@@ -807,8 +841,21 @@ mod tests {
             runtime_action: None,
         };
         panel.export_options_to(&path)?;
-        panel.draft = current.clone();
-        panel.import_options_from(&path)?;
+        panel.message = Some("existing message".into());
+        panel.export_options_selected(None);
+        assert_eq!(panel.message.as_deref(), Some("existing message"));
+        let archive = std::fs::read(&path)?;
+        panel.draft.ui_scale = f32::NAN;
+        panel.export_options_selected(Some(&path));
+        assert!(
+            panel
+                .message
+                .as_deref()
+                .is_some_and(|message| message.contains("not exported"))
+        );
+        assert!(panel.draft.ui_scale.is_nan());
+        assert_eq!(std::fs::read(&path)?, archive);
+        panel.draft = exported.clone();
         let _ = std::fs::remove_file(&path);
         assert_eq!(panel.draft, exported);
         assert_eq!(panel.current, current);

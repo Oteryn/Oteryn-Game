@@ -938,6 +938,11 @@ impl ApplicationHandler for Application {
                         login.show(ui.ctx());
                         crate::mouse_cursor::show(ui.ctx(), &self.preferences);
                     });
+                    while let Some(action) = login.settings.take_runtime_action() {
+                        if action == crate::settings_ui::SettingsRuntimeAction::ExportOptions {
+                            login.settings.export_options(window);
+                        }
+                    }
                     state.handle_platform_output(window, output.platform_output.clone());
                     if renderer
                         .render_ui(self.generation, &context, output)
@@ -1014,14 +1019,18 @@ impl ApplicationHandler for Application {
                             gui.settings.open_options();
                         }
                         gui.settings_window(ui.ctx());
-                        while let Some(action) = gui.settings.take_runtime_action() {
-                            let _ = self.hud.route_settings_action(action);
-                        }
                         while let Some(row) = gui.settings.take_clear_action_row() {
                             self.hud.clear_action_row(row, &self.preferences);
                         }
                         crate::mouse_cursor::show(ui.ctx(), &self.preferences);
                     });
+                    while let Some(action) = gui.settings.take_runtime_action() {
+                        if action == crate::settings_ui::SettingsRuntimeAction::ExportOptions {
+                            gui.settings.export_options(window);
+                        } else {
+                            let _ = self.hud.route_settings_action(action);
+                        }
+                    }
                     if let Some(preferences) = self.hud.take_preferences() {
                         let saved = oteryn_client::settings::ClientSettings::path()
                             .is_some_and(|path| preferences.save(&path).is_ok());

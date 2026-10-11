@@ -61,7 +61,7 @@ These changes do not qualify full lighting, engine switching or visual 1:1 parit
 | Miscellaneous | Yes, seven rows | Confirmation and session selections require explicit consumers; secure remembered sign-in stays OFF/unwired |
 | Gameplay | Yes | Inspection/chase/loot intent prepared; engine contracts/consumers pending |
 | Screenshots | Yes, two trigger columns | The folder action creates and opens the local Oteryn screenshot directory. The screenshot hotkey performs a real non-overwriting PNG renderer capture, and Only Capture Game Window selects the actual scene crop. Seventeen automatic triggers stay disabled because their event pipeline does not exist |
-| Help | Partial | Info is local; Compendium opens the existing local composition idempotently during play; confirmed reset works. Export currently creates a local JSON backup, not the source-confirmed ZIP SaveFile flow, and is not counted as reference-compatible completion. Client Help/Lenshelp, Rule Violations, Manual and FAQ stay visibly disabled because no verified Oteryn destination exists. Export Minimap and the combined Import Options/Minimap action stay disabled until a versioned minimap format and honest format dispatch exist |
+| Help | Partial | Info is local; Compendium opens the existing local composition idempotently during play; confirmed reset works. AUTHORING replaces fixed-path JSON export with an upstream native Windows ZIP SaveFile picker and atomic Oteryn-only archive writer. Cancel leaves state/files unchanged; invalid drafts and failed writes preserve previous exports. Native picker interaction and original archive interoperability remain unqualified. Client Help/Lenshelp, Rule Violations, Manual and FAQ stay visibly disabled because no verified Oteryn destination exists. Export Minimap and the combined Import Options/Minimap action stay disabled until a versioned minimap format and honest format dispatch exist |
 
 ## Compiled-page verification — 2026-10-11
 
@@ -446,6 +446,29 @@ manifest SHA-256 `2ce3bf80c6b6c4527912e7a408d7c9eb0f42f626f88f58e161a6daa661bc17
 Recovery `/workspace/oteryn-client-publication-c302e255.bundle`, SHA-256
 `7ca7ff19086db198b3ee6b82b17e220edc756e68a4a2cef451f2a2be78185763`.
 Same-head protected-base audit passes, not full repository CI or bundle E2E.
+
+## Help ZIP export continuation — AUTHORING
+
+Source-first Help inspection confirms ZIP SaveFile/OpenFile filters, not the
+archive contents. The client now dispatches export after the egui frame to an
+upstream `rfd` picker owned by its Windows window, both at login and during play.
+The independently authored ZIP contains only `oteryn-options.json`, using the
+existing bounded, validated preference serializer. No account directory, cookies
+or minimap are copied. Upstream `zip` and `tempfile` provide encoding and atomic
+destination replacement after complete writing and sync. Cancelling preserves
+the draft/message/current settings; errors preserve previous exports; the active
+preference destination is refused, including before its first save.
+
+Four new regressions cover the real export-button dispatch, ZIP readback/legacy
+retention, failure preservation and active-file protection. Linux client tests
+pass 209/175/5, strict Clippy and whole-workspace formatting pass, boundaries and
+governance/60 tests pass. The dependency lock refresh changes the World input
+pin to `5e2707acfa842f0d96590b573b1ca7d589b5c8c73a564b8b41d09e4b014a003d`;
+release pin-check rebuilds the same 25,086,645-byte bundle twice, preserving
+`f8b11ebcd96a4140f71dcbb5944519434d3a8e6b0b0f2ecf9fecb9c74f67b6c8`.
+Fresh MSVC/DX12 qualification remains pending. Native physical picker acceptance,
+original archive interoperability and the combined minimap importer are not
+established by serialization or settings-page captures.
 
 ## Required evidence per page/panel
 

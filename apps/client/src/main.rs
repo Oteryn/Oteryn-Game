@@ -6,6 +6,9 @@ mod login_backdrop;
 #[cfg(windows)]
 mod login_screen;
 #[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
+mod options_export;
+#[cfg(any(windows, test))]
 mod preferences_browser;
 #[cfg(any(windows, test))]
 #[cfg_attr(test, allow(dead_code))]

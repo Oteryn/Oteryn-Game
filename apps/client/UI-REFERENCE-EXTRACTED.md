@@ -50,8 +50,13 @@ object. Only key names/types and the version were inspected; private values were
 not retained. Other root sections include identity-related data, so that file
 must not be copied or treated as a credential-free export. Neither its version
 nor its 192 keys establishes the ZIP format, factory defaults or visible-page
-cardinality. Oteryn's fixed-path JSON export is a working local backup, **not**
-reference-compatible Help export; archive dispatch/import remains unqualified.
+cardinality. At discovery, Oteryn's fixed-path JSON export was a working local
+backup, **not** reference-compatible Help export. The AUTHORING successor uses
+upstream `rfd` for the Windows ZIP SaveFile picker and `zip`/`tempfile` for atomic
+export of the existing validated Oteryn preference representation. Its sole
+entry is `oteryn-options.json`; this independently authored local format is not
+claimed to match the unknown original archive layout. Original archive
+interoperability, combined import and minimap dispatch remain unqualified.
 
 ## Exact settings contracts recovered
 
