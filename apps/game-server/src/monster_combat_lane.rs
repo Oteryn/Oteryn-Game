@@ -6711,6 +6711,7 @@ mod project_native_registration_membership_tests {
     }
 }
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod native_ability_coverage {
     //! Data-coverage gate: every authored monster attack in `content/` must have a runtime owner
     //! constructor in this lane, or be listed in the reviewed baseline of known gaps.
