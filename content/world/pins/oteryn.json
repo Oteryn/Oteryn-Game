@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_WORLD_PIN/v1",
-  "digest": "f8b11ebcd96a4140f71dcbb5944519434d3a8e6b0b0f2ecf9fecb9c74f67b6c8",
+  "digest": "bbdf626678db005168c2af90a507738716e09b5c9d662674d306007361b8fef1",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "d3-7-corpse-admitted-20261006-r1",
@@ -10,5 +10,5 @@
     "y": 10032,
     "floor": 0
   },
-  "inputs_digest": "b456d5d6e4b64787b3c021cacf8feb032c434b5b9b9c5623e0beb33589688146"
+  "inputs_digest": "8820bb7f397b579c49d2ec991c1aed3737c5f42c1e9efcee1416e2b5321adf89"
 }
