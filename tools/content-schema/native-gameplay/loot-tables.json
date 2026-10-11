@@ -5106,7 +5106,7 @@
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3603","revision":"definition-r1"},"materializable":false},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3605","revision":"definition-r1"},"materializable":false},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3606","revision":"definition-r1"},"materializable":false},
-{"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3607","revision":"definition-r1"},"materializable":false},
+{"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3607","revision":"definition-r1"},"materializable":true},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i36434","revision":"definition-r1"},"materializable":false},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3658","revision":"definition-r1"},"materializable":false},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3659","revision":"definition-r1"},"materializable":true},
