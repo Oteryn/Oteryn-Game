@@ -140,7 +140,7 @@ pub const PANELS: &[PanelDefinition] = &[
         &[f!("name","Nazwa","Name",Value), f!("formula","Formuła","Formula",Value), f!("vocation","Profesja","Vocation",Status), f!("group","Grupa","Group",Status), f!("level","Wymagany poziom","Required level",Value), f!("mana","Koszt many","Mana cost",Value), f!("cooldown","Odnowienie","Cooldown",Duration), f!("details","Opis czaru","Spell details",Details)], &[]),
     p!("vip", "Lista VIP", "VIP List", Contacts, true, ObservedPanel, None,
         &[f!("name","Imię","Name",Value), f!("status","Dostępność","Online status",Status), f!("group","Grupa","Group",Status)], &[]),
-    p!("help", "Pomoc", "Help", Documents, true, ObservedShortcut, None,
+    p!("help", "Pomoc", "Lenshelp", Documents, true, ObservedShortcut, None,
         &[f!("controls","Sterowanie","Controls",Details), f!("connection","Połączenie","Connection",Details), f!("support","Wsparcie","Support",Details)], &[]),
     p!("quest-log", "Dziennik zadań", "Quest Log", QuestTree, true, ObservedPanel, Some(16),
         &[f!("quest","Zadanie","Quest",Value), f!("mission","Misja","Mission",Value), f!("state","Stan","State",Status), f!("description","Opis","Description",Details), f!("tracked","Śledzenie","Tracking",Status)], &[]),
@@ -163,13 +163,13 @@ pub const PANELS: &[PanelDefinition] = &[
         &[f!("quest","Zadanie","Quest",Value), f!("mission","Misja","Mission",Value), f!("progress","Postęp","Progress",Progress)], &[t!("tracked","Śledzone zadania","Tracked quests",ObservedPanel), t!("automation","Automatyczne śledzenie","Automatic tracking",NamesOnly)]),
     p!("unjustified-points", "Punkty nieuzasadnionych zabójstw", "Unjustified Points", Thresholds, false, ObservedPanel, None,
         &[f!("points","Aktualne punkty","Current points",Value), f!("short-period","Próg w krótszym okresie","Short-period threshold",Progress), f!("medium-period","Próg w średnim okresie","Medium-period threshold",Progress), f!("long-period","Próg w dłuższym okresie","Long-period threshold",Progress)], &[]),
-    p!("prey", "Polowanie Prey", "Prey", PreySlots, false, ObservedPanel, None,
+    p!("prey", "Polowanie Prey", "Prey Dialog", PreySlots, false, ObservedPanel, None,
         &[f!("creature","Stworzenie","Creature",Value), f!("bonus","Premia","Bonus",Value), f!("duration","Pozostały czas","Time remaining",Duration), f!("reroll","Koszt losowania","Reroll cost",Value), f!("availability","Dostępność slotu","Slot availability",Status)], &[]),
     p!("kill-tracker", "Licznik zabójstw", "Kill Tracker", Tracker, false, ObservedPanel, None,
         &[f!("creature","Stworzenie","Creature",Value), f!("kills","Zabójstwa","Kills",Value), f!("state","Stan śledzenia","Tracking state",Status)], &[]),
     p!("reward-wall", "Nagrody dzienne", "Reward Wall", RewardCalendar, false, ObservedPanel, None,
         &[f!("cycle","Cykl nagród","Reward cycle",Progress), f!("streak","Seria odbiorów","Claim streak",Value), f!("resting","Premie odpoczynku","Resting bonuses",Details), f!("jokers","Jokery","Jokers",Value), f!("claim-state","Stan odbioru","Claim state",Status)], &[t!("cycle","Cykl nagród","Reward cycle",ObservedPanel), t!("history","Historia","History",ObservedPanel)]),
-    p!("analytics", "Analizatory", "Analytics", Analytics, false, ObservedPanel, Some(10),
+    p!("analytics", "Analizatory", "Analytics Selector", Analytics, false, ObservedPanel, Some(10),
         &[f!("duration","Czas sesji","Session duration",Duration), f!("total","Suma","Total",Value), f!("rate","Tempo","Rate",Value), f!("maximum","Wartość maksymalna","Maximum",Value), f!("breakdown","Podział","Breakdown",Table)],
         &[t!("hunt","Polowanie","Hunting",ObservedPanel), t!("loot","Łupy","Loot",ObservedPanel), t!("supply","Zużycie zasobów","Supply",ObservedPanel), t!("impact","Obrażenia i leczenie","Impact",ObservedPanel), t!("damage-input","Otrzymane obrażenia","Damage Input",ObservedPanel), t!("experience","Doświadczenie","XP",ObservedPanel), t!("drops","Śledzenie zdobyczy","Drop Tracker",ObservedPanel), t!("party-hunt","Polowanie drużynowe","Party Hunt",ObservedPanel), t!("boss-cooldowns","Odnowienia bossów","Boss Cooldowns",ObservedPanel)]),
     p!("bosstiary", "Bestiariusz bossów", "Bosstiary", Bestiary, false, ObservedPanel, None,
@@ -334,6 +334,47 @@ pub fn fields_for_tab(panel_id: &str, tab_id: &str) -> &'static [PanelField] {
 mod tests {
     use super::*;
     use std::collections::BTreeSet;
+
+    #[test]
+    fn shortcut_ids_and_english_labels_match_the_complete_observed_list() {
+        let actual: Vec<_> = PANELS
+            .iter()
+            .map(|definition| (definition.id, definition.english))
+            .collect();
+        assert_eq!(
+            actual,
+            [
+                ("skills", "Skills"),
+                ("battle", "Battle List"),
+                ("spells", "Spell List"),
+                ("vip", "VIP List"),
+                ("help", "Lenshelp"),
+                ("quest-log", "Quest Log"),
+                ("compendium", "Compendium"),
+                ("cyclopedia", "Cyclopedia"),
+                ("highscores", "Highscores"),
+                ("player-guide", "Player Guide"),
+                ("shortcuts", "Manage Shortcuts"),
+                ("party", "Party List"),
+                ("wheel", "Wheel of Destiny"),
+                ("quest-tracker", "Quest Tracker"),
+                ("unjustified-points", "Unjustified Points"),
+                ("prey", "Prey Dialog"),
+                ("kill-tracker", "Kill Tracker"),
+                ("reward-wall", "Reward Wall"),
+                ("analytics", "Analytics Selector"),
+                ("bosstiary", "Bosstiary"),
+                ("boss-slots", "Boss Slots"),
+                ("bosstiary-tracker", "Bosstiary Tracker"),
+                ("bestiary-tracker", "Bestiary Tracker"),
+                ("imbuement-tracker", "Imbuement Tracker"),
+                ("weapon-proficiency", "Weapon Proficiency"),
+                ("forge", "Exaltation Forge"),
+                ("social", "Social"),
+                ("task-board", "Task Board"),
+            ]
+        );
+    }
 
     #[test]
     fn audited_shortcuts_have_unique_bounded_stable_identifiers_and_original_defaults() {

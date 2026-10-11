@@ -748,7 +748,6 @@ struct BindingEditor {
     target: BindingTarget,
     action: String,
     captured: Option<ShortcutBinding>,
-    listening: bool,
 }
 
 #[derive(Clone)]
@@ -1421,9 +1420,6 @@ fn edit_new_action(
             {
                 add_new_action(profile, state, kind);
             }
-            if ui.button(if en { "Back" } else { "Wstecz" }).clicked() {
-                state.new_action = Some(NewAction::Choose);
-            }
             if ui.button(if en { "Cancel" } else { "Anuluj" }).clicked() {
                 state.new_action = None;
             }
@@ -1495,7 +1491,6 @@ fn binding_button(
             target,
             action: action.into(),
             captured: value,
-            listening: true,
         });
     }
 }
@@ -1505,46 +1500,42 @@ fn binding_editor(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state
         return;
     };
     let mut close = false;
-    if editor.listening {
-        let event = ui.input(|input| {
-            input.events.iter().find_map(|event| {
-                let egui::Event::Key {
-                    key,
-                    physical_key,
-                    pressed: true,
-                    repeat: false,
-                    modifiers,
-                } = event
-                else {
-                    return None;
-                };
-                Some((*key, physical_key.unwrap_or(*key), *modifiers))
-            })
-        });
-        if let Some((logical, physical, modifiers)) = event {
-            if logical == egui::Key::Escape {
-                if editor.target.is_stop_all() {
-                    editor.captured = Some(ShortcutBinding {
-                        key: 41,
-                        ctrl: modifiers.ctrl,
-                        alt: modifiers.alt,
-                        shift: modifiers.shift,
-                        meta: modifiers.mac_cmd,
-                    });
-                    editor.listening = false;
-                } else {
-                    close = true;
-                }
-            } else if let Some(key) = egui_key_to_hid(physical) {
+    let event = ui.input(|input| {
+        input.events.iter().find_map(|event| {
+            let egui::Event::Key {
+                key,
+                physical_key,
+                pressed: true,
+                repeat: false,
+                modifiers,
+            } = event
+            else {
+                return None;
+            };
+            Some((*key, physical_key.unwrap_or(*key), *modifiers))
+        })
+    });
+    if let Some((logical, physical, modifiers)) = event {
+        if logical == egui::Key::Escape {
+            if editor.target.is_stop_all() {
                 editor.captured = Some(ShortcutBinding {
-                    key,
+                    key: 41,
                     ctrl: modifiers.ctrl,
                     alt: modifiers.alt,
                     shift: modifiers.shift,
                     meta: modifiers.mac_cmd,
                 });
-                editor.listening = false;
+            } else {
+                close = true;
             }
+        } else if let Some(key) = egui_key_to_hid(physical) {
+            editor.captured = Some(ShortcutBinding {
+                key,
+                ctrl: modifiers.ctrl,
+                alt: modifiers.alt,
+                shift: modifiers.shift,
+                meta: modifiers.mac_cmd,
+            });
         }
     }
     let valid = binding_candidate_valid(draft, &editor.target, editor.captured);
@@ -1563,14 +1554,10 @@ fn binding_editor(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state
             "Tryb czatu wyłączony"
         });
         ui.add_space(6.0);
-        ui.label(if editor.listening {
-            if en {
-                "Press a key…"
-            } else {
-                "Naciśnij klawisz…"
-            }
+        ui.label(if en {
+            "Press a key…"
         } else {
-            ""
+            "Naciśnij klawisz…"
         });
         ui.strong(
             editor
@@ -1588,12 +1575,6 @@ fn binding_editor(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state
             );
         }
         ui.horizontal(|ui| {
-            if ui
-                .button(if en { "Capture" } else { "Przechwyć" })
-                .clicked()
-            {
-                editor.listening = true;
-            }
             if ui.add_enabled(valid, egui::Button::new("OK")).clicked() {
                 let _ = set_binding(draft, &editor.target, editor.captured);
                 close = true;
@@ -1666,7 +1647,10 @@ fn set_binding(
             } else {
                 pair.first = value;
             }
-            if pair == HotkeyPair::default() && !is_movement_action(action) {
+            if pair == HotkeyPair::default()
+                && !is_movement_action(action)
+                && *action != "chat.send"
+            {
                 map.remove(*action);
             } else {
                 map.insert((*action).into(), pair);
@@ -1854,13 +1838,21 @@ fn key_name(key: u16) -> String {
         39 => "0".into(),
         40 => "Enter".into(),
         41 => "Esc".into(),
+        42 => "Backspace".into(),
         43 => "Tab".into(),
         44 => "Space".into(),
         58..=69 => format!("F{}", key - 57),
+        73 => "Insert".into(),
+        74 => "Home".into(),
+        75 => "Page Up".into(),
+        76 => "Delete".into(),
+        77 => "End".into(),
+        78 => "Page Down".into(),
         79 => "→".into(),
         80 => "←".into(),
         81 => "↓".into(),
         82 => "↑".into(),
+        88 => "Numpad Enter".into(),
         _ => format!("HID {key}"),
     }
 }
@@ -2070,8 +2062,14 @@ mod tests {
     #[test]
     fn binding_editor_keeps_chat_contexts_and_rejects_conflicts() -> Result<(), &'static str> {
         let mut settings = ClientSettings::default();
+        let original_chat_on = settings
+            .hotkeys
+            .active()
+            .ok_or("default profile")?
+            .general_chat_on
+            .clone();
         let first = ShortcutBinding {
-            key: 9,
+            key: 30,
             ctrl: true,
             alt: false,
             shift: false,
@@ -2088,8 +2086,7 @@ mod tests {
             profile.general_chat_off["client.options"].first,
             Some(first)
         );
-        assert_eq!(profile.general_chat_on.len(), 1);
-        assert!(profile.general_chat_on.contains_key("client.stop"));
+        assert_eq!(profile.general_chat_on, original_chat_on);
 
         let fullscreen_off = BindingTarget::General {
             action: "client.fullscreen",
@@ -2141,6 +2138,44 @@ mod tests {
     }
 
     #[test]
+    fn clearing_chat_send_keeps_an_explicit_empty_pair_distinct_from_legacy_absence() {
+        let mut settings = ClientSettings::default();
+        for second in [false, true] {
+            assert!(set_binding(
+                &mut settings,
+                &BindingTarget::General {
+                    action: "chat.send",
+                    chat_on: true,
+                    second,
+                },
+                None,
+            ));
+        }
+        assert_eq!(
+            settings
+                .hotkeys
+                .active()
+                .and_then(|profile| profile.general_chat_on.get("chat.send"))
+                .copied(),
+            Some(HotkeyPair::default())
+        );
+        assert!(settings.validate_hotkey_draft().is_ok());
+    }
+
+    #[test]
+    fn reference_default_navigation_and_numpad_keys_have_human_labels() {
+        for (key, expected) in [
+            (74, "Home"),
+            (75, "Page Up"),
+            (77, "End"),
+            (78, "Page Down"),
+            (88, "Numpad Enter"),
+        ] {
+            assert_eq!(key_name(key), expected);
+        }
+    }
+
+    #[test]
     fn binding_editor_captures_stop_escape_cancels_other_escape_and_keeps_f10()
     -> Result<(), &'static str> {
         let run_key = |settings: &mut ClientSettings, state: &mut State, key: egui::Key| {
@@ -2168,7 +2203,6 @@ mod tests {
             },
             action: action.into(),
             captured: None,
-            listening: true,
         };
 
         let mut settings = ClientSettings::default();
@@ -2179,7 +2213,6 @@ mod tests {
         run_key(&mut settings, &mut state, egui::Key::Escape);
         let stop = state.binding_editor.as_ref().ok_or("stop editor closed")?;
         assert_eq!(stop.captured.map(|binding| binding.key), Some(41));
-        assert!(!stop.listening);
 
         state.binding_editor = Some(editor("client.options"));
         run_key(&mut settings, &mut state, egui::Key::Escape);
@@ -2197,7 +2230,6 @@ mod tests {
         run_key(&mut settings, &mut state, egui::Key::F10);
         let f10 = state.binding_editor.as_ref().ok_or("F10 editor closed")?;
         assert_eq!(f10.captured.map(|binding| binding.key), Some(67));
-        assert!(!f10.listening);
         Ok(())
     }
 

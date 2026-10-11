@@ -1,6 +1,96 @@
 use egui::{Align2, RichText};
 use oteryn_client::settings::ClientSettings;
 
+pub(crate) fn screenshot_directory() -> Option<std::path::PathBuf> {
+    ClientSettings::path().and_then(|path| screenshot_directory_for(&path))
+}
+
+fn screenshot_directory_for(settings_path: &std::path::Path) -> Option<std::path::PathBuf> {
+    settings_path
+        .parent()
+        .map(|parent| parent.join("screenshots"))
+}
+
+/// Missing intent keeps the historical full-client capture behavior; only an
+/// explicit enabled value selects the game viewport crop.
+pub(crate) fn game_only_capture(settings: &ClientSettings) -> bool {
+    settings.stored_bool("screenshots.capture.game_only") == Some(true)
+}
+
+fn encode_screenshot(frame: &oteryn_renderer::CapturedFrame) -> std::io::Result<Vec<u8>> {
+    let expected = frame
+        .width
+        .checked_mul(frame.height)
+        .and_then(|pixels| pixels.checked_mul(4))
+        .and_then(|bytes| usize::try_from(bytes).ok())
+        .ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::InvalidData, "invalid screenshot")
+        })?;
+    if frame.width == 0 || frame.height == 0 || frame.rgba.len() != expected {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "invalid screenshot",
+        ));
+    }
+    let mut encoded = Vec::new();
+    image::ImageEncoder::write_image(
+        image::codecs::png::PngEncoder::new(&mut encoded),
+        &frame.rgba,
+        frame.width,
+        frame.height,
+        image::ExtendedColorType::Rgba8,
+    )
+    .map_err(std::io::Error::other)?;
+    Ok(encoded)
+}
+
+pub(crate) fn save_screenshot(
+    frame: &oteryn_renderer::CapturedFrame,
+) -> std::io::Result<std::path::PathBuf> {
+    let directory = screenshot_directory()
+        .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))?;
+    save_screenshot_to(&directory, frame)
+}
+
+fn save_screenshot_to(
+    directory: &std::path::Path,
+    frame: &oteryn_renderer::CapturedFrame,
+) -> std::io::Result<std::path::PathBuf> {
+    use std::io::Write;
+
+    std::fs::create_dir_all(directory)?;
+    let encoded = encode_screenshot(frame)?;
+    for index in 0_u16..=u16::MAX {
+        // PNG is reference-observed. This collision sequence stays Oteryn-local
+        // until the manual-capture filename convention is independently observed.
+        let name = if index == 0 {
+            "oteryn-screenshot.png".to_owned()
+        } else {
+            format!("oteryn-screenshot-{index:04}.png")
+        };
+        let path = directory.join(name);
+        let mut file = match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+        {
+            Ok(file) => file,
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error),
+        };
+        if let Err(error) = file.write_all(&encoded).and_then(|()| file.sync_all()) {
+            drop(file);
+            let _ = std::fs::remove_file(&path);
+            return Err(error);
+        }
+        return Ok(path);
+    }
+    Err(std::io::Error::new(
+        std::io::ErrorKind::AlreadyExists,
+        "screenshot filename space exhausted",
+    ))
+}
+
 pub(crate) const fn prelogin_settings_hotkey(
     consumed: bool,
     login_present: bool,
@@ -64,6 +154,23 @@ impl SettingsPanel {
         }
     }
 
+    /// Creates a settings panel without reading or writing the user preference path.
+    pub fn for_settings_audit(current: ClientSettings) -> Self {
+        Self {
+            draft: current.clone(),
+            current,
+            open: false,
+            applied: false,
+            tab: 0,
+            message: None,
+            browser: crate::preferences_browser::PreferencesBrowser::new(),
+        }
+    }
+
+    pub fn audit_draft(&self) -> &ClientSettings {
+        &self.draft
+    }
+
     pub fn set_language(&mut self, english: bool) {
         self.current.english = english;
         self.draft.english = english;
@@ -110,10 +217,6 @@ impl SettingsPanel {
                     self.draft = ClientSettings::default();
                     self.message = None;
                 }
-                PreferenceAction::QuickSettings => {
-                    self.browser.open = false;
-                    self.tab = 5;
-                }
                 PreferenceAction::ExportOptions => self.export_options(),
                 PreferenceAction::ImportOptions => self.import_options(),
                 PreferenceAction::ResetOptions => {
@@ -156,7 +259,6 @@ impl SettingsPanel {
                     PreferenceAction::Cancel => { self.draft = self.current.clone(); self.open = false; self.message = None; }
                     PreferenceAction::None
                     | PreferenceAction::Defaults
-                    | PreferenceAction::QuickSettings
                     | PreferenceAction::ExportOptions
                     | PreferenceAction::ImportOptions
                     | PreferenceAction::ResetOptions
@@ -217,14 +319,23 @@ impl SettingsPanel {
                                         }
                                     });
                                 ui.checkbox(&mut self.draft.vsync, tr("Synchronizacja pionowa (VSync)", "Vertical synchronization (VSync)"));
+                                let mut selected_fps = self.draft.fps;
                                 egui::ComboBox::from_label(tr("Limit klatek", "Frame limit"))
-                                    .selected_text(if self.draft.fps == 0 { tr("Bez limitu", "Unlimited").into() } else { format!("{} FPS", self.draft.fps) })
+                                    .selected_text(if selected_fps == 0 { tr("Bez limitu", "Unlimited").into() } else { format!("{selected_fps} FPS") })
                                     .show_ui(ui, |ui| {
-                                        for fps in [30, 60, 90, 120, 144, 165, 240, 360, 0] {
+                                        for fps in [1, 30, 60, 90, 120, 144, 165, 200, 0] {
                                             let text = if fps == 0 { tr("Bez limitu", "Unlimited").into() } else { format!("{fps} FPS") };
-                                            ui.selectable_value(&mut self.draft.fps, fps, text);
+                                            ui.selectable_value(&mut selected_fps, fps, text);
                                         }
                                     });
+                                if selected_fps != self.draft.fps {
+                                    if selected_fps == 0 {
+                                        self.draft.set_frame_limit_enabled(false);
+                                    } else {
+                                        let _ = self.draft.set_frame_limit(selected_fps);
+                                        self.draft.set_frame_limit_enabled(true);
+                                    }
+                                }
                                 ui.add(egui::Slider::new(&mut self.draft.background_fps, 5..=60).text(tr("FPS w tle", "Background FPS")));
                                 ui.small(tr("VSync może ograniczyć FPS do częstotliwości monitora.", "VSync may cap FPS to the monitor refresh rate."));
                             }
@@ -244,18 +355,42 @@ impl SettingsPanel {
                             2 => {
                                 ui.heading(tr("Sterowanie ruchem", "Movement controls"));
                                 ui.horizontal(|ui| {
-                                    if ui.button(tr("Strzałki", "Arrow keys")).clicked() { self.draft.movement_keys = [82, 79, 81, 80]; }
-                                    if ui.button("WASD").clicked() { self.draft.movement_keys = [26, 7, 22, 4]; }
+                                    if ui.button(tr("Strzałki", "Arrow keys")).clicked() {
+                                        crate::preferences_browser::remember_movement_change(
+                                            ui.ctx(),
+                                            "quick-movement-conflict",
+                                            self.draft.set_movement_keys([82, 79, 81, 80]),
+                                        );
+                                    }
+                                    if ui.button("WASD").clicked() {
+                                        crate::preferences_browser::remember_movement_change(
+                                            ui.ctx(),
+                                            "quick-movement-conflict",
+                                            self.draft.set_movement_keys([26, 7, 22, 4]),
+                                        );
+                                    }
                                 });
                                 for (index, label) in [tr("Północ", "North"), tr("Wschód", "East"), tr("Południe", "South"), tr("Zachód", "West")].iter().enumerate() {
+                                    let effective = self.draft.effective_movement_keys()[index];
                                     egui::ComboBox::from_id_salt(("movement", index))
-                                        .selected_text(format!("{}: {}", label, key_label(self.draft.movement_keys[index])))
+                                        .selected_text(format!("{}: {}", label, effective.map_or_else(|| tr("Nieprzypisany", "Unbound").into(), key_label)))
                                         .show_ui(ui, |ui| {
                                             for key in (4..=29).chain(79..=82) {
-                                                ui.selectable_value(&mut self.draft.movement_keys[index], key, key_label(key));
+                                                if ui.selectable_label(effective == Some(key), key_label(key)).clicked() {
+                                                    crate::preferences_browser::remember_movement_change(
+                                                        ui.ctx(),
+                                                        "quick-movement-conflict",
+                                                        self.draft.set_movement_key(index, key),
+                                                    );
+                                                }
                                             }
                                         });
                                 }
+                                crate::preferences_browser::movement_change_feedback(
+                                    ui,
+                                    "quick-movement-conflict",
+                                    en,
+                                );
                                 ui.checkbox(&mut self.draft.click_to_walk, tr("Chodzenie lewym kliknięciem", "Walk with left mouse click"));
                                 ui.small(tr("Każdy kierunek wymaga innego klawisza bez modyfikatorów.", "Each direction requires a distinct key without modifiers."));
                                 ui.separator();
@@ -327,18 +462,8 @@ impl SettingsPanel {
         ClientSettings::path().map(|path| path.with_file_name("oteryn-options-export.json"))
     }
 
-    fn screenshot_directory() -> Option<std::path::PathBuf> {
-        ClientSettings::path().and_then(|path| Self::screenshot_directory_for(&path))
-    }
-
-    fn screenshot_directory_for(settings_path: &std::path::Path) -> Option<std::path::PathBuf> {
-        settings_path
-            .parent()
-            .map(|parent| parent.join("screenshots"))
-    }
-
     fn open_screenshot_folder(&mut self) {
-        let result = Self::screenshot_directory()
+        let result = screenshot_directory()
             .ok_or_else(|| std::io::Error::other("Preferences directory unavailable"))
             .and_then(|path| {
                 std::fs::create_dir_all(&path)?;
@@ -580,14 +705,206 @@ mod tests {
     }
 
     #[test]
+    fn quick_movement_editor_reports_atomic_conflicts_and_persists_runtime_binding()
+    -> Result<(), Box<dyn std::error::Error>> {
+        for english in [false, true] {
+            let ctx = egui::Context::default();
+            ctx.set_theme(egui::Theme::Dark);
+            crate::client_chrome::install(&ctx, false);
+            let size = egui::vec2(900.0, 620.0);
+            let current = ClientSettings {
+                english,
+                ..Default::default()
+            };
+            let mut panel = SettingsPanel {
+                draft: current.clone(),
+                current,
+                open: true,
+                applied: false,
+                tab: 2,
+                message: None,
+                browser: PreferencesBrowser::default(),
+            };
+
+            // Start from a valid non-default single-key change so persistence must
+            // preserve both the existing edit and the next UI edit.
+            panel.draft.set_movement_key(1, 27)?;
+            let before_conflict = panel.draft.clone();
+            {
+                let mut draw = |ctx: &egui::Context| panel.show(ctx, None, None);
+                let mut output = egui::FullOutput::default();
+                for _ in 0..4 {
+                    output = frame(&ctx, size, vec![], &mut draw).1;
+                }
+                let north = button_position(
+                    &output,
+                    size,
+                    if english { "North: W" } else { "Północ: W" },
+                )
+                .ok_or("north binding visible")?;
+                click(&ctx, size, north, &mut draw);
+                let popup = frame(&ctx, size, vec![], &mut draw).1;
+                let conflicting =
+                    button_position(&popup, size, "E").ok_or("conflicting key visible in popup")?;
+                click(&ctx, size, conflicting, &mut draw);
+                output = frame(&ctx, size, vec![], &mut draw).1;
+                assert!(
+                    button_position(
+                        &output,
+                        size,
+                        if english {
+                            "Shortcut conflict. Movement keys were not changed."
+                        } else {
+                            "Konflikt skrótów. Klawisze ruchu nie zostały zmienione."
+                        }
+                    )
+                    .is_some(),
+                    "quick movement conflict feedback is not visible"
+                );
+            }
+            assert_eq!(panel.draft, before_conflict);
+
+            {
+                let mut draw = |ctx: &egui::Context| panel.show(ctx, None, None);
+                let output = frame(&ctx, size, vec![], &mut draw).1;
+                let north = button_position(
+                    &output,
+                    size,
+                    if english { "North: W" } else { "Północ: W" },
+                )
+                .ok_or("north binding still visible")?;
+                click(&ctx, size, north, &mut draw);
+                let popup = frame(&ctx, size, vec![], &mut draw).1;
+                let replacement =
+                    button_position(&popup, size, "F").ok_or("replacement key visible in popup")?;
+                click(&ctx, size, replacement, &mut draw);
+                let output = frame(&ctx, size, vec![], &mut draw).1;
+                assert!(
+                    button_position(
+                        &output,
+                        size,
+                        if english {
+                            "Shortcut conflict. Movement keys were not changed."
+                        } else {
+                            "Konflikt skrótów. Klawisze ruchu nie zostały zmienione."
+                        }
+                    )
+                    .is_none(),
+                    "successful movement change did not clear conflict feedback"
+                );
+            }
+            assert_eq!(panel.draft.effective_movement_keys()[0], Some(9));
+
+            let north = oteryn_input_actions::NormalizedInputEvent::Key {
+                code: oteryn_input_actions::KeyCode::new(9)?,
+                state: oteryn_input_actions::ButtonState::Pressed,
+                modifiers: oteryn_input_actions::Modifiers::NONE,
+                repeat: false,
+            };
+            assert_eq!(
+                panel
+                    .draft
+                    .hotkeys
+                    .resolve(std::slice::from_ref(&north), false),
+                vec![oteryn_client::hotkeys::ResolvedHotkey::General(
+                    "movement.north".into()
+                )]
+            );
+
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "oteryn-quick-movement-{}-{nonce}-{}.json",
+                std::process::id(),
+                u8::from(english)
+            ));
+            panel.draft.save(&path)?;
+            let loaded = ClientSettings::load(&path)?;
+            std::fs::remove_file(&path)?;
+            assert_eq!(
+                loaded.effective_movement_keys(),
+                [Some(9), Some(27), Some(22), Some(4)]
+            );
+            assert_eq!(
+                loaded.hotkeys.resolve(std::slice::from_ref(&north), false),
+                vec![oteryn_client::hotkeys::ResolvedHotkey::General(
+                    "movement.north".into()
+                )]
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn screenshot_directory_is_a_sibling_of_the_settings_file() {
         let path = std::path::Path::new("/configuration/oteryn/settings.json");
         assert_eq!(
-            SettingsPanel::screenshot_directory_for(path),
+            screenshot_directory_for(path),
             Some(std::path::PathBuf::from(
                 "/configuration/oteryn/screenshots"
             ))
         );
+    }
+
+    #[test]
+    fn screenshot_runtime_selects_crop_only_for_explicit_enabled_intent() {
+        let mut settings = ClientSettings::default();
+        assert!(!game_only_capture(&settings));
+        settings.future_preferences.insert(
+            "screenshots.capture.game_only".into(),
+            oteryn_client::settings_catalog::FutureValue::Bool(false),
+        );
+        assert!(!game_only_capture(&settings));
+        settings.future_preferences.insert(
+            "screenshots.capture.game_only".into(),
+            oteryn_client::settings_catalog::FutureValue::Bool(true),
+        );
+        assert!(game_only_capture(&settings));
+    }
+
+    #[test]
+    fn screenshots_are_lossless_png_and_never_overwrite_collisions()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos();
+        let directory = std::env::temp_dir().join(format!(
+            "oteryn-screenshot-test-{}-{nonce}",
+            std::process::id()
+        ));
+        std::fs::create_dir(&directory)?;
+        let original = directory.join("oteryn-screenshot.png");
+        std::fs::write(&original, b"existing")?;
+        let frame = oteryn_renderer::CapturedFrame {
+            width: 2,
+            height: 1,
+            rgba: vec![255, 0, 0, 255, 0, 255, 0, 127],
+        };
+        let first = save_screenshot_to(&directory, &frame)?;
+        let second = save_screenshot_to(&directory, &frame)?;
+        assert_eq!(std::fs::read(&original)?, b"existing");
+        assert_eq!(
+            first.file_name().and_then(std::ffi::OsStr::to_str),
+            Some("oteryn-screenshot-0001.png")
+        );
+        assert_eq!(
+            second.file_name().and_then(std::ffi::OsStr::to_str),
+            Some("oteryn-screenshot-0002.png")
+        );
+        for path in [&first, &second] {
+            let bytes = std::fs::read(path)?;
+            assert_eq!(bytes.get(..8), Some(b"\x89PNG\r\n\x1a\n".as_slice()));
+            let decoded =
+                image::load_from_memory_with_format(&bytes, image::ImageFormat::Png)?.to_rgba8();
+            assert_eq!(decoded.dimensions(), (2, 1));
+            assert_eq!(decoded.as_raw(), &frame.rgba);
+        }
+        for path in [first, second, original] {
+            std::fs::remove_file(path)?;
+        }
+        std::fs::remove_dir(directory)?;
+        Ok(())
     }
 
     #[test]

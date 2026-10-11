@@ -1,18 +1,12 @@
 //! Display/input arrangements observed in private captures, distinct from Oteryn extras.
-use super::{PageState, boxed, reference_option, row};
+use super::{boxed, reference_option, row};
 use oteryn_client::{settings::ClientSettings, settings_catalog::FutureValue};
 
-pub(super) fn show(
-    ui: &mut egui::Ui,
-    draft: &mut ClientSettings,
-    section: &str,
-    en: bool,
-    state: &mut PageState,
-) -> bool {
+pub(super) fn show(ui: &mut egui::Ui, draft: &mut ClientSettings, section: &str, en: bool) -> bool {
     match section {
         "controls" => controls(ui, draft, en),
         "interface" => interface(ui, draft, en),
-        "graphics" => graphics(ui, draft, en, state),
+        "graphics" => graphics(ui, draft, en),
         "game_window" => game_window(ui, draft, en),
         "gameplay" => gameplay(ui, draft, en),
         _ => return false,
@@ -21,14 +15,26 @@ pub(super) fn show(
 }
 
 fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
-    reference_option(
-        ui,
-        draft,
-        "controls",
-        "controls.mouse_preset",
-        ["Schemat myszy:", "Mouse Preset:"],
-        en,
-    );
+    ui.horizontal_wrapped(|ui| {
+        reference_option(
+            ui,
+            draft,
+            "controls",
+            "controls.mouse_preset",
+            ["Schemat myszy:", "Mouse Preset:"],
+            en,
+        );
+        if draft.stored_choice("controls.controls.mouse_preset") == Some("classic_controls") {
+            reference_option(
+                ui,
+                draft,
+                "controls",
+                "controls.loot_button",
+                ["Łup:", "Loot:"],
+                en,
+            );
+        }
+    });
     boxed(ui, "", |ui| {
         reference_option(
             ui,
@@ -97,24 +103,6 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
         ],
         en,
     );
-    boxed(ui, "OTERYN", |ui| {
-        ui.checkbox(
-            &mut draft.click_to_walk,
-            if en {
-                "Click to Walk"
-            } else {
-                "Chodzenie kliknięciem"
-            },
-        );
-        reference_option(
-            ui,
-            draft,
-            "controls",
-            "controls.movement",
-            ["Klawisze ruchu", "Movement Keys"],
-            en,
-        );
-    });
 }
 
 fn interface(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
@@ -184,42 +172,9 @@ fn interface(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             reference_option(ui, draft, "interface", id, labels, en);
         }
     });
-    boxed(ui, "OTERYN", |ui| {
-        ui.checkbox(
-            &mut draft.english,
-            if en {
-                "English Interface"
-            } else {
-                "Interfejs po angielsku"
-            },
-        );
-        ui.checkbox(
-            &mut draft.high_contrast,
-            if en {
-                "High Contrast"
-            } else {
-                "Wysoki kontrast"
-            },
-        );
-        ui.checkbox(
-            &mut draft.reduced_motion,
-            if en {
-                "Reduced Motion"
-            } else {
-                "Ograniczone animacje"
-            },
-        );
-        ui.add(
-            egui::Slider::new(&mut draft.ui_scale, 0.8..=1.8).text(if en {
-                "Interface Scale"
-            } else {
-                "Skala interfejsu"
-            }),
-        );
-    });
 }
 
-fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut PageState) {
+fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
     reference_option(
         ui,
         draft,
@@ -259,10 +214,7 @@ fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut
     });
     boxed(ui, "", |ui| {
         ui.checkbox(&mut draft.vsync, "V-Sync");
-        if draft.fps != 0 {
-            state.last_frame_limit = Some(draft.fps);
-        }
-        let mut unlimited = draft.fps == 0;
+        let mut unlimited = !draft.frame_limit_enabled();
         if ui
             .checkbox(
                 &mut unlimited,
@@ -274,24 +226,19 @@ fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut
             )
             .changed()
         {
-            draft.fps = if unlimited {
-                0
-            } else {
-                state.last_frame_limit.unwrap_or(60)
-            };
+            draft.set_frame_limit_enabled(!unlimited);
         }
-        let mut limit = state.last_frame_limit.unwrap_or(60);
+        let mut limit = draft.last_frame_limit;
         ui.add_enabled_ui(!unlimited, |ui| {
             if ui
-                .add(egui::Slider::new(&mut limit, 30..=360).text(if en {
+                .add(egui::Slider::new(&mut limit, 1..=200).text(if en {
                     "Frame Rate Limit"
                 } else {
                     "Limit FPS"
                 }))
                 .changed()
             {
-                draft.fps = limit;
-                state.last_frame_limit = Some(limit);
+                let _ = draft.set_frame_limit(limit);
             }
         });
         let current_fps = ui.ctx().input(|input| {
@@ -309,21 +256,6 @@ fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut
                 "Aktualna liczba FPS:"
             }
         ));
-    });
-    boxed(ui, "OTERYN", |ui| {
-        ui.horizontal(|ui| {
-            ui.label(if en { "Window Size:" } else { "Rozmiar okna:" });
-            ui.add(egui::DragValue::new(&mut draft.window_width).range(800..=3840));
-            ui.label("×");
-            ui.add(egui::DragValue::new(&mut draft.window_height).range(600..=2160));
-        });
-        ui.add(
-            egui::Slider::new(&mut draft.background_fps, 5..=60).text(if en {
-                "Background FPS"
-            } else {
-                "FPS w tle"
-            }),
-        );
     });
 }
 
@@ -411,10 +343,7 @@ fn gameplay(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
     for (id, labels) in [
         (
             "gameplay.inspect_permission",
-            [
-                "Pozwól innym oglądać postać",
-                "Allow Others to Inspect Your Character",
-            ],
+            ["Pozwól wszystkim oglądać postać", "Allow All to Inspect Me"],
         ),
         (
             "gameplay.cancel_chase",
@@ -435,46 +364,97 @@ mod tests {
     use crate::preferences_browser::test_support::{button_position, click, frame};
 
     #[test]
-    fn unlimited_frame_switch_restores_draft_limit_without_altering_committed_settings()
-    -> Result<(), &'static str> {
+    fn frame_switch_restores_144_after_save_load_without_altering_committed_settings()
+    -> Result<(), Box<dyn std::error::Error>> {
         for en in [false, true] {
             let ctx = egui::Context::default();
             crate::client_chrome::install(&ctx, false);
             let size = egui::vec2(650.0, 650.0);
             let committed = ClientSettings {
                 fps: 144,
+                last_frame_limit: 144,
                 ..Default::default()
             };
             let mut draft = committed.clone();
-            let mut state = PageState::default();
             let label = if en {
                 "No Frame Rate Limit"
             } else {
                 "Bez limitu FPS"
             };
-            let mut draw = |ctx: &egui::Context| {
-                egui::Window::new("graphics-test")
-                    .default_size([500.0, 550.0])
-                    .show(ctx, |ui| graphics(ui, &mut draft, en, &mut state));
-            };
-            for _ in 0..4 {
-                let _ = frame(&ctx, size, vec![], &mut draw);
+            {
+                let mut draw = |ctx: &egui::Context| {
+                    egui::Window::new("graphics-test")
+                        .default_size([500.0, 550.0])
+                        .show(ctx, |ui| graphics(ui, &mut draft, en));
+                };
+                for _ in 0..4 {
+                    let _ = frame(&ctx, size, vec![], &mut draw);
+                }
+                let (_, out) = frame(&ctx, size, vec![], &mut draw);
+                let button = button_position(&out, size, label).ok_or("frame switch visible")?;
+                click(&ctx, size, button, &mut draw);
             }
-            let (_, out) = frame(&ctx, size, vec![], &mut draw);
-            let button = button_position(&out, size, label).ok_or("frame switch visible")?;
-            click(&ctx, size, button, &mut draw);
             assert_eq!(draft.fps, 0);
-            let mut draw = |ctx: &egui::Context| {
-                egui::Window::new("graphics-test")
-                    .default_size([500.0, 550.0])
-                    .show(ctx, |ui| graphics(ui, &mut draft, en, &mut state));
-            };
-            let (_, out) = frame(&ctx, size, vec![], &mut draw);
-            let button = button_position(&out, size, label).ok_or("frame switch visible")?;
-            click(&ctx, size, button, &mut draw);
-            assert_eq!(draft.fps, 144);
+            assert_eq!(draft.last_frame_limit, 144);
+            assert_eq!(draft.redraw_fps(true), 0);
             assert_eq!(committed.fps, 144);
+
+            let path = std::env::temp_dir().join(format!(
+                "oteryn-frame-limit-ui-{}-{en}.json",
+                std::process::id()
+            ));
+            draft.save(&path)?;
+            draft = ClientSettings::load(&path)?;
+            std::fs::remove_file(path)?;
+            assert_eq!(draft.fps, 0);
+            assert_eq!(draft.last_frame_limit, 144);
+
+            {
+                let mut draw = |ctx: &egui::Context| {
+                    egui::Window::new("graphics-test-after-restart")
+                        .default_size([500.0, 550.0])
+                        .show(ctx, |ui| graphics(ui, &mut draft, en));
+                };
+                for _ in 0..2 {
+                    let _ = frame(&ctx, size, vec![], &mut draw);
+                }
+                let (_, out) = frame(&ctx, size, vec![], &mut draw);
+                let button = button_position(&out, size, label).ok_or("frame switch visible")?;
+                click(&ctx, size, button, &mut draw);
+            }
+            assert_eq!(draft.fps, 144);
+            assert_eq!(draft.redraw_fps(true), 144);
+            assert_eq!(committed.fps, 144);
+
+            // Cancel discards a later draft-only change exactly like the panel.
+            draft.set_frame_limit(165)?;
+            assert_eq!(draft.fps, 165);
+            draft = committed.clone();
+            assert_eq!(draft.fps, 144);
+            assert_eq!(draft.last_frame_limit, 144);
         }
         Ok(())
+    }
+
+    #[test]
+    fn gameplay_uses_the_exact_reference_inspection_label() {
+        let ctx = egui::Context::default();
+        crate::client_chrome::install(&ctx, false);
+        let size = egui::vec2(620.0, 420.0);
+        let mut draft = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let mut output = egui::FullOutput::default();
+        for _ in 0..2 {
+            output = frame(&ctx, size, vec![], |ctx| {
+                egui::Window::new("gameplay-test")
+                    .fixed_size([560.0, 360.0])
+                    .show(ctx, |ui| gameplay(ui, &mut draft, true));
+            })
+            .1;
+        }
+        assert!(button_position(&output, size, "Allow All to Inspect Me").is_some());
+        assert!(button_position(&output, size, "Allow Others to Inspect Your Character").is_none());
     }
 }

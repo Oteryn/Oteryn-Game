@@ -10,7 +10,11 @@ use std::{
 /// Bound hostile or corrupt local input while leaving room for all 32 complete
 /// hotkey profiles, their two bindings per action, and custom actions.
 const MAX_SETTINGS_BYTES: u64 = 8 * 1024 * 1024;
-const SETTINGS_VERSION: u8 = 2;
+const SETTINGS_VERSION: u8 = 3;
+const DEFAULT_FRAME_LIMIT: u16 = 120;
+const LEGACY_UNLIMITED_FRAME_LIMIT: u16 = 60;
+const MIN_FRAME_LIMIT: u16 = 1;
+const MAX_FRAME_LIMIT: u16 = 200;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -23,6 +27,9 @@ pub struct ClientSettings {
     pub vsync: bool,
     /// Zero means no application frame limit.
     pub fps: u16,
+    /// Last non-zero foreground limit, retained while `fps` is zero.
+    #[serde(default)]
+    pub last_frame_limit: u16,
     pub background_fps: u16,
     pub ui_scale: f32,
     pub high_contrast: bool,
@@ -73,7 +80,8 @@ impl Default for ClientSettings {
             window_width: 900,
             window_height: 620,
             vsync: true,
-            fps: 120,
+            fps: DEFAULT_FRAME_LIMIT,
+            last_frame_limit: DEFAULT_FRAME_LIMIT,
             background_fps: 30,
             ui_scale: 1.0,
             high_contrast: false,
@@ -129,6 +137,49 @@ impl ClientSettings {
             crate::settings_catalog::FutureValue::Bool(enabled),
         );
         enabled
+    }
+
+    #[must_use]
+    pub const fn frame_limit_enabled(&self) -> bool {
+        self.fps != 0
+    }
+
+    /// Toggle the foreground scheduler limit without discarding its value.
+    pub fn set_frame_limit_enabled(&mut self, enabled: bool) {
+        if enabled {
+            if self.fps == 0 {
+                self.fps = self.last_frame_limit;
+            }
+        } else if self.fps != 0 {
+            self.last_frame_limit = self.fps;
+            self.fps = 0;
+        }
+    }
+
+    /// Change the retained foreground limit. The live scheduler follows it
+    /// immediately unless the no-limit switch is active.
+    pub fn set_frame_limit(&mut self, limit: u16) -> io::Result<()> {
+        if !(MIN_FRAME_LIMIT..=MAX_FRAME_LIMIT).contains(&limit) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Invalid foreground frame limit",
+            ));
+        }
+        self.last_frame_limit = limit;
+        if self.fps != 0 {
+            self.fps = limit;
+        }
+        Ok(())
+    }
+
+    /// Foreground and background rates consumed by the native redraw scheduler.
+    #[must_use]
+    pub const fn redraw_fps(&self, focused: bool) -> u16 {
+        if focused {
+            self.fps
+        } else {
+            self.background_fps
+        }
     }
 
     /// An unset preference preserves the pre-settings behavior: atlas frame on,
@@ -219,6 +270,38 @@ impl ClientSettings {
         Ok(())
     }
 
+    /// `Food and Beverages` and `Move Item` were initially stored under the UI
+    /// Sounds page. They belong to Sound in the reference client. Consume the
+    /// old spelling once, while preserving an explicitly stored new value.
+    fn migrate_legacy_ui_sound_preferences(&mut self) {
+        for (old, new) in [
+            ("ui_sounds.sound.eating", "sound.sound.eating"),
+            ("ui_sounds.sound.item_movement", "sound.sound.item_movement"),
+        ] {
+            if let Some(value) = self.future_preferences.remove(old) {
+                self.future_preferences.entry(new.into()).or_insert(value);
+            }
+        }
+    }
+
+    /// Version 2 files predate a durable remembered limit. A limited legacy
+    /// file already contains the remembered value; an unlimited one used the
+    /// old UI's 60 FPS fallback when the switch was turned back on.
+    fn migrate_legacy_frame_limit(&mut self, legacy_wide_range: bool) {
+        if self.fps != 0 {
+            if legacy_wide_range {
+                self.fps = self.fps.clamp(MIN_FRAME_LIMIT, MAX_FRAME_LIMIT);
+            }
+            self.last_frame_limit = self.fps;
+        } else if self.last_frame_limit == 0 {
+            self.last_frame_limit = LEGACY_UNLIMITED_FRAME_LIMIT;
+        } else if legacy_wide_range {
+            self.last_frame_limit = self
+                .last_frame_limit
+                .clamp(MIN_FRAME_LIMIT, MAX_FRAME_LIMIT);
+        }
+    }
+
     fn migrate_settings_version(&mut self) -> io::Result<()> {
         match self.version {
             1 => {
@@ -233,6 +316,11 @@ impl ClientSettings {
                     })?
                     .action_bar
                     .clone();
+                self.version = SETTINGS_VERSION;
+                Ok(())
+            }
+            2 => {
+                self.hotkeys.migrate_v2_reference_defaults();
                 self.version = SETTINGS_VERSION;
                 Ok(())
             }
@@ -291,6 +379,18 @@ impl ClientSettings {
         Ok(true)
     }
 
+    /// Select the previous existing profile without inventing one. The current
+    /// profile retains its live action-bar configuration before the switch.
+    pub fn select_previous_hotkey_profile(&mut self) -> io::Result<bool> {
+        let len = self.hotkeys.profiles.len();
+        if len <= 1 {
+            return Ok(false);
+        }
+        let previous = (self.hotkeys.selected + len - 1) % len;
+        self.select_hotkey_profile(previous)?;
+        Ok(true)
+    }
+
     /// Select the profile named exactly like the admitted character when the
     /// observed Auto-Switch option is enabled. No profile is created or guessed.
     /// The previous profile's current action bars are retained before switching.
@@ -327,7 +427,8 @@ impl ClientSettings {
         if self.version != SETTINGS_VERSION
             || !(800..=3840).contains(&self.window_width)
             || !(600..=2160).contains(&self.window_height)
-            || !(self.fps == 0 || (30..=360).contains(&self.fps))
+            || !(self.fps == 0 || (MIN_FRAME_LIMIT..=MAX_FRAME_LIMIT).contains(&self.fps))
+            || !(MIN_FRAME_LIMIT..=MAX_FRAME_LIMIT).contains(&self.last_frame_limit)
             || !(5..=60).contains(&self.background_fps)
             || !self.ui_scale.is_finite()
             || !(0.8..=1.8).contains(&self.ui_scale)
@@ -339,7 +440,6 @@ impl ClientSettings {
                 "Invalid client preferences",
             ));
         }
-        self.action_bar.validate(&self.movement_keys)?;
         self.validate_hotkey_draft()?;
         crate::panel_catalog::ShortcutOrder::from_saved(&self.panel_shortcuts)?;
         crate::settings_catalog::validate_future_preferences(&self.future_preferences)
@@ -364,9 +464,12 @@ impl ClientSettings {
             ));
         }
         let mut settings: Self = serde_json::from_slice(&fs::read(path)?)?;
+        let legacy_wide_frame_range = settings.version < SETTINGS_VERSION;
         settings.migrate_settings_version()?;
+        settings.migrate_legacy_frame_limit(legacy_wide_frame_range);
         settings.migrate_legacy_action_rows()?;
         settings.migrate_legacy_action_edge_masters()?;
+        settings.migrate_legacy_ui_sound_preferences();
         settings.reconcile_active_hotkey_profile()?;
         settings.validate()?;
         Ok(settings)
@@ -424,6 +527,98 @@ impl ClientSettings {
                 .copied()
         })
     }
+
+    /// Effective first cardinal bindings shown by the supplementary movement
+    /// editor. `None` is an intentional profile-owned clear, not a fallback.
+    #[must_use]
+    pub fn effective_movement_keys(&self) -> [Option<u16>; 4] {
+        const ACTIONS: [&str; 4] = [
+            "movement.north",
+            "movement.east",
+            "movement.south",
+            "movement.west",
+        ];
+        let active = self.hotkeys.active();
+        std::array::from_fn(|index| {
+            active
+                .and_then(|profile| profile.general_chat_off.get(ACTIONS[index]))
+                .map_or(Some(self.movement_keys[index]), |pair| {
+                    pair.first.map(|binding| binding.key)
+                })
+        })
+    }
+
+    /// Rebind one cardinal direction in the active Chat Off profile and keep
+    /// the legacy fallback synchronized. The change is atomic and validated.
+    pub fn set_movement_key(&mut self, index: usize, key: u16) -> io::Result<()> {
+        let action = [
+            "movement.north",
+            "movement.east",
+            "movement.south",
+            "movement.west",
+        ]
+        .get(index)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Unknown direction"))?;
+        let mut candidate = self.clone();
+        candidate.movement_keys[index] = key;
+        candidate
+            .hotkeys
+            .active_mut()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing hotkey profile"))?
+            .general_chat_off
+            .insert(
+                (*action).into(),
+                crate::hotkeys::HotkeyPair {
+                    first: Some(crate::settings_catalog::ShortcutBinding {
+                        key,
+                        ctrl: false,
+                        alt: false,
+                        shift: false,
+                        meta: false,
+                    }),
+                    second: None,
+                },
+            );
+        candidate.validate()?;
+        *self = candidate;
+        Ok(())
+    }
+
+    /// Apply a complete cardinal preset through the same validated profile path.
+    pub fn set_movement_keys(&mut self, keys: [u16; 4]) -> io::Result<()> {
+        let mut candidate = self.clone();
+        candidate.movement_keys = keys;
+        let profile = candidate
+            .hotkeys
+            .active_mut()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Missing hotkey profile"))?;
+        for (action, key) in [
+            "movement.north",
+            "movement.east",
+            "movement.south",
+            "movement.west",
+        ]
+        .into_iter()
+        .zip(keys)
+        {
+            profile.general_chat_off.insert(
+                action.into(),
+                crate::hotkeys::HotkeyPair {
+                    first: Some(crate::settings_catalog::ShortcutBinding {
+                        key,
+                        ctrl: false,
+                        alt: false,
+                        shift: false,
+                        meta: false,
+                    }),
+                    second: None,
+                },
+            );
+        }
+        candidate.validate()?;
+        *self = candidate;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -459,7 +654,7 @@ mod tests {
         settings.ui_scale = f32::NAN;
         assert!(settings.validate().is_err());
         settings = ClientSettings::default();
-        settings.version = 3;
+        settings.version = SETTINGS_VERSION.saturating_add(1);
         assert!(settings.validate().is_err());
     }
 
@@ -560,29 +755,183 @@ mod tests {
     }
 
     #[test]
-    fn v2_explicitly_cleared_stop_stays_cleared_after_save_and_reload()
+    fn v2_single_stop_defaults_migrate_to_the_exact_reference_matrices()
     -> Result<(), Box<dyn std::error::Error>> {
-        let mut settings = ClientSettings::default();
+        let legacy_stop = crate::hotkeys::HotkeyPair {
+            first: Some(crate::settings_catalog::ShortcutBinding {
+                key: 41,
+                ctrl: false,
+                alt: false,
+                shift: false,
+                meta: false,
+            }),
+            second: None,
+        };
+        let mut settings = ClientSettings {
+            version: 2,
+            ..ClientSettings::default()
+        };
         let profile = settings
             .hotkeys
             .active_mut()
             .ok_or_else(|| io::Error::other("missing default profile"))?;
-        profile.general_chat_on.remove("client.stop");
-        profile.general_chat_off.remove("client.stop");
+        profile.general_chat_on =
+            std::collections::BTreeMap::from([("client.stop".into(), legacy_stop)]);
+        profile.general_chat_off =
+            std::collections::BTreeMap::from([("client.stop".into(), legacy_stop)]);
         let path = std::env::temp_dir().join(format!(
-            "oteryn-settings-v2-cleared-stop-{}.json",
+            "oteryn-settings-v2-reference-hotkeys-{}.json",
             std::process::id()
         ));
 
-        settings.save(&path)?;
+        let mut raw_v2 = serde_json::to_value(settings)?;
+        raw_v2
+            .as_object_mut()
+            .ok_or_else(|| io::Error::other("settings must be an object"))?
+            .remove("last_frame_limit");
+        fs::write(&path, serde_json::to_vec(&raw_v2)?)?;
         let restored = ClientSettings::load(&path)?;
         let profile = restored
             .hotkeys
             .active()
             .ok_or_else(|| io::Error::other("missing restored profile"))?;
-        assert!(!profile.general_chat_on.contains_key("client.stop"));
-        assert!(!profile.general_chat_off.contains_key("client.stop"));
+        let expected = crate::hotkeys::HotkeyPreferences::default();
+        let expected = expected
+            .active()
+            .ok_or_else(|| io::Error::other("missing expected profile"))?;
+        assert_eq!(profile.general_chat_on.len(), 38);
+        assert_eq!(profile.general_chat_off.len(), 49);
+        assert_eq!(profile.general_chat_on, expected.general_chat_on);
+        assert_eq!(profile.general_chat_off, expected.general_chat_off);
+        assert_eq!(
+            profile.general_chat_on["chat.send"],
+            crate::hotkeys::HotkeyPair {
+                first: Some(crate::settings_catalog::ShortcutBinding {
+                    key: 40,
+                    ctrl: false,
+                    alt: false,
+                    shift: false,
+                    meta: false,
+                }),
+                second: Some(crate::settings_catalog::ShortcutBinding {
+                    key: 88,
+                    ctrl: false,
+                    alt: false,
+                    shift: false,
+                    meta: false,
+                }),
+            }
+        );
+        assert_eq!(
+            profile.general_chat_off["movement.north"]
+                .first
+                .map(|binding| binding.key),
+            Some(26)
+        );
+        restored.save(&path)?;
+        assert_eq!(ClientSettings::load(&path)?, restored);
         fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn v2_customized_and_explicitly_cleared_maps_are_not_backfilled()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut settings = ClientSettings {
+            version: 2,
+            ..ClientSettings::default()
+        };
+        let profile = settings
+            .hotkeys
+            .active_mut()
+            .ok_or_else(|| io::Error::other("missing default profile"))?;
+        profile.general_chat_on.clear();
+        profile.general_chat_off = std::collections::BTreeMap::from([(
+            "client.stop".into(),
+            crate::hotkeys::HotkeyPair::default(),
+        )]);
+        let mut inactive = crate::hotkeys::HotkeyProfile {
+            name: "Customized".into(),
+            ..crate::hotkeys::HotkeyProfile::default()
+        };
+        inactive.general_chat_on = std::collections::BTreeMap::from([(
+            "client.options".into(),
+            crate::hotkeys::HotkeyPair {
+                first: Some(crate::settings_catalog::ShortcutBinding {
+                    key: 30,
+                    ctrl: false,
+                    alt: false,
+                    shift: false,
+                    meta: false,
+                }),
+                second: None,
+            },
+        )]);
+        inactive.general_chat_off.clear();
+        settings.hotkeys.profiles.push(inactive);
+        let expected = settings
+            .hotkeys
+            .profiles
+            .iter()
+            .map(|profile| {
+                (
+                    profile.general_chat_on.clone(),
+                    profile.general_chat_off.clone(),
+                )
+            })
+            .collect::<Vec<_>>();
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-settings-v2-custom-hotkeys-{}.json",
+            std::process::id()
+        ));
+
+        let mut raw_v2 = serde_json::to_value(settings)?;
+        raw_v2
+            .as_object_mut()
+            .ok_or_else(|| io::Error::other("settings must be an object"))?
+            .remove("last_frame_limit");
+        fs::write(&path, serde_json::to_vec(&raw_v2)?)?;
+        let restored = ClientSettings::load(&path)?;
+        for (profile, (expected_on, expected_off)) in restored.hotkeys.profiles.iter().zip(expected)
+        {
+            assert_eq!(profile.general_chat_on, expected_on);
+            assert_eq!(profile.general_chat_off, expected_off);
+        }
+        restored.save(&path)?;
+        assert_eq!(ClientSettings::load(&path)?, restored);
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn action_bar_arrows_conflict_only_with_effective_movement_fallbacks()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut settings = ClientSettings::default();
+        settings.action_bar.shortcuts[12] = Some(crate::action_bar::SlotShortcut {
+            key: settings.movement_keys[0],
+            modifiers: 0,
+        });
+        assert!(
+            settings
+                .hotkeys
+                .active_movement_fallback_keys(&settings.movement_keys)
+                .is_empty()
+        );
+        settings.validate()?;
+
+        settings
+            .hotkeys
+            .active_mut()
+            .ok_or_else(|| io::Error::other("missing default profile"))?
+            .general_chat_off
+            .remove("movement.north");
+        assert_eq!(
+            settings
+                .hotkeys
+                .active_movement_fallback_keys(&settings.movement_keys),
+            vec![settings.movement_keys[0]]
+        );
+        assert!(settings.validate().is_err());
         Ok(())
     }
 
@@ -647,24 +996,26 @@ mod tests {
             version: 1,
             ..ClientSettings::default()
         };
-        settings
+        let east_fallback = settings.movement_keys[1];
+        let chat_off = &mut settings
             .hotkeys
             .active_mut()
             .ok_or("default profile")?
-            .general_chat_off
-            .insert(
-                "movement.north".into(),
-                crate::hotkeys::HotkeyPair {
-                    first: Some(crate::settings_catalog::ShortcutBinding {
-                        key: settings.movement_keys[1],
-                        ctrl: true,
-                        alt: false,
-                        shift: false,
-                        meta: false,
-                    }),
-                    second: None,
-                },
-            );
+            .general_chat_off;
+        chat_off.clear();
+        chat_off.insert(
+            "movement.north".into(),
+            crate::hotkeys::HotkeyPair {
+                first: Some(crate::settings_catalog::ShortcutBinding {
+                    key: east_fallback,
+                    ctrl: true,
+                    alt: false,
+                    shift: false,
+                    meta: false,
+                }),
+                second: None,
+            },
+        );
         let path = std::env::temp_dir().join(format!(
             "oteryn-settings-v1-movement-fallback-{}.json",
             std::process::id()
@@ -732,6 +1083,122 @@ mod tests {
     }
 
     #[test]
+    fn legacy_frame_limit_files_gain_a_durable_restore_value() -> io::Result<()> {
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-legacy-frame-limit-{}.json",
+            std::process::id()
+        ));
+        for (fps, expected_last, enabled) in
+            [(144, 144, true), (0, LEGACY_UNLIMITED_FRAME_LIMIT, false)]
+        {
+            let mut legacy = serde_json::to_value(ClientSettings {
+                fps,
+                ..ClientSettings::default()
+            })?;
+            legacy
+                .as_object_mut()
+                .ok_or_else(|| io::Error::other("settings must be an object"))?
+                .remove("last_frame_limit");
+            fs::write(&path, serde_json::to_vec(&legacy)?)?;
+            let loaded = ClientSettings::load(&path)?;
+            assert_eq!(loaded.last_frame_limit, expected_last);
+            assert_eq!(loaded.frame_limit_enabled(), enabled);
+            loaded.validate()?;
+        }
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn v2_frame_limits_migrate_to_the_observed_one_through_two_hundred_range() -> io::Result<()> {
+        let path =
+            std::env::temp_dir().join(format!("oteryn-v2-frame-limit-{}.json", std::process::id()));
+        for (fps, expected_fps, expected_last) in [
+            (360, 200, 200),
+            (0, 0, LEGACY_UNLIMITED_FRAME_LIMIT),
+            (1, 1, 1),
+        ] {
+            let mut legacy = serde_json::to_value(ClientSettings {
+                version: 2,
+                fps,
+                ..ClientSettings::default()
+            })?;
+            legacy
+                .as_object_mut()
+                .ok_or_else(|| io::Error::other("settings must be an object"))?
+                .remove("last_frame_limit");
+            fs::write(&path, serde_json::to_vec(&legacy)?)?;
+            let loaded = ClientSettings::load(&path)?;
+            assert_eq!(loaded.version, SETTINGS_VERSION);
+            assert_eq!(loaded.fps, expected_fps);
+            assert_eq!(loaded.last_frame_limit, expected_last);
+        }
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn frame_limit_setter_enforces_the_observed_slider_bounds() {
+        let mut settings = ClientSettings::default();
+        assert!(settings.set_frame_limit(1).is_ok());
+        assert_eq!(settings.fps, 1);
+        assert!(settings.set_frame_limit(200).is_ok());
+        assert_eq!(settings.fps, 200);
+        assert!(settings.set_frame_limit(0).is_err());
+        assert!(settings.set_frame_limit(201).is_err());
+        assert_eq!(settings.fps, 200);
+    }
+
+    #[test]
+    fn legacy_ui_sound_keys_move_once_and_explicit_sound_values_win()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::settings_catalog::FutureValue;
+
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-legacy-ui-sounds-{}.json",
+            std::process::id()
+        ));
+        let mut legacy = ClientSettings::default();
+        legacy.future_preferences.extend([
+            ("ui_sounds.sound.eating".into(), FutureValue::Bool(false)),
+            (
+                "ui_sounds.sound.item_movement".into(),
+                FutureValue::Bool(false),
+            ),
+            ("sound.sound.item_movement".into(), FutureValue::Bool(true)),
+        ]);
+        fs::write(&path, serde_json::to_vec(&legacy)?)?;
+
+        let migrated = ClientSettings::load(&path)?;
+        assert_eq!(
+            migrated.future_preferences.get("sound.sound.eating"),
+            Some(&FutureValue::Bool(false))
+        );
+        assert_eq!(
+            migrated.future_preferences.get("sound.sound.item_movement"),
+            Some(&FutureValue::Bool(true))
+        );
+        assert!(
+            !migrated
+                .future_preferences
+                .contains_key("ui_sounds.sound.eating")
+        );
+        assert!(
+            !migrated
+                .future_preferences
+                .contains_key("ui_sounds.sound.item_movement")
+        );
+
+        migrated.save(&path)?;
+        assert_eq!(ClientSettings::load(&path)?, migrated);
+        let saved = String::from_utf8(fs::read(&path)?)?;
+        assert!(!saved.contains("ui_sounds.sound.eating"));
+        assert!(!saved.contains("ui_sounds.sound.item_movement"));
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
     fn next_profile_cycles_existing_profiles_and_preserves_action_bars()
     -> Result<(), Box<dyn std::error::Error>> {
         let mut settings = ClientSettings::default();
@@ -749,6 +1216,29 @@ mod tests {
         assert!(!settings.action_bar.edge_enabled[0]);
         assert!(!settings.hotkeys.profiles[0].action_bar.edge_enabled[1]);
         assert!(settings.select_next_hotkey_profile()?);
+        assert_eq!(settings.hotkeys.selected, 0);
+        assert!(!settings.action_bar.edge_enabled[1]);
+        Ok(())
+    }
+
+    #[test]
+    fn previous_profile_wraps_and_preserves_outgoing_action_bars()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut settings = ClientSettings::default();
+        assert!(!settings.select_previous_hotkey_profile()?);
+        let mut second = crate::hotkeys::HotkeyProfile {
+            name: "Second".into(),
+            ..crate::hotkeys::HotkeyProfile::default()
+        };
+        second.action_bar.edge_enabled[0] = false;
+        settings.hotkeys.profiles.push(second);
+        settings.action_bar.edge_enabled[1] = false;
+
+        assert!(settings.select_previous_hotkey_profile()?);
+        assert_eq!(settings.hotkeys.selected, 1);
+        assert!(!settings.action_bar.edge_enabled[0]);
+        assert!(!settings.hotkeys.profiles[0].action_bar.edge_enabled[1]);
+        assert!(settings.select_previous_hotkey_profile()?);
         assert_eq!(settings.hotkeys.selected, 0);
         assert!(!settings.action_bar.edge_enabled[1]);
         Ok(())
@@ -781,10 +1271,16 @@ mod tests {
     #[test]
     fn modified_action_shortcut_does_not_also_walk() -> Result<(), Box<dyn std::error::Error>> {
         use oteryn_input_actions::{Modifier, Modifiers};
-        let settings = ClientSettings {
+        let mut settings = ClientSettings {
             movement_keys: [26, 7, 22, 4],
             ..ClientSettings::default()
         };
+        settings
+            .hotkeys
+            .active_mut()
+            .ok_or("default profile")?
+            .general_chat_off
+            .clear();
         let mut event = NormalizedInputEvent::Key {
             code: KeyCode::new(26)?,
             state: ButtonState::Pressed,
@@ -806,6 +1302,12 @@ mod tests {
             movement_keys: [26, 7, 22, 4],
             ..ClientSettings::default()
         };
+        settings
+            .hotkeys
+            .active_mut()
+            .ok_or("default profile")?
+            .general_chat_off
+            .clear();
         let event = NormalizedInputEvent::Key {
             code: KeyCode::new(26)?,
             state: ButtonState::Pressed,
@@ -838,6 +1340,47 @@ mod tests {
     }
 
     #[test]
+    fn movement_editor_rebinds_the_active_profile_and_runtime_resolver()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::hotkeys::ResolvedHotkey;
+        use oteryn_input_actions::Modifiers;
+
+        let mut settings = ClientSettings::default();
+        assert_eq!(
+            settings.effective_movement_keys(),
+            [Some(26), Some(7), Some(22), Some(4)]
+        );
+        settings.set_movement_keys([82, 79, 81, 80])?;
+        assert_eq!(settings.movement_keys, [82, 79, 81, 80]);
+        assert_eq!(
+            settings.effective_movement_keys(),
+            [Some(82), Some(79), Some(81), Some(80)]
+        );
+        let north = NormalizedInputEvent::Key {
+            code: KeyCode::new(82)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        assert_eq!(
+            settings.hotkeys.resolve(&[north], false),
+            vec![ResolvedHotkey::General("movement.north".into())]
+        );
+        let old_north = NormalizedInputEvent::Key {
+            code: KeyCode::new(26)?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        assert!(settings.hotkeys.resolve(&[old_north], false).is_empty());
+        settings.set_movement_key(0, 27)?;
+        assert_eq!(settings.effective_movement_keys()[0], Some(27));
+        assert!(settings.set_movement_key(0, 79).is_err());
+        assert_eq!(settings.effective_movement_keys()[0], Some(27));
+        Ok(())
+    }
+
+    #[test]
     fn preferences_survive_replacement_and_invalid_save_preserves_them() -> io::Result<()> {
         let path =
             std::env::temp_dir().join(format!("oteryn-settings-test-{}.json", std::process::id()));
@@ -847,7 +1390,7 @@ mod tests {
         settings.english = true;
         settings.save(&path)?;
         assert_eq!(ClientSettings::load(&path)?, settings);
-        settings.fps = 1;
+        settings.fps = MAX_FRAME_LIMIT.saturating_add(1);
         assert!(settings.save(&path).is_err());
         assert_eq!(ClientSettings::load(&path)?.fps, 120);
         fs::remove_file(path)?;
@@ -1112,7 +1655,7 @@ mod tests {
             row.shortcuts = std::array::from_fn(|slot| {
                 let index = row_index * ACTION_BAR_SLOTS + slot;
                 Some(SlotShortcut {
-                    key: 4 + (index % 36) as u16,
+                    key: 100 + (index % 36) as u16,
                     modifiers: (index / 36) as u8,
                 })
             });

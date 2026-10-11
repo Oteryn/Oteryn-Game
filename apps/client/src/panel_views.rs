@@ -75,6 +75,29 @@ impl PanelViews {
         self.navigation.take()
     }
 
+    /// Select a dedicated panel page by its stable catalogue tab identifier.
+    /// The local draft changes only after both identifiers are verified.
+    pub fn select_tab(&mut self, panel_id: &str, tab_id: &str) -> bool {
+        if !matches!(panel_id, "cyclopedia" | "social") {
+            return false;
+        }
+        let Some(definition) = oteryn_client::panel_catalog::panel(panel_id) else {
+            return false;
+        };
+        let Some(index) = definition.tabs.iter().position(|tab| tab.id == tab_id) else {
+            return false;
+        };
+        let draft = self.drafts.entry(panel_id.to_owned()).or_default();
+        match panel_id {
+            "cyclopedia" => {
+                draft.choices.insert("cyclopedia.page", index);
+            }
+            "social" => draft.tab = index,
+            _ => unreachable!("dedicated panel identifiers were checked above"),
+        }
+        true
+    }
+
     /// Returns false for panels drawn by the existing live HUD/help/shortcut renderer.
     pub fn show(&mut self, ui: &mut egui::Ui, id: &str, english: bool, state: &GameState) -> bool {
         if !matches!(
@@ -1362,7 +1385,40 @@ fn item_summary(ui: &mut egui::Ui, d: &mut Draft, en: bool, state: &GameState) {
 
 #[cfg(test)]
 mod tests {
-    use super::LocalPresets;
+    use super::{LocalPresets, PanelViews};
+
+    #[test]
+    fn stable_panel_tabs_select_exact_dedicated_drafts() {
+        let mut views = PanelViews::default();
+        for (id, index) in [
+            ("map", 0),
+            ("items", 1),
+            ("character", 3),
+            ("bestiary", 4),
+            ("charms", 5),
+            ("archive", 8),
+        ] {
+            assert!(views.select_tab("cyclopedia", id));
+            assert_eq!(views.drafts["cyclopedia"].choices["cyclopedia.page"], index);
+        }
+        for (id, index) in [
+            ("finder", 0),
+            ("assemble", 1),
+            ("friends", 2),
+            ("invitations", 3),
+            ("search", 4),
+        ] {
+            assert!(views.select_tab("social", id));
+            assert_eq!(views.drafts["social"].tab, index);
+        }
+        let before = views.drafts["cyclopedia"].choices["cyclopedia.page"];
+        assert!(!views.select_tab("cyclopedia", "not-a-tab"));
+        assert!(!views.select_tab("not-a-panel", "map"));
+        assert_eq!(
+            views.drafts["cyclopedia"].choices["cyclopedia.page"],
+            before
+        );
+    }
 
     #[test]
     fn atelier_regions_fit_narrow_and_two_column_widths() {

@@ -65,7 +65,8 @@ impl SlotShortcut {
 #[serde(deny_unknown_fields)]
 pub struct ActionBarPreferences {
     pub visible: bool,
-    /// Locks assignment editing, never command activation.
+    /// Locks pointer drag/drop editing, never command activation or explicit
+    /// context-menu and Settings actions.
     pub locked: bool,
     #[serde(
         default = "empty_shortcuts",
@@ -510,16 +511,6 @@ impl ActionBar {
     }
 
     pub fn assign(&mut self, slot: usize, assignment: Option<SlotAssignment>) -> io::Result<()> {
-        let row = self
-            .preferences
-            .row(slot / ACTION_BAR_SLOTS)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Unknown action slot"))?;
-        if row.locked {
-            return Err(io::Error::new(
-                io::ErrorKind::PermissionDenied,
-                "Action bar is locked",
-            ));
-        }
         let destination = self
             .assignments
             .get_mut(slot)
@@ -538,15 +529,33 @@ impl ActionBar {
         Ok(())
     }
 
-    pub fn clear_row(&mut self, row: usize) -> io::Result<()> {
-        let preferences = self
+    /// Pointer drag/drop assignment respects the row lock. Explicit assignment
+    /// menus use [`Self::assign`] because the reference lock does not gate them.
+    pub fn assign_from_drop(
+        &mut self,
+        slot: usize,
+        assignment: Option<SlotAssignment>,
+    ) -> io::Result<()> {
+        let row = self
             .preferences
-            .row(row)
-            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Unknown action row"))?;
-        if preferences.locked {
+            .row(slot / ACTION_BAR_SLOTS)
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Unknown action slot"))?;
+        if row.locked {
             return Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
                 "Action row is locked",
+            ));
+        }
+        self.assign(slot, assignment)
+    }
+
+    /// Explicit bulk clear is a Settings action, so it is not a pointer drop and
+    /// remains available while a row is locked.
+    pub fn clear_row(&mut self, row: usize) -> io::Result<()> {
+        if self.preferences.row(row).is_none() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Unknown action row",
             ));
         }
         self.assignments[row * ACTION_BAR_SLOTS..(row + 1) * ACTION_BAR_SLOTS].fill(None);
@@ -594,6 +603,12 @@ impl ActionBar {
         self.text_active = text_active;
         self.modal_active = modal_active;
         Ok(())
+    }
+
+    /// Current router context used for both activation and visible shortcut labels.
+    #[must_use]
+    pub const fn chat_context_active(&self) -> bool {
+        self.text_active
     }
 
     /// Process focus/release events even while text/modal input suppresses gameplay.
@@ -948,8 +963,14 @@ mod tests {
         let mut preferences = bar.preferences().clone();
         preferences.locked = true;
         bar.reconfigure(preferences, &[])?;
+        let assignment = bar.assignment(0).cloned();
+        bar.assign(0, None)?;
+        assert!(bar.assignment(0).is_none());
+        bar.assign(0, assignment)?;
         assert_eq!(
-            bar.assign(0, None).err().map(|error| error.kind()),
+            bar.assign_from_drop(0, None)
+                .err()
+                .map(|error| error.kind()),
             Some(io::ErrorKind::PermissionDenied)
         );
         assert!(bar.activate(0).is_some());
@@ -1212,12 +1233,21 @@ mod tests {
         assert_eq!(bar.preferences().visible_rows(), [0, 0, 1]);
         assert!(bar.activate(0).is_some()); // Hidden means rendering only.
         assert!(bar.activate(TOTAL_ACTION_BAR_SLOTS - 1).is_some());
-        assert!(bar.assign(TOTAL_ACTION_BAR_SLOTS - 1, None).is_err());
-        assert!(bar.clear_row(ACTION_BAR_ROWS - 1).is_err());
-        bar.assign(0, assignment)?;
+        assert_eq!(
+            bar.assign_from_drop(TOTAL_ACTION_BAR_SLOTS - 1, None)
+                .err()
+                .map(|error| error.kind()),
+            Some(io::ErrorKind::PermissionDenied)
+        );
+        assert!(bar.assignment(TOTAL_ACTION_BAR_SLOTS - 1).is_some());
+        bar.clear_row(ACTION_BAR_ROWS - 1)?;
+        assert!(bar.assignment(TOTAL_ACTION_BAR_SLOTS - 1).is_none());
+        bar.assign_from_drop(0, assignment)?;
+        assert!(bar.assignment(0).is_some());
         bar.clear_row(0)?;
         assert!(bar.assignment(0).is_none());
         assert!(bar.assign(TOTAL_ACTION_BAR_SLOTS, None).is_err());
+        assert!(bar.assign_from_drop(TOTAL_ACTION_BAR_SLOTS, None).is_err());
         bar.reset_session()?;
         assert!((0..TOTAL_ACTION_BAR_SLOTS).all(|slot| bar.assignment(slot).is_none()));
         assert!(bar.preferences().extra_rows[7].locked);

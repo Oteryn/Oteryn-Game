@@ -1,7 +1,7 @@
 use crate::scene_gpu::SceneGpu;
 use crate::{
-    AtlasImage, RendererError, SpriteBatch, SurfaceDecision, SurfaceEvent, SurfaceSize,
-    SurfaceState, TileBatch,
+    AtlasImage, CapturedFrame, CapturedPixelOrder, RendererError, SpriteBatch, SurfaceDecision,
+    SurfaceEvent, SurfaceSize, SurfaceState, TileBatch, unpack_capture_rows,
 };
 use oteryn_foundation::ProcessGeneration;
 
@@ -130,7 +130,7 @@ where
 
     /// Clears the surface.
     pub fn render(&mut self, generation: ProcessGeneration) -> Result<(), RendererError> {
-        self.render_frame(generation, None, None)
+        self.render_frame(generation, None, None, false).map(drop)
     }
 
     /// Clears the surface, then draws the tile batch and the sprite batch over it.
@@ -140,7 +140,13 @@ where
         tiles: &TileBatch,
         sprites: &SpriteBatch,
     ) -> Result<(), RendererError> {
-        self.render_frame(generation, Some(FrameBatches { tiles, sprites }), None)
+        self.render_frame(
+            generation,
+            Some(FrameBatches { tiles, sprites }),
+            None,
+            false,
+        )
+        .map(drop)
     }
 
     pub fn set_vsync(
@@ -168,7 +174,28 @@ where
             generation,
             Some(FrameBatches { tiles, sprites }),
             Some((context, output)),
+            false,
         )
+        .map(drop)
+    }
+
+    /// Draws the production scene and UI, then synchronously reads back that
+    /// exact composed DX12 surface frame.
+    pub fn render_batches_ui_capture(
+        &mut self,
+        generation: ProcessGeneration,
+        tiles: &TileBatch,
+        sprites: &SpriteBatch,
+        context: &egui::Context,
+        output: egui::FullOutput,
+    ) -> Result<CapturedFrame, RendererError> {
+        self.render_frame(
+            generation,
+            Some(FrameBatches { tiles, sprites }),
+            Some((context, output)),
+            true,
+        )?
+        .ok_or(RendererError::CaptureMap)
     }
 
     pub fn render_ui(
@@ -177,7 +204,19 @@ where
         context: &egui::Context,
         output: egui::FullOutput,
     ) -> Result<(), RendererError> {
-        self.render_frame(generation, None, Some((context, output)))
+        self.render_frame(generation, None, Some((context, output)), false)
+            .map(drop)
+    }
+
+    /// Draws the production UI and synchronously reads back that exact DX12 surface frame.
+    pub fn render_ui_capture(
+        &mut self,
+        generation: ProcessGeneration,
+        context: &egui::Context,
+        output: egui::FullOutput,
+    ) -> Result<CapturedFrame, RendererError> {
+        self.render_frame(generation, None, Some((context, output)), true)?
+            .ok_or(RendererError::CaptureMap)
     }
 
     fn render_frame(
@@ -185,7 +224,8 @@ where
         generation: ProcessGeneration,
         batches: Option<FrameBatches<'_>>,
         ui_output: Option<(&egui::Context, egui::FullOutput)>,
-    ) -> Result<(), RendererError> {
+        capture: bool,
+    ) -> Result<Option<CapturedFrame>, RendererError> {
         if batches.is_some() && self.atlas.is_none() {
             return Err(RendererError::Validation);
         }
@@ -194,26 +234,30 @@ where
         })?;
         match frame {
             wgpu::CurrentSurfaceTexture::Success(frame) => {
-                self.present(frame, generation, false, batches, ui_output)
+                self.present(frame, generation, false, batches, ui_output, capture)
             }
             wgpu::CurrentSurfaceTexture::Suboptimal(frame) => {
-                self.present(frame, generation, true, batches, ui_output)
+                self.present(frame, generation, true, batches, ui_output, capture)
             }
             wgpu::CurrentSurfaceTexture::Timeout => {
                 let decision = self.state.apply(SurfaceEvent::Timeout { generation })?;
-                self.execute(decision, generation)
+                self.execute(decision, generation)?;
+                Ok(None)
             }
             wgpu::CurrentSurfaceTexture::Occluded => {
                 let decision = self.state.apply(SurfaceEvent::Occluded { generation })?;
-                self.execute(decision, generation)
+                self.execute(decision, generation)?;
+                Ok(None)
             }
             wgpu::CurrentSurfaceTexture::Outdated => {
                 let decision = self.state.apply(SurfaceEvent::Outdated { generation })?;
-                self.execute(decision, generation)
+                self.execute(decision, generation)?;
+                Ok(None)
             }
             wgpu::CurrentSurfaceTexture::Lost => {
                 let decision = self.state.apply(SurfaceEvent::Lost { generation })?;
-                self.execute(decision, generation)
+                self.execute(decision, generation)?;
+                Ok(None)
             }
             wgpu::CurrentSurfaceTexture::Validation => Err(RendererError::Validation),
         }
@@ -250,7 +294,8 @@ where
         suboptimal: bool,
         batches: Option<FrameBatches<'_>>,
         ui_output: Option<(&egui::Context, egui::FullOutput)>,
-    ) -> Result<(), RendererError> {
+        capture: bool,
+    ) -> Result<Option<CapturedFrame>, RendererError> {
         self.prepare_scene(batches)?;
         let view = frame
             .texture
@@ -330,20 +375,109 @@ where
             });
             renderer.render(&mut pass.forget_lifetime(), jobs, screen);
         }
+        let readback = if capture {
+            let configuration = self
+                .configuration
+                .as_ref()
+                .ok_or(RendererError::CaptureUnsupported)?;
+            if !configuration.usage.contains(wgpu::TextureUsages::COPY_SRC) {
+                return Err(RendererError::CaptureUnsupported);
+            }
+            let order = match configuration.format {
+                wgpu::TextureFormat::Rgba8Unorm | wgpu::TextureFormat::Rgba8UnormSrgb => {
+                    CapturedPixelOrder::Rgba
+                }
+                wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Bgra8UnormSrgb => {
+                    CapturedPixelOrder::Bgra
+                }
+                _ => return Err(RendererError::CaptureUnsupported),
+            };
+            let row_bytes = configuration
+                .width
+                .checked_mul(4)
+                .ok_or(RendererError::CaptureSize)?;
+            let padded_row_bytes = row_bytes
+                .checked_add(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT - 1)
+                .map(|bytes| bytes / wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
+                .and_then(|rows| rows.checked_mul(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT))
+                .ok_or(RendererError::CaptureSize)?;
+            let buffer_size = u64::from(padded_row_bytes)
+                .checked_mul(u64::from(configuration.height))
+                .ok_or(RendererError::CaptureSize)?;
+            let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("oteryn-native-frame-readback"),
+                size: buffer_size,
+                usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                mapped_at_creation: false,
+            });
+            encoder.copy_texture_to_buffer(
+                frame.texture.as_image_copy(),
+                wgpu::TexelCopyBufferInfo {
+                    buffer: &buffer,
+                    layout: wgpu::TexelCopyBufferLayout {
+                        offset: 0,
+                        bytes_per_row: Some(padded_row_bytes),
+                        rows_per_image: None,
+                    },
+                },
+                wgpu::Extent3d {
+                    width: configuration.width,
+                    height: configuration.height,
+                    depth_or_array_layers: 1,
+                },
+            );
+            Some((
+                buffer,
+                configuration.width,
+                configuration.height,
+                padded_row_bytes,
+                order,
+            ))
+        } else {
+            None
+        };
         commands.push(encoder.finish());
-        let _submission = self.queue.submit(commands);
+        let submission = self.queue.submit(commands);
         if let (Some(renderer), Some((_, _, free))) = (&mut self.ui, ui_frame) {
             for id in free {
                 renderer.free_texture(&id);
             }
         }
+        let captured = if let Some((buffer, width, height, padded_row_bytes, order)) = readback {
+            let (sender, receiver) = std::sync::mpsc::sync_channel(1);
+            buffer.map_async(wgpu::MapMode::Read, .., move |result| {
+                let _ = sender.send(result);
+            });
+            self.device
+                .poll(wgpu::PollType::Wait {
+                    submission_index: Some(submission),
+                    timeout: Some(std::time::Duration::from_secs(10)),
+                })
+                .map_err(|_error| RendererError::CaptureMap)?;
+            receiver
+                .recv_timeout(std::time::Duration::from_secs(1))
+                .map_err(|_error| RendererError::CaptureMap)?
+                .map_err(|_error| RendererError::CaptureMap)?;
+            let mapped = buffer.get_mapped_range(..);
+            let rgba = unpack_capture_rows(&mapped, width, height, padded_row_bytes, order)?;
+            drop(mapped);
+            buffer.unmap();
+            Some(CapturedFrame {
+                width,
+                height,
+                rgba,
+            })
+        } else {
+            None
+        };
         frame.present();
 
         let decision = self.state.apply(SurfaceEvent::Presented {
             generation,
             suboptimal,
         })?;
-        self.execute(decision, generation)
+        self.execute(decision, generation)?;
+        Ok(captured)
     }
 
     /// Builds (or rebuilds after a surface format change) the scene resources and uploads the
@@ -430,6 +564,14 @@ where
         } else {
             wgpu::PresentMode::AutoNoVsync
         };
+        if self
+            .surface
+            .get_capabilities(&self.adapter)
+            .usages
+            .contains(wgpu::TextureUsages::COPY_SRC)
+        {
+            configuration.usage |= wgpu::TextureUsages::COPY_SRC;
+        }
         self.surface.configure(&self.device, &configuration);
         self.configuration = Some(configuration);
         let decision = self.state.apply(SurfaceEvent::Configured { generation })?;

@@ -16,7 +16,6 @@ use oteryn_client::{
 pub(super) struct PageState {
     displayed: Option<String>,
     available: Option<String>,
-    last_frame_limit: Option<u16>,
     hotkeys: hotkeys::State,
     help_action: Option<HelpAction>,
     help_reset_confirmation: bool,
@@ -55,7 +54,7 @@ pub(super) fn show(
         _ => {
             return hotkeys::show(ui, draft, section, english, &mut state.hotkeys)
                 || hud::show(ui, draft, section, english, state)
-                || display::show(ui, draft, section, english, state);
+                || display::show(ui, draft, section, english);
         }
     }
     true
@@ -115,6 +114,19 @@ fn help(ui: &mut egui::Ui, en: bool, state: &mut PageState) {
         {
             state.help_action = Some(HelpAction::Export);
         }
+        ui.add_enabled(
+            false,
+            egui::Button::new(if en {
+                "Export Minimap"
+            } else {
+                "Eksportuj minimapę"
+            }),
+        )
+        .on_hover_text(if en {
+            "No versioned minimap import/export format is available yet."
+        } else {
+            "Brak jeszcze wersjonowanego formatu importu/eksportu minimapy."
+        });
         if ui
             .button(if en {
                 "Import Options"
@@ -125,18 +137,19 @@ fn help(ui: &mut egui::Ui, en: bool, state: &mut PageState) {
         {
             state.help_action = Some(HelpAction::Import);
         }
-        for label in if en {
-            ["Export Minimap", "Import Minimap"]
+        ui.add_enabled(
+            false,
+            egui::Button::new(if en {
+                "Import Minimap"
+            } else {
+                "Importuj minimapę"
+            }),
+        )
+        .on_hover_text(if en {
+            "No versioned minimap import/export format is available yet."
         } else {
-            ["Eksportuj minimapę", "Importuj minimapę"]
-        } {
-            ui.add_enabled(false, egui::Button::new(label))
-                .on_hover_text(if en {
-                    "No versioned minimap import/export format is available yet."
-                } else {
-                    "Brak jeszcze wersjonowanego formatu importu/eksportu minimapy."
-                });
-        }
+            "Brak jeszcze wersjonowanego formatu importu/eksportu minimapy."
+        });
         if !state.help_reset_confirmation {
             if ui
                 .button(if en {
@@ -192,6 +205,26 @@ fn row(
             ui.set_min_height(28.0);
             reference_option(ui, draft, section, id, labels, en);
         });
+}
+
+pub(super) fn retained_children(
+    ui: &mut egui::Ui,
+    enabled: bool,
+    gate: &'static str,
+    body: impl FnOnce(&mut egui::Ui),
+) {
+    ui.push_id(("retained-child-scope", gate), |ui| {
+        ui.add_enabled_ui(enabled, |ui| {
+            #[cfg(test)]
+            ui.ctx().data_mut(|data| {
+                data.insert_temp(
+                    egui::Id::new(("retained-child-gate", gate)),
+                    ui.is_enabled(),
+                );
+            });
+            body(ui);
+        });
+    });
 }
 
 // Unset is visibly unknown, never silently saved as an invented reference default.
@@ -278,32 +311,40 @@ fn console(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             ],
         ),
         ("console.timestamps", ["Znaczniki czasu", "Show Timestamps"]),
-        (
-            "console.seconds",
-            ["Sekundy w znacznikach czasu", "Show Seconds in Timestamps"],
-        ),
-        ("console.levels", ["Poziomy postaci", "Show Levels"]),
     ] {
         row(ui, draft, "console", id, labels, en);
     }
-    boxed(ui, "OTERYN", |ui| {
-        ui.checkbox(
-            &mut draft.show_chat,
-            if en {
-                "Show Chat Panel"
-            } else {
-                "Pokaż panel czatu"
-            },
-        );
-        reference_option(
-            ui,
-            draft,
-            "console",
-            "console.font_size",
-            ["Rozmiar tekstu", "Text Size"],
-            en,
-        );
-    });
+    retained_children(
+        ui,
+        draft.stored_bool("console.console.timestamps") == Some(true),
+        "console-timestamp-seconds",
+        |ui| {
+            row(
+                ui,
+                draft,
+                "console",
+                "console.seconds",
+                ["Sekundy w znacznikach czasu", "Show Seconds in Timestamps"],
+                en,
+            );
+        },
+    );
+    row(
+        ui,
+        draft,
+        "console",
+        "console.levels",
+        ["Poziomy postaci", "Show Levels"],
+        en,
+    );
+    reference_option(
+        ui,
+        draft,
+        "console",
+        "console.font_size",
+        ["Rozmiar tekstu", "Text Size"],
+        en,
+    );
 }
 
 fn effects(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
@@ -400,12 +441,10 @@ fn sound(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                     en,
                 );
             } else if id == "sound.items" {
-                // These keys retain their existing storage section; their visual group
-                // is Sound, as observed, rather than UI Sounds.
                 reference_option(
                     ui,
                     draft,
-                    "ui_sounds",
+                    "sound",
                     "sound.eating",
                     ["Jedzenie i napoje", "Food and Beverages"],
                     en,
@@ -413,7 +452,7 @@ fn sound(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 reference_option(
                     ui,
                     draft,
-                    "ui_sounds",
+                    "sound",
                     "sound.item_movement",
                     ["Przenoszenie przedmiotów", "Move Item"],
                     en,
@@ -421,16 +460,6 @@ fn sound(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             }
         });
     }
-    boxed(ui, "OTERYN", |ui| {
-        reference_option(
-            ui,
-            draft,
-            "sound",
-            "sound.background_mute",
-            ["Wycisz w tle", "Mute in Background"],
-            en,
-        );
-    });
 }
 
 fn battle(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
@@ -473,15 +502,26 @@ fn battle(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 ["Zaklęcia", "Spells"],
                 en,
             );
-            ui.indent(("spells", own), |ui| {
-                for (id, labels) in [
-                    (attack, ["Atak", "Attack"]),
-                    (healing, ["Leczenie", "Healing"]),
-                    (support, ["Wsparcie", "Support"]),
-                ] {
-                    reference_option(ui, draft, "battle_sounds", id, labels, en);
-                }
-            });
+            retained_children(
+                ui,
+                draft.stored_bool(&format!("battle_sounds.{spells}")) == Some(true),
+                if own {
+                    "battle-own-spells"
+                } else {
+                    "battle-other-spells"
+                },
+                |ui| {
+                    ui.indent(("spells", own), |ui| {
+                        for (id, labels) in [
+                            (attack, ["Atak", "Attack"]),
+                            (healing, ["Leczenie", "Healing"]),
+                            (support, ["Wsparcie", "Support"]),
+                        ] {
+                            reference_option(ui, draft, "battle_sounds", id, labels, en);
+                        }
+                    });
+                },
+            );
             reference_option(ui, draft, "battle_sounds", weapons, ["Broń", "Weapons"], en);
         });
     }
@@ -551,30 +591,37 @@ fn ui_sound(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 ["Dźwięki wiadomości", "Console Messages"],
                 en,
             );
-            ui.indent("console-audio", |ui| {
-                for (id, labels) in [
-                    ("sound.party_chat", ["Drużyna", "Party"]),
-                    ("sound.guild", ["Gildia", "Guild"]),
-                    (
-                        "sound.private_without_tab",
-                        [
-                            "Prywatne w lokalnym czacie",
-                            "Private Messages in Local Chat",
-                        ],
-                    ),
-                    ("sound.private", ["Wiadomości prywatne", "Private Messages"]),
-                    ("sound.npc", ["NPC", "NPCs"]),
-                    ("sound.global", ["Kanały globalne", "Global"]),
-                    ("sound.team_finder", ["Wyszukiwarka drużyn", "Team Finder"]),
-                    ("sound.raids", ["Najazdy", "Raid Announcements"]),
-                    (
-                        "sound.system",
-                        ["Komunikaty systemowe", "System Announcements"],
-                    ),
-                ] {
-                    reference_option(ui, draft, "ui_sounds", id, labels, en);
-                }
-            });
+            retained_children(
+                ui,
+                draft.stored_bool("ui_sounds.sound.chat_enabled") == Some(true),
+                "ui-console-messages",
+                |ui| {
+                    ui.indent("console-audio", |ui| {
+                        for (id, labels) in [
+                            ("sound.party_chat", ["Drużyna", "Party"]),
+                            ("sound.guild", ["Gildia", "Guild"]),
+                            (
+                                "sound.private_without_tab",
+                                [
+                                    "Prywatne w lokalnym czacie",
+                                    "Private Messages in Local Chat",
+                                ],
+                            ),
+                            ("sound.private", ["Wiadomości prywatne", "Private Messages"]),
+                            ("sound.npc", ["NPC", "NPCs"]),
+                            ("sound.global", ["Kanały globalne", "Global"]),
+                            ("sound.team_finder", ["Wyszukiwarka drużyn", "Team Finder"]),
+                            ("sound.raids", ["Najazdy", "Raid Announcements"]),
+                            (
+                                "sound.system",
+                                ["Komunikaty systemowe", "System Announcements"],
+                            ),
+                        ] {
+                            reference_option(ui, draft, "ui_sounds", id, labels, en);
+                        }
+                    });
+                },
+            );
         },
     );
 }
@@ -644,11 +691,12 @@ fn shortcuts(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mu
             .show(ui, |ui| {
                 ui.vertical(|ui| {
                     ui.set_width(width);
-                    egui::ScrollArea::vertical()
-                        .id_salt("displayed-panel-shortcuts")
-                        .auto_shrink([false, false])
-                        .max_height(130.0)
-                        .show(ui, |ui| {
+                    crate::settings_audit::show_bounded_vertical(
+                        ui,
+                        "displayed-panel-shortcuts",
+                        130.0,
+                        None,
+                        |ui| {
                             for id in order.ids() {
                                 if let Some(definition) = panel(id)
                                     && ui
@@ -661,7 +709,8 @@ fn shortcuts(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mu
                                     state.displayed = Some((*id).into());
                                 }
                             }
-                        });
+                        },
+                    );
                 });
             });
         ui.vertical(|ui| {
@@ -714,11 +763,12 @@ fn shortcuts(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mu
             .show(ui, |ui| {
                 ui.vertical(|ui| {
                     ui.set_width(width);
-                    egui::ScrollArea::vertical()
-                        .id_salt("available-panel-shortcuts")
-                        .auto_shrink([false, false])
-                        .max_height(110.0)
-                        .show(ui, |ui| {
+                    crate::settings_audit::show_bounded_vertical(
+                        ui,
+                        "available-panel-shortcuts",
+                        110.0,
+                        None,
+                        |ui| {
                             for definition in
                                 PANELS.iter().filter(|entry| !order.contains(entry.id))
                             {
@@ -732,7 +782,8 @@ fn shortcuts(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mu
                                     state.available = Some(definition.id.into());
                                 }
                             }
-                        });
+                        },
+                    );
                 });
             });
         if ui
@@ -972,6 +1023,109 @@ mod tests {
             assert!(button_position(&output, size, exact).is_some());
             assert!(button_position(&output, size, "Open New Tabs for Private Messages").is_none());
             assert_eq!(draft.future_preferences, before);
+        }
+    }
+
+    #[test]
+    fn retained_reference_masters_gate_children_without_erasing_saved_intent() {
+        type Page = fn(&mut egui::Ui, &mut ClientSettings, bool);
+        for (page, parent, children, gate) in [
+            (
+                console as Page,
+                "console.console.timestamps",
+                &["console.console.seconds"][..],
+                "console-timestamp-seconds",
+            ),
+            (
+                battle as Page,
+                "battle_sounds.sound.own_spells",
+                &[
+                    "battle_sounds.sound.attack_spells",
+                    "battle_sounds.sound.healing_spells",
+                    "battle_sounds.sound.support_spells",
+                ][..],
+                "battle-own-spells",
+            ),
+            (
+                battle as Page,
+                "battle_sounds.sound.other_spells",
+                &[
+                    "battle_sounds.sound.other_attack_spells",
+                    "battle_sounds.sound.other_healing_spells",
+                    "battle_sounds.sound.other_support_spells",
+                ][..],
+                "battle-other-spells",
+            ),
+            (
+                ui_sound as Page,
+                "ui_sounds.sound.chat_enabled",
+                &[
+                    "ui_sounds.sound.party_chat",
+                    "ui_sounds.sound.guild",
+                    "ui_sounds.sound.private_without_tab",
+                    "ui_sounds.sound.private",
+                    "ui_sounds.sound.npc",
+                    "ui_sounds.sound.global",
+                    "ui_sounds.sound.team_finder",
+                    "ui_sounds.sound.raids",
+                    "ui_sounds.sound.system",
+                ][..],
+                "ui-console-messages",
+            ),
+        ] {
+            let ctx = egui::Context::default();
+            crate::client_chrome::install(&ctx, false);
+            let size = egui::vec2(720.0, 720.0);
+            let mut draft = ClientSettings::default();
+            draft
+                .future_preferences
+                .insert(parent.into(), FutureValue::Bool(false));
+            for child in children {
+                draft
+                    .future_preferences
+                    .insert((*child).into(), FutureValue::Bool(true));
+            }
+            let draw = |ctx: &egui::Context, draft: &mut ClientSettings| {
+                egui::Window::new(gate)
+                    .fixed_size([660.0, 660.0])
+                    .show(ctx, |ui| page(ui, draft, true));
+            };
+            for _ in 0..2 {
+                let _ = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft));
+            }
+            assert_eq!(
+                ctx.data(|data| {
+                    data.get_temp::<bool>(egui::Id::new(("retained-child-gate", gate)))
+                }),
+                Some(false),
+                "{gate}"
+            );
+            for child in children {
+                assert_eq!(
+                    draft.future_preferences.get(*child),
+                    Some(&FutureValue::Bool(true)),
+                    "disabled child {child} retains its saved intent"
+                );
+            }
+
+            draft
+                .future_preferences
+                .insert(parent.into(), FutureValue::Bool(true));
+            let _ = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft));
+            assert_eq!(
+                ctx.data(|data| {
+                    data.get_temp::<bool>(egui::Id::new(("retained-child-gate", gate)))
+                }),
+                Some(true),
+                "{gate}"
+            );
+            for child in children {
+                assert_eq!(
+                    draft.future_preferences.get(*child),
+                    Some(&FutureValue::Bool(true)),
+                    "reenabling a master restores retained child {child}"
+                );
+            }
         }
     }
 }

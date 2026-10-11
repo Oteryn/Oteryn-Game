@@ -40,12 +40,12 @@ No original settings were applied, profiles changed, or assignments accepted.
 
 | Page / control | Observed choices or controls |
 | --- | --- |
-| Controls / Mouse preset | Classic Controls, Regular Controls, Left Smart-Click; the built-in guide shows an additional loot-button selector under Classic Controls, still to verify interactively |
+| Controls / Mouse preset | Classic Controls, Regular Controls, Left Smart-Click. Classic alone adds `Loot:` with Right, SHIFT+Right, Left; the dependent selector disappears under Regular and Left Smart-Click |
 | Interface / Colourise Loot Value | None, Frames, Corners |
 | Game Window / Mark Target Visually | Frame & Highlight, Frame Only, Highlight Only, None |
 | Graphics / Engine on Linux | auto-select, Vulkan, OpenGL; platform-specific, not a Windows renderer contract |
 | Graphics / Antialiasing | None, Antialiasing, Smooth Retro |
-| Graphics | Fullscreen, integral-multiple scaling, V-Sync, No Frame Rate Limit, limit slider and measured current FPS |
+| Graphics | Fullscreen, integral-multiple scaling, V-Sync, No Frame Rate Limit, integer 1–200 limit slider and measured current FPS. Unlimited disables the slider while retaining and displaying its prior number |
 | Effects | Light master with dependent ambient light, level separator and one combined Clouds & Indoor Effect control; separate own/other/creature/boss-area spell opacity |
 | Sound device | auto-select and this machine's Dummy Output; enumerate runtime devices instead of hardcoding |
 | Sound | Master, Music plus Anthem, Ambience, Item plus Food and Beverages / Move Item, Event volume |
@@ -53,7 +53,7 @@ No original settings were applied, profiles changed, or assignments accepted.
 | UI Sounds | Volume; UI interactions; join/leave party; VIP login/logout; console master with Party, Guild, Private Messages in Local Chat, Private Messages, NPCs, Global, Team Finder, Raid Announcements, System Announcements |
 | Misc | Confirm purchases, stowing contents, sorting nested containers, moving nested contents; stay logged in for session, connection stability, quick login |
 | Gameplay | Allow All to Inspect Me, Auto Chase Off, Quick Loot Nearby Corpses |
-| Screenshots | Only Capture Game Window; five-second backlog; automatic master; triggers below; Open Screenshot Folder |
+| Screenshots | Only Capture Game Window; five-second backlog; automatic master; triggers below; Open Screenshot Folder. One existing automatic Level Up artifact is PNG RGBA and, with the current account's game-only option selected, contains only the game viewport |
 | Help | Client Help, Compendium, Rule Violations, Manual, FAQ, Info, Export All Options, Export Minimap, Import Options/Minimap, Reset All Options |
 
 Screenshot triggers: Level Up, Skill Up, Achievement, Bestiary Entry Unlocked,

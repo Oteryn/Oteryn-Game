@@ -40,11 +40,45 @@ impl ClientPanels {
         let Some(definition) = panel(id) else {
             return false;
         };
+        if !has_local_destination(definition.id) {
+            return false;
+        }
         if definition.id == "shortcuts" {
             self.manage = !self.manage;
         } else if !self.open.remove(definition.id) {
             self.open.insert(definition.id);
         }
+        true
+    }
+
+    /// Open a known panel without turning a repeated dialog command into Close.
+    pub fn open(&mut self, id: &str) -> bool {
+        let Some(definition) = panel(id) else {
+            return false;
+        };
+        if !has_local_destination(definition.id) {
+            return false;
+        }
+        if definition.id == "shortcuts" {
+            self.manage = true;
+        } else {
+            self.open.insert(definition.id);
+        }
+        true
+    }
+
+    /// Open a known panel on a stable catalogue tab. Selection is rejected
+    /// atomically when either identifier has no dedicated destination.
+    pub fn open_tab(&mut self, id: &str, tab: &str) -> bool {
+        let Some(definition) = panel(id) else {
+            return false;
+        };
+        if !definition.tabs.iter().any(|candidate| candidate.id == tab)
+            || !self.views.select_tab(definition.id, tab)
+        {
+            return false;
+        }
+        self.open.insert(definition.id);
         true
     }
 
@@ -63,9 +97,17 @@ impl ClientPanels {
                 } else {
                     self.open.contains(definition.id)
                 };
-                if crate::panel_icons::shortcut_selected(ui, definition.id, label, selected)
-                    .clicked()
-                {
+                let shortcut = ui
+                    .add_enabled_ui(has_local_destination(definition.id), |ui| {
+                        crate::panel_icons::shortcut_selected(ui, definition.id, label, selected)
+                    })
+                    .inner
+                    .on_disabled_hover_text(if english {
+                        "The Lenshelp destination has not been established."
+                    } else {
+                        "Cel Lenshelp nie został jeszcze potwierdzony."
+                    });
+                if shortcut.clicked() {
                     if definition.id == "shortcuts" {
                         self.manage = true;
                     } else if !self.open.remove(definition.id) {
@@ -126,12 +168,19 @@ impl ClientPanels {
                                     continue;
                                 };
                                 ui.horizontal(|ui| {
-                                    if crate::panel_icons::shortcut(
-                                        ui,
-                                        definition.id,
-                                        definition.label(english),
-                                    )
-                                    .clicked()
+                                    if ui
+                                        .add_enabled_ui(
+                                            has_local_destination(definition.id),
+                                            |ui| {
+                                                crate::panel_icons::shortcut(
+                                                    ui,
+                                                    definition.id,
+                                                    definition.label(english),
+                                                )
+                                            },
+                                        )
+                                        .inner
+                                        .clicked()
                                         && definition.id != "shortcuts"
                                     {
                                         self.open.insert(definition.id);
@@ -187,12 +236,19 @@ impl ClientPanels {
                             }
                             for definition in available {
                                 ui.horizontal(|ui| {
-                                    if crate::panel_icons::shortcut(
-                                        ui,
-                                        definition.id,
-                                        definition.label(english),
-                                    )
-                                    .clicked()
+                                    if ui
+                                        .add_enabled_ui(
+                                            has_local_destination(definition.id),
+                                            |ui| {
+                                                crate::panel_icons::shortcut(
+                                                    ui,
+                                                    definition.id,
+                                                    definition.label(english),
+                                                )
+                                            },
+                                        )
+                                        .inner
+                                        .clicked()
                                         && definition.id != "shortcuts"
                                     {
                                         self.open.insert(definition.id);
@@ -264,6 +320,12 @@ impl ClientPanels {
             self.open.insert(destination);
         }
     }
+}
+
+/// Lenshelp is an observed shortcut identity, but retained evidence does not
+/// establish that it opens the local Documents/help composition.
+fn has_local_destination(id: &str) -> bool {
+    id != "help"
 }
 
 enum ShortcutChange {
@@ -765,5 +827,23 @@ mod tests {
         assert!(!panels.is_open("vip"));
         assert!(!panels.toggle("not-a-panel"));
         assert!(!panels.is_open("not-a-panel"));
+        assert!(!panels.toggle("help"));
+        assert!(!panels.open("help"));
+        assert!(!panels.is_open("help"));
+    }
+
+    #[test]
+    fn dialogs_open_idempotently_and_stable_tabs_reject_unknown_destinations() {
+        let mut panels = ClientPanels::default();
+        assert!(panels.open("quest-log"));
+        assert!(panels.is_open("quest-log"));
+        assert!(panels.open("quest-log"));
+        assert!(panels.is_open("quest-log"));
+
+        assert!(panels.open_tab("cyclopedia", "map"));
+        assert!(panels.is_open("cyclopedia"));
+        assert!(!panels.open_tab("cyclopedia", "not-a-tab"));
+        assert!(panels.is_open("cyclopedia"));
+        assert!(!panels.open_tab("not-a-panel", "map"));
     }
 }

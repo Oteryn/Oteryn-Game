@@ -11,196 +11,114 @@ branch: feat/client-completion-20261009
 owner: root
 ```
 
-AUTHORING on draft #1942; remote predecessor
-`c177231dee65188909049f0b26ce5cd12d35f4cd`; local authoring base
-`b000e20fb0bc0f03ddd450141c6f975bb15ded45` merges main
-`907412c53dec6f85a21c47a59be0f716cc7de4e6`; no freeze. Root is sole
-publisher; no production deployment or DB reset.
-Owner permits client/Platform/engine work; preserve unrelated modifications.
-Do not publish proprietary reference assets or private account data.
+## Authority and publication state
 
-## Current owner direction and correction
+Draft PR #1942 remains in AUTHORING. Root is the sole branch publisher. Do not
+freeze or qualify a candidate until all owned changes are committed, merged
+normally with current `origin/main`, validated and reviewed as one exact SHA.
+Before publication, fresh-read the remote branch head and use the guarded
+publication-integrity helper with that exact predecessor and an external recovery
+bundle. Never force, reset, rebase, amend or publish reference assets/private
+account data. No production deployment, account mutation or database reset is in
+scope.
 
-Owner rejected cosmetic patches to incomplete existing forms. Inspect the original
-Tibia Global interface, dropdowns, scroll extents and nested panels BEFORE building
-replacement UI. Modern Oteryn appearance must retain complete interaction groups.
-Previous complete-HUD wording was wrong: live scrolling reveals 35 conditions;
-our catalogue and table expose six. The original first bottom action bar ends at
-1.50; our rows have 12 slots. Hotkey profile auto-switch is missing in our source.
-Evidence and remaining audit scope: apps/client/UI-REFERENCE-OBSERVATIONS.md.
-apps/client/UI-FIDELITY.md now marks the HUD partial, not complete.
-This increment changes documentation only; no additional cosmetic client edits.
+The owner requires the Tibia Global client to be matched 1:1 and explicitly does
+not count a control that merely serializes a value as implemented behavior.
+Reference facts are retained in `apps/client/UI-REFERENCE-COVERAGE.md`,
+`UI-FIDELITY.md`, `UI-REFERENCE-OBSERVATIONS.md` and
+`UI-REFERENCE-SETTINGS.md`. Original captures remain private compatibility
+evidence. Missing engine/server mechanisms must remain visibly unavailable and
+must not be claimed as complete.
 
-## Existing implementation and verification scope
+## Current authoring batch — 2026-10-11
 
-580b3168 improves HUD legibility and fixes footer reachability. Native Windows
-169 tests (124 library/40 app/5 launcher), strict MSVC Clippy/release and Linux28
-composition tests passed for that source. Those results do not establish option
-coverage, original behavior, visual parity or complete gameplay. Native screenshot:
-/workspace/artifacts/oteryn-full-hud-native-20261009.png.
-Quick settings are supplementary; complete pages must remain reachable.
-Nine action rows/108 chords, shortcut draft add/remove/order and Apply/Cancel work.
-Own-resource HUD consumes real session vitals; unknown/invalid maxima draw no fake
-resources. Names/marks/conditions/order and many panel consumers remain incomplete.
-28 shortcuts,22 prepared panel views,20 Cyclopedia pages and six dialogs are
-scaffolding counts, not completion. Audio/effects/capture consumers remain open.
-Modern charcoal/bronze chrome and pinned Lucide icons do not establish fidelity.
+- Production Settings navigation is restricted to the exact 20 observed pages
+  and order. Quick/Account/Transparency shell entries, seven catalogue-only
+  pages and Oteryn-only controls embedded in reference pages are hidden while old
+  values remain loadable.
+- Compiled semantic coverage routes those same 20 production pages, checks a
+  page-specific marker set plus targeted labels/choices/dependencies, outer-page
+  scroll reachability, Help action order and render-time non-mutation. It is not
+  yet an exhaustive per-row snapshot. A Windows-only `--settings-audit` mode
+  captures every page through the real DX12 renderer and emits a
+  geometry/readback manifest. Audit frames expand all three bounded nested lists
+  into the driven outer scroll, require full marker visibility and horizontal
+  fit, then reopen, decode and hash every capture before writing the manifest.
+- General Hotkeys contains all 120 observed English actions, exact untouched
+  Chat On/Off defaults and two chords. Real consumers cover movement, Stop All,
+  Options/Hotkeys, profiles, fullscreen/FPS, minimap zoom/pan/center, action-row
+  visibility, admitted battle targets, supported chat actions and selected real
+  panels; unsupported actions remain disabled. The official Open Options -
+  Custom Hotkeys action now opens that exact page. The key-capture modal exposes
+  only the observed OK/Clear/Cancel actions, and Assign Text exposes only
+  OK/Apply/Cancel.
+- Chat Off / Chat On / temporary Chat On* now own resolver context and composer
+  focus. Enter and Numpad Enter activate temporary chat from Off and send from
+  On; explicit On persists after send. Claimed chords are removed before egui so
+  they cannot replay into text. Chat On no longer reclaims focus from unrelated
+  text editors. Custom Text shares the same validation/send path.
+- The observed mouse preset choices and Classic-only `Loot: Right / SHIFT+Right /
+  Left` dependency are composed but disabled until an actual input consumer
+  exists.
+- The foreground FPS control uses the observed integer 1–200 range. No-limit
+  retains its prior numeric value across Apply/restart and the native redraw
+  scheduler consumes the enabled/disabled result.
+- Action bars have nine independent 50-slot rows and two Chat On/Off chords.
+  Context assignment and Clear are available. The settings lock row remains
+  disabled because pointer drag/drop is not implemented, and the observed single
+  trailing lock per nonempty edge group remains open. The exact six observed
+  context-category labels are present and unsupported categories are disabled
+  instead of fabricated.
+- Manual screenshot hotkey captures the real renderer, optionally crops the game
+  viewport, writes lossless non-overwriting PNG and reports success/failure. The
+  17 automatic event triggers remain disabled without an event pipeline.
+- Help exposes the observed local-data order. Options export/import and confirmed
+  reset are real; minimap/support destinations stay disabled without a verified
+  format/route.
+- Settings migration preserves legacy action rows, sound keys and prior wide FPS
+  values. Exact untouched v2 single-Stop maps upgrade to the 49/38 reference
+  matrices while customized and explicitly cleared maps stay unchanged.
+  Profile/movement edits are atomic and action-bar conflicts reserve only active
+  legacy movement fallbacks.
 
-## Security, dependencies and retained boundaries
+## Acceptance evidence and next actions
 
-Actual first/repeated sign-in remains system-browser PKCE. Remembered native
-sign-in primitives are OFF/unwired. Never persist account passwords. Platform
-PR#1484 is separate. CI fixes #1943/#1944 remain frozen/unmerged; the main Rust
-1.94/client1.95 mismatch is not repaired by this draft. protocol-oteryn,
-WorldId/ChannelId separation and generation fencing remain invariant.
-Original resources are private compatibility references only. Missing engine
-mechanics do not justify omitting planned controls, but cannot be claimed working.
+The current uncommitted tree passes 178 client-library, 108 native-binary and 5
+launcher tests, strict client all-target Clippy, 37 renderer tests and strict
+renderer Clippy, governance validation/policy tests, rustfmt and
+`git diff --check`. These checks must be repeated on the final committed and
+main-merged candidate. The native audit must then be built and run from a fresh exact-SHA
+checkout on the authorized owner Windows machine; verify all 20 manifest entries
+and captures before launching that same binary for the owner. The existing dirty
+checkout at `C:\Users\barte\Downloads\oteryn-client-main-20261007` must not be
+modified or cleaned.
 
-## Runtime and next steps
+After guarded publication, fresh-read PR/check state and repair every red check in
+one AUTHORING batch. CI on an older head never qualifies a successor.
 
-Windows checkout: C:/Users/barte/Downloads/oteryn-client-main-20261007.
-Native file transfer remains SHA-256 guarded with exact backups and scoped HWND
-interaction. Do not print private launch scripts or credentials. Synology reference:
-otclient-track-a-kasmvnc, DISPLAY=:1, window27262999; verify live title/geometry.
-Private fresh captures are NAS /tmp/oteryn-hud-conditions-*.png and hotkey captures
-listed in UI-REFERENCE-OBSERVATIONS.md. No Apply/Reset/reference account changes.
+## Known completion gaps
 
-Finish the complete original interaction inventory: remaining scroll extents,
-choices, hotkey modes/profiles/custom editors, plus-menu panels, context menus,
-nested modules and visible/disabled dependencies. Record observed facts separately
-from untested behavior. Then replace incomplete compositions using the complete
-inventory and a consistent Oteryn component system; verify compiled native views
-and actual actions. Preserve working runtime code without treating its forms as
-the target design. Publish bounded increments through the guarded single-writer
-path. The current workspace is a clean single-writer checkout; inherited
-server/content files are ancestry from main, not work owned by this task. Preserve
-them and stage only the explicit client/governance batch.
+- Spell/Object Custom Hotkeys need authoritative spell/inventory models and the
+  observed picker compositions; the existing incomplete editors must not be
+  enabled.
+- Many General actions and panel interiors still lack genuine consumers or
+  authoritative projections. Diagonal movement remains visible but disabled
+  because the accepted movement wire has only four cardinal directions; the FPS
+  toggle does not yet supply the label's lag indicator.
+- Mouse preset/loot semantics, most Console and Game Window filters, graphics
+  engine/AA/integer scaling, non-ambient effects, all audio families,
+  Misc/Gameplay options and automatic screenshots remain pending.
+- Action-bar global trailing lock placement needs exact reference composition;
+  Clear/profile-remove confirmation semantics and edge-master behavior are not
+  reference-proven.
+- HUD condition projection/ordering, native visual comparison, populated module
+  states and platform-specific graphics/audio choices remain open.
+- Graphics Engine and Sound Device need real platform/runtime enumeration; their
+  recorded static rows stay disabled and empty rather than hardcoding one probe
+  machine. Factory-default state still lacks independent reference evidence.
+- Secure remembered sign-in remains OFF/unwired. Actual sign-in stays system-
+  browser PKCE. `protocol-oteryn`, multichannel WorldId/ChannelId separation and
+  session-generation fencing remain invariant.
 
-## Continuation checkpoint — 2026-10-10
-
-The current branch supersedes the historical 6-condition/12-slot/missing-auto-switch
-implementation notes above without changing their audit provenance. It now has the
-35 observed HUD rows/symbols, exact masters/Harmony choices and ordering, nine 50-slot action rows, captured two-column
-hotkey editing in distinct Chat On/Off contexts with conflict blocking,
-character-name preset auto-switch, and real
-consumers for movement, Options, fullscreen, action-row visibility and text custom
-actions. Unsupported general actions and spell/object assignments are disabled;
-persisted intent is not completion credit. Help options export/import/reset are
-real local operations, while support destinations and minimap import/export stay
-disabled because no verified target/format exists.
-
-Rust remains pinned to repository MSRV 1.94. The incompatible client-only Rust
-1.95 / egui 0.36 change was replaced with egui 0.35 and its matching wgpu 29,
-including the renderer API adjustments and the resulting World compiler-input
-pin refresh. Locked Linux client tests, strict client and workspace Clippy,
-Windows cross-target check/Clippy and the compiled 20-page
-reachability test are the local evidence for this checkpoint. Native Windows
-screenshot comparison and every explicitly pending engine/server consumer remain
-open; do not describe the whole matrix as 1:1 complete.
-
-## Continuation checkpoint — 2026-10-10 chat console
-
-The received-chat projection now backs per-tab Copy and bounded, non-overwriting
-local Save actions. Export names come only from the six fixed client tabs, private
-files use owner-only Unix permissions, and a failed write removes its incomplete
-file. Per-tab read-only mode blocks both the composer and send action. The inert
-secondary-console control is disabled; participants, Clear and a second console
-remain explicit gaps because their required projections/views do not exist.
-
-The Windows-only HUD, panel, icon and reference-dialog modules are now included in
-Linux test builds through `cfg(test)`; the application target therefore exercises
-51 tests instead of silently omitting those modules. The `image` dev dependency
-matches the existing pinned Windows dependency and does not change production
-composition. Native Windows cross-check still requires the missing MinGW compiler
-in this environment and remains a CI lane.
-
-## Continuation checkpoint — 2026-10-10 chat hotkeys
-
-The existing General Hotkeys inventory now exposes six additional executable
-actions: local, next, previous, Help, channel list and close. Next/previous cycle
-only through Local, rooms confirmed open by the current chat projection, and
-Private. Help uses the accepted `OpenRoom(Help)` session intent when needed;
-Close uses the matching typed room intent and returns to Local only after queueing
-it. Missing chat capability sends nothing and remains visibly unavailable. Loot
-chat, server-message filters and other action families remain disabled.
-
-## Continuation checkpoint — 2026-10-10 panel hotkeys
-
-The observed VIP List, Battle List, Skills, Quest Log and Prey General Hotkeys
-now toggle the same real client-panel state as the HUD shortcut bar. They expose
-only admitted session projections and keep unavailable values unknown. Unknown
-panel identifiers and the unresolved Lenshelp destination remain non-executable;
-persisting a binding still does not count as implementing those actions.
-
-## Continuation checkpoint — 2026-10-10 local display hotkeys
-
-Minimap Zoom In/Out now changes the same bounded three-level runtime zoom used
-by the visible minimap controls. Toggle FPS/Lag Indicator now changes the real
-FPS overlay preference, validates it through the finite settings catalogue and
-persists it through the existing settings save path. Minimap scrolling/floor
-actions and latency display remain disabled because no corresponding projection
-or navigable minimap state exists yet.
-
-## Continuation checkpoint — 2026-10-10 profile and settings hotkeys
-
-Open Hotkeys now opens the compiled complete-preferences browser directly on
-General Hotkeys. Next Hotkey Preset cycles only through existing profiles,
-retains the outgoing profile's live action bars, activates the incoming action
-bars and persists the same validated settings object. A single-profile client
-remains unchanged rather than inventing another profile.
-
-## Continuation checkpoint — 2026-10-10 battle target hotkeys
-
-Attack First/Next/Previous Target now selects from the admitted visible-entity
-projection and queues the existing typed attack command. Cycling follows the
-server projection order, wraps deterministically and shares pointer targeting's
-current Creature-only boundary; players, NPCs, objects, off-floor and off-view entities
-are not guessed to be attackable. Exact reference battle-list sorting/filtering
-remains a separate acceptance gap.
-
-## Continuation checkpoint — 2026-10-10 stop-all hotkey
-
-Stop All Actions now cancels the local click-walk goal, replaces bounded queued
-movement/cast/attack inputs with one stop intent and sends the protocol's existing
-`attack_target(None)` command. An already-sent step remains server-authoritative;
-the client does not pretend it can rewind an in-flight outcome. The resulting
-server disposition is exposed through the existing combat feedback path.
-
-## Continuation checkpoint — 2026-10-10 minimap pan hotkeys
-
-Minimap North/East/South/West now move the real loaded-map crop one tile per
-press. The offset is bounded to the nearest zoom radius, clamped to loaded
-texture bounds and keeps the authoritative player marker in view. Floor Up/Down
-remain disabled because the client has only the admitted mapped floor; no blank
-or fabricated layer is shown.
-
-The current Linux worker has the `x86_64-pc-windows-gnu` Rust target but no
-`x86_64-w64-mingw32-gcc`. A fresh locked cross-target check stops in the
-`aws-lc-sys` C probe before reaching Oteryn's Windows shell. Linux locked tests,
-strict all-target Clippy and compiled page coverage remain green; native Windows
-CI is still required for the complete composition.
-
-## Continuation checkpoint — 2026-10-11 main synchronization
-
-Normal AUTHORING merge `b000e20f` brought main `907412c5` onto the draft without
-rebasing or rewriting its predecessor. The two textual conflicts in
-`REFERENCE-AUDIT.md` and `SETTINGS.md` were resolved by retaining main's privacy
-sanitization together with the branch's newer fidelity evidence. CI evidence on
-remote predecessor `c177231d` does not qualify any successor; each published
-candidate still requires fresh exact-head Linux and Windows checks.
-
-The targeted pass closed the General Hotkeys capture gap without applying a
-reference preference and inventories all 120 official action labels. AUTHORING restores key
-semantics in a bounded increment: movement bindings accept only an unmodified
-physical key, an explicitly cleared profile movement binding cannot fall through
-to legacy global movement, Escape is exclusive to Stop All, and F10 is available
-to the admitted action-bar/hotkey router while remaining the pre-admission
-settings shortcut. New action-bar defaults use F1–F12. These claims require the
-batch's locked tests, strict Clippy and a new native Windows check before freeze.
-
-## Continuation checkpoint — 2026-10-11 effects dependencies
-
-Effects now has the captured combined Clouds & Indoor row and exact opacity labels.
-Light gates retained Ambient/Level/combined values; opacity stays independent.
-Only Ambient has a runtime consumer; other sliders remain disabled. The former
-separate indoor value is loadable compatibility state, hidden from search.
+Presence, cardinality, saved intent, generated mockups and static reachability do
+not establish 1:1 behavior. Continue in evidence-backed, reviewable increments.

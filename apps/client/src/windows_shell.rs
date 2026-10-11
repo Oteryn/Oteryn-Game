@@ -1,4 +1,4 @@
-use oteryn_client::hotkeys::ResolvedHotkey;
+use oteryn_client::hotkeys::{ClaimedKeyLifecycle, ResolvedHotkey};
 use oteryn_client::input::{MouseActions, StepDir, click_tile};
 use oteryn_client::play::{BattleTargetSelection, PlayLink, PlayView};
 use oteryn_client::scene::Scene;
@@ -8,7 +8,7 @@ use oteryn_client::{AdmittedSession, ClientBootstrap, GameplayEntryError};
 use oteryn_foundation::ProcessGeneration;
 use oteryn_input_platform::InputPlatformAdapter;
 use oteryn_platform_client::native_login::PublicClass;
-use oteryn_renderer::{SurfacePhase, TileCoord, WindowsRenderer};
+use oteryn_renderer::{RendererError, SurfacePhase, TileCoord, WindowsRenderer};
 use std::fmt::{self, Display, Formatter};
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
@@ -29,6 +29,7 @@ pub enum ShellError {
     RendererResize,
     RendererRender,
     RendererClose,
+    SettingsAudit,
 }
 
 impl Display for ShellError {
@@ -44,6 +45,7 @@ impl Display for ShellError {
             Self::RendererResize => "client renderer resize failed",
             Self::RendererRender => "client renderer render failed",
             Self::RendererClose => "client renderer close failed",
+            Self::SettingsAudit => "native settings audit failed",
         })
     }
 }
@@ -73,7 +75,10 @@ struct Application {
     input: InputPlatformAdapter,
     actions: MouseActions,
     hotkeys: SpellHotkeys,
+    claimed_keyboard: ClaimedKeyLifecycle,
+    screenshot_requested: bool,
     fatal_error: Option<ShellError>,
+    settings_audit: Option<crate::settings_audit::NativeSettingsAudit>,
 }
 
 /// The view of an admitted session and the link to its task on the client runtime.
@@ -84,11 +89,33 @@ struct Play {
     status: String,
 }
 
+struct GeneralHotkeyRouting {
+    direction: Option<StepDir>,
+    matched: bool,
+    claimed: bool,
+}
+
+const fn forward_event_to_egui(keyboard: bool, claimed: bool) -> bool {
+    !keyboard || !claimed
+}
+
+fn direct_settings_section(action: &str) -> Option<&'static str> {
+    match action {
+        // The official action is "Open Options - Custom Hotkeys".
+        "client.hotkeys" => Some("custom_hotkeys"),
+        _ => None,
+    }
+}
+
 impl Application {
     fn new(
         smoke: bool,
         play: Option<(ClientBootstrap, AdmittedSession)>,
+        audit_request: Option<crate::settings_audit::SettingsAuditRequest>,
     ) -> Result<Self, ShellError> {
+        if audit_request.is_some() && (smoke || play.is_some()) {
+            return Err(ShellError::SettingsAudit);
+        }
         let (client, play) = match play {
             Some((client, admitted)) => {
                 let (view, link) = client
@@ -105,8 +132,33 @@ impl Application {
             }
             None => (None, None),
         };
-        let login = if play.is_none() && !smoke {
+        let mut login = if let Some(_request) = &audit_request {
+            Some(crate::login_screen::LoginScreen::new_for_settings_audit(
+                oteryn_client::settings::ClientSettings {
+                    english: true,
+                    fullscreen: false,
+                    window_width: crate::settings_audit::SETTINGS_AUDIT_LOGICAL_SIZE.width as u16,
+                    window_height: crate::settings_audit::SETTINGS_AUDIT_LOGICAL_SIZE.height as u16,
+                    ui_scale: 1.0,
+                    ..Default::default()
+                },
+            ))
+        } else if play.is_none() && !smoke {
             Some(crate::login_screen::LoginScreen::new())
+        } else {
+            None
+        };
+        let settings_audit = if let Some(request) = audit_request {
+            let Some(login) = &mut login else {
+                return Err(ShellError::SettingsAudit);
+            };
+            match crate::settings_audit::NativeSettingsAudit::start(request, &mut login.settings) {
+                Ok(audit) => Some(audit),
+                Err(error) => {
+                    eprintln!("Oteryn settings audit: {error}");
+                    return Err(ShellError::SettingsAudit);
+                }
+            }
         } else {
             None
         };
@@ -138,7 +190,10 @@ impl Application {
             input: InputPlatformAdapter::new(),
             actions: MouseActions::new().map_err(|_error| ShellError::InputInitialization)?,
             hotkeys: SpellHotkeys::new().map_err(|_error| ShellError::InputInitialization)?,
+            claimed_keyboard: ClaimedKeyLifecycle::default(),
+            screenshot_requested: false,
             fatal_error: None,
+            settings_audit,
         })
     }
 
@@ -147,46 +202,67 @@ impl Application {
         event_loop: &ActiveEventLoop,
         events: &[oteryn_input_actions::NormalizedInputEvent],
         consumed: bool,
-    ) {
+    ) -> bool {
         let modal = self.game_ui.as_ref().is_some_and(|ui| ui.settings.open)
             || self.hud.blocks_game_input();
-        let typing = self
+        let egui_keyboard_input = self
             .game_ui
             .as_ref()
             .is_some_and(|ui| ui.context.egui_wants_keyboard_input());
+        let chat_on = self
+            .game_ui
+            .as_ref()
+            .is_some_and(|ui| self.hud.chat_routes_keyboard(&ui.context));
+        let gameplay_modal = modal || egui_keyboard_input && !chat_on;
+        let resolved_hotkeys = self.preferences.hotkeys.resolve(events, chat_on);
         let configured_action_matched = if let Some(play) = &self.play {
-            self.hud
-                .route_actions(events, &play.link, &self.preferences, typing, modal)
+            self.hud.route_actions(
+                events,
+                &resolved_hotkeys,
+                &play.link,
+                &self.preferences,
+                chat_on,
+                gameplay_modal,
+            )
         } else {
             false
         };
-        let (hotkey_direction, hotkey_matched) =
-            self.route_general_hotkeys(event_loop, events, typing, modal);
-        if self.hotkeys.set_text_active(typing || modal).is_err() {
+        if let Some(context) = self.game_ui.as_ref().map(|ui| ui.context.clone()) {
+            self.hud.apply_chat_focus_transition(&context);
+        }
+        let general = self.route_general_hotkeys(event_loop, &resolved_hotkeys, gameplay_modal);
+        let hotkey_direction = general.direction;
+        let hotkey_matched = general.matched;
+        let suppress_egui = configured_action_matched || general.claimed;
+        let text_active = egui_keyboard_input || self.hud.chat_hotkey_context() || modal;
+        if self.hotkeys.set_text_active(text_active).is_err() {
             self.fail(event_loop, ShellError::InputInitialization);
-            return;
+            return suppress_egui;
         }
         let spell_casts = self.hotkeys.route(events);
-        let Ok(clicks) =
-            self.actions
-                .route_with_ui(events, typing, modal || self.login.is_some(), consumed)
-        else {
+        let Ok(clicks) = self.actions.route_with_ui(
+            events,
+            text_active,
+            modal || self.login.is_some(),
+            consumed,
+        ) else {
             self.fail(event_loop, ShellError::InputInitialization);
-            return;
+            return suppress_egui;
         };
         if consumed && hotkey_direction.is_none() {
-            return;
+            return suppress_egui;
         }
         if self.login.is_some() || modal {
-            return;
+            return suppress_egui;
         }
         if hotkey_direction.is_none()
-            && self
-                .game_ui
-                .as_ref()
-                .is_some_and(|ui| ui.context.egui_wants_keyboard_input())
+            && (self.hud.chat_hotkey_context()
+                || self
+                    .game_ui
+                    .as_ref()
+                    .is_some_and(|ui| ui.context.egui_wants_keyboard_input()))
         {
-            return;
+            return suppress_egui;
         }
         let viewport = self.window.as_ref().and_then(|window| {
             let size = window.inner_size();
@@ -199,7 +275,7 @@ impl Application {
             )
         });
         if viewport.is_none() {
-            return;
+            return suppress_egui;
         }
         if let Some(play) = &mut self.play {
             let direction = hotkey_direction.or_else(|| {
@@ -229,7 +305,7 @@ impl Application {
             if render_failed {
                 self.fail(event_loop, ShellError::RendererRender);
             }
-            return;
+            return suppress_egui;
         }
         let direction = hotkey_direction.or_else(|| {
             (!hotkey_matched)
@@ -241,7 +317,7 @@ impl Application {
             self.offline_facing = direction;
             if self.rebuild_offline().is_err() {
                 self.fail(event_loop, ShellError::RendererRender);
-                return;
+                return suppress_egui;
             }
         }
         for click in clicks {
@@ -254,45 +330,76 @@ impl Application {
                 self.fail(event_loop, ShellError::RendererRender);
             }
         }
+        suppress_egui
     }
 
     fn route_general_hotkeys(
         &mut self,
         event_loop: &ActiveEventLoop,
-        events: &[oteryn_input_actions::NormalizedInputEvent],
-        chat_on: bool,
+        actions: &[ResolvedHotkey],
         modal: bool,
-    ) -> (Option<StepDir>, bool) {
+    ) -> GeneralHotkeyRouting {
         if self.login.is_some() {
-            return (None, false);
+            return GeneralHotkeyRouting {
+                direction: None,
+                matched: false,
+                claimed: false,
+            };
         }
-        let actions = self.preferences.hotkeys.resolve(events, chat_on);
         let matched = actions.iter().any(|action| {
             matches!(action, ResolvedHotkey::General(_))
                 || self.play.is_some() && matches!(action, ResolvedHotkey::Custom(_))
         });
         let mut movement = None;
+        let mut claimed = false;
         let mut settings_changed = false;
         let mut renderer_failed = false;
         for action in actions {
             let ResolvedHotkey::General(action) = action else {
                 continue;
             };
+            if modal {
+                continue;
+            }
             if action == "client.options" {
+                claimed = true;
                 if let Some(ui) = self.game_ui.as_mut() {
                     ui.settings.open = !ui.settings.open;
                 }
                 continue;
             }
-            if action == "client.hotkeys" {
+            if let Some(section) = direct_settings_section(action) {
+                claimed = true;
                 if let Some(ui) = self.game_ui.as_mut() {
-                    ui.settings.open_complete_section("general_hotkeys");
+                    ui.settings.open_complete_section(section);
                 }
                 continue;
             }
-            if modal {
+            if action == "client.screenshot" {
+                claimed = true;
+                if self.play.is_some() {
+                    self.screenshot_requested = true;
+                    if let Some(window) = &self.window {
+                        window.request_redraw();
+                    }
+                }
                 continue;
             }
+            claimed |= matches!(
+                action.as_str(),
+                "movement.north"
+                    | "movement.east"
+                    | "movement.south"
+                    | "movement.west"
+                    | "battle.first"
+                    | "battle.next"
+                    | "battle.previous"
+                    | "client.fullscreen"
+                    | "client.fps"
+                    | "client.next_profile"
+                    | "client.previous_profile"
+                    | "client.stop"
+            ) || action.starts_with("action.");
             match action.as_str() {
                 "movement.north" => movement = Some(StepDir::North),
                 "movement.east" => movement = Some(StepDir::East),
@@ -324,6 +431,13 @@ impl Application {
                     settings_changed = self
                         .preferences
                         .select_next_hotkey_profile()
+                        .unwrap_or(false)
+                        || settings_changed;
+                }
+                "client.previous_profile" => {
+                    settings_changed = self
+                        .preferences
+                        .select_previous_hotkey_profile()
                         .unwrap_or(false)
                         || settings_changed;
                 }
@@ -379,7 +493,11 @@ impl Application {
         }
         if renderer_failed {
             self.fail(event_loop, ShellError::RendererRender);
-            return (movement, matched);
+            return GeneralHotkeyRouting {
+                direction: movement,
+                matched,
+                claimed,
+            };
         }
         if settings_changed {
             if let Some(window) = &self.window {
@@ -398,7 +516,11 @@ impl Application {
                 self.hud.preferences_save_failed(self.preferences.english);
             }
         }
-        (movement, matched)
+        GeneralHotkeyRouting {
+            direction: movement,
+            matched,
+            claimed,
+        }
     }
 
     /// The offline scene around `offline_own`, over the loaded world.
@@ -474,13 +596,16 @@ impl ApplicationHandler for Application {
         if self.window.is_some() {
             return;
         }
-        let title = if self.play.is_some() {
+        let title = if self.settings_audit.is_some() {
+            "Oteryn — native settings audit".to_owned()
+        } else if self.play.is_some() {
             "Oteryn".to_owned()
         } else {
             "Oteryn — logowanie".to_owned()
         };
         let attributes = WindowAttributes::default()
             .with_title(title)
+            .with_resizable(self.settings_audit.is_none())
             .with_inner_size(LogicalSize::new(
                 self.preferences.window_width,
                 self.preferences.window_height,
@@ -496,6 +621,33 @@ impl ApplicationHandler for Application {
             return;
         }
         let size = window.inner_size();
+        if self.settings_audit.is_some() {
+            let Ok(renderer) = WindowsRenderer::new(
+                Arc::clone(&window),
+                self.generation,
+                size.width,
+                size.height,
+            ) else {
+                self.fail(event_loop, ShellError::RendererInitialization);
+                return;
+            };
+            let Some(login) = self.login.as_ref() else {
+                self.fail(event_loop, ShellError::SettingsAudit);
+                return;
+            };
+            self.ui_state = Some(egui_winit::State::new(
+                login.context.clone(),
+                egui::ViewportId::ROOT,
+                window.as_ref(),
+                Some(window.scale_factor() as f32),
+                None,
+                None,
+            ));
+            window.request_redraw();
+            self.window = Some(window);
+            self.renderer = Some(renderer);
+            return;
+        }
         // The map is loaded on the first resume and kept across suspends.
         let world = if let Some(world) = &self.world {
             Arc::clone(world)
@@ -560,7 +712,8 @@ impl ApplicationHandler for Application {
         event: DeviceEvent,
     ) {
         if let Ok(events) = self.input.process_device_event(&event) {
-            self.handle_input(event_loop, &events, false);
+            let action_claimed = self.handle_input(event_loop, &events, false);
+            let _ = self.claimed_keyboard.observe(&events, action_claimed);
         }
     }
 
@@ -570,16 +723,43 @@ impl ApplicationHandler for Application {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        let consumed = if let (Some(state), Some(window)) = (&mut self.ui_state, &self.window) {
-            state.on_window_event(window, &event).consumed
+        let auditing = self.settings_audit.is_some();
+        let keyboard = matches!(&event, WindowEvent::KeyboardInput { .. });
+        let routed = if auditing {
+            None
         } else {
-            false
+            self.input.process_window_event(&event).ok()
         };
-        // Every window event goes through the adapter and router first; select or walk is
-        // triggered only by the routed gameplay action.
-        if let Ok(events) = self.input.process_window_event(&event) {
-            self.handle_input(event_loop, &events, consumed);
-        }
+        // A claimed keyboard chord is routed before egui sees it, so a printable
+        // hotkey cannot also alter the focused text field. Pointer input keeps
+        // egui-first ordering because click routing needs its consumption bit.
+        let consumed = if keyboard {
+            let suppress_egui = routed.as_deref().is_some_and(|events| {
+                let action_claimed = self.handle_input(event_loop, events, false);
+                self.claimed_keyboard.observe(events, action_claimed)
+            });
+            if !auditing
+                && forward_event_to_egui(keyboard, suppress_egui)
+                && let (Some(state), Some(window)) = (&mut self.ui_state, &self.window)
+            {
+                state.on_window_event(window, &event).consumed
+            } else {
+                suppress_egui
+            }
+        } else {
+            let consumed = if !auditing
+                && let (Some(state), Some(window)) = (&mut self.ui_state, &self.window)
+            {
+                state.on_window_event(window, &event).consumed
+            } else {
+                false
+            };
+            if let Some(events) = routed.as_deref() {
+                let action_claimed = self.handle_input(event_loop, events, consumed);
+                let _ = self.claimed_keyboard.observe(events, action_claimed);
+            }
+            consumed
+        };
         match event {
             WindowEvent::Focused(focused) => {
                 self.focused = focused;
@@ -587,7 +767,7 @@ impl ApplicationHandler for Application {
             WindowEvent::KeyboardInput { event, .. }
                 if crate::settings_ui::prelogin_settings_hotkey(
                     consumed,
-                    self.login.is_some(),
+                    self.login.is_some() && !auditing,
                     event.state == winit::event::ElementState::Pressed,
                     event.repeat,
                     event.physical_key
@@ -599,6 +779,10 @@ impl ApplicationHandler for Application {
                 }
             }
             WindowEvent::CloseRequested => {
+                if auditing {
+                    self.fail(event_loop, ShellError::SettingsAudit);
+                    return;
+                }
                 if let Some(renderer) = &mut self.renderer
                     && renderer.close(self.generation).is_err()
                 {
@@ -617,6 +801,75 @@ impl ApplicationHandler for Application {
                 }
             }
             WindowEvent::RedrawRequested => {
+                if let (Some(audit), Some(login), Some(state), Some(window), Some(renderer)) = (
+                    &mut self.settings_audit,
+                    &mut self.login,
+                    &mut self.ui_state,
+                    &self.window,
+                    &mut self.renderer,
+                ) {
+                    if !redraw_eligible(Some(renderer.state().phase())) {
+                        return;
+                    }
+                    if renderer.set_scene_viewport(None).is_err() {
+                        self.fail(event_loop, ShellError::RendererRender);
+                        return;
+                    }
+                    login.context.set_zoom_factor(1.0);
+                    audit.prepare_frame(&login.context);
+                    let mut input = state.take_egui_input(window);
+                    input.events.clear();
+                    let context = login.context.clone();
+                    let output = context.run_ui(input, |ui| login.show(ui.ctx()));
+                    state.handle_platform_output(window, output.platform_output.clone());
+                    let capture = match audit.observe_frame(
+                        &context,
+                        &output,
+                        login.settings.audit_draft(),
+                    ) {
+                        Ok(capture) => capture,
+                        Err(error) => {
+                            eprintln!("Oteryn settings audit: {error}");
+                            self.fail(event_loop, ShellError::SettingsAudit);
+                            return;
+                        }
+                    };
+                    if capture {
+                        let frame =
+                            match renderer.render_ui_capture(self.generation, &context, output) {
+                                Ok(frame) => frame,
+                                Err(error) => {
+                                    eprintln!("Oteryn settings audit renderer: {error}");
+                                    self.fail(event_loop, ShellError::SettingsAudit);
+                                    return;
+                                }
+                            };
+                        match audit.accept_capture(
+                            &context,
+                            &mut login.settings,
+                            frame,
+                            window.scale_factor() as f32,
+                        ) {
+                            Ok(true) => {
+                                self.settings_audit = None;
+                                event_loop.exit();
+                            }
+                            Ok(false) => window.request_redraw(),
+                            Err(error) => {
+                                eprintln!("Oteryn settings audit: {error}");
+                                self.fail(event_loop, ShellError::SettingsAudit);
+                            }
+                        }
+                    } else if renderer
+                        .render_ui(self.generation, &context, output)
+                        .is_err()
+                    {
+                        self.fail(event_loop, ShellError::RendererRender);
+                    } else {
+                        window.request_redraw();
+                    }
+                    return;
+                }
                 if let (Some(login), Some(state), Some(window), Some(renderer)) = (
                     &mut self.login,
                     &mut self.ui_state,
@@ -727,15 +980,64 @@ impl ApplicationHandler for Application {
                     }
                     state.handle_platform_output(window, output.platform_output.clone());
                     let scene = play.view.scene();
-                    let rendered = if viewport.is_some() {
-                        renderer.render_batches_ui(
-                            self.generation,
-                            scene.tiles(),
-                            scene.sprites(),
-                            &context,
-                            output,
-                        )
+                    let capture_requested = std::mem::take(&mut self.screenshot_requested);
+                    let rendered = if let Some(viewport) = viewport {
+                        if capture_requested {
+                            match renderer.render_batches_ui_capture(
+                                self.generation,
+                                scene.tiles(),
+                                scene.sprites(),
+                                &context,
+                                output,
+                            ) {
+                                Ok(frame) => {
+                                    let captured = (if crate::settings_ui::game_only_capture(
+                                        &self.preferences,
+                                    ) {
+                                        frame
+                                            .crop_physical_viewport([
+                                                viewport.x,
+                                                viewport.y,
+                                                viewport.width,
+                                                viewport.height,
+                                            ])
+                                            .ok()
+                                    } else {
+                                        Some(frame)
+                                    })
+                                    .and_then(|frame| {
+                                        crate::settings_ui::save_screenshot(&frame).ok()
+                                    })
+                                    .is_some();
+                                    self.hud
+                                        .screenshot_finished(captured, self.preferences.english);
+                                    Ok(())
+                                }
+                                Err(
+                                    RendererError::CaptureUnsupported
+                                    | RendererError::CaptureSize
+                                    | RendererError::CaptureMap,
+                                ) => {
+                                    self.hud
+                                        .screenshot_finished(false, self.preferences.english);
+                                    Ok(())
+                                }
+                                Err(error) => Err(error),
+                            }
+                        } else {
+                            renderer.render_batches_ui(
+                                self.generation,
+                                scene.tiles(),
+                                scene.sprites(),
+                                &context,
+                                output,
+                            )
+                        }
                     } else {
+                        if capture_requested {
+                            self.hud
+                                .screenshot_finished(false, self.preferences.english);
+                        }
                         renderer.render_ui(self.generation, &context, output)
                     };
                     if rendered.is_err() {
@@ -770,6 +1072,21 @@ impl ApplicationHandler for Application {
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if self.settings_audit.is_some() {
+            if let Some(window) = &self.window
+                && redraw_eligible(
+                    self.renderer
+                        .as_ref()
+                        .map(|renderer| renderer.state().phase()),
+                )
+            {
+                window.request_redraw();
+                event_loop.set_control_flow(winit::event_loop::ControlFlow::WaitUntil(
+                    std::time::Instant::now() + std::time::Duration::from_millis(16),
+                ));
+            }
+            return;
+        }
         if let Some(ui) = self.login.as_mut().or(self.game_ui.as_mut())
             && ui.settings.applied
         {
@@ -873,11 +1190,7 @@ impl ApplicationHandler for Application {
                     .map(|renderer| renderer.state().phase()),
             )
         {
-            let fps = if self.focused {
-                self.preferences.fps
-            } else {
-                self.preferences.background_fps
-            };
+            let fps = self.preferences.redraw_fps(self.focused);
             let interval = if fps == 0 {
                 std::time::Duration::ZERO
             } else {
@@ -897,10 +1210,13 @@ impl ApplicationHandler for Application {
     }
 }
 
-pub fn run(play: Option<(ClientBootstrap, AdmittedSession)>) -> Result<(), ShellError> {
+pub fn run(
+    play: Option<(ClientBootstrap, AdmittedSession)>,
+    audit: Option<crate::settings_audit::SettingsAuditRequest>,
+) -> Result<(), ShellError> {
     let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
     let smoke = std::env::args().any(|argument| argument == "--smoke");
-    let mut application = Application::new(smoke, play)?;
+    let mut application = Application::new(smoke, play, audit)?;
     let run_result = event_loop
         .run_app(&mut application)
         .map_err(|_error| ShellError::EventLoopRun);
@@ -910,6 +1226,9 @@ pub fn run(play: Option<(ClientBootstrap, AdmittedSession)>) -> Result<(), Shell
     }
     if let Some(error) = application.fatal_error {
         return Err(error);
+    }
+    if application.settings_audit.is_some() {
+        return Err(ShellError::SettingsAudit);
     }
     run_result
 }
@@ -934,5 +1253,38 @@ mod tests {
         assert!(!redraw_eligible(Some(SurfacePhase::Suspended)));
         assert!(!redraw_eligible(Some(SurfacePhase::Lost)));
         assert!(!redraw_eligible(Some(SurfacePhase::Closing)));
+    }
+
+    #[test]
+    fn redraw_scheduler_uses_the_durable_foreground_switch_and_background_limit() {
+        let mut settings = oteryn_client::settings::ClientSettings {
+            fps: 144,
+            last_frame_limit: 144,
+            background_fps: 24,
+            ..Default::default()
+        };
+        assert_eq!(settings.redraw_fps(true), 144);
+        assert_eq!(settings.redraw_fps(false), 24);
+        settings.set_frame_limit_enabled(false);
+        assert_eq!(settings.redraw_fps(true), 0);
+        assert_eq!(settings.redraw_fps(false), 24);
+        settings.set_frame_limit_enabled(true);
+        assert_eq!(settings.redraw_fps(true), 144);
+    }
+
+    #[test]
+    fn claimed_keyboard_chords_are_not_replayed_into_egui_text_fields() {
+        assert!(!super::forward_event_to_egui(true, true));
+        assert!(super::forward_event_to_egui(true, false));
+        assert!(super::forward_event_to_egui(false, true));
+    }
+
+    #[test]
+    fn custom_hotkeys_action_opens_its_exact_settings_page() {
+        assert_eq!(
+            super::direct_settings_section("client.hotkeys"),
+            Some("custom_hotkeys")
+        );
+        assert_eq!(super::direct_settings_section("client.options"), None);
     }
 }

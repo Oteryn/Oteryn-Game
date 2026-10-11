@@ -46,6 +46,26 @@ pub struct LoginScreen {
 
 impl LoginScreen {
     pub fn new() -> Self {
+        let config = NativeLoginConfig::from_launcher_env(|name| std::env::var(name).ok())
+            .ok()
+            .flatten();
+        Self::new_inner(crate::settings_ui::SettingsPanel::new(), config, true)
+    }
+
+    /// Builds the audit UI from explicit defaults, without environment, disk, or network input.
+    pub fn new_for_settings_audit(settings: oteryn_client::settings::ClientSettings) -> Self {
+        Self::new_inner(
+            crate::settings_ui::SettingsPanel::for_settings_audit(settings),
+            None,
+            false,
+        )
+    }
+
+    fn new_inner(
+        settings: crate::settings_ui::SettingsPanel,
+        config: Option<NativeLoginConfig>,
+        refresh_directory: bool,
+    ) -> Self {
         let context = egui::Context::default();
         let mut fonts = egui::FontDefinitions::default();
         fonts.font_data.insert(
@@ -84,10 +104,6 @@ impl LoginScreen {
                     egui::TextureOptions::LINEAR,
                 )
             });
-        let config = NativeLoginConfig::from_launcher_env(|name| std::env::var(name).ok())
-            .ok()
-            .flatten();
-        let settings = crate::settings_ui::SettingsPanel::new();
         let mut result = Self {
             context,
             background,
@@ -106,7 +122,9 @@ impl LoginScreen {
             choose_account: false,
             quit: false,
         };
-        result.refresh_directory();
+        if refresh_directory {
+            result.refresh_directory();
+        }
         result
     }
 

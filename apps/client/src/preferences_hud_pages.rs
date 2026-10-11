@@ -1,5 +1,5 @@
 //! HUD, confirmation and capture page compositions. Server state is never fabricated.
-use super::{HelpAction, PageState, boxed, percent, reference_option, row};
+use super::{HelpAction, PageState, boxed, percent, reference_option, retained_children, row};
 use oteryn_client::settings::ClientSettings;
 use oteryn_client::settings_catalog::FutureValue;
 
@@ -42,6 +42,44 @@ const CONDITIONS: [(&str, [&str; 2]); 35] = [
     ("orange_skull", ["Pomarańczowa czaszka", "Orange Skull"]),
     ("guild_war", ["Wojna gildii", "In Guild War"]),
     ("hungry", ["Głód", "Hungry"]),
+];
+
+const SCREENSHOT_EVENTS_LEFT: &[(&str, [&str; 2])] = &[
+    ("level", ["Awans poziomu", "Level Up"]),
+    ("skill", ["Awans umiejętności", "Skill Up"]),
+    ("capture.achievements", ["Osiągnięcie", "Achievement"]),
+    (
+        "bestiary_unlocked",
+        ["Odblokowany wpis bestiariusza", "Bestiary Entry Unlocked"],
+    ),
+    (
+        "bestiary_completed",
+        ["Ukończony wpis bestiariusza", "Bestiary Entry Completed"],
+    ),
+    ("capture.treasure", ["Znaleziony skarb", "Treasure Found"]),
+    ("capture.loot", ["Cenny łup", "Valuable Loot"]),
+    ("capture.boss", ["Pokonany boss", "Boss Defeated"]),
+];
+
+const SCREENSHOT_EVENTS_RIGHT: &[(&str, [&str; 2])] = &[
+    ("death_pve", ["Śmierć PvE", "Death PvE"]),
+    ("death_pvp", ["Śmierć PvP", "Death PvP"]),
+    ("player_kill", ["Zabójstwo gracza", "Player Kill"]),
+    (
+        "player_assist",
+        ["Asysta przy zabójstwie", "Player Kill Assist"],
+    ),
+    ("player_attack", ["Atak gracza", "Player Attacking"]),
+    (
+        "capture.damage",
+        ["Najwyższe obrażenia", "Highest Damage Dealt"],
+    ),
+    (
+        "capture.healing",
+        ["Najwyższe leczenie", "Highest Healing Done"],
+    ),
+    ("capture.low_health", ["Niskie zdrowie", "Low Health"]),
+    ("gift_of_life", ["Dar życia", "Gift of Life Triggered"]),
 ];
 
 pub(super) fn show(
@@ -273,12 +311,12 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             };
             row(ui, tr("Stan", "Condition"), draft, None, &mut selected);
             ui.horizontal_top(|ui| {
-                egui::ScrollArea::vertical()
-                    .id_salt("hud-conditions")
-                    .max_height(180.0)
-                    .max_width(table_width)
-                    .auto_shrink([false, false])
-                    .show(ui, |ui| {
+                crate::settings_audit::show_bounded_vertical(
+                    ui,
+                    "hud-conditions",
+                    180.0,
+                    Some(table_width),
+                    |ui| {
                         ui.vertical(|ui| {
                             ui.set_width(table_width);
                             for (index, id) in order.iter().enumerate() {
@@ -305,7 +343,8 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                                 }
                             }
                         });
-                    });
+                    },
+                );
                 ui.vertical(|ui| {
                     ui.add_space(45.0);
                     let index = order.iter().position(|id| id == &selected).unwrap_or(0);
@@ -572,11 +611,6 @@ fn miscellaneous(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
     ] {
         row(ui, draft, "miscellaneous", id, labels, en);
     }
-    ui.weak(if en {
-        "Session selections do not store credentials or enable remembered sign-in."
-    } else {
-        "Te wybory nie zapisują danych logowania ani nie włączają zapamiętanej sesji."
-    });
 }
 
 fn screenshots(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mut PageState) {
@@ -601,48 +635,35 @@ fn screenshots(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &
             "Zdarzenia do zapisu"
         },
         |ui| {
-            ui.columns(2, |columns| {
-                for (id, labels) in [
-                    ("level", ["Awans poziomu", "Level Up"]),
-                    ("skill", ["Awans umiejętności", "Skill Up"]),
-                    ("capture.achievements", ["Osiągnięcie", "Achievement"]),
-                    (
-                        "bestiary_unlocked",
-                        ["Odblokowany wpis bestiariusza", "Bestiary Entry Unlocked"],
-                    ),
-                    (
-                        "bestiary_completed",
-                        ["Ukończony wpis bestiariusza", "Bestiary Entry Completed"],
-                    ),
-                    ("capture.treasure", ["Znaleziony skarb", "Treasure Found"]),
-                    ("capture.loot", ["Cenny łup", "Valuable Loot"]),
-                    ("capture.boss", ["Pokonany boss", "Boss Defeated"]),
-                ] {
-                    reference_option(&mut columns[0], draft, "screenshots", id, labels, en);
-                }
-                for (id, labels) in [
-                    ("death_pve", ["Śmierć PvE", "Death PvE"]),
-                    ("death_pvp", ["Śmierć PvP", "Death PvP"]),
-                    ("player_kill", ["Zabójstwo gracza", "Player Kill"]),
-                    (
-                        "player_assist",
-                        ["Asysta przy zabójstwie", "Player Kill Assist"],
-                    ),
-                    ("player_attack", ["Atak gracza", "Player Attacking"]),
-                    (
-                        "capture.damage",
-                        ["Najwyższe obrażenia", "Highest Damage Dealt"],
-                    ),
-                    (
-                        "capture.healing",
-                        ["Najwyższe leczenie", "Highest Healing Done"],
-                    ),
-                    ("capture.low_health", ["Niskie zdrowie", "Low Health"]),
-                    ("gift_of_life", ["Dar życia", "Gift of Life Triggered"]),
-                ] {
-                    reference_option(&mut columns[1], draft, "screenshots", id, labels, en);
-                }
-            });
+            retained_children(
+                ui,
+                draft.stored_bool("screenshots.auto") == Some(true),
+                "screenshot-automatic-events",
+                |ui| {
+                    ui.columns(2, |columns| {
+                        for (id, labels) in SCREENSHOT_EVENTS_LEFT {
+                            reference_option(
+                                &mut columns[0],
+                                draft,
+                                "screenshots",
+                                id,
+                                *labels,
+                                en,
+                            );
+                        }
+                        for (id, labels) in SCREENSHOT_EVENTS_RIGHT {
+                            reference_option(
+                                &mut columns[1],
+                                draft,
+                                "screenshots",
+                                id,
+                                *labels,
+                                en,
+                            );
+                        }
+                    });
+                },
+            );
         },
     );
     if ui
@@ -890,5 +911,69 @@ mod tests {
                 .map_err(|_| "deserialize")?;
         assert_eq!(restored, draft);
         Ok(())
+    }
+
+    #[test]
+    fn automatic_screenshot_master_gates_all_seventeen_retained_triggers() {
+        assert_eq!(
+            SCREENSHOT_EVENTS_LEFT.len() + SCREENSHOT_EVENTS_RIGHT.len(),
+            17
+        );
+        let ctx = egui::Context::default();
+        crate::client_chrome::install(&ctx, false);
+        let size = egui::vec2(760.0, 720.0);
+        let mut draft = ClientSettings::default();
+        draft
+            .future_preferences
+            .insert("screenshots.auto".into(), FutureValue::Bool(false));
+        let retained: Vec<_> = SCREENSHOT_EVENTS_LEFT
+            .iter()
+            .chain(SCREENSHOT_EVENTS_RIGHT)
+            .enumerate()
+            .map(|(index, (id, _))| {
+                let key = format!("screenshots.{id}");
+                let value = FutureValue::Bool(index % 2 == 0);
+                draft.future_preferences.insert(key.clone(), value.clone());
+                (key, value)
+            })
+            .collect();
+        let mut state = PageState::default();
+        let draw = |ctx: &egui::Context, draft: &mut ClientSettings, state: &mut PageState| {
+            egui::Window::new("screenshots-test")
+                .fixed_size([700.0, 660.0])
+                .show(ctx, |ui| screenshots(ui, draft, true, state));
+        };
+        for _ in 0..2 {
+            let _ = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft, &mut state));
+        }
+        assert_eq!(
+            ctx.data(|data| {
+                data.get_temp::<bool>(egui::Id::new((
+                    "retained-child-gate",
+                    "screenshot-automatic-events",
+                )))
+            }),
+            Some(false)
+        );
+        for (key, value) in &retained {
+            assert_eq!(draft.future_preferences.get(key), Some(value), "{key}");
+        }
+
+        draft
+            .future_preferences
+            .insert("screenshots.auto".into(), FutureValue::Bool(true));
+        let _ = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft, &mut state));
+        assert_eq!(
+            ctx.data(|data| {
+                data.get_temp::<bool>(egui::Id::new((
+                    "retained-child-gate",
+                    "screenshot-automatic-events",
+                )))
+            }),
+            Some(true)
+        );
+        for (key, value) in &retained {
+            assert_eq!(draft.future_preferences.get(key), Some(value), "{key}");
+        }
     }
 }

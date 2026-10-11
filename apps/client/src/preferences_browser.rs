@@ -8,6 +8,7 @@ use oteryn_client::{
     settings::ClientSettings,
     settings_catalog::{
         FutureValue, Implementation, OptionKind, SETTINGS_SECTIONS, SettingOption, ShortcutBinding,
+        reference_settings_sections,
     },
 };
 
@@ -30,7 +31,6 @@ pub enum PreferenceAction {
     Apply,
     Cancel,
     Defaults,
-    QuickSettings,
     ExportOptions,
     ImportOptions,
     ResetOptions,
@@ -39,7 +39,10 @@ pub enum PreferenceAction {
 
 impl PreferencesBrowser {
     pub fn open_section(&mut self, id: &str) -> bool {
-        let Some(section) = SETTINGS_SECTIONS.iter().position(|entry| entry.id == id) else {
+        let Some(section) = reference_settings_sections()
+            .iter()
+            .position(|entry| entry.id == id)
+        else {
             return false;
         };
         self.section = section;
@@ -113,10 +116,6 @@ impl PreferencesBrowser {
                             });
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                                 if ui.add_sized([30.0,30.0], egui::Button::new("×")).clicked() { action = PreferenceAction::Cancel; }
-                                if size.x > 650.0 {
-                                    ui.spacing_mut().slider_width = 90.0;
-                                    ui.add(egui::Slider::new(&mut draft.settings_transparency, 0..=70).suffix("%").text(tr("Przezroczystość", "Transparency")));
-                                }
                             });
                         });
                     });
@@ -127,21 +126,26 @@ impl PreferencesBrowser {
                         ui.spacing_mut().item_spacing.y=2.0;
                         ui.add(egui::TextEdit::singleline(&mut self.search).desired_width(ui.available_width()).char_limit(120).hint_text(tr("Szukaj ustawienia…", "Search preferences…")));
                         ui.add_space(8.0);
-                        egui::Panel::bottom("preferences-account-link").exact_size(34.0).show(ui, |ui| {
-                            if ui.button(tr("Konto i sieć", "Account/network")).clicked() {action=PreferenceAction::QuickSettings;}
-                        });
                         egui::ScrollArea::vertical().id_salt("all-preferences-sections").auto_shrink([false,false]).show(ui, |ui| {
-                            if ui.selectable_label(self.overview,tr("Szybkie ustawienia", "Quick settings")).clicked() {self.overview=true;}
                             let search = self.search.trim().to_lowercase();
-                            for (index, section) in SETTINGS_SECTIONS.iter().enumerate() {
-                                if !search.is_empty() && !section.text(english).to_lowercase().contains(&search) && !section.options.iter().any(|option| option.text(english).to_lowercase().contains(&search)) {continue;}
+                            for (index, section) in reference_settings_sections().iter().enumerate() {
+                                // The catalogue also retains compatibility-only options that are
+                                // deliberately absent from the reference composition. Indexing
+                                // those rows would reveal a page for a control the page cannot show.
+                                // Until page compositions expose their own search terms, search
+                                // only the exact visible page titles.
+                                if !search.is_empty()
+                                    && !section.text(english).to_lowercase().contains(&search)
+                                {
+                                    continue;
+                                }
                                 if let Some(group) = match section.id {
                                     "basic" => Some(tr("NA SKRÓTY", "QUICK ACCESS")),
                                     "controls" => Some(tr("STEROWANIE", "CONTROLS")),
                                     "interface" => Some(tr("INTERFEJS", "INTERFACE")),
                                     "graphics" => Some(tr("OBRAZ I DŹWIĘK", "VIDEO AND AUDIO")),
                                     "miscellaneous" => Some(tr("POZOSTAŁE", "OTHER")),
-                                    "panels" => Some("OTERYN"), _ => None,
+                                    _ => None,
                                 } {
                                     ui.add_space(16.0);
                                     ui.label(egui::RichText::new(group).size(10.0).color(egui::Color32::from_rgb(183,169,141)));
@@ -159,21 +163,21 @@ impl PreferencesBrowser {
                     });
                 } else {
                     egui::Panel::top("preferences-compact-navigation").show(&mut body_ui, |ui| {
-                        egui::ComboBox::from_id_salt("preferences-category").selected_text(SETTINGS_SECTIONS[self.section].text(english)).show_ui(ui, |ui| {
-                            for (index,section) in SETTINGS_SECTIONS.iter().enumerate() {if ui.selectable_value(&mut self.section,index,section.text(english)).clicked() {self.overview=false;}}
+                        egui::ComboBox::from_id_salt("preferences-category").selected_text(reference_settings_sections()[self.section].text(english)).show_ui(ui, |ui| {
+                            for (index,section) in reference_settings_sections().iter().enumerate() {if ui.selectable_value(&mut self.section,index,section.text(english)).clicked() {self.overview=false;}}
                         });
                     });
                 }
                 egui::CentralPanel::default().frame(egui::Frame::new().inner_margin(if size.x<700.0 {12} else {22}))
                     .show(&mut body_ui, |ui| {
                         let search = self.search.trim().to_lowercase();
-                        let _body_output = egui::ScrollArea::vertical().id_salt(("all-preferences-options", SETTINGS_SECTIONS[self.section].id)).auto_shrink([false,false]).show(ui, |ui| {
+                        let _body_output = egui::ScrollArea::vertical().id_salt(("all-preferences-options", reference_settings_sections()[self.section].id)).auto_shrink([false,false]).show(ui, |ui| {
                             ui.set_width(ui.available_width());
                             ui.label(egui::RichText::new(tr("USTAWIENIA KLIENTA", "CLIENT SETTINGS")).size(10.0).color(egui::Color32::from_rgb(185,164,130)));
                             ui.add_space(3.0);
-                            if !self.overview {ui.label(egui::RichText::new(if SETTINGS_SECTIONS[self.section].id=="hud" {tr("HUD postaci", "Character HUD")} else {SETTINGS_SECTIONS[self.section].text(english)}).size(24.0));}
+                            if !self.overview {ui.label(egui::RichText::new(if reference_settings_sections()[self.section].id=="hud" {tr("HUD postaci", "Character HUD")} else {reference_settings_sections()[self.section].text(english)}).size(24.0));}
                             ui.add_space(16.0);
-                        let section = &SETTINGS_SECTIONS[self.section];
+                        let section = &reference_settings_sections()[self.section];
                         if self.overview { overview::show(ui, draft, english); }
                         else if section.id == "basic" { basic_page(ui, draft, english); }
                         else if section.id == "action_bars" { action_bars_page(ui, draft, english, self.action_bar_available, &mut self.clear_action_row); }
@@ -238,6 +242,11 @@ impl PreferencesBrowser {
                         }
                             if let Some(message) = message {ui.add_space(12.0);ui.label(message);}
                         });
+                        crate::settings_audit::record_settings_scroll(
+                            ctx,
+                            reference_settings_sections()[self.section].id,
+                            &_body_output,
+                        );
                         #[cfg(test)]
                         test_support::record_scroll_geometry(ctx, "all-preferences-body-geometry", &_body_output);
                     });
@@ -814,8 +823,16 @@ fn implemented(
             egui::ComboBox::from_id_salt(field)
                 .selected_text(format!("{label}: {}", draft.fps))
                 .show_ui(ui, |ui| {
-                    for value in [0, 30, 60, 90, 120, 144, 165, 240, 360] {
-                        ui.selectable_value(&mut draft.fps, value, value.to_string());
+                    for value in [0, 1, 30, 60, 90, 120, 144, 165, 200] {
+                        let selected = draft.fps == value;
+                        if ui.selectable_label(selected, value.to_string()).clicked() {
+                            if value == 0 {
+                                draft.set_frame_limit_enabled(false);
+                            } else {
+                                let _ = draft.set_frame_limit(value);
+                                draft.set_frame_limit_enabled(true);
+                            }
+                        }
                     }
                 });
         }
@@ -829,10 +846,18 @@ fn implemented(
                     .button(if english { "Arrow keys" } else { "Strzałki" })
                     .clicked()
                 {
-                    draft.movement_keys = [82, 79, 81, 80];
+                    remember_movement_change(
+                        ui.ctx(),
+                        "complete-movement-conflict",
+                        draft.set_movement_keys([82, 79, 81, 80]),
+                    );
                 }
                 if ui.button("WASD").clicked() {
-                    draft.movement_keys = [26, 7, 22, 4];
+                    remember_movement_change(
+                        ui.ctx(),
+                        "complete-movement-conflict",
+                        draft.set_movement_keys([26, 7, 22, 4]),
+                    );
                 }
             });
             for (index, direction) in if english {
@@ -843,21 +868,35 @@ fn implemented(
             .iter()
             .enumerate()
             {
+                let effective = draft.effective_movement_keys()[index];
                 egui::ComboBox::from_id_salt(("complete-movement", index))
                     .selected_text(format!(
                         "{direction}: {}",
-                        shortcut_label(draft.movement_keys[index])
+                        effective.map_or_else(
+                            || if english {
+                                "Unbound".into()
+                            } else {
+                                "Nieprzypisany".into()
+                            },
+                            shortcut_label,
+                        )
                     ))
                     .show_ui(ui, |ui| {
                         for code in (4..=29).chain(79..=82) {
-                            ui.selectable_value(
-                                &mut draft.movement_keys[index],
-                                code,
-                                shortcut_label(code),
-                            );
+                            if ui
+                                .selectable_label(effective == Some(code), shortcut_label(code))
+                                .clicked()
+                            {
+                                remember_movement_change(
+                                    ui.ctx(),
+                                    "complete-movement-conflict",
+                                    draft.set_movement_key(index, code),
+                                );
+                            }
                         }
                     });
             }
+            movement_change_feedback(ui, "complete-movement-conflict", english);
         }
         "action_bottom_rows" | "action_left_rows" | "action_right_rows" => {
             let edge = match field {
@@ -881,6 +920,42 @@ fn implemented(
         _ => {
             ui.label(label);
         }
+    }
+}
+
+pub(crate) fn remember_movement_change(
+    ctx: &egui::Context,
+    feedback_id: &'static str,
+    result: std::io::Result<()>,
+) {
+    let feedback_id = egui::Id::new(feedback_id);
+    ctx.data_mut(|data| {
+        if result.is_err() {
+            data.insert_temp(feedback_id, true);
+        } else {
+            data.remove::<bool>(feedback_id);
+        }
+    });
+}
+
+pub(crate) fn movement_change_feedback(
+    ui: &mut egui::Ui,
+    feedback_id: &'static str,
+    english: bool,
+) {
+    if ui
+        .ctx()
+        .data(|data| data.get_temp::<bool>(egui::Id::new(feedback_id)))
+        .unwrap_or(false)
+    {
+        ui.colored_label(
+            egui::Color32::from_rgb(244, 112, 112),
+            if english {
+                "Shortcut conflict. Movement keys were not changed."
+            } else {
+                "Konflikt skrótów. Klawisze ruchu nie zostały zmienione."
+            },
+        );
     }
 }
 
@@ -930,24 +1005,42 @@ fn stored_value(
             }
         }
         OptionKind::Choice(choices) => {
-            let mut chosen = if let Some(FutureValue::Choice(value)) = stored {
-                value
-            } else {
-                String::new()
+            let mut chosen = match stored.as_ref() {
+                Some(FutureValue::Choice(value)) => Some(value.clone()),
+                _ => None,
             };
             let label = choices
                 .iter()
-                .find(|c| c.id == chosen)
-                .map_or(tr("Nieustawione", "Unset"), |c| c.text(english));
-            egui::ComboBox::from_id_salt(&key)
-                .selected_text(label)
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut chosen, String::new(), tr("Nieustawione", "Unset"));
-                    for choice in choices {
-                        ui.selectable_value(&mut chosen, choice.id.into(), choice.text(english));
-                    }
-                });
-            next = (!chosen.is_empty()).then_some(FutureValue::Choice(chosen));
+                .find(|choice| chosen.as_deref() == Some(choice.id))
+                .map_or("—", |choice| choice.text(english));
+            let _choice_response = ui.add_enabled_ui(!choices.is_empty(), |ui| {
+                egui::ComboBox::from_id_salt(&key)
+                    .selected_text(label)
+                    .show_ui(ui, |ui| {
+                        for choice in choices {
+                            ui.selectable_value(
+                                &mut chosen,
+                                Some(choice.id.into()),
+                                choice.text(english),
+                            );
+                        }
+                    });
+            });
+            #[cfg(test)]
+            ui.ctx().data_mut(|data| {
+                data.insert_temp(
+                    egui::Id::new(("preference-choice", key.as_str())),
+                    (
+                        _choice_response.response.enabled(),
+                        label.to_owned(),
+                        choices
+                            .iter()
+                            .map(|choice| choice.text(english).to_owned())
+                            .collect::<Vec<_>>(),
+                    ),
+                );
+            });
+            next = chosen.map(FutureValue::Choice);
         }
         OptionKind::Text { max_bytes } => {
             let mut value = if let Some(FutureValue::Text(value)) = stored {
@@ -993,7 +1086,8 @@ fn stored_value(
             ui.add_enabled(false, egui::Button::new(tr("Niedostępne", "Unavailable")));
         }
     }
-    if next.is_some()
+    if !matches!(option.kind, OptionKind::Choice(_))
+        && next.is_some()
         && ui
             .small_button(tr("Wyczyść własną wartość", "Clear custom value"))
             .clicked()
@@ -1074,6 +1168,14 @@ pub(crate) mod test_support {
     }
 
     pub fn button_position(output: &FullOutput, size: Vec2, label: &str) -> Option<Pos2> {
+        button_position_in_rect(output, Rect::from_min_size(Pos2::ZERO, size), label)
+    }
+
+    pub fn button_position_in_rect(
+        output: &FullOutput,
+        viewport: Rect,
+        label: &str,
+    ) -> Option<Pos2> {
         fn find(shape: &Shape, clip: Rect, viewport: Rect, label: &str) -> Option<Pos2> {
             match shape {
                 Shape::Text(text) if text.galley.job.text == label => {
@@ -1087,7 +1189,6 @@ pub(crate) mod test_support {
                 _ => None,
             }
         }
-        let viewport = Rect::from_min_size(Pos2::ZERO, size);
         output
             .shapes
             .iter()
@@ -1101,8 +1202,26 @@ pub(crate) mod test_support {
         pointer: Pos2,
         mut draw: impl FnMut(&Context) -> T,
     ) -> FullOutput {
+        reveal_in_rect(
+            ctx,
+            size,
+            Rect::from_min_size(Pos2::ZERO, size),
+            label,
+            pointer,
+            &mut draw,
+        )
+    }
+
+    pub fn reveal_in_rect<T>(
+        ctx: &Context,
+        size: Vec2,
+        viewport: Rect,
+        label: &str,
+        pointer: Pos2,
+        mut draw: impl FnMut(&Context) -> T,
+    ) -> FullOutput {
         let mut output = frame(ctx, size, vec![], &mut draw).1;
-        if button_position(&output, size, label).is_some() {
+        if button_position_in_rect(&output, viewport, label).is_some() {
             return output;
         }
         for delta in std::iter::once(4000.0).chain(std::iter::repeat_n(-100.0, 40)) {
@@ -1124,7 +1243,7 @@ pub(crate) mod test_support {
             for _ in 0..12 {
                 output = frame(ctx, size, vec![], &mut draw).1;
             }
-            if button_position(&output, size, label).is_some() {
+            if button_position_in_rect(&output, viewport, label).is_some() {
                 break;
             }
         }
@@ -1167,59 +1286,212 @@ pub(crate) mod test_support {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_support::{button_position, click, frame, reveal, scroll_geometry};
+    use test_support::{
+        button_position, button_position_in_rect, click, frame, reveal, reveal_in_rect,
+        scroll_geometry,
+    };
 
     #[test]
-    fn direct_section_navigation_accepts_only_catalogue_pages() {
+    fn direct_section_navigation_accepts_only_the_twenty_reference_pages() {
         let mut browser = PreferencesBrowser::new();
         assert!(browser.open_section("general_hotkeys"));
-        assert_eq!(SETTINGS_SECTIONS[browser.section].id, "general_hotkeys");
+        assert_eq!(
+            reference_settings_sections()[browser.section].id,
+            "general_hotkeys"
+        );
         assert!(!browser.overview);
         assert!(browser.open);
         assert!(!browser.open_section("not-a-settings-page"));
-        assert_eq!(SETTINGS_SECTIONS[browser.section].id, "general_hotkeys");
+        for hidden in [
+            "panels",
+            "containers",
+            "character_selection",
+            "market",
+            "floating_messages",
+            "analyzers",
+            "notifications",
+        ] {
+            assert!(!browser.open_section(hidden), "leaked section {hidden}");
+        }
+        assert_eq!(
+            reference_settings_sections()[browser.section].id,
+            "general_hotkeys"
+        );
+    }
+
+    #[test]
+    fn reference_navigation_hides_oteryn_only_destinations_and_shell_controls() {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(1180.0, 880.0);
+        let mut browser = PreferencesBrowser::new();
+        let mut draft = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = frame(&ctx, size, vec![], |ctx| {
+                browser.show(ctx, &mut draft, None)
+            })
+            .1;
+        }
+        for forbidden in [
+            "Quick settings",
+            "Account/network",
+            "Transparency",
+            "Panels and Minimap",
+            "Containers and Loot",
+            "Character Selection",
+            "Market",
+            "Floating Messages",
+            "Analyzers",
+            "Notifications",
+        ] {
+            assert!(
+                button_position(&output, size, forbidden).is_none(),
+                "reference navigation leaked {forbidden}"
+            );
+        }
+    }
+
+    #[test]
+    fn navigation_search_does_not_index_hidden_compatibility_controls() {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(1180.0, 880.0);
+        let mut browser = PreferencesBrowser::new();
+        let mut draft = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        let navigation = egui::Rect::from_min_max(egui::Pos2::ZERO, egui::pos2(260.0, size.y));
+        for (query, leaked_page) in [
+            ("Show Chat Panel", "Console"),
+            ("Background FPS", "Graphics"),
+            ("Mute in Background", "Sound"),
+            ("English Interface", "Interface"),
+        ] {
+            browser.search = query.into();
+            let mut output = egui::FullOutput::default();
+            for _ in 0..3 {
+                output = frame(&ctx, size, vec![], |ctx| {
+                    browser.show(ctx, &mut draft, None)
+                })
+                .1;
+            }
+            assert!(
+                button_position_in_rect(&output, navigation, leaked_page).is_none(),
+                "hidden query {query:?} leaked {leaked_page}"
+            );
+        }
+    }
+
+    #[test]
+    fn choice_editors_expose_only_evidenced_entries_and_disable_unknown_dynamic_lists()
+    -> Result<(), &'static str> {
+        type ChoiceState = (bool, String, Vec<String>);
+
+        let size = egui::vec2(900.0, 620.0);
+        let ctx = egui::Context::default();
+        ctx.set_theme(egui::Theme::Dark);
+        crate::client_chrome::install(&ctx, false);
+        let mut draft = ClientSettings::default();
+        draft.future_preferences.insert(
+            "game_window.window.target_marking".into(),
+            FutureValue::Choice("frame_and_highlight".into()),
+        );
+        let mut draw = |ctx: &egui::Context| {
+            egui::Window::new("Reference choices").show(ctx, |ui| {
+                for (section, id, label) in [
+                    ("controls", "controls.mouse_preset", "Mouse Preset:"),
+                    (
+                        "interface",
+                        "interface.colourise_loot_value",
+                        "Colourise Loot Value:",
+                    ),
+                    (
+                        "game_window",
+                        "window.target_marking",
+                        "Mark Target Visually:",
+                    ),
+                    ("graphics", "graphics.antialiasing", "Antialiasing Mode:"),
+                    ("graphics", "graphics.engine", "Graphics Engine:"),
+                ] {
+                    reference_option(ui, &mut draft, section, id, [label, label], true);
+                }
+            })
+        };
+        let mut output = egui::FullOutput::default();
+        for _ in 0..4 {
+            output = frame(&ctx, size, Vec::new(), &mut draw).1;
+        }
+        let choice_state = |key: &str| {
+            ctx.data(|data| data.get_temp::<ChoiceState>(egui::Id::new(("preference-choice", key))))
+        };
+        for (key, enabled, label, choices) in [
+            (
+                "controls.controls.mouse_preset",
+                false,
+                "—",
+                vec!["Classic Controls", "Regular Controls", "Left Smart-Click"],
+            ),
+            (
+                "interface.interface.colourise_loot_value",
+                false,
+                "—",
+                vec!["None", "Frames", "Corners"],
+            ),
+            (
+                "game_window.window.target_marking",
+                true,
+                "Frame & Highlight",
+                vec!["Frame & Highlight", "Frame Only", "Highlight Only", "None"],
+            ),
+            (
+                "graphics.graphics.antialiasing",
+                false,
+                "—",
+                vec!["None", "Antialiasing", "Smooth Retro"],
+            ),
+            ("graphics.graphics.engine", false, "—", vec![]),
+        ] {
+            let state = choice_state(key).ok_or("choice response")?;
+            assert_eq!(state.0, enabled, "wrong enabled state for {key}");
+            assert_eq!(state.1, label, "wrong selected label for {key}");
+            assert_eq!(state.2, choices, "wrong menu entries for {key}");
+        }
+        assert!(button_position(&output, size, "Clear custom value").is_none());
+        assert!(button_position(&output, size, "Unset").is_none());
+
+        let target =
+            button_position(&output, size, "Frame & Highlight").ok_or("target-marking choice")?;
+        let _ = click(&ctx, size, target, &mut draw);
+        output = frame(&ctx, size, Vec::new(), &mut draw).1;
+        for label in ["Frame & Highlight", "Frame Only", "Highlight Only", "None"] {
+            assert!(
+                button_position(&output, size, label).is_some(),
+                "missing target-marking choice {label}"
+            );
+        }
+        assert!(button_position(&output, size, "Unset").is_none());
+        assert!(button_position(&output, size, "Clear custom value").is_none());
+        Ok(())
     }
 
     #[test]
     fn every_reference_settings_page_renders_in_the_compiled_client_at_native_size()
     -> Result<(), &'static str> {
-        let pages = [
-            ("basic", "Gameplay"),
-            ("controls", "Mouse Preset:"),
-            ("general_hotkeys", "Auto-Switch Hotkey Preset"),
-            ("action_hotkeys", "Bottom Action Bar: Action Button 1.01"),
-            ("custom_hotkeys", "New Action"),
-            ("interface", "Highlight Mouse Target"),
-            ("hud", "Special conditions · 35"),
-            ("console", "Show Info Messages"),
-            ("game_window", "Show Textual Effects"),
-            ("action_bars", "Show Bottom Action Bars:"),
-            ("shortcuts", "Displayed Shortcuts:"),
-            ("graphics", "Graphics Engine:"),
-            ("effects", "Lighting"),
-            ("sound", "Sound Device:"),
-            ("battle_sounds", "Own Battle Sounds"),
-            ("ui_sounds", "UI Volume: —"),
-            ("miscellaneous", "Ask Before Buying Products"),
-            ("gameplay", "Allow Others to Inspect Your Character"),
-            ("screenshots", "Only Capture Game Window"),
-            ("help", "Client Help"),
-        ];
-        let ctx = egui::Context::default();
-        ctx.set_theme(egui::Theme::Dark);
-        crate::client_chrome::install(&ctx, false);
         let size = egui::vec2(900.0, 620.0);
-        let mut browser = PreferencesBrowser::new();
-        browser.overview = false;
-        let mut draft = ClientSettings {
-            english: true,
-            ..Default::default()
-        };
-        for (section, marker) in pages {
-            browser.section = SETTINGS_SECTIONS
-                .iter()
-                .position(|entry| entry.id == section)
-                .ok_or("missing settings section")?;
+        for reference in crate::settings_audit::REFERENCE_SETTINGS_PAGES {
+            let (section, marker) = (reference.id, reference.marker);
+            let ctx = egui::Context::default();
+            ctx.set_theme(egui::Theme::Dark);
+            crate::client_chrome::install(&ctx, false);
+            let mut browser = PreferencesBrowser::new();
+            assert!(browser.open_section(section), "missing settings section");
+            let mut draft = ClientSettings {
+                english: true,
+                ..Default::default()
+            };
             let mut output = egui::FullOutput::default();
             for _ in 0..6 {
                 output = frame(&ctx, size, Vec::new(), |ctx| {
@@ -1227,8 +1499,15 @@ mod tests {
                 })
                 .1;
             }
+            let (body, _) = scroll_geometry(&ctx, "all-preferences-body-geometry")
+                .ok_or("missing settings body geometry")?;
+            if button_position_in_rect(&output, body, marker).is_none() {
+                output = reveal_in_rect(&ctx, size, body, marker, body.center(), |ctx| {
+                    browser.show(ctx, &mut draft, None)
+                });
+            }
             assert!(
-                button_position(&output, size, marker).is_some(),
+                button_position_in_rect(&output, body, marker).is_some(),
                 "compiled page marker is not reachable: {section} / {marker}"
             );
             for footer in ["Reset", "OK", "Apply", "Cancel"] {
@@ -1385,7 +1664,6 @@ mod tests {
             }
             for label in if english {
                 [
-                    "Account/network",
                     "Powerless",
                     "Show Customisable Status Bars",
                     "Show Status Bars",
@@ -1396,7 +1674,6 @@ mod tests {
                 ]
             } else {
                 [
-                    "Konto i sieć",
                     "Bezsilność",
                     "Konfigurowalne paski stanu",
                     "Paski stanu",
@@ -1437,21 +1714,6 @@ mod tests {
             assert!((poison.left() - powerless.left()).abs() < 0.5);
             assert!((poison_bar.left() - powerless_bar.left()).abs() < 0.5);
             assert!(poison_bar.left() - poison.left() > 70.0);
-            let account = button_position(
-                &output,
-                size,
-                if english {
-                    "Account/network"
-                } else {
-                    "Konto i sieć"
-                },
-            )
-            .ok_or("account navigation clipped")?;
-            assert!(matches!(
-                click(&ctx, size, account, |ctx| browser
-                    .show(ctx, &mut draft, None)),
-                PreferenceAction::QuickSettings
-            ));
             let _ = reveal(
                 &ctx,
                 size,
@@ -1498,50 +1760,144 @@ mod tests {
     }
 
     #[test]
-    fn movement_editor_fits_a_settings_column_and_routes_preset_clicks() -> Result<(), &'static str>
-    {
+    fn movement_editor_fits_a_settings_column_and_routes_preset_clicks()
+    -> Result<(), Box<dyn std::error::Error>> {
         for english in [false, true] {
             let ctx = egui::Context::default();
             crate::client_chrome::install(&ctx, false);
             let size = egui::vec2(450.0, 350.0);
             let mut draft = ClientSettings::default();
-            let mut draw = |ctx: &egui::Context| {
-                egui::Window::new("movement-test")
-                    .default_size([350.0, 260.0])
-                    .show(ctx, |ui| {
-                        reference_option(
-                            ui,
-                            &mut draft,
-                            "controls",
-                            "controls.movement",
-                            ["Klawisze ruchu", "Movement Keys"],
-                            english,
-                        );
-                    });
-            };
-            for _ in 0..4 {
-                let _ = frame(&ctx, size, vec![], &mut draw);
+            {
+                let mut draw = |ctx: &egui::Context| {
+                    egui::Window::new("movement-test")
+                        .default_size([350.0, 260.0])
+                        .show(ctx, |ui| {
+                            reference_option(
+                                ui,
+                                &mut draft,
+                                "controls",
+                                "controls.movement",
+                                ["Klawisze ruchu", "Movement Keys"],
+                                english,
+                            );
+                        });
+                };
+                for _ in 0..4 {
+                    let _ = frame(&ctx, size, vec![], &mut draw);
+                }
+                let (_, output) = frame(&ctx, size, vec![], &mut draw);
+                for label in if english {
+                    ["North: W", "East: D", "South: S", "West: A"]
+                } else {
+                    ["Północ: W", "Wschód: D", "Południe: S", "Zachód: A"]
+                } {
+                    assert!(
+                        button_position(&output, size, label).is_some(),
+                        "clipped {label}"
+                    );
+                }
+                let preset = button_position(
+                    &output,
+                    size,
+                    if english { "Arrow keys" } else { "Strzałki" },
+                )
+                .ok_or("preset visible")?;
+                click(&ctx, size, preset, &mut draw);
             }
-            let (_, output) = frame(&ctx, size, vec![], &mut draw);
-            for label in if english {
-                ["North: Up", "East: Right", "South: Down", "West: Left"]
-            } else {
-                [
-                    "Północ: Up",
-                    "Wschód: Right",
-                    "Południe: Down",
-                    "Zachód: Left",
-                ]
-            } {
+            assert_eq!(draft.movement_keys, [82, 79, 81, 80]);
+            assert_eq!(
+                draft.effective_movement_keys(),
+                [Some(82), Some(79), Some(81), Some(80)]
+            );
+            assert_eq!(
+                draft
+                    .hotkeys
+                    .active()
+                    .and_then(|profile| profile.general_chat_off.get("movement.north"))
+                    .and_then(|pair| pair.first)
+                    .map(|binding| binding.key),
+                Some(82)
+            );
+            let north = oteryn_input_actions::NormalizedInputEvent::Key {
+                code: oteryn_input_actions::KeyCode::new(82)?,
+                state: oteryn_input_actions::ButtonState::Pressed,
+                modifiers: oteryn_input_actions::Modifiers::NONE,
+                repeat: false,
+            };
+            assert_eq!(
+                draft.hotkeys.resolve(std::slice::from_ref(&north), false),
+                vec![oteryn_client::hotkeys::ResolvedHotkey::General(
+                    "movement.north".into()
+                )]
+            );
+            draft.validate()?;
+
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "oteryn-complete-movement-{}-{nonce}-{}.json",
+                std::process::id(),
+                u8::from(english)
+            ));
+            draft.save(&path)?;
+            let loaded = ClientSettings::load(&path)?;
+            std::fs::remove_file(&path)?;
+            assert_eq!(
+                loaded.effective_movement_keys(),
+                draft.effective_movement_keys()
+            );
+            assert_eq!(
+                loaded.hotkeys.resolve(std::slice::from_ref(&north), false),
+                vec![oteryn_client::hotkeys::ResolvedHotkey::General(
+                    "movement.north".into()
+                )]
+            );
+
+            let before_conflict = draft.clone();
+            {
+                let mut draw = |ctx: &egui::Context| {
+                    egui::Window::new("movement-test")
+                        .default_size([350.0, 260.0])
+                        .show(ctx, |ui| {
+                            reference_option(
+                                ui,
+                                &mut draft,
+                                "controls",
+                                "controls.movement",
+                                ["Klawisze ruchu", "Movement Keys"],
+                                english,
+                            );
+                        });
+                };
+                let output = frame(&ctx, size, vec![], &mut draw).1;
+                let north = button_position(
+                    &output,
+                    size,
+                    if english { "North: Up" } else { "Północ: Up" },
+                )
+                .ok_or("north binding visible")?;
+                click(&ctx, size, north, &mut draw);
+                let popup = frame(&ctx, size, vec![], &mut draw).1;
+                let conflicting = button_position(&popup, size, "E")
+                    .ok_or("conflicting binding visible in popup")?;
+                click(&ctx, size, conflicting, &mut draw);
+                let output = frame(&ctx, size, vec![], &mut draw).1;
                 assert!(
-                    button_position(&output, size, label).is_some(),
-                    "clipped {label}"
+                    button_position(
+                        &output,
+                        size,
+                        if english {
+                            "Shortcut conflict. Movement keys were not changed."
+                        } else {
+                            "Konflikt skrótów. Klawisze ruchu nie zostały zmienione."
+                        }
+                    )
+                    .is_some(),
+                    "movement conflict feedback is not visible"
                 );
             }
-            let wasd = button_position(&output, size, "WASD").ok_or("preset visible")?;
-            click(&ctx, size, wasd, &mut draw);
-            assert_eq!(draft.movement_keys, [26, 7, 22, 4]);
-            draft.validate().map_err(|_| "valid preset")?;
+            assert_eq!(draft, before_conflict);
         }
         Ok(())
     }

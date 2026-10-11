@@ -89,6 +89,10 @@ pub struct GameUi {
     recipient: String,
     channel: usize,
     chat_read_only: [bool; 6],
+    chat_mode: ChatMode,
+    chat_focus_request: Option<bool>,
+    chat_composer_id: Option<egui::Id>,
+    chat_recipient_id: Option<egui::Id>,
     notice: Option<String>,
     action_bar: Option<ActionBar>,
     minimap: Option<(LoadedMinimap, egui::TextureHandle)>,
@@ -100,6 +104,42 @@ pub struct GameUi {
     preferences_changes: Option<ClientSettings>,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum ChatMode {
+    #[default]
+    Off,
+    On,
+    Temporary,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PanelHotkeyDestination {
+    Toggle(&'static str),
+    Open(&'static str),
+    OpenTab(&'static str, &'static str),
+}
+
+fn panel_hotkey_destination(action: &str) -> Option<PanelHotkeyDestination> {
+    Some(match action {
+        "window.vip" => PanelHotkeyDestination::Toggle("vip"),
+        "window.battle" => PanelHotkeyDestination::Toggle("battle"),
+        "window.skills" => PanelHotkeyDestination::Toggle("skills"),
+        "window.spell_list" => PanelHotkeyDestination::Toggle("spells"),
+        "dialog.quest_log" => PanelHotkeyDestination::Open("quest-log"),
+        "dialog.prey" => PanelHotkeyDestination::Open("prey"),
+        "dialog.cyclopedia.map" => PanelHotkeyDestination::OpenTab("cyclopedia", "map"),
+        _ => return None,
+    })
+}
+
+const fn custom_text_action_available(
+    send_automatically: bool,
+    chat_visible: bool,
+    transport_available: bool,
+) -> bool {
+    transport_available && (send_automatically || chat_visible)
+}
+
 impl GameUi {
     pub fn set_character_name(&mut self, name: String) {
         self.character_name = Some(name);
@@ -107,6 +147,176 @@ impl GameUi {
 
     pub fn blocks_game_input(&self) -> bool {
         self.panels.manage || self.dialogs.any_open()
+    }
+
+    /// The hotkey context is owned by the in-game chat state, rather than by
+    /// whatever widget happened to report keyboard focus for the last frame.
+    #[must_use]
+    pub fn chat_hotkey_context(&self) -> bool {
+        self.chat_mode != ChatMode::Off
+    }
+
+    /// Chat-mode bindings own native keyboard routing only while the chat
+    /// composer (or its private-recipient field) owns focus. An unrelated
+    /// text editor must remain an egui/modal input even when Chat On remains
+    /// selected in the console.
+    #[must_use]
+    pub fn chat_routes_keyboard(&self, ctx: &egui::Context) -> bool {
+        if !self.chat_hotkey_context() {
+            return false;
+        }
+        ctx.memory(|memory| {
+            memory.focused().is_none_or(|focused| {
+                self.chat_composer_id == Some(focused) || self.chat_recipient_id == Some(focused)
+            })
+        })
+    }
+
+    fn chat_mode_label(&self, english: bool) -> &'static str {
+        match (self.chat_mode, english) {
+            (ChatMode::Off, true) => "Chat Off",
+            (ChatMode::Off, false) => "Czat wyłączony",
+            (ChatMode::On, true) => "Chat On",
+            (ChatMode::On, false) => "Czat włączony",
+            (ChatMode::Temporary, true) => "Chat On*",
+            (ChatMode::Temporary, false) => "Czat włączony*",
+        }
+    }
+
+    /// Apply a chat focus transition after the native router has claimed the
+    /// activating key, but before a later native input event can be queued.
+    pub fn apply_chat_focus_transition(&mut self, ctx: &egui::Context) {
+        let Some(focus) = self.chat_focus_request else {
+            return;
+        };
+        if focus {
+            let Some(id) = self.chat_composer_id else {
+                return;
+            };
+            ctx.memory_mut(|memory| memory.request_focus(id));
+        } else {
+            ctx.memory_mut(|memory| {
+                if let Some(id) = self.chat_composer_id {
+                    memory.surrender_focus(id);
+                }
+                if let Some(id) = self.chat_recipient_id {
+                    memory.surrender_focus(id);
+                }
+            });
+        }
+        self.chat_focus_request = None;
+    }
+
+    fn set_chat_mode(&mut self, mode: ChatMode) {
+        self.chat_mode = mode;
+        self.chat_focus_request = Some(mode != ChatMode::Off);
+    }
+
+    fn route_chat_mode_hotkey(
+        &mut self,
+        action: &str,
+        composer_available: bool,
+        english: bool,
+    ) -> bool {
+        let mode = match action {
+            "chat.mode.off" => {
+                self.set_chat_mode(ChatMode::Off);
+                return true;
+            }
+            "chat.mode.on" => ChatMode::On,
+            "chat.mode.temporary" => ChatMode::Temporary,
+            _ => return false,
+        };
+        if !self.chat_composer_ready(composer_available, english) {
+            return true;
+        }
+        self.set_chat_mode(mode);
+        true
+    }
+
+    fn chat_composer_ready(&mut self, available: bool, english: bool) -> bool {
+        if !available {
+            if self.chat_hotkey_context() {
+                self.set_chat_mode(ChatMode::Off);
+            }
+            self.notice = Some(chat_feedback(ChatDisposition::ChatUnavailable, english).into());
+            return false;
+        }
+        if self
+            .chat_read_only
+            .get(self.channel)
+            .copied()
+            .unwrap_or(true)
+        {
+            if self.chat_hotkey_context() {
+                self.set_chat_mode(ChatMode::Off);
+            }
+            self.notice = Some(
+                if english {
+                    "This tab is read-only."
+                } else {
+                    "Ta karta jest tylko do odczytu."
+                }
+                .into(),
+            );
+            return false;
+        }
+        true
+    }
+
+    fn place_chat_text(&mut self, text: &str, available: bool, english: bool) -> bool {
+        if !self.chat_composer_ready(available, english) {
+            return false;
+        }
+        self.draft = text.to_owned();
+        if self.chat_mode == ChatMode::Off {
+            self.set_chat_mode(ChatMode::Temporary);
+        } else {
+            self.chat_focus_request = Some(true);
+        }
+        true
+    }
+
+    fn apply_chat_composer_focus(&mut self, edit: &egui::Response, keep_focused: bool) {
+        self.chat_composer_id = Some(edit.id);
+        match self.chat_focus_request.take() {
+            Some(true) => edit.request_focus(),
+            Some(false) => edit.surrender_focus(),
+            None => {}
+        }
+        if edit.gained_focus() && self.chat_mode == ChatMode::Off {
+            self.chat_mode = ChatMode::On;
+        }
+        let unrelated_widget_has_focus = edit.ctx.memory(|memory| {
+            memory.focused().is_some_and(|focused| {
+                self.chat_composer_id != Some(focused) && self.chat_recipient_id != Some(focused)
+            })
+        });
+        if keep_focused
+            && self.chat_hotkey_context()
+            && !edit.has_focus()
+            && !unrelated_widget_has_focus
+        {
+            edit.request_focus();
+        }
+    }
+
+    fn observe_chat_text_focus(&mut self, edit: &egui::Response) {
+        self.chat_recipient_id = Some(edit.id);
+        if edit.gained_focus() && self.chat_mode == ChatMode::Off {
+            self.chat_mode = ChatMode::On;
+        }
+    }
+
+    fn relinquish_hidden_chat_focus(&mut self, ctx: &egui::Context) {
+        self.set_chat_mode(ChatMode::Off);
+        self.chat_focus_request = None;
+        if let Some(id) = self.chat_composer_id {
+            ctx.memory_mut(|memory| memory.surrender_focus(id));
+        }
+        if let Some(id) = self.chat_recipient_id {
+            ctx.memory_mut(|memory| memory.surrender_focus(id));
+        }
     }
 
     pub fn preferences_save_failed(&mut self, english: bool) {
@@ -119,11 +329,32 @@ impl GameUi {
             .into(),
         );
     }
+
+    pub fn screenshot_finished(&mut self, saved: bool, english: bool) {
+        self.notice = Some(
+            match (saved, english) {
+                (true, true) => "Screenshot saved.",
+                (true, false) => "Zapisano zrzut ekranu.",
+                (false, true) => "Screenshot could not be saved.",
+                (false, false) => "Nie udało się zapisać zrzutu ekranu.",
+            }
+            .into(),
+        );
+    }
     pub fn take_preferences(&mut self) -> Option<ClientSettings> {
         self.preferences_changes.take()
     }
-    pub fn route_chat_hotkey(&mut self, action: &str, link: &PlayLink, english: bool) -> bool {
+    pub fn route_chat_hotkey(
+        &mut self,
+        action: &str,
+        link: &PlayLink,
+        english: bool,
+        chat_visible: bool,
+    ) -> bool {
         let rooms = link.game_state().chat.map(|chat| chat.rooms());
+        if self.route_chat_mode_hotkey(action, chat_visible && rooms.is_some(), english) {
+            return true;
+        }
         match action {
             "chat.next" | "chat.previous" => {
                 if let Some(rooms) = rooms {
@@ -165,21 +396,79 @@ impl GameUi {
                 }
             }
             "chat.list" => self.dialogs.open_chat_channels(),
+            "chat.send" => {
+                let available = chat_visible && rooms.is_some();
+                self.submit_current_chat(available, english, |intent| link.send_chat(intent));
+                if self.chat_hotkey_context() {
+                    self.chat_focus_request = Some(true);
+                }
+            }
             _ => return false,
         }
         true
     }
 
-    pub fn route_panel_hotkey(&mut self, action: &str) -> bool {
-        let panel = match action {
-            "window.vip" => "vip",
-            "window.battle" => "battle",
-            "window.skills" => "skills",
-            "dialog.quest_log" => "quest-log",
-            "dialog.prey" => "prey",
-            _ => return false,
+    fn submit_current_chat(
+        &mut self,
+        available: bool,
+        english: bool,
+        send: impl FnOnce(ChatIntent) -> bool,
+    ) -> bool {
+        let text = self.draft.trim().to_owned();
+        if !self.submit_chat_text(text, available, english, send) {
+            return false;
+        }
+        self.draft.clear();
+        self.complete_chat_send();
+        true
+    }
+
+    fn submit_chat_text(
+        &mut self,
+        text: String,
+        available: bool,
+        english: bool,
+        send: impl FnOnce(ChatIntent) -> bool,
+    ) -> bool {
+        let tr = |pl, en| if english { en } else { pl };
+        if !self.chat_composer_ready(available, english) {
+            return false;
+        }
+        let text = text.trim().to_owned();
+        if text.is_empty() {
+            return false;
+        }
+        if text.len() > oteryn_session::MAX_CHAT_TEXT_BYTES {
+            self.notice = Some(tr("Wiadomość jest zbyt długa", "Message is too long").into());
+            return false;
+        }
+        let Some(intent) = chat_intent(self.channel, &self.recipient, text) else {
+            self.notice = Some(tr("Podaj prawidłowego odbiorcę", "Enter a valid recipient").into());
+            return false;
         };
-        self.panels.toggle(panel)
+        if !send(intent) {
+            self.notice = Some(action_busy(english).into());
+            return false;
+        }
+        self.notice = None;
+        true
+    }
+
+    fn complete_chat_send(&mut self) {
+        match self.chat_mode {
+            ChatMode::Temporary => self.set_chat_mode(ChatMode::Off),
+            ChatMode::On => self.chat_focus_request = Some(true),
+            ChatMode::Off => {}
+        }
+    }
+
+    pub fn route_panel_hotkey(&mut self, action: &str) -> bool {
+        match panel_hotkey_destination(action) {
+            Some(PanelHotkeyDestination::Toggle(panel)) => self.panels.toggle(panel),
+            Some(PanelHotkeyDestination::Open(panel)) => self.panels.open(panel),
+            Some(PanelHotkeyDestination::OpenTab(panel, tab)) => self.panels.open_tab(panel, tab),
+            None => false,
+        }
     }
 
     pub fn route_minimap_hotkey(&mut self, action: &str) -> bool {
@@ -190,6 +479,7 @@ impl GameUi {
             "minimap.east" => self.minimap_pan[0] = (self.minimap_pan[0] + 1).min(16),
             "minimap.south" => self.minimap_pan[1] = (self.minimap_pan[1] + 1).min(16),
             "minimap.west" => self.minimap_pan[0] = (self.minimap_pan[0] - 1).max(-16),
+            "minimap.center" => self.minimap_pan = [0, 0],
             _ => return false,
         }
         true
@@ -210,13 +500,16 @@ impl GameUi {
         }
     }
     fn bar(&mut self, settings: &ClientSettings) -> Option<&mut ActionBar> {
+        let fallback_movement_keys = settings
+            .hotkeys
+            .active_movement_fallback_keys(&settings.movement_keys);
         if self.action_bar.is_none() {
             self.action_bar =
-                ActionBar::new(settings.action_bar.clone(), &settings.movement_keys).ok();
+                ActionBar::new(settings.action_bar.clone(), &fallback_movement_keys).ok();
         }
         let bar = self.action_bar.as_mut()?;
         if bar.preferences() != &settings.action_bar {
-            let _ = bar.reconfigure(settings.action_bar.clone(), &settings.movement_keys);
+            let _ = bar.reconfigure(settings.action_bar.clone(), &fallback_movement_keys);
         }
         Some(bar)
     }
@@ -224,27 +517,33 @@ impl GameUi {
     pub fn route_actions(
         &mut self,
         events: &[oteryn_input_actions::NormalizedInputEvent],
+        hotkeys: &[ResolvedHotkey],
         link: &PlayLink,
         settings: &ClientSettings,
-        typing: bool,
+        chat_on: bool,
         modal: bool,
     ) -> bool {
         let mut matched = false;
         if !modal {
-            for hotkey in settings.hotkeys.resolve(events, typing) {
+            for hotkey in hotkeys {
                 let action = match hotkey {
                     ResolvedHotkey::General(action) if action.starts_with("chat.") => {
-                        matched |= self.route_chat_hotkey(&action, link, settings.english);
+                        matched |= self.route_chat_hotkey(
+                            action,
+                            link,
+                            settings.english,
+                            settings.show_chat,
+                        );
                         continue;
                     }
                     ResolvedHotkey::General(action)
                         if action.starts_with("window.") || action.starts_with("dialog.") =>
                     {
-                        matched |= self.route_panel_hotkey(&action);
+                        matched |= self.route_panel_hotkey(action);
                         continue;
                     }
                     ResolvedHotkey::General(action) if action.starts_with("minimap.") => {
-                        matched |= self.route_minimap_hotkey(&action);
+                        matched |= self.route_minimap_hotkey(action);
                         continue;
                     }
                     ResolvedHotkey::General(_) => continue,
@@ -256,25 +555,26 @@ impl GameUi {
                         text,
                         send_automatically,
                     } => {
-                        if !send_automatically {
-                            self.draft = text;
-                        } else if let Some(intent) =
-                            chat_intent(self.channel, &self.recipient, text)
-                        {
-                            if link.send_chat(intent) {
-                                self.notice = None;
-                            } else {
-                                self.notice = Some(action_busy(settings.english).into());
-                            }
+                        let available = custom_text_action_available(
+                            *send_automatically,
+                            settings.show_chat,
+                            link.game_state().chat.is_some(),
+                        );
+                        if !*send_automatically {
+                            let _ = self.place_chat_text(text, available, settings.english);
                         } else {
-                            self.notice = Some(
-                                if settings.english {
-                                    "Choose a valid private-message recipient first."
-                                } else {
-                                    "Najpierw wybierz prawidłowego odbiorcę wiadomości prywatnej."
-                                }
-                                .into(),
+                            let accepted = self.submit_chat_text(
+                                text.clone(),
+                                available,
+                                settings.english,
+                                |intent| link.send_chat(intent),
                             );
+                            if accepted {
+                                self.complete_chat_send();
+                            }
+                            if self.chat_hotkey_context() {
+                                self.chat_focus_request = Some(true);
+                            }
                         }
                     }
                     CustomHotkeyAction::Spell { .. } | CustomHotkeyAction::Object { .. } => {
@@ -291,7 +591,7 @@ impl GameUi {
             }
         }
         if let Some(bar) = self.bar(settings) {
-            if bar.set_input_context(typing, modal).is_err() {
+            if bar.set_input_context(chat_on, modal).is_err() {
                 return matched;
             }
             let (commands, action_bar_matched) = bar.route_with_match(events);
@@ -316,6 +616,9 @@ impl GameUi {
         let rect = ctx.content_rect();
         let en = settings.english;
         let tr = |pl, english| if en { english } else { pl };
+        if !settings.show_chat || state.chat.is_none() {
+            self.relinquish_hidden_chat_focus(ctx);
+        }
         let mut open_settings = false;
         let hud_enabled = !self.blocks_game_input();
         self.panels.initialize(&settings.panel_shortcuts);
@@ -390,7 +693,11 @@ impl GameUi {
                 &state.entities,
             );
         }
+        let chat_context = self.chat_hotkey_context();
         let commands = self.bar(settings).map_or_else(Vec::new, |bar| {
+            // Keep both activation and the visible shortcut labels in sync
+            // even when the console toggle changed without a native key event.
+            let _ = bar.set_input_context(chat_context, !hud_enabled);
             // Available spells need an authoritative catalogue projection.
             crate::action_bar_ui::show(ctx, bar, &state, &[], settings, body, hud_enabled)
         });
@@ -678,6 +985,10 @@ impl GameUi {
                             ui.horizontal(|ui| {
                                 ui.add_enabled(
                                     false,
+                                    egui::Button::new(tr("Czat wyłączony", "Chat Off")),
+                                );
+                                ui.add_enabled(
+                                    false,
                                     egui::TextEdit::singleline(&mut self.draft)
                                         .hint_text(tr("Wiadomość", "Message"))
                                         .desired_width((ui.available_width() - 80.0).max(50.0)),
@@ -767,13 +1078,31 @@ impl GameUi {
                             });
                         ui.horizontal(|ui| {
                             let read_only = self.chat_read_only[self.channel];
+                            if read_only && self.chat_hotkey_context() {
+                                self.set_chat_mode(ChatMode::Off);
+                            }
+                            let mode_label = self.chat_mode_label(en);
+                            if ui
+                                .add_enabled(!read_only, egui::Button::new(mode_label))
+                                .clicked()
+                            {
+                                let action = if self.chat_hotkey_context() {
+                                    "chat.mode.off"
+                                } else {
+                                    "chat.mode.on"
+                                };
+                                let _ = self.route_chat_mode_hotkey(action, true, en);
+                            }
+                            let mut alternate_chat_input_focused = false;
                             if self.channel == 5 {
-                                ui.add_enabled(
+                                let recipient = ui.add_enabled(
                                     !read_only,
                                     egui::TextEdit::singleline(&mut self.recipient)
                                         .desired_width(100.0)
                                         .hint_text(tr("Odbiorca", "Recipient")),
                                 );
+                                self.observe_chat_text_focus(&recipient);
+                                alternate_chat_input_focused = recipient.has_focus();
                             }
                             let edit = ui.add_enabled(
                                 !read_only,
@@ -781,60 +1110,25 @@ impl GameUi {
                                     .desired_width((ui.available_width() - 65.0).max(30.0))
                                     .hint_text(tr("Napisz wiadomość", "Write a message")),
                             );
+                            let legacy_enter = settings.hotkeys.active().is_none_or(|profile| {
+                                !profile.general_chat_on.contains_key("chat.send")
+                            }) && edit.lost_focus()
+                                && ui.input(|input| input.key_pressed(egui::Key::Enter));
                             let submit = ui
                                 .add_enabled(!read_only, egui::Button::new(tr("Wyślij", "Send")))
                                 .clicked()
-                                || !read_only
-                                    && edit.lost_focus()
-                                    && ui.input(|input| input.key_pressed(egui::Key::Enter));
-                            if submit && !self.draft.trim().is_empty() {
-                                let text = self.draft.trim().to_owned();
-                                if text.len() > oteryn_session::MAX_CHAT_TEXT_BYTES {
-                                    self.notice = Some(
-                                        tr("Wiadomość jest zbyt długa", "Message is too long")
-                                            .into(),
-                                    );
-                                } else if self.channel == 5
-                                    && (self.recipient.trim().is_empty()
-                                        || self.recipient.len()
-                                            > oteryn_session::MAX_CHAT_NAME_BYTES)
-                                {
-                                    self.notice = Some(
-                                        tr(
-                                            "Podaj prawidłowego odbiorcę",
-                                            "Enter a valid recipient",
-                                        )
-                                        .into(),
-                                    );
-                                } else {
-                                    let intent = if self.channel == 5 {
-                                        ChatIntent::Private {
-                                            recipient_name: self.recipient.trim().into(),
-                                            text,
-                                        }
-                                    } else if let Some(room) = room {
-                                        ChatIntent::Room { room, text }
-                                    } else {
-                                        ChatIntent::Say {
-                                            mode: ChatSpeechMode::Say,
-                                            text,
-                                        }
-                                    };
-                                    if link.send_chat(intent) {
-                                        self.draft.clear();
-                                        self.notice = None;
-                                        edit.request_focus();
-                                    } else {
-                                        self.notice = Some(
-                                            tr(
-                                                "Poczekaj na poprzednią wiadomość",
-                                                "Wait for the previous message",
-                                            )
-                                            .into(),
-                                        );
-                                    }
+                                || !read_only && legacy_enter;
+                            if submit {
+                                let accepted = self
+                                    .submit_current_chat(true, en, |intent| link.send_chat(intent));
+                                if !accepted && self.chat_hotkey_context() {
+                                    self.chat_focus_request = Some(true);
                                 }
                             }
+                            self.apply_chat_composer_focus(
+                                &edit,
+                                hud_enabled && !alternate_chat_input_focused,
+                            );
                         });
                         if self.chat_read_only[self.channel] {
                             ui.small(tr(
@@ -1377,8 +1671,9 @@ fn chat_feedback(value: ChatDisposition, english: bool) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::{
-        ambient_overlay_alpha, chat_line_text, cycle_chat_channel, export_chat_contents_to,
-        item_button, show_window_recovery,
+        ChatMode, PanelHotkeyDestination, ambient_overlay_alpha, chat_line_text,
+        custom_text_action_available, cycle_chat_channel, export_chat_contents_to, item_button,
+        panel_hotkey_destination, show_window_recovery,
     };
     use crate::preferences_browser::test_support::{button_position, click, frame};
 
@@ -1394,6 +1689,20 @@ mod tests {
         assert_eq!(cycle_chat_channel(0, rooms, false), 5);
         assert_eq!(cycle_chat_channel(5, rooms, false), 3);
         assert_eq!(cycle_chat_channel(2, rooms, true), 1);
+    }
+
+    #[test]
+    fn screenshot_feedback_reports_success_and_failure_in_both_languages() {
+        let mut ui = super::GameUi::default();
+        for (saved, english, expected) in [
+            (true, true, "Screenshot saved."),
+            (true, false, "Zapisano zrzut ekranu."),
+            (false, true, "Screenshot could not be saved."),
+            (false, false, "Nie udało się zapisać zrzutu ekranu."),
+        ] {
+            ui.screenshot_finished(saved, english);
+            assert_eq!(ui.notice.as_deref(), Some(expected));
+        }
     }
 
     #[test]
@@ -1414,7 +1723,406 @@ mod tests {
         assert!(ui.route_minimap_hotkey("minimap.south"));
         assert!(ui.route_minimap_hotkey("minimap.west"));
         assert_eq!(ui.minimap_pan, [15, -15]);
+        assert!(ui.route_minimap_hotkey("minimap.center"));
+        assert_eq!(ui.minimap_pan, [0, 0]);
+        assert!(ui.route_minimap_hotkey("minimap.center"));
         assert!(!ui.route_minimap_hotkey("minimap.floor_up"));
+    }
+
+    #[test]
+    fn panel_hotkeys_preserve_show_hide_and_open_page_semantics() {
+        assert_eq!(
+            panel_hotkey_destination("window.spell_list"),
+            Some(PanelHotkeyDestination::Toggle("spells"))
+        );
+        assert_eq!(
+            panel_hotkey_destination("dialog.quest_log"),
+            Some(PanelHotkeyDestination::Open("quest-log"))
+        );
+        assert_eq!(
+            panel_hotkey_destination("dialog.cyclopedia.map"),
+            Some(PanelHotkeyDestination::OpenTab("cyclopedia", "map"))
+        );
+        assert_eq!(panel_hotkey_destination("dialog.lenshelp"), None);
+    }
+
+    #[test]
+    fn chat_submit_hotkey_uses_the_composer_validation_and_clears_only_on_accept() {
+        use std::cell::RefCell;
+
+        let sent = RefCell::new(Vec::new());
+        let mut ui = super::GameUi {
+            draft: "  hello  ".into(),
+            ..Default::default()
+        };
+        assert!(ui.submit_current_chat(true, true, |intent| {
+            sent.borrow_mut().push(intent);
+            true
+        }));
+        assert_eq!(
+            sent.into_inner(),
+            vec![oteryn_session::ChatIntent::Say {
+                mode: oteryn_session::ChatSpeechMode::Say,
+                text: "hello".into(),
+            }]
+        );
+        assert!(ui.draft.is_empty());
+
+        ui.channel = 5;
+        ui.recipient = " Alice ".into();
+        ui.draft = "private".into();
+        let mut private = None;
+        assert!(ui.submit_current_chat(true, true, |intent| {
+            private = Some(intent);
+            true
+        }));
+        assert_eq!(
+            private,
+            Some(oteryn_session::ChatIntent::Private {
+                recipient_name: "Alice".into(),
+                text: "private".into(),
+            })
+        );
+
+        ui.channel = 0;
+        ui.draft = "retry".into();
+        assert!(!ui.submit_current_chat(true, true, |_| false));
+        assert_eq!(ui.draft, "retry");
+        assert_eq!(
+            ui.notice.as_deref(),
+            Some("Wait for the previous action to finish")
+        );
+    }
+
+    #[test]
+    fn chat_submit_hotkey_rejects_unavailable_read_only_and_invalid_drafts_without_sending() {
+        let mut ui = super::GameUi {
+            draft: "hello".into(),
+            ..Default::default()
+        };
+        let mut calls = 0;
+        assert!(!ui.submit_current_chat(false, true, |_| {
+            calls += 1;
+            true
+        }));
+        ui.chat_read_only[0] = true;
+        assert!(!ui.submit_current_chat(true, true, |_| {
+            calls += 1;
+            true
+        }));
+        ui.chat_read_only[0] = false;
+        ui.draft = " ".into();
+        assert!(!ui.submit_current_chat(true, true, |_| {
+            calls += 1;
+            true
+        }));
+        ui.channel = 5;
+        ui.draft = "private".into();
+        ui.recipient.clear();
+        assert!(!ui.submit_current_chat(true, true, |_| {
+            calls += 1;
+            true
+        }));
+        ui.channel = 0;
+        ui.draft = "x".repeat(oteryn_session::MAX_CHAT_TEXT_BYTES + 1);
+        assert!(!ui.submit_current_chat(true, true, |_| {
+            calls += 1;
+            true
+        }));
+        assert_eq!(calls, 0);
+        assert!(!ui.draft.is_empty());
+    }
+
+    #[test]
+    fn automatic_custom_text_needs_chat_transport_but_not_a_visible_composer() {
+        assert!(custom_text_action_available(true, false, true));
+        assert!(custom_text_action_available(true, true, true));
+        assert!(!custom_text_action_available(true, true, false));
+        assert!(!custom_text_action_available(false, false, true));
+        assert!(custom_text_action_available(false, true, true));
+    }
+
+    #[test]
+    fn exact_enter_binding_switches_resolver_context_and_temporary_send_returns_off()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_client::hotkeys::{HotkeyPreferences, ResolvedHotkey};
+        use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+
+        let preferences = HotkeyPreferences::default();
+        for key in [40, 88] {
+            let enter = NormalizedInputEvent::Key {
+                code: KeyCode::new(key)?,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::NONE,
+                repeat: false,
+            };
+            let mut ui = super::GameUi::default();
+            let off_actions =
+                preferences.resolve(std::slice::from_ref(&enter), ui.chat_hotkey_context());
+            assert_eq!(
+                off_actions,
+                vec![ResolvedHotkey::General("chat.mode.temporary".into())]
+            );
+            let ResolvedHotkey::General(action) = &off_actions[0] else {
+                return Err("expected general hotkey".into());
+            };
+            assert!(ui.route_chat_mode_hotkey(action, true, true));
+            assert_eq!(ui.chat_mode, ChatMode::Temporary);
+            assert!(ui.chat_hotkey_context());
+            assert_eq!(
+                preferences.resolve(std::slice::from_ref(&enter), ui.chat_hotkey_context()),
+                vec![ResolvedHotkey::General("chat.send".into())]
+            );
+
+            ui.draft = "hello".into();
+            assert!(ui.submit_current_chat(true, true, |_| true));
+            assert_eq!(ui.chat_mode, ChatMode::Off);
+            assert!(!ui.chat_hotkey_context());
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn configured_on_and_off_actions_resolve_into_the_game_ui_state()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_client::{
+            hotkeys::{HotkeyPair, HotkeyPreferences, ResolvedHotkey},
+            settings_catalog::ShortcutBinding,
+        };
+        use oteryn_input_actions::{ButtonState, KeyCode, Modifiers, NormalizedInputEvent};
+
+        let pair = |key| HotkeyPair {
+            first: Some(ShortcutBinding {
+                key,
+                shift: false,
+                ctrl: false,
+                alt: false,
+                meta: false,
+            }),
+            second: None,
+        };
+        let mut preferences = HotkeyPreferences::default();
+        let profile = preferences.active_mut().ok_or("default hotkey profile")?;
+        profile.action_bar.shortcuts[10] = None;
+        profile.action_bar.chat_on_shortcuts[11] = None;
+        profile
+            .general_chat_off
+            .insert("chat.mode.on".into(), pair(68));
+        profile
+            .general_chat_on
+            .insert("chat.mode.off".into(), pair(69));
+        preferences.validate(&[82, 79, 81, 80])?;
+
+        let pressed = |key| -> Result<NormalizedInputEvent, Box<dyn std::error::Error>> {
+            Ok(NormalizedInputEvent::Key {
+                code: KeyCode::new(key)?,
+                state: ButtonState::Pressed,
+                modifiers: Modifiers::NONE,
+                repeat: false,
+            })
+        };
+        let mut ui = super::GameUi::default();
+        let actions = preferences.resolve(&[pressed(68)?], ui.chat_hotkey_context());
+        assert_eq!(
+            actions,
+            vec![ResolvedHotkey::General("chat.mode.on".into())]
+        );
+        let ResolvedHotkey::General(action) = &actions[0] else {
+            return Err("expected general hotkey".into());
+        };
+        assert!(ui.route_chat_mode_hotkey(action, true, true));
+        assert_eq!(ui.chat_mode, ChatMode::On);
+
+        let actions = preferences.resolve(&[pressed(69)?], ui.chat_hotkey_context());
+        assert_eq!(
+            actions,
+            vec![ResolvedHotkey::General("chat.mode.off".into())]
+        );
+        let ResolvedHotkey::General(action) = &actions[0] else {
+            return Err("expected general hotkey".into());
+        };
+        assert!(ui.route_chat_mode_hotkey(action, true, true));
+        assert_eq!(ui.chat_mode, ChatMode::Off);
+        Ok(())
+    }
+
+    #[test]
+    fn temporary_activation_focuses_without_replaying_the_claimed_enter() -> Result<(), &'static str>
+    {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(320.0, 80.0);
+        let mut ui = super::GameUi {
+            draft: "existing draft".into(),
+            ..Default::default()
+        };
+        let draw_composer = |ctx: &egui::Context, ui: &mut super::GameUi| {
+            let window = egui::Window::new("temporary-chat-focus-test").show(ctx, |frame_ui| {
+                let edit = frame_ui.text_edit_singleline(&mut ui.draft);
+                let legacy_submit = edit.lost_focus()
+                    && frame_ui.input(|input| input.key_pressed(egui::Key::Enter));
+                let id = edit.id;
+                ui.apply_chat_composer_focus(&edit, true);
+                (id, legacy_submit)
+            })?;
+            window.inner
+        };
+
+        let (initial, _) = frame(&ctx, size, Vec::new(), |ctx| draw_composer(ctx, &mut ui));
+        let (composer, _) = initial.ok_or("focus test window")?;
+        assert_eq!(ctx.memory(|memory| memory.focused()), None);
+        assert!(ui.route_chat_mode_hotkey("chat.mode.temporary", true, true));
+        ui.apply_chat_focus_transition(&ctx);
+        assert_eq!(ctx.memory(|memory| memory.focused()), Some(composer));
+
+        // The native shell suppresses the claimed activation key before egui;
+        // this next render must not replay that Enter into the focused editor.
+        let (result, _) = frame(&ctx, size, Vec::new(), |ctx| draw_composer(ctx, &mut ui));
+        let (rendered_composer, legacy_submit) = result.ok_or("focus test window")?;
+        assert!(!legacy_submit);
+        assert_eq!(ui.draft, "existing draft");
+        assert_eq!(ui.chat_mode, ChatMode::Temporary);
+        assert_eq!(rendered_composer, composer);
+        assert_eq!(ctx.memory(|memory| memory.focused()), Some(composer));
+        Ok(())
+    }
+
+    #[test]
+    fn explicit_chat_on_persists_after_send_and_off_relinquishes_the_composer()
+    -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(320.0, 80.0);
+        let mut ui = super::GameUi::default();
+
+        assert!(ui.route_chat_mode_hotkey("chat.mode.on", true, true));
+        let (composer, _) = frame(&ctx, size, Vec::new(), |ctx| {
+            let window = egui::Window::new("chat-focus-test").show(ctx, |frame_ui| {
+                let edit = frame_ui.text_edit_singleline(&mut ui.draft);
+                let id = edit.id;
+                ui.apply_chat_composer_focus(&edit, true);
+                id
+            })?;
+            window.inner
+        });
+        let composer = composer.ok_or("focus test window")?;
+        assert_eq!(ctx.memory(|memory| memory.focused()), Some(composer));
+
+        ui.draft = "persistent".into();
+        assert!(ui.submit_current_chat(true, true, |_| true));
+        assert_eq!(ui.chat_mode, ChatMode::On);
+        assert!(ui.chat_hotkey_context());
+
+        assert!(ui.route_chat_mode_hotkey("chat.mode.off", true, true));
+        ui.apply_chat_focus_transition(&ctx);
+        assert_eq!(ctx.memory(|memory| memory.focused()), None);
+        let _ = frame(&ctx, size, Vec::new(), |ctx| {
+            let _ = egui::Window::new("chat-focus-test").show(ctx, |frame_ui| {
+                let edit = frame_ui.text_edit_singleline(&mut ui.draft);
+                ui.apply_chat_composer_focus(&edit, true);
+            });
+        });
+        assert_eq!(ctx.memory(|memory| memory.focused()), None);
+        assert_eq!(ui.chat_mode, ChatMode::Off);
+        Ok(())
+    }
+
+    #[test]
+    fn chat_on_does_not_reclaim_focus_from_an_unrelated_text_editor() -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(360.0, 100.0);
+        let mut ui = super::GameUi::default();
+        let mut unrelated_text = String::new();
+
+        assert!(ui.route_chat_mode_hotkey("chat.mode.on", true, true));
+        let ids = frame(&ctx, size, Vec::new(), |ctx| {
+            let window = egui::Window::new("chat-unrelated-focus-test").show(ctx, |frame_ui| {
+                let unrelated = frame_ui.text_edit_singleline(&mut unrelated_text);
+                let composer = frame_ui.text_edit_singleline(&mut ui.draft);
+                ui.apply_chat_composer_focus(&composer, true);
+                (unrelated.id, composer.id)
+            })?;
+            window.inner
+        })
+        .0
+        .ok_or("focus test window")?;
+        assert_eq!(ctx.memory(|memory| memory.focused()), Some(ids.1));
+        assert!(ui.chat_routes_keyboard(&ctx));
+
+        ctx.memory_mut(|memory| memory.request_focus(ids.0));
+        let _ = frame(&ctx, size, Vec::new(), |ctx| {
+            let _ = egui::Window::new("chat-unrelated-focus-test").show(ctx, |frame_ui| {
+                let unrelated = frame_ui.text_edit_singleline(&mut unrelated_text);
+                let composer = frame_ui.text_edit_singleline(&mut ui.draft);
+                assert_eq!(unrelated.id, ids.0);
+                assert_eq!(composer.id, ids.1);
+                ui.apply_chat_composer_focus(&composer, true);
+            });
+        });
+        assert_eq!(ctx.memory(|memory| memory.focused()), Some(ids.0));
+        assert!(ui.chat_hotkey_context());
+        assert!(!ui.chat_routes_keyboard(&ctx));
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_or_unavailable_composer_never_enters_chat_mode() {
+        let mut ui = super::GameUi::default();
+        assert!(ui.route_chat_mode_hotkey("chat.mode.temporary", false, true));
+        assert_eq!(ui.chat_mode, ChatMode::Off);
+        ui.chat_read_only[0] = true;
+        assert!(ui.route_chat_mode_hotkey("chat.mode.on", true, true));
+        assert_eq!(ui.chat_mode, ChatMode::Off);
+        assert_eq!(ui.notice.as_deref(), Some("This tab is read-only."));
+    }
+
+    #[test]
+    fn console_mode_indicator_exposes_off_on_and_temporary_states() {
+        let mut ui = super::GameUi::default();
+        assert_eq!(ui.chat_mode_label(true), "Chat Off");
+        assert_eq!(ui.chat_mode_label(false), "Czat wyłączony");
+        assert!(ui.route_chat_mode_hotkey("chat.mode.on", true, true));
+        assert_eq!(ui.chat_mode_label(true), "Chat On");
+        assert!(ui.route_chat_mode_hotkey("chat.mode.temporary", true, true));
+        assert_eq!(ui.chat_mode_label(true), "Chat On*");
+        assert!(ui.route_chat_mode_hotkey("chat.mode.off", true, true));
+        assert_eq!(ui.chat_mode_label(true), "Chat Off");
+    }
+
+    #[test]
+    fn custom_text_uses_the_composer_contract_and_preserves_an_unrelated_draft_on_auto_send() {
+        let mut ui = super::GameUi {
+            draft: "unchanged".into(),
+            ..Default::default()
+        };
+        assert!(!ui.place_chat_text("preset", false, true));
+        assert_eq!(ui.draft, "unchanged");
+        assert_eq!(ui.chat_mode, ChatMode::Off);
+
+        ui.chat_read_only[0] = true;
+        assert!(!ui.place_chat_text("preset", true, true));
+        assert_eq!(ui.draft, "unchanged");
+        ui.chat_read_only[0] = false;
+        assert!(ui.place_chat_text("preset", true, true));
+        assert_eq!(ui.draft, "preset");
+        assert_eq!(ui.chat_mode, ChatMode::Temporary);
+
+        ui.draft = "manual draft".into();
+        let mut sent = None;
+        assert!(
+            ui.submit_chat_text("automatic".into(), true, true, |intent| {
+                sent = Some(intent);
+                true
+            })
+        );
+        ui.complete_chat_send();
+        assert_eq!(
+            sent,
+            Some(oteryn_session::ChatIntent::Say {
+                mode: oteryn_session::ChatSpeechMode::Say,
+                text: "automatic".into(),
+            })
+        );
+        assert_eq!(ui.draft, "manual draft");
+        assert_eq!(ui.chat_mode, ChatMode::Off);
     }
 
     #[test]

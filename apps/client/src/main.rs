@@ -12,6 +12,11 @@ mod preferences_browser;
 mod reference_dialogs;
 #[cfg(any(windows, test))]
 #[cfg_attr(test, allow(dead_code))]
+mod settings_audit;
+#[cfg(test)]
+mod settings_semantic_contract;
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
 mod settings_ui;
 
 #[cfg(any(windows, test))]
@@ -80,6 +85,13 @@ fn native_entry() -> Result<Option<NativeGameplay>, ()> {
 /// install or uninstall holds the transaction mutex (CLIENT-INSTALLER-0 §2.1).
 #[cfg(windows)]
 fn main() -> std::process::ExitCode {
+    let audit = match settings_audit::parse_settings_audit_request(std::env::args_os().skip(1)) {
+        Ok(audit) => audit,
+        Err(error) => {
+            eprintln!("Oteryn: {error}");
+            return std::process::ExitCode::from(2);
+        }
+    };
     let _instance = match oteryn_client::win_mutex::acquire_client_instance() {
         Ok(instance) => instance,
         Err(error) => {
@@ -87,15 +99,16 @@ fn main() -> std::process::ExitCode {
             return std::process::ExitCode::from(3);
         }
     };
-    let entry = match if std::env::args().any(|argument| argument == "--auto-login") {
-        native_entry()
-    } else {
-        Ok(None)
-    } {
-        Ok(entry) => entry,
-        Err(()) => return std::process::ExitCode::FAILURE,
-    };
-    match windows_shell::run(entry) {
+    let entry =
+        match if audit.is_none() && std::env::args().any(|argument| argument == "--auto-login") {
+            native_entry()
+        } else {
+            Ok(None)
+        } {
+            Ok(entry) => entry,
+            Err(()) => return std::process::ExitCode::FAILURE,
+        };
+    match windows_shell::run(entry, audit) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("Error: {error:?}");

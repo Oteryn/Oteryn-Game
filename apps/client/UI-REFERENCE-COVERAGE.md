@@ -65,11 +65,11 @@ not proof of every hidden control or runtime effect. Do not restart those pages.
 
 | Group | Established | Remaining targeted checks |
 | --- | --- | --- |
-| Basic / Controls | Page layouts; three mouse presets | Classic loot-button selector and dependent controls |
+| Basic / Controls | Page layouts; three mouse presets; Classic-only Loot selector with Right / SHIFT+Right / Left and hide-on-other-preset dependency | Input consumers |
 | General / Action Bar / Custom Hotkeys | Full 120-action label inventory; profiles, chat contexts, two binding columns, key capture/conflict, spell/object/text editors; the formerly missing 02/03 interval is now directly captured; Oteryn routes next-profile/direct-Hotkeys navigation, first/next/previous admitted battle targets, Stop All Actions, local/next/previous/help/list/close chat actions, VIP/Battle/Skills/Quest Log/Prey panel toggles, FPS overlay and minimap zoom/pan through live client consumers | Profile removal confirmation, full spell-dependent fields and the remaining disabled action families |
 | Interface / HUD / Console / Game Window | Pages inspected; exact HUD masters and Harmony choices, 35 conditions/symbols, exact private-message-tab label; target-marking and loot-colour choices | HUD aggregate semantics and condition consumers; remaining Console/context details |
 | Action Bars / Shortcuts | All nine bars individually verified at 50 slots; all shortcut identities | Edge-master/retained-child behavior, clear confirmations and persistence |
-| Graphics / Effects | Linux engines, antialiasing, lighting and opacity controls; Light master dependency and retained children | Platform-specific availability and actual rendering checks beyond ambient light |
+| Graphics / Effects | Linux engines, antialiasing, integer 1–200 FPS slider, retained disabled limit under Unlimited, lighting and opacity controls; Light master dependency and retained children | Platform-specific availability and actual rendering checks beyond ambient light |
 | Sound / Battle Sounds / UI Sounds | Volume/filter families and device selection | Audio consumers, unavailable-device handling, master/child behavior |
 | Misc / Gameplay / Screenshots / Help | Controls, automatic capture master plus 17 event triggers; help/import/export/reset routes | Trigger effects, validation and non-destructive dialog inspection |
 

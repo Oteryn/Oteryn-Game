@@ -7,7 +7,7 @@ use oteryn_client::action_bar::{
 };
 use oteryn_client::play::GameState;
 use oteryn_client::settings::ClientSettings;
-use oteryn_session::{ChatIntent, ChatRoom, EntityDetail, EntityKind, SpellTarget};
+use oteryn_session::{EntityDetail, EntityKind, SpellTarget};
 use std::num::NonZeroU32;
 
 /// The caller must obtain these indices/targets from the current admitted content generation.
@@ -18,6 +18,15 @@ pub struct AvailableSpell {
     pub target: SpellTarget,
     pub aim_at_target: bool,
 }
+
+const ASSIGNMENT_CATEGORY_LABELS: [[&str; 2]; 6] = [
+    ["Zaklęcie", "Spell"],
+    ["Przedmiot", "Object"],
+    ["Wiele akcji", "Multi-Action"],
+    ["Tekst", "Text"],
+    ["Umiejętność pasywna", "Passive Ability"],
+    ["Skrót klawiszowy", "Hotkey"],
+];
 
 pub fn show(
     ctx: &egui::Context,
@@ -125,7 +134,7 @@ pub fn show(
                         header.context_menu(|ui| {
                             if ui
                                 .add_enabled(
-                                    enabled && !preferences.locked,
+                                    enabled,
                                     egui::Button::new(if english {
                                         "Clear row assignments"
                                     } else {
@@ -150,8 +159,11 @@ pub fn show(
                                     || ("—".into(), false),
                                     |a| assignment_label(a, state, english, show_item_amounts),
                                 );
-                                let shortcut = preferences.shortcuts[index]
-                                    .map_or_else(|| "—".into(), shortcut_label);
+                                let shortcut = visible_shortcut_label(
+                                    &preferences,
+                                    index,
+                                    bar.chat_context_active(),
+                                );
                                 let mut response =
                                     ui.add_sized([width, 24.0], egui::Button::new(""));
                                 if show_tooltips {
@@ -192,8 +204,8 @@ pub fn show(
                                     );
                                 }
                                 response.context_menu(|ui| {
-                                    ui.add_enabled_ui(enabled && !preferences.locked, |ui| {
-                                        assign_menu(ui, bar, slot, state, spells, english)
+                                    ui.add_enabled_ui(enabled, |ui| {
+                                        assign_menu(ui, bar, slot, spells, english)
                                     });
                                 });
                             }
@@ -321,12 +333,10 @@ fn assign_menu(
     ui: &mut egui::Ui,
     bar: &mut ActionBar,
     slot: usize,
-    state: &GameState,
     spells: &[AvailableSpell],
     english: bool,
 ) {
     let tr = |pl, en| if english { en } else { pl };
-    ui.label(tr("Przypisz akcję", "Assign action"));
     let mut choose = |ui: &mut egui::Ui, label: String, command| {
         if ui.button(&label).clicked()
             && bar
@@ -336,90 +346,69 @@ fn assign_menu(
             ui.close();
         }
     };
-    ui.menu_button(tr("Czary", "Spells"), |ui| {
-        if spells.is_empty() {
-            ui.label(tr(
-                "Brak katalogu czarów bieżącej sesji",
-                "No spell catalogue for this session",
-            ));
-        }
-        for spell in spells.iter().take(256) {
-            choose(
-                ui,
-                spell.label.clone(),
-                ActionBarCommand::CastSpell {
-                    spell: spell.spell,
-                    target: spell.target,
-                    aim_at_target: spell.aim_at_target,
-                },
-            );
-        }
-    });
-    ui.menu_button(tr("Przedmioty → plecak", "Items → backpack"), |ui| {
-        let inventory = state
-            .inventory
-            .iter()
-            .flat_map(|i| i.entries.iter().chain(i.equipment.iter().map(|e| &e.item)));
-        let container = state.container.iter().flat_map(|c| c.entries.iter());
-        let mut any = false;
-        for item in inventory.chain(container) {
-            any = true;
-            choose(
-                ui,
-                format!("#{} ×{}", item.item_definition_ref, item.count),
-                ActionBarCommand::MoveToBackpack(item.handle),
-            );
-        }
-        if !any {
-            ui.label(tr("Brak dostępnych przedmiotów", "No available items"));
-        }
-    });
-    ui.menu_button(tr("Otwórz widoczne zwłoki", "Open visible corpse"), |ui| {
-        let mut any = false;
-        for entity in &state.entities {
-            if entity.kind == EntityKind::Corpse
-                && let EntityDetail::Object {
-                    item_handle: Some(handle),
-                    item_definition_ref,
-                    ..
-                } = entity.detail
-            {
-                any = true;
+    if spells.is_empty() {
+        unavailable_assignment_category(
+            ui,
+            ASSIGNMENT_CATEGORY_LABELS[0][usize::from(english)],
+            tr(
+                "Brak katalogu zaklęć bieżącej sesji.",
+                "No authoritative spell catalogue is available for this session.",
+            ),
+        );
+    } else {
+        ui.menu_button(ASSIGNMENT_CATEGORY_LABELS[0][usize::from(english)], |ui| {
+            for spell in spells.iter().take(256) {
                 choose(
                     ui,
-                    format!(
-                        "{} #{} ({}, {})",
-                        tr("Zwłoki", "Corpse"),
-                        item_definition_ref,
-                        entity.position.x,
-                        entity.position.y
-                    ),
-                    ActionBarCommand::OpenItem(handle),
+                    spell.label.clone(),
+                    ActionBarCommand::CastSpell {
+                        spell: spell.spell,
+                        target: spell.target,
+                        aim_at_target: spell.aim_at_target,
+                    },
                 );
             }
-        }
-        if !any {
-            ui.label(tr("Brak widocznych zwłok", "No visible corpse"));
-        }
-    });
-    ui.menu_button(tr("Kanały czatu", "Chat channels"), |ui| {
-        for (label, room) in [
-            (tr("Pomoc", "Help"), ChatRoom::Help),
-            (tr("Świat", "World"), ChatRoom::World),
-            ("English", ChatRoom::English),
-            (tr("Reklamy", "Advertising"), ChatRoom::Advertising),
-        ] {
-            choose(
-                ui,
-                label.into(),
-                ActionBarCommand::Chat(ChatIntent::OpenRoom(room)),
-            );
-        }
-    });
+        });
+    }
+    for labels in &ASSIGNMENT_CATEGORY_LABELS[1..] {
+        unavailable_assignment_category(
+            ui,
+            labels[usize::from(english)],
+            tr(
+                "Ta kategoria nie ma jeszcze bezpiecznego wykonania w bieżącej sesji.",
+                "This category has no safe session-backed execution yet.",
+            ),
+        );
+    }
+    ui.separator();
     if ui.button(tr("Wyczyść pole", "Clear slot")).clicked() {
         let _ = bar.assign(slot, None);
         ui.close();
     }
+}
+
+fn unavailable_assignment_category(ui: &mut egui::Ui, label: &str, reason: &str) {
+    ui.add_enabled(false, egui::Button::new(label))
+        .on_disabled_hover_text(reason);
+}
+
+fn lock_assignment_control(ui: &mut egui::Ui, locked: &mut bool, english: bool) -> egui::Response {
+    ui.add_enabled(
+        false,
+        egui::Checkbox::new(
+            locked,
+            if english {
+                "Lock assignments"
+            } else {
+                "Zablokuj przypisania"
+            },
+        ),
+    )
+    .on_disabled_hover_text(if english {
+        "Unavailable until pointer drag/drop assignment is implemented."
+    } else {
+        "Niedostępne do czasu wdrożenia przypisywania przez przeciąganie."
+    })
 }
 
 pub fn preferences_editor(
@@ -437,10 +426,7 @@ pub fn preferences_editor(
             ui.collapsing(row_label(row, english), |ui| {
                 ui.horizontal(|ui| {
                     ui.checkbox(&mut draft.visible, tr("Widoczny", "Visible"));
-                    ui.checkbox(
-                        &mut draft.locked,
-                        tr("Zablokuj przypisania", "Lock assignments"),
-                    );
+                    lock_assignment_control(ui, &mut draft.locked, english);
                 });
                 for (slot, shortcut) in draft.shortcuts.iter_mut().enumerate() {
                     ui.horizontal(|ui| {
@@ -574,9 +560,43 @@ pub fn shortcut_label(shortcut: SlotShortcut) -> String {
     parts.join("+")
 }
 
+fn visible_shortcut_label(
+    preferences: &oteryn_client::action_bar::ActionRowPreferences,
+    slot: usize,
+    chat_on: bool,
+) -> String {
+    let (primary, secondary) = if chat_on {
+        (
+            preferences.chat_on_shortcuts.get(slot).copied().flatten(),
+            preferences
+                .chat_on_secondary_shortcuts
+                .get(slot)
+                .copied()
+                .flatten(),
+        )
+    } else {
+        (
+            preferences.shortcuts.get(slot).copied().flatten(),
+            preferences.secondary_shortcuts.get(slot).copied().flatten(),
+        )
+    };
+    let label = [primary, secondary]
+        .into_iter()
+        .flatten()
+        .map(shortcut_label)
+        .collect::<Vec<_>>()
+        .join(" / ");
+    if label.is_empty() {
+        "—".into()
+    } else {
+        label
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oteryn_session::{ChatIntent, ChatRoom};
 
     #[test]
     fn vertical_scrolling_clips_text_without_repositioning_the_two_lines()
@@ -709,9 +729,13 @@ mod tests {
     }
 
     #[test]
-    fn disabled_rows_reject_clicks_and_assignment_menus() -> Result<(), Box<dyn std::error::Error>>
-    {
-        let mut bar = ActionBar::new(ActionBarPreferences::default(), &[])?;
+    fn disabled_rows_reject_clicks_and_assignment_menus_while_lock_still_allows_the_menu()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let preferences = ActionBarPreferences {
+            locked: true,
+            ..Default::default()
+        };
+        let mut bar = ActionBar::new(preferences, &[])?;
         let command = ActionBarCommand::Chat(ChatIntent::OpenRoom(ChatRoom::Help));
         bar.assign(
             0,
@@ -743,8 +767,17 @@ mod tests {
                 body,
                 enabled,
             );
-            ctx.end_pass().textures_delta.clear();
-            commands
+            let mut output = ctx.end_pass();
+            output.textures_delta.clear();
+            let text = output
+                .shapes
+                .iter()
+                .filter_map(|shape| match &shape.shape {
+                    egui::epaint::Shape::Text(text) => Some(text.galley.job.text.clone()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            (commands, text)
         };
         for _ in 0..2 {
             frame(true, Vec::new());
@@ -761,8 +794,16 @@ mod tests {
                 },
             ]
         };
-        assert!(frame(false, pointer(egui::PointerButton::Primary, true)).is_empty());
-        assert!(frame(false, pointer(egui::PointerButton::Primary, false)).is_empty());
+        assert!(
+            frame(false, pointer(egui::PointerButton::Primary, true))
+                .0
+                .is_empty()
+        );
+        assert!(
+            frame(false, pointer(egui::PointerButton::Primary, false))
+                .0
+                .is_empty()
+        );
         frame(false, pointer(egui::PointerButton::Secondary, true));
         frame(false, pointer(egui::PointerButton::Secondary, false));
         assert!(!egui::Popup::is_any_open(&ctx));
@@ -770,12 +811,16 @@ mod tests {
         frame(true, pointer(egui::PointerButton::Secondary, true));
         frame(true, pointer(egui::PointerButton::Secondary, false));
         assert!(egui::Popup::is_any_open(&ctx));
+        let (_, popup_text) = frame(true, Vec::new());
+        for category in ASSIGNMENT_CATEGORY_LABELS.map(|labels| labels[1]) {
+            assert!(popup_text.iter().any(|text| text == category));
+        }
         frame(false, Vec::new());
         assert!(!egui::Popup::is_any_open(&ctx));
         frame(true, Vec::new());
         frame(true, pointer(egui::PointerButton::Primary, true));
         assert_eq!(
-            frame(true, pointer(egui::PointerButton::Primary, false)),
+            frame(true, pointer(egui::PointerButton::Primary, false)).0,
             vec![command]
         );
         Ok(())
@@ -822,6 +867,63 @@ mod tests {
             "Shift+Ctrl+Alt+A"
         );
         Ok(())
+    }
+
+    #[test]
+    fn visible_shortcuts_follow_chat_context_and_include_both_chords() {
+        let mut preferences = oteryn_client::action_bar::ActionRowPreferences::default();
+        preferences.shortcuts[0] = Some(SlotShortcut {
+            key: 4,
+            modifiers: 0,
+        });
+        preferences.secondary_shortcuts[0] = Some(SlotShortcut {
+            key: 5,
+            modifiers: 2,
+        });
+        preferences.chat_on_shortcuts[0] = Some(SlotShortcut {
+            key: 6,
+            modifiers: 1,
+        });
+        preferences.chat_on_secondary_shortcuts[0] = Some(SlotShortcut {
+            key: 7,
+            modifiers: 4,
+        });
+        assert_eq!(visible_shortcut_label(&preferences, 0, false), "A / Ctrl+B");
+        assert_eq!(
+            visible_shortcut_label(&preferences, 0, true),
+            "Shift+C / Alt+D"
+        );
+        assert_eq!(visible_shortcut_label(&preferences, 49, false), "—");
+    }
+
+    #[test]
+    fn assignment_menu_uses_the_observed_categories_only() {
+        assert_eq!(
+            ASSIGNMENT_CATEGORY_LABELS.map(|labels| labels[1]),
+            [
+                "Spell",
+                "Object",
+                "Multi-Action",
+                "Text",
+                "Passive Ability",
+                "Hotkey",
+            ]
+        );
+    }
+
+    #[test]
+    fn save_only_lock_control_is_disabled_and_preserves_imported_state() {
+        for initial in [false, true] {
+            let ctx = egui::Context::default();
+            let mut locked = initial;
+            let mut enabled = true;
+            let mut output = ctx.run_ui(Default::default(), |ui| {
+                enabled = lock_assignment_control(ui, &mut locked, true).enabled();
+            });
+            output.textures_delta.clear();
+            assert!(!enabled);
+            assert_eq!(locked, initial);
+        }
     }
 
     #[test]

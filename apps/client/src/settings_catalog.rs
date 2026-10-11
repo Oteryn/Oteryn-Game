@@ -121,14 +121,14 @@ pub fn validate_future_preferences(
             "invalid future preferences",
         )
     };
-    // Bound the map by the finite catalogue. Expanding HUD conditions must not
-    // make an otherwise valid complete set of preferences impossible to save.
-    // Unknown keys and the existing serialized byte limit are still rejected below.
+    // Bound the map by the finite catalogue plus the explicitly retained hidden
+    // compatibility values. Unknown keys and the serialized byte limit remain
+    // rejected below.
     let catalogue_capacity: usize = SETTINGS_SECTIONS
         .iter()
         .map(|section| section.options.len())
         .sum::<usize>()
-        + 1; // Retained, hidden compatibility value: effects.effects.indoor_light.
+        + 3;
     if values.len() > catalogue_capacity {
         return Err(invalid());
     }
@@ -145,10 +145,17 @@ pub fn validate_future_preferences(
                 })
             })
             .map(|option| option.kind)
-            // Older Oteryn drafts exposed indoor and cloud attenuation separately. The
-            // reference has one combined row, so keep the old indoor value loadable without
-            // advertising a second control in navigation or search.
-            .or_else(|| (key == "effects.effects.indoor_light").then_some(PERCENT))
+            .or(match key.as_str() {
+                // Older Oteryn drafts exposed indoor and cloud attenuation separately.
+                // The reference has one combined row, so keep the old indoor value loadable
+                // without advertising a second control in navigation or search.
+                "effects.effects.indoor_light" => Some(PERCENT),
+                // Food and item movement were previously stored under UI Sounds. They belong
+                // to the observed Sound / Item group; retain the old keys without exposing
+                // duplicate controls or search results.
+                "ui_sounds.sound.eating" | "ui_sounds.sound.item_movement" => Some(Toggle),
+                _ => None,
+            })
             .ok_or_else(invalid)?;
         let valid = match (kind, value) {
             (Toggle, FutureValue::Bool(_)) => true,
@@ -303,6 +310,25 @@ const MOUSE_PRESETS: &[LocalizedChoice] = &[
         en: "Left Smart-Click",
     },
 ];
+// Visible only while Classic Controls is selected. Membership was inspected in
+// the live reference draft and cancelled without applying the account change.
+const CLASSIC_LOOT_BUTTONS: &[LocalizedChoice] = &[
+    LocalizedChoice {
+        id: "right",
+        pl: "Prawy",
+        en: "Right",
+    },
+    LocalizedChoice {
+        id: "shift_right",
+        pl: "SHIFT+Prawy",
+        en: "SHIFT+Right",
+    },
+    LocalizedChoice {
+        id: "left",
+        pl: "Lewy",
+        en: "Left",
+    },
+];
 const ANTIALIASING: &[LocalizedChoice] = &[
     LocalizedChoice {
         id: "none",
@@ -373,6 +399,32 @@ pub const CONTAINER_SORT_CHOICES: &[LocalizedChoice] = &[
     LocalizedChoice { id: "expiry_descending", pl: "Termin wygaśnięcia malejąco", en: "Expiry descending" },
 ];
 
+/// The complete Tibia Global settings navigation established by the private
+/// reference audit. Additional catalogue sections are compatibility/storage
+/// scope and must not leak into this 20-page surface.
+pub const REFERENCE_SETTINGS_SECTION_IDS: [&str; 20] = [
+    "basic",
+    "controls",
+    "general_hotkeys",
+    "action_hotkeys",
+    "custom_hotkeys",
+    "interface",
+    "hud",
+    "console",
+    "game_window",
+    "action_bars",
+    "shortcuts",
+    "graphics",
+    "effects",
+    "sound",
+    "battle_sounds",
+    "ui_sounds",
+    "miscellaneous",
+    "gameplay",
+    "screenshots",
+    "help",
+];
+
 #[rustfmt::skip]
 pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
     section!("basic", "Podstawowe", "Basic Options", [
@@ -386,6 +438,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("controls.turn_alt", "Obracanie: Alt", "Turn: Alt", Toggle, "movement actions"),
         p!("controls.complete_stack_ctrl", "Ctrl do przenoszenia całych stosów", "Press CTRL to Drag Complete Stacks", Toggle, "item-move amount intent"),
         p!("controls.mouse_preset", "Schemat sterowania myszą", "Mouse control preset", Choice(MOUSE_PRESETS), "input router"),
+        p!("controls.loot_button", "Przycisk łupienia", "Loot button", Choice(CLASSIC_LOOT_BUTTONS), "input router"),
         r!("controls.movement", "Klawisze kierunków", "Movement keys", Binding, "movement_keys"),
         q!("controls.rotation", "Modyfikator obracania postaci", "Turn modifier", Binding, "movement actions"),
         q!("controls.held_keys", "Działanie przytrzymanych klawiszy", "Held-key behavior", UNKNOWN_CHOICES, "input router"),
@@ -617,7 +670,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         r!("graphics.width", "Szerokość okna", "Window width", Integer { min: 800, max: 3840 }, "window_width"),
         r!("graphics.height", "Wysokość okna", "Window height", Integer { min: 600, max: 2160 }, "window_height"),
         r!("graphics.vsync", "Synchronizacja pionowa", "VSync", Toggle, "vsync"),
-        r!("graphics.fps", "Limit FPS (0: bez limitu)", "FPS limit (0: unlimited)", Integer { min: 0, max: 360 }, "fps"),
+        r!("graphics.fps", "Limit FPS (0: bez limitu)", "FPS limit (0: unlimited)", Integer { min: 0, max: 200 }, "fps"),
         r!("graphics.background_fps", "Limit FPS w tle", "Background FPS limit", Integer { min: 5, max: 60 }, "background_fps"),
         p!("graphics.engine", "Obsługiwany silnik graficzny", "Supported graphics engine", UNKNOWN_CHOICES, "renderer capabilities"),
         p!("graphics.antialiasing", "Wygładzanie obrazu", "Antialiasing", Choice(ANTIALIASING), "renderer capabilities"),
@@ -642,6 +695,8 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("sound.music", "Muzyka", "Music volume", PERCENT, "audio mixer"),
         p!("sound.ambience", "Dźwięki otoczenia", "Ambience volume", PERCENT, "audio mixer"),
         p!("sound.items", "Dźwięki przedmiotów", "Item volume", PERCENT, "audio mixer"),
+        p!("sound.eating", "Jedzenie i napoje", "Food and Beverages", Toggle, "item-use audio"),
+        p!("sound.item_movement", "Przenoszenie przedmiotów", "Move Item", Toggle, "inventory audio"),
         p!("sound.events", "Dźwięki zdarzeń", "Event volume", PERCENT, "audio mixer"),
         q!("sound.background_mute", "Wycisz w tle", "Mute in background", Toggle, "audio mixer"),
         n!("sound.anthem", "Odtwarzaj hymn", "Play anthem", Toggle, "audio event policy", "soundAnthemEnabled"),
@@ -667,8 +722,6 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
     section!("ui_sounds", "Dźwięki interfejsu", "UI Sounds", [
         p!("sound.ui", "Głośność interfejsu", "UI volume", PERCENT, "UI audio"),
         p!("sound.interactions", "Kliknięcia i interakcje", "UI interactions", Toggle, "UI audio"),
-        p!("sound.item_movement", "Przenoszenie przedmiotów", "Item movement", Toggle, "inventory audio"),
-        p!("sound.eating", "Jedzenie", "Eating", Toggle, "item-use audio"),
         p!("sound.party_notice", "Powiadomienia drużyny", "Party notifications", Toggle, "social audio"),
         p!("sound.vip_notice", "Powiadomienia znajomych", "VIP notifications", Toggle, "social audio"),
         p!("sound.chat_channels", "Dźwięki wybranych kanałów", "Chat-channel sounds", Action, "chat audio filters"),
@@ -696,7 +749,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("misc.quick_login", "Szybkie logowanie", "Quick login", Toggle, "approved device-session contract"),
     ]),
     section!("gameplay", "Rozgrywka", "Gameplay", [
-        p!("gameplay.inspect_permission", "Zezwalaj na oglądanie postaci", "Allow character inspection", Toggle, "inspection authority"),
+        p!("gameplay.inspect_permission", "Pozwól wszystkim oglądać postać", "Allow All to Inspect Me", Toggle, "inspection authority"),
         p!("gameplay.cancel_chase", "Przerywaj pościg przy ruchu", "Cancel chase on movement", Toggle, "combat commands"),
         p!("gameplay.nearby_corpses", "Łupienie pobliskich ciał", "Loot nearby corpses", Toggle, "accepted loot commands"),
     ]),
@@ -714,7 +767,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         p!("gift_of_life", "Aktywacja daru życia", "Gift of Life Triggered", Toggle, "capture event pipeline"),
         q!("capture.manual", "Zrób zrzut ekranu", "Take screenshot", Action, "renderer capture"),
         q!("capture.folder", "Folder zrzutów", "Screenshot folder", Text { max_bytes: 1024 }, "capture storage"),
-        p!("capture.game_only", "Tylko obszar gry", "Game-only capture", Toggle, "renderer capture"),
+        s!("capture.game_only", "Tylko obszar gry", "Game-only capture", Toggle, "native renderer viewport crop"),
         p!("capture.backlog", "Pięciosekundowy bufor zrzutów", "Five-second backlog", Toggle, "bounded capture buffer"),
         p!("capture.progression", "Przy awansie i postępie", "Progression events", Toggle, "progression events"),
         p!("capture.achievements", "Przy osiągnięciu", "Achievement events", Toggle, "achievement events"),
@@ -823,6 +876,13 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         q!("notifications.vip", "Zdarzenia znajomych", "VIP events", Toggle, "social notification events"),
     ]),
 ];
+
+/// Ordered settings sections rendered by the reference-compatible Options UI.
+#[must_use]
+pub fn reference_settings_sections() -> &'static [SettingsSection] {
+    &SETTINGS_SECTIONS[..REFERENCE_SETTINGS_SECTION_IDS.len()]
+}
+
 #[cfg(test)]
 #[rustfmt::skip]
 mod tests {
@@ -839,6 +899,13 @@ mod tests {
                 assert!(!option.pl.is_empty() && !option.en.is_empty());
             }
         }
+        assert_eq!(
+            reference_settings_sections()
+                .iter()
+                .map(|section| section.id)
+                .collect::<Vec<_>>(),
+            REFERENCE_SETTINGS_SECTION_IDS
+        );
         for page in ["basic", "controls", "general_hotkeys", "action_hotkeys", "custom_hotkeys",
             "interface", "hud", "console", "game_window", "action_bars", "shortcuts", "graphics",
             "effects", "sound", "battle_sounds", "ui_sounds", "miscellaneous", "gameplay", "screenshots", "help"] {
@@ -851,10 +918,20 @@ mod tests {
         assert!(validate_future_preferences(&BTreeMap::new()).is_ok());
         let accepted = BTreeMap::from([("sound.sound.master".to_owned(), FutureValue::Int(50))]);
         validate_future_preferences(&accepted)?;
-        let retained_legacy = BTreeMap::from([(
-            "effects.effects.indoor_light".to_owned(),
-            FutureValue::Int(65),
-        )]);
+        let retained_legacy = BTreeMap::from([
+            (
+                "effects.effects.indoor_light".to_owned(),
+                FutureValue::Int(65),
+            ),
+            (
+                "ui_sounds.sound.eating".to_owned(),
+                FutureValue::Bool(true),
+            ),
+            (
+                "ui_sounds.sound.item_movement".to_owned(),
+                FutureValue::Bool(false),
+            ),
+        ]);
         validate_future_preferences(&retained_legacy)?;
         assert!(SETTINGS_SECTIONS.iter().all(|section| section
             .options
@@ -875,6 +952,24 @@ mod tests {
         ] {
             assert!(validate_future_preferences(&BTreeMap::from([(key.to_owned(), value)])).is_err());
         }
+        Ok(())
+    }
+    #[test]
+    fn observed_item_sound_children_belong_only_to_the_sound_page() -> Result<(), &'static str> {
+        let sound = SETTINGS_SECTIONS.iter().find(|section| section.id == "sound").ok_or("sound")?;
+        let ui = SETTINGS_SECTIONS.iter().find(|section| section.id == "ui_sounds").ok_or("ui sounds")?;
+        for (id, label) in [
+            ("sound.eating", "Food and Beverages"),
+            ("sound.item_movement", "Move Item"),
+        ] {
+            assert_eq!(sound.options.iter().find(|option| option.id == id).map(|option| option.en), Some(label));
+            assert!(ui.options.iter().all(|option| option.id != id));
+        }
+        let gameplay = SETTINGS_SECTIONS.iter().find(|section| section.id == "gameplay").ok_or("gameplay")?;
+        assert_eq!(
+            gameplay.options.iter().find(|option| option.id == "gameplay.inspect_permission").map(|option| option.en),
+            Some("Allow All to Inspect Me")
+        );
         Ok(())
     }
     #[test]
@@ -900,6 +995,157 @@ mod tests {
         let value = std::collections::BTreeMap::from([("containers.containers.sort_order".into(),
             FutureValue::Choice("amount_descending".into()))]);
         assert!(validate_future_preferences(&value).is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn screenshot_catalog_enables_only_the_consumed_game_viewport_choice() {
+        assert_eq!(
+            runtime_consumer("screenshots.capture.game_only"),
+            Some("native renderer viewport crop")
+        );
+        for pending in [
+            "screenshots.capture.backlog",
+            "screenshots.auto",
+            "screenshots.level",
+            "screenshots.skill",
+        ] {
+            assert_eq!(runtime_consumer(pending), None, "{pending}");
+        }
+    }
+
+    #[test]
+    fn runtime_enabled_catalogue_is_an_explicit_audited_allowlist() {
+        use std::collections::BTreeMap;
+
+        let stored: BTreeMap<_, _> = SETTINGS_SECTIONS
+            .iter()
+            .flat_map(|section| section.options.iter().map(move |option| (section, option)))
+            .filter_map(|(section, option)| match option.implementation {
+                Implementation::Stored { consumer } => {
+                    Some((format!("{}.{}", section.id, option.id), consumer))
+                }
+                Implementation::Implemented { .. } | Implementation::Pending { .. } => None,
+            })
+            .collect();
+        let expected_stored: BTreeMap<_, _> = [
+            ("action_bars.bars.item_amounts", "action-bar renderer"),
+            ("action_bars.bars.labels", "action-bar renderer"),
+            ("action_bars.bars.tooltips", "action-bar renderer"),
+            ("console.console.font_size", "chat text renderer"),
+            ("effects.effects.ambient_light", "scene lighting overlay"),
+            ("effects.effects.lighting", "scene lighting overlay"),
+            ("game_window.window.target_marking", "scene target projection"),
+            ("graphics.graphics.fps_indicator", "frame diagnostics overlay"),
+            ("hud.arc_size_preset", "own-resource HUD"),
+            ("hud.harmony_position", "own-resource HUD"),
+            ("hud.hud.arc_distance", "own-resource HUD"),
+            ("hud.hud.arc_opacity", "own-resource HUD"),
+            ("hud.hud.arcs", "own-resource HUD"),
+            ("hud.hud.creatures_enabled", "visible-actor HUD"),
+            ("hud.hud.other_health", "visible-actor HUD"),
+            ("hud.hud.owner_health", "own-resource HUD"),
+            ("hud.hud.owner_mana", "own-resource HUD"),
+            ("hud.hud.owner_name", "own-character HUD"),
+            ("hud.hud.player_enabled", "own-resource HUD"),
+            ("hud.hud.resource_bars", "own-resource HUD"),
+            ("hud.show_harmony", "own-resource HUD"),
+            ("interface.interface.highlight_mouse", "scene hover projection"),
+            ("screenshots.capture.game_only", "native renderer viewport crop"),
+        ]
+        .into_iter()
+        .map(|(key, consumer)| (key.to_owned(), consumer))
+        .collect();
+        assert_eq!(stored, expected_stored, "a Stored row requires a reviewed runtime consumer");
+
+        let implemented: BTreeMap<_, _> = SETTINGS_SECTIONS
+            .iter()
+            .flat_map(|section| section.options.iter().map(move |option| (section, option)))
+            .filter_map(|(section, option)| match option.implementation {
+                Implementation::Implemented { field } => {
+                    Some((format!("{}.{}", section.id, option.id), field))
+                }
+                Implementation::Stored { .. } | Implementation::Pending { .. } => None,
+            })
+            .collect();
+        let expected_implemented: BTreeMap<_, _> = [
+            ("action_bars.bars.bottom_rows", "action_bottom_rows"),
+            ("action_bars.bars.bottom_visible", "action_bottom_enabled"),
+            ("action_bars.bars.left_rows", "action_left_rows"),
+            ("action_bars.bars.left_visible", "action_left_enabled"),
+            ("action_bars.bars.right_rows", "action_right_rows"),
+            ("action_bars.bars.right_visible", "action_right_enabled"),
+            ("basic.basic.click_walk", "click_to_walk"),
+            ("basic.basic.ui_scale", "ui_scale"),
+            ("console.console.visible", "show_chat"),
+            ("controls.controls.movement", "movement_keys"),
+            ("graphics.graphics.background_fps", "background_fps"),
+            ("graphics.graphics.fps", "fps"),
+            ("graphics.graphics.fullscreen", "fullscreen"),
+            ("graphics.graphics.height", "window_height"),
+            ("graphics.graphics.vsync", "vsync"),
+            ("graphics.graphics.width", "window_width"),
+            ("interface.interface.contrast", "high_contrast"),
+            ("interface.interface.english", "english"),
+            ("interface.interface.reduced_motion", "reduced_motion"),
+            ("panels.panels.battle", "show_battle"),
+            ("panels.panels.inventory", "show_inventory"),
+            ("panels.panels.minimap", "show_minimap"),
+        ]
+        .into_iter()
+        .map(|(key, field)| (key.to_owned(), field))
+        .collect();
+        assert_eq!(
+            implemented, expected_implemented,
+            "an Implemented row requires a reviewed live field"
+        );
+    }
+
+    #[test]
+    fn observed_reference_dropdowns_contain_only_captured_choices() -> Result<(), &'static str> {
+        let observed: &[(&str, &str, &[&str])] = &[
+            (
+                "controls",
+                "controls.mouse_preset",
+                &["Classic Controls", "Regular Controls", "Left Smart-Click"],
+            ),
+            (
+                "controls",
+                "controls.loot_button",
+                &["Right", "SHIFT+Right", "Left"],
+            ),
+            (
+                "interface",
+                "interface.colourise_loot_value",
+                &["None", "Frames", "Corners"],
+            ),
+            (
+                "game_window",
+                "window.target_marking",
+                &["Frame & Highlight", "Frame Only", "Highlight Only", "None"],
+            ),
+            (
+                "graphics",
+                "graphics.antialiasing",
+                &["None", "Antialiasing", "Smooth Retro"],
+            ),
+        ];
+        for (section_id, option_id, expected) in observed {
+            let option = SETTINGS_SECTIONS
+                .iter()
+                .find(|section| section.id == *section_id)
+                .and_then(|section| section.options.iter().find(|option| option.id == *option_id))
+                .ok_or("observed dropdown")?;
+            let OptionKind::Choice(choices) = option.kind else {
+                return Err("observed dropdown has the wrong control type");
+            };
+            assert_eq!(
+                choices.iter().map(|choice| choice.en).collect::<Vec<_>>(),
+                *expected,
+                "unexpected choices for {option_id}"
+            );
+            assert!(choices.iter().all(|choice| !choice.id.is_empty()));
+        }
         Ok(())
     }
     #[test]
