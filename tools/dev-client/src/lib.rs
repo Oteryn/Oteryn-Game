@@ -88,6 +88,8 @@ pub enum DevClientError {
     ActorSpell(ActorSpellError),
     /// A chat intent or chat payload failed its codec.
     Chat(ChatWireError),
+    /// The attack codec failed (the same error type as chat, kept distinct by the variant).
+    Attack(ChatWireError),
     /// A capability-4 item payload failed its codec.
     ItemView(ItemViewWireError),
     /// The server closed, or replied with something other than `ServerAccepted`, before
@@ -219,6 +221,7 @@ impl From<SessionError> for DevClientError {
             SessionError::WorldObject(error) => Self::WorldObject(error),
             SessionError::ActorSpell(error) => Self::ActorSpell(error),
             SessionError::Chat(error) => Self::Chat(error),
+            SessionError::Attack(error) => Self::Attack(error),
             SessionError::ItemView(error) => Self::ItemView(error),
             SessionError::NotAdmitted(message_type) => Self::NotAdmitted(message_type),
             SessionError::AdmissionRefused { code } => Self::AdmissionRefused { code },
@@ -356,6 +359,7 @@ impl fmt::Display for DevClientError {
             ),
             Self::Protocol(error) => write!(formatter, "FND-02 protocol error: {error}"),
             Self::Chat(error) => write!(formatter, "chat codec failed: {error:?}"),
+            Self::Attack(error) => write!(formatter, "attack codec failed: {error:?}"),
             Self::ItemView(error) => write!(formatter, "item codec failed: {error:?}"),
             Self::WorldSpatial(error) => {
                 write!(formatter, "WORLD_SPATIAL decode failed: {error:?}")
