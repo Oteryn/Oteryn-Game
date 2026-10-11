@@ -8,8 +8,8 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/b6-evidence-bind-1-20261011
-pr: null
-base_sha: a803e4127
+pr: 1996
+base_sha: d538d5d97
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -115,7 +115,7 @@ workflow.
 
 ## PR and closeout
 
-- PR: null
+- PR: 1996
 - ownership release: after merge
 
 ## Context checkpoint
@@ -125,7 +125,7 @@ last_progress: check bound to the checkout, negative cases verified
 status: completed
 branch: claude/b6-evidence-bind-1-20261011
 head_sha: null
-pr: null
+pr: 1996
 final_head_sha: null
 next_action: control plane review and freeze
 ```
