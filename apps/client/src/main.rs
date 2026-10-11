@@ -1,6 +1,9 @@
 #[cfg(any(windows, test))]
 #[cfg_attr(test, allow(dead_code))]
 mod actor_hud;
+#[cfg(any(windows, test))]
+#[cfg_attr(test, allow(dead_code))]
+mod chat_output;
 #[cfg(windows)]
 mod login_backdrop;
 #[cfg(windows)]

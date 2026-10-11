@@ -105,6 +105,7 @@ pub struct GameUi {
     chat_select_all_request: bool,
     chat_composer_id: Option<egui::Id>,
     chat_recipient_id: Option<egui::Id>,
+    chat_output_id: Option<egui::Id>,
     notice: Option<String>,
     action_bar: Option<ActionBar>,
     minimap: Option<(LoadedMinimap, egui::TextureHandle)>,
@@ -374,6 +375,9 @@ impl GameUi {
             ctx.memory_mut(|memory| memory.surrender_focus(id));
         }
         if let Some(id) = self.chat_recipient_id {
+            ctx.memory_mut(|memory| memory.surrender_focus(id));
+        }
+        if let Some(id) = self.chat_output_id.take() {
             ctx.memory_mut(|memory| memory.surrender_focus(id));
         }
     }
@@ -1169,23 +1173,18 @@ impl GameUi {
                             .max_height((ui.available_height() - 36.0).max(12.0))
                             .stick_to_bottom(true)
                             .show(ui, |ui| {
-                                for text in chat_rows(
+                                let contents = chat_rows(
                                     chat,
                                     &state.chat_receipts,
                                     self.channel,
                                     en,
                                     settings,
                                     self.chat_cleared_at[self.channel],
-                                ) {
-                                    if let Some(size) = settings
-                                        .stored_int("console.console.font_size")
-                                        .map(|size| size.clamp(10, 32) as f32)
-                                    {
-                                        ui.label(RichText::new(text).size(size));
-                                    } else {
-                                        ui.label(text);
-                                    }
-                                }
+                                )
+                                .join("\n");
+                                let output =
+                                    crate::chat_output::show(ui, self.channel, &contents, settings);
+                                self.chat_output_id = Some(output.response.id);
                             });
                         ui.horizontal(|ui| {
                             let read_only = self.chat_read_only[self.channel];
@@ -2281,6 +2280,41 @@ mod tests {
         };
         assert!(ui.route_chat_mode_hotkey(action, true, true));
         assert_eq!(ui.chat_mode, ChatMode::Off);
+        Ok(())
+    }
+
+    #[test]
+    fn output_selection_cannot_route_gameplay_and_hidden_chat_releases_its_focus()
+    -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(480.0, 120.0);
+        let mut ui = super::GameUi {
+            draft: "unsent 🦀".into(),
+            ..Default::default()
+        };
+        let (output, _) = frame(&ctx, size, Vec::new(), |ctx| {
+            egui::Area::new(egui::Id::new("chat-output-focus-test"))
+                .show(ctx, |frame_ui| {
+                    frame_ui.set_width(440.0);
+                    crate::chat_output::show(
+                        frame_ui,
+                        0,
+                        "received",
+                        &oteryn_client::settings::ClientSettings::default(),
+                    )
+                })
+                .inner
+        });
+        let id = output.response.id;
+        ui.chat_output_id = Some(id);
+        ctx.memory_mut(|memory| memory.request_focus(id));
+        assert!(!ui.chat_routes_keyboard(&ctx));
+        assert!(ctx.egui_wants_keyboard_input());
+        assert_eq!(ui.chat_mode, ChatMode::Off);
+        ui.relinquish_hidden_chat_focus(&ctx);
+        assert_eq!(ctx.memory(|memory| memory.focused()), None);
+        assert_eq!(ui.chat_output_id, None);
+        assert_eq!(ui.draft, "unsent 🦀");
         Ok(())
     }
 

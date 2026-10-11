@@ -49,7 +49,7 @@ These changes do not qualify full lighting, engine switching or visual 1:1 parit
 | Custom Hotkeys | Partial: observed editor inventory | Text assignments fill the real composer or send through the typed chat intent. Spell/object assignment and legacy bindings are disabled because no authoritative live picker/assignment exists; their persisted presence is not counted as behavior |
 | Interface | Yes | Tile-under-pointer highlighting works. Explicit Native off draws an independently authored Oteryn arrow, Native on restores the OS pointer, and Big doubles the custom arrow around the same pointer hotspot. Specialized text/resize cursors retain their OS semantics; contextual Animated cursor states, native/Big combination acceptance, link-copy warning, loot-colour and expiry remain pending. Fresh native qualification of the custom arrow is required. Oteryn language, contrast, motion and scale controls are intentionally absent from this reference page |
 | HUD | Partial: groups/arcs and all 35 observed conditions | Exact master labels, the two Harmony radio positions and 35 locally drawn condition symbols are present. Own name and harmony use admitted/session data; own health/mana bars/arcs and other-actor health bars consume real projections. Condition controls and ordering are visible but disabled because the protocol exposes no condition projection; native live-session visual acceptance remains pending |
-| Console | Yes | Per-tab read-only, bounded/non-overwriting Save Window, receipt-time timestamps and sequence-cutoff Clear Window work without mutating session history or inventing server timestamps. Chat Off / Chat On / temporary Chat On* own focus and send behavior. Select All now selects the real Unicode composer. Earlier system-clipboard acceptance was overstated: egui-winit had only its in-app fallback. The continuation enables its upstream Windows clipboard backend; external clipboard acceptance is still required. Participants, secondary console, private tabs and event filters remain pending. Legacy text size is retained but has no reference-page control |
+| Console | Yes | Per-tab read-only, bounded/non-overwriting Save Window, receipt-time timestamps and sequence-cutoff Clear Window work without mutating session history or inventing server timestamps. AUTHORING adds immutable received-output selection/copy through upstream egui, with per-channel selection and hidden-output focus release; native qualification is pending. Chat Off / Chat On / temporary Chat On* own focus and send behavior. Select All selects the real Unicode composer. The upstream Windows clipboard backend is compiled; external clipboard acceptance is still required. Participants, secondary console, private tabs and event filters remain pending. Legacy text size is retained but has no reference-page control |
 | Game Window | Yes | Frame & Highlight / Frame Only / Highlight Only / None drive the real target frame and scene overlay. Text/combat/effect projections remain disabled |
 | Action Bars | Partial | Three masters and nine independent 50-slot rows drive the live layout; visible stored hotkey labels affect that renderer. Global lock migration, a single trailing lock per nonempty edge group, clear and primary-button move/swap primitives are tested against in-memory session assignments. Production still has no authoritative spell/object assignment source, so an admitted client starts empty; assignment menus, binding/item-amount/tooltip controls, clear controls and both lock surfaces remain disabled. Those primitives are not counted as reachable behavior. |
 | Shortcuts | Yes, two lists | Add/remove/order edits for destinations with real local compositions affect draft only; Apply updates the live registry and Cancel discards. Clean profiles and Defaults omit Lenshelp; a Lenshelp entry retained from an existing profile remains visible and removable but disabled, and cannot be added while its destination is unverified. |
@@ -478,6 +478,23 @@ Recovery `/workspace/oteryn-client-publication-7898fdf7.bundle`, SHA-256
 Same-head protected-base audit passes, not full repository CI. Native physical
 picker acceptance, original archive interoperability and the combined minimap
 importer are not established by serialization or settings-page captures.
+
+## Immutable chat-output selection — AUTHORING
+
+Received chat rows now use upstream egui's immutable `&str` TextBuffer instead
+of non-selectable labels. Primary dragging selects across Unicode lines and Copy
+emits the actual selected text, while typing/paste/cut cannot edit received
+history. Channel IDs keep selection state separate; a shortened/cleared view
+cannot copy departed lines. Legacy font size and the existing receipt-clock/
+sequence-cutoff projection are preserved. Output focus is not a gameplay/chat
+composer route and is explicitly surrendered when chat is hidden.
+
+Four regressions exercise pointer dragging, actual Copy commands, immutable
+rendered text, channel isolation, stale selection and native input/focus gating.
+Linux client tests pass 209/179/5, strict Clippy and formatting pass. Native
+MSVC/DX12 and live-session selection/OS clipboard acceptance remain pending.
+This does not implement rich-text NPC keywords, external-link warnings, remapped
+Chat Copy actions, private/secondary consoles or unsupported event filters.
 
 ## Required evidence per page/panel
 
