@@ -638,6 +638,7 @@ pub(crate) mod tests {
             skipped_provisional_keys: Vec::new(),
             dropped_teleports: Vec::new(),
             spawns: Default::default(),
+            npcs: Default::default(),
         };
         let tile = |x, y, palettes: &[u32]| Tile {
             x,
