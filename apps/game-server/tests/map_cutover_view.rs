@@ -153,6 +153,7 @@ fn item(key: &str) -> Option<ItemDefinition> {
         solid: Some(false),
         blocks_projectile: false,
         pickupable,
+        door: false,
     })
 }
 
