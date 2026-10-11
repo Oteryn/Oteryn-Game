@@ -8,7 +8,7 @@ status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/npc-talk-1-20261011
-pr: 1
+pr: 1976
 base_sha: null
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
@@ -86,4 +86,4 @@ Content and foundation edits are visibility re-exports only.
 ## PR and closeout
 
 - changed-file review: within owned paths
-- merge commit/result: squash merge of #1
+- merge commit/result: squash merge of #1976
