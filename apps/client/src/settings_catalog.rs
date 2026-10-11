@@ -127,12 +127,13 @@ pub fn validate_future_preferences(
     let catalogue_capacity: usize = SETTINGS_SECTIONS
         .iter()
         .map(|section| section.options.len())
-        .sum();
+        .sum::<usize>()
+        + 1; // Retained, hidden compatibility value: effects.effects.indoor_light.
     if values.len() > catalogue_capacity {
         return Err(invalid());
     }
     for (key, value) in values {
-        let option = SETTINGS_SECTIONS
+        let kind = SETTINGS_SECTIONS
             .iter()
             .find_map(|section| {
                 section.options.iter().find(|option| {
@@ -143,8 +144,13 @@ pub fn validate_future_preferences(
                         )
                 })
             })
+            .map(|option| option.kind)
+            // Older Oteryn drafts exposed indoor and cloud attenuation separately. The
+            // reference has one combined row, so keep the old indoor value loadable without
+            // advertising a second control in navigation or search.
+            .or_else(|| (key == "effects.effects.indoor_light").then_some(PERCENT))
             .ok_or_else(invalid)?;
-        let valid = match (option.kind, value) {
+        let valid = match (kind, value) {
             (Toggle, FutureValue::Bool(_)) => true,
             (Integer { min, max }, FutureValue::Int(value)) => (min..=max).contains(value),
             (Decimal { min, max }, FutureValue::Decimal(value)) => {
@@ -623,12 +629,11 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
     section!("effects", "Efekty graficzne", "Effects", [
         s!("effects.ambient_light", "Światło otoczenia", "Ambient light", PERCENT, "scene lighting overlay"),
         p!("effects.level_separator", "Oddzielenie pięter", "Level separator", PERCENT, "floor projection"),
-        p!("effects.indoor_light", "Tłumienie światła we wnętrzach", "Indoor light attenuation", PERCENT, "lighting renderer"),
-        p!("effects.cloud_light", "Tłumienie światła przez chmury", "Cloud light attenuation", PERCENT, "lighting renderer"),
-        p!("effects.own_opacity", "Widoczność własnych zaklęć", "Own spell opacity", PERCENT, "effect renderer"),
-        p!("effects.other_opacity", "Widoczność zaklęć innych", "Other-player spell opacity", PERCENT, "effect renderer"),
-        p!("effects.creature_opacity", "Widoczność zaklęć stworzeń", "Creature spell opacity", PERCENT, "effect renderer"),
-        p!("effects.boss_opacity", "Widoczność obszarów ataków bossów", "Boss-area spell opacity", PERCENT, "effect renderer"),
+        p!("effects.cloud_light", "Efekt chmur i wnętrz", "Clouds & Indoor Effect", PERCENT, "lighting renderer"),
+        p!("effects.own_opacity", "Efekty własnych zaklęć", "Own Spell Effects", PERCENT, "effect renderer"),
+        p!("effects.other_opacity", "Efekty innych graczy", "Other Players' Effects", PERCENT, "effect renderer"),
+        p!("effects.creature_opacity", "Efekty zaklęć stworzeń", "Creature Spell Effects", PERCENT, "effect renderer"),
+        p!("effects.boss_opacity", "Efekty zaklęć stworzeń w obszarach bossów", "Boss Area Creature Spell Effects", PERCENT, "effect renderer"),
         sn!("effects.lighting", "Efekty oświetlenia", "Lighting effects", Toggle, "scene lighting overlay", "lightEffectsEnabled"),
     ]),
     section!("sound", "Dźwięk", "Sound", [
@@ -846,6 +851,15 @@ mod tests {
         assert!(validate_future_preferences(&BTreeMap::new()).is_ok());
         let accepted = BTreeMap::from([("sound.sound.master".to_owned(), FutureValue::Int(50))]);
         validate_future_preferences(&accepted)?;
+        let retained_legacy = BTreeMap::from([(
+            "effects.effects.indoor_light".to_owned(),
+            FutureValue::Int(65),
+        )]);
+        validate_future_preferences(&retained_legacy)?;
+        assert!(SETTINGS_SECTIONS.iter().all(|section| section
+            .options
+            .iter()
+            .all(|option| option.id != "effects.indoor_light")));
         let encoded = serde_json::to_vec(&accepted)?;
         assert_eq!(accepted, serde_json::from_slice(&encoded)?);
         for (key, value) in [

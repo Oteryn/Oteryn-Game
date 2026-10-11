@@ -29,7 +29,7 @@ implemented.
 | Action Bars | Yes | Three masters/nine independent 50-slot rows, locks, two chords per slot and session action clearing work. Hotkey labels, item amounts and tooltips drive the live action-row renderer |
 | Shortcuts | Yes, two lists | Add/remove/order edits affect draft only; Apply updates live registry, Cancel discards |
 | Graphics | Yes | Fullscreen/VSync/frame limits, live frame-rate readout and the optional FPS overlay work; engine/AA controls stay disabled pending renderer capabilities |
-| Effects | Yes, lighting + opacity groups | Lighting and ambient intensity drive a bounded scene overlay. Floor/cloud/indoor/spell-effect controls stay disabled pending projections/renderers |
+| Effects | Yes, lighting + opacity groups | The Light master gates its retained Ambient, Level Separator and combined Clouds & Indoor children; ambient intensity drives the bounded scene overlay. Level separation, the combined attenuation row and spell-effect controls stay disabled pending projections/renderers |
 | Sound | Yes, device + five volume groups | Food/move-item controls belong in item group; all controls are disabled because no audio backend/content exists |
 | Battle Sounds | Yes, own/others/creatures | Nested spell categories are present but disabled because no mixer/events exist |
 | UI Sounds | Yes, UI/social + console categories | Filters are present but disabled because no audio playback exists |

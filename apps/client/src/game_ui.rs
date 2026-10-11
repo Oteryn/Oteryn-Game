@@ -36,10 +36,7 @@ fn scene_setting_overlays(
     view: &PlayView,
     settings: &ClientSettings,
 ) {
-    if settings.stored_bool("effects.effects.lighting") == Some(true)
-        && let Some(ambient) = settings.stored_int("effects.effects.ambient_light")
-    {
-        let alpha = (((100 - ambient.clamp(0, 100)) as f32 / 100.0) * 190.0).round() as u8;
+    if let Some(alpha) = ambient_overlay_alpha(settings) {
         ctx.layer_painter(egui::LayerId::new(
             egui::Order::Background,
             "scene-ambient-light".into(),
@@ -76,6 +73,13 @@ fn scene_setting_overlays(
             );
         }
     }
+}
+
+fn ambient_overlay_alpha(settings: &ClientSettings) -> Option<u8> {
+    (settings.stored_bool("effects.effects.lighting") == Some(true))
+        .then(|| settings.stored_int("effects.effects.ambient_light"))
+        .flatten()
+        .map(|ambient| (((100 - ambient.clamp(0, 100)) as f32 / 100.0) * 190.0).round() as u8)
 }
 
 #[derive(Default)]
@@ -1376,8 +1380,8 @@ fn chat_feedback(value: ChatDisposition, english: bool) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::{
-        chat_line_text, cycle_chat_channel, export_chat_contents_to, item_button,
-        show_window_recovery,
+        ambient_overlay_alpha, chat_line_text, cycle_chat_channel, export_chat_contents_to,
+        item_button, show_window_recovery,
     };
     use crate::preferences_browser::test_support::{button_position, click, frame};
 
@@ -1414,6 +1418,31 @@ mod tests {
         assert!(ui.route_minimap_hotkey("minimap.west"));
         assert_eq!(ui.minimap_pan, [15, -15]);
         assert!(!ui.route_minimap_hotkey("minimap.floor_up"));
+    }
+
+    #[test]
+    fn ambient_overlay_requires_the_light_master_and_retains_its_bounded_alpha() {
+        let mut settings = oteryn_client::settings::ClientSettings::default();
+        settings.future_preferences.insert(
+            "effects.effects.ambient_light".into(),
+            oteryn_client::settings_catalog::FutureValue::Int(25),
+        );
+        assert_eq!(ambient_overlay_alpha(&settings), None);
+        settings.future_preferences.insert(
+            "effects.effects.lighting".into(),
+            oteryn_client::settings_catalog::FutureValue::Bool(false),
+        );
+        assert_eq!(ambient_overlay_alpha(&settings), None);
+        settings.future_preferences.insert(
+            "effects.effects.lighting".into(),
+            oteryn_client::settings_catalog::FutureValue::Bool(true),
+        );
+        assert_eq!(ambient_overlay_alpha(&settings), Some(143));
+        settings.future_preferences.insert(
+            "effects.effects.ambient_light".into(),
+            oteryn_client::settings_catalog::FutureValue::Int(100),
+        );
+        assert_eq!(ambient_overlay_alpha(&settings), Some(0));
     }
 
     #[test]

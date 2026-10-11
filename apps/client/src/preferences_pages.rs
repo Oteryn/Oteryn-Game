@@ -232,6 +232,18 @@ fn percent(
             .inner
         })
         .inner;
+    #[cfg(test)]
+    ui.ctx().data_mut(|data| {
+        data.insert_temp(
+            egui::Id::new(("preference-percent", key.as_str())),
+            (
+                response.rect,
+                ui.clip_rect(),
+                ui.is_enabled(),
+                response.enabled(),
+            ),
+        );
+    });
     if consumer.is_some() && (response.changed() || (selected.is_none() && response.clicked())) {
         draft
             .future_preferences
@@ -304,20 +316,25 @@ fn effects(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             ["Pokaż efekty światła", "Show Light Effects"],
             en,
         );
-        for (id, labels) in [
-            (
-                "effects.ambient_light",
-                ["Światło otoczenia:", "Ambient Light:"],
-            ),
-            (
-                "effects.level_separator",
-                ["Oddzielenie pięter:", "Level Separator:"],
-            ),
-            ("effects.cloud_light", ["Chmury:", "Cloud Effects:"]),
-            ("effects.indoor_light", ["Wnętrza:", "Indoor Effects:"]),
-        ] {
-            percent(ui, draft, "effects", id, labels, en);
-        }
+        let lighting = draft.stored_bool("effects.effects.lighting") == Some(true);
+        ui.add_enabled_ui(lighting, |ui| {
+            for (id, labels) in [
+                (
+                    "effects.ambient_light",
+                    ["Światło otoczenia:", "Ambient Light:"],
+                ),
+                (
+                    "effects.level_separator",
+                    ["Oddzielenie pięter:", "Level Separator:"],
+                ),
+                (
+                    "effects.cloud_light",
+                    ["Efekt chmur i wnętrz:", "Clouds & Indoor Effect:"],
+                ),
+            ] {
+                percent(ui, draft, "effects", id, labels, en);
+            }
+        });
     });
     boxed(
         ui,
@@ -328,12 +345,24 @@ fn effects(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
         },
         |ui| {
             for (id, labels) in [
-                ("effects.own_opacity", ["Własne:", "Own:"]),
-                ("effects.other_opacity", ["Inni gracze:", "Other Players:"]),
-                ("effects.creature_opacity", ["Stworzenia:", "Creatures:"]),
+                (
+                    "effects.own_opacity",
+                    ["Efekty własnych zaklęć:", "Own Spell Effects:"],
+                ),
+                (
+                    "effects.other_opacity",
+                    ["Efekty innych graczy:", "Other Players' Effects:"],
+                ),
+                (
+                    "effects.creature_opacity",
+                    ["Efekty zaklęć stworzeń:", "Creature Spell Effects:"],
+                ),
                 (
                     "effects.boss_opacity",
-                    ["Obszary zaklęć bossów:", "Boss Area Creature Spells:"],
+                    [
+                        "Efekty zaklęć stworzeń w obszarach bossów:",
+                        "Boss Area Creature Spell Effects:",
+                    ],
                 ),
             ] {
                 percent(ui, draft, "effects", id, labels, en);
@@ -802,6 +831,118 @@ mod tests {
                 });
                 assert_eq!(serde_json::to_value(&draft)?, before, "{section}");
             }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn lighting_master_gates_children_retains_values_and_uses_the_combined_row()
+    -> Result<(), &'static str> {
+        for en in [false, true] {
+            let ctx = egui::Context::default();
+            crate::client_chrome::install(&ctx, false);
+            let size = egui::vec2(560.0, 430.0);
+            let mut draft = ClientSettings::default();
+            for (key, value) in [
+                ("effects.effects.ambient_light", 25),
+                ("effects.effects.level_separator", 80),
+                ("effects.effects.cloud_light", 50),
+                ("effects.effects.indoor_light", 65),
+                ("effects.effects.own_opacity", 100),
+                ("effects.effects.other_opacity", 75),
+                ("effects.effects.creature_opacity", 50),
+                ("effects.effects.boss_opacity", 25),
+            ] {
+                draft
+                    .future_preferences
+                    .insert(key.into(), FutureValue::Int(value));
+            }
+            draft
+                .future_preferences
+                .insert("effects.effects.lighting".into(), FutureValue::Bool(false));
+            let before = draft.future_preferences.clone();
+            let render = |draft: &mut ClientSettings| {
+                frame(&ctx, size, vec![], |ctx| {
+                    egui::Window::new("effects-test")
+                        .default_size([500.0, 380.0])
+                        .show(ctx, |ui| effects(ui, draft, en));
+                })
+                .1
+            };
+            let _ = render(&mut draft);
+            let mut output = render(&mut draft);
+            let enabled = |key: &str| {
+                ctx.data(|data| {
+                    data.get_temp::<(egui::Rect, egui::Rect, bool, bool)>(egui::Id::new((
+                        "preference-percent",
+                        key,
+                    )))
+                })
+                .map(|(_, _, parent, response)| (parent, response))
+            };
+            for key in [
+                "effects.effects.ambient_light",
+                "effects.effects.level_separator",
+                "effects.effects.cloud_light",
+            ] {
+                assert_eq!(enabled(key), Some((false, false)), "{key}");
+            }
+            assert_eq!(enabled("effects.effects.own_opacity"), Some((true, false)));
+            let combined = if en {
+                "Clouds & Indoor Effect: 50%"
+            } else {
+                "Efekt chmur i wnętrz: 50%"
+            };
+            assert!(button_position(&output, size, combined).is_some());
+            for absent in ["Cloud Effects: 50%", "Indoor Effects: 65%"] {
+                assert!(button_position(&output, size, absent).is_none());
+            }
+            assert_eq!(draft.future_preferences, before);
+
+            let (master, clip) = ctx
+                .data(|data| {
+                    data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                        "preference-toggle",
+                        "effects.effects.lighting",
+                    )))
+                })
+                .ok_or("missing light master")?;
+            assert!(clip.contains_rect(master));
+            click(&ctx, size, master.center(), |ctx| {
+                egui::Window::new("effects-test")
+                    .default_size([500.0, 380.0])
+                    .show(ctx, |ui| effects(ui, &mut draft, en));
+            });
+            assert_eq!(draft.stored_bool("effects.effects.lighting"), Some(true));
+            output = render(&mut draft);
+            assert_eq!(enabled("effects.effects.ambient_light"), Some((true, true)));
+            for key in [
+                "effects.effects.level_separator",
+                "effects.effects.cloud_light",
+            ] {
+                assert_eq!(enabled(key), Some((true, false)), "{key}");
+            }
+            assert_eq!(enabled("effects.effects.own_opacity"), Some((true, false)));
+            assert!(button_position(&output, size, combined).is_some());
+            for label in if en {
+                [
+                    "Own Spell Effects: 100%",
+                    "Other Players' Effects: 75%",
+                    "Creature Spell Effects: 50%",
+                    "Boss Area Creature Spell Effects: 25%",
+                ]
+            } else {
+                [
+                    "Efekty własnych zaklęć: 100%",
+                    "Efekty innych graczy: 75%",
+                    "Efekty zaklęć stworzeń: 50%",
+                    "Efekty zaklęć stworzeń w obszarach bossów: 25%",
+                ]
+            } {
+                assert!(button_position(&output, size, label).is_some(), "{label}");
+            }
+            assert_eq!(draft.stored_int("effects.effects.ambient_light"), Some(25));
+            assert_eq!(draft.stored_int("effects.effects.indoor_light"), Some(65));
         }
         Ok(())
     }

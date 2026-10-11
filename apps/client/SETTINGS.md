@@ -104,8 +104,8 @@ panels are recorded in [REFERENCE-AUDIT.md](REFERENCE-AUDIT.md).
   Visible entries include skills, battle/spell/VIP lists, help, quests, compendium,
   cyclopedia, highscores, player guide, party, wheel and unjustified points.
 - Graphics exposes engine, anti-aliasing, fullscreen, integral scaling, VSync and
-  frame limiting. Effects separates ambient light, level separator, indoor/cloud
-  attenuation and own/other/creature/boss-area spell opacity.
+  frame limiting. Effects separates ambient light, level separator, one combined
+  Clouds & Indoor Effect control and own/other/creature/boss-area spell opacity.
 - Sound separates device, master/music/ambience/items/events; combat mixes own,
   other players and creatures with attack/heal/support/weapon/noise/death filters.
   UI audio includes interactions, party/VIP notices and per-channel chat filters.

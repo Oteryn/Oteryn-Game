@@ -177,7 +177,8 @@ impl PreferencesBrowser {
                         if self.overview { overview::show(ui, draft, english); }
                         else if section.id == "basic" { basic_page(ui, draft, english); }
                         else if section.id == "action_bars" { action_bars_page(ui, draft, english, self.action_bar_available, &mut self.clear_action_row); }
-                        else if search.is_empty() && pages::show(ui, draft, section.id, english, &mut self.page_state) {
+                        else if (search.is_empty() || section.id == "effects")
+                            && pages::show(ui, draft, section.id, english, &mut self.page_state) {
                             if let Some(help_action) = self.page_state.take_help_action() {
                                 action = match help_action {
                                     pages::HelpAction::Export => PreferenceAction::ExportOptions,
@@ -1238,6 +1239,54 @@ mod tests {
                 );
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn effects_search_keeps_the_reference_composition_and_light_dependency()
+    -> Result<(), &'static str> {
+        let ctx = egui::Context::default();
+        crate::client_chrome::install(&ctx, false);
+        let size = egui::vec2(900.0, 620.0);
+        let mut browser = PreferencesBrowser::new();
+        browser.overview = false;
+        browser.search = "ambient light".into();
+        browser.section = SETTINGS_SECTIONS
+            .iter()
+            .position(|section| section.id == "effects")
+            .ok_or("effects page")?;
+        let mut draft = ClientSettings {
+            english: true,
+            ..Default::default()
+        };
+        for (key, value) in [
+            ("effects.effects.ambient_light", FutureValue::Int(25)),
+            ("effects.effects.own_opacity", FutureValue::Int(100)),
+        ] {
+            draft.future_preferences.insert(key.into(), value);
+        }
+        draft
+            .future_preferences
+            .insert("effects.effects.lighting".into(), FutureValue::Bool(false));
+
+        let mut output = egui::FullOutput::default();
+        for _ in 0..3 {
+            output = frame(&ctx, size, Vec::new(), |ctx| {
+                browser.show(ctx, &mut draft, None)
+            })
+            .1;
+        }
+        let ambient = ctx
+            .data(|data| {
+                data.get_temp::<(egui::Rect, egui::Rect, bool, bool)>(egui::Id::new((
+                    "preference-percent",
+                    "effects.effects.ambient_light",
+                )))
+            })
+            .ok_or("ambient control")?;
+        assert!(!ambient.2 && !ambient.3);
+        assert!(button_position(&output, size, "Own Spell Effects: 100%").is_some());
+        assert!(button_position(&output, size, "Own spell opacity").is_none());
         Ok(())
     }
 

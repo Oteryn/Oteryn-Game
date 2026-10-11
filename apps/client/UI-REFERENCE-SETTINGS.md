@@ -44,7 +44,7 @@ No original settings were applied, profiles changed, or assignments accepted.
 | Graphics / Engine on Linux | auto-select, Vulkan, OpenGL; platform-specific, not a Windows renderer contract |
 | Graphics / Antialiasing | None, Antialiasing, Smooth Retro |
 | Graphics | Fullscreen, integral-multiple scaling, V-Sync, No Frame Rate Limit, limit slider and measured current FPS |
-| Effects | Light master with dependent ambient light, level separator, clouds/indoor controls; separate own/other/creature/boss-area spell opacity |
+| Effects | Light master with dependent ambient light, level separator and one combined Clouds & Indoor Effect control; separate own/other/creature/boss-area spell opacity |
 | Sound device | auto-select and this machine's Dummy Output; enumerate runtime devices instead of hardcoding |
 | Sound | Master, Music plus Anthem, Ambience, Item plus Food and Beverages / Move Item, Event volume |
 | Battle Sounds | Own and Other Players groups each have volume, Spells with Attack/Healing/Support and Weapons; Creatures have volume, Creature Noises, Death, Attacks and Spells |

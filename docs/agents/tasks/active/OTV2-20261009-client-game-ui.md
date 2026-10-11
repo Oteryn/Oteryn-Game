@@ -197,3 +197,10 @@ to legacy global movement, Escape is exclusive to Stop All, and F10 is available
 to the admitted action-bar/hotkey router while remaining the pre-admission
 settings shortcut. New action-bar defaults use F1–F12. These claims require the
 batch's locked tests, strict Clippy and a new native Windows check before freeze.
+
+## Continuation checkpoint — 2026-10-11 effects dependencies
+
+Effects now has the captured combined Clouds & Indoor row and exact opacity labels.
+Light gates retained Ambient/Level/combined values; opacity stays independent.
+Only Ambient has a runtime consumer; other sliders remain disabled. The former
+separate indoor value is loadable compatibility state, hidden from search.
