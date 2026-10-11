@@ -70,6 +70,9 @@ Follow-ups:
 - WORLD-BUNDLE-ROUTING-1, which waits for #1944: add `content/npcs/definitions/`,
   `content/dialogues/definitions/` and `content/services/` to `WORLD_BUNDLE_INPUT_PREFIXES` in
   `tools/repository/classify_pr_test_lanes.py`, so that NPC catalogue edits run the world_bundle lane.
+  Constraint: it must land with or before the next `tools/repository/**` PR. Until then,
+  `test_classify_pr_test_lanes.py` fails its parity check against the compiler's `INPUT_PATHS`,
+  which already lists these three directories.
 - MAP-CELL-FACTS-1: compile-time cell facts taken from the first top-level ground, with contained
   entries ignored, for spawns and NPC placements alike (the Codex review finding on `compile.rs`).
 
