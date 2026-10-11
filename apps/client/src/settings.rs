@@ -223,7 +223,8 @@ impl ClientSettings {
         match self.version {
             1 => {
                 self.reconcile_active_hotkey_profile()?;
-                self.hotkeys.migrate_v1_reference_defaults();
+                self.hotkeys
+                    .migrate_v1_reference_defaults(&self.movement_keys);
                 self.action_bar = self
                     .hotkeys
                     .active()
@@ -559,6 +560,33 @@ mod tests {
     }
 
     #[test]
+    fn v2_explicitly_cleared_stop_stays_cleared_after_save_and_reload()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut settings = ClientSettings::default();
+        let profile = settings
+            .hotkeys
+            .active_mut()
+            .ok_or_else(|| io::Error::other("missing default profile"))?;
+        profile.general_chat_on.remove("client.stop");
+        profile.general_chat_off.remove("client.stop");
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-settings-v2-cleared-stop-{}.json",
+            std::process::id()
+        ));
+
+        settings.save(&path)?;
+        let restored = ClientSettings::load(&path)?;
+        let profile = restored
+            .hotkeys
+            .active()
+            .ok_or_else(|| io::Error::other("missing restored profile"))?;
+        assert!(!profile.general_chat_on.contains_key("client.stop"));
+        assert!(!profile.general_chat_off.contains_key("client.stop"));
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
     fn v1_action_default_collision_preserves_legacy_chords_and_other_settings()
     -> Result<(), Box<dyn std::error::Error>> {
         let legacy = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 68, 69];
@@ -606,6 +634,59 @@ mod tests {
                 .map(|binding| binding.key),
             Some(58)
         );
+        fs::remove_file(path)?;
+        Ok(())
+    }
+
+    #[test]
+    fn v1_modified_movement_cannot_take_another_directions_fallback()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_input_actions::Modifiers;
+
+        let mut settings = ClientSettings {
+            version: 1,
+            ..ClientSettings::default()
+        };
+        settings
+            .hotkeys
+            .active_mut()
+            .ok_or("default profile")?
+            .general_chat_off
+            .insert(
+                "movement.north".into(),
+                crate::hotkeys::HotkeyPair {
+                    first: Some(crate::settings_catalog::ShortcutBinding {
+                        key: settings.movement_keys[1],
+                        ctrl: true,
+                        alt: false,
+                        shift: false,
+                        meta: false,
+                    }),
+                    second: None,
+                },
+            );
+        let path = std::env::temp_dir().join(format!(
+            "oteryn-settings-v1-movement-fallback-{}.json",
+            std::process::id()
+        ));
+        fs::write(&path, serde_json::to_vec(&settings)?)?;
+
+        let migrated = ClientSettings::load(&path)?;
+        assert_eq!(
+            migrated
+                .hotkeys
+                .active()
+                .ok_or("default profile")?
+                .general_chat_off["movement.north"],
+            crate::hotkeys::HotkeyPair::default()
+        );
+        let east = NormalizedInputEvent::Key {
+            code: KeyCode::new(migrated.movement_keys[1])?,
+            state: ButtonState::Pressed,
+            modifiers: Modifiers::NONE,
+            repeat: false,
+        };
+        assert_eq!(migrated.direction(&[east]), Some(StepDir::East));
         fs::remove_file(path)?;
         Ok(())
     }

@@ -455,10 +455,7 @@ impl GameUi {
                         });
                         ui.small(format!("{fps:.0} FPS"));
                     }
-                    if ui
-                        .small_button(tr("Ustawienia · F10", "Settings · F10"))
-                        .clicked()
-                    {
+                    if ui.small_button(tr("Ustawienia", "Settings")).clicked() {
                         open_settings = true;
                     }
                     if ui
@@ -1073,7 +1070,7 @@ fn show_window_recovery(ctx: &egui::Context, english: bool) -> bool {
         .max_width((rect.width() - 24.0).max(1.0))
         .show(ctx, |ui| {
             open_settings = ui
-                .button(tr("Ustawienia · F10", "Settings · F10"))
+                .button(tr("Ustawienia", "Settings"))
                 .on_hover_text(tr(
                     "Powiększ okno albo zmniejsz skalę interfejsu lub liczbę pasków akcji.",
                     "Enlarge the window, or reduce interface scale or the number of action rows.",
@@ -1541,11 +1538,7 @@ mod tests {
                     })
                     .1;
                 }
-                let label = if english {
-                    "Settings · F10"
-                } else {
-                    "Ustawienia · F10"
-                };
+                let label = if english { "Settings" } else { "Ustawienia" };
                 let position =
                     button_position(&output, size, label).ok_or("recovery control clipped")?;
                 assert!(click(&ctx, size, position, |ctx| show_window_recovery(

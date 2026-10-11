@@ -1,6 +1,16 @@
 use egui::{Align2, RichText};
 use oteryn_client::settings::ClientSettings;
 
+pub(crate) const fn prelogin_settings_hotkey(
+    consumed: bool,
+    login_present: bool,
+    pressed: bool,
+    repeat: bool,
+    f10: bool,
+) -> bool {
+    !consumed && login_present && pressed && !repeat && f10
+}
+
 pub struct SettingsPanel {
     pub current: ClientSettings,
     draft: ClientSettings,
@@ -448,6 +458,16 @@ mod tests {
         PreferencesBrowser,
         test_support::{button_position, click, frame, scroll_geometry},
     };
+
+    #[test]
+    fn prelogin_f10_yields_to_the_binding_editor() {
+        assert!(prelogin_settings_hotkey(false, true, true, false, true));
+        assert!(!prelogin_settings_hotkey(true, true, true, false, true));
+        assert!(!prelogin_settings_hotkey(false, false, true, false, true));
+        assert!(!prelogin_settings_hotkey(false, true, false, false, true));
+        assert!(!prelogin_settings_hotkey(false, true, true, true, true));
+        assert!(!prelogin_settings_hotkey(false, true, true, false, false));
+    }
 
     #[test]
     fn ok_closes_only_after_save_success_while_apply_remains_open() {

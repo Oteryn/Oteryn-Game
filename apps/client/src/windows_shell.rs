@@ -585,11 +585,14 @@ impl ApplicationHandler for Application {
                 self.focused = focused;
             }
             WindowEvent::KeyboardInput { event, .. }
-                if event.state == winit::event::ElementState::Pressed
-                    && !event.repeat
-                    && self.login.is_some()
-                    && event.physical_key
-                        == winit::keyboard::PhysicalKey::Code(winit::keyboard::KeyCode::F10) =>
+                if crate::settings_ui::prelogin_settings_hotkey(
+                    consumed,
+                    self.login.is_some(),
+                    event.state == winit::event::ElementState::Pressed,
+                    event.repeat,
+                    event.physical_key
+                        == winit::keyboard::PhysicalKey::Code(winit::keyboard::KeyCode::F10),
+                ) =>
             {
                 if let Some(ui) = self.login.as_mut() {
                     ui.settings.open = !ui.settings.open;

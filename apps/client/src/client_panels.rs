@@ -494,8 +494,8 @@ fn document(ui: &mut egui::Ui, id: &str, tab: Option<&str>, english: bool) {
             return;
         }
         _ => tr(
-            "F10 otwiera ustawienia. Kierunki ruchu zmienisz w Sterowaniu. Kliknięcie terenu wyznacza drogę; kliknięcie obiektu wybiera go. Prawy przycisk na polu paska akcji otwiera menu przypisania.",
-            "F10 opens settings. Change movement keys in Controls. Clicking terrain sets a walking goal; clicking an object selects it. Right-click an action slot to open its assignment menu.",
+            "Przycisk Ustawienia otwiera ustawienia podczas gry. Kierunki ruchu zmienisz w Sterowaniu. Kliknięcie terenu wyznacza drogę; kliknięcie obiektu wybiera go. Prawy przycisk na polu paska akcji otwiera menu przypisania.",
+            "The Settings button opens settings during play. Change movement keys in Controls. Clicking terrain sets a walking goal; clicking an object selects it. Right-click an action slot to open its assignment menu.",
         ),
     };
     ui.label(text);
