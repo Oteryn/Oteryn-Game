@@ -1816,13 +1816,25 @@ fn realize_fixture_spawns(
         .map_err(|_| BootError::Readiness("creature spawn realization"))
 }
 
-/// SPAWN-1b (CREATURE-AI-0 §6.1): a bundle World realizes the spawn family of its bundle at
-/// Channel activation, before the listener binds. Each creature's initial health is its served
-/// definition's maximum health; a creature the active content does not serve refuses readiness.
-fn realize_bundle_spawns(
+/// The Channel owner window an activation realizes at most one spawn window in
+/// (`CREATUREAI0-RL-14`; the carrier's `spawn::OWNER_WINDOW_MICROS`).
+const SPAWN_ACTIVATION_WINDOW_MICROS: u64 = 50_000;
+
+/// SPAWN-1b (CREATURE-AI-0 §6.1, §6.2): a bundle World realizes the spawn family of its bundle
+/// at Channel activation, before the listener binds. Each creature's initial health is its
+/// served definition's maximum health; a creature the active content does not serve refuses
+/// readiness.
+///
+/// The activation is begun once (every registered ceiling checked, nothing admitted) and then
+/// realized one `CREATUREAI0-RL-14` window (4,096 points) per 50 ms owner window, in canonical
+/// order, on a boot-local monotonic owner clock: the loop waits for the next window boundary
+/// between windows. Any refusal refuses readiness with nothing realized. Returns the creatures
+/// realized and the windows used, or `None` when shutdown was requested meanwhile.
+async fn realize_bundle_spawns(
     runtime: &mut ChannelRuntimeV1,
     world: &crate::map::boot::BundleWorld,
-) -> Result<usize, BootError> {
+    signalled: &CancellationToken,
+) -> Result<Option<(usize, u64)>, BootError> {
     let refuse = || BootError::Readiness("creature spawn realization");
     let sources = world
         .activation_spawns(|key| {
@@ -1830,9 +1842,44 @@ fn realize_bundle_spawns(
             u64::try_from(policy.maximum_health).ok()
         })
         .ok_or_else(refuse)?;
+    realize_activation_paced(runtime, sources, signalled).await
+}
+
+/// Realizes `sources` as one activation paced at most one `CREATUREAI0-RL-14` window per
+/// 50 ms owner window (see [`realize_bundle_spawns`]).
+async fn realize_activation_paced(
+    runtime: &mut ChannelRuntimeV1,
+    sources: Vec<crate::map::boot::BundleSpawnFacts>,
+    signalled: &CancellationToken,
+) -> Result<Option<(usize, u64)>, BootError> {
+    let refuse = || BootError::Readiness("creature spawn realization");
     runtime
-        .realize_activation_spawns(sources)
-        .map_err(|_| refuse())
+        .begin_activation_spawns(sources)
+        .map_err(|_| refuse())?;
+    let origin = tokio::time::Instant::now();
+    let mut windows = 0u64;
+    loop {
+        let now = u64::try_from(origin.elapsed().as_micros()).unwrap_or(u64::MAX);
+        let progress = runtime
+            .realize_activation_spawn_window(now)
+            .map_err(|_| refuse())?;
+        if progress.realized > 0 {
+            windows += 1;
+        }
+        if progress.remaining == 0 {
+            return Ok(Some((progress.realized_total, windows)));
+        }
+        let next = (now / SPAWN_ACTIVATION_WINDOW_MICROS)
+            .saturating_add(1)
+            .saturating_mul(SPAWN_ACTIVATION_WINDOW_MICROS);
+        let wake = origin + Duration::from_micros(next);
+        if first(tokio::time::sleep_until(wake), signalled.cancelled())
+            .await
+            .is_none()
+        {
+            return Ok(None);
+        }
+    }
 }
 
 async fn boot_and_serve(
@@ -2012,12 +2059,21 @@ async fn boot_and_serve(
             .install_companion_policies(&mut channel_runtime)
             .map_err(|_| BootError::ContentActivation("active creature policies"))?;
     }
-    let spawned_monsters = match &bundle {
-        Some(world) => realize_bundle_spawns(&mut channel_runtime, world)?,
-        None => realize_fixture_spawns(&mut channel_runtime, spawn_source, false)?,
+    let (spawned_monsters, spawn_windows) = match &bundle {
+        Some(world) => match realize_bundle_spawns(&mut channel_runtime, world, signalled).await? {
+            Some(realized) => realized,
+            None => {
+                stopped_before_ready();
+                return Ok(());
+            }
+        },
+        None => {
+            let realized = realize_fixture_spawns(&mut channel_runtime, spawn_source, false)?;
+            (realized, u64::from(realized > 0))
+        }
     };
     event(&format!(
-        "event=creature_spawns state=realized spawned_monsters={spawned_monsters}"
+        "event=creature_spawns state=realized spawned_monsters={spawned_monsters} windows={spawn_windows}"
     ));
     let runtime = Mutex::new(channel_runtime);
     event(&format!(
@@ -2466,6 +2522,65 @@ mod tests {
             Some(0)
         );
         assert!(bundle.spawn_point_creatures().is_empty());
+    }
+
+    /// SPAWN-1b (Codex P1 on #1981, `CREATUREAI0-RL-14`): an activation above one window is
+    /// realized one window of at most 4,096 points per 50 ms owner window, not in one turn; a
+    /// shutdown requested meanwhile stops it before readiness.
+    #[test]
+    fn spawn1b_activation_is_paced_one_window_per_owner_window() {
+        let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+            .expect("world");
+        let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
+            .expect("channel");
+        let node =
+            NodeId::decode(&[1, 0, 0, 0, 0, 3, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 3]).expect("node");
+        let runtime = || {
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                channel,
+                node,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                9_000,
+                crate::foundation::ChannelContentPin::test(world),
+            )
+            .expect("runtime")
+        };
+        // 131 sources of 63 points: 8,253 points in windows of 4,096, 4,096 and 61.
+        let sources = || -> Vec<crate::map::boot::BundleSpawnFacts> {
+            (0..131)
+                .map(|_| {
+                    let cells = (0..63).map(|x| (x, 0, 7)).collect::<Vec<_>>();
+                    (cells, 60_000, 5_000, "oteryn:creature/rat".to_string(), 20)
+                })
+                .collect::<Vec<_>>()
+        };
+        let executor = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        executor.block_on(async {
+            let mut paced = runtime();
+            let started = std::time::Instant::now();
+            let realized =
+                realize_activation_paced(&mut paced, sources(), &CancellationToken::new()).await;
+            assert_eq!(realized.ok(), Some(Some((8_253, 3))));
+            assert!(started.elapsed() >= Duration::from_millis(100));
+            assert_eq!(paced.spawn_point_creatures().len(), 8_253);
+
+            let stopped = CancellationToken::new();
+            stopped.cancel();
+            let mut cancelled = runtime();
+            assert_eq!(
+                realize_activation_paced(&mut cancelled, sources(), &stopped)
+                    .await
+                    .ok(),
+                Some(None)
+            );
+        });
     }
 
     #[test]
