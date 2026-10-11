@@ -97,6 +97,21 @@ geometry tests caught HUD overflow/height regressions during authoring; repair
 must keep the original geometry gates, not relax them. Fresh local and exact-SHA
 MSVC/DX12 qualification are required before recording this successor's acceptance.
 
+Slider/volume source head `e69413380a2e44aa763b603844fd60fb7d7d6ed8` passed
+Linux tests (194/169/5), strict Clippy, formatting and governance checks including
+all 60 governance tests. Fresh MSVC tests passed (193/173/5), strict Clippy passed,
+and the DX12 release audit passed 20 pages/78 captures with zero invalid entries.
+Default-state HUD/Graphics/Battle/UI captures were visually inspected. Private
+directory: `C:\Users\barte\Downloads\oteryn-settings-audit-e6941338`; manifest
+SHA-256 `47bc86e9582d5c0310ffc97da661f6c64ac4f4f8a8ccc7ac84f9404dadd01dc3`.
+The guarded publication recovery bundle is
+`/workspace/oteryn-client-publication-e6941338.bundle`, SHA-256
+`5d0b1057e135a5f2373a05e3e9308830801864f618266d714c7789c5aeb04438`.
+Next: physical/native interactive slider parity (including pixel/trackpad units),
+remaining source-derived Interface dependencies and real graphics/audio runtime
+capabilities/consumers. Do not repeat completed source inventory or count disabled
+audio as playback. Qualify any new client source head independently.
+
 Installed-original extraction now precedes further guesswork. Independently
 written evidence is in `apps/client/UI-REFERENCE-EXTRACTED.md`: actual 15.33 QML
 contracts, source digests, resource/audio/spell counts and explicit backend gaps.
@@ -117,9 +132,9 @@ passed MSVC tests (193/169/5), strict Clippy and DX12 release audit with 20 page
 Effects and Sound captures were visually inspected. Private directory:
 `C:\Users\barte\Downloads\oteryn-settings-audit-993ec2c4`; manifest SHA-256
 `a5384dbff955c770564d1938c8ef1ee6a3183d8ab503a92ff7397a0ccdcb6197`.
-This is not warning-state visual parity or playback acceptance. Remaining
-source-derived work includes slider button/key/wheel interactions, group-volume
-gates in Battle/UI Sounds and real renderer/audio capabilities/consumers.
+This is not warning-state visual parity or playback acceptance. The slider and
+volume-filter follow-up is recorded above; real renderer/audio capabilities and
+full native interactive parity remain pending.
 
 Historical qualification remains recorded, with exact SHAs, manifests and private
 capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral

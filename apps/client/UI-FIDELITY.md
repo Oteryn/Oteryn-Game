@@ -125,6 +125,18 @@ Trackpad/pixel-wheel equivalence and native interactive acceptance remain open.
   `a5384dbff955c770564d1938c8ef1ee6a3183d8ab503a92ff7397a0ccdcb6197`.
   The captures do not establish populated audio, warning-state visual parity or
   unavailable renderer/lighting functionality.
+- Slider/volume successor `e69413380a2e44aa763b603844fd60fb7d7d6ed8` passed
+  Linux locked tests (194/169/5), strict Clippy, formatting and governance checks.
+  Fresh MSVC tests passed (193/173/5), including arrow timing/modifiers, normal
+  line-wheel steps and retained volume-dependent filters. Its DX12 audit passed
+  all 20 pages/78 captures with no invalid entry. Changed default-state HUD,
+  Graphics, Battle Sounds and UI Sounds captures were visually inspected.
+  Private directory: `C:\Users\barte\Downloads\oteryn-settings-audit-e6941338`;
+  manifest SHA-256:
+  `47bc86e9582d5c0310ffc97da661f6c64ac4f4f8a8ccc7ac84f9404dadd01dc3`.
+  The strict compact HUD/footer geometry gates were retained and passed after
+  repairing arrow sizing. This is not physical mouse/trackpad parity or playback
+  acceptance, and later client changes still require fresh qualification.
 - This establishes native compiled-page reachability, not exhaustive reference
   comparison or working behavior for disabled rows. Native live-session visual
   acceptance and every row whose consumer remains pending are still open and
