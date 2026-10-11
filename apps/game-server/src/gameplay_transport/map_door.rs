@@ -25,6 +25,45 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
     }
 }
 
+/// `WORLDINT0-RL-02`: the per-actor `world_action` cooldown.
+const WORLD_ACTION_COOLDOWN: std::time::Duration = std::time::Duration::from_millis(200);
+/// `WORLDINT0-RL-08`: world interactions admitted per Channel per simulation tick.
+const WORLD_ACTIONS_PER_TICK: u32 = 512;
+/// The owner's simulation tick, the window the per-tick cap counts in.
+const SIMULATION_TICK: std::time::Duration = std::time::Duration::from_millis(100);
+
+/// The world-interaction admission gate of one Channel (`WORLD_INTERACTION0` §3.4): the
+/// `world_action` cooldown per actor, started at admission and kept after a refused act, and the
+/// per-tick cap. A refused act is `EXHAUSTED`, queues nothing and changes nothing.
+#[derive(Debug, Default)]
+pub(crate) struct WorldActionGate {
+    started: Vec<(ExactActorRef, std::time::Duration)>,
+    tick: u128,
+    admitted: u32,
+}
+
+impl WorldActionGate {
+    /// Admits one `USE` of `actor` at owner-clock time `now`, or refuses it.
+    pub(crate) fn admit(&mut self, actor: ExactActorRef, now: std::time::Duration) -> bool {
+        self.started
+            .retain(|(_, at)| now.saturating_sub(*at) < WORLD_ACTION_COOLDOWN);
+        if self.started.iter().any(|(who, _)| *who == actor) {
+            return false;
+        }
+        let tick = now.as_nanos() / SIMULATION_TICK.as_nanos();
+        if tick != self.tick {
+            self.tick = tick;
+            self.admitted = 0;
+        }
+        if self.admitted >= WORLD_ACTIONS_PER_TICK {
+            return false;
+        }
+        self.admitted += 1;
+        self.started.push((actor, now));
+        true
+    }
+}
+
 /// Whether `actor` can reach a door at `door`: same floor, Chebyshev distance <= 1.
 pub(super) fn reachable(actor: TilePos, door: TilePos) -> bool {
     actor.floor == door.floor && actor.x.abs_diff(door.x) <= 1 && actor.y.abs_diff(door.y) <= 1
@@ -453,5 +492,26 @@ mod tests {
             .expect("rat");
         assert_eq!(go(&runtime, 1), UseDisposition::Occupied);
         assert!(world.enterable(DOOR_AT));
+    }
+
+    #[test]
+    fn the_world_action_gate_applies_the_cooldown_and_the_tick_cap() {
+        use std::time::Duration;
+        let (_runtime, actor, _) = runtime_beside_the_door();
+        let ms = Duration::from_millis;
+        let mut gate = WorldActionGate::default();
+        assert!(gate.admit(actor, ms(1_000)));
+        // Inside the 200 ms cooldown: refused, and the refusal does not restart it.
+        assert!(!gate.admit(actor, ms(1_100)));
+        assert!(!gate.admit(actor, ms(1_199)));
+        assert!(gate.admit(actor, ms(1_200)));
+        // The per-tick cap: the cooldown is per actor, the cap per Channel.
+        let mut gate = WorldActionGate {
+            admitted: WORLD_ACTIONS_PER_TICK,
+            tick: Duration::from_millis(5_000).as_nanos() / SIMULATION_TICK.as_nanos(),
+            ..WorldActionGate::default()
+        };
+        assert!(!gate.admit(actor, ms(5_010)));
+        assert!(gate.admit(actor, ms(5_100)));
     }
 }

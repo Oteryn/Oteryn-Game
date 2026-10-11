@@ -499,6 +499,7 @@ pub async fn serve_gameplay(
         achievements: owners.achievements,
         imported_charms: owners.imported_charms,
         spell_states: Mutex::default(),
+        world_gate: std::sync::Mutex::default(),
         attack: Mutex::default(),
         clock_origin: std::time::Instant::now(),
         lost: std::sync::Mutex::default(),
@@ -651,6 +652,9 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     /// The Channel owner's player vitals and cooldowns (spell cast §4). Always locked after
     /// `runtime`, never before, like `door`.
     pub(crate) spell_states: Mutex<actor_spell::ChannelSpellStates>,
+    /// The world-interaction admission gate (`WORLD_INTERACTION0` §3.4): a leaf lock, never held
+    /// across another.
+    pub(crate) world_gate: std::sync::Mutex<map_door::WorldActionGate>,
     /// The Channel owner's attack targets, fight modes and in-fight deadlines (ATTACK-1b).
     /// Always locked after `runtime` and `spell_states`, never before.
     pub(crate) attack: Mutex<attack::ChannelAttackStates>,
@@ -2560,6 +2564,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return UseOutcome::rejected();
         }
         if let Some(map) = self.bundle_map() {
+            let admitted = self
+                .world_gate
+                .lock()
+                .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()));
+            if !admitted {
+                return UseOutcome {
+                    disposition: world_object::UseDisposition::Exhausted,
+                    committed: None,
+                    earned: connection::EarnedNotice::NoneEarned,
+                };
+            }
             return self.use_bundle_door(actor, map, &target).await;
         }
         if let Some(chest) = Self::chest_target(self.chest, &target.placement) {
