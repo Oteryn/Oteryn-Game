@@ -48,8 +48,8 @@ python test_convert_store.py
 # evidence regeneration (needs pinned engine checkouts; local-only, like the item census)
 python convert_store.py --engine canary --root <canary@47dfd51f> --out /tmp/canary-catalog.json
 python validate_store.py /tmp/canary-catalog.json
-python store_census.py --canary <canary@47dfd51f> --crystal <crystalserver@ff7ede5>
-python store_census.py --canary <canary@47dfd51f> --crystal <crystalserver@ff7ede5> --check --self-check
+python store_census.py --reference-engine <canary@47dfd51f> --crystal <crystalserver@ff7ede5>
+python store_census.py --reference-engine <canary@47dfd51f> --crystal <crystalserver@ff7ede5> --check --self-check
 ```
 
 ## Product reference payload by offer_type

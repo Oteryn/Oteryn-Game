@@ -694,7 +694,7 @@ def main(argv: list[str] | None = None) -> int:
         "capture", help="fetch the wiki pages and read Canary; write the source facts"
     )
     cap.add_argument(
-        "--canary",
+        "--reference-engine",
         type=Path,
         required=True,
         help=f"Canary checkout at {CANARY_REVISION}",
@@ -721,7 +721,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "capture":
         SOURCES.parent.mkdir(exist_ok=True)
-        SOURCES.write_text(dumps(capture(args.canary)), encoding="utf-8", newline="\n")
+        SOURCES.write_text(dumps(capture(args.reference_engine)), encoding="utf-8", newline="\n")
         return 0
     if args.command == "build":
         catalogue, report = build(json.loads(SOURCES.read_text(encoding="utf-8")))

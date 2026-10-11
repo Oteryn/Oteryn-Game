@@ -1,6 +1,6 @@
 """Transcribe Canary and CrystalServer reward chests into candidate reward claims.
 
-Usage: python ots_chests.py --canary <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
+Usage: python ots_chests.py --reference-engine <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
                             [--coverage samples/quest-coverage-2026-09-27.json] [--out samples/chests]
 
 Both servers keep reward chests as data (`startup/tables/chest.lua`, table `ChestUnique`) served by one
@@ -519,12 +519,12 @@ def definition_refs(value):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--canary', required=True, type=Path)
+    parser.add_argument('--reference-engine', required=True, type=Path)
     parser.add_argument('--crystal', required=True, type=Path)
     parser.add_argument('--coverage', type=Path, default=ROOT / 'samples/quest-coverage-2026-09-27.json')
     parser.add_argument('--out', type=Path, default=ROOT / 'samples/chests')
     args = parser.parse_args()
-    repos = {'canary': args.canary, 'crystalserver': args.crystal}
+    repos = {'canary': args.reference_engine, 'crystalserver': args.crystal}
     for name, repo in repos.items():
         check_checkout(name, repo)
     coverage = json.loads(args.coverage.read_text()) if args.coverage and args.coverage.exists() else None

@@ -6,7 +6,7 @@ sources. No source wins a conflict; every CONFLICT or one-sided row stays an ope
 NPCs are paired by source file stem, then by registered name. Each section is reduced to keyed facts
 (text by SHA-256 only) and every fact gets one outcome: SAME, CONFLICT, CANARY_ONLY or CRYSTAL_ONLY.
 
-Usage: python source_diff.py --canary <out/canary/bundles> --crystal <out/crystal/bundles> --out report.json
+Usage: python source_diff.py --reference-engine <out/canary/bundles> --crystal <out/crystal/bundles> --out report.json
 """
 import argparse
 import json
@@ -124,11 +124,11 @@ def pair(canary, crystal):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--canary', required=True)
+    parser.add_argument('--reference-engine', required=True)
     parser.add_argument('--crystal', required=True)
     parser.add_argument('--out', required=True)
     args = parser.parse_args()
-    canary, crystal = load(args.canary), load(args.crystal)
+    canary, crystal = load(args.reference_engine), load(args.crystal)
     rows, totals, npc_outcomes = [], {s: Counter() for s in SECTIONS}, Counter()
     for left_stem, right_stem in pair(canary, crystal):
         left = canary.get(left_stem) if left_stem else None

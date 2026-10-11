@@ -1,7 +1,7 @@
 """Census of the converted Store catalog: per-engine counts and a cross-engine
 difference summary. Evidence tooling, not Game truth — see `convert_store.py`.
 
-Needs a pinned Canary and/or Crystal checkout (`--canary`/`--crystal`); there is no
+Needs a pinned Canary and/or Crystal checkout (`--reference-engine`/`--crystal`); there is no
 network or bundled copy, so `--check`/`--self-check` are local-only, like the Item
 package's population census.
 """
@@ -174,7 +174,7 @@ def self_check(engine: str, catalog: dict) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--canary", help="pinned Canary checkout root")
+    parser.add_argument("--reference-engine", help="pinned Canary checkout root")
     parser.add_argument("--crystal", help="pinned Crystal checkout root")
     parser.add_argument(
         "--check",
@@ -188,14 +188,14 @@ def main():
 
     catalogs = {}
     censuses = {}
-    for engine, root_arg in (("canary", args.canary), ("crystal", args.crystal)):
+    for engine, root_arg in (("canary", args.reference_engine), ("crystal", args.crystal)):
         if root_arg:
             census, catalog = census_one(engine, Path(root_arg))
             censuses[engine] = census
             catalogs[engine] = catalog
 
     if not censuses:
-        parser.error("at least one of --canary/--crystal is required")
+        parser.error("at least one of --reference-engine/--crystal is required")
 
     if len(catalogs) == 2:
         diff = cross_engine_diff(catalogs["canary"], catalogs["crystal"])

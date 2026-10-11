@@ -1,6 +1,6 @@
 """Transcribe Canary and CrystalServer quest, key, level and dedicated-script doors into candidate door gates.
 
-Usage: python ots_doors.py --canary <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
+Usage: python ots_doors.py --reference-engine <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
                            [--chests samples/chests] [--coverage samples/quest-coverage-2026-09-27.json] [--out samples/doors]
 
 Both servers list doors in startup tables (`door_quest.lua`, `door_key.lua`, `door_level.lua`); the map loader puts the
@@ -310,13 +310,13 @@ def build(repos, chests_dir, coverage):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--canary', required=True, type=Path)
+    parser.add_argument('--reference-engine', required=True, type=Path)
     parser.add_argument('--crystal', required=True, type=Path)
     parser.add_argument('--chests', type=Path, default=ROOT / 'samples/chests')
     parser.add_argument('--coverage', type=Path, default=ROOT / 'samples/quest-coverage-2026-09-27.json')
     parser.add_argument('--out', type=Path, default=ROOT / 'samples/doors')
     args = parser.parse_args()
-    repos = {'canary': args.canary, 'crystalserver': args.crystal}
+    repos = {'canary': args.reference_engine, 'crystalserver': args.crystal}
     for name, repo in repos.items():
         check_checkout(name, repo)
     outputs = build(repos, args.chests, json.loads(args.coverage.read_text()))
