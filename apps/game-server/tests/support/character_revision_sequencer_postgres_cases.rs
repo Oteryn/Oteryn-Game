@@ -53,7 +53,7 @@ use std::task::Poll;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-async fn join_two<A, B>(first: A, second: B) -> (A::Output, B::Output)
+pub(super) async fn join_two<A, B>(first: A, second: B) -> (A::Output, B::Output)
 where
     A: Future,
     B: Future,
@@ -85,13 +85,13 @@ where
     .await
 }
 
-fn id(seed: u8) -> [u8; 16] {
+pub(super) fn id(seed: u8) -> [u8; 16] {
     [
         seed, 2, 3, 4, 5, 6, 0x70, 8, 0x80, 10, 11, 12, 13, 14, 15, seed,
     ]
 }
 
-fn debug(error: impl std::fmt::Debug) -> Box<dyn std::error::Error> {
+pub(super) fn debug(error: impl std::fmt::Debug) -> Box<dyn std::error::Error> {
     format!("{error:?}").into()
 }
 
@@ -177,17 +177,25 @@ async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationP
         .map_err(debug)
 }
 
-struct Harness {
+pub(super) struct Harness {
     database: Database,
-    root: DurabilityRoot,
-    pool: sqlx::PgPool,
-    recovery: CharacterRecoveryStore,
+    pub(super) root: DurabilityRoot,
+    pub(super) pool: sqlx::PgPool,
+    pub(super) recovery: CharacterRecoveryStore,
     retained: std::path::PathBuf,
-    node: NodeIncarnationProof,
+    pub(super) node: NodeIncarnationProof,
 }
 
 impl Harness {
-    async fn create(admin: String, tag: &str, initialized: bool) -> TestResult<Self> {
+    pub(super) async fn create(admin: String, tag: &str, initialized: bool) -> TestResult<Self> {
+        Self::create_with_admission_seed(admin, tag, initialized, true).await
+    }
+    pub(super) async fn create_with_admission_seed(
+        admin: String,
+        tag: &str,
+        initialized: bool,
+        seed_session: bool,
+    ) -> TestResult<Self> {
         let database = Database::create(admin, tag).await?;
         let root = DurabilityRoot::connect_test_runtime(&database.url)?;
         assert!(root.maintain_ready_once().await?);
@@ -202,7 +210,7 @@ impl Harness {
                 .map_err(debug)?;
         }
         let node = register(&root, 1).await?;
-        seed_character(&pool, &root, &node, initialized).await?;
+        seed_character(&pool, &root, &node, initialized, seed_session).await?;
         Ok(Self {
             database,
             root,
@@ -213,7 +221,7 @@ impl Harness {
         })
     }
 
-    async fn cleanup(self) -> TestResult {
+    pub(super) async fn cleanup(self) -> TestResult {
         self.pool.close().await;
         self.database.cleanup().await?;
         std::fs::remove_dir_all(self.retained)?;
@@ -312,6 +320,7 @@ async fn seed_character(
     root: &DurabilityRoot,
     node: &NodeIncarnationProof,
     initialized: bool,
+    seed_session: bool,
 ) -> TestResult {
     sqlx::query(
         "INSERT INTO game_character_interpretations VALUES \
@@ -371,8 +380,9 @@ async fn seed_character(
         .await?;
     }
 
-    sqlx::query(
-        "INSERT INTO game_durability_reconnect_sessions(\
+    if seed_session {
+        sqlx::query(
+            "INSERT INTO game_durability_reconnect_sessions(\
            game_session_id,account_id,character_id,world_id,runtime_scope_kind,\
            runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,\
            original_grace_deadline,predecessor_generation,character_lease_generation,\
@@ -380,36 +390,37 @@ async fn seed_character(
          VALUES (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
            encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,\
            1,999999,1,1,1,1,$6,1)",
-    )
-    .bind(id(50).as_slice())
-    .bind(id(40).as_slice())
-    .bind(id(41).as_slice())
-    .bind(id(42).as_slice())
-    .bind(id(43).as_slice())
-    .bind([9_u8; 16].as_slice())
-    .execute(pool)
-    .await?;
-    sqlx::query(
-        "INSERT INTO game_durability_admission_account_guards VALUES \
+        )
+        .bind(id(50).as_slice())
+        .bind(id(40).as_slice())
+        .bind(id(41).as_slice())
+        .bind(id(42).as_slice())
+        .bind(id(43).as_slice())
+        .bind([9_u8; 16].as_slice())
+        .execute(pool)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_durability_admission_account_guards VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
           1,'test',1,'account-current',1,0,'{}')",
-    )
-    .bind(id(40).as_slice())
-    .bind(id(41).as_slice())
-    .bind(id(50).as_slice())
-    .execute(pool)
-    .await?;
-    sqlx::query(
-        "INSERT INTO game_durability_admission_character_guards VALUES \
+        )
+        .bind(id(40).as_slice())
+        .bind(id(41).as_slice())
+        .bind(id(50).as_slice())
+        .execute(pool)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_durability_admission_character_guards VALUES \
          (encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,\
           true,1,encode($4,'hex')::uuid,1,'test',1,'character-current',1,0,'{}')",
-    )
-    .bind(id(41).as_slice())
-    .bind(id(40).as_slice())
-    .bind(id(42).as_slice())
-    .bind(id(50).as_slice())
-    .execute(pool)
-    .await?;
+        )
+        .bind(id(41).as_slice())
+        .bind(id(40).as_slice())
+        .bind(id(42).as_slice())
+        .bind(id(50).as_slice())
+        .execute(pool)
+        .await?;
+    }
     let fact = node.fact();
     sqlx::query(
         "INSERT INTO game_control_scope_grants \
@@ -441,18 +452,20 @@ async fn seed_character(
     let AssignmentOutcome::Committed(receipt) = assignment else {
         return Err(format!("unexpected assignment outcome: {assignment:?}").into());
     };
-    publish_readiness(
-        pool,
-        root,
-        node,
-        scope,
-        receipt.assignment.ownership_generation,
-    )
-    .await?;
+    if seed_session {
+        publish_readiness(
+            pool,
+            root,
+            node,
+            scope,
+            receipt.assignment.ownership_generation,
+        )
+        .await?;
+    }
     Ok(())
 }
 
-fn fence(revision: u64) -> TestResult<CurrentCharacterGameplayFence> {
+pub(super) fn fence(revision: u64) -> TestResult<CurrentCharacterGameplayFence> {
     Ok(CurrentCharacterGameplayFence {
         character_id: CharacterId::from_bytes(id(41)).map_err(debug)?,
         game_session_id: crate::foundation::GameSessionId::decode(&id(50)).map_err(debug)?,
@@ -623,7 +636,7 @@ fn xp_request(tag: u8) -> TestResult<ExperienceAwardRequest<2>> {
     })
 }
 
-fn run<F>(body: F) -> TestResult
+pub(super) fn run<F>(body: F) -> TestResult
 where
     F: AsyncFnOnce(String) -> TestResult,
 {
@@ -990,6 +1003,234 @@ fn revision_bound_writers_fail_closed_without_retry() -> TestResult {
                 "{case}: no retry committed"
             );
         }
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn loaded_monk_values_do_not_pin_later_saves_and_exact_replay_does_not_revert_successor()
+-> TestResult {
+    run(async |admin| {
+        let harness = Harness::create(admin, "monk_load_cursor_replay", true).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let character = fence(1)?.character_id;
+        let observed_revision = revision(&harness.pool).await?;
+        let observed_values = harness
+            .root
+            .read_character_monk_state(&authority, character)
+            .await
+            .map_err(debug)?;
+        assert_eq!(observed_revision, 1);
+        assert_eq!(observed_values, DurableMonkState::default());
+        let sequencer = CharacterRevisionSequencer::new();
+        let mut slot = sequencer.acquire(character).await;
+        let xp = slot
+            .commit_experience(
+                &harness.root,
+                &authority,
+                &harness.node,
+                fence(observed_revision)?,
+                xp_request(91)?,
+                None,
+            )
+            .await
+            .map_err(debug)?;
+        let ExperienceCommitOutcome::Committed(xp) = xp else {
+            return Err(format!("XP did not commit: {xp:?}").into());
+        };
+        assert_eq!(xp.committed_character_revision.get(), 2);
+        let first_request = MonkStateSaveRequest {
+            occurrence: MonkStateSaveOccurrence::from_bytes(id(92)).map_err(debug)?,
+            state: DurableMonkState::new(3, 4_000_000).map_err(debug)?,
+        };
+        let first = slot
+            .commit_monk_state_save(
+                &harness.root,
+                &authority,
+                &harness.node,
+                fence(observed_revision)?,
+                first_request,
+            )
+            .await
+            .map_err(debug)?;
+        let MonkStateSaveOutcome::Committed(first) = first else {
+            return Err(format!("first monk save did not commit: {first:?}").into());
+        };
+        assert_eq!(first.original_character_revision.get(), 2);
+        assert_eq!(first.committed_character_revision.get(), 3);
+        let successor_request = MonkStateSaveRequest {
+            occurrence: MonkStateSaveOccurrence::from_bytes(id(93)).map_err(debug)?,
+            state: DurableMonkState::new(4, 2_000_000).map_err(debug)?,
+        };
+        let successor = slot
+            .commit_monk_state_save(
+                &harness.root,
+                &authority,
+                &harness.node,
+                fence(observed_revision)?,
+                successor_request,
+            )
+            .await
+            .map_err(debug)?;
+        let MonkStateSaveOutcome::Committed(successor) = successor else {
+            return Err(format!("successor monk save did not commit: {successor:?}").into());
+        };
+        assert_eq!(successor.original_character_revision.get(), 3);
+        assert_eq!(successor.committed_character_revision.get(), 4);
+        let unchanged = slot
+            .commit_monk_state_save(
+                &harness.root,
+                &authority,
+                &harness.node,
+                fence(observed_revision)?,
+                MonkStateSaveRequest {
+                    occurrence: MonkStateSaveOccurrence::from_bytes(id(94)).map_err(debug)?,
+                    state: successor_request.state,
+                },
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(unchanged, MonkStateSaveOutcome::Unchanged);
+        assert_eq!(revision(&harness.pool).await?, 4);
+        // Retained receipt is historical outcome evidence, never current actor authority.
+        let replay = harness
+            .root
+            .commit_character_monk_state_save(
+                &authority,
+                &harness.node,
+                fence(first.original_character_revision.get())?,
+                first_request,
+            )
+            .await
+            .map_err(debug)?;
+        assert_eq!(replay, MonkStateSaveOutcome::AlreadyCommitted(first));
+        let reconciled = harness
+            .root
+            .reconcile_character_monk_state_save(&authority, first_request.occurrence)
+            .await
+            .map_err(debug)?;
+        assert_eq!(reconciled, Some(first));
+        let reloaded = harness
+            .root
+            .read_character_monk_state(&authority, character)
+            .await
+            .map_err(debug)?;
+        assert_eq!(reloaded, successor_request.state);
+        assert_eq!(revision(&harness.pool).await?, 4);
+        drop(slot);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn durable_death_clears_harmony_and_serene_and_receipt_readback_cannot_restore_them() -> TestResult
+{
+    run(async |admin| {
+        let harness = Harness::create(admin, "monk_death_zero", true).await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let character = fence(1)?.character_id;
+        let sequencer = CharacterRevisionSequencer::new();
+        let mut slot = sequencer.acquire(character).await;
+        let request = MonkStateSaveRequest {
+            occurrence: MonkStateSaveOccurrence::from_bytes(id(94)).map_err(debug)?,
+            state: DurableMonkState::new(3, 4_000_000).map_err(debug)?,
+        };
+        let saved = slot
+            .commit_monk_state_save(&harness.root, &authority, &harness.node, fence(1)?, request)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(saved, MonkStateSaveOutcome::Committed(_)));
+        assert_eq!(revision(&harness.pool).await?, 2);
+        assert_eq!(
+            harness
+                .root
+                .read_character_monk_state(&authority, character)
+                .await
+                .map_err(debug)?,
+            request.state
+        );
+        // Positive death uses D58/D68 ratio1/1 and a closed threshold oracle
+        // covering the fixture before and after its capped loss. The older death
+        // helper is used by a pre-calculation mismatch test and carries1/10.
+        let mut death_request = death(95)?;
+        death_request.policy.death_loss_denominator = 1;
+        death_request.policy.thresholds = [
+            LevelThreshold {
+                level: 49,
+                minimum_experience: ExactI64::new(0),
+            },
+            LevelThreshold {
+                level: 50,
+                minimum_experience: ExactI64::new(1000),
+            },
+        ];
+        let dead = slot
+            .commit_death(
+                &harness.root,
+                &authority,
+                &harness.node,
+                fence(1)?,
+                death_request,
+                None,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(
+            dead,
+            crate::durability::character_death::CharacterDeathOutcome::Committed(_)
+        ));
+        assert_eq!(revision(&harness.pool).await?, 3);
+        assert_eq!(
+            harness
+                .root
+                .read_character_monk_state(&authority, character)
+                .await
+                .map_err(debug)?,
+            DurableMonkState::default()
+        );
+        let later = MonkStateSaveRequest {
+            occurrence: MonkStateSaveOccurrence::from_bytes(id(96)).map_err(debug)?,
+            state: DurableMonkState::new(4, 2_000_000).map_err(debug)?,
+        };
+        let refused = slot
+            .commit_monk_state_save(&harness.root, &authority, &harness.node, fence(1)?, later)
+            .await;
+        assert!(
+            matches!(refused, Err(CharacterProgressionError::RespawnPending)),
+            "{refused:?}"
+        );
+        assert!(
+            harness
+                .root
+                .reconcile_character_monk_state_save(&authority, request.occurrence)
+                .await
+                .map_err(debug)?
+                .is_some()
+        );
+        assert_eq!(revision(&harness.pool).await?, 3);
+        assert_eq!(
+            harness
+                .root
+                .read_character_monk_state(&authority, character)
+                .await
+                .map_err(debug)?,
+            DurableMonkState::default()
+        );
+        drop(slot);
         drop(authority);
         drop(seal);
         harness.cleanup().await

@@ -48,6 +48,41 @@ fn qualified_parameters(parameters: &Value) -> bool {
         .is_some_and(|values| values.iter().any(|value| value == parameters))
 }
 
+/// The existing source-qualified Focus profiles share the accepted provisional
+/// gained-charge healing rules. Ordinary builders consume that same closed profile;
+/// this does not claim resolution of Global A.2-Q2/Q3.
+pub(crate) fn harmony_gain_profile() -> Result<&'static Value, SpellCastDisposition> {
+    static HEALING: OnceLock<Option<Value>> = OnceLock::new();
+    HEALING
+        .get_or_init(|| {
+            let export: Value = serde_json::from_str(PROFILE_JSON).ok()?;
+            if export.get("revision")?.as_str()? != "spell-p2-r20" {
+                return None;
+            }
+            let parameters = export
+                .get("profiles")?
+                .as_array()?
+                .iter()
+                .filter_map(|row| {
+                    let native = row.get("execution")?.get("native_behavior")?;
+                    (native.get("key")?.as_str()? == "monk_focus")
+                        .then(|| native.get("parameters").cloned())
+                        .flatten()
+                })
+                .collect::<Vec<_>>();
+            if parameters.len() != 2
+                || parameters[0].get("harmony_gain_healing")?
+                    != parameters[1].get("harmony_gain_healing")?
+                || parameters[0].get("presentation")? != parameters[1].get("presentation")?
+            {
+                return None;
+            }
+            Some(parameters[0].clone())
+        })
+        .as_ref()
+        .ok_or(SpellCastDisposition::Rejected)
+}
+
 fn reject<E>(_: E) -> SpellCastDisposition {
     SpellCastDisposition::Rejected
 }

@@ -583,6 +583,9 @@ pub(crate) fn clear_on_lifecycle(state: &mut PlayerSpellState) {
     }
     state.regen_health_ms = 0;
     state.regen_mana_ms = 0;
+    if let Some(monk) = state.monk.as_mut() {
+        monk.clear_on_death();
+    }
 }
 
 /// The existing creature-bite vitals owner applies its already qualified damage to the
