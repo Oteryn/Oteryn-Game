@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 INPUT = "content/abilities/source-imports/current-sources.json"
 # This receipt was qualified against immutable donor bytes and the current model.
 # Refreshing it requires repeating source and model qualification, then review.
-INPUT_SHA256 = "eda88215630cbf932a55c3603d110662ad1f62583c2c4e7182b9be2b381cb7f1"
+INPUT_SHA256 = "f27fbdff9ed45b5c803e871b2ef154cb0ac21d5582baa29c39389c61a9248f4f"
 CATALOG = "content/abilities/definitions/player-spells.json"
 SELECTION = "content/abilities/definitions/player-spell-selection.json"
 MANIFEST = "content/spells.manifest.json"

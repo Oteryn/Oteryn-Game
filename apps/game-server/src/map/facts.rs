@@ -15,6 +15,7 @@
 //! - **Overlay.** The Channel overlay stays empty until MAP-CUTOVER-1c, so no added entry has
 //!   facts and every object revision is 0.
 
+use super::floor::palette_mask;
 use super::overlay::{AddedItem, TilePos};
 use super::view::{self, EntryFacts, MapFacts, placement_key};
 use super::{LoadError, palette_appearance};
@@ -195,6 +196,20 @@ fn bound(attrs: &Attrs) -> bool {
         || attrs.description.is_some()
 }
 
+/// The catalogue `floor_change` WorldObjects whose collision fact is `blocks_movement = true`
+/// (ascending Tibia appearance ids; kept equal to the JSON by a test). Every other floor-change
+/// record is walkable or has no collision fact (Terrain).
+const SOLID_FLOOR_CHANGE: &[u16] = &[17230, 24806, 24810, 24812, 28655];
+
+/// Whether the catalogue says the entry `key` names changes floors and can be walked onto: the
+/// compiler routes stairs and holes to Item entries that production definitions leave without a
+/// solidity fact, and a solid floor-change object (`SOLID_FLOOR_CHANGE`) is not one of them.
+fn walkable_floor_change(key: &str) -> bool {
+    palette_appearance(key).is_some_and(|id| {
+        palette_mask(Family::Item, key) != 0 && SOLID_FLOOR_CHANGE.binary_search(&id).is_err()
+    })
+}
+
 fn palette_facts(
     entry: &PaletteEntry,
     item: &impl Fn(&str) -> Option<ItemDefinition>,
@@ -225,7 +240,9 @@ fn palette_facts(
         facts.definition = MapDefinition::Item(reference);
         facts.blocks_projectile = definition.blocks_projectile;
         facts.pickupable = definition.pickupable;
-        solid = definition.solid != Some(false);
+        solid = definition
+            .solid
+            .unwrap_or_else(|| !walkable_floor_change(&entry.key));
     }
     Ok(PaletteFacts {
         family: entry.family,
@@ -269,5 +286,101 @@ impl MapFacts for BundleFacts {
 
     fn object_revision(&self, _placement_key: u64) -> u64 {
         0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used)]
+    use super::*;
+    use crate::foundation::{ChannelId, WorldId};
+    use crate::map::boot::{boot, tests as fixture};
+
+    fn item_solid(key: &str) -> bool {
+        let entry = PaletteEntry {
+            key: key.into(),
+            family: Family::Item,
+            id: 0,
+            terrain: None,
+        };
+        let definition = |_: &str| {
+            Some(ItemDefinition {
+                reference: NonZeroU32::MIN,
+                solid: None,
+                blocks_projectile: false,
+                pickupable: false,
+            })
+        };
+        palette_facts(&entry, &definition).expect("facts").solid
+    }
+
+    /// A solid floor-change object keeps blocking; a plain item without the fact blocks too.
+    #[test]
+    fn solid_floor_change_objects_without_a_solidity_fact_block() {
+        for key in SOLID_FLOOR_CHANGE {
+            assert!(item_solid(&format!("oteryn:item.tibia.i{key}")), "{key}");
+        }
+        assert!(item_solid("oteryn:item.tibia.i100"));
+        assert!(!item_solid("oteryn:item.tibia.i1950"));
+        assert!(!item_solid("oteryn:item.tibia.i293"));
+    }
+
+    /// The solid list equals the JSON catalogue's `blocks_movement` floor-change objects.
+    #[test]
+    fn solid_floor_change_list_matches_content() {
+        let dir =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content/world/objects");
+        let mut found = Vec::new();
+        for entry in std::fs::read_dir(dir).expect("dir") {
+            let path = entry.expect("entry").path();
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if !(name.starts_with("objects-") && name.ends_with(".json")) {
+                continue;
+            }
+            let value: serde_json::Value =
+                serde_json::from_slice(&std::fs::read(&path).expect("read")).expect("json");
+            for record in value["records"].as_array().expect("records") {
+                let blocks = &record["collision"]["blocks_movement"];
+                if record["floor_change"]["state"] == "KNOWN"
+                    && blocks["state"] == "KNOWN"
+                    && blocks["value"] == true
+                {
+                    let key = record["identity"]["key"].as_str().expect("key");
+                    found.push(
+                        key.rsplit_once(".i")
+                            .expect("id")
+                            .1
+                            .parse::<u16>()
+                            .expect("n"),
+                    );
+                }
+            }
+        }
+        found.sort_unstable();
+        assert_eq!(found.as_slice(), SOLID_FLOOR_CHANGE);
+    }
+
+    /// Production item definitions carry no solidity fact: a stair routed to an Item entry is
+    /// still walkable through its catalogue floor change, a box without the fact still blocks.
+    #[test]
+    fn floor_change_items_without_a_solidity_fact_are_walkable() {
+        let (bytes, load) = fixture::floor_bundle();
+        let unknown = |key: &str| {
+            fixture::floor_items(key).map(|definition| ItemDefinition {
+                solid: None,
+                ..definition
+            })
+        };
+        let world = boot(
+            &bytes,
+            &fixture::floor_pins(load),
+            WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1]).expect("id"),
+            ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2]).expect("id"),
+            unknown,
+        )
+        .expect("boot");
+        let at = |x, floor| TilePos { x, y: 0, floor };
+        assert!(world.enterable(at(1, -8)), "east stair");
+        assert!(!world.enterable(at(1, -7)), "box");
     }
 }
