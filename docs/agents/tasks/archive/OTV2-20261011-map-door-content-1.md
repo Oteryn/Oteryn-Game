@@ -61,7 +61,8 @@ The Item provider gains 290 profiles: the 146 closed plain doors the World proje
 - `python3 tools/content-schema/native-gameplay/test_source_world.py`: OK.
 - Generator rerun at the pinned Canary and Crystal revisions reproduces the baseline 121-record provider byte for byte; the new provider equals the generator output.
 - `python tools/agents/validate_governance.py`: pass.
-- `python -m unittest discover -s tools/agents/tests`: pass (59 of 60 in the sparse checkout; the one error reads `experiments/world-vfx-real-content/README.md`, absent from the sparse tree).
+- `python -m unittest discover -s tools/agents/tests`: pass.
+- Sparse-checkout note: that run had 59 of 60 passing locally; the one error is a missing `experiments/` file outside the sparse tree.
 - Rust build and tests: not run locally (disk); left to CI.
 
 ## Review
