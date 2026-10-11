@@ -35,7 +35,8 @@ Minimap, and an OpenFile dialog for the combined Import Options/Minimap action.
 All three offer ZIP and all-file filters. Their handlers delegate to the native
 controller; the QML does not establish archive entry names, schemas or validation.
 Private resource SHA-256:
-`01786875ff3137967635b7a23d06ea83737ec6fbe1879e32283398b247a09723`.
+`ab2d9f9856efc4bc71da6c2dad2652997f1df6b8f53e4383c9732437ef95c4e1`
+(9,350 raw QFile bytes, excluding the diagnostic framing).
 
 A non-applying live inspection independently confirmed the Help rows
 and the ZIP save dialog. One attempted export reported an I/O error; no archive
@@ -107,6 +108,15 @@ or a dependency fork. Pixel/trackpad wheel equivalence and full native interacti
 comparison remain pending; these changes do not establish audio playback.
 
 ## Chat selection continuation
+
+`ChatOutput.qml` (10,410 raw resource bytes, SHA-256
+`84885036204e09fbf42dcb0f2062a08f15d5aef85a9bf57d94dbe98aaa4a2e50`)
+renders immutable rich-text entries and routes primary drag/double-click to
+model-owned text-selection operations. Primary rich-text anchor clicks call
+`sendKeyword`, not an inferred browser-opening action. Channel/context-menu
+handling belongs to the native model. This establishes read-only output
+selection, not the external-link clipboard warning policy, which remains unknown.
+Do not convert NPC keyword anchors into generic external web links.
 
 Offline `Chat.qml` SHA-256
 `247665b41f1251993c94a7d03ed8657d2f8de0068845d4762b1811392771a0d2`

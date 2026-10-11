@@ -50,8 +50,12 @@ Help ZIP export AUTHORING uses upstream window-owned `rfd`, `zip` and atomic
 `tempfile` replacement, reusing the existing validated Oteryn preferences.
 Linux 209/175/5, strict Clippy, formatting, boundaries and governance pass.
 World input pin `5e2707ac` double-builds the unchanged bundle (`f8b11ebc`).
-Fresh MSVC/DX12 qualification and actual picker interaction remain pending;
-unknown original ZIP contents/minimap import are not claimed as implemented.
+Source `7898fdf79a54d969d0114878f1d114cb26d73ee8` passes MSVC 208/179/5,
+strict seven-package Clippy/tests and DX12 20 pages/78 hashes/zero invalid
+entries at 125% DPI; manifest/recovery are retained in UI-FIDELITY.md.
+Actual picker interaction and unknown original ZIP/minimap import remain open.
+Next unblocked local consumer: source-confirmed immutable chat-output selection;
+external-link warning policy is not established by NPC keyword anchors.
 
 Owner renewed implementation scope for all nine settings lanes: Graphics,
 Effects, Audio, Controls/General Hotkeys, Action Bars/Custom Hotkeys,

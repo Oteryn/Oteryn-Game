@@ -466,9 +466,18 @@ governance/60 tests pass. The dependency lock refresh changes the World input
 pin to `5e2707acfa842f0d96590b573b1ca7d589b5c8c73a564b8b41d09e4b014a003d`;
 release pin-check rebuilds the same 25,086,645-byte bundle twice, preserving
 `f8b11ebcd96a4140f71dcbb5944519434d3a8e6b0b0f2ecf9fecb9c74f67b6c8`.
-Fresh MSVC/DX12 qualification remains pending. Native physical picker acceptance,
-original archive interoperability and the combined minimap importer are not
-established by serialization or settings-page captures.
+Source `7898fdf79a54d969d0114878f1d114cb26d73ee8` passes native MSVC client
+208/179/5, Session 72, protocol 214, dev adapter 34, harness 36, renderer 43 and
+assets 2/13 tests, plus strict seven-package Clippy. The exact-source DX12 audit
+passes 20 pages/78 independently verified hashes/zero invalid entries at 125%
+DPI; the Help capture was visually inspected, and PID 12896 remains responsive.
+Private audit `C:\Users\barte\Downloads\oteryn-settings-audit-7898fdf7`;
+manifest SHA-256 `547fff2e0bbe28de3842207612a4f3ea730fb0e061b15d70dea10179ea71065c`.
+Recovery `/workspace/oteryn-client-publication-7898fdf7.bundle`, SHA-256
+`1c257df208f77d3bc7759bf0f1f1dde6a622d8a54a4fdc51c912d82e4bb2fbac`.
+Same-head protected-base audit passes, not full repository CI. Native physical
+picker acceptance, original archive interoperability and the combined minimap
+importer are not established by serialization or settings-page captures.
 
 ## Required evidence per page/panel
 
