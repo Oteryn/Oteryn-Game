@@ -66,6 +66,7 @@ external_repositories: []
 
 - The lock entry drops `pending_pull_request` and adds `candidate_pull_requests` [1936, 1959] and `reviewed_head_commit`.
 - Producer status: `ACCEPTED_NOT_IMPLEMENTED`. Consumer status: Platform C1 intent store, off by default and not mounted.
+- Review round 1 (Codex P1, comment 4241669058, accepted and fixed): the status line no longer says acceptance authorizes the Platform consumer. Acceptance locks the Game-side wire only. Platform work needs its own authority (task allocation and owner decisions D1004, D1005, D1007 in the #1622 STATE). §15 and the lock notes say the same. The pin is unchanged.
 
 ## Validation
 

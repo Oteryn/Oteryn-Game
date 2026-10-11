@@ -2,9 +2,12 @@
 
 - Status: **Accepted**, revision 1 (GAME-CHAR-CMD-0, revised by GAME-CHAR-CMD-0b), accepted by
   the owner on 2026-10-11 (D1004, D1007) after independent review of the frozen head. The lock
-  entry `GAME-CHAR-CMD-0` pins the accepted wire at commit `cfe82f98` (#1959). Acceptance
-  authorizes the Game implementation and the Platform consumer, both disabled by default (§14
-  steps 2 and 3); enablement still waits for §14 step 4.
+  entry `GAME-CHAR-CMD-0` pins the accepted wire at commit `cfe82f98` (#1959). Acceptance only
+  locks this Game-side wire contract; it is the accepted owning contract for the Game
+  implementation (§14 step 2), disabled by default. It grants no Oteryn/Oteryn-Platform authority:
+  Platform work (§14 step 3) proceeds only under its own task allocation and owner decisions
+  recorded in the #1622 STATE (for the Bazaar: D1004, D1005, D1007). Enablement still waits for
+  §14 step 4.
 - Contract ID: `oteryn-game-character-authority-commands-v1`
 - Coordination: #1622 (plan comment 6056637549, packet P4, inventory rows C7 and C8);
   Oteryn/Oteryn-Platform#1476.
@@ -641,4 +644,6 @@ Accepted by the owner on 2026-10-11 (D1004, D1007). Revision 1 as pinned in the 
 (commit `cfe82f983daf22c7d653015d8e034254f9b72182`, document sha256
 `25359aa161096be15e42a0dca56dd9b75762e6ba0912b36784194a7c5eb1de7f`) is the frozen v1 wire. The
 status line, §14 step 1 and this section were later edited only to record the acceptance. Any
-later change to a member, path, bound, code or response is a new `contract_version`.
+later change to a member, path, bound, code or response is a new `contract_version`. Acceptance
+locks the Game-side wire only; Platform implementation needs its own separate authority (status
+line).

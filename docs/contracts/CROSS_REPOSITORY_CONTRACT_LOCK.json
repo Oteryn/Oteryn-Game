@@ -321,7 +321,7 @@
         "enable together in one testing stack with shared fixtures, then preproduction; production needs separate authority"
       ],
       "production_enabled": false,
-      "notes": "Packet P4 of the #1622 plan (rows C7, C8). Platform keeps creation and transfer disabled until this contract is accepted and the Game implementation exists (D963 Q2=A). Creation happens only on the Platform account page; the client opens it through the Create character deep link (D965 Q5=A). Accepted by the owner (D1004, D1007) at the pinned revision; the later contract edit that records the acceptance (status line, section 14 step 1, section 15) is editorial and changes no member, path, bound, code or response. Implementation and the Platform consumer stay disabled by default until section 14 step 4 (U-CC7, U-CC9)."
+      "notes": "Packet P4 of the #1622 plan (rows C7, C8). Platform keeps creation and transfer disabled until this contract is accepted and the Game implementation exists (D963 Q2=A). Creation happens only on the Platform account page; the client opens it through the Create character deep link (D965 Q5=A). Accepted by the owner (D1004, D1007) at the pinned revision; the later contract edit that records the acceptance (status line, section 14 step 1, section 15) is editorial and changes no member, path, bound, code or response. Implementation and the Platform consumer stay disabled by default until section 14 step 4 (U-CC7, U-CC9). Acceptance locks the Game-side wire only; Platform implementation needs its own task allocation and owner decisions in the #1622 STATE (for the Bazaar: D1004, D1005, D1007)."
     }
   ]
 }
