@@ -75,19 +75,19 @@ fn hud_card(
             ui.set_width(ui.available_width());
             egui::Frame::new()
                 .fill(egui::Color32::from_rgba_unmultiplied(35, 39, 42, 160))
-                .inner_margin(egui::Margin::symmetric(12, 5))
+                .inner_margin(egui::Margin::symmetric(12, 3))
                 .show(ui, |ui| {
                     ui.set_width(ui.available_width());
                     reference_option(ui, draft, "hud", id, labels, en);
                 });
             egui::Frame::new()
-                .inner_margin(egui::Margin::symmetric(12, 10))
+                .inner_margin(egui::Margin::symmetric(12, 6))
                 .show(ui, |ui| {
                     ui.set_width(ui.available_width());
                     body(ui, draft);
                 });
         });
-    ui.add_space(8.0);
+    ui.add_space(5.0);
 }
 
 fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
@@ -97,7 +97,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             &mut columns[0],
             draft,
             "hud.player_enabled",
-            ["Własna postać", "Own character"],
+            ["Pokaż HUD własnej postaci", "Show HUD for Own Character"],
             en,
             |ui, draft| {
                 ui.add_enabled_ui(enabled(draft, "hud.player_enabled"), |ui| {
@@ -114,14 +114,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                         }
                     });
                     ui.add_enabled_ui(enabled(draft, "show_harmony"), |ui| {
-                        reference_option(
-                            ui,
-                            draft,
-                            "hud",
-                            "harmony_position",
-                            ["Harmonia obok", "Harmony beside"],
-                            en,
-                        );
+                        ui.indent("harmony-position", |ui| harmony_position(ui, draft, en));
                     });
                 });
             },
@@ -130,7 +123,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             &mut columns[1],
             draft,
             "hud.creatures_enabled",
-            ["Inne stworzenia", "Other creatures"],
+            ["Pokaż HUD innych stworzeń", "Show HUD for Other Creatures"],
             en,
             |ui, draft| {
                 ui.add_enabled_ui(enabled(draft, "hud.creatures_enabled"), |ui| {
@@ -228,7 +221,10 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                         |ui| {
                             ui.set_min_width(table_width * 0.5 - 16.0);
                             if let Some(id) = id {
-                                if ui.selectable_label(selected == id, label).clicked() {
+                                let icon = condition_icon(ui, id, label);
+                                if icon.clicked()
+                                    || ui.selectable_label(selected == id, label).clicked()
+                                {
                                     *selected = id.into();
                                 }
                             } else {
@@ -402,6 +398,132 @@ fn enabled(draft: &ClientSettings, id: &str) -> bool {
     )
 }
 
+fn harmony_position(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
+    let key = "hud.harmony_position";
+    let selected = match draft.future_preferences.get(key) {
+        Some(FutureValue::Choice(value)) => Some(value.clone()),
+        _ => None,
+    };
+    ui.vertical(|ui| {
+        for (id, labels) in [
+            ("health", ["obok łuku zdrowia", "next to Health Arc"]),
+            ("mana", ["obok łuku many", "next to Mana Arc"]),
+        ] {
+            let response = ui.radio(selected.as_deref() == Some(id), labels[usize::from(en)]);
+            #[cfg(test)]
+            ui.ctx().data_mut(|data| {
+                data.insert_temp(
+                    egui::Id::new(("harmony-position", id)),
+                    (response.rect, ui.clip_rect()),
+                )
+            });
+            if response.clicked() {
+                draft
+                    .future_preferences
+                    .insert(key.into(), FutureValue::Choice(id.into()));
+            }
+        }
+    });
+}
+
+fn condition_icon(ui: &mut egui::Ui, id: &str, label: &str) -> egui::Response {
+    let (rect, response) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), egui::Sense::click());
+    let painter = ui.painter();
+    let frame = rect.shrink(1.0);
+    painter.rect_filled(frame, 2.0, egui::Color32::from_rgb(31, 34, 35));
+    painter.rect_stroke(
+        frame,
+        2.0,
+        egui::Stroke::new(0.7, egui::Color32::from_rgb(79, 83, 82)),
+        egui::StrokeKind::Inside,
+    );
+    paint_condition_icon(painter, frame.shrink(2.0), id);
+    #[cfg(test)]
+    ui.ctx().data_mut(|data| {
+        data.insert_temp(
+            egui::Id::new(("condition-icon", id)),
+            (rect, ui.clip_rect()),
+        )
+    });
+    response.on_hover_text(label)
+}
+
+#[rustfmt::skip]
+fn paint_condition_icon(painter: &egui::Painter, rect: egui::Rect, id: &str) {
+    use egui::{Color32, Pos2, Shape, Stroke};
+
+    let point = |x: f32, y: f32| Pos2::new(rect.left() + rect.width() * x, rect.top() + rect.height() * y);
+    let line = |points: &[[f32; 2]], color: Color32, width: f32| {
+        painter.add(Shape::line(points.iter().map(|p| point(p[0], p[1])).collect(), Stroke::new(width, color)));
+    };
+    let polygon = |points: &[[f32; 2]], color: Color32| {
+        painter.add(Shape::convex_polygon(points.iter().map(|p| point(p[0], p[1])).collect(), color, Stroke::NONE));
+    };
+    let circle = |x: f32, y: f32, radius: f32, color: Color32| {
+        painter.circle_filled(point(x, y), rect.width() * radius, color);
+    };
+    let green = Color32::from_rgb(82, 222, 83);
+    let red = Color32::from_rgb(238, 55, 62);
+    let blue = Color32::from_rgb(92, 191, 246);
+    let yellow = Color32::from_rgb(246, 199, 53);
+    let orange = Color32::from_rgb(240, 127, 39);
+    let violet = Color32::from_rgb(192, 97, 232);
+    let white = Color32::from_rgb(224, 230, 229);
+    let grey = Color32::from_rgb(147, 153, 154);
+    let ink = match id {
+        "poison" | "haste" | "strengthened" | "in_pz" | "party_mode" => green,
+        "burning" | "bleeding" | "agony" | "pz_block" | "red_skull" => red,
+        "electric" | "dazzled" | "lesser_hex" | "intense_hex" | "greater_hex" | "yellow_skull" | "hungry" => yellow,
+        "rooted" | "logout_block" | "orange_skull" => orange,
+        "magic_shield" | "monk_virtue" | "drowning" | "freezing" => blue,
+        "feared" | "cursed" | "goshnar_taint" => violet,
+        "powerless" | "drunk" | "slowed" | "resting" | "bakragore_taint" | "black_skull" | "guild_war" => grey,
+        _ => white,
+    };
+    match id {
+        "poison" | "bleeding" | "drowning" => {
+            polygon(&[[0.50,0.08],[0.77,0.50],[0.70,0.77],[0.50,0.91],[0.30,0.77],[0.23,0.50]], ink);
+            if id == "poison" { circle(0.49,0.57,0.10,Color32::from_rgb(24,91,35)); }
+            if id == "drowning" { line(&[[0.29,0.63],[0.43,0.57],[0.57,0.63],[0.71,0.57]],white,1.0); }
+        }
+        "burning" => polygon(&[[0.53,0.04],[0.67,0.35],[0.78,0.49],[0.72,0.76],[0.51,0.92],[0.28,0.77],[0.25,0.55],[0.39,0.34],[0.42,0.61],[0.57,0.50]], ink),
+        "electric" => polygon(&[[0.55,0.04],[0.24,0.55],[0.47,0.54],[0.39,0.94],[0.76,0.40],[0.53,0.42]], ink),
+        "agony" => { circle(0.50,0.50,0.14,ink); for p in [[[0.50,0.05],[0.50,0.28]],[[0.50,0.72],[0.50,0.95]],[[0.05,0.50],[0.28,0.50]],[[0.72,0.50],[0.95,0.50]],[[0.18,0.18],[0.34,0.34]],[[0.66,0.66],[0.82,0.82]]] { line(&p,ink,1.2); } }
+        "powerless" => { painter.rect_stroke(egui::Rect::from_min_max(point(0.18,0.26),point(0.76,0.77)),1.0,Stroke::new(1.2,ink),egui::StrokeKind::Inside); line(&[[0.76,0.42],[0.90,0.42],[0.90,0.61],[0.76,0.61]],ink,1.2); line(&[[0.55,0.31],[0.40,0.49],[0.57,0.49],[0.42,0.72]],red,1.2); }
+        "rooted" => { line(&[[0.50,0.09],[0.50,0.62],[0.22,0.90]],ink,1.4); line(&[[0.50,0.62],[0.78,0.90]],ink,1.4); line(&[[0.50,0.46],[0.24,0.27]],green,1.2); line(&[[0.50,0.38],[0.74,0.20]],green,1.2); }
+        "feared" => { line(&[[0.10,0.51],[0.29,0.32],[0.50,0.25],[0.71,0.32],[0.90,0.51],[0.71,0.69],[0.50,0.76],[0.29,0.69],[0.10,0.51]],ink,1.2); circle(0.50,0.51,0.14,ink); circle(0.50,0.51,0.055,Color32::BLACK); }
+        "drunk" => { circle(0.31,0.64,0.15,ink); circle(0.58,0.38,0.12,orange); circle(0.74,0.67,0.09,yellow); }
+        "magic_shield" | "in_pz" | "pz_block" => {
+            line(&[[0.50,0.08],[0.79,0.20],[0.75,0.62],[0.50,0.90],[0.25,0.62],[0.21,0.20],[0.50,0.08]],ink,1.4);
+            if id == "in_pz" { line(&[[0.32,0.52],[0.46,0.66],[0.70,0.36]],green,1.6); }
+            if id == "pz_block" { line(&[[0.18,0.82],[0.82,0.18]],red,1.8); }
+        }
+        "monk_virtue" => { circle(0.50,0.50,0.18,ink); for p in [[[0.50,0.06],[0.50,0.22]],[[0.50,0.78],[0.50,0.94]],[[0.06,0.50],[0.22,0.50]],[[0.78,0.50],[0.94,0.50]]] { line(&p,ink,1.2); } }
+        "slowed" | "haste" | "strengthened" => {
+            let up = id != "slowed";
+            let ys = if up { [[0.72,0.45,0.25],[0.48,0.21,0.49]] } else { [[0.28,0.55,0.75],[0.52,0.79,0.51]] };
+            for [tip,left_y,right_y] in ys { line(&[[0.20,left_y],[0.50,tip],[0.80,right_y]],ink,1.5); }
+        }
+        "logout_block" => { painter.rect_stroke(egui::Rect::from_min_max(point(0.22,0.44),point(0.78,0.86)),1.0,Stroke::new(1.3,ink),egui::StrokeKind::Inside); line(&[[0.34,0.44],[0.34,0.31],[0.42,0.18],[0.58,0.18],[0.66,0.31],[0.66,0.44]],ink,1.3); circle(0.50,0.63,0.055,red); }
+        "freezing" => { for p in [[[0.50,0.06],[0.50,0.94]],[[0.12,0.28],[0.88,0.72]],[[0.12,0.72],[0.88,0.28]]] { line(&p,ink,1.15); } circle(0.50,0.50,0.07,white); }
+        "dazzled" => polygon(&[[0.50,0.06],[0.61,0.37],[0.94,0.39],[0.68,0.58],[0.76,0.91],[0.50,0.71],[0.24,0.91],[0.32,0.58],[0.06,0.39],[0.39,0.37]],ink),
+        "cursed" | "yellow_skull" | "white_skull" | "red_skull" | "black_skull" | "orange_skull" => {
+            circle(0.50,0.43,0.28,ink); painter.rect_filled(egui::Rect::from_min_max(point(0.34,0.55),point(0.66,0.80)),1.0,ink); circle(0.40,0.41,0.055,Color32::BLACK); circle(0.60,0.41,0.055,Color32::BLACK); line(&[[0.43,0.65],[0.43,0.79]],Color32::BLACK,1.0); line(&[[0.57,0.65],[0.57,0.79]],Color32::BLACK,1.0);
+        }
+        "resting" => { circle(0.47,0.47,0.31,ink); circle(0.59,0.37,0.27,Color32::from_rgb(31,34,35)); circle(0.70,0.72,0.045,blue); }
+        "lesser_hex" | "intense_hex" | "greater_hex" => {
+            line(&[[0.50,0.08],[0.84,0.28],[0.84,0.68],[0.50,0.89],[0.16,0.68],[0.16,0.28],[0.50,0.08]],ink,1.2);
+            let dots = match id { "lesser_hex" => 1, "intense_hex" => 2, _ => 3 };
+            for index in 0..dots { circle(0.38 + index as f32 * 0.12,0.50,0.045,ink); }
+        }
+        "goshnar_taint" | "bakragore_taint" => { circle(0.50,0.50,0.27,ink); circle(0.50,0.50,0.15,Color32::from_rgb(31,34,35)); line(&[[0.12,0.18],[0.33,0.34]],red,1.2); line(&[[0.88,0.18],[0.67,0.34]],blue,1.2); line(&[[0.12,0.82],[0.33,0.66]],yellow,1.2); }
+        "party_mode" => { circle(0.50,0.32,0.12,ink); circle(0.26,0.43,0.09,ink); circle(0.74,0.43,0.09,ink); line(&[[0.22,0.79],[0.29,0.60],[0.42,0.57],[0.50,0.76],[0.58,0.57],[0.71,0.60],[0.78,0.79]],ink,1.4); }
+        "guild_war" => { line(&[[0.16,0.16],[0.84,0.84]],ink,1.5); line(&[[0.84,0.16],[0.16,0.84]],yellow,1.5); line(&[[0.12,0.28],[0.28,0.12]],ink,1.2); line(&[[0.72,0.12],[0.88,0.28]],yellow,1.2); }
+        "hungry" => { line(&[[0.28,0.10],[0.28,0.90]],ink,1.2); line(&[[0.18,0.10],[0.18,0.39],[0.38,0.39],[0.38,0.10]],ink,1.1); line(&[[0.67,0.10],[0.67,0.90]],ink,1.2); line(&[[0.67,0.10],[0.82,0.28],[0.67,0.44]],ink,1.2); }
+        _ => { circle(0.50,0.50,0.21,ink); }
+    }
+}
+
 fn miscellaneous(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
     for (id, labels) in [
         (
@@ -543,7 +665,120 @@ fn screenshots(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::preferences_browser::test_support::{click, frame};
+    use crate::preferences_browser::test_support::{button_position, click, frame};
+
+    #[test]
+    fn hud_uses_reference_masters_radio_harmony_and_all_condition_icons() -> Result<(), &'static str>
+    {
+        for en in [false, true] {
+            let ctx = egui::Context::default();
+            let size = egui::vec2(1100.0, 900.0);
+            let mut draft = ClientSettings::default();
+            draft
+                .future_preferences
+                .insert("hud.hud.player_enabled".into(), FutureValue::Bool(true));
+            draft
+                .future_preferences
+                .insert("hud.show_harmony".into(), FutureValue::Bool(true));
+            let draw = |ctx: &egui::Context, draft: &mut ClientSettings| {
+                egui::Window::new("HUD test")
+                    .fixed_size([1050.0, 850.0])
+                    .show(ctx, |ui| {
+                        show(ui, draft, "hud", en, &mut PageState::default());
+                    });
+            };
+            let mut output = egui::FullOutput::default();
+            for _ in 0..3 {
+                output = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft)).1;
+            }
+            for label in if en {
+                [
+                    "Show HUD for Own Character",
+                    "Show HUD for Other Creatures",
+                    "next to Health Arc",
+                    "next to Mana Arc",
+                ]
+            } else {
+                [
+                    "Pokaż HUD własnej postaci",
+                    "Pokaż HUD innych stworzeń",
+                    "obok łuku zdrowia",
+                    "obok łuku many",
+                ]
+            } {
+                assert!(
+                    button_position(&output, size, label).is_some(),
+                    "missing {label}"
+                );
+            }
+            for stale in ["Own character", "Other creatures", "Harmony beside"] {
+                assert!(
+                    button_position(&output, size, stale).is_none(),
+                    "stale {stale}"
+                );
+            }
+            assert!(
+                !draft
+                    .future_preferences
+                    .contains_key("hud.harmony_position")
+            );
+            let radio = |id: &'static str| {
+                ctx.data(|data| {
+                    data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                        "harmony-position",
+                        id,
+                    )))
+                })
+            };
+            let (mana, clip) = radio("mana").ok_or("mana radio")?;
+            assert!(clip.contains_rect(mana));
+            click(&ctx, size, mana.center(), |ctx| draw(ctx, &mut draft));
+            assert_eq!(
+                draft.future_preferences.get("hud.harmony_position"),
+                Some(&FutureValue::Choice("mana".into()))
+            );
+            draft
+                .future_preferences
+                .insert("hud.show_harmony".into(), FutureValue::Bool(false));
+            let _ = frame(&ctx, size, vec![], |ctx| draw(ctx, &mut draft));
+            let (health, _) = radio("health").ok_or("health radio")?;
+            click(&ctx, size, health.center(), |ctx| draw(ctx, &mut draft));
+            assert_eq!(
+                draft.future_preferences.get("hud.harmony_position"),
+                Some(&FutureValue::Choice("mana".into())),
+                "disabled radio must retain the saved choice"
+            );
+            let (powerless, clip) = ctx
+                .data(|data| {
+                    data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                        "condition-icon",
+                        "powerless",
+                    )))
+                })
+                .ok_or("powerless icon")?;
+            assert!(clip.contains_rect(powerless));
+            click(&ctx, size, powerless.center(), |ctx| draw(ctx, &mut draft));
+            assert_eq!(
+                ctx.data(|data| {
+                    data.get_temp::<String>(egui::Id::new("selected-hud-condition"))
+                })
+                .as_deref(),
+                Some("powerless")
+            );
+            for (id, _) in CONDITIONS {
+                let (rect, _) = ctx
+                    .data(|data| {
+                        data.get_temp::<(egui::Rect, egui::Rect)>(egui::Id::new((
+                            "condition-icon",
+                            id,
+                        )))
+                    })
+                    .ok_or("condition icon")?;
+                assert_eq!(rect.size(), egui::vec2(18.0, 18.0), "{id}");
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn hud_masters_gate_edits_without_erasing_saved_children() -> Result<(), &'static str> {

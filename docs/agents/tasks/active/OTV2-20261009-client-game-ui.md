@@ -80,7 +80,7 @@ them and stage only the explicit client/governance batch.
 
 The current branch supersedes the historical 6-condition/12-slot/missing-auto-switch
 implementation notes above without changing their audit provenance. It now has the
-35 observed HUD rows with ordering, nine 50-slot action rows, captured two-column
+35 observed HUD rows/symbols, exact masters/Harmony choices and ordering, nine 50-slot action rows, captured two-column
 hotkey editing in distinct Chat On/Off contexts with conflict blocking,
 character-name preset auto-switch, and real
 consumers for movement, Options, fullscreen, action-row visibility and text custom

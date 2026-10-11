@@ -273,8 +273,8 @@ fn console(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
         (
             "console.private_tab",
             [
-                "Nowe karty prywatnych rozmów",
-                "Open New Tabs for Private Messages",
+                "Otwieraj nowe karty po otrzymaniu prywatnych wiadomości",
+                "Open New Tabs When Receiving Private Messages",
             ],
         ),
         ("console.timestamps", ["Znaczniki czasu", "Show Timestamps"]),
@@ -945,5 +945,33 @@ mod tests {
             assert_eq!(draft.stored_int("effects.effects.indoor_light"), Some(65));
         }
         Ok(())
+    }
+
+    #[test]
+    fn console_uses_the_exact_private_message_tab_label_without_inventing_behavior() {
+        for en in [false, true] {
+            let ctx = egui::Context::default();
+            crate::client_chrome::install(&ctx, false);
+            let size = egui::vec2(620.0, 480.0);
+            let mut draft = ClientSettings::default();
+            let before = draft.future_preferences.clone();
+            let mut output = egui::FullOutput::default();
+            for _ in 0..2 {
+                output = frame(&ctx, size, vec![], |ctx| {
+                    egui::Window::new("console-test")
+                        .default_size([560.0, 440.0])
+                        .show(ctx, |ui| console(ui, &mut draft, en));
+                })
+                .1;
+            }
+            let exact = if en {
+                "Open New Tabs When Receiving Private Messages"
+            } else {
+                "Otwieraj nowe karty po otrzymaniu prywatnych wiadomości"
+            };
+            assert!(button_position(&output, size, exact).is_some());
+            assert!(button_position(&output, size, "Open New Tabs for Private Messages").is_none());
+            assert_eq!(draft.future_preferences, before);
+        }
     }
 }

@@ -177,8 +177,7 @@ impl PreferencesBrowser {
                         if self.overview { overview::show(ui, draft, english); }
                         else if section.id == "basic" { basic_page(ui, draft, english); }
                         else if section.id == "action_bars" { action_bars_page(ui, draft, english, self.action_bar_available, &mut self.clear_action_row); }
-                        else if (search.is_empty() || section.id == "effects")
-                            && pages::show(ui, draft, section.id, english, &mut self.page_state) {
+                        else if pages::show(ui, draft, section.id, english, &mut self.page_state) {
                             if let Some(help_action) = self.page_state.take_help_action() {
                                 action = match help_action {
                                     pages::HelpAction::Export => PreferenceAction::ExportOptions,
