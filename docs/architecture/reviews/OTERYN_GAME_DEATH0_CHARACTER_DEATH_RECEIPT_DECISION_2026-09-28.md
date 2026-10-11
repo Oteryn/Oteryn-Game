@@ -1,7 +1,7 @@
 # DEATH-0 Character death receipt decision
 
 - Decision: `DEATH0-CHARACTER-DEATH-RECEIPT-V1`
-- Status: **CANDIDATE**. Acceptance requires exact-head validation, independent review and
+- Status: **ACCEPTED**. Accepted by the owner on 2026-10-11 (`ACCEPT-CHAT-ATTACK-DEATH-0`, `OTERYN_GAME_ACCEPT_CHAT_ATTACK_DEATH0_ACCEPTANCE_DECISION_2026-10-11.md`); it records the acceptance of a runtime that is already implemented, and no rule text changes. Original gate: Acceptance requires exact-head validation, independent review and
   protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Answers: the storage prerequisite of the Reference first player death decision (§4.3, child

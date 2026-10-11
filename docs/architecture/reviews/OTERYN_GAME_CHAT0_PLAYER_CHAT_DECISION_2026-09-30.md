@@ -1,7 +1,7 @@
 # CHAT-0 Player chat
 
 - Decision: `CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol,
+- Status: **ACCEPTED**. Accepted by the owner on 2026-10-11 (`ACCEPT-CHAT-ATTACK-DEATH-0`, `OTERYN_GAME_ACCEPT_CHAT_ATTACK_DEATH0_ACCEPTANCE_DECISION_2026-10-11.md`); it records the acceptance of a runtime that is already implemented, and no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (protocol,
   security and privacy) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the owner's direction to finish the playable game (2026-09-30); players cannot talk

@@ -1,7 +1,7 @@
 # ATTACK-0 Attack target and auto-attack
 
 - Decision: `ATTACK0-ATTACK-TARGET-AND-AUTO-ATTACK-V1`
-- Status: **CANDIDATE**. Acceptance needs exact-head validation, independent review (protocol and
+- Status: **ACCEPTED**. Accepted by the owner on 2026-10-11 (`ACCEPT-CHAT-ATTACK-DEATH-0`, `OTERYN_GAME_ACCEPT_CHAT_ATTACK_DEATH0_ACCEPTANCE_DECISION_2026-10-11.md`); it records the acceptance of a runtime that is already implemented, and no rule text changes. Original gate: Acceptance needs exact-head validation, independent review (protocol and
   combat) and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.3)
 - Answers: the architect programme plan (#162 5910870596, M1): a player cannot attack today

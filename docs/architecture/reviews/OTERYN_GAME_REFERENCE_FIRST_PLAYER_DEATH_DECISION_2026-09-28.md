@@ -1,7 +1,7 @@
 # Reference first player death decision
 
 - Decision: `REFERENCE-FIRST-PLAYER-DEATH-V1`
-- Status: **CANDIDATE with owner decisions D58-D60 and D62-D68 taken (§2)**. Acceptance requires
+- Status: **ACCEPTED with owner decisions D58-D60 and D62-D68 taken (§2)**. Accepted by the owner on 2026-10-11 (`ACCEPT-CHAT-ATTACK-DEATH-0`, `OTERYN_GAME_ACCEPT_CHAT_ATTACK_DEATH0_ACCEPTANCE_DECISION_2026-10-11.md`); it records the acceptance of a runtime that is already implemented, and no rule text changes. Original gate: Acceptance requires
   exact-head validation, independent review and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Profile: `Oteryn Reference` (target Global Tibia at 2026-09-27, D33)
