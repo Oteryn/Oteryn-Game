@@ -10,245 +10,427 @@ use oteryn_client::{
     settings_catalog::ShortcutBinding,
 };
 
+/// The English labels are exact `label_gameactionidentifier_*` translations from the official
+/// Tibia 15.33.b21348 `client.en.qm`. The Polish labels are Oteryn-authored translations: the
+/// official package contains no Polish Tibia catalogue.
 const GENERAL_ACTIONS: &[(&str, [&str; 2])] = &[
     (
         "action.bottom.1",
         [
-            "Paski akcji: dolny 1",
-            "Action Bar: Show/Hide Bottom Action Bar 1",
+            "Pasek akcji: pokaż/ukryj dolny pasek akcji 1",
+            "Action Bar: Show/hide Bottom Action Bar 1",
         ],
     ),
     (
         "action.bottom.2",
         [
-            "Paski akcji: dolny 2",
-            "Action Bar: Show/Hide Bottom Action Bar 2",
+            "Pasek akcji: pokaż/ukryj dolny pasek akcji 2",
+            "Action Bar: Show/hide Bottom Action Bar 2",
         ],
     ),
     (
         "action.bottom.3",
         [
-            "Paski akcji: dolny 3",
-            "Action Bar: Show/Hide Bottom Action Bar 3",
+            "Pasek akcji: pokaż/ukryj dolny pasek akcji 3",
+            "Action Bar: Show/hide Bottom Action Bar 3",
         ],
     ),
     (
         "action.bottom.all",
         [
-            "Paski akcji: wszystkie dolne",
-            "Action Bar: Show/Hide Bottom Action Bars",
+            "Pasek akcji: pokaż/ukryj dolne paski akcji",
+            "Action Bar: Show/hide Bottom Action Bars",
         ],
     ),
     (
         "action.left.1",
         [
-            "Paski akcji: lewy 1",
-            "Action Bar: Show/Hide Left Action Bar 1",
+            "Pasek akcji: pokaż/ukryj lewy pasek akcji 1",
+            "Action Bar: Show/hide Left Action Bar 1",
         ],
     ),
     (
         "action.left.2",
         [
-            "Paski akcji: lewy 2",
-            "Action Bar: Show/Hide Left Action Bar 2",
+            "Pasek akcji: pokaż/ukryj lewy pasek akcji 2",
+            "Action Bar: Show/hide Left Action Bar 2",
         ],
     ),
     (
         "action.left.3",
         [
-            "Paski akcji: lewy 3",
-            "Action Bar: Show/Hide Left Action Bar 3",
+            "Pasek akcji: pokaż/ukryj lewy pasek akcji 3",
+            "Action Bar: Show/hide Left Action Bar 3",
         ],
     ),
     (
         "action.left.all",
         [
-            "Paski akcji: wszystkie lewe",
-            "Action Bar: Show/Hide Left Action Bars",
+            "Pasek akcji: pokaż/ukryj lewe paski akcji",
+            "Action Bar: Show/hide Left Action Bars",
         ],
     ),
     (
         "action.right.1",
         [
-            "Paski akcji: prawy 1",
-            "Action Bar: Show/Hide Right Action Bar 1",
+            "Pasek akcji: pokaż/ukryj prawy pasek akcji 1",
+            "Action Bar: Show/hide Right Action Bar 1",
         ],
     ),
     (
         "action.right.2",
         [
-            "Paski akcji: prawy 2",
-            "Action Bar: Show/Hide Right Action Bar 2",
+            "Pasek akcji: pokaż/ukryj prawy pasek akcji 2",
+            "Action Bar: Show/hide Right Action Bar 2",
         ],
     ),
     (
         "action.right.3",
         [
-            "Paski akcji: prawy 3",
-            "Action Bar: Show/Hide Right Action Bar 3",
+            "Pasek akcji: pokaż/ukryj prawy pasek akcji 3",
+            "Action Bar: Show/hide Right Action Bar 3",
         ],
     ),
     (
         "action.right.all",
         [
-            "Paski akcji: wszystkie prawe",
-            "Action Bar: Show/Hide Right Action Bars",
+            "Pasek akcji: pokaż/ukryj prawe paski akcji",
+            "Action Bar: Show/hide Right Action Bars",
         ],
     ),
     (
         "battle.first",
         [
-            "Lista walki: pierwszy cel",
+            "Lista walki: zaatakuj pierwszy cel",
             "Battle List: Attack First Target",
         ],
     ),
     (
         "battle.next",
         [
-            "Lista walki: następny cel",
+            "Lista walki: zaatakuj następny cel",
             "Battle List: Attack Next Target",
         ],
     ),
     (
         "battle.previous",
         [
-            "Lista walki: poprzedni cel",
+            "Lista walki: zaatakuj poprzedni cel",
             "Battle List: Attack Previous Target",
+        ],
+    ),
+    (
+        "chat.send",
+        [
+            "Czat: wyślij bieżący wiersz czatu",
+            "Chat: Send current chat line",
+        ],
+    ),
+    (
+        "chat.server_messages",
+        [
+            "Czat: pokaż/ukryj komunikaty serwera w bieżącym kanale",
+            "Chat: Show/hide Show Server messages in current channel",
         ],
     ),
     (
         "chat.close",
         [
-            "Kanał czatu: zamknij",
+            "Kanał czatu: zamknij bieżący kanał",
             "Chat Channel: Close Current Channel",
         ],
     ),
     (
         "chat.next",
-        ["Kanał czatu: następny", "Chat Channel: Next Channel"],
+        ["Kanał czatu: następny kanał", "Chat Channel: Next Channel"],
     ),
     (
         "chat.list",
         [
-            "Kanał czatu: lista kanałów",
+            "Kanał czatu: otwórz listę kanałów",
             "Chat Channel: Open Channel List",
         ],
     ),
     (
         "chat.help",
-        ["Kanał czatu: pomoc", "Chat Channel: Open Help Channel"],
+        [
+            "Kanał czatu: otwórz kanał pomocy",
+            "Chat Channel: Open Help Channel",
+        ],
     ),
     (
         "chat.loot",
-        ["Kanał czatu: łup", "Chat Channel: Open Loot Channel"],
+        [
+            "Kanał czatu: otwórz kanał łupu",
+            "Chat Channel: Open Loot Channel",
+        ],
     ),
-    ("movement.north", ["Ruch: północ", "Movement: North"]),
-    ("movement.east", ["Ruch: wschód", "Movement: East"]),
-    ("movement.south", ["Ruch: południe", "Movement: South"]),
-    ("movement.west", ["Ruch: zachód", "Movement: West"]),
     (
-        "client.options",
-        ["Klient: ustawienia", "Client: Open Options"],
+        "chat.npc",
+        [
+            "Kanał czatu: otwórz kanał NPC",
+            "Chat Channel: Open NPC Channel",
+        ],
+    ),
+    (
+        "chat.server",
+        [
+            "Kanał czatu: otwórz kanał serwera",
+            "Chat Channel: Open Server Channel",
+        ],
     ),
     (
         "chat.previous",
-        ["Kanał czatu: poprzedni", "Chat Channel: Previous Channel"],
+        [
+            "Kanał czatu: poprzedni kanał",
+            "Chat Channel: Previous Channel",
+        ],
     ),
     (
         "chat.local",
-        ["Kanał czatu: lokalny", "Chat Channel: Switch to Local Chat"],
+        [
+            "Kanał czatu: pokaż kanał domyślny",
+            "Chat Channel: Show Default Channel",
+        ],
     ),
     (
-        "chat.server_messages",
-        ["Czat: komunikaty serwera", "Chat: Toggle Server Messages"],
+        "chat.mode.off",
+        [
+            "Tryb czatu: ustaw „Czat wyłączony”",
+            "Chat Mode: Set to Chat Off",
+        ],
     ),
     (
-        "client.hotkeys",
-        ["Klient: ustawienia skrótów", "Client: Open Hotkeys"],
+        "chat.mode.on",
+        [
+            "Tryb czatu: ustaw „Czat włączony”",
+            "Chat Mode: Set to Chat On",
+        ],
     ),
     (
-        "client.ignore",
-        ["Klient: lista ignorowanych", "Client: Open Ignore List"],
+        "chat.mode.temporary",
+        [
+            "Tryb czatu: ustaw „Czat włączony*”",
+            "Chat Mode: Set to Chat On*",
+        ],
+    ),
+    (
+        "chat.text.copy",
+        [
+            "Tekst czatu: kopiuj do schowka",
+            "Chat Text: Copy to clipboard",
+        ],
+    ),
+    (
+        "chat.text.select_all",
+        ["Tekst czatu: zaznacz wszystko", "Chat Text: Select All"],
+    ),
+    (
+        "combat.chase",
+        ["Walka: przełącz tryb pościgu", "Combat: Toggle Chase Mode"],
+    ),
+    (
+        "combat.secure",
+        [
+            "Walka: przełącz tryb bezpieczny",
+            "Combat: Toggle Secure Mode",
+        ],
+    ),
+    (
+        "container.manual_sort",
+        [
+            "Kontenery: przełącz tryb ręcznego sortowania",
+            "Containers: Toggle Manual Sort Mode",
+        ],
     ),
     (
         "client.bug_report",
-        ["Klient: zgłoszenie błędu", "Client: Bug Report"],
+        ["Okna: otwórz zgłoszenie błędu", "Dialogs: Open Bugreport"],
     ),
     (
-        "client.change_character",
-        ["Klient: zmień postać", "Client: Change Character"],
+        "dialog.compendium",
+        ["Okna: otwórz Kompendium", "Dialogs: Open Compendium"],
     ),
-    ("client.logout", ["Klient: wyloguj", "Client: Logout"]),
     (
-        "client.next_profile",
+        "dialog.cyclopedia.bestiary",
         [
-            "Klient: następny profil skrótów",
-            "Client: Next Hotkey Preset",
+            "Okna: otwórz Cyklopedię — Bestiariusz",
+            "Dialogs: Open Cyclopedia - Bestiary",
         ],
     ),
     (
-        "client.stop",
+        "dialog.cyclopedia.character",
         [
-            "Klient: zatrzymaj wszystkie akcje",
-            "Client: Stop All Actions",
+            "Okna: otwórz Cyklopedię — Postać",
+            "Dialogs: Open Cyclopedia - Character",
         ],
     ),
     (
-        "client.fullscreen",
-        ["Interfejs: pełny ekran", "Interface: Toggle Fullscreen"],
-    ),
-    (
-        "client.fps",
+        "dialog.cyclopedia.charms",
         [
-            "Interfejs: FPS i opóźnienie",
-            "Interface: Toggle FPS/Lag Indicator",
+            "Okna: otwórz Cyklopedię — Talizmany",
+            "Dialogs: Open Cyclopedia - Charms",
         ],
     ),
     (
-        "client.names",
+        "dialog.cyclopedia.items",
         [
-            "Interfejs: nazwy i paski",
-            "Interface: Toggle Creature Names/Bars",
+            "Okna: otwórz Cyklopedię — Przedmioty",
+            "Dialogs: Open Cyclopedia - Items",
         ],
     ),
     (
-        "client.clear_message",
+        "dialog.cyclopedia.magical_archive",
         [
-            "Okno gry: usuń najstarszy komunikat",
-            "Game Window: Clear Oldest Message",
+            "Okna: otwórz Cyklopedię — Archiwum magiczne",
+            "Dialogs: Open Cyclopedia - Magical Archive",
         ],
     ),
     (
-        "client.mount",
-        ["Postać: wsiądź/zsiądź", "Character: Mount/Dismount"],
+        "dialog.cyclopedia.map",
+        [
+            "Okna: otwórz Cyklopedię — Mapę",
+            "Dialogs: Open Cyclopedia - Map",
+        ],
     ),
-    ("dialog.prey", ["Okno: Prey", "Dialog: Open Prey"]),
+    (
+        "dialog.exaltation_forge",
+        [
+            "Okna: otwórz Kuźnię egzaltacji",
+            "Dialogs: Open Exaltation Forge",
+        ],
+    ),
+    (
+        "dialog.exiva_options",
+        ["Okna: otwórz opcje Exivy", "Dialogs: Open Exiva Options"],
+    ),
+    (
+        "client.ignore",
+        [
+            "Okna: otwórz listę ignorowanych",
+            "Dialogs: Open Ignore List",
+        ],
+    ),
+    (
+        "dialog.manage_containers",
+        [
+            "Okna: otwórz zarządzanie kontenerami",
+            "Dialogs: Open Manage Containers",
+        ],
+    ),
+    (
+        "client.options",
+        ["Okna: otwórz ustawienia", "Dialogs: Open Options"],
+    ),
+    (
+        "client.hotkeys",
+        [
+            "Okna: otwórz Ustawienia — Własne skróty",
+            "Dialogs: Open Options - Custom Hotkeys",
+        ],
+    ),
+    (
+        "dialog.prey",
+        ["Okna: otwórz Prey", "Dialogs: Open Prey Dialog"],
+    ),
     (
         "dialog.quest_log",
-        ["Okno: dziennik zadań", "Dialog: Open Quest Log"],
+        ["Okna: otwórz dziennik zadań", "Dialogs: Open Questlog"],
     ),
     (
-        "dialog.lenshelp",
-        ["Okno: Lenshelp", "Dialog: Open Lenshelp"],
-    ),
-    ("window.vip", ["Panel: lista VIP", "Window: VIP List"]),
-    (
-        "window.battle",
-        ["Panel: lista walki", "Window: Battle List"],
-    ),
-    ("window.skills", ["Panel: umiejętności", "Window: Skills"]),
-    ("minimap.zoom_out", ["Minimapa: oddal", "Minimap: Zoom Out"]),
-    (
-        "minimap.zoom_in",
-        ["Minimapa: przybliż", "Minimap: Zoom In"],
+        "dialog.reward_wall",
+        ["Okna: otwórz Ścianę nagród", "Dialogs: Open Reward Wall"],
     ),
     (
-        "minimap.north",
-        ["Minimapa: przewiń na północ", "Minimap: Scroll North"],
+        "dialog.social.assemble_team",
+        [
+            "Okna: otwórz Społeczność — Utwórz drużynę",
+            "Dialogs: Open Social - Assemble Team",
+        ],
+    ),
+    (
+        "dialog.social.badges",
+        [
+            "Okna: otwórz Społeczność — Odznaki",
+            "Dialogs: Open Social - Badges",
+        ],
+    ),
+    (
+        "dialog.social.friend_list",
+        [
+            "Okna: otwórz Społeczność — Lista znajomych",
+            "Dialogs: Open Social - Friend List",
+        ],
+    ),
+    (
+        "dialog.social.friends_config",
+        [
+            "Okna: otwórz Społeczność — Ustawienia znajomych",
+            "Dialogs: Open Social - Friends Config",
+        ],
+    ),
+    (
+        "dialog.social.friend_invitations",
+        [
+            "Okna: otwórz Społeczność — Zaproszenia znajomych",
+            "Dialogs: Open Social - Friends Invitations",
+        ],
+    ),
+    (
+        "dialog.social.friend_search",
+        [
+            "Okna: otwórz Społeczność — Wyszukiwanie znajomych",
+            "Dialogs: Open Social - Friends Search",
+        ],
+    ),
+    (
+        "dialog.social.join_team",
+        [
+            "Okna: otwórz Społeczność — Dołącz do drużyny",
+            "Dialogs: Open Social - Join Team",
+        ],
+    ),
+    (
+        "dialog.task_board",
+        ["Okna: otwórz Tablicę zleceń", "Dialogs: Open Task Board"],
+    ),
+    (
+        "dialog.weapon_proficiency",
+        [
+            "Okna: otwórz Biegłość w broni",
+            "Dialogs: Open Weapon Proficiency",
+        ],
+    ),
+    (
+        "dialog.wheel_of_destiny",
+        [
+            "Okna: otwórz Koło przeznaczenia",
+            "Dialogs: Open Wheel of Destiny",
+        ],
+    ),
+    (
+        "loot.nearby_corpses",
+        [
+            "Łup: szybko zbierz łup z pobliskich ciał",
+            "Loot: Quick Loot Nearby Corpses",
+        ],
+    ),
+    ("minimap.center", ["Minimapa: wyśrodkuj", "Minimap: Center"]),
+    (
+        "minimap.floor_down",
+        ["Minimapa: piętro niżej", "Minimap: One Floor Down"],
+    ),
+    (
+        "minimap.floor_up",
+        ["Minimapa: piętro wyżej", "Minimap: One Floor Up"],
     ),
     (
         "minimap.east",
         ["Minimapa: przewiń na wschód", "Minimap: Scroll East"],
+    ),
+    (
+        "minimap.north",
+        ["Minimapa: przewiń na północ", "Minimap: Scroll North"],
     ),
     (
         "minimap.south",
@@ -259,12 +441,286 @@ const GENERAL_ACTIONS: &[(&str, [&str; 2])] = &[
         ["Minimapa: przewiń na zachód", "Minimap: Scroll West"],
     ),
     (
-        "minimap.floor_up",
-        ["Minimapa: piętro wyżej", "Minimap: Floor Up"],
+        "minimap.zoom_in",
+        ["Minimapa: przybliż", "Minimap: Zoom In"],
+    ),
+    ("minimap.zoom_out", ["Minimapa: oddal", "Minimap: Zoom Out"]),
+    (
+        "dialog.lenshelp",
+        ["Inne: aktywuj Lenshelp", "Misc.: Activate Lenshelp"],
     ),
     (
-        "minimap.floor_down",
-        ["Minimapa: piętro niżej", "Minimap: Floor Down"],
+        "gameplay.exiva_allow_all",
+        [
+            "Inne: zezwól/zabroń wszystkim postaciom używać na mnie Exivy",
+            "Misc.: Allow/disallow all characters to Exiva me",
+        ],
+    ),
+    (
+        "client.change_character",
+        ["Inne: zmień postać", "Misc.: Change Character"],
+    ),
+    (
+        "client.clear_message",
+        [
+            "Inne: usuń najstarszy komunikat z okna gry",
+            "Misc.: Clear oldest message from Game Window",
+        ],
+    ),
+    (
+        "dialog.customise_character",
+        ["Inne: dostosuj postać", "Misc.: Customise Character"],
+    ),
+    ("client.logout", ["Inne: wyloguj", "Misc.: Logout"]),
+    (
+        "client.next_profile",
+        ["Inne: następny profil skrótów", "Misc.: Next Hotkey Preset"],
+    ),
+    (
+        "client.previous_profile",
+        [
+            "Inne: poprzedni profil skrótów",
+            "Misc.: Previous Hotkey Preset",
+        ],
+    ),
+    (
+        "client.screenshot",
+        ["Inne: zrób zrzut ekranu", "Misc.: Take Screenshot"],
+    ),
+    (
+        "movement.east",
+        ["Ruch: idź na wschód", "Movement: Go East"],
+    ),
+    (
+        "movement.north",
+        ["Ruch: idź na północ", "Movement: Go North"],
+    ),
+    (
+        "movement.north_east",
+        ["Ruch: idź na północny wschód", "Movement: Go North-East"],
+    ),
+    (
+        "movement.north_west",
+        ["Ruch: idź na północny zachód", "Movement: Go North-West"],
+    ),
+    (
+        "movement.south",
+        ["Ruch: idź na południe", "Movement: Go South"],
+    ),
+    (
+        "movement.south_east",
+        ["Ruch: idź na południowy wschód", "Movement: Go South-East"],
+    ),
+    (
+        "movement.south_west",
+        ["Ruch: idź na południowy zachód", "Movement: Go South-West"],
+    ),
+    (
+        "movement.west",
+        ["Ruch: idź na zachód", "Movement: Go West"],
+    ),
+    (
+        "client.mount",
+        ["Ruch: wsiądź/zsiądź", "Movement: Mount/dismount"],
+    ),
+    (
+        "client.stop",
+        [
+            "Ruch: zatrzymaj wszystkie akcje",
+            "Movement: Stop All Actions",
+        ],
+    ),
+    (
+        "pvp.dove",
+        ["Tryb PvP: ustaw gołębia", "PvP Mode: Set to Dove"],
+    ),
+    (
+        "pvp.red_fist",
+        [
+            "Tryb PvP: ustaw czerwoną pięść",
+            "PvP Mode: Set to Red Fist",
+        ],
+    ),
+    (
+        "pvp.white_hand",
+        ["Tryb PvP: ustaw białą dłoń", "PvP Mode: Set to White Hand"],
+    ),
+    (
+        "pvp.yellow_hand",
+        ["Tryb PvP: ustaw żółtą dłoń", "PvP Mode: Set to Yellow Hand"],
+    ),
+    (
+        "sound.toggle",
+        ["Dźwięk: wycisz/włącz", "Sound: Mute/unmute"],
+    ),
+    (
+        "client.names",
+        [
+            "Interfejs: pokaż/ukryj nazwy i paski stworzeń",
+            "UI: Show/hide Creature Names and Bars",
+        ],
+    ),
+    (
+        "client.fps",
+        [
+            "Interfejs: pokaż/ukryj wskaźnik FPS/opóźnienia",
+            "UI: Show/hide FPS / lag indicator",
+        ],
+    ),
+    (
+        "client.fullscreen",
+        ["Interfejs: przełącz pełny ekran", "UI: Toggle Fullscreen"],
+    ),
+    (
+        "window.battle.secondary",
+        [
+            "Okna: otwórz dodatkową listę walki",
+            "Windows: Open secondary battle list",
+        ],
+    ),
+    (
+        "window.kill_tracker",
+        [
+            "Okna: pokaż/ukryj licznik zabójstw",
+            "Windows: Show/hide Kill Tracker window",
+        ],
+    ),
+    (
+        "window.vip",
+        ["Okna: pokaż/ukryj listę VIP", "Windows: Show/hide VIP list"],
+    ),
+    (
+        "window.xp_analyser",
+        [
+            "Okna: pokaż/ukryj analizator doświadczenia",
+            "Windows: Show/hide XP analyser",
+        ],
+    ),
+    (
+        "window.analytics_selector",
+        [
+            "Okna: pokaż/ukryj wybór analizatorów",
+            "Windows: Show/hide analytics selector",
+        ],
+    ),
+    (
+        "window.battle",
+        [
+            "Okna: pokaż/ukryj listę walki",
+            "Windows: Show/hide battle list",
+        ],
+    ),
+    (
+        "window.bestiary_tracker",
+        [
+            "Okna: pokaż/ukryj śledzenie bestiariusza",
+            "Windows: Show/hide bestiary tracker",
+        ],
+    ),
+    (
+        "window.boss_cooldowns",
+        [
+            "Okna: pokaż/ukryj odnowienia bossów",
+            "Windows: Show/hide boss cooldowns",
+        ],
+    ),
+    (
+        "window.bosstiary_tracker",
+        [
+            "Okna: pokaż/ukryj śledzenie bestiariusza bossów",
+            "Windows: Show/hide bosstiary tracker",
+        ],
+    ),
+    (
+        "window.drop_tracker",
+        [
+            "Okna: pokaż/ukryj śledzenie zdobyczy",
+            "Windows: Show/hide drop tracker",
+        ],
+    ),
+    (
+        "window.hunting_analyser",
+        [
+            "Okna: pokaż/ukryj analizator polowania",
+            "Windows: Show/hide hunting analyser",
+        ],
+    ),
+    (
+        "window.imbuement_tracker",
+        [
+            "Okna: pokaż/ukryj śledzenie nasyceń",
+            "Windows: Show/hide imbuement tracker",
+        ],
+    ),
+    (
+        "window.impact_analyser",
+        [
+            "Okna: pokaż/ukryj analizator wpływu",
+            "Windows: Show/hide impact analyser",
+        ],
+    ),
+    (
+        "window.damage_input_analyser",
+        [
+            "Okna: pokaż/ukryj analizator otrzymanych obrażeń",
+            "Windows: Show/hide input analyser",
+        ],
+    ),
+    (
+        "window.loot_analyser",
+        [
+            "Okna: pokaż/ukryj analizator łupu",
+            "Windows: Show/hide loot analyser",
+        ],
+    ),
+    (
+        "window.party_hunt_analyser",
+        [
+            "Okna: pokaż/ukryj analizator polowania drużynowego",
+            "Windows: Show/hide party hunt analyser",
+        ],
+    ),
+    (
+        "window.party",
+        [
+            "Okna: pokaż/ukryj listę drużyny",
+            "Windows: Show/hide party list",
+        ],
+    ),
+    (
+        "window.player_guide",
+        [
+            "Okna: pokaż/ukryj poradnik gracza",
+            "Windows: Show/hide player guide",
+        ],
+    ),
+    (
+        "window.quest_tracker",
+        [
+            "Okna: pokaż/ukryj śledzenie zadań",
+            "Windows: Show/hide quest tracker",
+        ],
+    ),
+    (
+        "window.skills",
+        [
+            "Okna: pokaż/ukryj umiejętności",
+            "Windows: Show/hide skills window",
+        ],
+    ),
+    (
+        "window.spell_list",
+        [
+            "Okna: pokaż/ukryj listę czarów",
+            "Windows: Show/hide spell list",
+        ],
+    ),
+    (
+        "window.supply_analyser",
+        [
+            "Okna: pokaż/ukryj analizator zasobów",
+            "Windows: Show/hide supply analyser",
+        ],
     ),
 ];
 
@@ -1446,6 +1902,77 @@ fn custom_label(action: &CustomHotkeyAction, en: bool) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeSet;
+
+    #[test]
+    fn general_hotkey_catalog_matches_the_official_120_action_inventory() {
+        assert_eq!(GENERAL_ACTIONS.len(), 120);
+
+        let ids = GENERAL_ACTIONS
+            .iter()
+            .map(|(id, _)| *id)
+            .collect::<BTreeSet<_>>();
+        let english_labels = GENERAL_ACTIONS
+            .iter()
+            .map(|(_, labels)| labels[1])
+            .collect::<BTreeSet<_>>();
+        assert_eq!(ids.len(), GENERAL_ACTIONS.len());
+        assert_eq!(english_labels.len(), GENERAL_ACTIONS.len());
+        assert!(
+            GENERAL_ACTIONS
+                .iter()
+                .all(|(_, labels)| !labels[0].is_empty())
+        );
+
+        for (prefix, expected) in [
+            ("Action Bar:", 12),
+            ("Battle List:", 3),
+            ("Chat:", 2),
+            ("Chat Channel:", 9),
+            ("Chat Mode:", 3),
+            ("Chat Text:", 2),
+            ("Combat:", 2),
+            ("Containers:", 1),
+            ("Dialogs:", 27),
+            ("Loot:", 1),
+            ("Minimap:", 9),
+            ("Misc.:", 9),
+            ("Movement:", 10),
+            ("PvP Mode:", 4),
+            ("Sound:", 1),
+            ("UI:", 3),
+            ("Windows:", 22),
+        ] {
+            assert_eq!(
+                GENERAL_ACTIONS
+                    .iter()
+                    .filter(|(_, labels)| labels[1].starts_with(prefix))
+                    .count(),
+                expected,
+                "{prefix}"
+            );
+        }
+
+        let english = |id: &str| {
+            GENERAL_ACTIONS
+                .iter()
+                .find(|(candidate, _)| *candidate == id)
+                .map(|(_, labels)| labels[1])
+        };
+        assert_eq!(
+            english("chat.server_messages"),
+            Some("Chat: Show/hide Show Server messages in current channel")
+        );
+        assert_eq!(
+            english("container.manual_sort"),
+            Some("Containers: Toggle Manual Sort Mode")
+        );
+        assert_eq!(english("client.stop"), Some("Movement: Stop All Actions"));
+        assert_eq!(
+            english("window.kill_tracker"),
+            Some("Windows: Show/hide Kill Tracker window")
+        );
+    }
 
     #[test]
     fn all_hotkey_pages_render_for_both_languages() {
@@ -1611,6 +2138,67 @@ mod tests {
         assert_eq!(egui_key_to_hid(egui::Key::F12), Some(69));
         assert_eq!(egui_key_to_hid(egui::Key::ArrowUp), Some(82));
         assert_eq!(egui_key_to_hid(egui::Key::Escape), Some(41));
+    }
+
+    #[test]
+    fn binding_editor_captures_stop_escape_cancels_other_escape_and_keeps_f10()
+    -> Result<(), &'static str> {
+        let run_key = |settings: &mut ClientSettings, state: &mut State, key: egui::Key| {
+            let context = egui::Context::default();
+            let mut output = context.run_ui(
+                egui::RawInput {
+                    events: vec![egui::Event::Key {
+                        key,
+                        physical_key: Some(key),
+                        pressed: true,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    }],
+                    ..Default::default()
+                },
+                |ui| binding_editor(ui, settings, true, state),
+            );
+            output.textures_delta.clear();
+        };
+        let editor = |action: &'static str| BindingEditor {
+            target: BindingTarget::General {
+                action,
+                chat_on: false,
+                second: false,
+            },
+            action: action.into(),
+            captured: None,
+            listening: true,
+        };
+
+        let mut settings = ClientSettings::default();
+        let mut state = State {
+            binding_editor: Some(editor("client.stop")),
+            ..State::default()
+        };
+        run_key(&mut settings, &mut state, egui::Key::Escape);
+        let stop = state.binding_editor.as_ref().ok_or("stop editor closed")?;
+        assert_eq!(stop.captured.map(|binding| binding.key), Some(41));
+        assert!(!stop.listening);
+
+        state.binding_editor = Some(editor("client.options"));
+        run_key(&mut settings, &mut state, egui::Key::Escape);
+        assert!(state.binding_editor.is_none());
+        assert!(
+            !settings
+                .hotkeys
+                .active()
+                .ok_or("active profile")?
+                .general_chat_off
+                .contains_key("client.options")
+        );
+
+        state.binding_editor = Some(editor("client.options"));
+        run_key(&mut settings, &mut state, egui::Key::F10);
+        let f10 = state.binding_editor.as_ref().ok_or("F10 editor closed")?;
+        assert_eq!(f10.captured.map(|binding| binding.key), Some(67));
+        assert!(!f10.listening);
+        Ok(())
     }
 
     #[test]

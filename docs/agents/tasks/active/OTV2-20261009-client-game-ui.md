@@ -189,8 +189,8 @@ sanitization together with the branch's newer fidelity evidence. CI evidence on
 remote predecessor `c177231d` does not qualify any successor; each published
 candidate still requires fresh exact-head Linux and Windows checks.
 
-The targeted reference pass closed the former General Hotkeys capture gap without
-applying a reference preference. Current AUTHORING work restores reference key
+The targeted pass closed the General Hotkeys capture gap without applying a
+reference preference and inventories all 120 official action labels. AUTHORING restores key
 semantics in a bounded increment: movement bindings accept only an unmodified
 physical key, an explicitly cleared profile movement binding cannot fall through
 to legacy global movement, Escape is exclusive to Stop All, and F10 is available

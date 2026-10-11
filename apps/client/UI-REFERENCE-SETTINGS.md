@@ -16,6 +16,8 @@ No original settings were applied, profiles changed, or assignments accepted.
   is unverified. Evidence: `profile-add`, `profile-copy`, `profile-rename`.
 - General, Action Bar and Custom hotkeys share profile selection and automatic
   profile switching, Chat Mode On/Off and delayed search with clear control.
+- The official English translation catalogue contains 120 unique General Hotkey
+  action labels. Oteryn exposes the full set; its Polish labels are authored here.
 - Chat On/Off changes the binding context. In the observed profile movement
   letter bindings were empty in Chat On and populated in Chat Off; do not copy
   the account's bindings as product defaults.
