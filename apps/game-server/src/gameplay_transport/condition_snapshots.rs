@@ -171,13 +171,13 @@ pub(crate) async fn prepare_current_player_in_transaction(
             revision,
             artifact,
         }) => {
-            if *artifact != content.source_digest()
+            let unqualified = *artifact != content.source_digest()
                 || (content.item_policy(key, revision).is_none()
                     && content
                         .spell_appearances()
                         .and_then(|r| r.for_item(key, revision))
-                        .is_none())
-            {
+                        .is_none());
+            if unqualified {
                 return Err(Error::Unqualified);
             }
         }
