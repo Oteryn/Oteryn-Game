@@ -20,6 +20,7 @@ packet: "docs/architecture/reviews/OTERYN_GAME_NPC_PLACE1_NPC_PLACEMENTS_DECISIO
 owned_paths:
   - crates/world-bundle/
   - tools/world-bundle-compiler/
+  - tools/repository/classify_pr_test_lanes.py
   - docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - apps/game-server/tests/npc_placement_parity.rs
@@ -33,6 +34,7 @@ owned_paths:
   - apps/game-server/tests/support/map_item_mint_postgres_cases.rs
   - content/world/pins/oteryn.json
   - content/world/pins/README.md
+  - deploy/synology-game/preprod-topology.toml
   - docs/agents/tasks/active/OTV2-20261008-npc-place-1b.md
   - docs/agents/tasks/archive/OTV2-20261008-npc-place-1b.md
 public_contracts: [OTERYN_WORLD_BUNDLE_FORMAT_V1]
@@ -52,9 +54,13 @@ depends_on: [NPC-PLACE-1, NPC-PLACE-1a]
   (the v4 bundle moves `map_revision`); `tests/map_load_base.rs`, `tests/map_overlay_channel.rs`
   and `tests/support/map_item_mint_postgres_cases.rs` for their hand-built bundle assemblers' v4
   update only (NPC row and frame, format 4, v4 digest domain), assertions unchanged.
-- Control plane decision (b): the CI routing change is not in this PR, because any
-  `tools/repository/**` change runs the merge-authority audit, which stays red until the Rust 1.95
-  gate migration lands (#1978 then #1944).
+- Control plane decision (b), superseded once #1978 and #1944 landed: the CI routing change
+  (WORLD-BUNDLE-ROUTING-1) is back in this PR, owner-approved. `classify_pr_test_lanes.py` adds
+  `content/npcs/definitions/`, `content/dialogues/definitions/` and `content/services/` to
+  `WORLD_BUNDLE_INPUT_PREFIXES`, matching the compiler's `INPUT_PATHS`.
+- Merge of main after BUNDLE-BUILD-1 (#1979): `deploy/synology-game/preprod-topology.toml` for the
+  `[world_bundle]` `digest` line only, kept equal to the re-pinned `oteryn.json`, as
+  `pin_check.rs::preprod_manifest_world_bundle_equals_the_pin` requires.
 
 ## Outcome
 
@@ -67,12 +73,8 @@ are held as `BlockSolid`, because Item-family ground without a native profile re
 
 Follow-ups:
 
-- WORLD-BUNDLE-ROUTING-1, which waits for #1944: add `content/npcs/definitions/`,
-  `content/dialogues/definitions/` and `content/services/` to `WORLD_BUNDLE_INPUT_PREFIXES` in
-  `tools/repository/classify_pr_test_lanes.py`, so that NPC catalogue edits run the world_bundle lane.
-  Constraint: it must land with or before the next `tools/repository/**` PR. Until then,
-  `test_classify_pr_test_lanes.py` fails its parity check against the compiler's `INPUT_PATHS`,
-  which already lists these three directories.
+- WORLD-BUNDLE-ROUTING-1 is done in this PR (see the scope notes), so NPC catalogue edits run the
+  world_bundle lane.
 - MAP-CELL-FACTS-1: compile-time cell facts taken from the first top-level ground, with contained
   entries ignored, for spawns and NPC placements alike (the Codex review finding on `compile.rs`).
 
@@ -84,6 +86,7 @@ Follow-ups:
 - `cargo test -p oteryn-game-server -p oteryn-client --no-fail-fast`: pass
 - `world-bundle-compiler pin-check . <out>`: pass
 - `python3 tools/repository/validate_repository_policy.py`: pass
+- `python3 tools/repository/test_classify_pr_test_lanes.py` and the other classifier tests: pass
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
 
