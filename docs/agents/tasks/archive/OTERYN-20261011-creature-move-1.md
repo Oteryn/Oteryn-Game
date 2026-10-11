@@ -3,13 +3,13 @@
 ```yaml
 task_id: OTERYN-20261011-creature-move-1
 title: "CREATURE-MOVE-1a: spawned monsters step (chase, flee, wander) on the entry room"
-mode: IMPLEMENT
-status: implementing
+mode: IMPLEMENTATION
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/creature-move-1-20261011
 issue: 1622
-pr: null
+pr: 1977
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 owner: claude-code-session_01CwP6d84eCPvpgoEuyci8Tx
@@ -55,7 +55,12 @@ No change to `ai_think*`, `movement*`, `runtime_actor_carrier.rs`, `serve.rs`, a
 
 ## Validation
 
-pending
+- `cargo fmt --all -- --check`: pass
+- `cargo clippy --locked -p oteryn-game-server --lib --tests -- -D warnings`: pass
+- `cargo test --locked -p oteryn-game-server --lib ai`: pass (623 passed, 0 failed)
+- `cargo test --locked -p oteryn-game-server --lib monster_ai_cycle`: pass (6 passed, 0 failed)
+- `python tools/agents/validate_governance.py`: pass (the only findings are handover paths absent from the sparse worktree used here)
+- `python -m unittest discover -s tools/agents/tests`: pass
 
 ## Self-review
 
@@ -68,16 +73,16 @@ pending
 
 - changed-file review: owned paths only
 - unresolved review threads: none
-- merge commit/result: pending
+- merge commit/result: squash merge of #1977
 - ownership release: on merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: implemented
-status: implementing
+last_progress: candidate frozen
+status: completed
 branch: claude/creature-move-1-20261011
-pr: null
+pr: 1977
 blocker: null
-next_action: validate and open PR
+next_action: independent review
 ```
