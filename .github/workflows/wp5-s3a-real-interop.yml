@@ -78,7 +78,7 @@ jobs:
         run: test "$(git -C _platform rev-parse HEAD)" = 623435ec1b907d6d9770b767806c90300252a71c
 
       - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt
+        run: rustup toolchain install 1.95.0 --profile minimal --component rustfmt
 
       - name: Validate retained harness and topology
         env:
@@ -99,8 +99,8 @@ jobs:
           git diff --check
           bash -n tools/qualification/wp5_s3a/run.sh
           docker compose --project-name "$WP5_PROJECT" --file tools/qualification/wp5_s3a/compose.yml config --quiet
-          cargo +1.94.0 fmt --all --check
-          cargo +1.94.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop --no-run
+          cargo +1.95.0 fmt --all --check
+          cargo +1.95.0 test --locked -p oteryn-game-server --test native_admission_source_real_interop --no-run
           echo 'S3_EVIDENCE static_validation=PASS rust=compiled compose=configured shell=parsed'
 
       - name: Run real composed qualification
