@@ -27,6 +27,7 @@ owned_paths:
   - tools/repository/test_classify_post_merge_lanes.py
   - tools/repository/test_validate_merge_group_pg_sim.py
   - docs/repository/GITHUB_GOVERNANCE.md
+  - docs/agents/BUILD_TEST_MATRIX.md
   - docs/agents/tasks/archive/OTV2-20261011-game-ci-option-a.md
 public_contracts: []
 depends_on: [1997]
@@ -84,10 +85,12 @@ procedure with independent deep review and the normal exact-candidate game-gate
 and protected Merge Queue. Owner authorization and exact frozen heads are
 recorded on coordination Issue #1622.
 
-Both candidates return to AUTHORING for this material repair, then freeze their
-new published heads and rerun qualification. Prior review evidence applies only
-to its original heads; the repaired heads require fresh independent review.
-Automatic GitHub Codex review is used without duplicate paid-review triggers.
+Both repaired heads completed independent review without new findings. A final
+documentation reconciliation updates the active build/test matrix to describe the
+reviewed PR/MQ/main behavior; workflow bytes and approved pins are unchanged.
+#1998 returns to AUTHORING for that coherent documentation delta, then freezes
+and qualifies the successor head. Live PR review/checks govern that final head.
+One GitHub Codex review is dispatched per frozen head without duplicate paid-review triggers.
 Review preservation of exact-candidate coverage (including installer lifecycle),
 full-ci retirement, metadata cancellation/live fences, `--no-run` semantics,
 protected-main cache provenance and the narrowed PG/SIM caller.
