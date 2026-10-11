@@ -66,80 +66,36 @@ and playback remain unqualified. Qt qsb 6.4.2 rejects serialization v9 even with
 exit zero; this is not evidence of decoded shaders. Use installed-original
 evidence, never publish original assets/account data, and qualify each new head.
 
-MAP-WIRE-1 preparation reuses the accepted capability-18/domain-17 codec through
-Session re-exports. The bounded map model atomically replaces/applies snapshots
-and deltas, drops departed tiles/handles, enforces whole-view limits, and derives
-targets solely from server origin metadata. Bad updates invalidate drawing and
-targets until a valid snapshot. Eight targeted tests cover binding, reset/floor,
-roof visibility, window changes, budgets and received-only stacks/ground speed.
-This is preparation only: capability 18 remains unadvertised. No session resync,
-streamed drawing, live targeting or ground-speed switch is claimed. Complete
-MAP-CLIENT-1 requires those consumers and the joint client/server speed switch
-under the accepted packet, followed by exact-head review and native qualification.
-Preparation source `fe3eec72` passed Linux client 205/171/5, MSVC client 204/175/5,
-Session 58 tests on each platform, strict Clippy, formatting, boundaries and
-governance/60 tests. Exact-source DX12 audit passes 20 pages/78 verified captures/
-zero invalid entries at 125% DPI. Manifest/recovery hashes are in UI-FIDELITY.md.
-The owner's PID 12896 remains responsive. Protected-base audit passes, not full
-CI. Next: complete accepted MAP-CLIENT-1 runtime consumers, retaining the joint
-speed-switch requirement and not enabling speculative light/sound projections.
+## Map consumer continuation — AUTHORING
 
-Next AUTHORING batch connects the accepted map domain to Session admission and
-typed pushed events, without advertising 18 yet. Bundle joins require domain 17
-instead of 2, validate generation and dependencies 4/6, and reject mixed object
-domains. Binding mismatch emits the existing FND ResyncRequest, invalidates map
-state and ends this unusable session; recovery requires a new admission snapshot.
-The missing protocol encoder implements the existing foundation.proto request
-only, without allocating/changing a wire type. Dev-client exhaustive error mapping
-and fixture harness builders follow the added Session types. The fixture harness
-does not advertise/test 18; bundle E2E remains pending. These consumer/public-API
-changes require independent review on the final frozen candidate.
-Session source `e6357687` independently passes MSVC/DX12 20-page/78-capture
-qualification; counts/manifests/recovery are in UI-FIDELITY.md. Current draw batch
-reuses pinned assets, SpriteFrame/AtlasPage, floor/stack phase ordering, actor
-overlap and neighbour anchors; five tests include a real pinned sheet cell.
-Linux client 210/171/5, Session 62, renderer 39, assets 2/13 and strict Clippy pass.
-Next: actual GPU page uploads/multiple draws and the play-view consumer, not
-another assertion that preparation alone constitutes a live feature.
+Source `c302e2555c83aeeb51481d324663603304420140` is committed/published:
+Session admits and maintains the complete bounded domain-17 map; mismatched
+bindings request existing FND resync and invalidate drawing/targets. Pinned
+appearance/sheet resolution, floor/stack phases, bounded four-batch GPU uploads
+and texture recreation reuse the existing renderer. Play coalesces complete map
+projections, renders them through the Windows page/capture path and never anchors
+them to the local start area. Native secondary USE clicks pick the highest visible
+floor/top received entry and derive authority only from its origin. Session checks
+queued targets again; stale inputs send no frame or command ID. Duplex tests
+verify exact base-key/revision and item-handle payloads. Actor visuals without an
+accepted binding remain placeholders; this does not enable all mouse/loot presets.
 
-Draw source `108d99f8` now passes MSVC seven-package strict Clippy/tests and the
-exact-source 20-page/78-capture DX12 audit; full evidence is in UI-FIDELITY.md.
-The current renderer batch adds up to four ordered GPU instance buffers, bounded
-atomic page-cell uploads and CPU backing for texture recreation. Physical DX12
-later-batch/overwrite/recreation readback is added but not yet native-qualified.
-Continue with the Session-owned full map store, bounded play mailbox and actual
-scene consumer; do not stop after renderer preparation. Capability 18 stays off
-until the accepted consumer and joint speed-switch requirements pass.
+Linux client 209/171/5, Session 72, dev adapter 34, harness 36 and strict Clippy
+pass. MSVC client 208/175/5, Session 72, protocol 214, dev adapter 34, harness 36,
+renderer 43 and assets 2/13 pass with strict seven-package Clippy. Exact-source
+DX12 audit verifies 20 pages/78 capture hashes/zero invalid entries at 125% DPI;
+PID 12896 is preserved/responsive. Source/manifests/recovery for all intermediate
+batches are retained in UI-FIDELITY.md. Same-head protected-base audit passes,
+not full repository CI, independent review or bundle E2E.
 
-GPU source `8ae5a9d0` is now MSVC/DX12-qualified, including actual later-batch,
-cell-overwrite and texture-recreation pixels and all 20 settings pages/78 hashed
-captures; full source/manifest/recovery evidence is in UI-FIDELITY.md. Current
-AUTHORING changes move the bounded map model into Session and coalesce complete
-latest-state projections into the play mailbox. Eight model tests are retained
-under Session; transport regression now verifies clears and received non-150
-speed. A mailbox regression covers bounded latest-wins and ordering. Continue
-with the live scene/GPU consumer, picking and accepted joint speed activation.
-
-Map-store source `87259844` passes MSVC strict Clippy/tests and fresh 20-page/
-78-hash DX12 audit; exact counts/manifests/recovery are in UI-FIDELITY.md. Current
-AUTHORING changes connect the map composer to Scene/Play and Windows page
-presentation/capture, retaining pending pixels across rebuilds and resetting
-residency for renderer recreation. Streamed positions never use the local start
-anchor/minimap. Unbound actor visuals remain honest placeholders. Continue with
-floor-correct targets and movement/ground-speed coupling, then bundle E2E and
-exact-head independent review. Capability 18 is still not advertised.
-
-Scene source `9d43a594` passes MSVC strict Clippy/tests and verified 20-page/
-78-capture DX12 audit. Current input batch connects highest-visible-floor and
-top-received-origin picking to native secondary USE clicks and the existing wire
-encoders, with current-target revalidation on the Session task. Exact base and
-item payloads/stale no-send are duplex-tested. Full evidence is in UI-FIDELITY.md.
-Joint ground-speed activation needs an owning-contract decision: current admitted
-domains/results contain no effective actor speed or step-duration/deadline, while
-server speed depends on level, conditions and equipment. Never substitute 110 or
-switch only the server. Keep 18 off, finish safe input qualification and continue
-unblocked settings/reference work; route missing authority together with the
-existing spell/condition/light/audio/event projection gaps.
+Capability 18 stays unadvertised. The joint ground-speed switch needs an owning
+contract: admitted actor/entity/vitals and step-result codecs expose no effective
+actor speed or step-duration/deadline, while production speed depends on level,
+conditions and equipment. Never substitute 110/150 or switch only the server.
+Finish unblocked settings/reference work, then route missing speed authority with
+the existing spell/condition/light/audio/event projection gaps. Floor/teleport
+snapshot recovery, map drag, bundle E2E and frozen-head independent review remain
+open. Animation/light/minimap are outside the accepted MAP-CLIENT-1 packet.
 
 Historical qualification remains recorded, with exact SHAs, manifests and private
 capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral

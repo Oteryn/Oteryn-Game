@@ -435,6 +435,18 @@ that missing authoritative input is supplied under an accepted owning contract.
 Do not guess 110/150, allocate a new field here or change only the server source.
 Capability 18 therefore remains unadvertised; existing server pacing stays intact.
 
+Input source `c302e2555c83aeeb51481d324663603304420140` passes Linux client
+209/171/5, Session 72, dev adapter 34 and harness 36 tests, strict Clippy,
+formatting, workspace boundaries and governance. MSVC client 208/175/5, Session
+72, protocol 214, dev adapter 34, harness 36, renderer 43 and assets 2/13 pass,
+with seven-package strict Clippy. The exact-source DX12 audit verifies 20 pages,
+78 capture hashes, zero invalid entries and 125% DPI. The owner's PID 12896 remains
+responsive. Private audit `C:\Users\barte\Downloads\oteryn-settings-audit-c302e255`;
+manifest SHA-256 `2ce3bf80c6b6c4527912e7a408d7c9eb0f42f626f88f58e161a6daa661bc1731`.
+Recovery `/workspace/oteryn-client-publication-c302e255.bundle`, SHA-256
+`7ca7ff19086db198b3ee6b82b17e220edc756e68a4a2cef451f2a2be78185763`.
+Same-head protected-base audit passes, not full repository CI or bundle E2E.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private
