@@ -120,6 +120,15 @@ under Session; transport regression now verifies clears and received non-150
 speed. A mailbox regression covers bounded latest-wins and ordering. Continue
 with the live scene/GPU consumer, picking and accepted joint speed activation.
 
+Map-store source `87259844` passes MSVC strict Clippy/tests and fresh 20-page/
+78-hash DX12 audit; exact counts/manifests/recovery are in UI-FIDELITY.md. Current
+AUTHORING changes connect the map composer to Scene/Play and Windows page
+presentation/capture, retaining pending pixels across rebuilds and resetting
+residency for renderer recreation. Streamed positions never use the local start
+anchor/minimap. Unbound actor visuals remain honest placeholders. Continue with
+floor-correct targets and movement/ground-speed coupling, then bundle E2E and
+exact-head independent review. Capability 18 is still not advertised.
+
 Historical qualification remains recorded, with exact SHAs, manifests and private
 capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral
 scaling `1b3a3be5`, repeat scheduler `5bf89893`/`597fda90` and custom pointer

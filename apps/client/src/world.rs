@@ -376,7 +376,7 @@ fn atlas_from_cells(cells: Vec<u8>, count: usize) -> Result<AtlasImage, BatchErr
 }
 
 /// The builtin cells, one after another: black, a yellow outline, a red square.
-fn builtin_rgba() -> Vec<u8> {
+pub(crate) fn builtin_rgba() -> Vec<u8> {
     let px = CELL_PX as usize;
     let mut rgba = Vec::with_capacity(BUILTIN_CELLS * px * px * 4);
     for cell in 0..BUILTIN_CELLS {

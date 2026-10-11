@@ -17,6 +17,7 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 /// Visual data already resolved by the actor consumer, not a map definition reference.
+#[derive(Debug, Clone)]
 pub struct MapActor {
     pub position: ActorPosition,
     pub previous: Option<ActorPosition>,
@@ -27,6 +28,14 @@ pub struct MapActor {
 
 pub struct MapDraw {
     assets: Option<(AppearanceIndex, SpriteSheets)>,
+}
+
+impl std::fmt::Debug for MapDraw {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MapDraw")
+            .field("assets_loaded", &self.assets.is_some())
+            .finish()
+    }
 }
 
 impl MapDraw {
@@ -95,6 +104,14 @@ impl MapDraw {
     /// Callers must overwrite a reused slot with their placeholder pixels on error,
     /// never retain the previous cell's texture contents.
     pub fn cell_rgba(&mut self, key: CellKey) -> Result<Vec<u8>, String> {
+        // Sprite zero is reserved here for our owned UI glyphs, never a map appearance.
+        if key.sprite_id == 0 && key.cell_y == 0 && key.cell_x < 3 {
+            return Ok(crate::world::builtin_rgba()
+                .chunks_exact(4096)
+                .nth(usize::from(key.cell_x))
+                .ok_or("invalid builtin cell")?
+                .to_vec());
+        }
         let Some((_, sheets)) = &mut self.assets else {
             return Err("sprite assets unavailable".into());
         };
@@ -104,7 +121,7 @@ impl MapDraw {
     }
 }
 
-fn projected(position: ActorPosition, origin: ActorPosition) -> Option<TileCoord> {
+pub(crate) fn projected(position: ActorPosition, origin: ActorPosition) -> Option<TileCoord> {
     let shift = i32::from(position.floor) - i32::from(origin.floor);
     Some(TileCoord::new(
         position.x.checked_sub(shift)?,

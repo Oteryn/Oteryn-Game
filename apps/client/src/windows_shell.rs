@@ -572,6 +572,9 @@ impl Application {
     /// A session end returns to the pre-admission state: the offline scene, with the public
     /// class in the title and on the console. The session task is gone with its link.
     fn return_to_login(&mut self, class: PublicClass) {
+        if let (Some(renderer), Some(world)) = (&mut self.renderer, &self.world) {
+            renderer.set_atlas(world.atlas().clone());
+        }
         self.play = None;
         self.game_ui = None;
         self.hud = crate::game_ui::GameUi::default();
@@ -695,7 +698,10 @@ impl ApplicationHandler for Application {
             world
         };
         let shown = match &mut self.play {
-            Some(play) => play.view.set_world(Arc::clone(&world)),
+            Some(play) => play
+                .view
+                .set_world(Arc::clone(&world))
+                .and_then(|()| play.view.reset_page()),
             None => self.rebuild_offline(),
         };
         if shown.is_err() {
@@ -711,8 +717,11 @@ impl ApplicationHandler for Application {
             self.fail(event_loop, ShellError::RendererInitialization);
             return;
         };
-        // One atlas for the offline scene and the play view, uploaded once.
-        renderer.set_atlas(world.atlas().clone());
+        // Reset page residency when a new renderer starts; its texture has no old cells.
+        renderer.set_atlas(self.play.as_ref().map_or_else(
+            || world.atlas().clone(),
+            |play| play.view.scene().atlas().clone(),
+        ));
         if let Some(login) = self.login.as_ref().or(self.game_ui.as_ref()) {
             self.ui_state = Some(egui_winit::State::new(
                 login.context.clone(),
@@ -1020,17 +1029,35 @@ impl ApplicationHandler for Application {
                         }
                     }
                     state.handle_platform_output(window, output.platform_output.clone());
+                    let uploads = if viewport.is_some() {
+                        play.view.take_page_uploads()
+                    } else {
+                        Vec::new()
+                    };
                     let scene = play.view.scene();
                     let capture_requested = std::mem::take(&mut self.screenshot_requested);
                     let rendered = if let Some(viewport) = viewport {
                         if capture_requested {
-                            match renderer.render_batches_ui_capture(
-                                self.generation,
-                                scene.tiles(),
-                                scene.sprites(),
-                                &context,
-                                output,
-                            ) {
+                            let captured = match scene.sprite_frame() {
+                                Some(frame) => renderer
+                                    .render_sprite_frame_ui(
+                                        self.generation,
+                                        frame,
+                                        &uploads,
+                                        &context,
+                                        output,
+                                        true,
+                                    )
+                                    .and_then(|capture| capture.ok_or(RendererError::CaptureMap)),
+                                None => renderer.render_batches_ui_capture(
+                                    self.generation,
+                                    scene.tiles(),
+                                    scene.sprites(),
+                                    &context,
+                                    output,
+                                ),
+                            };
+                            match captured {
                                 Ok(frame) => {
                                     let captured = (if crate::settings_ui::game_only_capture(
                                         &self.preferences,
@@ -1066,13 +1093,25 @@ impl ApplicationHandler for Application {
                                 Err(error) => Err(error),
                             }
                         } else {
-                            renderer.render_batches_ui(
-                                self.generation,
-                                scene.tiles(),
-                                scene.sprites(),
-                                &context,
-                                output,
-                            )
+                            match scene.sprite_frame() {
+                                Some(frame) => renderer
+                                    .render_sprite_frame_ui(
+                                        self.generation,
+                                        frame,
+                                        &uploads,
+                                        &context,
+                                        output,
+                                        false,
+                                    )
+                                    .map(|_| ()),
+                                None => renderer.render_batches_ui(
+                                    self.generation,
+                                    scene.tiles(),
+                                    scene.sprites(),
+                                    &context,
+                                    output,
+                                ),
+                            }
                         }
                     } else {
                         if capture_requested {
@@ -1194,6 +1233,11 @@ impl ApplicationHandler for Application {
                     {
                         self.fail(event_loop, ShellError::RendererInitialization);
                         return;
+                    }
+                    if view.world_map().is_some()
+                        && let Some(renderer) = &mut self.renderer
+                    {
+                        renderer.set_atlas(view.scene().atlas().clone());
                     }
                     self.client = Some(client);
                     self.play = Some(Play {

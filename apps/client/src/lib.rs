@@ -19,6 +19,7 @@ pub mod scene;
 pub mod settings;
 pub mod settings_catalog;
 pub mod spell;
+mod streamed_scene;
 #[cfg(windows)]
 pub mod win_mutex;
 pub mod world;

@@ -383,6 +383,29 @@ undrained-mailbox regression covers latest-wins and before/after-step ordering.
 PlayView holds the join/current map, but streamed scene drawing, picking and the
 joint client/server speed switch are still pending. Capability 18 stays off.
 
+Map-store source `8725984429e361aba5306263e1294721c79ce44b` passes MSVC client
+202/175/5, Session 71, protocol 214, dev adapter 34, harness 36, renderer 43 and
+assets 2/13 tests, plus strict all-target Clippy. The exact-source DX12 audit
+passes 20 pages/78 independently hashed captures/zero invalid entries at 125%
+DPI; PID 12896 stays responsive. Private audit:
+`C:\Users\barte\Downloads\oteryn-settings-audit-87259844`; manifest SHA-256
+`22e06f92c2fc98f0e31c913170b1783bc30211b20cccba33fac645eb850cbad0`.
+Recovery `/workspace/oteryn-client-publication-87259844.bundle`, SHA-256
+`1213b75eb9045c79b4adee6d4bae379e6de003fd480c8f2d0f6f1466b4e28eef`.
+
+The next AUTHORING batch connects server-map composition to PlayView, Scene and
+the real Windows GPU page/capture path. Local start-area anchoring and its
+minimap image cannot replace a streamed map. The page retains latest pending
+pixels across multiple unpresented rebuilds; a new renderer resets residency and
+reuploads visible cells. Login return restores the static atlas. Missing assets
+overwrite reused cells with owned placeholder pixels, and the target frame uses
+the existing owned yellow outline, not a fabricated appearance reference.
+Three regressions exercise retained uploads, recreation, placeholder pixels and
+the play-view coordinate/atlas transition. Actors without an accepted visual
+binding remain explicit placeholders. Floor-correct picking, movement presentation,
+bundle E2E and the joint ground-speed switch remain pending; capability 18 stays
+unadvertised. Settings captures do not qualify live admission/drawing by themselves.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

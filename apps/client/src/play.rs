@@ -138,6 +138,7 @@ impl PlayView {
             map.replace_snapshot(&payload)
                 .map_err(|_| BatchError::InvalidView)?;
             view.map = Some(map);
+            view.rebuild()?;
         }
         Ok(view)
     }
@@ -195,6 +196,14 @@ impl PlayView {
         &self.scene
     }
 
+    pub fn take_page_uploads(&mut self) -> Vec<oteryn_renderer::SpritePageUpload> {
+        self.scene.take_page_uploads()
+    }
+
+    pub fn reset_page(&mut self) -> Result<(), BatchError> {
+        self.scene.reset_page()
+    }
+
     #[must_use]
     pub fn world_map(&self) -> Option<&MapView> {
         self.map.as_ref()
@@ -212,6 +221,9 @@ impl PlayView {
 
     #[must_use]
     pub fn minimap_image(&self) -> Option<crate::minimap::LoadedMinimap> {
+        if self.map.is_some() {
+            return None;
+        }
         crate::minimap::LoadedMinimap::from_world(&self.world)
     }
 
@@ -232,6 +244,11 @@ impl PlayView {
     /// the start floor.
     pub fn set_world(&mut self, world: Arc<World>) -> Result<(), BatchError> {
         self.world = world;
+        if self.map.is_some() {
+            self.anchor = TileCoord::new(0, 0);
+            self.map_floor = None;
+            return self.rebuild();
+        }
         self.map_floor = Some(self.floor);
         // Wrapping keeps the offset exact for any join position: `own + anchor` wraps back to START.
         self.anchor = TileCoord::new(
@@ -446,6 +463,69 @@ impl PlayView {
     }
 
     fn rebuild(&mut self) -> Result<(), BatchError> {
+        if let Some(map) = &self.map {
+            let header = map.header().ok_or(BatchError::InvalidView)?;
+            let drawable = |position: ActorPosition| {
+                position.floor <= header.first_visible_floor
+                    && oteryn_session::map_view::in_window(header.origin, position)
+            };
+            let entities = self
+                .entities
+                .iter()
+                .filter(|entity| {
+                    drawable(entity.position)
+                        && matches!(
+                            entity.kind,
+                            EntityKind::Player | EntityKind::Creature | EntityKind::Npc
+                        )
+                })
+                .collect::<Vec<_>>();
+            let visible = entities
+                .iter()
+                .filter_map(|entity| {
+                    Some(Targetable {
+                        tile: crate::map_draw::projected(entity.position, header.origin)?,
+                        kind: TargetKind::Entity,
+                        glyph: true,
+                        entity: (entity.kind == EntityKind::Creature).then_some(entity.entity),
+                    })
+                })
+                .collect::<Vec<_>>();
+            let own = ActorPosition {
+                x: self.own.x,
+                y: self.own.y,
+                floor: self.floor,
+            };
+            let actors = entities
+                .into_iter()
+                .map(|entity| entity.position)
+                .chain([own])
+                .map(|position| crate::map_draw::MapActor {
+                    position,
+                    previous: None,
+                    offset: [0, 0],
+                    cells: Vec::new(),
+                })
+                .collect();
+            let mut scene = Scene::centered_with(
+                Arc::clone(&self.world),
+                None,
+                self.own,
+                self.facing,
+                &[],
+                &visible,
+            )?;
+            scene.set_target_frame(self.target_frame)?;
+            scene.streamed = Some(crate::streamed_scene::StreamedScene::compose(
+                map,
+                actors,
+                self.scene.streamed.take(),
+                scene.view(),
+                None,
+            )?);
+            self.scene = scene;
+            return Ok(());
+        }
         let markers = self.drawn_markers().collect::<Vec<_>>();
         let entities = self
             .entities
@@ -1713,6 +1793,64 @@ mod tests {
         let view = PlayView::new(TileCoord::new(1, 0), 0, &[door])?;
         assert_eq!(view.marker_count(), 1);
         assert_eq!(view.scene().sprites().len(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn streamed_play_uses_server_coordinates_and_not_the_local_start_map()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_session::map_view::{
+            MapViewHeader, WorldMapViewSnapshot, encode_world_map_snapshot,
+        };
+        let own = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
+        let payload = encode_world_map_snapshot(&WorldMapViewSnapshot {
+            header: MapViewHeader {
+                content_generation: [1; 32],
+                bundle_digest: [2; 32],
+                reset_epoch: 1,
+                origin: own,
+                first_visible_floor: 0,
+            },
+            tiles: vec![],
+        })
+        .map_err(|e| format!("{e:?}"))?;
+        let mut map = MapView::new([1; 32]).map_err(|e| format!("{e:?}"))?;
+        map.replace_snapshot(&payload)
+            .map_err(|e| format!("{e:?}"))?;
+        let mut view = PlayView::new(TileCoord::new(100, 100), -7, &[])?;
+        view.apply_pushed(&Pushed {
+            map: Some(Box::new(map)),
+            ..Pushed::default()
+        })?;
+        assert_eq!(
+            view.scene()
+                .sprite_frame()
+                .ok_or("not streamed")?
+                .quads()
+                .quad_count(),
+            1
+        );
+        assert_eq!(view.scene().atlas().width(), 2048);
+        view.set_world(Arc::new(World::builtin()?))?;
+        assert_eq!(view.anchor, TileCoord::new(0, 0));
+        assert!(view.map_floor.is_none());
+        assert!(view.minimap_image().is_none());
+        assert_eq!(
+            view.scene()
+                .sprite_frame()
+                .ok_or("lost streamed view")?
+                .quads()
+                .quad_count(),
+            1
+        );
+        view.scene.select_tile(TileCoord::new(100, 100))?;
+        assert_eq!(view.take_page_uploads().len(), 1);
+        view.reset_page()?;
+        assert_eq!(view.take_page_uploads().len(), 1);
         Ok(())
     }
 

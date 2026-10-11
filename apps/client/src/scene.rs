@@ -5,6 +5,7 @@
 //! whose positions are not map positions still draws the start area around its actor.
 
 use crate::input::{StepDir, TargetKind, Targetable, pick_target};
+use crate::streamed_scene::StreamedScene;
 use crate::world::{
     BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, SCAN_MARGIN, TARGET_CELL, World,
 };
@@ -40,6 +41,7 @@ pub struct Scene {
     visible: Vec<Targetable>,
     target: Option<Targetable>,
     target_frame: bool,
+    pub(crate) streamed: Option<StreamedScene>,
 }
 
 impl Scene {
@@ -101,6 +103,7 @@ impl Scene {
             visible,
             target: None,
             target_frame: true,
+            streamed: None,
         };
         scene.rebuild_sprites()?;
         Ok(scene)
@@ -148,6 +151,9 @@ impl Scene {
     /// player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
+        if let Some(streamed) = &mut self.streamed {
+            return streamed.rebuild(&self.view, self.target.filter(|_| self.target_frame));
+        }
         let mut sprites = SpriteBatch::new();
         let (atlas, origin) = (self.world.atlas(), self.view.origin());
         let push = |sprites: &mut SpriteBatch, tile, draw: &Draw, lift: i32| {
@@ -209,7 +215,27 @@ impl Scene {
 
     #[must_use]
     pub fn atlas(&self) -> &AtlasImage {
-        self.world.atlas()
+        self.streamed
+            .as_ref()
+            .map_or_else(|| self.world.atlas(), StreamedScene::atlas)
+    }
+
+    #[must_use]
+    pub fn sprite_frame(&self) -> Option<&oteryn_renderer::SpriteFrame> {
+        self.streamed.as_ref().map(StreamedScene::frame)
+    }
+
+    pub fn take_page_uploads(&mut self) -> Vec<oteryn_renderer::SpritePageUpload> {
+        self.streamed
+            .as_mut()
+            .map_or_else(Vec::new, StreamedScene::take_uploads)
+    }
+
+    pub fn reset_page(&mut self) -> Result<(), BatchError> {
+        if let Some(streamed) = &mut self.streamed {
+            streamed.reset_page(&self.view, self.target.filter(|_| self.target_frame))?;
+        }
+        Ok(())
     }
 
     #[must_use]

@@ -473,6 +473,7 @@ pub const PAGE_CELLS: usize = (PAGE_CELLS_PER_ROW * PAGE_CELLS_PER_ROW) as usize
 /// The accepted worst-case map frame plus bounded actor/target cells fits four batches.
 pub const MAX_SPRITE_FRAME_BATCHES: usize = 4;
 
+#[derive(Debug, Clone)]
 pub struct SpritePageUpload {
     pub slot: u16,
     pub rgba: Vec<u8>,
