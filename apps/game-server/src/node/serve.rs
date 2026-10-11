@@ -1783,6 +1783,25 @@ fn realize_fixture_spawns(
         .map_err(|_| BootError::Readiness("creature spawn realization"))
 }
 
+/// SPAWN-1b (CREATURE-AI-0 §6.1): a bundle World realizes the spawn family of its bundle at
+/// Channel activation, before the listener binds. Each creature's initial health is its served
+/// definition's maximum health; a creature the active content does not serve refuses readiness.
+fn realize_bundle_spawns(
+    runtime: &mut ChannelRuntimeV1,
+    world: &crate::map::boot::BundleWorld,
+) -> Result<usize, BootError> {
+    let refuse = || BootError::Readiness("creature spawn realization");
+    let sources = world
+        .activation_spawns(|key| {
+            let policy = runtime.companion_policy(key).ok()?;
+            u64::try_from(policy.maximum_health).ok()
+        })
+        .ok_or_else(refuse)?;
+    runtime
+        .realize_activation_spawns(sources)
+        .map_err(|_| refuse())
+}
+
 async fn boot_and_serve(
     root: &DurabilityRoot,
     material: &Material,
@@ -1960,8 +1979,10 @@ async fn boot_and_serve(
             .install_companion_policies(&mut channel_runtime)
             .map_err(|_| BootError::ContentActivation("active creature policies"))?;
     }
-    let spawned_monsters =
-        realize_fixture_spawns(&mut channel_runtime, spawn_source, bundle.is_some())?;
+    let spawned_monsters = match &bundle {
+        Some(world) => realize_bundle_spawns(&mut channel_runtime, world)?,
+        None => realize_fixture_spawns(&mut channel_runtime, spawn_source, false)?,
+    };
     event(&format!(
         "event=creature_spawns state=realized spawned_monsters={spawned_monsters}"
     ));

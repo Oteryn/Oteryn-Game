@@ -105,6 +105,7 @@ pub struct BundleWorld {
     map_revision: String,
     start: TilePos,
     blocked: Arc<BTreeSet<TilePos>>,
+    spawns: Arc<oteryn_world_bundle::spawn::Table>,
 }
 
 /// Two boots of the same pins are equal: the same bundle, revision, start, blocked tiles and
@@ -143,7 +144,8 @@ pub fn boot(
 /// bundle loads with its pins, `map_revision` is the bundle's and the start tile's ground is
 /// walkable.
 pub fn check(data: Vec<u8>, pins: BootPins) -> Result<CheckedBundle, BootRefusal> {
-    let base = Arc::new(super::load(&data, &pins.bundle)?);
+    let (base, spawns) = super::load_spawns(&data, &pins.bundle)?;
+    let base = Arc::new(base);
     let revision = map_revision(&base);
     if revision != pins.map_revision {
         return Err(BootRefusal::MapRevision);
@@ -156,6 +158,7 @@ pub fn check(data: Vec<u8>, pins: BootPins) -> Result<CheckedBundle, BootRefusal
         base,
         map_revision: revision,
         start: pins.start,
+        spawns,
     })
 }
 
@@ -166,6 +169,7 @@ pub struct CheckedBundle {
     base: Arc<WorldBase>,
     map_revision: String,
     start: TilePos,
+    spawns: oteryn_world_bundle::spawn::Table,
 }
 
 impl CheckedBundle {
@@ -214,6 +218,7 @@ impl CheckedBundle {
             map_revision: self.map_revision,
             start: self.start,
             blocked,
+            spawns: Arc::new(self.spawns),
         })
     }
 }
@@ -324,7 +329,68 @@ fn tile_pos(cell: LogicalCell) -> Option<TilePos> {
     })
 }
 
+/// SPAWN-1b: one realizable spawn group of the bundle as the Channel runtime realizes it:
+/// placement cells `(x, y, z)` in authored order, respawn delay and occupancy retry interval
+/// (ms), creature key and initial health.
+pub(crate) type BundleSpawnFacts = (Vec<(i32, i32, i16)>, u64, u64, String, u64);
+
+/// CREATURE-AI-0 §6.3: the occupancy retry interval of a bundle spawn (the D116 value).
+pub(crate) const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
+
+/// A point whose creature has a period other than `All` is outside the activation set. The
+/// points of one source that share a creature and a respawn delay form one group, in authored
+/// order; a creature `health` does not serve refuses the whole family (`None`). The point
+/// direction is not realized yet.
+pub(crate) fn table_activation_spawns(
+    table: &oteryn_world_bundle::spawn::Table,
+    health: impl Fn(&str) -> Option<u64>,
+) -> Option<Vec<BundleSpawnFacts>> {
+    use oteryn_world_bundle::spawn::Period;
+    let mut out = Vec::new();
+    for source in &table.sources {
+        let mut groups: Vec<(u32, u32, Vec<(i32, i32, i16)>)> = Vec::new();
+        for point in &source.points {
+            let creature = table.creatures.get(usize::try_from(point.creature).ok()?)?;
+            if creature.period != Period::All {
+                continue;
+            }
+            let cell = (
+                i32::from(point.x),
+                i32::from(point.y),
+                i16::from(source.floor).checked_neg()?,
+            );
+            match groups
+                .iter_mut()
+                .find(|(c, r, _)| *c == point.creature && *r == point.respawn_ms)
+            {
+                Some((_, _, cells)) => cells.push(cell),
+                None => groups.push((point.creature, point.respawn_ms, vec![cell])),
+            }
+        }
+        for (creature, respawn_ms, cells) in groups {
+            let key = &table.creatures.get(usize::try_from(creature).ok()?)?.key;
+            out.push((
+                cells,
+                u64::from(respawn_ms),
+                BUNDLE_OCCUPANCY_RETRY_MS,
+                key.clone(),
+                health(key)?,
+            ));
+        }
+    }
+    Some(out)
+}
+
 impl BundleWorld {
+    /// SPAWN-1b (CREATURE-AI-0 §6.1): the bundle's spawn family as activation spawn facts; see
+    /// [`table_activation_spawns`].
+    pub(crate) fn activation_spawns(
+        &self,
+        health: impl Fn(&str) -> Option<u64>,
+    ) -> Option<Vec<BundleSpawnFacts>> {
+        table_activation_spawns(&self.spawns, health)
+    }
+
     pub fn base(&self) -> &Arc<WorldBase> {
         &self.base
     }
@@ -470,6 +536,69 @@ pub(crate) mod tests {
     };
     use std::error::Error;
     use std::num::NonZeroUsize;
+
+    #[test]
+    fn spawn1b_groups_points_and_skips_night_creatures() {
+        use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+        let point = |creature, x, respawn_ms| Point {
+            creature,
+            x,
+            y: 5,
+            direction: Direction::South,
+            respawn_ms,
+        };
+        let table = Table {
+            creatures: vec![
+                Creature {
+                    key: "oteryn:creature.rat".into(),
+                    period: Period::All,
+                },
+                Creature {
+                    key: "oteryn:creature.bat".into(),
+                    period: Period::Night,
+                },
+            ],
+            sources: vec![Source {
+                key: "oteryn:spawn/a".into(),
+                floor: -7,
+                x: 3,
+                y: 5,
+                points: vec![
+                    point(0, 1, 60_000),
+                    point(1, 2, 60_000),
+                    point(0, 3, 60_000),
+                    point(0, 4, 30_000),
+                ],
+            }],
+        };
+        let health = |key: &str| (key == "oteryn:creature.rat").then_some(20);
+        let facts = table_activation_spawns(&table, health).expect("facts");
+        assert_eq!(
+            facts,
+            vec![
+                (
+                    vec![(1, 5, 7), (3, 5, 7)],
+                    60_000,
+                    BUNDLE_OCCUPANCY_RETRY_MS,
+                    "oteryn:creature.rat".to_string(),
+                    20
+                ),
+                (
+                    vec![(4, 5, 7)],
+                    30_000,
+                    BUNDLE_OCCUPANCY_RETRY_MS,
+                    "oteryn:creature.rat".to_string(),
+                    20
+                ),
+            ]
+        );
+        // A creature the content does not serve refuses the family.
+        assert!(table_activation_spawns(&table, |_| None).is_none());
+        assert_eq!(
+            table_activation_spawns(&Table::default(), health),
+            Some(vec![])
+        );
+    }
 
     fn id(n: u8) -> [u8; 16] {
         [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]

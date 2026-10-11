@@ -341,6 +341,23 @@ pub fn load_with(
     pins: &BundlePins,
     limits: LoadLimits,
 ) -> Result<WorldBase, LoadError> {
+    load_with_spawns(data, pins, limits).map(|(base, _)| base)
+}
+
+/// [`load`] that also hands back the bundle's validated spawn family (SPAWN-1b).
+pub fn load_spawns(
+    data: &[u8],
+    pins: &BundlePins,
+) -> Result<(WorldBase, oteryn_world_bundle::spawn::Table), LoadError> {
+    load_with_spawns(data, pins, LOAD_LIMITS)
+}
+
+/// [`load_with`] that also hands back the bundle's validated spawn family (SPAWN-1b).
+pub fn load_with_spawns(
+    data: &[u8],
+    pins: &BundlePins,
+    limits: LoadLimits,
+) -> Result<(WorldBase, oteryn_world_bundle::spawn::Table), LoadError> {
     // The trailer is the digest the reader then verifies; a bundle that does not claim the
     // pinned one is refused before it is parsed.
     let trailer = data
@@ -380,17 +397,21 @@ pub fn load_with(
                 .partition_point(|key| ((key >> 11) as usize) < row) as u32
         })
         .collect();
-    Ok(WorldBase {
-        digest: visited.digest,
-        content_revision: visited.manifest.identity.content_revision,
-        keys: builder.keys,
-        rows,
-        sectors: builder.sectors,
-        tiles: builder.tiles,
-        ids: builder.ids,
-        depths: builder.depths,
-        uniques: builder.uniques,
-    })
+    let spawns = visited.spawns;
+    Ok((
+        WorldBase {
+            digest: visited.digest,
+            content_revision: visited.manifest.identity.content_revision,
+            keys: builder.keys,
+            rows,
+            sectors: builder.sectors,
+            tiles: builder.tiles,
+            ids: builder.ids,
+            depths: builder.depths,
+            uniques: builder.uniques,
+        },
+        spawns,
+    ))
 }
 
 fn check_pins(manifest: &Manifest, pins: &BundlePins) -> Result<(), LoadError> {
