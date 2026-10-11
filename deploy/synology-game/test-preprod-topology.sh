@@ -3,6 +3,7 @@
 # preprod-topology.toml; every mismatch, placeholder, epoch 0 and WorldId == ChannelId is refused.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
+umask 022 # directories the test creates must not be group-writable, as stage-world requires
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 export ROOT_BASE="$tmp/root" BASE="$tmp/base"
 mkdir -p "$ROOT_BASE/ops" "$BASE/node"
@@ -10,6 +11,11 @@ mkdir -p "$ROOT_BASE/ops" "$BASE/node"
 source "$here/deploy-ops.sh"
 ROOT_UID="$(id -u)" # the test user stands in for root
 WORLD_UID="$(id -u)"; WORLD_GID="$(id -g)" # and for the service user that owns the staged bundle
+# The runner-access probe needs root to switch users; the tests keep the real one as real_runner_can_write and
+# simulate a runner (owner, group or ACL) write grant on the one directory named by RUNNER_WRITABLE.
+eval "real_$(declare -f runner_can_write)"
+RUNNER_WRITABLE=""
+runner_can_write() { [[ -n "$RUNNER_WRITABLE" && "$1" = "$RUNNER_WRITABLE" ]]; }
 W=01900000-0000-7000-8000-000000000001
 C=01900000-0000-7000-8000-000000000002
 NODE="CN=oteryn-preprod-node-1-runtime-status"
@@ -152,6 +158,63 @@ if stage; then echo "FAIL stage-world: accepted a symlink" >&2; exit 1; fi
 rm -f "$BASE/run/world-bundle.incoming"; cp "$tmp/other.otwb" "$BASE/run/world-bundle.incoming"
 if stage; then echo "FAIL stage-world: accepted a mismatch over a good target" >&2; exit 1; fi
 cmp -s "$TARGET" "$tmp/good.otwb" || { echo "FAIL stage-world: good target replaced" >&2; exit 1; }
+# stage-world created the missing BASE/world root-owned 0755.
+[[ "$(stat -c '%u %a' "$BASE/world")" = "$ROOT_UID 755" ]] || { echo "FAIL stage-world: created world dir not root 0755" >&2; exit 1; }
+
+# Unsafe directories: refused before any temp file exists, the target and any symlink destination stay untouched.
+cp "$tmp/good.otwb" "$BASE/run/world-bundle.incoming"
+refuse_dir() { # <case> <expected error fragment>
+  if stage; then echo "FAIL stage-world: accepted $1" >&2; exit 1; fi
+  grep -q "world_bundle_unsafe_dir: .*$2" "$tmp/err" || { echo "FAIL stage-world $1: $(cat "$tmp/err")" >&2; exit 1; }
+  if [[ -d "$BASE/world" && ! -L "$BASE/world" ]] && compgen -G "$BASE/world/.world-bundle.*" >/dev/null; then
+    echo "FAIL stage-world $1: left a temp file" >&2; exit 1
+  fi
+  [[ -z "$(ls -A "$tmp/elsewhere" 2>/dev/null)" ]] || { echo "FAIL stage-world $1: wrote through a symlink" >&2; exit 1; }
+}
+safe_world() { rm -rf "$BASE/world" "$tmp/elsewhere"; mkdir -m 0755 "$BASE/world"; chmod 0755 "$BASE"; RUNNER_WRITABLE=""; }
+# Runner-owned world dir: real ownership when the test runs as root, else stat reports the runner uid for it.
+safe_world
+if [[ "$(id -u)" = 0 ]]; then
+  chown 1001:1001 "$BASE/world"; refuse_dir "runner-owned world dir" "$BASE/world is not root-owned (uid 1001)"
+else
+  # shellcheck disable=SC2329 # called by root_dir inside stage_world
+  stat() { if [[ "$1" = -c && "${*: -1}" = "$BASE/world" ]]; then echo "1001 755"; else command stat "$@"; fi; }
+  refuse_dir "runner-owned world dir (simulated owner)" "$BASE/world is not root-owned (uid 1001)"
+  unset -f stat
+fi
+safe_world; RUNNER_WRITABLE="$BASE/world"; refuse_dir "world dir writable by the runner (ACL)" "$BASE/world is writable by the runner"
+safe_world; RUNNER_WRITABLE="$BASE"; refuse_dir "BASE writable by the runner (ACL)" "$BASE is writable by the runner"
+safe_world; chmod 0775 "$BASE/world"; refuse_dir "group-writable world dir" "$BASE/world is group or other writable"
+safe_world; chmod 0757 "$BASE/world"; refuse_dir "world-writable world dir" "$BASE/world is group or other writable"
+safe_world; chmod 1777 "$BASE/world"; refuse_dir "sticky world-writable world dir" "$BASE/world is group or other writable"
+safe_world; chmod 0775 "$BASE"; refuse_dir "group-writable BASE" "$BASE is group or other writable"
+safe_world; rmdir "$BASE/world"; mkdir -m 0755 "$tmp/elsewhere"; ln -s "$tmp/elsewhere" "$BASE/world"
+refuse_dir "symlinked world dir" "$BASE/world is a symlink"
+# A symlinked ancestor between BASE and the target directory (manifest path one level deeper).
+safe_world; mkdir -m 0755 "$tmp/elsewhere"; ln -s "$tmp/elsewhere" "$BASE/deep"
+sub "$MANIFEST" 's|^path = "<BASE>/world/world.otbundle"|path = "<BASE>/deep/world/world.otbundle"|'
+refuse_dir "symlinked ancestor" "$BASE/deep is a symlink"
+rm -f "$BASE/deep"; printf '%s\n' "$good_manifest" > "$MANIFEST"
+# BASE itself a symlink.
+safe_world; mkdir -m 0755 "$tmp/elsewhere"; ln -s "$BASE" "$tmp/base-link"
+(BASE="$tmp/base-link"; NODE_CONFIG="$BASE/node/node.toml"; stage) && { echo "FAIL stage-world: accepted a symlinked BASE" >&2; exit 1; }
+grep -q "world_bundle_unsafe_dir: $tmp/base-link is a symlink" "$tmp/err" || { echo "FAIL stage-world symlinked BASE: $(cat "$tmp/err")" >&2; exit 1; }
+# The target path as a directory is refused; after all refusals the good target is still in place.
+safe_world; mkdir "$TARGET"
+if stage; then echo "FAIL stage-world: accepted a directory target" >&2; exit 1; fi
+rmdir "$TARGET"; safe_world; stage || { echo "FAIL stage-world on a safe dir: $(cat "$tmp/err")" >&2; exit 1; }
+cmp -s "$TARGET" "$tmp/good.otwb" || { echo "FAIL stage-world: wrong result on a safe dir" >&2; exit 1; }
+# The real runner probe (root only, probing as nobody): root 0755 is safe, a nobody-owned dir is writable.
+if [[ "$(id -u)" = 0 ]] && sudo -n -u nobody true 2>/dev/null; then
+  probe_dir="$tmp/probe"; mkdir -m 0755 "$probe_dir"; chmod 0755 "$tmp"
+  if (RUNNER_UID="$(id -u nobody)"; real_runner_can_write "$probe_dir"); then echo "FAIL probe: root 0755 dir reported writable" >&2; exit 1; fi
+  chown nobody "$probe_dir"
+  (RUNNER_UID="$(id -u nobody)"; real_runner_can_write "$probe_dir") || { echo "FAIL probe: nobody-owned dir reported safe" >&2; exit 1; }
+  (RUNNER_UID=4294967290; real_runner_can_write "$probe_dir") 2>/dev/null || { echo "FAIL probe: a failed probe did not fail closed" >&2; exit 1; }
+else
+  echo "note: real runner-access probe not exercised (needs root and sudo -u nobody)"
+fi
+
 # The root wrapper rejects extra arguments and a non-root caller.
 if bash "$here/deploy-ops.sh" stage-world extra 2>/dev/null; then echo "FAIL stage-world: accepted an argument" >&2; exit 1; fi
 echo "preprod topology check: ok"

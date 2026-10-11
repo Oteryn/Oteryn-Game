@@ -43,6 +43,7 @@ The preprod deploy can stage the pinned World Bundle (opt-in, default off) and c
 
 - [x] `world_bundle_check` fails closed with `world_bundle_missing`, `world_bundle_wrong_owner_or_mode`, `world_bundle_digest_mismatch`.
 - [x] `stage-world` copies the runner file once, verifies the copy against the root manifest digest, installs 1001/0644 atomically, refuses on mismatch.
+- [x] Before any temp file, `stage-world` creates or verifies `BASE` and every directory down to the target as root-owned, not group/other writable, not a symlink and not writable by the runner (probed as uid 1001, covering ACLs); it refuses with `world_bundle_unsafe_dir` otherwise, reads the incoming file with `nofollow` and renames with `mv -T` (Codex P1 4243554362).
 - [x] Workflow input `stage_world_bundle` default false; default deploy unchanged.
 - [x] README and owner one-time ops (sudoers entry, wrapper reinstall); no secrets.
 - [x] `[world_bundle] enabled`, the pin digest and topology digest/start fields untouched.
@@ -57,13 +58,15 @@ Flipping `enabled`, the pin and topology digest/start values (PRs #1983, #1993, 
 - `bash deploy/synology-game/test-supervisor-gap.sh`: pass
 - `bash -n deploy/synology-game/deploy-ops.sh`: pass
 - workflow YAML parse: pass
-- `actionlint`, `shellcheck`: NOT_APPLICABLE, not installed
+- `bash deploy/synology-game/test-preprod-topology.sh` as root and as an unprivileged user (runner-owned, group/world-writable, runner-ACL-writable, symlinked world dir, symlinked ancestor and BASE refusals): pass
+- `shellcheck -x deploy-ops.sh test-preprod-topology.sh`: pass
+- `actionlint`: NOT_APPLICABLE, not installed
 - `python tools/agents/validate_governance.py`: pass
 - `python -m unittest discover -s tools/agents/tests`: pass
 
 ## Self-review
 
-Whole diff re-read; no secrets; the wrapper takes no path argument and verifies its own copy.
+Whole diff re-read; no secrets; the wrapper takes no path argument, verifies its own copy, and writes only inside directories the runner cannot change. Residual: directories above `BASE` are not checked by the wrapper; the workflow checks `BASE` itself.
 
 ## PR and closeout
 

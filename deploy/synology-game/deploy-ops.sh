@@ -17,6 +17,7 @@ WORLD_GID=1001
 WORLD_MODE=644
 WORLD_BUNDLE_FORMAT="OTERYN_WORLD_BUNDLE/v4" # crates/world-bundle FORMAT; the digest covers FORMAT, a NUL byte, then the body
 WORLD_BUNDLE_MAX=1073741824 # bytes; a larger incoming file is refused
+RUNNER_UID=1001 # the runner user that calls this wrapper; stage-world refuses directories it could write (tests only)
 
 uuid='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 number='^[0-9]{1,18}$'
@@ -116,27 +117,66 @@ world_bundle_check() {
   [[ "$(bundle_digest "$want" || true)" = "$digest" ]] || fail "world_bundle_digest_mismatch: $want is not the pinned bundle $digest"
 }
 
+# runner_can_write <path>: true unless a probe run as RUNNER_UID reports that the runner cannot write path.
+# access(2) as that user covers mode bits, POSIX ACLs and DSM ACLs alike; a probe that cannot run counts as writable.
+runner_can_write() {
+  local out
+  out="$(sudo -n -u "#$RUNNER_UID" -- /bin/sh -c 'if [ -w "$1" ]; then echo writable; else echo safe; fi' sh "$1" 2>/dev/null)" || true
+  [[ "$out" = safe ]] && return 1
+  [[ "$out" = writable ]] || echo "deploy-ops: world_bundle_runner_probe_failed: cannot check runner access to $1 as uid $RUNNER_UID" >&2
+  return 0
+}
+# root_dir <dir>: creates dir root-owned 0755 if it is missing (its parent is already verified), then requires
+# a real directory (no symlink), owned by root, without group or other write and not writable by the runner.
+root_dir() {
+  local d="$1" uid mode
+  [[ -e "$d" || -L "$d" ]] || mkdir -m 0755 -- "$d" || fail "world_bundle_unsafe_dir: cannot create $d"
+  [[ -d "$d" && ! -L "$d" ]] || fail "world_bundle_unsafe_dir: $d is a symlink or not a directory"
+  read -r uid mode < <(stat -c '%u %a' -- "$d")
+  [[ "$uid" = "$ROOT_UID" ]] || fail "world_bundle_unsafe_dir: $d is not root-owned (uid $uid)"
+  (( (8#$mode & 8#022) == 0 )) || fail "world_bundle_unsafe_dir: $d is group or other writable (mode $mode)"
+  ! runner_can_write "$d" || fail "world_bundle_unsafe_dir: $d is writable by the runner uid $RUNNER_UID (owner, group or ACL)"
+}
+# root_dir_chain <dir>: root_dir for BASE and then every directory below it down to dir, top-down, so each
+# directory is created or checked only inside a parent the runner cannot change.
+root_dir_chain() {
+  local rest="${1#"$BASE"}" p="$BASE" c
+  local -a parts=()
+  [[ "$1" = "$BASE" || "$1" = "$BASE"/* ]] || fail "world_bundle_unsafe_dir: $1 is not under BASE"
+  root_dir "$p"
+  [[ -z "$rest" ]] || IFS=/ read -r -a parts <<< "${rest#/}"
+  for c in ${parts[@]+"${parts[@]}"}; do
+    [[ -n "$c" && "$c" != . && "$c" != .. ]] || fail "world_bundle_unsafe_dir: bad path component in $1"
+    p="$p/$c"; root_dir "$p"
+  done
+}
+
 # stage_world: copy the runner-provided $BASE/run/world-bundle.incoming into the manifest's bundle path.
-# The incoming file is copied once into a root-owned temp file next to the target and only that copy is
-# verified and renamed into place, so the runner cannot change the bytes after the check. A digest mismatch,
-# an oversize or a non-regular file is refused and leaves the current target untouched.
+# First the target directory and every directory from BASE down to it are created or verified as root-owned
+# and not writable by the runner (no symlink, no group/other write, no ACL write), so the runner cannot swap
+# any path the steps below use. The incoming file is then read once without following a symlink into a
+# root-owned temp file in that directory, and only that copy is verified, chowned and renamed over the target,
+# so the runner cannot change the bytes after the check. A digest mismatch, an oversize, a non-regular file
+# or an unsafe directory is refused and leaves the current target untouched.
 stage_world() {
   local pin digest target dir incoming tmp
   regular_root_file "$MANIFEST"
   pin="$(world_bundle_pin)"; digest="${pin%% *}"; target="${pin#* }"
+  dir="${target%/*}"
+  root_dir_chain "$dir"
   incoming="$BASE/run/world-bundle.incoming"
   [[ -f "$incoming" && ! -L "$incoming" ]] || fail "world_bundle_incoming_missing: $incoming"
-  dir="${target%/*}"
-  [[ ! -L "$dir" ]] || fail "world_bundle_target_dir_is_symlink: $dir"
-  mkdir -p "$dir"; chmod 0755 "$dir"
-  tmp="$(mktemp "$dir/.world-bundle.XXXXXX")"
+  [[ ! -d "$target" || -L "$target" ]] || fail "world_bundle_target_is_directory: $target"
+  tmp="$(mktemp -- "$dir/.world-bundle.XXXXXX")"
   # shellcheck disable=SC2064
-  trap "rm -f '$tmp'" EXIT
-  head -c "$((WORLD_BUNDLE_MAX + 1))" < "$incoming" > "$tmp"
-  [[ "$(stat -c %s "$tmp")" -le "$WORLD_BUNDLE_MAX" ]] || fail "world_bundle_too_large"
+  trap "rm -f -- '$tmp'" EXIT
+  # nofollow: a symlink swapped in after the check above is not opened; nonblock: a FIFO does not hang.
+  dd if="$incoming" iflag=nofollow,nonblock,count_bytes bs=1M count="$((WORLD_BUNDLE_MAX + 1))" status=none > "$tmp" ||
+    fail "world_bundle_incoming_unreadable: $incoming"
+  [[ "$(stat -c %s -- "$tmp")" -le "$WORLD_BUNDLE_MAX" ]] || fail "world_bundle_too_large"
   [[ "$(bundle_digest "$tmp" || true)" = "$digest" ]] || fail "world_bundle_digest_mismatch: incoming file is not the pinned bundle $digest"
-  chown "$WORLD_UID:$WORLD_GID" "$tmp"; chmod "$WORLD_MODE" "$tmp"
-  mv -f "$tmp" "$target"
+  chown -h -- "$WORLD_UID:$WORLD_GID" "$tmp"; chmod -- "$WORLD_MODE" "$tmp"
+  mv -f -T -- "$tmp" "$target"
   trap - EXIT
   echo "deploy-ops: world bundle staged ($digest)"
 }
