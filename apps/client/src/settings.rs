@@ -142,6 +142,16 @@ impl ClientSettings {
         }
     }
 
+    /// Applied whole-scene sampling, without manufacturing a saved selection.
+    #[must_use]
+    pub fn scene_sampling(&self) -> oteryn_renderer::SceneSampling {
+        match self.stored_choice("graphics.graphics.antialiasing") {
+            Some("antialiasing") => oteryn_renderer::SceneSampling::Antialiasing,
+            Some("smooth_retro") => oteryn_renderer::SceneSampling::SmoothRetro,
+            _ => oteryn_renderer::SceneSampling::None,
+        }
+    }
+
     /// Toggle the reference FPS overlay. An unset value has the same visible
     /// behavior as `false`, so the first invocation always enables it.
     pub fn toggle_fps_indicator(&mut self) -> bool {
@@ -640,6 +650,27 @@ impl ClientSettings {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn applied_sampling_modes_leave_unset_preferences_unmodified() {
+        use crate::settings_catalog::FutureValue;
+        use oteryn_renderer::SceneSampling;
+        let mut settings = ClientSettings::default();
+        let key = "graphics.graphics.antialiasing";
+        assert_eq!(settings.scene_sampling(), SceneSampling::None);
+        assert!(!settings.future_preferences.contains_key(key));
+        for (choice, expected) in [
+            ("none", SceneSampling::None),
+            ("antialiasing", SceneSampling::Antialiasing),
+            ("smooth_retro", SceneSampling::SmoothRetro),
+        ] {
+            settings
+                .future_preferences
+                .insert(key.into(), FutureValue::Choice(choice.into()));
+            assert_eq!(settings.scene_sampling(), expected);
+            assert_eq!(settings.stored_choice(key), Some(choice));
+        }
+    }
 
     #[test]
     fn settings_transparency_migrates_and_round_trips() -> Result<(), Box<dyn std::error::Error>> {

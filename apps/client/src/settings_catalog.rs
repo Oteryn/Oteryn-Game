@@ -674,7 +674,7 @@ pub const SETTINGS_SECTIONS: &[SettingsSection] = &[
         r!("graphics.fps", "Limit FPS (0: bez limitu)", "FPS limit (0: unlimited)", Integer { min: 0, max: 200 }, "fps"),
         r!("graphics.background_fps", "Limit FPS w tle", "Background FPS limit", Integer { min: 5, max: 60 }, "background_fps"),
         p!("graphics.engine", "Silnik graficzny", "Graphics Engine", UNKNOWN_CHOICES, "renderer capabilities"),
-        p!("graphics.antialiasing", "Wygładzanie obrazu", "Antialiasing Mode", Choice(ANTIALIASING), "renderer capabilities"),
+        SettingOption { implementation: if cfg!(windows) { Implementation::Stored { consumer: "whole-scene resampler" } } else { Implementation::Pending { consumer: "whole-scene resampler" } }, ..p!("graphics.antialiasing", "Wygładzanie obrazu", "Antialiasing Mode", Choice(ANTIALIASING), "whole-scene resampler") },
         s!("graphics.integer_scale", "Skalowanie całkowite", "Scale Using Only Integral Multiples", Toggle, "scene viewport"),
         q!("graphics.monitor", "Monitor", "Monitor", UNKNOWN_CHOICES, "window integration"),
         qs!("graphics.fps_indicator", "Wskaźnik FPS", "FPS indicator", Toggle, "frame diagnostics overlay"),
@@ -1093,7 +1093,7 @@ mod tests {
                 Implementation::Implemented { .. } | Implementation::Pending { .. } => None,
             })
             .collect();
-        let expected_stored: BTreeMap<_, _> = [
+        let mut expected_stored: BTreeMap<_, _> = [
             ("action_bars.bars.labels", "action-bar renderer"),
             ("basic.basic.advanced", "settings discovery"),
             ("console.console.font_size", "chat text renderer"),
@@ -1127,6 +1127,9 @@ mod tests {
         .into_iter()
         .map(|(key, consumer)| (key.to_owned(), consumer))
         .collect();
+        if cfg!(windows) {
+            expected_stored.insert("graphics.graphics.antialiasing".into(), "whole-scene resampler");
+        }
         assert_eq!(stored, expected_stored, "a Stored row requires a reviewed runtime consumer");
 
         let implemented: BTreeMap<_, _> = SETTINGS_SECTIONS

@@ -4,6 +4,11 @@ use std::fmt::{self, Display, Formatter};
 
 mod batch;
 mod resources;
+mod scene_sampling;
+pub use scene_sampling::SceneSampling;
+
+#[cfg(windows)]
+mod scene_resampler;
 
 #[cfg(windows)]
 mod scene_gpu;

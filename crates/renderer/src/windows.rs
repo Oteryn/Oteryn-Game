@@ -3,6 +3,7 @@ use crate::{
     AtlasImage, CapturedFrame, CapturedPixelOrder, RendererError, SpriteBatch, SurfaceDecision,
     SurfaceEvent, SurfaceSize, SurfaceState, TileBatch, unpack_capture_rows,
 };
+use crate::{SceneSampling, scene_resampler::SceneResampler};
 use oteryn_foundation::ProcessGeneration;
 
 pub struct WindowsRenderer<T>
@@ -22,6 +23,8 @@ where
     ui: Option<egui_wgpu::Renderer>,
     vsync: bool,
     scene_viewport: Option<[f32; 4]>,
+    scene_sampling: SceneSampling,
+    resampler: Option<SceneResampler>,
 }
 
 /// Tile and sprite batches for one frame; sprites are drawn over tiles.
@@ -79,6 +82,8 @@ where
             ui: None,
             vsync: true,
             scene_viewport: None,
+            scene_sampling: SceneSampling::None,
+            resampler: None,
         };
         renderer.resize(process_generation, width, height)?;
         Ok(renderer)
@@ -282,6 +287,11 @@ where
         Ok(())
     }
 
+    /// Applied scene-image filtering; atlas sampling and UI remain unchanged.
+    pub fn set_scene_sampling(&mut self, mode: SceneSampling) {
+        self.scene_sampling = mode;
+    }
+
     pub fn close(&mut self, generation: ProcessGeneration) -> Result<(), RendererError> {
         let decision = self.state.apply(SurfaceEvent::Close { generation })?;
         self.execute(decision, generation)
@@ -306,6 +316,24 @@ where
                 label: Some("oteryn-renderer-clear-encoder"),
             });
         let mut commands = Vec::new();
+        if let (Some(batches), Some(scene), Some(resampler)) =
+            (batches, &self.scene, &self.resampler)
+        {
+            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("oteryn-compose-native-scene"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &resampler.source,
+                    depth_slice: None,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                ..Default::default()
+            });
+            scene.draw(&mut pass, batches.tiles, batches.sprites);
+        }
         let ui_frame = if let Some((context, output)) = ui_output {
             let config = self
                 .configuration
@@ -356,7 +384,11 @@ where
                 if let Some([x, y, width, height]) = self.scene_viewport {
                     render_pass.set_viewport(x, y, width, height, 0.0, 1.0);
                 }
-                scene.draw(&mut render_pass, batches.tiles, batches.sprites);
+                if let Some(resampler) = &self.resampler {
+                    resampler.draw(&mut render_pass);
+                } else {
+                    scene.draw(&mut render_pass, batches.tiles, batches.sprites);
+                }
             }
         }
         if let (Some(renderer), Some((jobs, screen, _))) = (&self.ui, &ui_frame) {
@@ -484,11 +516,39 @@ where
     /// batches. Runs before the render pass so the pass only records draws.
     fn prepare_scene(&mut self, batches: Option<FrameBatches<'_>>) -> Result<(), RendererError> {
         let Some(batches) = batches else {
+            self.resampler = None;
             return Ok(());
         };
         let (Some(atlas), Some(configuration)) = (&self.atlas, &self.configuration) else {
             return Err(RendererError::Validation);
         };
+        let source_size = self
+            .scene_viewport
+            .map(|[_, _, width, height]| {
+                self.scene_sampling.source_size(
+                    [480, 352],
+                    [width, height],
+                    self.device.limits().max_texture_dimension_2d,
+                )
+            })
+            .transpose()?
+            .flatten();
+        if let Some(size) = source_size {
+            if self
+                .resampler
+                .as_ref()
+                .is_none_or(|r| !r.matches(configuration.format, size, self.scene_sampling))
+            {
+                self.resampler = Some(SceneResampler::new(
+                    &self.device,
+                    configuration.format,
+                    size,
+                    self.scene_sampling,
+                ));
+            }
+        } else {
+            self.resampler = None;
+        }
         if self
             .scene
             .as_ref()

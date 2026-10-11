@@ -29,6 +29,15 @@ disable or lost focus. Battle and UI filters now also require positive group
 volume while preserving selections; missing audio consumers remain disabled.
 Trackpad/pixel-wheel equivalence and native interactive acceptance remain open.
 
+Current AUTHORING adds a Windows whole-scene resampling consumer: None uses
+nearest image sampling, Antialiasing smooth sampling, and Smooth Retro composes
+at ceil(scale) native multiples before smooth downsampling. At native size the
+extra pass is bypassed. Atlas filtering stays nearest and HUD/text stay outside
+the pass. Mode/size/format changes replace cached resources; source dimensions
+are checked against device limits. The DX12 regression reads actual rendered
+pixels to distinguish the modes. Fresh Windows qualification is required; these
+changes do not qualify full lighting, engine switching or visual 1:1 parity.
+
 ## Page matrix
 
 | Reference page | Dedicated composition | Actual consumer / remaining acceptance |
@@ -137,6 +146,8 @@ Trackpad/pixel-wheel equivalence and native interactive acceptance remain open.
   The strict compact HUD/footer geometry gates were retained and passed after
   repairing arrow sizing. This is not physical mouse/trackpad parity or playback
   acceptance, and later client changes still require fresh qualification.
+  Preserved recovery bundle: `/workspace/oteryn-client-publication-e6941338.bundle`,
+  SHA-256 `5d0b1057e135a5f2373a05e3e9308830801864f618266d714c7789c5aeb04438`.
 - This establishes native compiled-page reachability, not exhaustive reference
   comparison or working behavior for disabled rows. Native live-session visual
   acceptance and every row whose consumer remains pending are still open and

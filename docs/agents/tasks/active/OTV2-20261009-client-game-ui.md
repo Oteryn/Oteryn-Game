@@ -87,21 +87,23 @@ must not be claimed as complete.
 
 ## Acceptance evidence and next actions
 
+Owner renewed implementation scope for all nine settings lanes: Graphics,
+Effects, Audio, Controls/General Hotkeys, Action Bars/Custom Hotkeys,
+Interface/HUD, Console/Game Window, Misc/Gameplay and Screenshots/Help.
+Current bounded batch: whole-scene AA/Smooth Retro in apps/client and
+crates/renderer, using upstream wgpu rather than proprietary shaders. Require
+physical DX12 pixel readback, MSVC and all 20 page captures before acceptance.
+Keep the owner's running binary alive; use a separate release build directory.
+All other lanes remain pending; protocol/authority changes need owning contracts.
+
 Slider/volume semantics and private source hashes are in UI-REFERENCE-EXTRACTED.md;
 the following exact-head evidence supersedes the authoring checkpoint. Pixel-wheel,
 native interactive parity and playback remain unqualified. Keep strict geometry
 gates and qualify every new client head independently.
 
 Slider/volume source head `e69413380a2e44aa763b603844fd60fb7d7d6ed8` passed
-Linux tests (194/169/5), strict Clippy, formatting and governance checks including
-all 60 governance tests. Fresh MSVC tests passed (193/173/5), strict Clippy passed,
-and the DX12 release audit passed 20 pages/78 captures with zero invalid entries.
-Default-state HUD/Graphics/Battle/UI captures were visually inspected. Private
-directory: `C:\Users\barte\Downloads\oteryn-settings-audit-e6941338`; manifest
-SHA-256 `47bc86e9582d5c0310ffc97da661f6c64ac4f4f8a8ccc7ac84f9404dadd01dc3`.
-The guarded publication recovery bundle is
-`/workspace/oteryn-client-publication-e6941338.bundle`, SHA-256
-`5d0b1057e135a5f2373a05e3e9308830801864f618266d714c7789c5aeb04438`.
+Linux 194/169/5 and MSVC 193/173/5 tests, strict Clippy and the 20-page/78-capture
+audit. Full manifests, private paths and recovery evidence remain in UI-FIDELITY.md.
 Next: physical/native interactive slider parity (including pixel/trackpad units),
 remaining source-derived Interface dependencies and real graphics/audio runtime
 capabilities/consumers. Do not repeat completed source inventory or count disabled
@@ -154,14 +156,10 @@ red World bundle job locally; the AUTHORING repair refreshes only the pin's
 `inputs_digest`, preserving world content, identity, production=false and the
 bundle digest. Qualification uses the unchanged double-build gate.
 
-The current client tree passes 194 client-library, 169 native-binary
-and 5 launcher tests, strict client all-target Clippy, rustfmt and
-`git diff --check`. These checks must be repeated on any repaired final
-candidate. The native audit must then be built and run from a fresh exact-SHA
-checkout on the authorized owner Windows machine; verify all 20 manifest entries
-and captures before launching that same binary for the owner. The existing dirty
-checkout at `C:\Users\barte\Downloads\oteryn-client-main-20261007` must not be
-modified or cleaned.
+Repeat selected local checks and exact-SHA MSVC/DX12 qualification on each new
+source head; earlier evidence never qualifies it. Verify all 20 pages/captures.
+Never modify or clean the owner's dirty checkout
+`C:\Users\barte\Downloads\oteryn-client-main-20261007`.
 
 After guarded publication, fresh-read PR/check state and repair every red check in
 one AUTHORING batch. CI on an older head never qualifies a successor.

@@ -964,6 +964,7 @@ impl ApplicationHandler for Application {
                         window.scale_factor() as f32 * self.preferences.ui_scale,
                         &self.preferences,
                     );
+                    renderer.set_scene_sampling(self.preferences.scene_sampling());
                     if renderer
                         .set_scene_viewport(viewport.map(|viewport| {
                             [viewport.x, viewport.y, viewport.width, viewport.height]

@@ -76,13 +76,13 @@ const fn choice(
 const CHOICE_CONTRACTS: &[ChoiceContract] = &[
     choice("basic", "controls.controls.mouse_preset", false, &["Classic Controls", "Regular Controls", "Left Smart-Click"]),
     choice("basic", "interface.interface.colourise_loot_value", false, &["None", "Frames", "Corners"]),
-    choice("basic", "graphics.graphics.antialiasing", false, &["None", "Antialiasing", "Smooth Retro"]),
+    choice("basic", "graphics.graphics.antialiasing", cfg!(windows), &["None", "Antialiasing", "Smooth Retro"]),
     choice("controls", "controls.controls.mouse_preset", false, &["Classic Controls", "Regular Controls", "Left Smart-Click"]),
     choice("interface", "interface.interface.colourise_loot_value", false, &["None", "Frames", "Corners"]),
     choice("hud", "hud.arc_size_preset", false, &["Default Size", "Small Size", "Large Size"]),
     choice("game_window", "game_window.window.target_marking", true, &["Frame & Highlight", "Frame Only", "Highlight Only", "None"]),
     choice("graphics", "graphics.graphics.engine", false, &[]),
-    choice("graphics", "graphics.graphics.antialiasing", false, &["None", "Antialiasing", "Smooth Retro"]),
+    choice("graphics", "graphics.graphics.antialiasing", cfg!(windows), &["None", "Antialiasing", "Smooth Retro"]),
     choice("sound", "sound.sound.device", false, &[]),
 ];
 

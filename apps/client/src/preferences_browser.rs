@@ -2062,7 +2062,7 @@ mod tests {
             ),
             (
                 "graphics.graphics.antialiasing",
-                false,
+                cfg!(windows),
                 "—",
                 vec!["None", "Antialiasing", "Smooth Retro"],
             ),
