@@ -8,6 +8,7 @@ pub mod device_store;
 pub mod hotkeys;
 pub mod input;
 pub mod layout;
+pub mod map_view;
 pub mod minimap;
 pub mod panel_catalog;
 pub mod play;

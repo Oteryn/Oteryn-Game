@@ -237,6 +237,26 @@ catalogues. Original reference metadata is not authoritative Oteryn session data
 Changing those server/protocol/identity contracts requires the owning contract
 and review; this client authoring task cannot silently allocate them.
 
+## MAP-WIRE-1 preparation — 2026-10-11
+
+The existing accepted server map codec is reused via Session re-exports, not
+reimplemented. The bounded client model stages snapshot/delta updates atomically,
+removes tiles and handles leaving the window, retains server floor/roof visibility
+and rejects accumulated handle/size overflow. Targets come only from current
+`BaseOrdinal` revision/bundle keys or item handles; display-only and hidden entries
+have no target. Refused updates invalidate all drawing/targets until a valid
+snapshot. No missing ground speed or truncated stack entry is invented.
+
+Eight focused tests cover these properties. Linux client tests pass 205/171/5,
+Session tests pass 58, strict all-target Clippy and formatting pass for both
+packages, workspace boundaries pass, and governance validation/60 tests pass.
+This is not a live map implementation
+or settings-lane acceptance: capability 18 stays unadvertised, and transport
+resync, streamed sprite rendering, real pointer targeting and the joint server/
+client ground-speed switch remain pending. MAP-WIRE-1 does not allocate lighting,
+weather, sound or spell/HUD projections; those controls remain unavailable.
+Earlier Windows evidence does not qualify this new source batch.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

@@ -42,6 +42,16 @@ pub use oteryn_protocol_oteryn::item_view::{
     ItemMoveOutcome, MAX_CHARACTER_INVENTORY_ITEMS, MAX_OPEN_CONTAINER_ENTRIES, OpenContainer,
 };
 use oteryn_protocol_oteryn::world_object::{self, WorldObjectTarget};
+/// Existing capability-18 map codecs/types, exposed without a client-to-protocol edge.
+/// Re-exporting them does not advertise the capability or activate session routing.
+pub mod map_view {
+    pub use oteryn_protocol_oteryn::world_map::{
+        MAX_MAP_VIEW_HANDLES, MAX_SNAPSHOT_TILES, MapDefinition, MapItem, MapOrigin, MapTile,
+        MapViewHeader, WorldMapViewDelta, WorldMapViewSnapshot, WorldMapWireError,
+        decode_world_map_delta, decode_world_map_snapshot, encode_world_map_delta,
+        encode_world_map_snapshot, in_window, tile_order,
+    };
+}
 pub use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
 /// The step types a client names when it walks and reads the outcome (ADR-0020 section 1).

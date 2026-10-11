@@ -99,48 +99,24 @@ clipboard instead of in-app fallback. Linux/MSVC tests, Clippy, World pin and
 20-page/78-capture DX12 audit pass; evidence is in UI-FIDELITY.md. External
 clipboard transfer and nine-lane contract gaps remain open. No lane is 100%.
 
-Slider/volume semantics and private source hashes are in UI-REFERENCE-EXTRACTED.md;
-the following exact-head evidence supersedes the authoring checkpoint. Pixel-wheel,
-native interactive parity and playback remain unqualified. Keep strict geometry
-gates and qualify every new client head independently.
+Earlier exact-head qualifications (source contracts `993ec2c4`, sliders/volume
+`e6941338`, half-native scaling `985fe6b4`) and their manifests/recovery bundles
+are retained in UI-FIDELITY.md. Reference QML contracts and private source hashes
+are in UI-REFERENCE-EXTRACTED.md. Physical slider/trackpad parity, live lighting
+and playback remain unqualified. Qt qsb 6.4.2 rejects serialization v9 even with
+exit zero; this is not evidence of decoded shaders. Use installed-original
+evidence, never publish original assets/account data, and qualify each new head.
 
-Slider/volume source head `e69413380a2e44aa763b603844fd60fb7d7d6ed8` passed
-Linux 194/169/5 and MSVC 193/173/5 tests, strict Clippy and the 20-page/78-capture
-audit. Full manifests, private paths and recovery evidence remain in UI-FIDELITY.md.
-Next: physical/native interactive slider parity (including pixel/trackpad units),
-remaining source-derived Interface dependencies and real graphics/audio runtime
-capabilities/consumers. Do not repeat completed source inventory or count disabled
-audio as playback. Qualify any new client source head independently.
-
-Graphics source contracts and hashes are in UI-REFERENCE-EXTRACTED.md.
-The bounded repair retains a half-native viewport when
-integral scaling cannot fit 1x, matching the original minimum without HUD overflow.
-Tests verify each tile's pointer transform at half-size and 125% DPI. Exact source
-head `985fe6b499979ac8420079a418731b1e373c8088` passed Linux 195/169/5 and MSVC
-194/173/5 tests, strict Clippy and 20-page/78-capture DX12 audit. Full manifest and
-recovery evidence are in UI-FIDELITY.md. AA resampling is now implemented above;
-lighting lacks real source/environment projections. Stock
-Qt qsb 6.4.2 rejects QSB serialization v9 (with exit zero): compatible upstream
-decoding remains pending, not a reason to invent a parser or enable controls.
-
-Use installed-original evidence before implementation. Original source, assets
-and account data are never published. UI-REFERENCE-EXTRACTED.md retains the QML
-contracts, source digests, resource counts and backend gaps.
-
-Source-contract repair `993ec2c4a19aab5099e8b82dff9d8a1ece753e75` was published
-through the guarded exact-candidate path. Recovery bundle:
-`/workspace/oteryn-client-publication-993ec2c4.bundle`, SHA-256
-`885787491f248dfae27b4a77adca4a886c069f510fa01cdbaea3a137aae5be7b`.
-It passed Linux tests (194/165/5), strict Clippy and formatting; governance
-validation and all 60 governance tests passed. A fresh Windows detached checkout
-passed MSVC tests (193/169/5), strict Clippy and DX12 release audit with 20 pages,
-78 captures and zero invalid entries. Changed default-state Controls, Graphics,
-Effects and Sound captures were visually inspected. Private directory:
-`C:\Users\barte\Downloads\oteryn-settings-audit-993ec2c4`; manifest SHA-256
-`a5384dbff955c770564d1938c8ef1ee6a3183d8ab503a92ff7397a0ccdcb6197`.
-This is not warning-state visual parity or playback acceptance. The slider and
-volume-filter follow-up is recorded above; real renderer/audio capabilities and
-full native interactive parity remain pending.
+MAP-WIRE-1 preparation reuses the accepted capability-18/domain-17 codec through
+Session re-exports. The bounded map model atomically replaces/applies snapshots
+and deltas, drops departed tiles/handles, enforces whole-view limits, and derives
+targets solely from server origin metadata. Bad updates invalidate drawing and
+targets until a valid snapshot. Eight targeted tests cover binding, reset/floor,
+roof visibility, window changes, budgets and received-only stacks/ground speed.
+This is preparation only: capability 18 remains unadvertised. No session resync,
+streamed drawing, live targeting or ground-speed switch is claimed. Complete
+MAP-CLIENT-1 requires those consumers and the joint client/server speed switch
+under the accepted packet, followed by exact-head review and native qualification.
 
 Historical qualification remains recorded, with exact SHAs, manifests and private
 capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral
