@@ -705,6 +705,28 @@ impl SpriteFrame {
         self.uploads.clear();
     }
 
+    /// A missing or refused appearance is visible without pretending it is oversized.
+    pub fn push_placeholder(
+        &mut self,
+        page: &mut AtlasPage,
+        view: &TileView,
+        tile: TileCoord,
+        offset: [i32; 2],
+    ) -> bool {
+        if !view.contains(tile) {
+            return false;
+        }
+        page.count_placeholder();
+        let [x, y] = view.tile_to_screen(tile);
+        let scale = view.tile_px() as f32 / PAGE_CELL_PX as f32;
+        self.quads.push(QuadInstance {
+            position: [x + offset[0] as f32 * scale, y + offset[1] as f32 * scale],
+            size: [view.tile_px() as f32; 2],
+            uv: AtlasPage::placeholder_uv(),
+        });
+        true
+    }
+
     /// Adds an entry on `tile`. Returns `Ok(false)` when the tile is outside the view.
     pub fn push_entry(
         &mut self,

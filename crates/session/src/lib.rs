@@ -59,13 +59,12 @@ use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
 pub use oteryn_protocol_oteryn::world_spatial::{
     ActorPosition, StepDirection, StepDisposition, WorldSpatialObservation,
 };
-use oteryn_protocol_oteryn::world_spatial_entities::{
-    self, CAPABILITY_WORLD_SPATIAL_ENTITIES, MAX_SNAPSHOT_ENTITIES,
-};
+use oteryn_protocol_oteryn::world_spatial_entities::{self, CAPABILITY_WORLD_SPATIAL_ENTITIES};
 /// The capability-6 entity types a client draws from, re-exported so it needs no direct
 /// `protocol-oteryn` edge (ADR-0020 section 1).
 pub use oteryn_protocol_oteryn::world_spatial_entities::{
-    EntityDetail, EntityKind, EntityRef, WorldSpatialEntitiesDelta, WorldSpatialEntity,
+    EntityDetail, EntityKind, EntityRef, MAX_SNAPSHOT_ENTITIES, WorldSpatialEntitiesDelta,
+    WorldSpatialEntity,
 };
 /// N8 admission refusal classes, re-exported so the client maps a refused code to its FND-04A
 /// public class without a direct `protocol-oteryn` edge (ADR-0020 section 1).

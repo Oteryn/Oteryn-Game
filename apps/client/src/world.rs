@@ -29,8 +29,9 @@ type Item = (u8, i32, Vec<DrawCell>);
 pub const ASSET_DIR_ENV: &str = "OTERYN_ASSET_DIR";
 /// The sha256 of `imports/official/client-assets/15.30/manifest.json`. The manifest pins every
 /// asset file, so the client pins the manifest instead of trusting the one in the asset root.
-const MANIFEST_SHA256: &str = "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4";
-const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.json";
+pub(crate) const MANIFEST_SHA256: &str =
+    "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4";
+pub(crate) const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.json";
 /// The sha256 of `content/world/placements/index.json`, which pins every region file. A
 /// regenerated placement index must update it; a test compares it with the repository.
 const PLACEMENT_INDEX_SHA256: &str =
@@ -397,7 +398,7 @@ fn builtin_rgba() -> Vec<u8> {
 /// How far each item of a sorted stack is lifted, and the tile's elevation. An item is lifted by
 /// its own height (the appearance profile's displacement) on top of the heights below it; a top
 /// item does not stand on the stack.
-fn stack_lifts(items: impl IntoIterator<Item = (u8, i32)>) -> (Vec<i32>, i32) {
+pub(crate) fn stack_lifts(items: impl IntoIterator<Item = (u8, i32)>) -> (Vec<i32>, i32) {
     let mut below = 0;
     let lifts = items
         .into_iter()
@@ -415,7 +416,7 @@ fn stack_lifts(items: impl IntoIterator<Item = (u8, i32)>) -> (Vec<i32>, i32) {
 
 /// An appearance's elevation as a stack height, capped like the stack itself so an oversized
 /// profile value can neither wrap negative nor overflow the sum below it.
-fn item_height(elevation: u32) -> i32 {
+pub(crate) fn item_height(elevation: u32) -> i32 {
     i32::try_from(elevation).map_or(MAX_ELEVATION, |height| height.min(MAX_ELEVATION))
 }
 

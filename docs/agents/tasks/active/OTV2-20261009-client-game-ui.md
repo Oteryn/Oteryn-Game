@@ -135,6 +135,13 @@ only, without allocating/changing a wire type. Dev-client exhaustive error mappi
 and fixture harness builders follow the added Session types. The fixture harness
 does not advertise/test 18; bundle E2E remains pending. These consumer/public-API
 changes require independent review on the final frozen candidate.
+Session source `e6357687` independently passes MSVC/DX12 20-page/78-capture
+qualification; counts/manifests/recovery are in UI-FIDELITY.md. Current draw batch
+reuses pinned assets, SpriteFrame/AtlasPage, floor/stack phase ordering, actor
+overlap and neighbour anchors; five tests include a real pinned sheet cell.
+Linux client 210/171/5, Session 62, renderer 39, assets 2/13 and strict Clippy pass.
+Next: actual GPU page uploads/multiple draws and the play-view consumer, not
+another assertion that preparation alone constitutes a live feature.
 
 Historical qualification remains recorded, with exact SHAs, manifests and private
 capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral
@@ -142,16 +149,10 @@ scaling `1b3a3be5`, repeat scheduler `5bf89893`/`597fda90` and custom pointer
 `5b784e60` passed their MSVC/Clippy/DX12 chains. These are not qualifications for a
 new source head. Contextual Animated cursor consumers remain unavailable.
 
-Earlier receipt-clock/Clear head `1b2928fb` passed MSVC tests (193/166/5), strict
-Clippy and the 20-page/78-capture DX12 audit; full evidence and manifest remain in
-`apps/client/UI-FIDELITY.md`. Accepted ChatLine receipt metadata supplies genuine
-timestamps via upstream `time` 0.3.55. Clear uses local per-tab sequence cutoffs;
-later identical messages survive, server/session history is unchanged, and an
-unavailable clock never produces invented time.
-The root lockfile is a World compiler input. Its changed digest reproduced the
-red World bundle job locally; the AUTHORING repair refreshes only the pin's
-`inputs_digest`, preserving world content, identity, production=false and the
-bundle digest. Qualification uses the unchanged double-build gate.
+Receipt-clock/Clear `1b2928fb` and the lockfile/World-pin CI repair remain fully
+qualified and documented in UI-FIDELITY.md. Never invent timestamps or mutate
+server history. Lockfile changes require refreshing only the World input digest
+and repeating the unchanged double-build gate, preserving content and identity.
 
 Repeat selected local checks and exact-SHA MSVC/DX12 qualification on each new
 source head; earlier evidence never qualifies it. Verify all 20 pages/captures.

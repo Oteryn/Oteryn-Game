@@ -305,7 +305,43 @@ independent review remains required; this draft is still AUTHORING. Linux tests
 pass: client 205/171/5, protocol 214, Session 62, dev adapter 34 and harness 36.
 Strict all-target Clippy passes for all five packages, formatting and workspace
 boundaries pass, and governance validation/60 tests pass. Windows qualification
-is pending for this batch.
+completed for source `e63576875b6c8db741f521f414c7814cd52da3cf`: MSVC client
+204/175/5, protocol 214, Session 62, dev adapter 34 and harness 36 tests pass,
+as does strict all-target Clippy for all five packages. Fresh DX12 release audit
+passes 20 pages/78 capture hashes/zero invalid entries at 125% DPI; the prior
+owner client (PID 12896) remains responsive. Private audit:
+`C:\Users\barte\Downloads\oteryn-settings-audit-e6357687`; manifest SHA-256
+`5ea6657fc0dcbaf765c183c68ee6836148ee3f35092ec5334dcf9de3efacdaea`.
+Recovery bundle `/workspace/oteryn-client-publication-e6357687.bundle`, SHA-256
+`95a8047243f801f8d644e828885522e20fe0d7101efe7e97537c5db3b5452d38`.
+Same-head protected-base audit passes; full repository CI and bundle E2E remain
+unqualified. This evidence qualifies Session reception, not map drawing.
+
+## Streamed map draw composition — AUTHORING
+
+Map stacks now resolve through the existing hash-pinned 15.30 appearance/sheet
+loader without reading a local map, bundle palette or placements. The draw
+composer emits the existing bounded SpriteFrame/AtlasPage batches in ascending
+floor/y/x order, shifts floors in perspective and preserves received stack order
+inside ground/border/bottom/common/top phases. Actor cells enter after common
+items and before top items, including actors on omitted tiles. A walking actor
+uses the later source/destination tile phase with its supplied native offset.
+This is presentation data, not a new movement authority or wire projection.
+
+Missing/refused appearances emit a real placeholder quad without falsely raising
+the oversized-entry counter. The view retains right/bottom neighbour anchors for
+large up-left sprite cells. Whole-frame splitting and LRU residency reuse the
+existing renderer pipeline rather than a new atlas/cache. Failed sheet uploads
+must overwrite reused slots with placeholder pixels, never stale texture data.
+
+Five regressions cover phases, floors/hidden actors, omitted/walking actors,
+neighbour overlap and missing/unknown/real appearances. The real pinned
+appearance 104 is sixteen position patterns of one cell each, not a sixteen-cell
+object; its actual sheet cell is read and checked. Linux client tests 210/171/5,
+Session 62, renderer 39 and asset tests 2/13 pass; strict Clippy passes for the
+changed Rust packages. This is draw composition only. GPU sprite-page uploads,
+the play-view consumer, picking and joint speed switch remain pending; capability
+18 stays unadvertised. Prior Windows evidence does not qualify this batch.
 
 ## Required evidence per page/panel
 
