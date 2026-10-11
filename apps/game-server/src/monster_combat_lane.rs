@@ -6767,16 +6767,26 @@ mod native_ability_coverage {
             "abilities/formulas",
         ] {
             for shard in shards(dir) {
-                for r in shard["records"].as_array().expect("records") {
-                    let record: ProjectReferenceRecord =
-                        serde_json::from_value(r["definition"].clone()).expect("definition");
-                    let data: Data =
-                        serde_json::from_value(r["authoring"].clone()).expect("authoring");
-                    let id = r["definition"]["identity"].clone();
-                    let target: Ref = serde_json::from_value(id.clone()).expect("identity");
+                let Some(rows) = shard["records"].as_array() else {
+                    continue;
+                };
+                for r in rows {
+                    let (Some(def), Some(auth)) = (r.get("definition"), r.get("authoring")) else {
+                        continue;
+                    };
+                    let Ok(record) = serde_json::from_value::<ProjectReferenceRecord>(def.clone())
+                    else {
+                        continue;
+                    };
+                    let Ok(data) = serde_json::from_value::<Data>(auth.clone()) else {
+                        continue;
+                    };
+                    let Ok(target) = serde_json::from_value::<Ref>(def["identity"].clone()) else {
+                        continue;
+                    };
                     let mut refs_set = BTreeSet::new();
-                    refs(&r["definition"], &mut refs_set);
-                    refs(&r["authoring"], &mut refs_set);
+                    refs(def, &mut refs_set);
+                    refs(auth, &mut refs_set);
                     all.insert(
                         (format!("{:?}", target.family), target.key.clone()),
                         Entry {
@@ -6829,12 +6839,12 @@ mod native_ability_coverage {
                 key: identity.key.clone(),
                 revision: identity.revision.clone(),
             };
-            let Data::Behavior(b) = profiles
+            let Some(Data::Behavior(b)) = profiles
                 .iter()
                 .find(|p| p.target.family == ProjectV2Family::Behavior)
                 .map(|p| &p.data)
-                .expect("behavior")
             else {
+                *stats.entry("no-behavior".to_owned()).or_default() += 1;
                 continue;
             };
             for (i, a) in b.attacks.iter().enumerate() {
