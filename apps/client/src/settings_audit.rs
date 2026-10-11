@@ -507,6 +507,7 @@ pub struct NativeSettingsAudit {
     page_index: usize,
     desired_scroll: f32,
     settle_frames: u8,
+    initial_window_visible_at: Option<f64>,
     settled_geometry: Option<SettledGeometry>,
     stable_geometry_frames: u8,
     attempts: u16,
@@ -557,6 +558,7 @@ impl NativeSettingsAudit {
             page_index: 0,
             desired_scroll: 0.0,
             settle_frames: 3,
+            initial_window_visible_at: None,
             settled_geometry: None,
             stable_geometry_frames: 0,
             attempts: 0,
@@ -622,6 +624,25 @@ impl NativeSettingsAudit {
             || scroll.content_clip_rect.height() <= 0.0
         {
             return Err(run_error("settings audit received invalid scroll geometry"));
+        }
+        let frame_time = context.input(|input| input.time);
+        let animation_time = context.global_style().animation_time;
+        if !frame_time.is_finite() || !animation_time.is_finite() || animation_time < 0.0 {
+            return Err(run_error(
+                "settings audit received invalid window animation timing",
+            ));
+        }
+        if !initial_window_fade_complete(
+            &mut self.initial_window_visible_at,
+            frame_time,
+            animation_time,
+        ) {
+            // The persistent settings Window uses egui's production fade-in.
+            // Geometry may settle while its shapes are still translucent, so
+            // no evidence is captured until the same input clock reaches the
+            // full-opacity end of that initial animation.
+            context.request_repaint();
+            return Ok(false);
         }
         if self.settle_frames > 0 {
             self.settle_frames -= 1;
@@ -840,6 +861,16 @@ impl NativeSettingsAudit {
 }
 
 #[cfg(any(windows, test))]
+fn initial_window_fade_complete(
+    first_visible_at: &mut Option<f64>,
+    frame_time: f64,
+    animation_time: f32,
+) -> bool {
+    let first_visible_at = *first_visible_at.get_or_insert(frame_time);
+    frame_time - first_visible_at >= f64::from(animation_time)
+}
+
+#[cfg(any(windows, test))]
 fn check_stable_dimension(
     label: &str,
     stored: &mut Option<f32>,
@@ -930,11 +961,16 @@ fn output_has_visible_text(output: &egui::FullOutput, needle: &str, viewport: eg
             _ => false,
         }
     }
+    // Egui can place a glyph a fractional point outside the scroll area's
+    // reported inner rectangle while the page's own clip still paints the
+    // complete glyph. Match the same one-point tolerance used by geometry
+    // validation, but never expand the shape's production clip rectangle.
+    let tolerated_viewport = viewport.expand(GEOMETRY_TOLERANCE);
     output.shapes.iter().any(|clipped| {
         shape_has_text(
             &clipped.shape,
             needle,
-            clipped.clip_rect.intersect(viewport),
+            clipped.clip_rect.intersect(tolerated_viewport),
         )
     })
 }
@@ -955,10 +991,14 @@ fn validate_page<'a>(
             "identifier, marker, or order differs from contract",
         ));
     }
-    if !evidence.marker_visible || !evidence.draft_unchanged || !evidence.footer.complete() {
-        return Err(invalid(
-            "marker, non-mutation, or fixed-footer evidence is incomplete",
-        ));
+    if !evidence.marker_visible {
+        return Err(invalid("marker evidence is incomplete"));
+    }
+    if !evidence.draft_unchanged {
+        return Err(invalid("non-mutation evidence is incomplete"));
+    }
+    if !evidence.footer.complete() {
+        return Err(invalid("fixed-footer evidence is incomplete"));
     }
     if !evidence.content_width.is_finite()
         || !evidence.content_height.is_finite()
@@ -1294,6 +1334,34 @@ mod tests {
     }
 
     #[test]
+    fn first_audit_capture_waits_for_full_window_fade() {
+        let mut first_visible_at = None;
+        let animation_time = 0.2_f32;
+        let started_at = 41.0;
+        assert!(!initial_window_fade_complete(
+            &mut first_visible_at,
+            started_at,
+            animation_time,
+        ));
+        assert!(!initial_window_fade_complete(
+            &mut first_visible_at,
+            started_at + f64::from(animation_time) - 0.001,
+            animation_time,
+        ));
+        assert!(initial_window_fade_complete(
+            &mut first_visible_at,
+            started_at + f64::from(animation_time),
+            animation_time,
+        ));
+        assert!(initial_window_fade_complete(
+            &mut first_visible_at,
+            started_at + 1.0,
+            animation_time,
+        ));
+        assert_eq!(first_visible_at, Some(started_at));
+    }
+
+    #[test]
     fn painted_width_ignores_cursor_only_layout_overflow_but_detects_shapes()
     -> Result<(), &'static str> {
         fn render(overdraw: f32) -> (egui::FullOutput, egui::Rect) {
@@ -1403,6 +1471,19 @@ mod tests {
                 reference.id,
                 scroll.inner_rect.width(),
             );
+            assert!(
+                output_has_visible_text(&output, reference.marker, scroll.inner_rect),
+                "{} marker {:?} is not visible in the first viewport",
+                reference.id,
+                reference.marker,
+            );
+            for label in ["Reset", "OK", "Apply", "Cancel"] {
+                assert!(
+                    output_has_visible_text(&output, label, context.content_rect()),
+                    "{} is missing fixed-footer control {label:?}",
+                    reference.id,
+                );
+            }
         }
         Ok(())
     }
@@ -1422,10 +1503,23 @@ mod tests {
     }
 
     #[test]
-    fn text_evidence_requires_the_entire_visual_bounds_to_be_visible() {
+    fn text_evidence_tolerates_fractional_viewport_noise_but_not_real_clipping()
+    -> Result<(), &'static str> {
+        fn text_bounds(shape: &egui::epaint::Shape, needle: &str) -> Option<egui::Rect> {
+            match shape {
+                egui::epaint::Shape::Text(text) if text.galley.job.text == needle => {
+                    Some(text.visual_bounding_rect())
+                }
+                egui::epaint::Shape::Vec(shapes) => {
+                    shapes.iter().find_map(|shape| text_bounds(shape, needle))
+                }
+                _ => None,
+            }
+        }
+
         let context = egui::Context::default();
         let size = egui::vec2(240.0, 80.0);
-        let output = context.run_ui(
+        let mut output = context.run_ui(
             egui::RawInput {
                 screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
                 ..Default::default()
@@ -1440,16 +1534,42 @@ mod tests {
                 });
             },
         );
+        let (shape_index, bounds) = output
+            .shapes
+            .iter()
+            .enumerate()
+            .find_map(|(index, shape)| {
+                text_bounds(&shape.shape, "fully-visible-marker").map(|bounds| (index, bounds))
+            })
+            .ok_or("missing test marker")?;
         assert!(output_has_visible_text(
             &output,
             "fully-visible-marker",
             egui::Rect::from_min_size(egui::Pos2::ZERO, size),
         ));
+        assert!(output_has_visible_text(
+            &output,
+            "fully-visible-marker",
+            egui::Rect::from_min_max(
+                egui::pos2(bounds.left() + GEOMETRY_TOLERANCE / 2.0, 0.0),
+                egui::pos2(size.x, size.y),
+            ),
+        ));
         assert!(!output_has_visible_text(
             &output,
             "fully-visible-marker",
-            egui::Rect::from_min_max(egui::Pos2::ZERO, egui::pos2(90.0, 80.0)),
+            egui::Rect::from_min_max(
+                egui::pos2(bounds.left() + GEOMETRY_TOLERANCE * 2.0, 0.0),
+                egui::pos2(size.x, size.y),
+            ),
         ));
+        output.shapes[shape_index].clip_rect.min.x = bounds.left() + GEOMETRY_TOLERANCE / 2.0;
+        assert!(!output_has_visible_text(
+            &output,
+            "fully-visible-marker",
+            egui::Rect::from_min_size(egui::Pos2::ZERO, size),
+        ));
+        Ok(())
     }
 
     #[test]
