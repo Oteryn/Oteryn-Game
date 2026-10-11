@@ -243,7 +243,7 @@ fn flag(ui: &mut egui::Ui, draft: &mut Draft, key: &'static str, english: bool, 
 
 fn unavailable_controls<R>(
     ui: &mut egui::Ui,
-    key: &'static str,
+    _key: &'static str,
     english: bool,
     reason: Label,
     add_contents: impl FnOnce(&mut egui::Ui) -> R,
@@ -252,7 +252,7 @@ fn unavailable_controls<R>(
         #[cfg(test)]
         ui.ctx().data_mut(|data| {
             data.insert_temp(
-                egui::Id::new(("panel-unavailable-control", key)),
+                egui::Id::new(("panel-unavailable-control", _key)),
                 ui.is_enabled(),
             );
         });

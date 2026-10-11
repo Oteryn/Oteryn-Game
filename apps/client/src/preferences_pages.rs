@@ -220,7 +220,7 @@ fn help(ui: &mut egui::Ui, en: bool, compendium_available: bool, state: &mut Pag
 
 fn help_row(
     ui: &mut egui::Ui,
-    id: &'static str,
+    _id: &'static str,
     label: &str,
     enabled: bool,
     explanation: &str,
@@ -248,7 +248,7 @@ fn help_row(
             #[cfg(test)]
             ui.ctx().data_mut(|data| {
                 data.insert_temp(
-                    egui::Id::new(("help-info-glyph", id)),
+                    egui::Id::new(("help-info-glyph", _id)),
                     (rect, ui.clip_rect()),
                 );
             });
@@ -256,7 +256,7 @@ fn help_row(
         #[cfg(test)]
         ui.ctx().data_mut(|data| {
             data.insert_temp(
-                egui::Id::new(("help-action-row", id)),
+                egui::Id::new(("help-action-row", _id)),
                 (response.rect, ui.clip_rect(), response.enabled()),
             );
         });
@@ -281,7 +281,7 @@ fn row(
         (None, false) => "Niedostępne: ta kontrolka nie ma obsługi wykonawczej.".into(),
     };
     let mut info_rect = egui::Rect::NOTHING;
-    let output = egui::Frame::new()
+    let _output = egui::Frame::new()
         .stroke(egui::Stroke::new(
             1.0,
             ui.visuals().widgets.noninteractive.bg_stroke.color,
@@ -330,7 +330,7 @@ fn row(
     ui.ctx().data_mut(|data| {
         data.insert_temp(
             egui::Id::new(("reference-row-geometry", key.as_str())),
-            (output.response.rect, ui.clip_rect(), info_rect),
+            (_output.response.rect, ui.clip_rect(), info_rect),
         );
     });
 }
@@ -798,7 +798,7 @@ fn shortcuts(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mu
     let border = ui.visuals().widgets.noninteractive.bg_stroke.color;
 
     let mut displayed_list_rect = egui::Rect::NOTHING;
-    let displayed_group = egui::Frame::new()
+    let _displayed_group = egui::Frame::new()
         .stroke(egui::Stroke::new(1.0, border))
         .corner_radius(3.0)
         .inner_margin(egui::Margin::symmetric(6, 4))
@@ -885,14 +885,14 @@ fn shortcuts(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mu
         data.insert_temp(
             egui::Id::new(("shortcut-group-geometry", "displayed")),
             (
-                displayed_group.response.rect,
+                _displayed_group.response.rect,
                 displayed_list_rect,
                 ui.clip_rect(),
             ),
         );
     });
     let mut available_list_rect = egui::Rect::NOTHING;
-    let available_group = egui::Frame::new()
+    let _available_group = egui::Frame::new()
         .stroke(egui::Stroke::new(1.0, border))
         .corner_radius(3.0)
         .inner_margin(egui::Margin::symmetric(6, 4))
@@ -990,7 +990,7 @@ fn shortcuts(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state: &mu
         data.insert_temp(
             egui::Id::new(("shortcut-group-geometry", "available")),
             (
-                available_group.response.rect,
+                _available_group.response.rect,
                 available_list_rect,
                 ui.clip_rect(),
             ),

@@ -449,7 +449,7 @@ fn navigation_label<'a>(id: &str, fallback: &'a str, english: bool, advanced: bo
 
 fn navigation_arrow(
     ui: &mut egui::Ui,
-    group: &'static str,
+    _group: &'static str,
     expanded: bool,
     english: bool,
 ) -> egui::Response {
@@ -465,7 +465,7 @@ fn navigation_arrow(
     #[cfg(test)]
     ui.ctx().data_mut(|data| {
         data.insert_temp(
-            egui::Id::new(("preferences-navigation-arrow", group)),
+            egui::Id::new(("preferences-navigation-arrow", _group)),
             (response.rect, ui.clip_rect()),
         );
     });

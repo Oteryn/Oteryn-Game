@@ -757,6 +757,7 @@ enum BindingTarget {
         chat_on: bool,
         second: bool,
     },
+    #[cfg(test)]
     ActionBar {
         row: usize,
         slot: usize,
@@ -1571,9 +1572,9 @@ fn binding_editor(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool, state
 impl BindingTarget {
     const fn chat_on(&self) -> bool {
         match self {
-            Self::General { chat_on, .. }
-            | Self::ActionBar { chat_on, .. }
-            | Self::Custom { chat_on, .. } => *chat_on,
+            Self::General { chat_on, .. } | Self::Custom { chat_on, .. } => *chat_on,
+            #[cfg(test)]
+            Self::ActionBar { chat_on, .. } => *chat_on,
         }
     }
 
@@ -1779,6 +1780,7 @@ fn set_binding(
             }
             true
         }
+        #[cfg(test)]
         BindingTarget::ActionBar {
             row,
             slot,

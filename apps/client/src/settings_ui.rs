@@ -543,6 +543,7 @@ impl SettingsPanel {
         self.draft.save(path)
     }
 
+    #[cfg(test)]
     fn import_options_from(&mut self, path: &std::path::Path) -> std::io::Result<()> {
         self.draft = ClientSettings::load(path)?;
         Ok(())

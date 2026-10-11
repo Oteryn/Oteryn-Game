@@ -225,7 +225,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             });
         });
     });
-    let condition_frame = egui::Frame::new()
+    let _condition_frame = egui::Frame::new()
         .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(58, 61, 61)))
         .corner_radius(4.0)
         .inner_margin(egui::Margin::symmetric(12, 5))
@@ -269,7 +269,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                        draft: &mut ClientSettings,
                        id: Option<&str>,
                        selected: &mut String| {
-                let response = ui
+                let _response = ui
                     .allocate_ui_with_layout(
                         egui::vec2(table_width, CONDITION_ROW_HEIGHT),
                         egui::Layout::left_to_right(egui::Align::Center),
@@ -338,7 +338,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 ui.ctx().data_mut(|data| {
                     data.insert_temp(
                         egui::Id::new(("hud-condition-row", id.unwrap_or("header"))),
-                        (response.rect, ui.clip_rect()),
+                        (_response.rect, ui.clip_rect()),
                     )
                 });
             };
@@ -450,7 +450,7 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
     ui.ctx().data_mut(|data| {
         data.insert_temp(
             egui::Id::new("hud-condition-frame"),
-            condition_frame.response.rect,
+            _condition_frame.response.rect,
         )
     });
     hud_status_row(
@@ -472,8 +472,8 @@ fn hud(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
     );
 }
 
-fn hud_boxed(ui: &mut egui::Ui, test_id: &'static str, body: impl FnOnce(&mut egui::Ui)) {
-    let frame = egui::Frame::new()
+fn hud_boxed(ui: &mut egui::Ui, _test_id: &'static str, body: impl FnOnce(&mut egui::Ui)) {
+    let _frame = egui::Frame::new()
         .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(58, 61, 61)))
         .corner_radius(4.0)
         .inner_margin(egui::Margin::symmetric(12, 5))
@@ -483,7 +483,7 @@ fn hud_boxed(ui: &mut egui::Ui, test_id: &'static str, body: impl FnOnce(&mut eg
         });
     #[cfg(test)]
     ui.ctx()
-        .data_mut(|data| data.insert_temp(egui::Id::new(test_id), frame.response.rect));
+        .data_mut(|data| data.insert_temp(egui::Id::new(_test_id), _frame.response.rect));
 }
 
 fn condition_header_toggle(ui: &mut egui::Ui, draft: &mut ClientSettings, where_: &str, en: bool) {
@@ -513,7 +513,7 @@ fn hud_master_row(
     info: [&str; 2],
     en: bool,
 ) {
-    let row = ui.horizontal(|ui| {
+    let _row = ui.horizontal(|ui| {
         reference_option(ui, draft, "hud", id, labels, en);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             info_glyph(ui, egui::Id::new(("hud-master-info", id)), info, en);
@@ -521,11 +521,11 @@ fn hud_master_row(
     });
     #[cfg(test)]
     ui.ctx().data_mut(|data| {
-        data.insert_temp(egui::Id::new(("hud-master-row", id)), row.response.rect)
+        data.insert_temp(egui::Id::new(("hud-master-row", id)), _row.response.rect)
     });
 }
 
-fn info_glyph(ui: &mut egui::Ui, id: egui::Id, labels: [&str; 2], en: bool) {
+fn info_glyph(ui: &mut egui::Ui, _id: egui::Id, labels: [&str; 2], en: bool) {
     let response = ui
         .allocate_response(egui::vec2(18.0, 18.0), egui::Sense::hover())
         .on_hover_text(labels[usize::from(en)]);
@@ -540,8 +540,9 @@ fn info_glyph(ui: &mut egui::Ui, id: egui::Id, labels: [&str; 2], en: bool) {
         color,
     );
     #[cfg(test)]
-    ui.ctx()
-        .data_mut(|data| data.insert_temp(id, (response.rect, labels[usize::from(en)].to_owned())));
+    ui.ctx().data_mut(|data| {
+        data.insert_temp(_id, (response.rect, labels[usize::from(en)].to_owned()))
+    });
 }
 
 fn hud_status_row(

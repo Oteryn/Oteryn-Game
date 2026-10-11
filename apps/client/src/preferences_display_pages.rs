@@ -59,7 +59,7 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             let selected = draft.stored_int("controls.controls.key_delay_ms");
             let mut delay = selected.unwrap_or(0);
             let value = selected.map_or_else(|| "—".to_owned(), |delay| format!("{delay} ms"));
-            let response = ui
+            let _response = ui
                 .horizontal(|ui| {
                     ui.label(if en {
                         format!("Keyboard Delay: {value}")
@@ -82,7 +82,7 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             ui.ctx().data_mut(|data| {
                 data.insert_temp(
                     egui::Id::new("controls-keyboard-delay-slider"),
-                    (response.rect, ui.clip_rect(), response.enabled()),
+                    (_response.rect, ui.clip_rect(), _response.enabled()),
                 );
             });
         });
