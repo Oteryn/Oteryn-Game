@@ -255,7 +255,12 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
     --locked` pass; `cargo test -p oteryn-game-server --lib --locked` pass (2,756 passed, 0
     failed, 28 ignored); governance validation and `tools/agents/tests` pass
   - Wake fan-out round (Codex 4242808144, 4242808147, clippy `while_let_loop`), on the PC
-    before the push: PCRESULT
+    before the push, in a private checkout of main 9080588d plus this branch's delta (apps and
+    registry diff hash equal to the pushed head's): `cargo fmt --all -- --check` pass; `cargo
+    clippy -p oteryn-game-server --all-targets --locked -- -D warnings` pass; `cargo test -p
+    oteryn-game-server --no-run --locked` pass (before the bound test's carrier capacity
+    fix, which the clippy and test runs then covered); `cargo test -p oteryn-game-server --lib
+    --locked` pass (2,758 passed, 0 failed, 28 ignored)
 - Earlier round: `cargo fmt --all --check`, `python tools/agents/validate_governance.py` and
   `python -m unittest discover -s tools/agents/tests`: pass
 

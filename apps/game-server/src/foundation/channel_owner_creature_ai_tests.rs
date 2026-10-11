@@ -622,7 +622,9 @@ fn the_wake_view_box_holds_every_cell_a_player_sees() {
 #[test]
 fn one_wake_pass_for_many_players_equals_their_wakes_in_turn_and_is_bounded() {
     const PLAYERS: u8 = 40;
-    let mut channel = Channel::with_capacity(usize::from(PLAYERS) + 1);
+    const RATS: usize = 800;
+    // Players and creatures share the carrier's slots.
+    let mut channel = Channel::with_capacity(usize::from(PLAYERS) + 1 + RATS);
     let mut players = vec![channel.player];
     for tag in 0..PLAYERS {
         let session = GameSessionId::decode(&uuid(10 + tag)).expect("session");
@@ -670,6 +672,7 @@ fn one_wake_pass_for_many_players_equals_their_wakes_in_turn_and_is_bounded() {
             .expect("far rat");
         rats.push(rat);
     }
+    assert_eq!(rats.len(), RATS);
     // Three tables with every rat idle: one per wake path.
     let mut tables = [(); 3].map(|()| CreatureAiTable::default());
     for table in &mut tables {
