@@ -4,8 +4,8 @@ run-name: Content World B6 interaction bindings • PR #${{ github.event.pull_re
 
 # The pinned-source rebuild of the B6 catalogue was removed in GAME-DECANARY-2a: Game CI no longer
 # fetches external server repositories. The tracked evidence is regenerated locally with
-# interaction_binding_catalog.py (see tools/reference-world-corridor-census/README.md); CI runs
-# the offline self-tests only.
+# interaction_binding_catalog.py (see tools/reference-world-corridor-census/README.md). CI runs
+# the offline self-tests and an offline closure check of the tracked index and family shards.
 
 on:
   pull_request:
@@ -20,6 +20,8 @@ on:
       - 'tools/reference-world-corridor-census/self_test.py'
       - 'tools/reference-world-corridor-census/content_source_batch_self_test.py'
       - 'tools/game-atlas-fullworld-source/self_test.py'
+      - 'docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
+      - 'docs/agents/evidence/OTV2-20260920-content-world-cw2-b6-interaction-bindings/**'
       - '.github/workflows/content-world-b6-interaction-bindings.yml'
 
 permissions:
@@ -74,3 +76,106 @@ jobs:
           python -B tools/reference-world-corridor-census/self_test.py
           python -B tools/reference-world-corridor-census/content_source_batch_self_test.py
           python -B tools/game-atlas-fullworld-source/self_test.py
+
+      - name: Verify tracked B6 evidence closure offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -B - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          def canonical_bytes(value):
+              return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n').encode('utf-8')
+
+          root = Path('docs/agents/evidence')
+          family_root = root / 'OTV2-20260920-content-world-cw2-b6-interaction-bindings'
+          index_path = root / 'OTV2-20260920-content-world-cw2-b6-interaction-bindings.json'
+          assert index_path.is_file() and not index_path.is_symlink()
+          assert family_root.is_dir() and not family_root.is_symlink()
+          for child in family_root.iterdir():
+              assert child.is_file() and not child.is_symlink(), f'unexpected entry {child}'
+
+          index = json.loads(index_path.read_text(encoding='utf-8'))
+          expected_stream = {'map_header': 1, 'tile': 18_997_668, 'town': 33, 'waypoint': 18}
+          expected_families = {
+              'ACTION_ID': 0,
+              'UNIQUE_ID': 0,
+              'TELEPORT_DESTINATION': 2_405,
+              'HOUSE_DOOR_ID': 4_527,
+          }
+          expected_shards = {'TELEPORT_DESTINATION': 3, 'HOUSE_DOOR_ID': 5}
+          expected_product = '793ea8072e56a1070f29cab071e5d9b2c1e029522984a268f18c76d038c0616e'
+          expected_game_inputs = {
+              'tools/game-atlas-fullworld-source/producer.py': '740a96fe1b1d97f32c56e278725ab9c2de6e724b',
+              'tools/reference-world-corridor-census/census.py': 'f056063ad1ae1476fcb73d97e918553a977a0a15',
+              'tools/game-atlas-thais-fixture/export.py': '0e36ca9e43d78a919eb673f9dc423ed1c178c727',
+          }
+
+          assert index['source_stream_counts'] == expected_stream
+          assert index['source']['revision'] == 'ff7ede593c69d4c658b382c97443e8155926924a'
+          assert index['source']['sha256'] == '09cce62af6c86644b5579fba460c674585261eb987ca5aa1f52baef9e91f8bbb'
+          assert index['game_inputs'] == expected_game_inputs
+          assert index['logical_product_digest_sha256'] == expected_product
+          assert index['silent_drop'] == 0
+          assert index['unclassified'] == 0
+          assert index['native_promotions'] == 0
+          assert index['executable_promotions'] == 0
+          assert index['quest_runtime_promotions'] == 0
+          assert index['dispositions']['UNKNOWN'] == index['total_occurrences'] == 6_932
+          for name in ('UNSUPPORTED', 'AMBIGUOUS', 'CONFLICT', 'LOSS'):
+              assert index['dispositions'][name] == 0
+
+          family_counts = {}
+          referenced = set()
+          for item in index['storage']['family_files']:
+              family_name = item['family']
+              name = Path(item['tracked_path']).name
+              referenced.add(name)
+              payload = (family_root / name).read_bytes()
+              assert len(payload) == item['bytes']
+              assert hashlib.sha256(payload).hexdigest() == item['sha256']
+              family = json.loads(payload.decode('utf-8'))
+              assert family['logical_product_digest_sha256'] == expected_product
+              assert family['counts']['occurrences'] == item['records'] == expected_families[family_name]
+              assert family['records_digest_sha256'] == item['records_digest_sha256']
+
+              if item['storage_mode'] == 'SHARDED':
+                  assert item['shard_count'] == expected_shards[family_name]
+                  assert family['storage']['mode'] == 'SHARDED'
+                  assert family['storage']['max_shard_bytes'] == 600_000
+                  assert family['storage']['shard_count'] == item['shard_count']
+                  assert len(family['storage']['shards']) == item['shard_count']
+                  reconstructed = []
+                  for expected_ordinal, shard_meta in enumerate(family['storage']['shards'], start=1):
+                      assert shard_meta['ordinal'] == expected_ordinal
+                      shard_name = Path(shard_meta['tracked_path']).name
+                      referenced.add(shard_name)
+                      shard_payload = (family_root / shard_name).read_bytes()
+                      assert len(shard_payload) == shard_meta['bytes'] <= 600_000
+                      assert hashlib.sha256(shard_payload).hexdigest() == shard_meta['sha256']
+                      shard = json.loads(shard_payload.decode('utf-8'))
+                      assert shard['family'] == family_name
+                      assert shard['ordinal'] == expected_ordinal
+                      assert shard['shard_count'] == item['shard_count']
+                      assert shard['logical_product_digest_sha256'] == expected_product
+                      assert shard['family_records_digest_sha256'] == item['records_digest_sha256']
+                      assert shard['record_count'] == shard_meta['record_count'] == len(shard['records'])
+                      assert hashlib.sha256(canonical_bytes(shard['records'])).hexdigest() == shard['records_digest_sha256'] == shard_meta['records_digest_sha256']
+                      reconstructed.extend(shard['records'])
+                  assert len(reconstructed) == item['records']
+                  assert hashlib.sha256(canonical_bytes(reconstructed)).hexdigest() == item['records_digest_sha256']
+              else:
+                  assert item['storage_mode'] == 'INLINE'
+                  assert item['shard_count'] == 0
+                  assert hashlib.sha256(canonical_bytes(family['records'])).hexdigest() == item['records_digest_sha256']
+
+              family_counts[family_name] = item['records']
+
+          assert family_counts == expected_families
+          assert sum(family_counts.values()) == index['total_occurrences']
+          tracked = {child.name for child in family_root.iterdir()}
+          assert tracked == referenced, f'unreferenced or missing files: {sorted(tracked ^ referenced)}'
+          print(f'B6 evidence closure ok: {len(tracked)} files, {index["total_occurrences"]} occurrences')
+          PY

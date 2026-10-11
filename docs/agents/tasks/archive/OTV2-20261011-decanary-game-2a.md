@@ -1,7 +1,7 @@
-# OTERYN-20261011-decanary-game-2a
+# OTV2-20261011-decanary-game-2a
 
 ```yaml
-task_id: OTERYN-20261011-decanary-game-2a
+task_id: OTV2-20261011-decanary-game-2a
 title: "GAME-DECANARY-2a neutral tool flags and B6 CI without external source fetch"
 mode: IMPLEMENT
 status: completed
@@ -54,7 +54,12 @@ owned_paths:
   - tools/content-schema/store-authoring/README.md
   - tools/content-schema/store-authoring/store_census.py
   - tools/reference-world-corridor-census/README.md
-  - docs/agents/tasks/archive/OTERYN-20261011-decanary-game-2a.md
+  - docs/reference/spells/r24-candidate/SHA256SUMS
+  - docs/reference/spells/r24-candidate/monster-provider/README.md
+  - docs/reference/spells/r25-candidate/SHA256SUMS
+  - docs/reference/spells/r25-candidate/monster-presentation/README.md
+  - docs/reference/spells/r25-candidate/monster-presentation/SHA256SUMS
+  - docs/agents/tasks/archive/OTV2-20261011-decanary-game-2a.md
 public_contracts: []
 external_repositories: []
 ```
@@ -69,9 +74,16 @@ Second slice: the live couplings that can move without changing a pinned digest 
   the new commands.
 - `content-world-b6-interaction-bindings.yml` no longer checks out an external server repository,
   the legacy parser or the client asset archive. The job is now `Content World B6 / offline
-  self-tests` and runs the four offline self-tests. The tracked evidence is regenerated locally, as
+  self-tests` and runs the four offline self-tests. It also runs an offline closure check of the
+  tracked B6 index and family shards: sizes, sha256 and record digests, counts, and no unreferenced
+  files. The evidence paths trigger it again. The tracked evidence is regenerated locally, as
   described in `tools/reference-world-corridor-census/README.md`.
-- No generated output, data key, provenance string, digest or golden changed.
+- The R24 monster-provider and R25 monster-presentation reproduction recipes use the renamed
+  flags. Their `SHA256SUMS` lines are recomputed, and all 50 entries in the three manifests verify.
+  No other file pins these manifests.
+- `charm_authoring.py` and `store_census.py` are ruff-formatted, because their directories are
+  ruff-gated.
+- No generated output, data key, provenance string, evidence digest or golden changed.
 
 ## Left in place, with reason (follow-up PRs)
 
@@ -108,8 +120,8 @@ Second slice: the live couplings that can move without changing a pinned digest 
 - **Seed and vendor paths owned elsewhere:**
   - the `g4-canonical-worldproject-package-seed.yml` source fetch (#1944)
   - the game-atlas legacy vendor paths
-- **Docs and data:** `docs/reference/**` READMEs and archived task records (slice 2b), and Rust
-  identifiers (slice 2c).
+- **Docs and data:** other `docs/reference/**` text and archived task records (slice 2b), and
+  Rust identifiers (slice 2c).
 - **Guard denylists:** kept literal, by owner decision 1a.
 
 ## Validation
@@ -132,6 +144,11 @@ Second slice: the live couplings that can move without changing a pinned digest 
   - corridor self_test
   - content_source_batch_self_test
   - game-atlas-fullworld-source self_test
+- B6 offline closure check against the tracked evidence: pass (12 files, 6932 occurrences)
+- B6 closure check negative cases: rejects a flipped shard byte and an unreferenced extra file
+- R24/R25 `SHA256SUMS`: all 50 entries in the three manifests verify
+- `ruff check` and `ruff format --check` (ruff 0.16.1) in every ruff-gated content-schema
+  directory: pass
 - workflow YAML parse: pass
 - `git diff --check`: clean
 - Pre-existing failures, identical on base `3ce431413`:

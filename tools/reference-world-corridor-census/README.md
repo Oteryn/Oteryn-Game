@@ -33,8 +33,10 @@ source recorded in the evidence index `source` field and the pinned parser
 lineage and 15.32 asset inputs that the generator checks. Run it twice and with
 `--enumeration reverse`, and require byte-identical output before replacing the
 tracked files. Since GAME-DECANARY-2a, Game CI no longer fetches that source:
-the `Content World B6 interaction bindings` workflow runs only the offline
-self-tests.
+the `Content World B6 interaction bindings` workflow runs the offline
+self-tests and an offline closure check of the tracked index and family shards
+(sizes, sha256 and record digests, counts, and no unreferenced files). It runs
+whenever the tracked evidence changes.
 
 
 ## Scope evolution
