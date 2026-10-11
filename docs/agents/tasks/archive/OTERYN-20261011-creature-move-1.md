@@ -18,6 +18,7 @@ updated_at: 2026-10-11
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/gameplay_transport/monster_ai_cycle.rs
+  - apps/game-server/src/durability/spell_item_transaction.rs
   - docs/agents/tasks/active/OTERYN-20261011-creature-move-1.md
   - docs/agents/tasks/archive/OTERYN-20261011-creature-move-1.md
 public_contracts: []
@@ -86,3 +87,11 @@ pr: 1977
 blocker: null
 next_action: independent review
 ```
+
+## Review follow-up: durable ground read (Codex P1s on #1977)
+
+- `owned_paths` widened (CP decision) to `durability/spell_item_transaction.rs` for one additive `pub(crate)` batch reader, `read_tiles_batch_for_scope`: `spatial_position = ANY($3)`, no `FOR UPDATE`, same fail-closed checks as the per-cell read. Its SQL is derived from `TILE_ROWS` and a unit test pins that derivation. Existing signatures and callers are unchanged.
+- Creature steps refuse a destination holding a durable ground item with `blocks_movement`. The read runs before the Channel guards are taken, once per pass, for the cardinal neighbours of the monsters, and applies only to the scope generation it was read in. An unread cell is refused.
+- RESIDUAL: the spell lane is held for exactly one SQL round trip (the scope assertion requires the permit); it is never held across the think pass. No live-DB test compares batch to per-cell results (no Postgres in the cloud runner); the equivalence is by construction.
+- Follow-up CREATURE-MOVE-1c: the Movement-owner in-memory overlay that removes the SQL read from the creature pass.
+

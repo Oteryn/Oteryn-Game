@@ -1317,6 +1317,108 @@ pub(crate) async fn locked_tile_rows_for_scope(
     Ok(rows)
 }
 
+/// The batch form of [`TILE_ROWS`]: the same joins and filters for several cells in one round
+/// trip. Derived from the per-cell text so they cannot drift: the position test becomes
+/// `= ANY($3)`, the per-cell `LIMIT` becomes a bound on the whole batch, and `FOR UPDATE` is
+/// dropped because this read is advisory (a creature step check) and locks no row. `None` when
+/// the per-cell text no longer has the expected shape, which fails the read closed.
+fn batch_tile_rows_sql(cells: usize) -> Option<String> {
+    let sql = TILE_ROWS.replace("g.spatial_position=$3", "g.spatial_position=ANY($3)");
+    let sql = sql.strip_suffix(" LIMIT 501 FOR UPDATE OF i")?;
+    (sql != TILE_ROWS && sql.contains("g.spatial_position=ANY($3)"))
+        .then(|| format!("{sql} LIMIT {}", cells.saturating_mul(501)))
+}
+
+/// Several cells of the same room read in one round trip, without row locks, with the same
+/// fail-closed checks as [`locked_tile_rows_for_scope`] (opaque or incompatible placement,
+/// scope generation, legacy ordering, the 500-item cap per cell). The result is aligned with
+/// `targets`. All targets must share one map revision, content revision and placement context.
+pub(crate) async fn read_tiles_batch_for_scope(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemScopeAuthority,
+    targets: &[SpellGroundTarget],
+) -> Result<Vec<DurableTileItems>> {
+    let Some(first) = targets.first() else {
+        return Ok(Vec::new());
+    };
+    if targets.iter().any(|t| {
+        t.map_revision != first.map_revision
+            || t.content_revision != first.content_revision
+            || t.placement_context != first.placement_context
+    }) {
+        return Err(SpellItemError::Rejected(
+            "batch tile read requires one placement generation",
+        ));
+    }
+    let current: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
+        .fetch_one(&mut **tx)
+        .await?;
+    if current != authority.physical_transaction {
+        return Err(SpellItemError::Rejected(
+            "tile read requires same physical owner transaction",
+        ));
+    }
+    let positions: Vec<Vec<u8>> = targets.iter().map(|t| t.spatial_position.clone()).collect();
+    let unknown:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR (g.spatial_position=ANY($3) AND (g.map_revision<>$4 OR g.content_revision<>$5 OR g.native_room_placement_context<>$6))))")
+        .bind(authority.world.as_slice()).bind(authority.channel.as_slice()).bind(&positions).bind(&first.map_revision).bind(&first.content_revision).bind(&first.placement_context).fetch_one(&mut **tx).await?;
+    if unknown {
+        return Err(SpellItemError::Rejected(
+            "unreconciled opaque or incompatible Ground placement",
+        ));
+    }
+    let sql = batch_tile_rows_sql(targets.len())
+        .ok_or(SpellItemError::Rejected("batch tile read query shape"))?;
+    let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
+        .bind(authority.world.as_slice())
+        .bind(authority.channel.as_slice())
+        .bind(&positions)
+        .bind(&first.map_revision)
+        .bind(&first.content_revision)
+        .bind(&first.placement_context)
+        .fetch_all(&mut **tx)
+        .await?;
+    let mut by_cell: Vec<Vec<sqlx::postgres::PgRow>> = targets.iter().map(|_| Vec::new()).collect();
+    for row in rows {
+        let position: Vec<u8> = row.try_get("spatial_position")?;
+        let index = targets
+            .iter()
+            .position(|t| t.spatial_position == position)
+            .ok_or(SpellItemError::Rejected("batch tile row outside the batch"))?;
+        by_cell[index].push(row);
+    }
+    let mut out = Vec::with_capacity(targets.len());
+    for (rows, target) in by_cell.into_iter().zip(targets) {
+        if rows.len() > 500 {
+            return Err(SpellItemError::Rejected(
+                "tile item snapshot exceeds 500 visited items",
+            ));
+        }
+        for row in &rows {
+            if integer(row.try_get("ground_scope_generation")?)? != authority.ownership_generation {
+                return Err(SpellItemError::Rejected(
+                    "Ground custody belongs to an unreconciled scope generation",
+                ));
+            }
+        }
+        if rows.iter().any(|r| {
+            r.try_get::<Option<String>, _>("stack_ordinal")
+                .ok()
+                .flatten()
+                .is_none()
+        }) {
+            return Err(SpellItemError::Rejected(
+                "legacy ground ordering has not been reconciled",
+            ));
+        }
+        out.push(decode_tile_rows(
+            rows,
+            authority.ownership_generation,
+            target,
+        )?);
+    }
+    Ok(out)
+}
+
 pub(crate) async fn prepare_corpse_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
@@ -3486,4 +3588,26 @@ fn decode_creature_field_origin(
         ));
     }
     Ok(Some(origin))
+}
+
+#[cfg(test)]
+#[allow(clippy::panic)]
+mod batch_tile_sql_tests {
+    use super::*;
+
+    /// The batch query is the per-cell query with only the position test, the limit and the row
+    /// lock changed, so a join or filter added to one cannot be missing from the other.
+    #[test]
+    fn the_batch_query_is_the_per_cell_query_for_many_cells() {
+        let Some(batch) = batch_tile_rows_sql(4) else {
+            panic!("batch sql");
+        };
+        let per_cell = TILE_ROWS
+            .replace("g.spatial_position=$3", "g.spatial_position=ANY($3)")
+            .replace(" LIMIT 501 FOR UPDATE OF i", "");
+        assert_eq!(batch, format!("{per_cell} LIMIT 2004"));
+        assert!(!batch.contains("FOR UPDATE"));
+        assert!(batch.contains("game_native_map_item_receipts"));
+        assert!(batch.contains("ORDER BY g.stack_ordinal DESC NULLS FIRST"));
+    }
 }

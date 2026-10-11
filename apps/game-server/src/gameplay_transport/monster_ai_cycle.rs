@@ -498,22 +498,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .await
                         .map_err(unavailable)?;
+                    // One round trip for every cell; an unreadable batch leaves every cell
+                    // unread, which refuses the steps.
                     let mut blocked = BTreeMap::new();
-                    for (key, target) in targets.iter() {
-                        let rows = crate::durability::spell_item_transaction::locked_tile_rows_for_scope(
-                            &mut tx, &authority, target,
+                    let only_targets = targets.iter().map(|(_, t)| t.clone()).collect::<Vec<_>>();
+                    if let Ok(read) =
+                        crate::durability::spell_item_transaction::read_tiles_batch_for_scope(
+                            &mut tx,
+                            &authority,
+                            &only_targets,
                         )
-                        .await;
-                        let items = rows.and_then(|rows| {
-                            crate::durability::spell_item_transaction::decode_tile_rows(
-                                rows,
-                                authority.generation(),
-                                target,
-                            )
-                        });
-                        // An unreadable cell stays absent, which refuses the step.
-                        if let Ok(items) = items {
-                            blocked.insert(*key, items.items.iter().any(|i| i.blocks_movement));
+                        .await
+                    {
+                        for ((key, _), tile) in targets.iter().zip(read) {
+                            blocked.insert(*key, tile.items.iter().any(|i| i.blocks_movement));
                         }
                     }
                     tx.rollback()
