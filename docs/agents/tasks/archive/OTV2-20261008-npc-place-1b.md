@@ -83,6 +83,7 @@ Follow-ups:
 - `cargo fmt --all --check`: pass
 - `cargo clippy -p oteryn-world-bundle -p oteryn-world-bundle-compiler -p oteryn-game-server -p oteryn-client --all-targets -- -D warnings`: pass
 - `cargo test -p oteryn-world-bundle -p oteryn-world-bundle-compiler`: pass
+- `cargo test --release -p oteryn-world-bundle-compiler --test pin_check` (its scratch tree now copies the NPC catalogue inputs): pass
 - `cargo test -p oteryn-game-server -p oteryn-client --no-fail-fast`: pass
 - `world-bundle-compiler pin-check . <out>`: pass
 - `python3 tools/repository/validate_repository_policy.py`: pass
