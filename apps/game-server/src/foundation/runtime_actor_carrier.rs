@@ -1484,6 +1484,21 @@ pub(crate) const CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX: usize = 64;
 /// product of the two rows above, bounds the carrier's spawn state and spawned population; it
 /// equals `CREATUREAI0-RL-12` (one pending respawn occurrence per point).
 pub(crate) const CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX: usize = 131_072;
+/// SPAWN-CEILINGS-1 (Codex 4242245064): carrier slots an activation leaves free for player
+/// admission, the D128 design target of 500 concurrent players per Channel. The pre-production
+/// carrier holds 131,072 actors (`PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY`), as many as
+/// `CREATUREAI0-RL-01` spawn points, so an activation that fills it would refuse every player.
+/// A carrier smaller than twice this (tests, qualification) keeps half of its slots instead.
+pub(crate) const SPAWN_ACTIVATION_PLAYER_HEADROOM: usize = 500;
+
+/// The slots an activation must leave free in a carrier of `capacity` slots.
+const fn spawn_activation_player_headroom(capacity: usize) -> usize {
+    if capacity / 2 < SPAWN_ACTIVATION_PLAYER_HEADROOM {
+        capacity / 2
+    } else {
+        SPAWN_ACTIVATION_PLAYER_HEADROOM
+    }
+}
 
 /// `AI01-SPAWN-SOURCES-PER-SCOPE` and `AI01-SPAWN-POPULATION` (AI-RL-11, D57): the first
 /// slice's 16 sources × 4 creatures = 64-creature envelope. Spawn realization no longer reads
@@ -2850,7 +2865,8 @@ impl ChannelRuntimeV1 {
 
     /// The checks every activation passes before anything is kept or admitted: the owner
     /// fence, no realized or pending activation, every registered ceiling and the slot
-    /// capacity. Returns the total points.
+    /// capacity, which keeps [`SPAWN_ACTIVATION_PLAYER_HEADROOM`] slots free for player
+    /// admission. Returns the total points.
     fn check_spawn_activation(
         &self,
         definitions: &[SpawnDefinition],
@@ -2865,7 +2881,13 @@ impl ChannelRuntimeV1 {
         let context = self.pinned_position_context();
         self.carrier.validate_current_continuity(&self.continuity)?;
         self.carrier.validate_position_context(context)?;
-        if self.carrier.free_slot_count() < total_points {
+        let headroom = spawn_activation_player_headroom(self.carrier.slots.len());
+        if self
+            .carrier
+            .free_slot_count()
+            .checked_sub(total_points)
+            .is_none_or(|left| left < headroom)
+        {
             return Err(CarrierError::CapacityExceeded);
         }
         Ok(total_points)
@@ -7709,7 +7731,7 @@ mod tests {
             Err(CarrierError::InvalidSpawnDefinition)
         );
         // The former first-slice bound (4) no longer limits a source.
-        let mut runtime = runtime(max);
+        let mut runtime = runtime(2 * max);
         assert_eq!(
             runtime.realize_spawn_definitions(vec![row_definition(0, max)]),
             Ok(max)
@@ -7784,7 +7806,7 @@ mod tests {
         assert!(over.carrier.occupied.is_empty());
         drop(over);
 
-        let mut runtime = runtime(max);
+        let mut runtime = runtime(max + SPAWN_ACTIVATION_PLAYER_HEADROOM);
         // More than one owner window: one turn refuses, owner windows realize it.
         assert_eq!(
             runtime.realize_spawn_definitions(sources(max)),
@@ -7857,7 +7879,7 @@ mod tests {
         // 131 sources of 63 points: 8,253 points, windows of 4,096, 4,096 and 61; source 65
         // has 1 point in the first window and 62 in the second.
         let definitions = || (0..131).map(|_| row_definition(0, 63)).collect::<Vec<_>>();
-        let mut runtime = runtime(8_253);
+        let mut runtime = runtime(8_253 + SPAWN_ACTIVATION_PLAYER_HEADROOM);
         let slots_before = runtime.carrier.slots.clone();
         assert_eq!(
             runtime.realize_spawn_definitions(definitions()),
@@ -7930,7 +7952,8 @@ mod tests {
     #[test]
     fn a_refused_activation_window_realizes_nothing() {
         // 65 sources of 64 points: windows of 4,096 and 64.
-        let mut runtime = runtime(4_160);
+        let capacity = 4_160 + SPAWN_ACTIVATION_PLAYER_HEADROOM;
+        let mut runtime = runtime(capacity);
         assert_eq!(
             runtime.begin_spawn_definitions((0..65).map(|_| row_definition(0, 64)).collect()),
             Ok(4_160)
@@ -7938,8 +7961,9 @@ mod tests {
         let first = runtime.realize_activation_spawn_window(0).expect("first");
         assert_eq!(first.realized, 4_096);
         let early = runtime.spawn_point_creatures()[0].2.expect("realized");
-        // Other owner work takes the slots the second window needs.
-        let others = (0..64)
+        // Other owner work takes slots between windows: the second window admits 63 of its 64
+        // points and then refuses.
+        let others = (0..runtime.carrier.free_slot_count() - 63)
             .map(|_| {
                 runtime
                     .carrier
@@ -7947,25 +7971,73 @@ mod tests {
                     .expect("other creature")
             })
             .collect::<Vec<_>>();
+        assert_eq!(others.len(), SPAWN_ACTIVATION_PLAYER_HEADROOM + 1);
         assert_eq!(
             runtime.realize_activation_spawn_window(spawn::OWNER_WINDOW_MICROS),
             Err(CarrierError::CapacityExceeded)
         );
         assert!(runtime.carrier.spawns.is_empty() && runtime.spawn_activation.is_none());
         assert!(!runtime.carrier.creature_alive(&runtime.continuity, early));
-        for other in others {
+        for other in &others {
             assert!(
                 runtime
                     .carrier
-                    .creature_alive(&runtime.continuity, ExactActorRef(other))
+                    .creature_alive(&runtime.continuity, ExactActorRef(*other))
             );
         }
-        assert_eq!(runtime.carrier.occupied.len(), 64);
-        assert_eq!(runtime.carrier.free_slot_count(), 4_096);
+        assert_eq!(runtime.carrier.occupied.len(), others.len());
+        assert_eq!(runtime.carrier.free_slot_count(), capacity - others.len());
         assert_eq!(
             runtime.realize_spawn_definitions(vec![row_definition(0, 64)]),
             Ok(64)
         );
+    }
+
+    /// SPAWN-CEILINGS-1 (Codex 4242245064): an activation leaves
+    /// [`SPAWN_ACTIVATION_PLAYER_HEADROOM`] slots of the pre-production carrier free, so players
+    /// are admitted after the largest accepted activation; filling the carrier with
+    /// `CREATUREAI0-RL-01` points refuses with nothing kept.
+    #[test]
+    fn activation_keeps_player_headroom_in_the_pre_production_carrier() {
+        let capacity =
+            usize::try_from(crate::node::config::PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY)
+                .expect("capacity");
+        assert_eq!(capacity, CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX);
+        assert_eq!(
+            spawn_activation_player_headroom(capacity),
+            SPAWN_ACTIVATION_PLAYER_HEADROOM
+        );
+        let points = |total: usize| {
+            let mut definitions = (0..total / 64)
+                .map(|index| row_definition(i32::try_from(index % 4).expect("small") * 64, 64))
+                .collect::<Vec<_>>();
+            if total % 64 > 0 {
+                definitions.push(row_definition(0, total % 64));
+            }
+            definitions
+        };
+        let mut runtime = runtime(capacity);
+        let largest = capacity - SPAWN_ACTIVATION_PLAYER_HEADROOM;
+        for refused in [capacity, largest + 1] {
+            assert_eq!(
+                runtime.begin_spawn_definitions(points(refused)),
+                Err(CarrierError::CapacityExceeded)
+            );
+            assert!(runtime.spawn_activation.is_none() && runtime.carrier.spawns.is_empty());
+        }
+        assert_eq!(
+            realize_in_owner_windows(&mut runtime, points(largest)).0,
+            largest
+        );
+        for raw in 0..u64::try_from(SPAWN_ACTIVATION_PLAYER_HEADROOM).expect("small") {
+            let reservation = runtime
+                .reserve_fresh_session(session(1_000 + raw))
+                .expect("player headroom");
+            runtime
+                .commit_fresh_session(reservation)
+                .expect("player commit");
+        }
+        assert_eq!(runtime.carrier.free_slot_count(), 0);
     }
 
     /// SPAWN-CEILINGS-1 (Codex 4242094686): the full spawn scan runs once per Channel owner

@@ -64,6 +64,9 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   at most one per 50 ms owner window, in canonical order.
 - The full respawn scan runs once per Channel owner window, not once per session drive
   (Codex 4242094686 on #1984).
+- Activation leaves `SPAWN_ACTIVATION_PLAYER_HEADROOM` (500) carrier slots free for players
+  (Codex 4242245064 on #1984): on the 131,072-actor pre-production carrier at most 130,572
+  points are accepted and 500 players are then admitted.
 
 ## Implementation / findings
 
@@ -95,6 +98,15 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   microsecond, and successors due inside the window are inserted in order. A death is now
   observed at the first drive of the next owner window (up to 50 ms later than before; the
   occurrence is still due one full delay after its observation).
+- Player headroom (review round on #1984): the pre-production carrier capacity
+  (`PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY`, 131,072, `node/config.rs`) equals
+  `CREATUREAI0-RL-01`, so a maximum activation filled every slot and `reserve_player`
+  (`admit_inner`) refused the first player. `check_spawn_activation` now requires the slots left
+  after the activation to be at least `SPAWN_ACTIVATION_PLAYER_HEADROOM`, the D128 design target
+  of 500 players per Channel (half the carrier for carriers under 1,000 slots, for tests and
+  qualification). Sizing the carrier to `CREATUREAI0-RL-04` instead needs `node/config.rs` and
+  an owner decision on the capacity; it is outside this task. The headroom does not cover
+  monster or player summons or NPCs (owner question in the report).
 - Performance review item (the governance validator defines no marker for it): the per-window
   scan is still O(spawn points) and `cell_occupied` is O(slots) per admission. Event-driven gone
   detection needs a death hook in the carrier's other modules and `ai/spawn.rs`, outside this
@@ -110,9 +122,11 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   Rust 1.94.0) at the pushed head:
   - `cargo fmt --all -- --check`: pass
   - `cargo clippy -p oteryn-game-server --all-targets --locked -- -D warnings`: pass
-  - `cargo test -p oteryn-game-server --lib --locked`: pass (2,740 passed, 0 failed, 28
-    ignored); the first run failed one new test assertion (a removed slot keeps its
-    generation, so liveness, not `validate_ref`, shows the removal), fixed in the next commit
+  - `cargo test -p oteryn-game-server --lib --locked`: pass at a2a1a060 (2,740 passed, 0
+    failed, 28 ignored); the first run failed one new test assertion (a removed slot keeps its
+    generation, so liveness, not `validate_ref`, shows the removal), fixed in a2a1a060
+  - Player headroom round (Codex 4242245064): fmt, clippy and the lib tests rerun on the PC at
+    the pushed head (2,741 tests)
 - Earlier round: `cargo fmt --all --check`, `python tools/agents/validate_governance.py` and
   `python -m unittest discover -s tools/agents/tests`: pass
 
