@@ -17,7 +17,8 @@ fn manifest_dir() -> PathBuf {
 
 /// Target names CI runs: `--test <name>` and `run_registered_target <name> <path>` calls.
 fn ci_run_targets() -> io::Result<BTreeSet<String>> {
-    let text = fs::read_to_string(manifest_dir().join("../../.github/workflows/merge-group-gate.yml"))?;
+    let text =
+        fs::read_to_string(manifest_dir().join("../../.github/workflows/merge-group-gate.yml"))?;
     let mut targets = BTreeSet::new();
     for line in text.lines() {
         let line = line.trim();
