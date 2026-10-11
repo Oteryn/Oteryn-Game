@@ -2008,11 +2008,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     async fn use_bundle_door(
         &self,
         actor: ExactActorRef,
+        session: GameSessionId,
         map: &crate::map::boot::BundleMap,
         target: &world_object::WorldObjectTarget,
     ) -> UseOutcome {
         let mut runtime = self.runtime.lock().await;
         if self.spell_states.lock().await.is_dead(actor) {
+            return UseOutcome::rejected();
+        }
+        // The USE's own GameSession must still be the actor's bound session with no control
+        // loss, read under the same lock as the commit (a stale or superseded session acts on
+        // nothing).
+        if !runtime
+            .player_control_facts(actor, session)
+            .is_ok_and(|facts| facts.control_loss.is_none())
+        {
             return UseOutcome::rejected();
         }
         // Admission is taken under the owner lock that also covers the commit below, and the
@@ -2581,7 +2591,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return UseOutcome::rejected();
         }
         if let Some(map) = self.bundle_map() {
-            return self.use_bundle_door(actor, map, &target).await;
+            return self
+                .use_bundle_door(actor, command.game_session_id, map, &target)
+                .await;
         }
         if let Some(chest) = Self::chest_target(self.chest, &target.placement) {
             return self.use_chest(actor, command, chest).await;
