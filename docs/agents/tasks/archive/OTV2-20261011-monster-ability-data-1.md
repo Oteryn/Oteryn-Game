@@ -10,7 +10,7 @@ issue: 1622
 lane_id: content
 base_branch: main
 branch: claude/monster-ability-data-1-20261011
-pr: 0
+pr: 1975
 base_sha: 967d7012f
 head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
 final_head_sha: "exact frozen head in the FREEZE_SHA report to the control plane"
@@ -65,8 +65,8 @@ authored record is incomplete.
 - `python3 tools/content-schema/native-gameplay/validate_monster_attack_authoring.py`: pass.
 - `python3 tools/content-schema/native-gameplay/build_monster_attack_authoring.py --check`: pass.
 - `python3 tools/content-schema/native-gameplay/test_monster_melee_profiles.py`: OK.
-- `python tools/agents/validate_governance.py`: VALIDATION_PENDING
-- `python -m unittest discover -s tools/agents/tests`: VALIDATION_PENDING
+- `python tools/agents/validate_governance.py`: pass
+- `python -m unittest discover -s tools/agents/tests`: pass
 
 ## Review
 
