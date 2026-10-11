@@ -7,7 +7,7 @@ rules from several events. Every manifest `covers` the (event, creature) pairs w
 transcribes; the monster converter relocates exactly those. Keys use the provisional `canary:`
 namespace, like the monster bundles.
 
-Usage: python canary_encounters.py --canary <checkout of opentibiabr/canary at REVISION>
+Usage: python canary_encounters.py --reference-engine <checkout of opentibiabr/canary at REVISION>
 """
 import argparse
 import hashlib
@@ -3290,9 +3290,9 @@ def count_vlarkorth(build):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('--canary', required=True, type=Path)
+    parser.add_argument('--reference-engine', required=True, type=Path)
     args = parser.parse_args()
-    build = Encounters(args.canary)
+    build = Encounters(args.reference_engine)
     for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos, burning_hatred, arena_summons, count_vlarkorth, more_arena_summons, vortex_and_caster_conditions):
         transcribe(build)
     print(json.dumps(build.write()))

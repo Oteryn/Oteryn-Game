@@ -20,7 +20,7 @@ prefix). Quests are joined to interactions the same way `ots_readiness.py` does 
 reimplemented). Deterministic; no narrative text from the sources is ever written out -- only line
 numbers and the call names the rules themselves match on.
 
-Usage: python ots_gap_triage.py --canary <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
+Usage: python ots_gap_triage.py --reference-engine <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
 """
 import argparse
 import collections
@@ -177,11 +177,11 @@ def build_quest_join():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--canary', required=True, type=pathlib.Path)
+    parser.add_argument('--reference-engine', required=True, type=pathlib.Path)
     parser.add_argument('--crystal', required=True, type=pathlib.Path)
     parser.add_argument('--out', type=pathlib.Path, default=OUT)
     args = parser.parse_args()
-    roots = {'canary': args.canary, 'crystalserver': args.crystal}
+    roots = {'canary': args.reference_engine, 'crystalserver': args.crystal}
 
     interactions = load('interactions/interactions.json', 'interactions')
     manifest = load('interactions/manifest.json', 'entries')

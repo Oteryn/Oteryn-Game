@@ -427,6 +427,7 @@ mod tests {
             skipped_provisional_keys: Vec::new(),
             dropped_teleports: Vec::new(),
             spawns: Default::default(),
+            npcs: Default::default(),
         };
         let tile = |x, palette| Tile {
             x,

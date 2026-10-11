@@ -7,7 +7,7 @@ that records the table passed to `mType:register`; no Canary engine code runs. E
 (defaults, scales, branch behaviour) are transcribed from the pinned C++/Lua sources cited in
 RULES and every value that needs an owner decision is left as an unresolved manifest row.
 
-Usage: python canary_batch.py --canary <checkout of opentibiabr/canary at REVISION> [--out DIR]
+Usage: python canary_batch.py --reference-engine <checkout of opentibiabr/canary at REVISION> [--out DIR]
 """
 import argparse
 import hashlib
@@ -2831,16 +2831,16 @@ class Converter:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('--canary', required=True, type=Path)
+    parser.add_argument('--reference-engine', required=True, type=Path)
     parser.add_argument('--batch', choices=sorted(BATCHES), action='append', help='default: every batch')
     parser.add_argument('--out', type=Path, default=ROOT / 'samples', help='parent directory of the batch directories')
     args = parser.parse_args()
-    objects = load_appearance_objects(args.canary / 'data/items/appearances.dat')
-    items = load_items_xml(args.canary / 'data/items/items.xml')
+    objects = load_appearance_objects(args.reference_engine / 'data/items/appearances.dat')
+    items = load_items_xml(args.reference_engine / 'data/items/items.xml')
     names, index = name_index(objects, items)
-    converter = Converter(args.canary, objects, items, names, index)
+    converter = Converter(args.reference_engine, objects, items, names, index)
     for batch in args.batch or sorted(BATCHES):
-        write_batch(converter, args.canary, args.out / batch, BATCHES[batch])
+        write_batch(converter, args.reference_engine, args.out / batch, BATCHES[batch])
 
 
 def write_batch(converter, canary, out, batch):
