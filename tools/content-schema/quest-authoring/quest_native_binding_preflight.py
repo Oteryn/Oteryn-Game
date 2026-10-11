@@ -150,7 +150,13 @@ def collect(root: Path):
             source = source_planned[key]
             check(not source.get("runtime_enabled"), f"Runtime already enabled {key}")
             check(source["transition_count"] == len(source["transitions"]), f"Source plan count {key}")
+            typed_keys = {transition["key"] for transition in quest["transitions"]}
+            seen_source = set()
             for transition in source["transitions"]:
+                transition_key = transition["quest_transition_key"]
+                check(transition_key in typed_keys, f"Unknown source-plan transition {transition_key}")
+                check(transition_key not in seen_source, f"Duplicate source-plan transition {transition_key}")
+                seen_source.add(transition_key)
                 source_transitions += 1
                 source_lanes[transition["consumer_lane"]] += 1
                 if transition.get("native_binding") is None:

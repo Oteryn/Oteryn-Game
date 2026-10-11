@@ -4,7 +4,7 @@
 task_id: OTV2-20261008-quest-native-binding-preflight
 title: Deterministic canonical Quest consumer gap inventory
 mode: AUDIT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/quest-native-binding-preflight-20261008
@@ -23,8 +23,7 @@ owned_paths:
   - tools/content-schema/quest-authoring/samples/native-binding-preflight/all352.json
   - docs/agents/tasks/archive/OTV2-20261008-quest-native-binding-preflight.md
 public_contracts: []
-depends_on:
-  - docs/agents/evidence/OTV2-20261006-crystal-summer-quest-audit.md
+depends_on: []
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -40,7 +39,7 @@ One reproducible offline work inventory for **all 352 canonical Quest owners**, 
 - **PROVEN:** `content/quests/missions/quest-state-completion-candidate.json` contains 310 typed owner candidates, not runtime admission.
 - **PROVEN:** `content/quests/missions/completion-binding-plan.json` contains 304 owner plans and 1891 stage intents.
 - **PROVEN:** `tools/content-schema/quest-authoring/samples/completion-matrix/all373.json` maps all 373 wiki titles to the canonical Quest catalogue.
-- **DERIVED:** partitioning these exact records yields 304 chosen-stage consumers, 6 source-progress owners without a chosen-stage plan, and 42 reward-only owners without a typed-progress candidate.
+- **DERIVED:** partitioning these exact records yields 304 chosen-stage consumers, 6 source-lowered owners (121 unbound transitions, from `source-lowered-binding-plan.json`) without a chosen-stage plan, and 42 reward-only owners without a typed-progress candidate.
 - **UNKNOWN:** which quests are genuinely playable start-to-finish in production. This pass executes no gameplay and marks every quest `NOT_ASSESSED`.
 
 ## High-risk authority/recovery qualification
@@ -62,7 +61,7 @@ NOT_APPLICABLE â€” offline read-only aggregation of committed content packe
 | Consumer / state | Evidence-only count |
 | --- | ---: |
 | Chosen quest owners with planned stages | 304 |
-| Source-lowered owners without chosen stage plan | 6 |
+| Source-lowered owners without chosen stage plan | 6 (121 unbound transitions: NPC_QUEST_1 106, QUEST_TRIGGER_1 15) |
 | Reward-only owners without typed-progress candidate | 42 |
 | Stages needing native dispatch binding | 1891 |
 | USE event intents | 458 |
@@ -103,7 +102,7 @@ Potential overlapping open PRs at snapshot: #1888 (COLLECT), #1901/#1889 (USE), 
 
 ### Focused
 
-- `python -m unittest test_quest_native_binding_preflight.py`: 5/5 PASS.
+- `python -m unittest test_quest_native_binding_preflight`: pass (5/5).
 - `python quest_native_binding_preflight.py --check`: PASS.
 - `git diff --check`: PASS.
 - `python tools/agents/validate_governance.py`: PASS.
@@ -119,11 +118,11 @@ NOT_APPLICABLE â€” this is an offline diagnostic report; production gamepla
 
 ### Exact-head CI
 
-PR #1930, exact final head recorded in live GitHub PR/check state; checks pending.
+PR #1930; the exact final head and check results are recorded in live GitHub PR/check state, not self-referenced here.
 
 ## Self-review
 
-Exact-head remote review pending. The generator's authority boundary is explicit: `playable_verification=NOT_ASSESSED` for all 352, and both exact target association and declared Encounter seams remain evidence-only.
+Exact-head remote review findings were addressed in follow-up commits (source-lowered plan consumed and ownership-checked, reward-only lane validated). The generator's authority boundary is explicit: `playable_verification=NOT_ASSESSED` for all 352, and both exact target association and declared Encounter seams remain evidence-only.
 
 ## Independent review
 
@@ -137,7 +136,7 @@ PR #1930 opened as a narrow additive diagnostic PR; no overlapping existing sour
 
 ```yaml
 last_progress: 352 owner preflight generated from current main with 1891 stage gaps and 304/6/42 partition
-status: validating
+status: completed
 branch: codex/quest-native-binding-preflight-20261008
 head_sha: null
 pr: 1930
@@ -158,5 +157,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: qualify PR #1930 exact head checks and review, then reconcile disjoint event-owner work
+next_action: none; reconcile disjoint event-owner work in separate tasks
 ```
