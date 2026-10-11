@@ -364,6 +364,25 @@ DX12 readback regression checks later-batch pixels, overwritten cells and a
 recreated texture. It requires native execution before it counts as evidence;
 the live play-view consumer is still pending and capability 18 remains off.
 
+GPU source `8ae5a9d0c837aa311ddeb6d3193256284cedfbc6` passes MSVC strict Clippy
+for all seven selected packages, their tests and the physical DX12 page readback
+regression. The exact-source release audit passes 20 pages/78 independently
+hashed captures/zero invalid entries at 125% DPI, without replacing the owner's
+responsive PID 12896. Private audit `C:\Users\barte\Downloads\oteryn-settings-audit-8ae5a9d0`;
+manifest SHA-256 `a04a84d7d70e1681ae485b2958e3b4641ad8759974377e2527102fde05c1f7b3`.
+Recovery `/workspace/oteryn-client-publication-8ae5a9d0.bundle`, SHA-256
+`c29f3298c6f7aae442c2860755391ca2b1ae449574227b8b87a63ecb3fb794cc`.
+
+The bounded map store now belongs to Session, reusing the previous eight model
+regressions rather than maintaining a second transport state implementation.
+Admission and deltas enforce whole-view tile/handle budgets before revision
+advance. A real Session regression verifies replacement, clearing and non-150
+received ground speed. The play mailbox coalesces full validated map projections
+at changed revisions instead of retaining/dropping arbitrary delta tails; an
+undrained-mailbox regression covers latest-wins and before/after-step ordering.
+PlayView holds the join/current map, but streamed scene drawing, picking and the
+joint client/server speed switch are still pending. Capability 18 stays off.
+
 ## Required evidence per page/panel
 
 - Control type, label, grouping, order and dimensions compared with a named private

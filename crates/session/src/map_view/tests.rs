@@ -1,5 +1,5 @@
 use super::*;
-use oteryn_session::map_view::{
+use crate::map_view::{
     MapDefinition, MapItem, WorldMapViewDelta, encode_world_map_delta, encode_world_map_snapshot,
 };
 use std::num::{NonZeroU32, NonZeroU64};
@@ -281,7 +281,7 @@ fn replacement_keeps_only_received_stack_and_no_invented_ground_speed() -> TestR
 
 #[test]
 fn malformed_payload_drops_previous_state_and_map_capability_remains_unadvertised() -> TestResult {
-    assert!(!oteryn_session::CLIENT_SUPPORTED_CAPABILITIES.contains(&18));
+    assert!(!crate::CLIENT_SUPPORTED_CAPABILITIES.contains(&18));
     assert_eq!(
         MapView::new([0; 32]).err(),
         Some(MapViewError::ContentGeneration)

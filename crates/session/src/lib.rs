@@ -45,13 +45,21 @@ use oteryn_protocol_oteryn::world_map;
 use oteryn_protocol_oteryn::world_object::{self, WorldObjectTarget};
 /// Existing capability-18 map codecs/types, exposed without a client-to-protocol edge.
 /// Re-exporting them does not advertise the capability in the default client.
-pub mod map_view {
-    pub use oteryn_protocol_oteryn::world_map::{
-        MAX_MAP_VIEW_HANDLES, MAX_SNAPSHOT_TILES, MapDefinition, MapItem, MapOrigin, MapTile,
-        MapViewHeader, WorldMapViewDelta, WorldMapViewSnapshot, WorldMapWireError,
-        decode_world_map_delta, decode_world_map_snapshot, encode_world_map_delta,
-        encode_world_map_snapshot, in_window, tile_order,
-    };
+pub mod map_view;
+
+fn map_store_error(error: map_view::MapViewError) -> SessionError {
+    match error {
+        map_view::MapViewError::Wire(error) => SessionError::WorldMap(error),
+        map_view::MapViewError::Limit => {
+            SessionError::WorldMap(world_map::WorldMapWireError::LimitExceeded)
+        }
+        map_view::MapViewError::ContentGeneration => SessionError::ContentGenerationMismatch {
+            domain_id: world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
+        },
+        map_view::MapViewError::AwaitingSnapshot => {
+            SessionError::MissingDomain(world_map::STATE_DOMAIN_WORLD_MAP_VIEW)
+        }
+    }
 }
 pub use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, CAPABILITY_PACED_MOVEMENT_V1};
@@ -913,7 +921,7 @@ pub struct Session<S> {
     actor_vitals: Option<ActorVitals>,
     world_spatial: WorldSpatialObservation,
     world_object_overlay: Vec<WorldObjectOverlayEntry>,
-    map_header: Option<map_view::MapViewHeader>,
+    map: Option<map_view::MapView>,
     map_revision: u64,
     join_snapshot: JoinSnapshot,
     unusable: bool,
@@ -1343,7 +1351,7 @@ impl<S: SessionStream> Session<S> {
         let observation = world_spatial_observation.ok_or(SessionError::MissingDomain(
             world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
         ))?;
-        if map_selected {
+        let map = if map_selected {
             let map = world_map_snapshot
                 .as_ref()
                 .ok_or(SessionError::MissingDomain(
@@ -1354,7 +1362,15 @@ impl<S: SessionStream> Session<S> {
                     domain_id: world_map::STATE_DOMAIN_WORLD_MAP_VIEW,
                 });
             }
-        }
+            let mut store =
+                map_view::MapView::new(observation.content_generation).map_err(map_store_error)?;
+            store
+                .replace_decoded(map.clone())
+                .map_err(map_store_error)?;
+            Some(store)
+        } else {
+            None
+        };
         let snapshot = JoinSnapshot {
             game_session_id: accepted_fields.game_session_id,
             world_spatial: observation,
@@ -1385,7 +1401,7 @@ impl<S: SessionStream> Session<S> {
             actor_vitals,
             world_spatial: snapshot.world_spatial,
             world_object_overlay: snapshot.world_object_overlay.clone(),
-            map_header: snapshot.world_map.as_ref().map(|map| map.header),
+            map,
             map_revision,
             join_snapshot: snapshot,
             unusable: false,
@@ -1496,6 +1512,16 @@ impl<S: SessionStream> Session<S> {
     /// selected.
     pub fn world_entities(&self) -> Option<&WorldEntities> {
         self.entities.as_ref()
+    }
+
+    /// The complete bounded map after every accepted domain-17 update; absent after refusal.
+    pub fn world_map_view(&self) -> Option<&map_view::MapView> {
+        self.map.as_ref()
+    }
+
+    /// Revision paired with the current map; useful for bounded latest-state consumers.
+    pub const fn world_map_revision(&self) -> u64 {
+        self.map_revision
     }
 
     /// The open rooms and the last lines after every delta applied so far; `Some` exactly when
@@ -1890,6 +1916,10 @@ impl<S: SessionStream> Session<S> {
     fn poison_on_error<T>(&mut self, outcome: Result<T, SessionError>) -> Result<T, SessionError> {
         if outcome.is_err() {
             self.unusable = true;
+            if self.map.take().is_some() {
+                self.join_snapshot.world_map = None;
+                self.events.clear();
+            }
         }
         outcome
     }
@@ -2134,7 +2164,7 @@ impl<S: SessionStream> Session<S> {
     ) -> Result<SessionEvent, SessionError> {
         let result = self.apply_state_delta(server_sequence, payload);
         if matches!(result, Err(SessionError::WorldMap(_))) {
-            self.map_header = None;
+            self.map = None;
             self.join_snapshot.world_map = None;
             self.events.clear();
             if matches!(
@@ -2188,12 +2218,14 @@ impl<S: SessionStream> Session<S> {
                     world_map::DELTA_TYPE_WORLD_MAP_VIEW_DELTA_V1,
                     self.map_revision,
                 )?;
-                let header = self
-                    .map_header
+                let map = self
+                    .map
+                    .as_mut()
                     .ok_or(SessionError::MissingDomain(domain_id))?;
+                let header = map.header().ok_or(SessionError::MissingDomain(domain_id))?;
                 let value = world_map::decode_world_map_delta(&header, delta.payload)
                     .map_err(SessionError::WorldMap)?;
-                self.map_header = Some(value.header);
+                map.apply_delta(delta.payload).map_err(map_store_error)?;
                 self.map_revision = new_revision;
                 Ok(SessionEvent::WorldMapView(applied(
                     server_sequence,

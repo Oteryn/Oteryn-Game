@@ -111,6 +111,15 @@ Continue with the Session-owned full map store, bounded play mailbox and actual
 scene consumer; do not stop after renderer preparation. Capability 18 stays off
 until the accepted consumer and joint speed-switch requirements pass.
 
+GPU source `8ae5a9d0` is now MSVC/DX12-qualified, including actual later-batch,
+cell-overwrite and texture-recreation pixels and all 20 settings pages/78 hashed
+captures; full source/manifest/recovery evidence is in UI-FIDELITY.md. Current
+AUTHORING changes move the bounded map model into Session and coalesce complete
+latest-state projections into the play mailbox. Eight model tests are retained
+under Session; transport regression now verifies clears and received non-150
+speed. A mailbox regression covers bounded latest-wins and ordering. Continue
+with the live scene/GPU consumer, picking and accepted joint speed activation.
+
 Historical qualification remains recorded, with exact SHAs, manifests and private
 capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral
 scaling `1b3a3be5`, repeat scheduler `5bf89893`/`597fda90` and custom pointer

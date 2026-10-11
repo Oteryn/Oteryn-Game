@@ -7,6 +7,7 @@
 
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand, run_combat};
 use crate::input::{ClickWalk, StepDir, StepResult, TargetKind, Targetable};
+use crate::map_view::MapView;
 use crate::scene::Scene;
 use crate::spell::{SPELL_SLOTS, SpellFeedback};
 use crate::world::{START, World};
@@ -113,6 +114,8 @@ pub struct PlayView {
     inputs: VecDeque<Input>,
     /// The other entities the server reports as visible.
     entities: Vec<WorldSpatialEntity>,
+    /// Latest complete server-composed map; never reconstructed from local placements.
+    map: Option<MapView>,
     /// The last combat line the server's answer produced, shown until the next one.
     combat_line: Option<&'static str>,
     /// Preserved when pushed session state rebuilds the scene.
@@ -122,11 +125,21 @@ pub struct PlayView {
 impl PlayView {
     pub fn from_join(snapshot: &JoinSnapshot) -> Result<Self, BatchError> {
         let position = snapshot.world_spatial.actor_position;
-        Self::new(
+        let mut view = Self::new(
             TileCoord::new(position.x, position.y),
             position.floor,
             &snapshot.world_object_overlay,
-        )
+        )?;
+        if let Some(snapshot) = &snapshot.world_map {
+            let payload = oteryn_session::map_view::encode_world_map_snapshot(snapshot)
+                .map_err(|_| BatchError::InvalidView)?;
+            let mut map = MapView::new(snapshot.header.content_generation)
+                .map_err(|_| BatchError::InvalidView)?;
+            map.replace_snapshot(&payload)
+                .map_err(|_| BatchError::InvalidView)?;
+            view.map = Some(map);
+        }
+        Ok(view)
     }
 
     pub fn new(
@@ -149,6 +162,7 @@ impl PlayView {
             in_flight: false,
             inputs: VecDeque::new(),
             entities: Vec::new(),
+            map: None,
             combat_line: None,
             target_frame: true,
         };
@@ -179,6 +193,11 @@ impl PlayView {
     #[must_use]
     pub const fn scene(&self) -> &Scene {
         &self.scene
+    }
+
+    #[must_use]
+    pub fn world_map(&self) -> Option<&MapView> {
+        self.map.as_ref()
     }
 
     #[must_use]
@@ -401,6 +420,9 @@ impl PlayView {
         if let Some(entities) = &pushed.entities {
             self.entities.clone_from(entities);
         }
+        if let Some(map) = &pushed.map {
+            self.map = Some((**map).clone());
+        }
         for entry in &pushed.markers {
             self.set_marker(entry);
         }
@@ -529,6 +551,8 @@ pub struct Pushed {
     pub own: Option<ActorPosition>,
     /// The latest full list of the other visible entities, when it changed.
     pub entities: Option<Vec<WorldSpatialEntity>>,
+    /// Complete latest-state map, bounded by the Session store, not a growing delta queue.
+    pub map: Option<Box<MapView>>,
     /// The latest domain-2 entry per placement, in first-pushed order of placement.
     pub markers: Vec<WorldObjectOverlayEntry>,
 }
@@ -550,6 +574,7 @@ impl Pushed {
     fn absorb(&mut self, newer: Self) {
         self.own = newer.own.or(self.own);
         self.entities = newer.entities.or(self.entities.take());
+        self.map = newer.map.or(self.map.take());
         for entry in newer.markers {
             self.set_marker(entry);
         }
@@ -566,6 +591,7 @@ struct Mailbox {
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
     pushed: Pushed,
+    last_map_revision: Option<u64>,
     /// Combat answers not yet polled; the oldest is dropped past [`MAX_COMBAT_REPORTS`].
     combat: VecDeque<CombatReport>,
     ended: Option<PublicClass>,
@@ -627,6 +653,14 @@ impl Outbox {
 
     fn entities(&self, entities: Vec<WorldSpatialEntity>) {
         lock(&self.0).pushed.entities = Some(entities);
+    }
+
+    fn map(&self, revision: u64, map: &MapView) {
+        let mut mailbox = lock(&self.0);
+        if mailbox.last_map_revision != Some(revision) {
+            mailbox.pushed.map = Some(Box::new(map.clone()));
+            mailbox.last_map_revision = Some(revision);
+        }
     }
 
     fn combat(&self, report: CombatReport) {
@@ -739,6 +773,9 @@ impl PlayLink {
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn map_view(&self) -> Option<(u64, &MapView)> {
+        None
+    }
     fn action(
         &mut self,
         _command: &crate::action_bar::ActionBarCommand,
@@ -782,6 +819,10 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn map_view(&self) -> Option<(u64, &MapView)> {
+        self.world_map_view()
+            .map(|map| (self.world_map_revision(), map))
+    }
     async fn action(
         &mut self,
         command: &crate::action_bar::ActionBarCommand,
@@ -860,6 +901,9 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
 /// Hands the shell what the session pushed, and the visible entities when they changed.
 fn publish<T: Stepper>(session: &mut T, outbox: &Outbox, held: &mut Vec<WorldSpatialEntity>) {
     outbox.push(session.drain());
+    if let Some((revision, map)) = session.map_view() {
+        outbox.map(revision, map);
+    }
     if let Some(entities) = session.entities_changed(held) {
         held.clone_from(&entities);
         outbox.entities(entities);
@@ -1669,6 +1713,54 @@ mod tests {
         let view = PlayView::new(TileCoord::new(1, 0), 0, &[door])?;
         assert_eq!(view.marker_count(), 1);
         assert_eq!(view.scene().sprites().len(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn undrained_map_mailbox_keeps_complete_latest_state_across_step_ordering()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_session::map_view::{
+            MapViewHeader, WorldMapViewSnapshot, encode_world_map_snapshot,
+        };
+        let (link, _commands, outbox) = play_channel();
+        let map = |x| -> Result<MapView, String> {
+            let snapshot = WorldMapViewSnapshot {
+                header: MapViewHeader {
+                    content_generation: [1; 32],
+                    bundle_digest: [2; 32],
+                    reset_epoch: 1,
+                    origin: ActorPosition {
+                        x,
+                        y: 100,
+                        floor: -7,
+                    },
+                    first_visible_floor: 0,
+                },
+                tiles: vec![],
+            };
+            let bytes = encode_world_map_snapshot(&snapshot).map_err(|e| format!("{e:?}"))?;
+            let mut map = MapView::new([1; 32]).map_err(|e| format!("{e:?}"))?;
+            map.replace_snapshot(&bytes).map_err(|e| format!("{e:?}"))?;
+            Ok(map)
+        };
+        for revision in 1..=1000 {
+            outbox.map(revision, &map(revision as i32)?);
+        }
+        let before = std::mem::take(&mut lock(&outbox.0).pushed);
+        lock(&outbox.0).before.absorb(before);
+        outbox.map(1001, &map(1001)?);
+        // Same revision must not copy over an already published projection.
+        outbox.map(1001, &map(2000)?);
+        for expected in [1000, 1001] {
+            let Some(PlayEvent::Pushed(pushed)) = link.poll() else {
+                return Err("missing map".into());
+            };
+            assert_eq!(
+                pushed.map.and_then(|map| map.header()).map(|h| h.origin.x),
+                Some(expected)
+            );
+        }
+        assert!(link.poll().is_none());
         Ok(())
     }
 

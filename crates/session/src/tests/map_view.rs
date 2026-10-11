@@ -119,8 +119,19 @@ fn selected_map_replaces_object_domain_and_routes_typed_pushed_delta() -> Result
         next.origin.x = 1;
         let value = WorldMapViewDelta {
             header: next,
-            tiles: vec![],
-            cleared: vec![],
+            tiles: vec![MapTile {
+                position: at(1, 0),
+                items: vec![MapItem {
+                    definition: MapDefinition::Item(NonZeroU32::MIN),
+                    count: 1,
+                    sub_type: 0,
+                    origin: MapOrigin::DisplayOnly,
+                    appearance_id: 0,
+                }],
+                more: false,
+                ground_speed: 137,
+            }],
+            cleared: vec![at(0, 0)],
         };
         let payload =
             world_map::encode_world_map_delta(&header(), &value).map_err(|e| format!("{e:?}"))?;
@@ -134,8 +145,15 @@ fn selected_map_replaces_object_domain_and_routes_typed_pushed_delta() -> Result
         assert_eq!(session.join_snapshot().world_map_revision, 9);
         assert!(session.world_object_overlay().is_empty());
         session.service_liveness(Duration::from_millis(50)).await?;
-        assert_eq!(session.map_header, Some(next));
+        assert_eq!(
+            session.world_map_view().and_then(|map| map.header()),
+            Some(next)
+        );
         assert_eq!(session.map_revision, 10);
+        let map = session.world_map_view().ok_or("map disappeared")?;
+        assert!(map.tile(at(0, 0)).is_none());
+        assert_eq!(map.ground_speed(at(1, 0)), Some(137));
+        assert_eq!(map.snapshot().ok_or("no map snapshot")?.tiles, value.tiles);
         assert!(
             matches!(session.take_events().as_slice(), [SessionEvent::WorldMapView(delta)]
             if delta.value == value && delta.base_revision == 9 && delta.new_revision == 10 && delta.server_sequence == 41)
@@ -215,6 +233,37 @@ fn unselected_or_wrong_generation_map_snapshot_is_refused() -> Result<(), BoxErr
 }
 
 #[test]
+fn refused_map_revision_invalidates_all_map_targets() -> Result<(), BoxError> {
+    block_on(async {
+        let mut next = header();
+        next.origin.x = 1;
+        let payload = world_map::encode_world_map_delta(
+            &header(),
+            &WorldMapViewDelta {
+                header: next,
+                tiles: vec![],
+                cleared: vec![],
+            },
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let frame = encode_state_delta(1, 41, 17, 8, 9, 1, &payload)?;
+        let (client, peer) = map_peer(SELECTED, Some(map_snapshot()?), false, Some(frame), false);
+        let mut session = Session::admit(client, map_admission()?).await?;
+        assert!(matches!(
+            session.service_liveness(Duration::from_millis(50)).await,
+            Err(SessionError::StateRevisionMismatch { domain_id: 17, .. })
+        ));
+        assert!(session.world_map_view().is_none());
+        assert!(session.join_snapshot().world_map.is_none());
+        assert!(session.take_events().is_empty());
+        assert_eq!(session.world_map_revision(), 9);
+        drop(session);
+        peer.await??;
+        Ok(())
+    })?
+}
+
+#[test]
 fn map_binding_mismatch_sends_resync_without_advancing_map_revision_and_poisoning_prevents_reuse()
 -> Result<(), BoxError> {
     block_on(async {
@@ -241,7 +290,7 @@ fn map_binding_mismatch_sends_resync_without_advancing_map_revision_and_poisonin
             ))
         ));
         assert_eq!(session.map_revision, 9);
-        assert!(session.map_header.is_none());
+        assert!(session.world_map_view().is_none());
         assert!(session.join_snapshot().world_map.is_none());
         assert!(session.take_events().is_empty());
         assert!(matches!(
