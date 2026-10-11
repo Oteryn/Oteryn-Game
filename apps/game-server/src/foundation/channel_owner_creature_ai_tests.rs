@@ -94,6 +94,10 @@ struct Channel {
 
 impl Channel {
     fn new() -> Self {
+        Self::with_capacity(8)
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
         let world = WorldId::decode(&uuid(1)).expect("world");
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
@@ -103,7 +107,7 @@ impl Channel {
             1,
             1,
             "runtime-scope-assignment:1",
-            8,
+            capacity,
             ChannelContentPin::test(world),
         )
         .expect("runtime");
@@ -539,4 +543,43 @@ fn the_swing_goes_at_the_think_target_and_not_a_nearer_player() {
         )
         .is_empty()
     );
+}
+
+/// SPAWN-CEILINGS-1 (Codex 4242381774): 300 rats, past the old `AI01-ACTIVE-ACTORS` 256. The
+/// melee census lists every one in slot order, also after a slot is reused, all 300 think in one
+/// pass, and a rat that dies while the table holds it is forgotten without a think.
+#[test]
+fn three_hundred_rats_are_censused_in_slot_order_think_in_one_pass_and_the_dead_are_forgotten() {
+    const RATS: usize = 300;
+    let mut channel = Channel::with_capacity(RATS + 1);
+    let rats = (0..RATS)
+        .map(|index| {
+            let x = 200 + 2 * i32::try_from(index).expect("x");
+            channel.admit(at(x, 300), 0)
+        })
+        .collect::<Vec<_>>();
+    let in_slot_order = |runtime: &ChannelRuntimeV1| {
+        let census = runtime.positioned_melee_census().expect("census");
+        assert_eq!(census.len(), RATS + 1);
+        census
+            .windows(2)
+            .all(|pair| pair[0].0.actor_local_id() < pair[1].0.actor_local_id())
+    };
+    assert!(in_slot_order(&channel.runtime));
+    assert_eq!(channel.table.len(), RATS);
+    assert_eq!(channel.thinks(0, false).len(), RATS);
+
+    let dead = rats[7];
+    assert!(channel.runtime.kill_creature_for_test(dead));
+    channel.table.forget_dead(&channel.runtime);
+    assert_eq!(channel.table.len(), RATS - 1);
+    assert!(channel.table.state(dead).is_none());
+    assert!(channel.table.state(rats[8]).is_some());
+
+    // The freed slot, the only one, takes the next rat; the census keeps slot order.
+    channel.runtime.remove_test_actor(dead).expect("despawn");
+    let newer = channel.admit(at(199, 300), 0);
+    assert_eq!(newer.actor_local_id(), dead.actor_local_id());
+    assert!(in_slot_order(&channel.runtime));
+    assert_eq!(channel.table.len(), RATS);
 }

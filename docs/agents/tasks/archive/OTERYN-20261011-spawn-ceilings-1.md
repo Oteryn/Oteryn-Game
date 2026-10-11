@@ -22,6 +22,17 @@ owned_paths:
   - apps/game-server/src/foundation/runtime_actor_carrier.rs
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/agents/tasks/archive/OTERYN-20261011-spawn-ceilings-1.md
+  # Scope extension directed by the control plane for the creature-ceiling closure audit
+  # (Codex 4242381779 and 4242381774 on #1984):
+  - apps/game-server/src/foundation/mod.rs
+  - apps/game-server/src/foundation/channel_owner_auto_attack_tests.rs
+  - apps/game-server/src/foundation/channel_owner_creature_ai_tests.rs
+  - apps/game-server/src/foundation/channel_owner_creature_bite_tests.rs
+  - apps/game-server/src/ability/creature_bite.rs
+  - apps/game-server/src/ai_monster_melee.rs
+  - apps/game-server/src/ai_think/channel_owner.rs
+  - apps/game-server/src/gameplay_transport/attack.rs
+  - apps/game-server/src/gameplay_transport/monster_ai_cycle.rs
 public_contracts:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
 external_repositories: []
@@ -71,6 +82,13 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   `SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX` (32) respawn steps however many occurrences fall due
   together; the rest stay pending, run first in the next windows, and every point respawns.
   A refused activation window removes its creatures with one pass over the occupied index.
+  The budget is registered as `SPAWNCEIL-RL-01` (owner decision 2026-10-11).
+- Creature-ceiling closure (Codex 4242381779 and 4242381774 on #1984): no production creature
+  path is capped by the old 64-entry or 256-actor envelope. `CREATUREAI0-RL-04` (262,144
+  creature actors per Channel) is registered and enforced by `admit_creature`; the creature
+  bite ledger and the melee owner never refuse a live issuer (tested with 300 issuers);
+  the monster pass has no channel-wide `AI01-ACTIVE-ACTORS` gate and swings at most
+  `CREATUREAI0-RL-05` targeting monsters per pass, round robin (tested with 300 monsters).
 
 ## Implementation / findings
 
@@ -81,8 +99,8 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
 - Removal no longer scans every spawn cell; `creature_alive` now checks the exact actor-local
   generation, so a stale cell reference never reads as the slot's later occupant. The summon
   move rollback therefore no longer snapshots `spawns`.
-- The 16/4 constants remain only as the fixed D57 64-entry ledger envelope
-  (`MAX_RETAINED_CORPSE_PROJECTIONS`, creature bite ledger, smelly cheese ledger).
+- The 16/4 constants remain only as the fixed D57 64-entry envelope of
+  `MAX_RETAINED_CORPSE_PROJECTIONS` and the test-only smelly cheese ledger.
 - RL-14 (review round on #1984): the activation is split into owner windows by
   `spawn::realization_windows` at point granularity (`admit_spawn_point`; a source is recorded
   at its point 0 and may span two windows). `SpawnActivation` persists the plan, the next-window
@@ -125,9 +143,9 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   no slot snapshot is taken; after the dead creature's best-effort removal only the protected
   generation exhaustion of the freed slot (#541) can refuse. `resolve_respawn_timer` keeps its
   snapshot restore and is no longer called by the drive. A position index would make each
-  step O(1) but positions are written in carrier modules outside this task; the budget is a
-  work bound, not a registered limit (noted on `CREATUREAI0-RL-12`; owner question in the
-  report).
+  step O(1) but positions are written in carrier modules outside this task; the owner moved it
+  to its own task, CREATURE-POSITION-INDEX-1. The budget is registered as `SPAWNCEIL-RL-01`
+  (owner decision 2026-10-11).
 - Audit at the 131,072 ceiling (review round on #1984), all under the Channel runtime mutex:
   - activation (`check_spawn_activation`, `realize_activation_window`, `admit_spawn_point`):
     one free-slot count per activation, then O(1) per point (free-list admission, binary-search
@@ -144,6 +162,45 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
     `position_occupied_by_other`, `committed_player_positions`, the census and
     `npc_actor.rs` placement remain O(slots) per call, bounded by their callers' own budgets
     (summons, movement, RL-05 thinks); a position index for them needs paths outside this task.
+- Creature-ceiling closure audit (Codex 4242381779 and 4242381774 on #1984). Every fixed
+  limit, ledger, budget or table of 16 × 4, 64 or 256 that depends on the creature or issuer
+  count:
+  - `CreatureBiteLedger` (`CREATURE_BITE_LEDGER_MAX` 64) and `MonsterMeleeOwner` (same cap):
+    the 65th live monster's bite and melee were refused `LedgerFull`. Both are now ordered maps
+    capped at `CREATUREAI0-RL-04`. The melee owner is keyed by carrier slot (`actor_local_id`):
+    an entry of an older generation of the slot is replaced in place, which also drops the old
+    retain-live scan per insert. The bite ledger is keyed by the issuer's exact generation
+    (`placement_identity`), because the `ability_engine` integration test compiles
+    `src/ability` against a Foundation shim without slots; a full ledger drops dead issuers'
+    entries first, and the carrier admits at most `CREATUREAI0-RL-04` creatures, so a live
+    issuer is never refused.
+  - `monster_ai_cycle`: the `census.len() > ResourceLimit::ActiveActors` (256) gate returned
+    before every think and attack at 257 positioned actors. Removed; the per-pass work is
+    bounded instead: think admission runs only for monsters new to the table, thinks are
+    `CREATUREAI0-RL-05`-bounded by `CreatureAiTable::take_due`, and swings run for at most
+    RL-05 targeting monsters per pass, round robin from a persisted cursor (the old
+    `EvaluationWork` 8 was a per-think envelope, not a channel swing budget).
+  - `CreatureAiTable`: idle dead creatures were never removed (only thinks clean up), so the
+    table leaked with deaths. `forget_dead` drops them once per pass; the table holds live
+    creatures only, bounded by RL-04.
+  - census: was a scan of every slot; it now walks the occupied index in slot order.
+  - `ChannelAttackStates` (player attack entries) were capped at `ActiveActors` 256; the cap is
+    now the carrier slot count.
+  - `CREATUREAI0-RL-04` is enforced at `admit_creature`; the check counts every actor, so it is
+    conservative and never binds on the 131,072-slot pre-production carrier.
+  - `AI01-ACTIVE-ACTORS` (256) stays only on `ai::AiSnapshot`, which only tests construct; the
+    registry row says so.
+  - Not changed: the 64-entry caps of the test-only monster lanes (`MonsterCombatLane`,
+    `MonsterThinkLane`: `AI01_CREATURES_PER_SCOPE`, smelly encounter, source encounter seven,
+    delayed damage spell, threshold heal, summon and area-heal memos, callback spawn, bone
+    encounters, smelly cheese 16 × 4) are not on the production path; they move with the lane
+    wiring task. FIFO retention rings (`MAX_RETAINED_CORPSE_PROJECTIONS`, native summon
+    deaths, 64) evict, never refuse. `KILLRW-RL-01`, `COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX`
+    and `COMBAT01_CORPSES_PER_SCOPE` (64) are registered limits of their own contracts (owner
+    question in the report).
+  - Residual per-pass O(N) work (`wake_for_player` per player over the table, the melee
+    qualification of non-melee monsters, `forget_dead`) is bounded by RL-17, measured by
+    CREATURE-MOVE-1, and is the scope of CREATURE-POSITION-INDEX-1.
 - At reference scale the 64-entry corpse projection FIFO may evict before a lost-response
   replay; that is an owner question, not changed here.
 - The test-only cheese source uses `SpawnSourceId(u16::MAX)`; at 65,536 realized sources it
@@ -169,6 +226,13 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
     oteryn-game-server --no-run --locked` pass (every test target, including the integration
     tests CI refused); `cargo test -p oteryn-game-server --lib --locked` pass (2,742 passed,
     0 failed, 28 ignored)
+  - Ledger-ceiling round (Codex 4242381779, 4242381774), on the PC before the push, in a
+    private checkout of 8dacdb0c plus this round's diff (tree hash checked against the
+    pushed code): `cargo fmt --all -- --check` pass; `cargo clippy -p oteryn-game-server
+    --all-targets --locked -- -D warnings` pass (every test target, including the
+    `ability_engine` shim and the postgres targets). The PC's WSL VM restarted during `cargo
+    test --no-run`, so the test run is left to CI; earlier attempts found and fixed the
+    `ability_engine` shim mismatch and a `assertions_on_constants` lint
 - Earlier round: `cargo fmt --all --check`, `python tools/agents/validate_governance.py` and
   `python -m unittest discover -s tools/agents/tests`: pass
 

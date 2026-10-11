@@ -44,6 +44,15 @@ impl CreatureAiTable {
         Ok(())
     }
 
+    /// Forgets every creature that is no longer live (SPAWN-CEILINGS-1). A thinking creature
+    /// leaves at its next think, but one that died or despawned while idle has no due think, so
+    /// without this its entry would outlive its slot. The table then holds at most one entry per
+    /// live creature, so at most `CREATUREAI0-RL-04`.
+    pub(crate) fn forget_dead(&mut self, runtime: &ChannelRuntimeV1) {
+        self.entries
+            .retain(|_, entry| runtime.contains_live_creature(entry.state.actor()));
+    }
+
     /// §2.1 item 1: `player` moved or was admitted; wakes the idle creatures it sees.
     pub(crate) fn wake_for_player(
         &mut self,

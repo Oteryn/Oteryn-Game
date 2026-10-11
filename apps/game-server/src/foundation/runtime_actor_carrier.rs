@@ -1484,6 +1484,14 @@ pub(crate) const CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX: usize = 64;
 /// product of the two rows above, bounds the carrier's spawn state and spawned population; it
 /// equals `CREATUREAI0-RL-12` (one pending respawn occurrence per point).
 pub(crate) const CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX: usize = 131_072;
+/// `CREATUREAI0-RL-04`: creature actors of every kind in one Channel (CREATURE-AI-0 §10; it
+/// replaces `AI01-ACTIVE-ACTORS` 256). [`ChannelActorCarrier::admit_creature`], the one creature
+/// admission, refuses `CapacityExceeded` once this many slots are taken. A creature takes a slot,
+/// so this counts every actor: at the pre-production capacity of 131,072 slots it never refuses,
+/// and a larger carrier refuses a creature at 262,144 actors of any kind, never later. The
+/// creature bite ledger (`CREATURE_BITE_LEDGER_MAX`, held equal by a test) and the melee owner,
+/// one entry per slot, are bounded by the same value.
+pub(crate) const CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX: usize = 262_144;
 /// SPAWN-CEILINGS-1 (Codex 4242245064): carrier slots an activation leaves free for player
 /// admission, the D128 design target of 500 concurrent players per Channel. The pre-production
 /// carrier holds 131,072 actors (`PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY`), as many as
@@ -1510,9 +1518,11 @@ pub(crate) const SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX: usize = 32;
 
 /// `AI01-SPAWN-SOURCES-PER-SCOPE` and `AI01-SPAWN-POPULATION` (AI-RL-11, D57): the first
 /// slice's 16 sources × 4 creatures = 64-creature envelope. Spawn realization no longer reads
-/// them (CREATURE-AI-0 §10 replaced them by the `CREATUREAI0_SPAWN_*` rows above); they stay
-/// only as the fixed 64 the D3/D4 ledgers were sized against (`MAX_RETAINED_CORPSE_PROJECTIONS`,
-/// the creature bite ledger, the smelly cheese ledger).
+/// them (CREATURE-AI-0 §10 replaced them by the `CREATUREAI0_SPAWN_*` rows above), and neither
+/// does the production creature path (SPAWN-CEILINGS-1, Codex 4242381779: the creature bite
+/// ledger and the melee owner are bounded by [`CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX`]).
+/// They stay only as the fixed 64 of the retention bound `MAX_RETAINED_CORPSE_PROJECTIONS` and of
+/// the smelly cheese ledger, which no production owner constructs yet.
 pub(crate) const AI01_SPAWN_SOURCES_PER_SCOPE_MAX: usize = 16;
 /// See [`AI01_SPAWN_SOURCES_PER_SCOPE_MAX`].
 pub(crate) const AI01_SPAWN_POPULATION_MAX: usize = 4;
@@ -2241,6 +2251,12 @@ impl ChannelRuntimeV1 {
         visible
     }
 
+    /// The carrier's slots: every actor of this runtime, of any kind, takes one. A ledger with
+    /// at most one entry per slot is bounded by it.
+    pub(crate) fn actor_slot_capacity(&self) -> usize {
+        self.carrier.slots.len()
+    }
+
     /// AI-4 (GAME-AI-01 slice §4.6): true only while `actor` names a live (`health > 0`)
     /// creature generation of this runtime. A player, a stale or dead generation, a vacant slot
     /// or another scope is false.
@@ -2310,11 +2326,24 @@ impl ChannelRuntimeV1 {
     > {
         self.carrier.validate_current_continuity(&self.continuity)?;
         self.owner_fence()?;
+        // SPAWN-CEILINGS-1 (Codex 4242381774): the census reads the occupied index in slot order,
+        // so a pass costs the actors present, not the capacity, and its order is unchanged.
+        let mut indexes = Vec::new();
+        indexes
+            .try_reserve_exact(self.carrier.occupied.len())
+            .map_err(|_| CarrierError::AllocationFailed)?;
+        indexes.extend_from_slice(&self.carrier.occupied);
+        indexes.sort_unstable();
         let mut result = Vec::new();
         result
-            .try_reserve(self.carrier.slots.len())
+            .try_reserve(indexes.len())
             .map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
-        for (index, slot) in self.carrier.slots.iter().enumerate() {
+        for index in indexes {
+            let index =
+                usize::try_from(index).map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
+            let Some(slot) = self.carrier.slots.get(index) else {
+                continue;
+            };
             let (generation, session) = match slot {
                 Slot::Occupied {
                     generation,
@@ -3701,8 +3730,9 @@ impl ChannelActorCarrier {
 
     /// AI-2 (GAME-AI-01 §4.1: "the carrier's current one-creature limit ... is lifted to this
     /// envelope in AI-2"): more than one creature actor may be admitted per Channel
-    /// generation. The general slot-capacity check `admit_inner` already performs is this
-    /// method's only capacity gate; population/placement-cell ceilings are a spawn-realization
+    /// generation. Its capacity gates are `CREATUREAI0-RL-04`
+    /// ([`CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX`]) and the general slot-capacity check
+    /// `admit_inner` performs; population/placement-cell ceilings are a spawn-realization
     /// concern (`realize_spawn`), not this generic per-actor primitive.
     fn admit_creature(
         &mut self,
@@ -3715,6 +3745,10 @@ impl ChannelActorCarrier {
             return Err(CarrierError::InvalidCreatureHealth);
         }
         self.validate_current_continuity(continuity)?;
+        // `CREATUREAI0-RL-04`, before anything is selected or written.
+        if self.occupied.len() >= CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX {
+            return Err(CarrierError::CapacityExceeded);
+        }
         let target_identity = creature_target_binding(target_identity)?;
         self.admit_inner(
             continuity,
@@ -8207,6 +8241,41 @@ mod tests {
                 .commit_fresh_session(reservation)
                 .expect("player commit");
         }
+        assert_eq!(runtime.carrier.free_slot_count(), 0);
+    }
+
+    /// SPAWN-CEILINGS-1 (Codex 4242381779): `CREATUREAI0-RL-04` is the creature admission
+    /// ceiling. The pre-production carrier is smaller, so it never binds there; a carrier with
+    /// one slot more than the ceiling admits 262,144 creatures, refuses the next one with
+    /// nothing written and still admits a player into the free slot.
+    #[test]
+    fn creature_admission_refuses_past_the_creature_actor_ceiling() {
+        const {
+            assert!(
+                CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX
+                    < CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX
+            );
+        }
+        let mut runtime = runtime(CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX + 1);
+        for _ in 0..CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX {
+            runtime
+                .carrier
+                .admit_creature(&runtime.continuity, ActorState(0), "test:creature", 20)
+                .expect("below the ceiling");
+        }
+        assert_eq!(
+            runtime
+                .carrier
+                .admit_creature(&runtime.continuity, ActorState(0), "test:creature", 20),
+            Err(CarrierError::CapacityExceeded)
+        );
+        assert_eq!(runtime.carrier.free_slot_count(), 1);
+        let reservation = runtime
+            .reserve_fresh_session(session(1))
+            .expect("the free slot admits a player");
+        runtime
+            .commit_fresh_session(reservation)
+            .expect("player commit");
         assert_eq!(runtime.carrier.free_slot_count(), 0);
     }
 

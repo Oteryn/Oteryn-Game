@@ -55,12 +55,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(sequence) = states.monster_ai_sequence.checked_add(1) else {
             return;
         };
+        // SPAWN-CEILINGS-1 (Codex 4242381774): no Channel-wide actor gate. The census holds at
+        // most the carrier's slots, and the work below is budgeted per pass instead, so a Channel
+        // past the old `AI01-ACTIVE-ACTORS` 256 keeps thinking and swinging.
         let Ok(census) = runtime.positioned_melee_census() else {
             return;
         };
-        if census.len() > ResourceLimit::ActiveActors.maximum() {
-            return;
-        }
         // ATTACK-1b: lock order runtime, spell states, attack.
         let mut attack = self.attack.lock().await;
         let semantic_now =
@@ -92,9 +92,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return;
         };
         // CREATURE-AI-1 §2.1: every qualified monster is admitted to the think table, which
-        // decides its target; the swing below only swings at that target.
-        let mut qualified = Vec::with_capacity(monsters.len());
-        for (actor, position, _) in &monsters {
+        // decides its target; the swing below only swings at that target. A monster already
+        // admitted is not qualified again.
+        for (actor, ..) in &monsters {
+            if melee_owner.creature_ai.state(*actor).is_some() {
+                continue;
+            }
             let Some(monster) = qualified_melee(&runtime, content, *actor) else {
                 continue;
             };
@@ -103,23 +106,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut targeting_only = monster.behavior.clone();
             targeting_only.attacks.clear();
             targeting_only.defenses.clear();
-            if melee_owner.creature_ai.state(*actor).is_none()
-                && melee_owner
-                    .creature_ai
-                    .admit_creature(
-                        &runtime,
-                        *actor,
-                        Some(&targeting_only),
-                        &std::collections::BTreeMap::new(),
-                        now.get(),
-                    )
-                    .is_err()
-            {
-                continue;
-            }
-            qualified.push((*actor, *position, monster));
+            let _ = melee_owner.creature_ai.admit_creature(
+                &runtime,
+                *actor,
+                Some(&targeting_only),
+                &std::collections::BTreeMap::new(),
+                now.get(),
+            );
         }
-        if qualified.is_empty() {
+        // An idle creature that died or despawned has no due think to remove it.
+        melee_owner.creature_ai.forget_dead(&runtime);
+        if melee_owner.creature_ai.is_empty() {
             states.monster_melee = melee_owner;
             return;
         }
@@ -156,10 +153,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &candidates,
             |_| false,
         );
-        let cursor = states.monster_ai_cursor % qualified.len();
-        let count = qualified.len().min(ResourceLimit::EvaluationWork.maximum());
+        // §2.1: only a monster whose think holds a target swings, in census order from the
+        // cursor and at most `CREATUREAI0-RL-05` per pass.
+        let swinging = monsters
+            .iter()
+            .filter(|(actor, ..)| {
+                melee_owner
+                    .creature_ai
+                    .state(*actor)
+                    .and_then(|state| state.target())
+                    .is_some()
+            })
+            .collect::<Vec<_>>();
+        let (cursor, count) = swing_window(swinging.len(), states.monster_ai_cursor);
         for offset in 0..count {
-            let (actor, position, monster) = &qualified[(cursor + offset) % qualified.len()];
+            let (actor, position, _) = &**swinging[(cursor + offset) % swinging.len()];
+            let Some(monster) = qualified_melee(&runtime, content, *actor) else {
+                continue;
+            };
             let p = position.position();
             let Ok(tile) = room.movement_cells().spell_tiles().lookup(
                 room.movement_cells().scope(),
@@ -308,8 +319,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             attack.record_hit_taken(&runtime, player, session, semantic_now);
         }
         states.monster_melee = melee_owner;
-        states.monster_ai_cursor = (cursor + count) % qualified.len();
+        if !swinging.is_empty() {
+            states.monster_ai_cursor = (cursor + count) % swinging.len();
+        }
     }
+}
+
+/// SPAWN-CEILINGS-1 (Codex 4242381774): the swings of one pass over the `len` monsters whose
+/// think holds a target, as (first index, count). It replaces `AI01-EVALUATION-WORK` 8, which
+/// left a Channel of hundreds of targeting monsters swinging once in dozens of passes: a pass
+/// swings every one of them up to `CREATUREAI0-RL-05`, and above it the cursor serves the rest
+/// first in the next passes. A swing is one evaluation of at most `CREATUREAI0-RL-06` units, and
+/// a pass runs once per `CREATURE_THINK_INTERVAL_MILLIS` (20 owner windows), so the swings stay
+/// within one window's think budget.
+fn swing_window(len: usize, cursor: usize) -> (usize, usize) {
+    if len == 0 {
+        return (0, 0);
+    }
+    (
+        cursor % len,
+        len.min(crate::ai_think::CREATUREAI0_THINKS_PER_WINDOW),
+    )
 }
 
 /// A present dead actor still has an observable vitals state until respawn. It must
@@ -524,6 +554,30 @@ mod tests {
         // Admission runs 4,200 ms after the warning (CREATURE-AI-0 §6.3).
         drive_owner_spawns(&mut runtime, due + 4_200_000);
         assert!(runtime.spawn_point_creatures()[0].2.is_some());
+    }
+
+    /// SPAWN-CEILINGS-1 (Codex 4242381774): a pass swings every targeting monster up to
+    /// `CREATUREAI0-RL-05`, not the old 8, and above it the cursor serves the rest next.
+    #[test]
+    fn a_pass_swings_every_targeting_monster_up_to_the_think_budget() {
+        use crate::ai_think::CREATUREAI0_THINKS_PER_WINDOW;
+        assert_eq!(swing_window(0, 5), (0, 0));
+        for len in [65, 256, 257, 300] {
+            assert_eq!(swing_window(len, 0), (0, len));
+            assert_eq!(swing_window(len, len + 3), (3, len));
+        }
+        assert_eq!(
+            swing_window(CREATUREAI0_THINKS_PER_WINDOW, 0),
+            (0, CREATUREAI0_THINKS_PER_WINDOW)
+        );
+        let len = CREATUREAI0_THINKS_PER_WINDOW + 1;
+        let (cursor, count) = swing_window(len, 0);
+        assert_eq!((cursor, count), (0, CREATUREAI0_THINKS_PER_WINDOW));
+        // The monster left over swings first in the next pass.
+        assert_eq!(
+            swing_window(len, cursor + count),
+            (CREATUREAI0_THINKS_PER_WINDOW, CREATUREAI0_THINKS_PER_WINDOW)
+        );
     }
 
     #[test]
