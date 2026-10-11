@@ -7952,18 +7952,12 @@ mod tests {
             Err(CarrierError::CapacityExceeded)
         );
         assert!(runtime.carrier.spawns.is_empty() && runtime.spawn_activation.is_none());
-        assert!(
-            runtime
-                .carrier
-                .validate_ref(&runtime.continuity, early.0)
-                .is_err()
-        );
+        assert!(!runtime.carrier.creature_alive(&runtime.continuity, early));
         for other in others {
             assert!(
                 runtime
                     .carrier
-                    .validate_ref(&runtime.continuity, other)
-                    .is_ok()
+                    .creature_alive(&runtime.continuity, ExactActorRef(other))
             );
         }
         assert_eq!(runtime.carrier.occupied.len(), 64);

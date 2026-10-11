@@ -106,11 +106,15 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
 
 ## Validation
 
-- `cargo fmt --all --check`: pass
-- `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: not run locally (the control plane stopped cargo in this container); run by the control plane and CI
-- `cargo test --locked -p oteryn-game-server --lib -- spawn`: not run locally, as above
-- `python tools/agents/validate_governance.py`: pass
-- `python -m unittest discover -s tools/agents/tests`: pass
+- Review round on #1984 (RL-14 windows, drive coalescing), on the owner's PC (WSL Ubuntu 24.04,
+  Rust 1.94.0) at the pushed head:
+  - `cargo fmt --all -- --check`: pass
+  - `cargo clippy -p oteryn-game-server --all-targets --locked -- -D warnings`: pass
+  - `cargo test -p oteryn-game-server --lib --locked`: pass (2,740 passed, 0 failed, 28
+    ignored); the first run failed one new test assertion (a removed slot keeps its
+    generation, so liveness, not `validate_ref`, shows the removal), fixed in the next commit
+- Earlier round: `cargo fmt --all --check`, `python tools/agents/validate_governance.py` and
+  `python -m unittest discover -s tools/agents/tests`: pass
 
 ## Self-review
 
