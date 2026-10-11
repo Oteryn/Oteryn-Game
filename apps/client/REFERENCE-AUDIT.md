@@ -28,7 +28,7 @@ named captures are excluded from evidence.
 | Battle List | Filter strip; name and eight ascending/descending sort choices | Not every filter tooltip identified |
 | Spell List | Search, details, formula, vocation, group, cooldown, mana and minimum level; filtering menu | No casting or assignment |
 | VIP List | Empty list; add, sort, offline and grouping menu | No contact changes |
-| Quest Log | Quest/mission details, search, sorting and tracker controls | Only the reference character's available quest content |
+| Quest Log | Quest/mission details, search, sorting and tracker controls | Only the quest content visible in the session |
 | Compendium | Player guide, client features, useful information, updates and support tabs | Not every historical/documentation leaf |
 | Cyclopedia / Map | Thais map, layers, filters and navigation | Not all map locations |
 | Cyclopedia / Items | Categories/search/filters; item stats, trade offers, valuation and drop/loot switches | No preference or tracking assignment |
@@ -41,21 +41,20 @@ named captures are excluded from evidence.
 | Cyclopedia / Magical Archive | Spell/rune list, combat and additional details | This is not Weapon Proficiency |
 | Highscores | World, vocation, category and PvP filters; ranking and own rank | Not all filter combinations |
 | Party List | Empty docked list and sorting menu | No invite or membership change |
-| Wheel of Destiny | Official preview, wheel/perks and vessels | Active use is gated by level, promotion and Premium requirements |
+| Wheel of Destiny | Official preview, wheel/perks and vessels | Active-use gating requirements shown by the client |
 | Gem Atelier | Empty collection, affinity/quality filters and revelation costs | No revelation |
 | Fragment Workshop | Modifier grid, search/filters, four grades and enhancement costs | No enhancement |
 | Premium features | Expanded benefits list | No purchase; these are benefits, not extra panels |
 
-## Follow-up with a second character
+## Additional window observations
 
-A second, more advanced character was inspected on 2026-10-09. Prey and Reward
-Wall open their full windows there; the earlier beginner-character restrictions
-are historical observations only. Account-specific values are not recorded.
+These are separate capability observations; no account, character or progression
+state is recorded or inferred. Prey and Reward Wall were observed as full windows.
 
-Wheel of Destiny opens the full character wheel with promotion-point allocation,
-preset controls and perk summaries, rather than the earlier preview. On opening,
-the official client displayed a notice that its saved presets had been adjusted.
-The auditor dismissed it and did not allocate points or use Apply/Reset.
+Wheel of Destiny shows a wheel with promotion-point allocation, preset controls
+and perk summaries. On opening, the official client displayed a notice that its
+saved presets had been adjusted. The auditor dismissed it and did not allocate
+points or use Apply/Reset.
 
 Forge Fusion shows item inputs, convergence, success probability, tier-loss
 mitigation and resource requirements. Transfer shows source/destination and
