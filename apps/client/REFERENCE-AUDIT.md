@@ -1,8 +1,10 @@
 # Reference client audit — authoring checkpoint
 
-Date: 2026-10-09. Source: official Tibia/CipSoft client running in the owner's
-Synology container `otclient-track-a-kasmvnc`. The container name does not make
-the running executable OTClient. This is a functional reference, not Oteryn code.
+Date: 2026-10-09. Source: official Tibia/CipSoft client running in a private
+reference container. The container name does not make the running executable
+OTClient. This is a functional reference, not Oteryn code. Account-derived state
+(character level, progression, points, task and reward status, ownership and
+restrictions) is deliberately omitted; only observed UI capabilities are recorded.
 
 ## Verified settings coverage
 
@@ -26,50 +28,49 @@ named captures are excluded from evidence.
 | Battle List | Filter strip; name and eight ascending/descending sort choices | Not every filter tooltip identified |
 | Spell List | Search, details, formula, vocation, group, cooldown, mana and minimum level; filtering menu | No casting or assignment |
 | VIP List | Empty list; add, sort, offline and grouping menu | No contact changes |
-| Quest Log | Quest/mission details, search, sorting and tracker controls | Only character's available quest content |
+| Quest Log | Quest/mission details, search, sorting and tracker controls | Only the reference character's available quest content |
 | Compendium | Player guide, client features, useful information, updates and support tabs | Not every historical/documentation leaf |
 | Cyclopedia / Map | Thais map, layers, filters and navigation | Not all map locations |
 | Cyclopedia / Items | Categories/search/filters; item stats, trade offers, valuation and drop/loot switches | No preference or tracking assignment |
-| Cyclopedia / Houses | House/guildhall categories and state/sort controls | Character owns no houses |
+| Cyclopedia / Houses | House/guildhall categories and state/sort controls | Ownership-dependent states not exercised |
 | Cyclopedia / Character | General information and section navigation | Character subpages pending |
 | Cyclopedia / Bestiary | Creature categories, counts, search and tracking | Not all creature entries |
 | Cyclopedia / Charms | Major/minor charms, cost, assignment and restrictions | No unlock or assignment |
 | Cyclopedia / Bosstiary | Unknown boss grid, filters, progression tiers | No unlocked boss details |
-| Cyclopedia / Boss Slots | Two locked slots, boosted boss and unlock conditions | Account restrictions retained |
+| Cyclopedia / Boss Slots | Slot grid, boosted boss and unlock conditions | Locked-state behavior only |
 | Cyclopedia / Magical Archive | Spell/rune list, combat and additional details | This is not Weapon Proficiency |
 | Highscores | World, vocation, category and PvP filters; ranking and own rank | Not all filter combinations |
 | Party List | Empty docked list and sorting menu | No invite or membership change |
-| Wheel of Destiny | Official preview, wheel/perks and vessels | Character requires level 51, promotion and Premium for active use |
+| Wheel of Destiny | Official preview, wheel/perks and vessels | Active use is gated by level, promotion and Premium requirements |
 | Gem Atelier | Empty collection, affinity/quality filters and revelation costs | No revelation |
 | Fragment Workshop | Modifier grid, search/filters, four grades and enhancement costs | No enhancement |
 | Premium features | Expanded benefits list | No purchase; these are benefits, not extra panels |
 
-## Follow-up with the mainland character
+## Follow-up with a second character
 
-The owner signed in normally to a different, level-313 character on 2026-10-09.
-Prey and Reward Wall now open their actual windows; the earlier beginner-character
-restrictions remain historical observations, not the current access state.
+A second, more advanced character was inspected on 2026-10-09. Prey and Reward
+Wall open their full windows there; the earlier beginner-character restrictions
+are historical observations only. Account-specific values are not recorded.
 
-Wheel of Destiny opens the actual character wheel with 263 available promotion
-points, preset controls and perk summaries, rather than the earlier level-2
-preview. On opening, the official client displayed a notice that its saved
-presets had been adjusted. The auditor dismissed the notice and did not allocate
-points or use Apply/Reset.
+Wheel of Destiny opens the full character wheel with promotion-point allocation,
+preset controls and perk summaries, rather than the earlier preview. On opening,
+the official client displayed a notice that its saved presets had been adjusted.
+The auditor dismissed it and did not allocate points or use Apply/Reset.
 
 Forge Fusion shows item inputs, convergence, success probability, tier-loss
 mitigation and resource requirements. Transfer shows source/destination and
 consumed-resource requirements. Conversion shows dust/sliver/core conversion and
-dust-limit increase. History is empty. No operation was submitted.
+dust-limit increase. History is a table view. No operation was submitted.
 
 Weapon Proficiency is a separate window from Magical Archive. The selected weapon
-shows inactive perks because the character does not meet its use requirements.
-No weapon modification, perk assignment or reset was submitted.
+shows perks that are inactive until use requirements are met. No weapon
+modification, perk assignment or reset was submitted.
 
-Task Board shows difficulty, three bounty candidates, progress/rewards, preferred
+Task Board shows difficulty, bounty candidates, progress/rewards, preferred
 list and reroll/claim controls, plus bounty-talisman upgrades. Weekly Tasks shows
-0/6 kill and 0/6 delivery progress with a difficulty selection. Hunting Task Shop
+kill and delivery progress counters with a difficulty selection. Hunting Task Shop
 shows outfit/addon/mount offers. No task selection, difficulty change, reroll,
-claim, upgrade or purchase was performed. Social team access still requires
+claim, upgrade or purchase was performed. Social team access is gated by
 Premium; the filter form itself is visible.
 
 ## Complete extra-shortcut inventory
@@ -84,15 +85,15 @@ All **17 extra shortcuts** were added; the available list became empty:
 | Party List | Inspected |
 | Wheel of Destiny | Inspected in normal preview, including both supporting tabs |
 | Quest Tracker | Visible; dedicated controls still pending |
-| Unjustified Points | Inspected: zero open points and three skull-threshold bars |
-| Prey Dialog | Mainland character: two creature-choice slots, reroll controls/costs, locked third slot |
+| Unjustified Points | Inspected: open-points counter and skull-threshold bars |
+| Prey Dialog | Creature-choice slots, reroll controls/costs, slot unlock gating |
 | Kill Tracker | Inspected: prey creature tracking, inactive state |
-| Reward Wall | Mainland character: seven-day cycle, resting bonuses, expired streak, jokers and empty history |
+| Reward Wall | Seven-day cycle, resting bonuses, streak, jokers and history view |
 | Analytics Selector | All nine entries opened; visible panels/menus and Premium/empty-state restrictions recorded below |
 | Bosstiary | Inspected through Cyclopedia; shortcut route pending |
 | Boss Slots | Inspected through Cyclopedia; shortcut route pending |
 | Bosstiary Tracker | Inspected: empty docked tracker with header controls |
-| Bestiary Tracker | Inspected: tracked creature, numeric progress and progress bar |
+| Bestiary Tracker | Inspected: tracked-creature entry, numeric progress and progress bar |
 | Imbuement Tracker | Inspected: equipment entry and imbuement slots |
 | Weapon Proficiency | Inspected: weapon catalogue/search/filters, XP, perk tree and requirement warning |
 | Exaltation Forge | Inspected all four tabs: Fusion, Transfer, Conversion and History |
@@ -100,7 +101,7 @@ All **17 extra shortcuts** were added; the available list became empty:
 | Task Board | Inspected Bounty Tasks, Weekly Tasks and Hunting Task Shop |
 
 Analytics Selector shows nine entries, including Boss Cooldowns. Hunting opens
-the Premium Store on this account. Loot and Supply open docked value/per-hour
+the Premium Store when not entitled. Loot and Supply open docked value/per-hour
 panels. Supply's header menu exposes Reset Data and per-hour gauge/graph controls,
 with those graphical controls labelled Premium. Impact shows damage totals, DPS,
 maximum DPS and all-time high, damage-type breakdown, healing totals, HPS and
@@ -146,7 +147,7 @@ mutation was submitted.
 ## Character stat subpages
 
 Character Stats shows progression, skills, resource/capacity/speed, stamina,
-offline training, account status and badges. Offence Stats breaks down flat
+offline training, account-status and badge sections. Offence Stats breaks down flat
 healing/damage, attack contributions and critical chance/extra damage. Defence
 Stats shows equipment/skill defence contributions, armor, mitigation, magic-shield
 capacity and reductions for physical/fire/earth/energy/ice/holy/death. Misc. Stats
@@ -166,7 +167,7 @@ Familiar collection filtering offers all, standard and quest familiars.
 ## Static client-file sweep
 
 The installed reference is the official Tibia distribution, despite the
-`otclient-track-a-kasmvnc` container name. Its `bin/client.en.qm` is a Qt
+reference container name. Its `bin/client.en.qm` is a Qt
 translation catalogue, not application source. A read-only parser consumed its
 702,294-byte messages block completely and found 4,622 distinct source keys.
 No account/configuration values, proprietary graphics or translated text corpus
@@ -206,9 +207,8 @@ account-dependent behavior checks retain their pending status.
 
 ## Evidence and preservation
 
-Private screenshots remain under `/workspace/artifacts/oteryn-reference`, with
-sidebar evidence under its `sidebar` directory and ongoing runtime captures on
-the owner's NAS. Reference screenshots and proprietary artwork are deliberately
+Private screenshots are kept outside the repository, together with ongoing
+runtime captures. Reference screenshots and proprietary artwork are deliberately
 not committed as Oteryn assets. No credentials or personal account data belong
 in this document. Temporary shortcut additions must be restored to the original
 layout after the audit and checked against the scoped preference snapshot.
