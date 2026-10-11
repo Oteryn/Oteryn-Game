@@ -3,6 +3,8 @@
 mod overview;
 #[path = "preferences_pages.rs"]
 mod pages;
+#[path = "preferences_slider.rs"]
+mod reference_slider;
 
 use oteryn_client::{
     action_bar::ACTION_BAR_ROWS,
@@ -96,6 +98,7 @@ impl PreferencesBrowser {
         if !self.open {
             return PreferenceAction::None;
         }
+        reference_slider::suppress_wheel_tail(ctx);
         let previous_style = ctx.style_of(egui::Theme::Dark);
         crate::client_chrome::install_preferences(ctx, draft.high_contrast);
         let mut action = PreferenceAction::None;

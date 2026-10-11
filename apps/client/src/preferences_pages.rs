@@ -388,10 +388,10 @@ fn percent(
             ui.horizontal(|ui| {
                 ui.label(format!("{} {text}", labels[usize::from(en)]));
                 ui.spacing_mut().slider_width = ui.available_width().clamp(45.0, 185.0);
-                ui.add_enabled(
-                    consumer.is_some(),
-                    egui::Slider::new(&mut value, 0..=100).show_value(false),
-                )
+                ui.add_enabled_ui(consumer.is_some(), |ui| {
+                    crate::preferences_browser::reference_slider::show(ui, &mut value, 0..=100)
+                })
+                .inner
                 .on_hover_text(match (consumer, en) {
                     (Some(consumer), true) => format!("Applied by {consumer}; — means unset."),
                     (Some(consumer), false) => {
@@ -649,35 +649,48 @@ fn battle(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                 ],
                 en,
             );
-            reference_option(
-                ui,
-                draft,
-                "battle_sounds",
-                spells,
-                ["Zaklęcia", "Spells"],
-                en,
-            );
             retained_children(
                 ui,
-                draft.stored_bool(&format!("battle_sounds.{spells}")) == Some(true),
+                draft
+                    .stored_int(&format!("battle_sounds.{volume}"))
+                    .is_some_and(|v| v > 0),
                 if own {
-                    "battle-own-spells"
+                    "battle-own-volume"
                 } else {
-                    "battle-other-spells"
+                    "battle-other-volume"
                 },
                 |ui| {
-                    ui.indent(("spells", own), |ui| {
-                        for (id, labels) in [
-                            (attack, ["Atak", "Attack"]),
-                            (healing, ["Leczenie", "Healing"]),
-                            (support, ["Wsparcie", "Support"]),
-                        ] {
-                            reference_option(ui, draft, "battle_sounds", id, labels, en);
-                        }
-                    });
+                    reference_option(
+                        ui,
+                        draft,
+                        "battle_sounds",
+                        spells,
+                        ["Zaklęcia", "Spells"],
+                        en,
+                    );
+                    retained_children(
+                        ui,
+                        draft.stored_bool(&format!("battle_sounds.{spells}")) == Some(true),
+                        if own {
+                            "battle-own-spells"
+                        } else {
+                            "battle-other-spells"
+                        },
+                        |ui| {
+                            ui.indent(("spells", own), |ui| {
+                                for (id, labels) in [
+                                    (attack, ["Atak", "Attack"]),
+                                    (healing, ["Leczenie", "Healing"]),
+                                    (support, ["Wsparcie", "Support"]),
+                                ] {
+                                    reference_option(ui, draft, "battle_sounds", id, labels, en);
+                                }
+                            });
+                        },
+                    );
+                    reference_option(ui, draft, "battle_sounds", weapons, ["Broń", "Weapons"], en);
                 },
             );
-            reference_option(ui, draft, "battle_sounds", weapons, ["Broń", "Weapons"], en);
         });
     }
     boxed(ui, "", |ui| {
@@ -689,23 +702,35 @@ fn battle(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             ["Stworzenia:", "Creatures:"],
             en,
         );
-        for (id, labels) in [
-            (
-                "sound.creature_noise",
-                ["Odgłosy stworzeń", "Creature Noises"],
-            ),
-            ("sound.creature_death", ["Śmierć", "Death"]),
-            (
-                "sound.creature_attacks",
-                ["Ataki i zaklęcia", "Attacks and Spells"],
-            ),
-        ] {
-            reference_option(ui, draft, "battle_sounds", id, labels, en);
-        }
+        retained_children(
+            ui,
+            draft
+                .stored_int("battle_sounds.sound.creature_combat")
+                .is_some_and(|v| v > 0),
+            "battle-creature-volume",
+            |ui| {
+                for (id, labels) in [
+                    (
+                        "sound.creature_noise",
+                        ["Odgłosy stworzeń", "Creature Noises"],
+                    ),
+                    ("sound.creature_death", ["Śmierć", "Death"]),
+                    (
+                        "sound.creature_attacks",
+                        ["Ataki i zaklęcia", "Attacks and Spells"],
+                    ),
+                ] {
+                    reference_option(ui, draft, "battle_sounds", id, labels, en);
+                }
+            },
+        );
     });
 }
 
 fn ui_sound(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
+    let positive_volume = draft
+        .stored_int("ui_sounds.sound.ui")
+        .is_some_and(|v| v > 0);
     boxed(ui, "", |ui| {
         percent(
             ui,
@@ -715,63 +740,67 @@ fn ui_sound(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
             ["Głośność interfejsu:", "UI Volume:"],
             en,
         );
-        for (id, labels) in [
-            (
-                "sound.interactions",
-                ["Interakcje interfejsu", "UI interactions"],
-            ),
-            (
-                "sound.party_notice",
-                ["Wejście/wyjście z drużyny", "Join/Leave Party"],
-            ),
-            (
-                "sound.vip_notice",
-                ["Logowanie/wylogowanie VIP", "VIP login/logout"],
-            ),
-        ] {
-            row(ui, draft, "ui_sounds", id, labels, en);
-        }
+        retained_children(ui, positive_volume, "ui-social-volume", |ui| {
+            for (id, labels) in [
+                (
+                    "sound.interactions",
+                    ["Interakcje interfejsu", "UI interactions"],
+                ),
+                (
+                    "sound.party_notice",
+                    ["Wejście/wyjście z drużyny", "Join/Leave Party"],
+                ),
+                (
+                    "sound.vip_notice",
+                    ["Logowanie/wylogowanie VIP", "VIP login/logout"],
+                ),
+            ] {
+                row(ui, draft, "ui_sounds", id, labels, en);
+            }
+        });
     });
     boxed(ui, "", |ui| {
-        reference_option(
-            ui,
-            draft,
-            "ui_sounds",
-            "sound.chat_enabled",
-            ["Dźwięki wiadomości", "Console Messages"],
-            en,
-        );
-        retained_children(
-            ui,
-            draft.stored_bool("ui_sounds.sound.chat_enabled") == Some(true),
-            "ui-console-messages",
-            |ui| {
-                ui.indent("console-audio", |ui| {
-                    for (id, labels) in [
-                        ("sound.party_chat", ["Drużyna", "Party"]),
-                        ("sound.guild", ["Gildia", "Guild"]),
-                        (
-                            "sound.private_without_tab",
-                            [
-                                "Prywatne w lokalnym czacie",
-                                "Private Messages in Local Chat",
-                            ],
-                        ),
-                        ("sound.private", ["Wiadomości prywatne", "Private Messages"]),
-                        ("sound.npc", ["NPC", "NPCs"]),
-                        ("sound.global", ["Kanały globalne", "Global"]),
-                        ("sound.team_finder", ["Wyszukiwarka drużyn", "Team Finder"]),
-                        ("sound.raids", ["Najazdy", "Raid Announcements"]),
-                        (
-                            "sound.system",
-                            ["Komunikaty systemowe", "System Announcements"],
-                        ),
-                    ] {
-                        reference_option(ui, draft, "ui_sounds", id, labels, en);
-                    }
-                });
-            },
-        );
+        retained_children(ui, positive_volume, "ui-chat-volume", |ui| {
+            reference_option(
+                ui,
+                draft,
+                "ui_sounds",
+                "sound.chat_enabled",
+                ["Dźwięki wiadomości", "Console Messages"],
+                en,
+            );
+            retained_children(
+                ui,
+                draft.stored_bool("ui_sounds.sound.chat_enabled") == Some(true),
+                "ui-console-messages",
+                |ui| {
+                    ui.indent("console-audio", |ui| {
+                        for (id, labels) in [
+                            ("sound.party_chat", ["Drużyna", "Party"]),
+                            ("sound.guild", ["Gildia", "Guild"]),
+                            (
+                                "sound.private_without_tab",
+                                [
+                                    "Prywatne w lokalnym czacie",
+                                    "Private Messages in Local Chat",
+                                ],
+                            ),
+                            ("sound.private", ["Wiadomości prywatne", "Private Messages"]),
+                            ("sound.npc", ["NPC", "NPCs"]),
+                            ("sound.global", ["Kanały globalne", "Global"]),
+                            ("sound.team_finder", ["Wyszukiwarka drużyn", "Team Finder"]),
+                            ("sound.raids", ["Najazdy", "Raid Announcements"]),
+                            (
+                                "sound.system",
+                                ["Komunikaty systemowe", "System Announcements"],
+                            ),
+                        ] {
+                            reference_option(ui, draft, "ui_sounds", id, labels, en);
+                        }
+                    });
+                },
+            );
+        });
     });
 }
 
@@ -1787,6 +1816,71 @@ mod tests {
     }
 
     #[test]
+    fn extracted_battle_and_ui_volumes_gate_filters_without_erasing_selections() {
+        for (page, volume, gates) in [
+            (
+                battle as Page,
+                "battle_sounds.sound.own_combat",
+                &["battle-own-volume", "battle-own-spells"][..],
+            ),
+            (
+                battle as Page,
+                "battle_sounds.sound.other_combat",
+                &["battle-other-volume", "battle-other-spells"][..],
+            ),
+            (
+                battle as Page,
+                "battle_sounds.sound.creature_combat",
+                &["battle-creature-volume"][..],
+            ),
+            (
+                ui_sound as Page,
+                "ui_sounds.sound.ui",
+                &["ui-social-volume", "ui-chat-volume", "ui-console-messages"][..],
+            ),
+        ] {
+            for selection in [None, Some(0), Some(1), Some(100)] {
+                let ctx = egui::Context::default();
+                let mut draft = ClientSettings::default();
+                for key in [
+                    "battle_sounds.sound.own_spells",
+                    "battle_sounds.sound.other_spells",
+                    "battle_sounds.sound.attack_spells",
+                    "battle_sounds.sound.creature_noise",
+                    "ui_sounds.sound.chat_enabled",
+                    "ui_sounds.sound.party_chat",
+                ] {
+                    draft
+                        .future_preferences
+                        .insert(key.into(), FutureValue::Bool(true));
+                }
+                if let Some(value) = selection {
+                    draft
+                        .future_preferences
+                        .insert(volume.into(), FutureValue::Int(value));
+                }
+                let before = draft.clone();
+                for _ in 0..2 {
+                    let _ = frame(&ctx, egui::vec2(750.0, 850.0), vec![], |ctx| {
+                        egui::Window::new("audio-volume-gates")
+                            .show(ctx, |ui| page(ui, &mut draft, true));
+                    });
+                }
+                for gate in gates {
+                    assert_eq!(
+                        ctx.data(|data| data
+                            .get_temp::<bool>(egui::Id::new(("retained-child-gate", *gate)))),
+                        Some(selection.is_some_and(|v| v > 0)),
+                        "{volume}/{gate}/{selection:?}"
+                    );
+                }
+                assert_eq!(draft, before);
+                assert!(oteryn_client::settings_catalog::runtime_consumer(volume).is_none());
+            }
+        }
+    }
+
+    #[test]
     fn retained_reference_masters_gate_children_without_erasing_saved_intent() {
         for (page, parent, children, gate) in [
             (
@@ -1836,6 +1930,15 @@ mod tests {
             crate::client_chrome::install(&ctx, false);
             let size = egui::vec2(720.0, 720.0);
             let mut draft = ClientSettings::default();
+            for key in [
+                "battle_sounds.sound.own_combat",
+                "battle_sounds.sound.other_combat",
+                "ui_sounds.sound.ui",
+            ] {
+                draft
+                    .future_preferences
+                    .insert(key.into(), FutureValue::Int(100));
+            }
             draft
                 .future_preferences
                 .insert(parent.into(), FutureValue::Bool(false));

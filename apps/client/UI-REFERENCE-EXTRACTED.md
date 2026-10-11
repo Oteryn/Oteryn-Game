@@ -42,6 +42,7 @@ Resource prefix: `:/qt/qml/qmlcomponents/qml/` in the installed executable.
 | OptionsPageControls.qml | Custom delay 0–1000 ms; default master disables it. Critical style/help below 50; warning below 250; neither at 250 or above. Shift/Ctrl/Alt rotation selections are separate |
 | OptionsPageInterface.qml | Native/Animated/Big are independent controls. Unused expiry is gated by inventory OR container expiry |
 | TibiaMenuSlider.qml / TibiaSlider.qml | Off marker supplements the minimum value. Arrow buttons and left/right keys step by one, Shift multiplies by 10, Ctrl by 100; wheel uses a tenth of the range per normal notch |
+| TibiaAutorepeatIconButton.qml | Primary click executes on release with its modifiers. A 350 ms timer starts repetition; its first 60 ms interval follows that delay. Further 60 ms repeats carry no mouse modifiers; disable/release stops repetition |
 
 The backend definition of `soundEnabled` was not recovered in this bounded pass;
 do not silently equate it with a stored master-volume value. Device enumeration,
@@ -65,8 +66,12 @@ Private source digests (SHA-256, decompressed resource bytes):
 - UI Sounds: `12a411dc8e0b88d7bebad2e9124199a8df31aca7b2d87a6931ef52bc3cce5088`
 - Menu slider: `8a248cc70f61577e08ed5af862acfc51d14936dbccdc680ad96de15b58132294`
 - Slider: `29565cd82ad5a6a1ecdec4cad0e03feef0596d5d5e614dc1681c91a9e9ba1e96`
+- Repeating arrow: `217119765d86cddd906bf28cb36d8fdd77d139c1247152611b60c6a74743460b`
 
 Current repairs cover the editable FPS minimum, delay warning boundaries, minimum
 Off markers and volume-dependent anthem/item child groups. Audio rows remain
-disabled without playback. Other recovered dependencies/slider interactions are
-reference requirements, not claims of already implemented parity.
+disabled without playback. The next source-backed batch adds arrow/key modifiers,
+ordinary line-wheel steps, held-arrow timing and positive-volume Battle/UI filter
+gates. It uses upstream egui sliders with a bounded Oteryn adapter, not copied QML
+or a dependency fork. Pixel/trackpad wheel equivalence and full native interactive
+comparison remain pending; these changes do not establish audio playback.

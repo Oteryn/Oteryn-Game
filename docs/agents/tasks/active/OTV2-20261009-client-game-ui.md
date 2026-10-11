@@ -87,6 +87,16 @@ must not be claimed as complete.
 
 ## Acceptance evidence and next actions
 
+Current continuation adds the installed-original slider arrow/key/line-wheel
+semantics through a small adapter over upstream egui, plus the positive group-
+volume gates in Battle/UI Sounds. The repeating-arrow source was read offline:
+350 ms delay followed by 60 ms intervals, click modifiers only on release and
+unmodified repeats. Unsupported audio remains disabled; pixel-wheel/trackpad
+equivalence and native interactive parity are not claimed. Existing strict
+geometry tests caught HUD overflow/height regressions during authoring; repair
+must keep the original geometry gates, not relax them. Fresh local and exact-SHA
+MSVC/DX12 qualification are required before recording this successor's acceptance.
+
 Installed-original extraction now precedes further guesswork. Independently
 written evidence is in `apps/client/UI-REFERENCE-EXTRACTED.md`: actual 15.33 QML
 contracts, source digests, resource/audio/spell counts and explicit backend gaps.
@@ -111,27 +121,11 @@ This is not warning-state visual parity or playback acceptance. Remaining
 source-derived work includes slider button/key/wheel interactions, group-volume
 gates in Battle/UI Sounds and real renderer/audio capabilities/consumers.
 
-Native Windows scissor rounding was repaired in `08495a50`; the exact SHA passed
-MSVC tests/strict Clippy and the DX12 release page audit (20 pages, 78 captures,
-all markers/footer buttons and no overflow/draft mutation). Private captures are
-under `C:\Users\barte\Downloads\oteryn-settings-audit-08495a50`.
-Integral sprite scaling with a shared physical transform for rendering, picking,
-HUD overlays and screenshot crops was published in `1b3a3be5`, then passed native
-Windows tests (190/163/5), strict Clippy and the 20-page/78-capture DX12 audit.
-Its private manifest SHA-256 is
-`b0bcedda748b9622147e63000a33057dac9736fe7378beb165f7acf8826db460`.
-Keyboard delay was published in `5bf89893` and passed native Windows tests
-(192/163/5), strict Clippy and the 20-page/78-capture DX12 audit; the private
-manifest SHA-256 is
-`a6b2866c47a4a84e9442e7a406520fd220520312e46824bbdfb4819443e200e0`.
-The modifier/explicit-zero repair `597fda90` passed native Windows tests, strict
-Clippy and the DX12 audit. The custom-pointer batch `5b784e60` supplies the independently
-drawn custom arrow and its Big variant, while restoring the OS pointer under
-Native and retaining specialized OS cursor semantics. The reference's Animated
-cursor is a contextual walk/use/view/container/attack/NPC/quick-loot family;
-its unavailable consumers stay disabled. Its MSVC/DX12 qualification chain
-completed with 20 pages/78 captures, no invalid page, manifest SHA-256
-`40cc3e17a964666a2ea8a4ea7c4ce331d988109d062f63b6cd0dd3d29316e5eb`.
+Historical qualification remains recorded, with exact SHAs, manifests and private
+capture paths, in `apps/client/UI-FIDELITY.md`: scissor rounding `08495a50`, integral
+scaling `1b3a3be5`, repeat scheduler `5bf89893`/`597fda90` and custom pointer
+`5b784e60` passed their MSVC/Clippy/DX12 chains. These are not qualifications for a
+new source head. Contextual Animated cursor consumers remain unavailable.
 
 The current AUTHORING batch adds a bounded receipt clock for accepted ChatLine
 events, genuine Console timestamp/seconds consumers and local per-tab Clear
@@ -149,7 +143,7 @@ red World bundle job locally; the AUTHORING repair refreshes only the pin's
 `inputs_digest`, preserving world content, identity, production=false and the
 bundle digest. Qualification uses the unchanged double-build gate.
 
-The current client tree passes 194 client-library, 165 native-binary
+The current client tree passes 194 client-library, 169 native-binary
 and 5 launcher tests, strict client all-target Clippy, rustfmt and
 `git diff --check`. These checks must be repeated on any repaired final
 candidate. The native audit must then be built and run from a fresh exact-SHA

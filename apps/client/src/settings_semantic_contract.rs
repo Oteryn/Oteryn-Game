@@ -516,6 +516,19 @@ fn compiled_dependency_groups_disable_without_erasing_and_restore_all_children()
             english: true,
             ..Default::default()
         };
+        // These spell/chat masters also depend on a positive group volume in
+        // the installed-original QML; this fixture isolates the boolean gate.
+        let volume = match contract.gate {
+            "battle-own-spells" => Some("battle_sounds.sound.own_combat"),
+            "battle-other-spells" => Some("battle_sounds.sound.other_combat"),
+            "ui-console-messages" => Some("ui_sounds.sound.ui"),
+            _ => None,
+        };
+        if let Some(volume) = volume {
+            draft
+                .future_preferences
+                .insert(volume.into(), FutureValue::Int(100));
+        }
         draft
             .future_preferences
             .insert(contract.master.into(), FutureValue::Bool(false));

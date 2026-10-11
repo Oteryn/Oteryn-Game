@@ -22,6 +22,13 @@ hides both. Clouds/audio zero values carry Off markers. Anthem/item children
 follow their positive group volume, but all audio remains disabled without a
 backend; these dependency repairs are not playback acceptance.
 
+The next source-backed batch adds slider arrows, Shift × 10 / Ctrl × 100 (combined
+× 1000), normal line-wheel range/10 changes, and held-arrow repetition after the
+reference's 350 + 60 ms timers. Repeats ignore click modifiers and cancel on release,
+disable or lost focus. Battle and UI filters now also require positive group
+volume while preserving selections; missing audio consumers remain disabled.
+Trackpad/pixel-wheel equivalence and native interactive acceptance remain open.
+
 ## Page matrix
 
 | Reference page | Dedicated composition | Actual consumer / remaining acceptance |

@@ -67,7 +67,7 @@ fn controls(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
                         format!("Opóźnienie klawiatury: {value}")
                     });
                     ui.spacing_mut().slider_width = ui.available_width().clamp(45.0, 185.0);
-                    ui.add(egui::Slider::new(&mut delay, 0..=1000).show_value(false))
+                    crate::preferences_browser::reference_slider::show(ui, &mut delay, 0..=1000)
                 })
                 .inner;
             if response.changed()
@@ -273,18 +273,26 @@ fn graphics(ui: &mut egui::Ui, draft: &mut ClientSettings, en: bool) {
         {
             draft.set_frame_limit_enabled(!unlimited);
         }
-        let mut limit = draft.last_frame_limit;
+        let mut limit = i32::from(draft.last_frame_limit);
         ui.add_enabled_ui(!unlimited, |ui| {
-            if ui
-                .add(
-                    egui::Slider::new(&mut limit, oteryn_client::settings::EDITABLE_FRAME_LIMIT)
-                        .clamping(egui::SliderClamping::Edits)
-                        .text(if en { "Frame Rate Limit" } else { "Limit FPS" }),
+            ui.horizontal(|ui| {
+                ui.label(format!(
+                    "{}: {limit}",
+                    if en { "Frame Rate Limit" } else { "Limit FPS" }
+                ));
+                let range = oteryn_client::settings::EDITABLE_FRAME_LIMIT;
+                ui.spacing_mut().slider_width = ui.available_width().clamp(93.0, 185.0);
+                if crate::preferences_browser::reference_slider::show(
+                    ui,
+                    &mut limit,
+                    i32::from(*range.start())..=i32::from(*range.end()),
                 )
                 .changed()
-            {
-                let _ = draft.set_frame_limit(limit);
-            }
+                    && let Ok(limit) = u16::try_from(limit)
+                {
+                    let _ = draft.set_frame_limit(limit);
+                }
+            });
         });
         let current_fps = ui.ctx().input(|input| {
             if input.stable_dt > 0.0 {
