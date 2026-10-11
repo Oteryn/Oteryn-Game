@@ -61,6 +61,18 @@ interoperability, combined import and minimap dispatch remain unqualified.
 
 ## Exact settings contracts recovered
 
+Options dialog continuation: `OptionsMenuDialog.qml` (11,389 raw bytes, SHA-256
+`bbcc3cfe46242f6caed9f7bffd1a05fe4a8dd101529dbb7515579fada3cc37bd`)
+has a right-aligned RowLayout in left-to-right **Ok / Apply / Cancel** order.
+Its cancellation handler calls `cancelButtonClicked`; the outer Return handler
+is explicitly undefined. `TibiaDialog.qml` (18,668 raw bytes, SHA-256
+`d8e02ba04bed46d77b93289ab9e8a7eeb23f76cd76381eea264e1a33f6f46c9e`)
+routes Escape/Cancel to that cancellation handler. Focused elements can own
+Return, but an outer Enter must not silently save all preferences. The existing
+Oteryn footer has reversed visual order and lacks outer Escape cancellation;
+these are local UI gaps, not missing server projections. Inner key-capture and
+confirmation dialogs must consume/cancel first without applying the draft.
+
 Resource prefix: `:/qt/qml/qmlcomponents/qml/` in the installed executable.
 
 | Resource | Confirmed contract |

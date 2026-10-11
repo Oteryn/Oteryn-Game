@@ -491,8 +491,17 @@ composer route and is explicitly surrendered when chat is hidden.
 
 Four regressions exercise pointer dragging, actual Copy commands, immutable
 rendered text, channel isolation, stale selection and native input/focus gating.
-Linux client tests pass 209/179/5, strict Clippy and formatting pass. Native
-MSVC/DX12 and live-session selection/OS clipboard acceptance remain pending.
+Linux client tests pass 209/179/5, strict Clippy and formatting pass. Source
+`34f5921499960120e726df4100211ebe614d5a5d` passes native MSVC client
+208/183/5 and strict seven-package Clippy/tests, plus DX12 20 pages/78
+independently verified hashes/zero invalid entries at 125% DPI. PID 12896 is
+preserved/responsive. Private audit
+`C:\Users\barte\Downloads\oteryn-settings-audit-34f59214`; manifest SHA-256
+`8254099676642bad3d7009889970565b50dce6df7dd5337f942566c16ef296e4`.
+Recovery `/workspace/oteryn-client-publication-34f59214.bundle`, SHA-256
+`7aab52ae5d7834ad40fe5783f7ba0c56d453d051eac8172c564f7a8c6578c03b`.
+Same-head protected-base audit passes, not full CI. Live-session physical
+selection and external OS clipboard transfer remain unqualified.
 This does not implement rich-text NPC keywords, external-link warnings, remapped
 Chat Copy actions, private/secondary consoles or unsupported event filters.
 
