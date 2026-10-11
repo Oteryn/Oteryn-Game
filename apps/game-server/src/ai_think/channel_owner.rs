@@ -55,6 +55,14 @@ impl CreatureAiTable {
             .retain(|_, entry| runtime.contains_live_creature(entry.state.actor()));
     }
 
+    /// The earliest pending think, `None` while every creature is idle (SPAWN-CEILINGS-1, Codex
+    /// 4243189401). A think left due past the window's `CREATUREAI0-RL-05` budget keeps its due
+    /// time, so after a pass this is at most that pass's time while a backlog remains. One pass
+    /// over the table, like `forget_dead`.
+    pub(crate) fn earliest_due(&self) -> Option<u64> {
+        self.entries.values().filter_map(|entry| entry.due_us).min()
+    }
+
     /// §2.1 item 1: `player` moved or was admitted; wakes the idle creatures it sees.
     pub(crate) fn wake_for_player(
         &mut self,

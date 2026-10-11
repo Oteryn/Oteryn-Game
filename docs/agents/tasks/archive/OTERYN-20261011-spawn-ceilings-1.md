@@ -135,6 +135,14 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   children are retired 256 links per call, an admission retires its parent's dead children
   first and later calls retire the rest; 300 creatures x 8 memos are looked up by exact
   creature, and a reused slot's stale memos are dropped.
+- Think backlog (Codex 4243189401): a think left due past a window's `CREATUREAI0-RL-05` budget
+  runs in the next owner window, not one think interval later. The pass sets the next pass to
+  the earliest due think (`CreatureAiTable::earliest_due`), no earlier than the next 50 ms
+  window and no later than the next swing pass; swings run on at most one pass per think
+  interval, so the swing budget and cadence are unchanged and the passes between swing passes
+  only think. Tested: 1,500 due rats think 1,024 at 0 and 476 at 50 ms; 83,000 first thinks
+  run in 82 passes 50 ms apart, oldest due first, with swing passes at 0, 1, 2, 3 and 4 s;
+  15,000 run in 15 passes and the next pass is the first cohort's next think at 1 s.
 
 ## Implementation / findings
 
@@ -261,6 +269,16 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   (owner question in the report). The link and memo maps allocate on insert like the other
   ordered-map ledgers of this task; the old `try_reserve` on the link Vec is gone, and a
   failed link insert (duplicate child or ordinal overflow) restores the admission snapshot.
+- Think backlog (Codex 4243189401): the pass after an activation of 83,000 monsters ran their
+  first thinks 1,024 per second (about 82 s). Now 1,024 per owner window (about 4 s). Residual:
+  during a backlog each 50 ms pass still runs the census, the melee qualification, admission
+  and `forget_dead` (O(slots), as before but at the window cadence), and `take_due`
+  (`ai_think.rs`, not owned here) collects and sorts every due entry, O(due log due) per
+  window; a due-time index belongs with CREATURE-POSITION-INDEX-1. RL-05 serves at most
+  20,480 thinks per second, so with more thinking monsters than that each thinks less than once
+  per second (oldest due first) and passes stay 50 ms apart; that is the RL-05 budget, not
+  changed here. Without a backlog the earliest due think equals the swing pass, so the cadence
+  is unchanged.
 - At reference scale the 64-entry corpse projection FIFO may evict before a lost-response
   replay; that is an owner question, not changed here.
 - The test-only cheese source uses `SpawnSourceId(u16::MAX)`; at 65,536 realized sources it
@@ -321,6 +339,16 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
     `cargo test -p oteryn-game-server --no-run --locked` pass; `cargo test -p
     oteryn-game-server --lib --locked` pass (2,762 passed, 0 failed,
     28 ignored); governance validation and `tools/agents/tests`
+    pass
+  - Think backlog round (Codex 4243189401), on the PC before the push, in the same private
+    checkout of main 9080588d plus this branch's delta (apps and registry diff hash equal to the
+    pushed head's): the first test run failed the new pass-cadence test, whose simulation
+    forgot that a cohort is due again one interval after its think (the code was right; the
+    test now models it); then `cargo fmt --all -- --check` pass; `cargo clippy -p
+    oteryn-game-server --all-targets --locked -- -D warnings` pass; `cargo test -p
+    oteryn-game-server --lib --locked` pass (2,764 passed, 0 failed, 28 ignored); `cargo test
+    -p oteryn-game-server --no-run --locked` pass (after a WSL restart truncated one
+    build artifact, which was removed and rebuilt); governance validation and `tools/agents/tests`
     pass
 - Earlier round: `cargo fmt --all --check`, `python tools/agents/validate_governance.py` and
   `python -m unittest discover -s tools/agents/tests`: pass

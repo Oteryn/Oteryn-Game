@@ -584,6 +584,42 @@ fn three_hundred_rats_are_censused_in_slot_order_think_in_one_pass_and_the_dead_
     assert_eq!(channel.table.len(), RATS);
 }
 
+/// SPAWN-CEILINGS-1 (Codex 4243189401): 1,500 rats due at once think 1,024 in the first owner
+/// window and the rest in the next; `earliest_due` reports the left-over thinks as still due, so
+/// the owner schedules its next pass in the next window.
+#[test]
+fn thinks_past_the_window_budget_stay_due_and_run_in_the_next_window() {
+    use crate::ai_think::{CREATUREAI0_THINK_WINDOW_MICROS, CREATUREAI0_THINKS_PER_WINDOW};
+    const RATS: usize = 1_500;
+    let mut channel = Channel::with_capacity(RATS + 1);
+    for index in 0..RATS {
+        let x = 200 + 2 * i32::try_from(index % 100).expect("x");
+        let y = 300 + 2 * i32::try_from(index / 100).expect("y");
+        channel.admit(at(x, y), 0);
+    }
+    assert_eq!(channel.table.earliest_due(), Some(0));
+    assert_eq!(
+        channel.thinks(0, false).len(),
+        CREATUREAI0_THINKS_PER_WINDOW
+    );
+    assert_eq!(channel.table.earliest_due(), Some(0));
+    assert!(
+        channel
+            .thinks(CREATUREAI0_THINK_WINDOW_MICROS - 1, false)
+            .is_empty()
+    );
+    assert_eq!(
+        channel.thinks(CREATUREAI0_THINK_WINDOW_MICROS, false).len(),
+        RATS - CREATUREAI0_THINKS_PER_WINDOW
+    );
+    assert!(
+        channel
+            .table
+            .earliest_due()
+            .is_none_or(|due| due >= 1_000_000)
+    );
+}
+
 /// SPAWN-CEILINGS-1 (Codex 4242808144): the wake's view box holds every cell a player sees, on
 /// every floor pair, VIS-1's 0..=15 and the source-world floors outside it.
 #[test]

@@ -160,17 +160,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &candidates,
             |destination| creature_cell_admissible(cells, &doors, destination),
         );
+        // CREATUREAI0-RL-05 (Codex 4243189401): thinks left due past this window's budget, or
+        // due before the next interval pass, run in a pass of their own as soon as the budget
+        // allows, not one think interval later. Such a pass only thinks: swings keep their one
+        // pass per think interval.
+        let swing_pass = now.get() >= melee_owner.next_swing_pass_us;
+        if swing_pass {
+            melee_owner.next_swing_pass_us = due;
+        }
+        let next_pass = next_monster_ai_pass_us(
+            now.get(),
+            melee_owner.next_swing_pass_us,
+            melee_owner.creature_ai.earliest_due(),
+        );
         // §2.1: only a monster whose think holds a target swings, in census order from the
         // cursor and at most `CREATUREAI0-RL-05` per pass. A creature that stepped swings from,
         // and is perceived at, its new cell.
         let swinging = monsters
             .iter()
             .filter(|(actor, ..)| {
-                melee_owner
-                    .creature_ai
-                    .state(*actor)
-                    .and_then(|state| state.target())
-                    .is_some()
+                swing_pass
+                    && melee_owner
+                        .creature_ai
+                        .state(*actor)
+                        .and_then(|state| state.target())
+                        .is_some()
             })
             .map(|(actor, position, _)| {
                 (
@@ -333,10 +347,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             attack.record_hit_taken(&runtime, player, session, semantic_now);
         }
         states.monster_melee = melee_owner;
+        states.next_monster_ai_pass_us = next_pass;
         if !swinging.is_empty() {
             states.monster_ai_cursor = (cursor + count) % swinging.len();
         }
     }
+}
+
+/// SPAWN-CEILINGS-1 (Codex 4243189401): when the coalesced pass after one at `now_us` runs. A
+/// pass runs at the next swing pass (`swing_due_us`, one `CREATURE_THINK_INTERVAL_MILLIS` after
+/// the last). When a think falls due sooner (`earliest_think_us`), the next pass runs at that
+/// time, and a think still due now, left over by the window's `CREATUREAI0-RL-05` budget, runs
+/// at the start of the next `CREATUREAI0_THINK_WINDOW_MICROS` window, whose budget is fresh. So a
+/// backlog of N due thinks takes ceil(N / 1,024) owner windows, not ceil(N / 1,024) think
+/// intervals, and a creature whose think was deferred is not delayed again by the pass cadence.
+fn next_monster_ai_pass_us(now_us: u64, swing_due_us: u64, earliest_think_us: Option<u64>) -> u64 {
+    let Some(earliest) = earliest_think_us else {
+        return swing_due_us;
+    };
+    let window = crate::ai_think::CREATUREAI0_THINK_WINDOW_MICROS;
+    let next_window = (now_us / window).saturating_add(1).saturating_mul(window);
+    earliest.max(next_window).min(swing_due_us)
 }
 
 /// SPAWN-CEILINGS-1 (Codex 4242381774): the swings of one pass over the `len` monsters whose
@@ -344,8 +375,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 /// left a Channel of hundreds of targeting monsters swinging once in dozens of passes: a pass
 /// swings every one of them up to `CREATUREAI0-RL-05`, and above it the cursor serves the rest
 /// first in the next passes. A swing is one evaluation of at most `CREATUREAI0-RL-06` units, and
-/// a pass runs once per `CREATURE_THINK_INTERVAL_MILLIS` (20 owner windows), so the swings stay
-/// within one window's think budget.
+/// a pass swings once per `CREATURE_THINK_INTERVAL_MILLIS` (20 owner windows; the passes between
+/// only run thinks left due, Codex 4243189401), so the swings stay within one window's think
+/// budget.
 fn swing_window(len: usize, cursor: usize) -> (usize, usize) {
     if len == 0 {
         return (0, 0);
@@ -628,6 +660,94 @@ mod tests {
         // Admission runs 4,200 ms after the warning (CREATURE-AI-0 §6.3).
         drive_owner_spawns(&mut runtime, due + 4_200_000);
         assert!(runtime.spawn_point_creatures()[0].2.is_some());
+    }
+
+    /// SPAWN-CEILINGS-1 (Codex 4243189401): thinks left due by `CREATUREAI0-RL-05` resume in the
+    /// next owner window, not one think interval later, and only one pass per interval swings.
+    #[test]
+    fn a_think_backlog_resumes_in_the_next_owner_window_and_swings_keep_their_interval() {
+        use crate::ai_think::{
+            CREATURE_THINK_INTERVAL_MILLIS, CREATUREAI0_THINK_WINDOW_MICROS,
+            CREATUREAI0_THINKS_PER_WINDOW,
+        };
+        let interval = CREATURE_THINK_INTERVAL_MILLIS * 1_000;
+        // No think pending sooner: the next swing pass.
+        assert_eq!(
+            next_monster_ai_pass_us(1_234_567, 2_234_567, None),
+            2_234_567
+        );
+        assert_eq!(
+            next_monster_ai_pass_us(1_234_567, 2_234_567, Some(2_234_567)),
+            2_234_567
+        );
+        // A think still due now: the start of the next owner window.
+        assert_eq!(
+            next_monster_ai_pass_us(1_234_567, 2_234_567, Some(1_000_000)),
+            1_250_000
+        );
+        assert_eq!(
+            next_monster_ai_pass_us(1_250_000, 2_234_567, Some(1_250_000)),
+            1_300_000
+        );
+        // A think due before the next swing pass: its own time.
+        assert_eq!(
+            next_monster_ai_pass_us(1_234_567, 2_234_567, Some(1_600_000)),
+            1_600_000
+        );
+        // N thinks due at once run 1,024 per owner window, oldest due first; each think is due
+        // again one interval later. Returns the passes until every first think ran, the last
+        // pass's time, the swing passes and the next pass after it.
+        let simulate = |total: usize| {
+            let mut due = std::collections::BTreeMap::from([(0_u64, total)]);
+            let (mut first, mut now, mut swing_due) = (total, 0_u64, 0_u64);
+            let (mut passes, mut swings) = (0_usize, 0_usize);
+            loop {
+                passes += 1;
+                if now >= swing_due {
+                    swing_due = now + interval;
+                    swings += 1;
+                }
+                let mut budget = CREATUREAI0_THINKS_PER_WINDOW;
+                while budget > 0 {
+                    let Some(mut entry) = due.first_entry() else {
+                        break;
+                    };
+                    if *entry.key() > now {
+                        break;
+                    }
+                    let (key, taken) = (*entry.key(), (*entry.get()).min(budget));
+                    *entry.get_mut() -= taken;
+                    if *entry.get() == 0 {
+                        entry.remove();
+                    }
+                    budget -= taken;
+                    if key == 0 {
+                        first -= taken;
+                    }
+                    *due.entry(now + interval).or_default() += taken;
+                }
+                let next = next_monster_ai_pass_us(now, swing_due, due.keys().next().copied());
+                if first == 0 {
+                    return (passes, now, swings, next);
+                }
+                assert_eq!(next, now + CREATUREAI0_THINK_WINDOW_MICROS);
+                now = next;
+            }
+        };
+        // 83,000 (an activation's worth): ceil(83,000 / 1,024) = 82 windows, about 4 s, not
+        // 82 s; swings stay one pass per interval (0, 1, 2, 3 and 4 s) and, with more due than
+        // RL-05 serves in an interval, the backlog keeps the next pass in the next window.
+        let (passes, now, swings, next) = simulate(83_000);
+        assert_eq!(passes, 83_000_usize.div_ceil(CREATUREAI0_THINKS_PER_WINDOW));
+        assert_eq!(now, 81 * CREATUREAI0_THINK_WINDOW_MICROS);
+        assert_eq!(swings, 5);
+        assert_eq!(next, now + CREATUREAI0_THINK_WINDOW_MICROS);
+        // 15,000: 15 windows, one swing, then the next pass is the first cohort's next think.
+        let (passes, now, swings, next) = simulate(15_000);
+        assert_eq!(passes, 15);
+        assert_eq!(now, 14 * CREATUREAI0_THINK_WINDOW_MICROS);
+        assert_eq!(swings, 1);
+        assert_eq!(next, interval);
     }
 
     /// SPAWN-CEILINGS-1 (Codex 4242381774): a pass swings every targeting monster up to

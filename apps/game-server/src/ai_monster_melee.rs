@@ -81,6 +81,10 @@ pub(crate) struct MonsterMeleeOwner {
     bites: CreatureBiteLedger,
     /// CREATURE-AI-1 §2.1: the Channel's creature thinks, which decide each swing's target.
     pub(crate) creature_ai: crate::ai_think::CreatureAiTable,
+    /// The first owner time of the next pass that swings (SPAWN-CEILINGS-1, Codex 4243189401):
+    /// swings keep one pass per `CREATURE_THINK_INTERVAL_MILLIS`, while the passes between them
+    /// only run thinks left due by `CREATUREAI0-RL-05`.
+    pub(crate) next_swing_pass_us: u64,
 }
 impl MonsterMeleeOwner {
     /// One scheduled owner think, at most one existing typed bite. The selected

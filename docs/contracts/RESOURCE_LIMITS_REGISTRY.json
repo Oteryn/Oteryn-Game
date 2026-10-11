@@ -9292,9 +9292,10 @@
         "max+1=1025: the 1,025th stays due and starts first in the next window"
       ],
       "consumers": [
-        "apps/game-server/src/ai_think.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due"
+        "apps/game-server/src/ai_think.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due",
+        "apps/game-server/src/gameplay_transport/monster_ai_cycle.rs next_monster_ai_pass_us: a pass leaving due thinks schedules the next pass in the next window"
       ],
-      "notes": "CREATURE-AI-1 \u00a71.3 and \u00a72.1. Test: apps/game-server/src/ai_think/think_tests.rs thinks_per_window_at_max_start_now_and_the_rest_next_window. Registered by OTV2-20261004-creature-ai-1."
+      "notes": "CREATURE-AI-1 \u00a71.3 and \u00a72.1. Test: apps/game-server/src/ai_think/think_tests.rs thinks_per_window_at_max_start_now_and_the_rest_next_window. Registered by OTV2-20261004-creature-ai-1. SPAWN-CEILINGS-1 (Codex 4243189401): the Channel owner's monster AI pass runs again at the start of the next window while thinks remain due (not one 1 s think interval later), and only one pass per interval swings; tests: monster_ai_cycle.rs a_think_backlog_resumes_in_the_next_owner_window_and_swings_keep_their_interval, foundation/channel_owner_creature_ai_tests.rs thinks_past_the_window_budget_stay_due_and_run_in_the_next_window."
     },
     {
       "id": "CREATUREAI0-RL-06",
