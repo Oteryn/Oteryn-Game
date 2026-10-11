@@ -58,8 +58,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // SPAWN-CEILINGS-1 (Codex 4242381774): no Channel-wide actor gate. The census holds at
         // most the carrier's slots, and the work below is budgeted per pass instead, so a Channel
         // past the old `AI01-ACTIVE-ACTORS` 256 keeps thinking and swinging.
-        let Ok(census) = runtime.positioned_melee_census() else {
-            return;
+        // Codex 4243397472: only a swing pass (one per think interval) takes the census and
+        // admits, forgets and wakes creatures. A pass between them only runs thinks left due by
+        // `CREATUREAI0-RL-05`, against the last swing pass's players at their current positions,
+        // so a think backlog costs each window its thinks, not a census of every actor.
+        let swing_pass = now.get() >= states.monster_melee.next_swing_pass_us;
+        let census = if swing_pass {
+            let Ok(census) = runtime.positioned_melee_census() else {
+                return;
+            };
+            census
+        } else {
+            think_player_census(&runtime, &states.monster_melee.think_players)
         };
         // ATTACK-1b: lock order runtime, spell states, attack.
         let mut attack = self.attack.lock().await;
@@ -70,7 +80,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .filter(|(_, _, session)| session.is_none())
             .collect::<Vec<_>>();
-        if monsters.is_empty() {
+        if swing_pass && monsters.is_empty() {
             return;
         }
         states.next_monster_ai_pass_us = due;
@@ -91,45 +101,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.monster_melee = melee_owner;
             return;
         };
-        // CREATURE-AI-1 §2.1: every qualified monster is admitted to the think table, which
-        // decides its target; the swing below only swings at that target. A monster already
-        // admitted is not qualified again.
-        for (actor, ..) in &monsters {
-            if melee_owner.creature_ai.state(*actor).is_some() {
-                continue;
+        if swing_pass {
+            melee_owner.think_players = census
+                .iter()
+                .filter_map(|(actor, _, session)| session.map(|session| (*actor, session)))
+                .collect();
+            // CREATURE-AI-1 §2.1: every qualified monster is admitted to the think table, which
+            // decides its target; the swing below only swings at that target. A monster already
+            // admitted is not qualified again.
+            for (actor, ..) in &monsters {
+                if melee_owner.creature_ai.state(*actor).is_some() {
+                    continue;
+                }
+                let Some(monster) = qualified_melee(&runtime, content, *actor) else {
+                    continue;
+                };
+                // The think projects targeting only: the swing stays this AI-4 owner's, and
+                // native content carries no Ability authoring for the think's proposals yet.
+                let mut targeting_only = monster.behavior.clone();
+                targeting_only.attacks.clear();
+                targeting_only.defenses.clear();
+                let _ = melee_owner.creature_ai.admit_creature(
+                    &runtime,
+                    *actor,
+                    Some(&targeting_only),
+                    &std::collections::BTreeMap::new(),
+                    now.get(),
+                );
             }
-            let Some(monster) = qualified_melee(&runtime, content, *actor) else {
-                continue;
-            };
-            // The think projects targeting only: the swing stays this AI-4 owner's, and native
-            // content carries no Ability authoring for the think's proposals yet.
-            let mut targeting_only = monster.behavior.clone();
-            targeting_only.attacks.clear();
-            targeting_only.defenses.clear();
-            let _ = melee_owner.creature_ai.admit_creature(
-                &runtime,
-                *actor,
-                Some(&targeting_only),
-                &std::collections::BTreeMap::new(),
-                now.get(),
-            );
+            // An idle creature that died or despawned has no due think to remove it.
+            melee_owner.creature_ai.forget_dead(&runtime);
         }
-        // An idle creature that died or despawned has no due think to remove it.
-        melee_owner.creature_ai.forget_dead(&runtime);
         if melee_owner.creature_ai.is_empty() {
             states.monster_melee = melee_owner;
             return;
         }
-        // §2.1 item 1: players wake the idle creatures they see; a creature already thinking is
-        // unaffected. One indexed pass for all players (Codex 4242808144): its work does not grow
-        // with players times creatures.
-        let players = targets
-            .iter()
-            .map(|(player, ..)| *player)
-            .collect::<Vec<_>>();
-        let _ = melee_owner
-            .creature_ai
-            .wake_for_players(&runtime, &players, now.get());
+        if swing_pass {
+            // §2.1 item 1: players wake the idle creatures they see; a creature already thinking
+            // is unaffected. One indexed pass for all players (Codex 4242808144): its work does
+            // not grow with players times creatures.
+            let players = targets
+                .iter()
+                .map(|(player, ..)| *player)
+                .collect::<Vec<_>>();
+            let _ = melee_owner
+                .creature_ai
+                .wake_for_players(&runtime, &players, now.get());
+        }
         // §2.1 item 3: protected players are ineligible, and invisible ones to a creature that
         // does not sense invisibility. The native artifact carries no player vitals or damage
         // contributors yet, so the strategies that read them see equal candidates.
@@ -152,7 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // Every door cell, open or closed: a creature never stands in a doorway (CREATURE-DOOR-1).
         let doors = self.door.lock().await.collision_cells().clone();
         let cells = room.movement_cells();
-        let _ = melee_owner.creature_ai.run_due_thinks(
+        let (_, next_think) = melee_owner.creature_ai.run_due_thinks_until_next(
             &mut runtime,
             now.get(),
             &GameplayDecisionRoot::from_bytes(content.source_digest()),
@@ -164,15 +182,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // due before the next interval pass, run in a pass of their own as soon as the budget
         // allows, not one think interval later. Such a pass only thinks: swings keep their one
         // pass per think interval.
-        let swing_pass = now.get() >= melee_owner.next_swing_pass_us;
         if swing_pass {
             melee_owner.next_swing_pass_us = due;
         }
-        let next_pass = next_monster_ai_pass_us(
-            now.get(),
-            melee_owner.next_swing_pass_us,
-            melee_owner.creature_ai.earliest_due(),
-        );
+        let next_pass =
+            next_monster_ai_pass_us(now.get(), melee_owner.next_swing_pass_us, next_think);
         // §2.1: only a monster whose think holds a target swings, in census order from the
         // cursor and at most `CREATUREAI0-RL-05` per pass. A creature that stepped swings from,
         // and is perceived at, its new cell.
@@ -352,6 +366,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.monster_ai_cursor = (cursor + count) % swinging.len();
         }
     }
+}
+
+/// SPAWN-CEILINGS-1 (Codex 4243397472): the census of a pass between swing passes: the last swing
+/// pass's `players` whose position still reads, in that census's order. Such a pass only runs
+/// thinks, so it needs no creature rows; `melee_targets` still checks each player's session,
+/// vitals, invisibility and protection now. It reads one position per player, not every actor.
+fn think_player_census(
+    runtime: &ChannelRuntimeV1,
+    players: &[(ExactActorRef, GameSessionId)],
+) -> Vec<(
+    ExactActorRef,
+    MovementPositionSnapshot,
+    Option<GameSessionId>,
+)> {
+    players
+        .iter()
+        .filter_map(|(actor, session)| {
+            let position = runtime.read_actor_position(*actor).ok()?;
+            Some((*actor, position, Some(*session)))
+        })
+        .collect()
 }
 
 /// SPAWN-CEILINGS-1 (Codex 4243189401): when the coalesced pass after one at `now_us` runs. A

@@ -85,6 +85,10 @@ pub(crate) struct MonsterMeleeOwner {
     /// swings keep one pass per `CREATURE_THINK_INTERVAL_MILLIS`, while the passes between them
     /// only run thinks left due by `CREATUREAI0-RL-05`.
     pub(crate) next_swing_pass_us: u64,
+    /// The players of the last swing pass's census, by actor and session (SPAWN-CEILINGS-1,
+    /// Codex 4243397472). A pass between swing passes reads only these players' current
+    /// positions instead of a census of every actor; at most one entry per present player.
+    pub(crate) think_players: Vec<(ExactActorRef, GameSessionId)>,
 }
 impl MonsterMeleeOwner {
     /// One scheduled owner think, at most one existing typed bite. The selected

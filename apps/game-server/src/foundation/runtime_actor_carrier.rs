@@ -1542,6 +1542,13 @@ const fn spawn_activation_player_headroom(capacity: usize) -> usize {
 /// pending and run first in the next window, by deadline then point.
 pub(crate) const SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX: usize = 32;
 
+/// SPAWN-CEILINGS-1 (Codex 4243397472): realized points one owner window's gone scan reads,
+/// from a cursor kept across windows (canonical order, wrapping), at the activation's
+/// `CREATUREAI0-RL-14` rate. A Channel of at most this many points is read whole every window,
+/// as before; a larger one is read once per `ceil(points / 4,096)` windows, so a death is
+/// observed at most 32 windows (1.6 s) later at the 131,072-point ceiling.
+pub(crate) const SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX: usize = spawn::REALIZATIONS_PER_WINDOW_MAX;
+
 /// `AI01-SPAWN-SOURCES-PER-SCOPE` and `AI01-SPAWN-POPULATION` (AI-RL-11, D57): the first
 /// slice's 16 sources × 4 creatures = 64-creature envelope. Spawn realization no longer reads
 /// them (CREATURE-AI-0 §10 replaced them by the `CREATUREAI0_SPAWN_*` rows above), and neither
@@ -1940,12 +1947,23 @@ pub(crate) struct ChannelRuntimeV1 {
     owner_cycle: super::ScopeRuntimeFence,
     /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
     spawn_schedule: spawn::RespawnSchedule,
+    /// SPAWN-CEILINGS-1 (Codex 4243397472): the occurrences of `spawn_schedule` by (deadline,
+    /// point), written with every schedule write, so a drive reads only the occurrences it runs
+    /// (`O(log n)` each) instead of collecting and sorting every due occurrence.
+    spawn_deadlines: BTreeSet<(u64, spawn::SpawnPoint)>,
+    /// SPAWN-CEILINGS-1 (Codex 4243397472): the first point the next gone scan reads
+    /// ([`SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX`] per owner window, wrapping).
+    spawn_scan_cursor: spawn::SpawnPoint,
     /// SPAWN-CEILINGS-1: an activation larger than one owner window, realized one window per
     /// owner window (`CREATUREAI0-RL-14`); `None` when no activation is in progress.
     spawn_activation: Option<Box<SpawnActivation>>,
-    /// SPAWN-CEILINGS-1: the owner window of the last full spawn scan and the occurrences due
-    /// within it, so the scan runs once per Channel window, not once per drive.
+    /// SPAWN-CEILINGS-1: the owner window of the last gone scan and its remaining step budget,
+    /// so the scan runs once per Channel window, not once per drive.
     spawn_drive_window: Option<SpawnDriveWindow>,
+    /// Test only: the spawn records the respawn drives read (gone-scan points and deadline
+    /// entries), to prove the work per owner window is bounded.
+    #[cfg(test)]
+    spawn_drive_visits: usize,
 }
 
 /// SPAWN-CEILINGS-1 (CREATURE-AI-0 §6.2, `CREATUREAI0-RL-14`): an activation in progress: its
@@ -2017,16 +2035,12 @@ pub(crate) struct SpawnActivationProgress {
     pub(crate) remaining: usize,
 }
 
-/// SPAWN-CEILINGS-1: one owner window of the respawn drive. The first drive of a window scans
-/// every realized point once and takes the occurrences due by the window's end; later drives
-/// of the same window only run those occurrences as their deadlines pass.
+/// SPAWN-CEILINGS-1: one owner window of the respawn drive. The first drive of a window runs
+/// the window's gone scan; every drive of it then runs the occurrences whose deadlines have
+/// passed, from the deadline index, within the window's step budget.
 #[derive(Debug)]
 struct SpawnDriveWindow {
     window: u64,
-    /// The last owner microsecond of `window`.
-    horizon: u64,
-    /// Occurrences due by `horizon`, by deadline then point.
-    due: std::collections::VecDeque<(spawn::SpawnPoint, spawn::PendingRespawn)>,
     /// Steps this window may still run ([`SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX`]).
     steps_left: usize,
 }
@@ -2110,8 +2124,15 @@ impl ChannelRuntimeV1 {
             owner_cycle: super::ScopeRuntimeFence::from_external_grant(scope_generation)
                 .with_scope(super::RuntimeScopeRefV1::channel(world_id, channel_id)),
             spawn_schedule: spawn::RespawnSchedule::default(),
+            spawn_deadlines: BTreeSet::new(),
+            spawn_scan_cursor: spawn::SpawnPoint {
+                source: 0,
+                ordinal: 0,
+            },
             spawn_activation: None,
             spawn_drive_window: None,
+            #[cfg(test)]
+            spawn_drive_visits: 0,
         })
     }
 
@@ -3088,6 +3109,19 @@ impl ChannelRuntimeV1 {
         self.spawn_schedule.pending(point)
     }
 
+    /// Test only: the spawn records read by the drives since the last call (gone-scan points
+    /// and deadline entries), and whether the deadline index still equals the schedule.
+    #[cfg(test)]
+    pub(crate) fn take_spawn_drive_visits(&mut self) -> (usize, bool) {
+        let consistent = self.spawn_deadlines.len() == self.spawn_schedule.len()
+            && self.spawn_deadlines.iter().all(|&(due_micros, point)| {
+                self.spawn_schedule
+                    .pending(point)
+                    .is_some_and(|pending| pending.due_micros == due_micros)
+            });
+        (std::mem::take(&mut self.spawn_drive_visits), consistent)
+    }
+
     /// SPAWN-1a (CREATURE-AI-0 §6.3): one respawn drive at owner time `now_micros`, run from the
     /// Channel owner's creature pass. A point whose creature is gone (observed at the first
     /// drive of an owner window) gets its one occurrence one full delay later; due occurrences
@@ -3095,10 +3129,9 @@ impl ChannelRuntimeV1 {
     /// only), else the warning and admission 4,200 ms later; an occupied cell runs the Occupied
     /// chain. Nothing runs while an activation is in progress.
     ///
-    /// SPAWN-CEILINGS-1: the owner drives this once per connected session, so the full pass
-    /// (every realized point and every pending occurrence) is coalesced per Channel: it runs on
-    /// the first drive of each owner window ([`spawn::OWNER_WINDOW_MICROS`]) and keeps the
-    /// occurrences due by that window's end. A later drive of the same window costs only the
+    /// SPAWN-CEILINGS-1: the owner drives this once per connected session, so the gone scan is
+    /// coalesced per Channel: it runs on the first drive of each owner window
+    /// ([`spawn::OWNER_WINDOW_MICROS`]). A later drive of the same window costs only the
     /// occurrences whose deadline it reaches, each still run at its exact deadline.
     ///
     /// SPAWN-CEILINGS-1 (Codex 4242270322): one window runs at most
@@ -3108,6 +3141,12 @@ impl ChannelRuntimeV1 {
     /// the present players once per drive (only their positions, from the occupied index),
     /// checks the cell once and admits without snapshotting the slots
     /// ([`ChannelActorCarrier::respawn_into_free_cell`]).
+    ///
+    /// SPAWN-CEILINGS-1 (Codex 4243397472): the due occurrences are read from the deadline
+    /// index (`spawn_deadlines`) one at a time, at most the window's steps, and the gone scan
+    /// reads at most [`SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX`] points from its cursor, so a
+    /// window reads at most 4,096 points and 32 index entries however large the backlog: with
+    /// 131,072 occurrences due, no window collects or sorts them.
     ///
     /// `sees(observer, cell)` is the reference view (MOVE-RL-11) the owner supplies.
     pub(crate) fn drive_spawn_respawns(
@@ -3128,34 +3167,40 @@ impl ChannelRuntimeV1 {
             .is_none_or(|current| window > current.window)
         {
             self.scan_spawn_points(now_micros)?;
-            let horizon = (window * spawn::OWNER_WINDOW_MICROS)
-                .saturating_add(spawn::OWNER_WINDOW_MICROS - 1);
             self.spawn_drive_window = Some(SpawnDriveWindow {
                 window,
-                horizon,
-                due: self.spawn_schedule.due(horizon).into(),
                 steps_left: SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX,
             });
         }
         let context = self.pinned_position_context();
         // The present players' positions, read on the first blockable step of this drive.
         let mut players: Option<Vec<MovementLocalPosition>> = None;
-        while let Some(drive_window) = self.spawn_drive_window.as_ref() {
-            let horizon = drive_window.horizon;
-            let steps_left = drive_window.steps_left;
-            let Some(&(point, pending)) = drive_window.due.front() else {
+        // The window's step budget is checked first, so a drive past it reads no entry.
+        while self
+            .spawn_drive_window
+            .as_ref()
+            .is_some_and(|drive_window| drive_window.steps_left > 0)
+        {
+            let Some(&(due_micros, point)) = self.spawn_deadlines.first() else {
                 break;
             };
-            if pending.due_micros > now_micros {
+            #[cfg(test)]
+            {
+                self.spawn_drive_visits += 1;
+            }
+            if due_micros > now_micros {
                 break;
             }
-            if self.spawn_schedule.pending(point) != Some(pending) {
-                self.pop_spawn_drive_due();
+            let Some(pending) = self
+                .spawn_schedule
+                .pending(point)
+                .filter(|pending| pending.due_micros == due_micros)
+            else {
+                // Not reached: the index is written with every schedule write. An entry the
+                // schedule no longer holds would be dropped once.
+                self.spawn_deadlines.pop_first();
                 continue;
-            }
-            if steps_left == 0 {
-                break;
-            }
+            };
             let timing = self.spawn_timing(point)?;
             let cell = self.spawn_cell(point)?;
             let outcome = match pending.step {
@@ -3206,19 +3251,14 @@ impl ChannelRuntimeV1 {
                 }
             }
             .map_err(|_| CarrierError::CapacityArithmeticOverflow)?;
-            self.pop_spawn_drive_due();
             if let Some(drive_window) = self.spawn_drive_window.as_mut() {
                 drive_window.steps_left -= 1;
             }
-            // A successor due within this window joins its queue in deadline order.
-            if let Some(next) = self.spawn_schedule.pending(point)
-                && next.due_micros <= horizon
-                && let Some(drive_window) = self.spawn_drive_window.as_mut()
-            {
-                let at = drive_window.due.partition_point(|(queued, due)| {
-                    (due.due_micros, *queued) < (next.due_micros, point)
-                });
-                drive_window.due.insert(at, (point, next));
+            // The index follows the step: an admitted occurrence leaves it, any other moves to
+            // its next deadline (a successor due within this window runs in it, in order).
+            self.spawn_deadlines.remove(&(due_micros, point));
+            if let Some(next) = self.spawn_schedule.pending(point) {
+                self.spawn_deadlines.insert((next.due_micros, point));
             }
             match outcome {
                 RespawnOutcome::Warned { .. } => report.warnings.push(cell),
@@ -3231,38 +3271,66 @@ impl ChannelRuntimeV1 {
         Ok(report)
     }
 
-    fn pop_spawn_drive_due(&mut self) {
-        if let Some(drive_window) = self.spawn_drive_window.as_mut() {
-            drive_window.due.pop_front();
-        }
-    }
-
-    /// Gone detection, once per owner window: walks the realized points in place, already in
-    /// canonical order (sources ascending, cells by ordinal), with no allocation or sort and
-    /// one generation-exact liveness read per point. A gone creature's point without an
-    /// occurrence gets one, one full delay after `now_micros`.
+    /// Gone detection, once per owner window: reads at most
+    /// [`SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX`] realized points in place, from the cursor in
+    /// canonical order (sources ascending, cells by ordinal, wrapping) and never one twice, with
+    /// no allocation or sort and one generation-exact liveness read per point. A gone creature's
+    /// point without an occurrence gets one, one full delay after `now_micros`, and enters the
+    /// deadline index. The cursor resumes at the first point at or after where it stopped, so a
+    /// source added or removed meanwhile neither repeats nor skips the others.
     fn scan_spawn_points(&mut self, now_micros: u64) -> Result<(), CarrierError> {
-        for spawn in &self.carrier.spawns {
-            let timing = spawn.definition.timing();
-            for (index, state) in spawn.cells.iter().enumerate() {
-                if state
-                    .live
-                    .is_some_and(|actor| self.carrier.creature_alive(&self.continuity, actor))
-                {
-                    continue;
-                }
-                let ordinal = u8::try_from(index).map_err(|_| CarrierError::CapacityExceeded)?;
-                let point = spawn::SpawnPoint {
-                    source: spawn.source.0,
-                    ordinal,
-                };
-                if self.spawn_schedule.pending(point).is_none() {
-                    self.spawn_schedule
-                        .creature_gone(point, timing, now_micros)
-                        .map_err(|_| CarrierError::CapacityExceeded)?;
-                }
+        let spawns = &self.carrier.spawns;
+        let Some(last_source) = spawns.len().checked_sub(1) else {
+            return Ok(());
+        };
+        let cursor = self.spawn_scan_cursor;
+        let mut source = spawns.partition_point(|spawn| spawn.source.0 < cursor.source);
+        let mut cell = match spawns.get(source) {
+            Some(spawn) if spawn.source.0 == cursor.source => usize::from(cursor.ordinal),
+            _ => 0,
+        };
+        if source > last_source {
+            (source, cell) = (0, 0);
+        }
+        if cell >= spawns[source].cells.len() {
+            (source, cell) = (if source == last_source { 0 } else { source + 1 }, 0);
+        }
+        let start = (source, cell);
+        let mut read = 0_usize;
+        while read < SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX {
+            let spawn = &spawns[source];
+            read += 1;
+            #[cfg(test)]
+            {
+                self.spawn_drive_visits += 1;
+            }
+            let gone = !spawn.cells[cell]
+                .live
+                .is_some_and(|actor| self.carrier.creature_alive(&self.continuity, actor));
+            let point = spawn::SpawnPoint {
+                source: spawn.source.0,
+                ordinal: u8::try_from(cell).map_err(|_| CarrierError::CapacityExceeded)?,
+            };
+            if gone && self.spawn_schedule.pending(point).is_none() {
+                let due_micros = self
+                    .spawn_schedule
+                    .creature_gone(point, spawn.definition.timing(), now_micros)
+                    .map_err(|_| CarrierError::CapacityExceeded)?;
+                self.spawn_deadlines.insert((due_micros, point));
+            }
+            cell += 1;
+            if cell == spawn.cells.len() {
+                (source, cell) = (if source == last_source { 0 } else { source + 1 }, 0);
+            }
+            if (source, cell) == start {
+                break;
             }
         }
+        let next = &spawns[source];
+        self.spawn_scan_cursor = spawn::SpawnPoint {
+            source: next.source.0,
+            ordinal: u8::try_from(cell).map_err(|_| CarrierError::CapacityExceeded)?,
+        };
         Ok(())
     }
 
@@ -8452,6 +8520,94 @@ mod tests {
         }
         // The dead creatures are gone: the occupied index holds exactly the respawned ones.
         assert_eq!(runtime.carrier.occupied.len(), total);
+    }
+
+    /// SPAWN-CEILINGS-1 (Codex 4243397472): with all 131,072 creatures of a Channel dead at once,
+    /// each owner window reads at most [`SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX`] points and
+    /// [`SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX`] deadline entries, however many drives it gets:
+    /// the gone scan observes the deaths 4,096 per window from its cursor, and once the whole
+    /// backlog is due each window runs its 32 steps by deadline then point without collecting
+    /// or sorting the backlog. The deadline index equals the schedule after every window.
+    #[test]
+    fn a_131_072_death_backlog_reads_bounded_spawn_records_per_owner_window() {
+        let total = CREATUREAI0_SPAWN_POINTS_PER_CHANNEL_MAX;
+        let per_source = CREATUREAI0_SPAWN_POINTS_PER_SOURCE_MAX;
+        let mut runtime = runtime(total + SPAWN_ACTIVATION_PLAYER_HEADROOM);
+        let definitions = (0..total / per_source)
+            .map(|_| row_definition(0, per_source))
+            .collect();
+        let (realized, activation_windows) = realize_in_owner_windows(&mut runtime, definitions);
+        assert_eq!(realized, total);
+        let points = runtime.spawn_point_creatures();
+        for (_, _, live) in &points {
+            kill_creature(&mut runtime, live.expect("realized creature"));
+        }
+        let window_reads =
+            SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX + SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX;
+        let window_micros = spawn::OWNER_WINDOW_MICROS;
+        let start = u64::try_from(activation_windows).expect("small") * window_micros;
+        let drive_window = |runtime: &mut ChannelRuntimeV1, now: u64| {
+            let report = runtime
+                .drive_spawn_respawns(now, reference_view)
+                .expect("drive");
+            // Another session's drive in the same window runs nothing more.
+            assert_eq!(
+                runtime.drive_spawn_respawns(now + 1, reference_view),
+                Ok(SpawnDriveReport::default())
+            );
+            let (visits, consistent) = runtime.take_spawn_drive_visits();
+            assert!(consistent, "the deadline index equals the schedule");
+            assert!(
+                visits <= window_reads,
+                "{visits} records read in one window"
+            );
+            report
+        };
+        // The gone scan: 4,096 deaths observed per window, 32 windows for the whole Channel.
+        let scan_windows = total / SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX;
+        assert_eq!(scan_windows, 32);
+        let _ = runtime.take_spawn_drive_visits();
+        for window in 0..scan_windows {
+            let now = start + u64::try_from(window).expect("small") * window_micros;
+            assert_eq!(drive_window(&mut runtime, now), SpawnDriveReport::default());
+            assert_eq!(
+                runtime.spawn_schedule.len(),
+                (window + 1) * SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX
+            );
+        }
+        for (index, (point, _, _)) in points.iter().enumerate() {
+            let window =
+                u64::try_from(index / SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX).expect("small");
+            assert_eq!(
+                runtime
+                    .pending_respawn(*point)
+                    .map(|pending| pending.due_micros),
+                Some(start + window * window_micros + SPAWN_DELAY)
+            );
+        }
+        // The whole backlog is due: each window warns 32 points, oldest deadline first.
+        let mut now =
+            start + u64::try_from(scan_windows).expect("small") * window_micros + SPAWN_DELAY;
+        for window in 0..64 {
+            let report = drive_window(&mut runtime, now);
+            assert_eq!(report.warnings.len(), SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX);
+            assert!(report.admitted.is_empty());
+            now += window_micros;
+            let warned = (window + 1) * SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX;
+            assert_eq!(
+                runtime
+                    .pending_respawn(points[warned - 1].0)
+                    .map(|pending| pending.step),
+                Some(spawn::RespawnStep::Admit)
+            );
+            assert_eq!(
+                runtime
+                    .pending_respawn(points[warned].0)
+                    .map(|pending| pending.step),
+                Some(spawn::RespawnStep::Due)
+            );
+        }
+        assert_eq!(runtime.spawn_schedule.len(), total);
     }
 
     /// The single-source path enforces `CREATUREAI0-RL-01` against the points already

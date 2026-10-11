@@ -620,6 +620,70 @@ fn thinks_past_the_window_budget_stay_due_and_run_in_the_next_window() {
     );
 }
 
+/// SPAWN-CEILINGS-1 (Codex 4243397472): the owner's bounded selection takes exactly the thinks
+/// `take_due`'s full sort takes, in the same order and against the same window budget, and
+/// reports the earliest think it left; after a pass, the reported next think is the table's
+/// `earliest_due`, so the owner needs no second walk of the table.
+#[test]
+fn the_bounded_think_selection_equals_the_full_sort_and_reports_the_next_think() {
+    use crate::ai_think::{CREATUREAI0_THINK_WINDOW_MICROS, CREATUREAI0_THINKS_PER_WINDOW};
+    const RATS: usize = 1_500;
+    let due_of = |index: usize| u64::try_from((index * 7) % 3).expect("small") * 20_000;
+    let channel_of = || {
+        let mut channel = Channel::with_capacity(RATS + 1);
+        for index in 0..RATS {
+            let x = 200 + 2 * i32::try_from(index % 100).expect("x");
+            let y = 300 + 2 * i32::try_from(index / 100).expect("y");
+            channel.admit(at(x, y), due_of(index));
+        }
+        channel
+    };
+    let mut sorted = channel_of();
+    let mut bounded = channel_of();
+    for now in [
+        45_000,
+        45_001,
+        CREATUREAI0_THINK_WINDOW_MICROS,
+        CREATUREAI0_THINK_WINDOW_MICROS + 30_000,
+    ] {
+        let expected = sorted.table.take_due(now);
+        let (taken, rest) = bounded.table.take_due_bounded(now);
+        assert_eq!(taken, expected, "selection at {now}");
+        let left = (0..RATS)
+            .map(due_of)
+            .filter(|due| *due <= now)
+            .count()
+            .saturating_sub(taken.len());
+        if now == 45_000 {
+            assert_eq!(taken.len(), CREATUREAI0_THINKS_PER_WINDOW);
+            assert_eq!(rest, Some(40_000), "the earliest think left at {now}");
+        } else {
+            assert!(left == 0 || rest.is_some(), "{left} thinks left unreported");
+        }
+    }
+
+    let mut channel = channel_of();
+    let players = [TargetCandidate {
+        actor: channel.player,
+        position: channel.position(channel.player),
+        eligible: true,
+        invisible: false,
+        health: 100,
+        damage: 0,
+    }];
+    for now in [0, 20_000, 45_000, CREATUREAI0_THINK_WINDOW_MICROS] {
+        let (_, next) = channel.table.run_due_thinks_until_next(
+            &mut channel.runtime,
+            now,
+            &channel.root,
+            &channel.revisions,
+            &players,
+            |_| false,
+        );
+        assert_eq!(next, channel.table.earliest_due(), "next think after {now}");
+    }
+}
+
 /// SPAWN-CEILINGS-1 (Codex 4242808144): the wake's view box holds every cell a player sees, on
 /// every floor pair, VIS-1's 0..=15 and the source-world floors outside it.
 #[test]

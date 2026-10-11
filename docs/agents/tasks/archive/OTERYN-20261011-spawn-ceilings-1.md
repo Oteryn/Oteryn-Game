@@ -143,6 +143,19 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   only think. Tested: 1,500 due rats think 1,024 at 0 and 476 at 50 ms; 83,000 first thinks
   run in 82 passes 50 ms apart, oldest due first, with swing passes at 0, 1, 2, 3 and 4 s;
   15,000 run in 15 passes and the next pass is the first cohort's next think at 1 s.
+- Per-window work under a backlog (Codex 4243397472): no owner window scans, collects or sorts
+  every pending record. The respawn drive takes its steps from a deadline index
+  (`spawn_deadlines`, ordered by due time then spawn point, kept equal to the schedule), so a
+  window reads at most 32 index records for its steps; the gone scan reads at most
+  `SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX` (RL-14's 4,096) points from a persisted cursor that
+  wraps in canonical order. The monster AI's think selection keeps a heap bounded by the
+  window's remaining RL-05 budget (`take_due_bounded`, the same order as `take_due`) and
+  takes the next pass time from it; a backlog pass between swing passes skips the census,
+  admission, `forget_dead` and the wake and reuses the last swing pass's players with fresh
+  positions. Tested: a 131,072-death backlog reads at most 4,096 + 32 spawn records per
+  window (counted, not timed) through 32 scan windows and 64 step windows, with the index
+  equal to the schedule after every window; the bounded selection equals `take_due` on 1,500
+  rats with mixed dues, and the reported next think equals `earliest_due`.
 
 ## Implementation / findings
 
@@ -173,7 +186,9 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   the window pop only the occurrences whose deadline they reach, each still run at its exact
   microsecond, and successors due inside the window are inserted in order. A death is now
   observed at the first drive of the next owner window (up to 50 ms later than before; the
-  occurrence is still due one full delay after its observation).
+  occurrence is still due one full delay after its observation). Superseded by Codex
+  4243397472 below: the per-window queue and `RespawnSchedule::due` are replaced by a deadline
+  index and a bounded gone-scan cursor.
 - Player headroom (review round on #1984): the pre-production carrier capacity
   (`PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY`, 131,072, `node/config.rs`) equals
   `CREATUREAI0-RL-01`, so a maximum activation filled every slot and `reserve_player`
@@ -209,6 +224,7 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
     up to 130,572 creatures); `remove_all` now removes them and drops their slots from the
     occupied index and the attacker leases in one pass each;
   - gone scan and `RespawnSchedule::due`: O(points) once per owner window (coalesced);
+    since Codex 4243397472 at most 4,096 points and 32 deadline-index records per window;
   - respawn steps: bounded as above; a removal is one pass over the occupied index;
   - player admission (`reserve_player`, `commit_reserved_player`): O(1) free-list admission,
     no scan; the headroom keeps 500 slots for it;
@@ -278,7 +294,31 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
   20,480 thinks per second, so with more thinking monsters than that each thinks less than once
   per second (oldest due first) and passes stay 50 ms apart; that is the RL-05 budget, not
   changed here. Without a backlog the earliest due think equals the swing pass, so the cadence
-  is unchanged.
+  is unchanged. Superseded in part by Codex 4243397472 below.
+- Per-window scans (Codex 4243397472, with an adversarial pass over every spawn, respawn,
+  retire and monster-AI path of this PR). Fixed here, because this PR introduced them:
+  - `RespawnSchedule::due` scanned, collected and sorted every due occurrence each window
+    while running only 32: replaced in the drive by `spawn_deadlines`, a
+    `BTreeSet<(due, SpawnPoint)>` beside the schedule (`ai/spawn.rs` is not owned here, so the
+    index lives in the carrier; the schedule changes only in the gone scan and the drive's two
+    step calls, which update it). Per window O(32 log n).
+  - the gone scan read every realized point every window: now a cursor of at most 4,096
+    points per window (RL-14's rate). At 131,072 points a death is observed up to 32 windows
+    (1.6 s) later; at 4,096 points or fewer, unchanged.
+  - the 50 ms backlog passes this PR added (Codex 4243189401) ran the census, admission,
+    `forget_dead`, the wake and `earliest_due` over every creature each window, and
+    `take_due` sorted every due think: backlog passes now skip the census, admission,
+    `forget_dead` and the wake, and the selection keeps a heap bounded by the window budget.
+  Not fixed here, named follow-ups (existing before this PR, or needing paths it does not own):
+  - CREATURE-THINK-DUE-INDEX-1: the selection is still one read-only O(table) walk per pass;
+    a due index inside `CreatureAiTable` (`ai_think.rs`, not owned) would make it
+    O(1,024 log n). `take_due` keeps its sort for its own tests.
+  - CREATURE-POSITION-INDEX-1 (already owner-assigned): `cell_occupied` is O(slots) per Admit
+    step (in base); `present_player_positions` is O(occupied) once per drive with a blockable
+    step (≤ 32 per window); `unindex_occupied` and `attackers.retain` are O(occupied) per
+    removal; the swing-pass census copies and sorts the occupied index once per second.
+  - A Channel with players and no monsters runs the census on every drive, because the pass
+    time is not advanced when there are no monsters (in base).
 - At reference scale the 64-entry corpse projection FIFO may evict before a lost-response
   replay; that is an owner question, not changed here.
 - The test-only cheese source uses `SpawnSourceId(u16::MAX)`; at 65,536 realized sources it
@@ -350,6 +390,13 @@ cells. Spawn realization reads the registered CREATURE-AI-0 §10 rows: `CREATURE
     -p oteryn-game-server --no-run --locked` pass (after a WSL restart truncated one
     build artifact, which was removed and rebuilt); governance validation and `tools/agents/tests`
     pass
+  - Per-window scan round (Codex 4243397472), in the session container (Rust 1.94.0) on the
+    exact tree committed (the owner's PC did not answer; the same commands): `cargo fmt --all
+    --check` pass; `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`
+    pass; `cargo test --locked -p oteryn-game-server --lib` pass (2,766 passed, 0 failed, 28
+    ignored; the first run ran out of container disk while linking and was rerun); governance
+    validation and `tools/agents/tests` (60) pass. `--no-run` of the integration targets is
+    left to CI (clippy `--all-targets` compiled them)
 - Earlier round: `cargo fmt --all --check`, `python tools/agents/validate_governance.py` and
   `python -m unittest discover -s tools/agents/tests`: pass
 

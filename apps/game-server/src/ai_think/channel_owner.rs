@@ -6,12 +6,13 @@
 //! The table is held beside `ChannelRuntimeV1` by its owner rather than inside `foundation`:
 //! standalone test crates path-include `foundation/mod.rs` without `ai_think`/`content`.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 
 use super::behaviour_profile::{CreatureBehaviourProfile, ProfileRefusal};
 use super::targeting::{self, TargetCandidate};
 use super::{
-    CREATUREAI1_WAKE_CANDIDATES, CreatureAiState, CreatureAiTable, CreatureThinkFacts, ThinkReport,
+    CREATUREAI0_THINK_WINDOW_MICROS, CREATUREAI0_THINKS_PER_WINDOW, CREATUREAI1_WAKE_CANDIDATES,
+    CreatureAiState, CreatureAiTable, CreatureThinkFacts, ThinkReport,
 };
 use crate::ability::RevisionSet;
 use crate::content::{
@@ -156,6 +157,52 @@ impl CreatureAiTable {
         (woken, examined)
     }
 
+    /// The thinks to start at `now_us` under `CREATUREAI0-RL-05`, in (due, placement) order,
+    /// each counted against the window, and the earliest due think left in the table
+    /// (SPAWN-CEILINGS-1, Codex 4243397472). The same selection as `take_due`, but one read-only
+    /// walk of the table keeps only the window's remaining budget in a bounded heap: it neither
+    /// collects nor sorts every due think, so a backlog of n due thinks costs a window
+    /// `O(n log 1,024)` reads and `O(1,024)` memory instead of an `O(n log n)` sort of n.
+    pub(crate) fn take_due_bounded(&mut self, now_us: u64) -> (Vec<ExactActorRef>, Option<u64>) {
+        let window = now_us / CREATUREAI0_THINK_WINDOW_MICROS;
+        if self.window != Some(window) {
+            self.window = Some(window);
+            self.window_started = 0;
+        }
+        let budget = CREATUREAI0_THINKS_PER_WINDOW.saturating_sub(self.window_started);
+        let mut taken = BinaryHeap::with_capacity(budget.min(self.entries.len()));
+        let mut rest: Option<u64> = None;
+        let mut leave = |due: u64| rest = Some(rest.map_or(due, |rest| rest.min(due)));
+        for (identity, entry) in &self.entries {
+            let Some(due) = entry.due_us else {
+                continue;
+            };
+            if due > now_us {
+                leave(due);
+                continue;
+            }
+            let key = (due, *identity);
+            if taken.len() < budget {
+                taken.push(key);
+            } else if taken.peek().is_some_and(|latest| key < *latest) {
+                if let Some((left, _)) = taken.pop() {
+                    leave(left);
+                }
+                taken.push(key);
+            } else {
+                leave(due);
+            }
+        }
+        let taken = taken.into_sorted_vec();
+        self.window_started += taken.len();
+        let actors = taken
+            .iter()
+            .filter_map(|(_, identity)| self.entries.get(identity))
+            .map(|entry| entry.state.actor())
+            .collect();
+        (actors, rest)
+    }
+
     /// Runs the thinks due at `now_us` within `CREATUREAI0-RL-05`. `players` are the Channel's
     /// player candidates with the owner's eligibility facts; `walkable` is the map's admission of
     /// a cell. A dead or despawned creature leaves the table. Each step is committed here.
@@ -168,8 +215,46 @@ impl CreatureAiTable {
         players: &[TargetCandidate],
         walkable: impl Fn(MovementLocalPosition) -> bool,
     ) -> Vec<(ExactActorRef, ThinkReport)> {
+        self.run_due_thinks_until_next(runtime, now_us, root, revisions, players, walkable)
+            .0
+    }
+
+    /// [`Self::run_due_thinks`], also returning the earliest pending think after the pass
+    /// (`earliest_due` without its walk of the table, SPAWN-CEILINGS-1, Codex 4243397472): the
+    /// earliest think the selection left, or a taken creature's next think.
+    pub(crate) fn run_due_thinks_until_next(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        now_us: u64,
+        root: &GameplayDecisionRoot,
+        revisions: &RevisionSet,
+        players: &[TargetCandidate],
+        walkable: impl Fn(MovementLocalPosition) -> bool,
+    ) -> (Vec<(ExactActorRef, ThinkReport)>, Option<u64>) {
+        let (taken, mut next) = self.take_due_bounded(now_us);
+        let reports =
+            self.run_taken_thinks(runtime, &taken, now_us, root, revisions, players, walkable);
+        for actor in taken {
+            if let Some(due) = self.due(actor) {
+                next = Some(next.map_or(due, |next| next.min(due)));
+            }
+        }
+        (reports, next)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn run_taken_thinks(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        taken: &[ExactActorRef],
+        now_us: u64,
+        root: &GameplayDecisionRoot,
+        revisions: &RevisionSet,
+        players: &[TargetCandidate],
+        walkable: impl Fn(MovementLocalPosition) -> bool,
+    ) -> Vec<(ExactActorRef, ThinkReport)> {
         let mut reports = Vec::new();
-        for actor in self.take_due(now_us) {
+        for &actor in taken {
             let Some(health) = runtime.live_creature_health(actor) else {
                 self.remove(actor);
                 continue;

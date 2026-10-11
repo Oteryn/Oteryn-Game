@@ -9204,7 +9204,7 @@
         "apps/game-server/src/ai/spawn.rs RESPAWN_PENDING_PER_CHANNEL_MAX: RespawnSchedule::creature_gone",
         "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::drive_spawn_respawns"
       ],
-      "notes": "CREATURE-AI-0 \u00a76.3; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs pending_occurrences_are_bounded_by_rl_12. Registered by OTV2-20261004-spawn-1a. SPAWN-CEILINGS-1 (Codex 4242270322): ChannelRuntimeV1::drive_spawn_respawns runs at most SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX = 32 respawn steps per 50 ms owner window (registered as SPAWNCEIL-RL-01); occurrences past it stay pending and run first in the next window. Test: apps/game-server/src/foundation/runtime_actor_carrier.rs simultaneous_respawns_run_a_bounded_number_of_steps_per_owner_window."
+      "notes": "CREATURE-AI-0 \u00a76.3; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs pending_occurrences_are_bounded_by_rl_12. Registered by OTV2-20261004-spawn-1a. SPAWN-CEILINGS-1 (Codex 4242270322): ChannelRuntimeV1::drive_spawn_respawns runs at most SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX = 32 respawn steps per 50 ms owner window (registered as SPAWNCEIL-RL-01); occurrences past it stay pending and run first in the next window. Test: apps/game-server/src/foundation/runtime_actor_carrier.rs simultaneous_respawns_run_a_bounded_number_of_steps_per_owner_window. SPAWN-CEILINGS-1 (Codex 4243397472): the Channel runtime keeps a deadline index of the pending occurrences, ordered by (due time, spawn point), beside the schedule, so a window reads only the occurrences it runs (at most 32, O(32 log n)) instead of scanning and sorting every due occurrence; test: apps/game-server/src/foundation/runtime_actor_carrier.rs a_131_072_death_backlog_reads_bounded_spawn_records_per_owner_window."
     },
     {
       "id": "SPAWNCEIL-RL-01",
@@ -9226,7 +9226,7 @@
       "consumers": [
         "apps/game-server/src/foundation/runtime_actor_carrier.rs SPAWN_RESPAWN_STEPS_PER_WINDOW_MAX: ChannelRuntimeV1::drive_spawn_respawns"
       ],
-      "notes": "CREATURE-AI-0 \u00a76.3 (implementation work budget under RL-12 and RL-17). Registered by SPAWN-CEILINGS-1 (Codex 4242270322; owner decision 2026-10-11). Test: apps/game-server/src/foundation/runtime_actor_carrier.rs simultaneous_respawns_run_a_bounded_number_of_steps_per_owner_window."
+      "notes": "CREATURE-AI-0 \u00a76.3 (implementation work budget under RL-12 and RL-17). Registered by SPAWN-CEILINGS-1 (Codex 4242270322; owner decision 2026-10-11). Test: apps/game-server/src/foundation/runtime_actor_carrier.rs simultaneous_respawns_run_a_bounded_number_of_steps_per_owner_window. Codex 4243397472: the steps are taken from a (due time, spawn point) deadline index, so a window with a 131,072-occurrence backlog reads at most 32 index records for its steps; test: apps/game-server/src/foundation/runtime_actor_carrier.rs a_131_072_death_backlog_reads_bounded_spawn_records_per_owner_window."
     },
     {
       "id": "SPAWNCEIL-RL-02",
@@ -9270,9 +9270,10 @@
       "consumers": [
         "apps/game-server/src/ai/spawn.rs REALIZATIONS_PER_WINDOW_MAX: realization_windows",
         "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::realize_activation_spawns (one owner turn; refuses more than one window)",
-        "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::begin_activation_spawns / realize_activation_spawn_window (persisted cursor, one window per 50 ms owner window; SPAWN-CEILINGS-1)"
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs ChannelRuntimeV1::begin_activation_spawns / realize_activation_spawn_window (persisted cursor, one window per 50 ms owner window; SPAWN-CEILINGS-1)",
+        "apps/game-server/src/foundation/runtime_actor_carrier.rs SPAWN_GONE_SCAN_POINTS_PER_WINDOW_MAX: ChannelRuntimeV1::scan_spawn_points (persisted gone-scan cursor, at most this many spawn points checked for a gone creature per 50 ms owner window; SPAWN-CEILINGS-1 Codex 4243397472)"
       ],
-      "notes": "CREATURE-AI-0 \u00a76.2; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs realization_windows_are_canonical_and_bounded_by_rl_14. Game carrier tests (SPAWN-CEILINGS-1): apps/game-server/src/foundation/runtime_actor_carrier.rs activation_realizes_at_most_rl_14_points_per_owner_window / a_refused_activation_window_realizes_nothing / spawn_sources_per_channel_max_accepted_max_plus_one_rejected. Registered by OTV2-20261004-spawn-1a."
+      "notes": "CREATURE-AI-0 \u00a76.2; SPAWN-1a. Test: apps/game-server/src/ai/spawn.rs realization_windows_are_canonical_and_bounded_by_rl_14. Game carrier tests (SPAWN-CEILINGS-1): apps/game-server/src/foundation/runtime_actor_carrier.rs activation_realizes_at_most_rl_14_points_per_owner_window / a_refused_activation_window_realizes_nothing / spawn_sources_per_channel_max_accepted_max_plus_one_rejected. Registered by OTV2-20261004-spawn-1a. SPAWN-CEILINGS-1 (Codex 4243397472): the respawn drive observes gone creatures at the same rate, at most 4,096 spawn points per window from a cursor that wraps in canonical order, so a full Channel of 131,072 points is observed within 32 windows (1.6 s) instead of every point every window; test: apps/game-server/src/foundation/runtime_actor_carrier.rs a_131_072_death_backlog_reads_bounded_spawn_records_per_owner_window."
     },
     {
       "id": "CREATUREAI0-RL-05",
@@ -9293,9 +9294,10 @@
       ],
       "consumers": [
         "apps/game-server/src/ai_think.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due",
+        "apps/game-server/src/ai_think/channel_owner.rs CREATUREAI0_THINKS_PER_WINDOW: CreatureAiTable::take_due_bounded (the Channel owner's selection)",
         "apps/game-server/src/gameplay_transport/monster_ai_cycle.rs next_monster_ai_pass_us: a pass leaving due thinks schedules the next pass in the next window"
       ],
-      "notes": "CREATURE-AI-1 \u00a71.3 and \u00a72.1. Test: apps/game-server/src/ai_think/think_tests.rs thinks_per_window_at_max_start_now_and_the_rest_next_window. Registered by OTV2-20261004-creature-ai-1. SPAWN-CEILINGS-1 (Codex 4243189401): the Channel owner's monster AI pass runs again at the start of the next window while thinks remain due (not one 1 s think interval later), and only one pass per interval swings; tests: monster_ai_cycle.rs a_think_backlog_resumes_in_the_next_owner_window_and_swings_keep_their_interval, foundation/channel_owner_creature_ai_tests.rs thinks_past_the_window_budget_stay_due_and_run_in_the_next_window."
+      "notes": "CREATURE-AI-1 \u00a71.3 and \u00a72.1. Test: apps/game-server/src/ai_think/think_tests.rs thinks_per_window_at_max_start_now_and_the_rest_next_window. Registered by OTV2-20261004-creature-ai-1. SPAWN-CEILINGS-1 (Codex 4243189401): the Channel owner's monster AI pass runs again at the start of the next window while thinks remain due (not one 1 s think interval later), and only one pass per interval swings; tests: monster_ai_cycle.rs a_think_backlog_resumes_in_the_next_owner_window_and_swings_keep_their_interval, foundation/channel_owner_creature_ai_tests.rs thinks_past_the_window_budget_stay_due_and_run_in_the_next_window. SPAWN-CEILINGS-1 (Codex 4243397472): the owner selects a window's thinks with a heap bounded by the remaining budget (no collect and sort of every due think) and takes the next pass time from that selection; a backlog pass between swing passes skips the creature census, admission, forget and wake and reuses the last swing pass's player set with fresh positions; tests: foundation/channel_owner_creature_ai_tests.rs the_bounded_think_selection_equals_the_full_sort_and_reports_the_next_think, gameplay_transport/monster_ai_cycle.rs a_think_backlog_resumes_in_the_next_owner_window_and_swings_keep_their_interval."
     },
     {
       "id": "CREATUREAI0-RL-06",
