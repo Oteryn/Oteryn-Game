@@ -2,7 +2,7 @@
 
 Reference: authorized Linux installation, Tibia **15.33.b21348**. This is an
 independently written semantic inventory, not redistributed original source or
-assets. Offline inspection did not modify the installation, apply preferences,
+assets. Initial offline inspection did not modify the installation, apply preferences,
 read account configuration or execute gameplay actions. Qt's resource APIs read
 the packaged RCC and the ELF's embedded resource arrays; Qt decompression reads
 the shader packages. Temporary tools and original captures remain private.
@@ -27,6 +27,31 @@ Packaged `tutorial/clientoptions.json` is tutorial configuration, **not factory
 defaults**. The 23 × 23 default cursor and 256 × 32 walk/attack strips establish
 geometry, not animation cadence. Original artwork/audio/source stays outside
 the public repository; Oteryn implementations remain independently authored.
+
+## Help export continuation
+
+`OptionsPageHelp.qml` uses SaveFile dialogs for Export All Options and Export
+Minimap, and an OpenFile dialog for the combined Import Options/Minimap action.
+All three offer ZIP and all-file filters. Their handlers delegate to the native
+controller; the QML does not establish archive entry names, schemas or validation.
+Private resource SHA-256:
+`01786875ff3137967635b7a23d06ea83737ec6fbe1879e32283398b247a09723`.
+
+A non-applying live inspection independently confirmed the Help rows
+and the ZIP save dialog. One attempted export reported an I/O error; no archive
+was created. The original process later disappeared during this probe. Its cause
+is unknown; no restart or account sign-in was attempted. No Apply, Reset,
+preference edit or gameplay action was requested. Private captures remain under
+`/tmp/oteryn-reference-help-preview-GTxHFx` on the authorized NAS.
+
+A schema-only inspection of the installed global configuration found
+`clientOptionsVersion: 9`, 192 keys in `options`, and a separate `hotkeyOptions`
+object. Only key names/types and the version were inspected; private values were
+not retained. Other root sections include identity-related data, so that file
+must not be copied or treated as a credential-free export. Neither its version
+nor its 192 keys establishes the ZIP format, factory defaults or visible-page
+cardinality. Oteryn's fixed-path JSON export is a working local backup, **not**
+reference-compatible Help export; archive dispatch/import remains unqualified.
 
 ## Exact settings contracts recovered
 

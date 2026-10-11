@@ -61,7 +61,7 @@ These changes do not qualify full lighting, engine switching or visual 1:1 parit
 | Miscellaneous | Yes, seven rows | Confirmation and session selections require explicit consumers; secure remembered sign-in stays OFF/unwired |
 | Gameplay | Yes | Inspection/chase/loot intent prepared; engine contracts/consumers pending |
 | Screenshots | Yes, two trigger columns | The folder action creates and opens the local Oteryn screenshot directory. The screenshot hotkey performs a real non-overwriting PNG renderer capture, and Only Capture Game Window selects the actual scene crop. Seventeen automatic triggers stay disabled because their event pipeline does not exist |
-| Help | Partial | Info is local; Compendium opens the existing local composition idempotently during play; complete options export and confirmed reset work. Client Help/Lenshelp, Rule Violations, Manual and FAQ stay visibly disabled because no verified Oteryn destination exists. Export Minimap and the combined Import Options/Minimap action stay disabled until a versioned minimap format and honest format dispatch exist |
+| Help | Partial | Info is local; Compendium opens the existing local composition idempotently during play; confirmed reset works. Export currently creates a local JSON backup, not the source-confirmed ZIP SaveFile flow, and is not counted as reference-compatible completion. Client Help/Lenshelp, Rule Violations, Manual and FAQ stay visibly disabled because no verified Oteryn destination exists. Export Minimap and the combined Import Options/Minimap action stay disabled until a versioned minimap format and honest format dispatch exist |
 
 ## Compiled-page verification — 2026-10-11
 

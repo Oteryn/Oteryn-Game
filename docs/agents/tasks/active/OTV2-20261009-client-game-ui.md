@@ -118,6 +118,13 @@ one AUTHORING batch. CI on an older head never qualifies a successor.
 
 ## Known completion gaps
 
+- Original Help source and a live SaveFile dialog confirm ZIP export/import
+  filters. Current fixed-path JSON export is only an Oteryn backup, not parity.
+  ZIP contents remain unknown: the probe produced no archive and the original
+  reference process disappeared; do not restart/sign in or copy global identity
+  configuration. Schema-only metadata and private evidence are recorded in
+  UI-REFERENCE-EXTRACTED.md. Continue offline/independently authored work.
+
 - Spell/Object Custom Hotkeys need authoritative spell/inventory models and the
   observed picker compositions; the existing incomplete editors must not be
   enabled.
