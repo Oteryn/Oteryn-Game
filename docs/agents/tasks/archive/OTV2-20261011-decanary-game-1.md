@@ -1,7 +1,7 @@
-# OTERYN-20261011-decanary-game-1
+# OTV2-20261011-decanary-game-1
 
 ```yaml
-task_id: OTERYN-20261011-decanary-game-1
+task_id: OTV2-20261011-decanary-game-1
 title: "GAME-DECANARY-1 neutral wording for engine-name references in workflows and docs"
 mode: IMPLEMENT
 status: completed
@@ -25,7 +25,7 @@ owned_paths:
   - apps/game-server/AGENTS.md
   - tools/game-platform-catalog/README.md
   - tools/qualification/spells/README.md
-  - docs/agents/tasks/archive/OTERYN-20261011-decanary-game-1.md
+  - docs/agents/tasks/archive/OTV2-20261011-decanary-game-1.md
 public_contracts: []
 external_repositories: []
 ```
@@ -58,8 +58,9 @@ Inventory on `origin/main`: about 5000 files mention the names; 1101 file paths 
 ## Validation
 
 - `python tools/agents/validate_governance.py`: pass
-- `python -m unittest discover -s tools/agents/tests`: pass (59 of 60; 1 error is a missing experiments/ file in the sparse checkout)
-- workflow YAML parse (PyYAML): pass
+- `python -m unittest discover -s tools/agents/tests`: pass (60 tests, OK)
+- workflow YAML parse (PyYAML) of the four changed workflows: pass
+- `git diff --check`: clean
 
 ## Review
 
