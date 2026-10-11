@@ -9,6 +9,7 @@ mkdir -p "$ROOT_BASE/ops" "$BASE/node"
 # shellcheck source=deploy-ops.sh
 source "$here/deploy-ops.sh"
 ROOT_UID="$(id -u)" # the test user stands in for root
+WORLD_UID="$(id -u)"; WORLD_GID="$(id -g)" # and for the service user that owns the staged bundle
 W=01900000-0000-7000-8000-000000000001
 C=01900000-0000-7000-8000-000000000002
 NODE="CN=oteryn-preprod-node-1-runtime-status"
@@ -94,11 +95,30 @@ fill_manifest; render; sub "$REPORT_CONFIG" "s|^node_identities = .*|node_identi
 fill_manifest; render; sub "$REPORT_CONFIG" "s|^node_identities = .*|node_identities = [\"$NODE\", \"CN=other\"]|"; expect_refused "report.toml extra node identity"
 fill_manifest; render; sub "$REPORT_CONFIG" "s|^\(\"$NODE\" = .*\)|\1\n\"CN=other\" = \"/x\"|"; expect_refused "report.toml extra certificate key"
 # World Bundle opt-in: enabled needs the bare digest as map_revision and the manifest's table in node.toml.
-D=$(sed -n 's/^digest = "\(.*\)"/\1/p' "$here/preprod-topology.toml")
+# A synthetic bundle: body, then sha256(FORMAT 0x00 body) as the 32-byte trailer. The manifest pin is set to its digest.
+mkbundle() { # <file> <body text>
+  printf '%s' "$2" > "$1.body"
+  { printf '%s\0' "$WORLD_BUNDLE_FORMAT"; cat "$1.body"; } | sha256sum | cut -d ' ' -f 1 > "$1.digest"
+  { cat "$1.body"; xxd_r="$(cat "$1.digest")"; printf '%s' "$xxd_r" | sed 's/../\\x&/g' | xargs -0 printf; } > "$1"
+  rm -f "$1.body"
+}
+mkbundle "$tmp/good.otwb" "synthetic world bundle body, long enough to be a file"
+D="$(cat "$tmp/good.otwb.digest")"
+mkbundle "$tmp/other.otwb" "a different synthetic body"
 fill_manifest; render; printf '[world_bundle]\npath = "x"\n' >> "$NODE_CONFIG"; expect_refused "node.toml table without opt-in"
-fill_manifest; sub "$MANIFEST" "s|^enabled = false|enabled = true|;s|^map_revision = .*|map_revision = \"$D\"|"; render
+fill_manifest; sub "$MANIFEST" "s|^enabled = false|enabled = true|;s|^map_revision = .*|map_revision = \"$D\"|;s|^digest = .*|digest = \"$D\"|"; render
 { echo "[world_bundle]"; sed -n '/^\[world_bundle\]/,/^$/p' "$MANIFEST" | grep -v '^\[\|^enabled\|^#\|^$' | sed "s|<BASE>|$BASE|"; } >> "$NODE_CONFIG"
 good_node="$(cat "$NODE_CONFIG")"; good_manifest="$(cat "$MANIFEST")"
+TARGET="$BASE/world/world.otbundle"
+stage_file() { mkdir -p "$BASE/world"; rm -f "$TARGET"; cp "$1" "$TARGET"; chmod 644 "$TARGET"; }
+# Fail closed on the file: absent, wrong bytes, symlink, wrong mode.
+rm -rf "$BASE/world"; expect_refused "enabled bundle file missing"
+stage_file "$tmp/other.otwb"; expect_refused "enabled bundle digest mismatch"
+stage_file "$tmp/good.otwb"; printf 'x' >> "$TARGET"; expect_refused "bundle with trailing byte"
+stage_file "$tmp/good.otwb"; chmod 600 "$TARGET"; expect_refused "bundle mode not 0644"
+stage_file "$tmp/good.otwb"; mv "$TARGET" "$tmp/real.otwb"; ln -s "$tmp/real.otwb" "$TARGET"; expect_refused "bundle is a symlink"
+stage_file "$tmp/good.otwb"; sed -i 's/^\(synthetic\)/X/' "$TARGET"; expect_refused "bundle body altered"
+stage_file "$tmp/good.otwb"
 run || { echo "FAIL enabled world bundle: $(cat "$tmp/err")" >&2; exit 1; }
 for key in digest content_revision project_format_version world_schema_version production start_x start_y start_floor path; do
   printf '%s\n' "$good_manifest" > "$MANIFEST"; printf '%s\n' "$good_node" > "$NODE_CONFIG"
@@ -108,4 +128,27 @@ printf '%s\n' "$good_manifest" > "$MANIFEST"; printf '%s\n' "$good_node" > "$NOD
 sub "$MANIFEST" "s|^map_revision = .*|map_revision = \"map.00112233445566ff\"|"; sub "$NODE_CONFIG" "s|^map_revision = .*|map_revision = \"map.00112233445566ff\"|"; expect_refused "map_revision not the bundle's"
 printf '%s\n' "$good_node" > "$NODE_CONFIG"; printf '%s\n' "$good_manifest" > "$MANIFEST"; sub "$MANIFEST" "s|^production = false|production = true|"; expect_refused "production bundle"
 printf '%s\n' "$good_manifest" > "$MANIFEST"; sub "$NODE_CONFIG" "/^\[world_bundle\]/,\$d"; expect_refused "enabled but node.toml has no table"
+
+# stage-world: refuses without incoming or on mismatch (target untouched), installs a pinned bundle atomically.
+stage() { (stage_world) >/dev/null 2>"$tmp/err"; }
+printf '%s\n' "$good_manifest" > "$MANIFEST"; printf '%s\n' "$good_node" > "$NODE_CONFIG"
+mkdir -p "$BASE/run"; rm -rf "$BASE/world"; rm -f "$BASE/run/world-bundle.incoming"
+if stage; then echo "FAIL stage-world: accepted without incoming file" >&2; exit 1; fi
+cp "$tmp/other.otwb" "$BASE/run/world-bundle.incoming"
+if stage; then echo "FAIL stage-world: accepted a digest mismatch" >&2; exit 1; fi
+grep -q world_bundle_digest_mismatch "$tmp/err" || { echo "FAIL stage-world: mismatch not named" >&2; exit 1; }
+[[ ! -e "$TARGET" ]] || { echo "FAIL stage-world: mismatch left a target" >&2; exit 1; }
+[[ -z "$(ls -A "$BASE/world")" ]] || { echo "FAIL stage-world: mismatch left a temp file" >&2; exit 1; }
+cp "$tmp/good.otwb" "$BASE/run/world-bundle.incoming"
+stage || { echo "FAIL stage-world: $(cat "$tmp/err")" >&2; exit 1; }
+cmp -s "$TARGET" "$tmp/good.otwb" && [[ "$(stat -c %a "$TARGET")" = 644 ]] || { echo "FAIL stage-world: wrong result" >&2; exit 1; }
+run || { echo "FAIL staged bundle passes topology check: $(cat "$tmp/err")" >&2; exit 1; }
+# A symlink as incoming file is refused; a stale good target survives a later mismatch.
+rm -f "$BASE/run/world-bundle.incoming"; ln -s "$tmp/good.otwb" "$BASE/run/world-bundle.incoming"
+if stage; then echo "FAIL stage-world: accepted a symlink" >&2; exit 1; fi
+rm -f "$BASE/run/world-bundle.incoming"; cp "$tmp/other.otwb" "$BASE/run/world-bundle.incoming"
+if stage; then echo "FAIL stage-world: accepted a mismatch over a good target" >&2; exit 1; fi
+cmp -s "$TARGET" "$tmp/good.otwb" || { echo "FAIL stage-world: good target replaced" >&2; exit 1; }
+# The root wrapper rejects extra arguments and a non-root caller.
+if bash "$here/deploy-ops.sh" stage-world extra 2>/dev/null; then echo "FAIL stage-world: accepted an argument" >&2; exit 1; fi
 echo "preprod topology check: ok"
