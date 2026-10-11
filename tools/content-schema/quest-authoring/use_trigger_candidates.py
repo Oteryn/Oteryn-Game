@@ -3,7 +3,9 @@
 A12 makes the CipSoft Tibia item id canonical identity in keys of the form
 `oteryn:item.tibia.i<id>`. This tool uses that accepted identity rule only to
 compare exact canonical Item targets with literal donor Action `id(...)`
-registrations already associated with the same canonical Quest.
+registrations already associated with the same canonical Quest. Per A12 4.2 a donor
+number is a source id, not an identity: it is joined to a canonical Item only when the
+admitted alias registry holds binding evidence for that exact source id and target.
 
 A matching registration is evidence of a possible source trigger. It does not
 prove the stage's branch semantics, native placement, CommandRef, runtime
@@ -21,11 +23,13 @@ from pathlib import Path
 PLAN = "content/quests/missions/completion-binding-plan.json"
 CROSSWALK = "tools/content-schema/quest-authoring/samples/binding_packets/source/crosswalk.json"
 IDENTITY_DECISION = "docs/architecture/reviews/OTERYN_GAME_A12_ITEM_IDENTITY_TIBIA_ID_DECISION_2026-09-29.md"
+ALIASES = "content/items/aliases.json"
 OUTPUT = "tools/content-schema/quest-authoring/samples/server-completion/use-trigger-candidates.json"
 
 CLASS_EXACT = "ONE_SAME_QUEST_LITERAL_ID_USE_TRIGGER_COVERS_ALL_TARGETS"
 CLASS_NO_MATCH = "NO_SAME_QUEST_LITERAL_ID_USE_TRIGGER_MATCH"
 CLASS_TARGET_INCOMPLETE = "TARGET_IDENTITY_INCOMPLETE"
+CLASS_SOURCE_ID_UNBOUND = "TARGET_SOURCE_ID_NOT_G4_BOUND"
 CLASS_AMBIGUOUS = "MULTIPLE_SAME_QUEST_LITERAL_ID_USE_TRIGGERS_COVER_TARGETS"
 
 ITEM_KEY = re.compile(r"^oteryn:item\.tibia\.i([1-9][0-9]*)$")
@@ -63,6 +67,22 @@ def literal_registration_ids(trigger):
             }
         )
     return ids, matched_registrations
+
+
+def bound_source_ids(root: Path):
+    """Source item ids with admitted binding evidence, mapped to their canonical key."""
+    bound = {}
+    for entry in read(root, ALIASES)["entries"]:
+        evidence = entry.get("evidence") or {}
+        source_id = evidence.get("source_item_id")
+        if (
+            entry.get("state") == "ALIAS"
+            and evidence.get("basis") == "binding"
+            and isinstance(source_id, int)
+            and entry.get("target") == f"oteryn:item.tibia.i{source_id}"
+        ):
+            bound[source_id] = entry["target"]
+    return bound
 
 
 def exact_item_targets(intent):
@@ -108,6 +128,7 @@ def build(root: Path):
     plan = read(root, PLAN)
     crosswalk = read(root, CROSSWALK)
     by_quest = {row["quest_key"]: row for row in crosswalk["quests"]}
+    bound = bound_source_ids(root)
 
     records = []
     for quest in plan["records"]:
@@ -126,7 +147,12 @@ def build(root: Path):
             exact_targets, incomplete_targets = exact_item_targets(intent)
             target_ids = {row["tibia_item_id"] for row in exact_targets}
             candidates = []
-            if not incomplete_targets and target_ids:
+            unbound_ids = sorted(
+                row["tibia_item_id"]
+                for row in exact_targets
+                if bound.get(row["tibia_item_id"]) != row["item"].get("key")
+            )
+            if not incomplete_targets and target_ids and not unbound_ids:
                 for trigger in use_triggers:
                     registration_ids, literal_regs = literal_registration_ids(trigger)
                     if target_ids <= registration_ids:
@@ -157,6 +183,8 @@ def build(root: Path):
 
             if incomplete_targets:
                 classification = CLASS_TARGET_INCOMPLETE
+            elif unbound_ids:
+                classification = CLASS_SOURCE_ID_UNBOUND
             elif len(candidates) == 1:
                 classification = CLASS_EXACT
             elif len(candidates) > 1:
@@ -172,12 +200,14 @@ def build(root: Path):
                 "classification": classification,
                 "exact_item_targets": exact_targets,
                 "incomplete_targets": incomplete_targets,
+                "unbound_source_item_ids": unbound_ids,
                 "same_quest_literal_id_use_trigger_candidates": candidates,
                 "native_dispatch_binding": None,
                 "runtime_admitted": False,
                 "holds": [
                     "SOURCE_ACTION_REGISTRATION_DOES_NOT_PROVE_NATIVE_PLACEMENT_OR_COMMANDREF",
                     "SOURCE_TRIGGER_MATCH_DOES_NOT_PROVE_STAGE_BRANCH_SEMANTICS",
+                    *(["DONOR_ITEM_ID_NOT_G4_BOUND"] if unbound_ids else []),
                     "QUEST_TRIGGER_RUNTIME_NOT_ADMITTED",
                 ],
             }
@@ -247,6 +277,7 @@ def build(root: Path):
         "inputs": [
             {"path": PLAN, "sha256": sha256(root / PLAN)},
             {"path": CROSSWALK, "sha256": sha256(root / CROSSWALK)},
+            {"path": ALIASES, "sha256": sha256(root / ALIASES)},
             {
                 "path": IDENTITY_DECISION,
                 "sha256": sha256(root / IDENTITY_DECISION),
@@ -260,7 +291,7 @@ def build(root: Path):
             "native_dispatch_bindings": 0,
         },
         "limits": [
-            "A12 permits exact Tibia Item id comparison; no other donor numeric id is promoted.",
+            "A donor numeric id joins a canonical Item only through admitted alias-registry binding evidence for that exact source id; unbound ids are held, not matched by number.",
             "Only literal Action id(...) registrations are considered; aid, uid, positions and symbols are excluded.",
             "A source registration that contains the stage target ids does not prove which internal source branch owns the chosen stage.",
             "Source trigger association does not prove native LocalObject placement, CommandRef or QUEST-TRIGGER-1 dispatch.",

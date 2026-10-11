@@ -91,6 +91,15 @@ class UseTriggerCandidatesTest(unittest.TestCase):
                     )
                 )
 
+    def test_exact_targets_require_g4_binding_evidence(self):
+        bound = candidates.bound_source_ids(self.root)
+        for row in self.packet["records"]:
+            if row["classification"] == candidates.CLASS_EXACT:
+                self.assertEqual([], row["unbound_source_item_ids"])
+        for source_id in (768, 769, 9106, 11466, 21504, 21507):
+            self.assertEqual(f"oteryn:item.tibia.i{source_id}", bound.get(source_id))
+        self.assertNotIn(1, bound)
+
 
 if __name__ == "__main__":
     unittest.main()
