@@ -79,7 +79,7 @@ Counts below are stage rows in `content/quests/missions/completion-binding-plan.
 | `talk` | **329** | **165** | 71 rows have NPC dialogue candidates; 8 more carry only a held target and no candidate | NPC-TALK-1 -> NPC-QUEST-1 |
 | `use` | **458** | **221** | 46 rows have all targets exact; 152 have at least one exact target | QUEST-TRIGGER-1 / WORLDINT-USE-1; ITEM-USE-1 where the event is Item-definition consumption/use |
 | `collect` | **277** | **151** | 147 rows have all targets exact; 182 have at least one exact Item target | inventory-count / per-target-quantity occurrence owner |
-| `explore` | **248** | **180** | 29 rows have all targets exact; 44 have at least one exact Area | movement/world entry occurrence via QUEST-TRIGGER-1 and applicable spatial owner |
+| `explore` | **248** | **180** | dedicated audit (`samples/server-completion/explore-area-candidates.json`): 20 exact Area candidates, 10 clean single-target; 36 ambiguous stages tracked separately | movement/world entry occurrence via QUEST-TRIGGER-1 and applicable spatial owner |
 | `kill` | **275** | **143** | 182 rows have all targets exact; 201 at least one exact Creature; 25 exact Encounter outcome seams | kill credit / Encounter outcome delivery |
 | `complete` | **304** | **304** | chosen graph predecessor relation | real producing occurrence / completion reducer binding |
 
@@ -135,7 +135,7 @@ An exact Area identity is not an entry trigger.
 
 The executable producer must bind an actual movement/world occurrence to a defined region, tile, transition or other spatial boundary under the accepted movement/world owner.
 
-The 29 all-exact-target Area rows are identity evidence only.
+The dedicated EXPLORE audit's 20 exact Area candidates (10 clean single-target) are identity evidence only; its 36 ambiguous stages are not a starting set.
 
 ## KILL owner boundary
 
