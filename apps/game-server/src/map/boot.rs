@@ -9,6 +9,7 @@
 //! Nothing durable names the bundle; a restart rebuilds an equal World from the same pins.
 
 use super::facts::{BundleFacts, FactsRefusal, ItemDefinition};
+use super::floor::{FloorTable, Ground, palette_mask};
 use super::overlay::{ChannelOverlay, TilePos, map_revision};
 use super::{BundlePins, LoadError, WorldBase};
 use crate::content::static_cell_engine::{EngineeringStaticCellScope, StaticCellEngineError};
@@ -50,6 +51,11 @@ pub enum BootRefusal {
     StartNotEnterable,
     /// A palette Item key the §1.6 item index lacks or places at another `id`.
     ItemReference,
+    /// MAP-FLOOR-1: a floor-change tile whose successive destinations never end.
+    FloorChain(TilePos),
+    /// MAP-FLOOR-1: a served bundle places no tile that changes floors, so its stairs,
+    /// ladders and holes did not resolve against the content catalogue.
+    NoFloorChanges,
 }
 
 impl fmt::Display for BootRefusal {
@@ -61,6 +67,14 @@ impl fmt::Display for BootRefusal {
             Self::ItemReference => {
                 f.write_str("a world bundle palette item does not match the item index")
             }
+            Self::NoFloorChanges => {
+                f.write_str("a world bundle places no tile that changes floors")
+            }
+            Self::FloorChain(tile) => write!(
+                f,
+                "the world bundle floor change at ({}, {}, {}) never reaches a destination",
+                tile.x, tile.y, tile.floor
+            ),
         }
     }
 }
@@ -164,15 +178,37 @@ impl CheckedBundle {
         channel_id: ChannelId,
         item: impl Fn(&str) -> Option<ItemDefinition>,
     ) -> Result<BundleWorld, BootRefusal> {
-        let (facts, blocked) = scan(&self.data, &item)?;
+        let (facts, blocked, floors) = scan(&self.data, &item)?;
         let blocked = Arc::new(blocked);
         if !enterable(&self.base, &blocked, self.start) {
             return Err(BootRefusal::StartNotEnterable);
         }
+        floors
+            .validate(|(x, y, z)| {
+                let pos = u16::try_from(x)
+                    .ok()
+                    .zip(u16::try_from(y).ok())
+                    .zip(i8::try_from(z).ok().filter(|z| (0..=15).contains(z)));
+                match pos {
+                    Some(((x, y), z)) => {
+                        let pos = TilePos { x, y, floor: -z };
+                        if self.base.tile(pos.x, pos.y, pos.floor).is_none() {
+                            Ground::Absent
+                        } else if enterable(&self.base, &blocked, pos) {
+                            Ground::Walkable
+                        } else {
+                            Ground::Blocked
+                        }
+                    }
+                    None => Ground::Absent,
+                }
+            })
+            .map_err(BootRefusal::FloorChain)?;
         Ok(BundleWorld {
             map: Arc::new(BundleMap {
                 overlay: ChannelOverlay::new(Arc::clone(&self.base), world_id, channel_id),
                 facts,
+                floors,
             }),
             base: self.base,
             map_revision: self.map_revision,
@@ -182,19 +218,29 @@ impl CheckedBundle {
     }
 }
 
-/// The map facts of the bundle, and the walkable-or-not tiles one of whose top-level entries is
-/// a `wall` Terrain or an Item whose definition is solid.
+/// The map facts of the bundle, the walkable-or-not tiles one of whose top-level entries is
+/// a `wall` Terrain or an Item whose definition is solid, and the tiles whose top-level entries
+/// carry a catalogue `floor_change` fact (MAP-FLOOR-1).
 fn scan(
     data: &[u8],
     item: &impl Fn(&str) -> Option<ItemDefinition>,
-) -> Result<(BundleFacts, BTreeSet<TilePos>), BootRefusal> {
+) -> Result<(BundleFacts, BTreeSet<TilePos>, FloorTable), BootRefusal> {
     let mut facts = None;
+    let mut masks: Vec<u8> = Vec::new();
+    let mut floors = FloorTable::default();
     let mut refused = None;
     let mut blocked = BTreeSet::new();
     let visited = bundle::visit(data, |manifest, sector| {
         if facts.is_none() {
             match BundleFacts::palette(manifest, item) {
-                Ok(palette) => facts = Some(palette),
+                Ok(palette) => {
+                    masks = manifest
+                        .palette
+                        .iter()
+                        .map(|entry| palette_mask(entry.family, &entry.key))
+                        .collect();
+                    facts = Some(palette);
+                }
                 Err(refusal) => {
                     refused = Some(refusal);
                     return Err(oteryn_world_bundle::Error::Format(
@@ -212,13 +258,22 @@ fn scan(
                 .iter()
                 .filter(|item| item.depth == 0)
                 .any(|item| facts.blocks(item.palette));
+            let pos = TilePos {
+                x: tile.x,
+                y: tile.y,
+                floor: sector.floor,
+            };
             if blocks {
-                blocked.insert(TilePos {
-                    x: tile.x,
-                    y: tile.y,
-                    floor: sector.floor,
-                });
+                blocked.insert(pos);
             }
+            let mask = tile
+                .items
+                .iter()
+                .filter(|item| item.depth == 0)
+                .fold(0, |mask, item| {
+                    mask | masks.get(item.palette as usize).copied().unwrap_or(0)
+                });
+            floors.add(pos, mask);
         }
         facts.push(manifest, &sector);
         Ok(())
@@ -232,7 +287,7 @@ fn scan(
         None => BundleFacts::palette(&visited.manifest, item)?,
     };
     facts.finish();
-    Ok((facts, blocked))
+    Ok((facts, blocked, floors))
 }
 
 /// The one ground speed switch point of a bundle World (§2.4): the server paces every step with
@@ -281,6 +336,11 @@ impl BundleWorld {
     /// The production map facts of the bundle.
     pub fn facts(&self) -> &BundleFacts {
         &self.map.facts
+    }
+
+    /// The tiles of this bundle that change floors (MAP-FLOOR-1).
+    pub fn floors(&self) -> &FloorTable {
+        &self.map.floors
     }
 
     pub fn map_revision(&self) -> &str {
@@ -348,6 +408,7 @@ impl BundleWorld {
 pub(crate) struct BundleMap {
     pub(crate) overlay: ChannelOverlay,
     pub(crate) facts: BundleFacts,
+    pub(crate) floors: FloorTable,
 }
 
 /// The collision of a Channel's movement cells over a world bundle: a tile is Walkable when it
@@ -514,6 +575,162 @@ pub(crate) mod tests {
         (bytes, pins)
     }
 
+    /// MAP-FLOOR-1: two floors of one row, whose palette keys are real appearance ids, so the
+    /// content catalogue's `floor_change` facts apply. Legacy `z` 8 (native -8) has grass at
+    /// x 0..=5 and an east stair (`i1950`) on x 1; `z` 7 (native -7) has grass at x 0..=2 (a solid
+    /// box on x 1), a hole (Terrain `i293`, `down`) at x 3 and nothing beyond.
+    pub(crate) fn floor_bundle() -> (Vec<u8>, BundlePins) {
+        floor_bundle_with(false)
+    }
+
+    /// [`floor_bundle`], plus a stair up onto a hole whose floor below leads back to the stair
+    /// (`cycle`): stair `i1947` (north) on `z` 8 at (3, 3) and (3, 2), the hole on `z` 7 at (3, 2).
+    pub(crate) fn floor_bundle_with(cycle: bool) -> (Vec<u8>, BundlePins) {
+        use oteryn_world_bundle_compiler::bundle::{
+            self, BuildClass, Extent, Family, Identity, Manifest, PaletteEntry, Sector, Terrain,
+            TerrainKind,
+        };
+        use oteryn_world_bundle_compiler::sector::{Attrs, Item, Tile};
+        let terrain = |key: &str, id| PaletteEntry {
+            key: key.into(),
+            family: Family::Terrain,
+            id,
+            terrain: Some(Terrain {
+                kind: TerrainKind::Ground,
+                walkable: Some(true),
+                ground_speed: Some(150),
+            }),
+        };
+        let item = |key: &str, id| PaletteEntry {
+            key: key.into(),
+            family: Family::Item,
+            id,
+            terrain: None,
+        };
+        let manifest = Manifest {
+            format: bundle::FORMAT.into(),
+            min_reader_version: bundle::VERSION,
+            projection_class: "server".into(),
+            compiler_version: "engineering".into(),
+            build_class: BuildClass::Production,
+            identity: Identity {
+                project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+                world_schema_version: "world-schema-1".into(),
+                content_revision: "rev-1".into(),
+                ..Identity::default()
+            },
+            world: Extent {
+                min_x: 0,
+                min_y: 0,
+                max_x: 32,
+                max_y: 32,
+                floors: vec![-8, -7],
+            },
+            palette: vec![
+                terrain("oteryn:terrain.tibia.i100", 0),
+                terrain("oteryn:terrain.tibia.i293", 1),
+                item("oteryn:item.tibia.i1950", 0),
+                item("oteryn:item.tibia.i100", 1),
+                item("oteryn:item.tibia.i1947", 2),
+            ],
+            draft_areas: Vec::new(),
+            skipped_provisional_keys: Vec::new(),
+            dropped_teleports: Vec::new(),
+            spawns: Default::default(),
+        };
+        let tile = |x, y, palettes: &[u32]| Tile {
+            x,
+            y,
+            flags: 0,
+            house: 0,
+            zones: Vec::new(),
+            items: palettes
+                .iter()
+                .map(|palette| Item {
+                    palette: *palette,
+                    depth: 0,
+                    attrs: Attrs::default(),
+                })
+                .collect(),
+        };
+        // Palette indices: 0 grass, 1 hole, 2 east stair, 3 box, 4 north stair.
+        let mut lower = vec![
+            tile(0, 0, &[0]),
+            tile(1, 0, &[0, 2]),
+            tile(2, 0, &[0]),
+            tile(3, 0, &[0]),
+            tile(4, 0, &[0]),
+            tile(5, 0, &[0]),
+        ];
+        let mut upper = vec![
+            tile(0, 0, &[0]),
+            tile(1, 0, &[0, 3]),
+            tile(2, 0, &[0]),
+            tile(3, 0, &[1]),
+        ];
+        if cycle {
+            lower.push(tile(3, 2, &[0, 4]));
+            lower.push(tile(3, 3, &[0, 4]));
+            upper.push(tile(3, 2, &[1]));
+        }
+        for tiles in [&mut lower, &mut upper] {
+            tiles.sort_by_key(|tile| (tile.y, tile.x));
+        }
+        let sectors = [
+            Sector {
+                floor: -8,
+                sx: 0,
+                sy: 0,
+                tiles: lower,
+            },
+            Sector {
+                floor: -7,
+                sx: 0,
+                sy: 0,
+                tiles: upper,
+            },
+        ];
+        let bytes =
+            bundle::write(&manifest, &sectors, &Default::default()).expect("written bundle");
+        let digest = bundle::read(&bytes).expect("read bundle").digest;
+        let pins = BundlePins {
+            digest,
+            project_format_version: "OTERYN_WORLD_PROJECT/v2".into(),
+            world_schema_version: "world-schema-1".into(),
+            content_revision: "rev-1".into(),
+            production: false,
+        };
+        (bytes, pins)
+    }
+
+    /// The served definitions of [`floor_bundle`]'s Items: the stair is walkable, the box solid.
+    pub(crate) fn floor_items(key: &str) -> Option<ItemDefinition> {
+        let (reference, solid) = match key {
+            "oteryn:item.tibia.i1950" => (1, Some(false)),
+            "oteryn:item.tibia.i100" => (2, Some(true)),
+            "oteryn:item.tibia.i1947" => (3, Some(false)),
+            _ => return None,
+        };
+        Some(ItemDefinition {
+            reference: std::num::NonZeroU32::new(reference)?,
+            solid,
+            blocks_projectile: solid == Some(true),
+            pickupable: false,
+        })
+    }
+
+    /// [`pins`] for [`floor_bundle`], starting on legacy `z` 8.
+    pub(crate) fn floor_pins(bundle: BundlePins) -> BootPins {
+        BootPins {
+            start: TilePos {
+                x: 0,
+                y: 0,
+                floor: -8,
+            },
+            ..pins(bundle, 0)
+        }
+    }
+
     /// The served definitions of the test bundle's Items: the §1.6 index places `item:box` at
     /// Item id 0 and `item:coin` at 1.
     pub(crate) fn items(key: &str) -> Option<ItemDefinition> {
@@ -637,6 +854,57 @@ pub(crate) mod tests {
                 .index()
                 .lookup(cells.scope(), LogicalCell { x: 1, y: 0, z: 16 }),
             Err(StaticCellEngineError::Absent)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn map_floor_boot_collects_the_catalogue_floor_changes() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = floor_bundle();
+        let world = boot(
+            &bytes,
+            &floor_pins(load),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            floor_items,
+        )?;
+        let at = |x, floor| TilePos { x, y: 0, floor };
+        // The east stair item on z 8 and the `down` hole Terrain on z 7; plain grass, the
+        // solid box and an UNKNOWN catalogue fact are no floor change.
+        assert_eq!(world.floors().count(), 2);
+        assert!(world.floors().contains(at(1, -8)));
+        assert!(world.floors().contains(at(3, -7)));
+        assert!(!world.floors().contains(at(1, -7)));
+        // A fixture bundle without a catalogue key has none.
+        let (bytes, load) = bundle();
+        let flat = boot(
+            &bytes,
+            &pins(load, 1),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            items,
+        )?;
+        assert_eq!(flat.floors().count(), 0);
+        Ok(())
+    }
+
+    #[test]
+    fn map_floor_boot_refuses_a_floor_change_that_never_ends() -> Result<(), Box<dyn Error>> {
+        let (bytes, load) = floor_bundle_with(true);
+        let refused = boot(
+            &bytes,
+            &floor_pins(load),
+            WorldId::decode(&id(1))?,
+            ChannelId::decode(&id(2))?,
+            floor_items,
+        );
+        assert_eq!(
+            refused,
+            Err(BootRefusal::FloorChain(TilePos {
+                x: 3,
+                y: 2,
+                floor: -7
+            }))
         );
         Ok(())
     }
